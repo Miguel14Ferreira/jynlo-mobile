@@ -3,6 +3,13 @@ import {communityDetails} from './community-api';
 import {safePositiveId,teamInviteUrl} from './realtime-core.cjs';
 import type {JynloTournamentTeam} from './types';
 const demoTeams=new Map<string,JynloTournamentTeam[]>();let demoNext=978000;
+// Consistent, offline-only roster for the same fictitious football tournament used in fixtures.
+if(DEMO_MODE){demoTeams.set('930001:940001',[
+ {id:1,name:'Futeboladas à Balda',playersPerTeam:5,createdAt:'2026-11-01T10:00:00Z',players:[{profileId:1001,username:'Tiago',displayName:'Tiago'}]},
+ {id:2,name:'Os Amigos',playersPerTeam:5,createdAt:'2026-11-01T10:00:00Z',players:[{profileId:1002,username:'André',displayName:'André'}]},
+ {id:3,name:'Quinta FC',playersPerTeam:5,createdAt:'2026-11-01T10:00:00Z',players:[]},
+ {id:4,name:'Bola Rasa',playersPerTeam:5,createdAt:'2026-11-01T10:00:00Z',players:[]}
+]);}
 const key=(communityId:number,tournamentId:number)=>`${safePositiveId(communityId)}:${safePositiveId(tournamentId)}`;
 const base=(communityId:number,tournamentId:number)=>`/api/communities/${safePositiveId(communityId)}/tournaments/${safePositiveId(tournamentId)}/teams`;
 export function shareableTeamInvite(communityId:number,tournamentId:number,teamId:number):string{

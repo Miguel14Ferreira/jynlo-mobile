@@ -16,6 +16,8 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
     <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/fixtures" options={{title:"Jogos e fases"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/teams/[teamId]" options={{title:"Equipa"}}/>
     <Stack.Screen name="feed" options={{title:"Feed"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>

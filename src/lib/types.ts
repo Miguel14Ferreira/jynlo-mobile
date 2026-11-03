@@ -120,6 +120,20 @@ export interface JynloNotification {
  id:number;subject:string;message:string;createdAt:string;read:boolean;
  type:string|null;communityId?:number|null;sessionId:number|null;relatedUsername?:string|null;
 }
+/** Matches and group standings exactly as supplied by the Jynlo team tournament backend. */
+export interface TournamentTeamMatch {
+ id:number;roundNumber:number;homeTeamId:number;homeTeamName:string;
+ awayTeamId:number;awayTeamName:string;status:'SCHEDULED'|'COMPLETED';
+ homeScore:number|null;awayScore:number|null;groupNumber?:number|null;
+}
+export interface TournamentTeamMatchPage {matches:TournamentTeamMatch[];page:number;hasMore:boolean;}
+export interface TournamentTeamStanding {
+ position:number;teamId:number;teamName:string;played:number;won:number;drawn:number;lost:number;
+ goalsFor:number;goalsAgainst:number;goalDifference:number;points:number;
+}
+export interface TournamentTeamGroup {groupNumber:number;standings:TournamentTeamStanding[];}
+export interface TournamentTeamGroups {tournamentId:number;knockoutStarted:boolean;groups:TournamentTeamGroup[];}
+
 export interface JynloTournamentTeam {
  id:number;name:string;playersPerTeam:number|null;createdAt:string;
  players:Array<{profileId:number;username:string;displayName:string}>;

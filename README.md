@@ -1,5 +1,18 @@
 # JYNLO MOBILE — Android / iOS
 
+**v0.9.0 — Páginas de equipas, grupos e jogos por fase (3 de novembro de 2026)**
+
+- Consultar a **fase de grupos** em torneios por equipas, com classificações oficiais de `GET /teams/groups` e estado `knockoutStarted` fornecido pelo servidor.
+- Consultar **eliminatórias** e calendário por rondas, usando apenas `GET /teams/matches?page=N`. O progresso e os vencedores **não são inferidos** a partir de resultados.
+- Página individual por equipa com **plantel**, partilha de convite, adesão explícita pelo jogador e jogos da própria equipa via `GET /teams/{teamId}/matches?page=N`.
+- Ecrã de equipas compacto, em vez de mostrar os plantéis de todas as equipas na mesma página.
+- Sem tabelas genéricas de futebol para outras modalidades: jogos por equipas nesta fase só são renderizados em **Futebol/Futsal** sem `scoringMode` específico. As restantes modalidades exigem UI própria validada.
+- Demonstração offline consistente com equipas, duas fases de grupos e uma final fictícia; sem pedidos à produção.
+- Testes locais: **66 testes passaram**, sintaxe TypeScript/TSX sem erros. A compilação Android e os testes em dispositivo **não estão confirmados nesta fase**.
+- Nenhuma alteração aos repositórios web ou backend. Desenvolvimento exclusivo em `develop` do repositório mobile.
+
+---
+
 **v0.8.0 — Descoberta de torneios e classificação adaptada à modalidade, 3 novembro 2026**
 
 - Pesquisa de torneios por nome, comunidade e desporto (acentos ignorados).

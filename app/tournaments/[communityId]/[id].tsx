@@ -44,6 +44,7 @@ export default function TournamentDetailScreen(){
        <Text style={styles.source}>{table.source}</Text>
      </View>:<Message>Esta modalidade tem regras próprias. A respetiva classificação ainda não está implementada no cliente mobile — não vamos aplicar-lhe a tabela de futebol.</Message>}
      {tournament.entryType==='TEAM'?<Button title="Equipas e convites" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?'Fase de grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Ver eliminatórias':'Calendário de jogos'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      <Button secondary title="Voltar aos torneios" onPress={()=>router.back()}/>
    </>:null}
  </Page>;
