@@ -1,70 +1,54 @@
-name: Jynlo Mobile — APK Android de testes
+name: Jynlo Mobile - Android APK (testes)
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
+      - "app/**"
+      - "src/**"
+      - "assets/**"
+      - "tests/**"
+      - "package.json"
+      - "app.json"
+      - "eas.json"
+      - ".github/workflows/build-android-apk.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build-android-debug:
+  android-debug:
+    name: Validar e compilar APK de testes
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
-      - name: Checkout private repository
+      - name: Checkout do projeto mobile
         uses: actions/checkout@v4
-
-      - name: Verify uploaded source archive
-        run: |
-          test -f JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip || {
-            echo "::error::Source ZIP missing. Upload JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip to the repository root first."
-            exit 1
-          }
-          unzip -t JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
-          unzip -q JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
-          test -f jynlo-mobile-starter/package.json
-          test -f jynlo-mobile-starter/app.json
-
-      - name: Setup Node.js
+      - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
-      - name: Setup JDK 17
+          node-version: "22"
+      - name: Preparar Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-
-      - name: Install Expo dependencies
+          java-version: "17"
+      - name: Instalar dependencias
         run: npm install --no-audit --no-fund
-        working-directory: jynlo-mobile-starter
-
-      - name: Run unit and contract tests
+      - name: Testes e validacao sintatica
         run: npm run test:all
-        working-directory: jynlo-mobile-starter
-
-      - name: Run TypeScript validation
+      - name: Validar TypeScript
         run: npm run typecheck
-        working-directory: jynlo-mobile-starter
-
-      - name: Generate native Android project
+      - name: Gerar projeto Android nativo
         run: npx expo prebuild --platform android --no-install --clean
-        working-directory: jynlo-mobile-starter
-
-      - name: Assemble Android debug APK
+      - name: Compilar APK debug (nao publicar)
         run: ./gradlew assembleDebug --no-daemon
-        working-directory: jynlo-mobile-starter/android
-
-      - name: Upload test-only APK
+        working-directory: android
+      - name: Guardar APK para instalacao de teste
         uses: actions/upload-artifact@v4
         with:
-          name: jynlo-mobile-apk-debug-v07
-          path: jynlo-mobile-starter/android/app/build/outputs/apk/debug/app-debug.apk
+          name: jynlo-mobile-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

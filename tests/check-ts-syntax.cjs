@@ -1,7 +1,13 @@
 'use strict';
-// A syntax-only check; runtime type checking needs the Expo node_modules installed.
+// Syntax-only check; full type checking requires Expo dependencies.
 const fs=require('node:fs'),path=require('node:path');
-const ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');
+let ts;
+try { ts=require('typescript'); }
+catch {
+  const {execFileSync}=require('node:child_process');
+  const globalRoot=execFileSync(process.platform==='win32'?'npm.cmd':'npm',['root','-g'],{encoding:'utf8'}).trim();
+  ts=require(path.join(globalRoot,'typescript'));
+}
 const root=path.resolve(__dirname,'..');
 let count=0,errors=[];
 function visit(dir){for(const d of fs.readdirSync(dir,{withFileTypes:true})){
