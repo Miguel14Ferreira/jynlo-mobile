@@ -86,7 +86,7 @@ export default function JynloFeedHome(){
       discoverPeople(auth.token)
     ]);
     if(id!==reloadNumber.current)return;
-    const value=<T,>(i:number,fallback:T):T=>fetches[i].status==='fulfilled'?(fetches[i] as PromiseFulfilledResult<T>).value:fallback;
+    const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
     setPosts(value(0,[] as FeedItem[]));setStories(value(1,[] as SocialStory[]));setOwnStories(value(2,[] as SocialStory[]));
     const week=value(3,{created:[] as SessionSummary[],joined:[] as SessionSummary[],waitlisted:[] as SessionSummary[]});
     const weekItems=uniqueSessions(week.created,week.joined).filter(s=>futureWeek(s)).sort((a,b)=>Date.parse(a.gameDate)-Date.parse(b.gameDate));
@@ -103,7 +103,7 @@ export default function JynloFeedHome(){
     if(!requireLogin())return;
     try{const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86});
       if(result.canceled||!result.assets.length)return;
-      const asset=result.assets[0];const kind=asset.type==='video'?'video':'image';
+      const asset=result.assets[0];if(!asset)return;const kind=asset.type==='video'?'video':'image';
       const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
       const size=asset.fileSize||0;const validation=validateMedia(mime,size,true);
       if(validation){Alert.alert('Ficheiro não aceite',size===0?'Não foi possível obter o tamanho do ficheiro.':validation);return;}
@@ -169,8 +169,8 @@ export default function JynloFeedHome(){
     </View>
     <View style={styles.weekPanel}><SectionHeader title="A minha semana desportiva" action="Ver todas ↗" onPress={()=>router.push('/my-sessions')}/>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
-        <WeekTile icon="▦" title="Os meus próximos jogos" detail={weekSessions.length?`${weekSessions[0].sport} · ${weekSessions[0].city}\n${prettyDate(weekSessions[0].gameDate)}`:'Ainda não tens jogos marcados para os próximos 7 dias.'} footer="As minhas sessões" onPress={()=>router.push('/my-sessions')}/>
-        <WeekTile icon="✦" title="Jogos com vagas" detail={weekOffers.length?`${weekOffers[0].sport} · ${weekOffers[0].city}\n${Math.max(0,weekOffers[0].maxParticipants-weekOffers[0].participantCount)} vagas disponíveis`:'Não há jogos com vagas para os próximos 7 dias.'} footer="Encontrar jogos" onPress={()=>router.push('/(tabs)/explore')}/>
+        <WeekTile icon="▦" title="Os meus próximos jogos" detail={weekSessions.length?`${weekSessions[0]!.sport} · ${weekSessions[0]!.city}\n${prettyDate(weekSessions[0]!.gameDate)}`:'Ainda não tens jogos marcados para os próximos 7 dias.'} footer="As minhas sessões" onPress={()=>router.push('/my-sessions')}/>
+        <WeekTile icon="✦" title="Jogos com vagas" detail={weekOffers.length?`${weekOffers[0]!.sport} · ${weekOffers[0]!.city}\n${Math.max(0,weekOffers[0]!.maxParticipants-weekOffers[0]!.participantCount)} vagas disponíveis`:'Não há jogos com vagas para os próximos 7 dias.'} footer="Encontrar jogos" onPress={()=>router.push('/(tabs)/explore')}/>
         <WeekTile icon="◎" title="As minhas comunidades" detail={communities.length?`${communities.slice(0,2).map(c=>c.name).join(' · ')}\n${communities.length} comunidades`:'Descobre a tua próxima comunidade.'} footer="Ver comunidades" onPress={()=>router.push('/(tabs)/communities')}/>
       </ScrollView>
     </View>
