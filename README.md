@@ -1,5 +1,18 @@
 # JYNLO MOBILE — Android / iOS
 
+**v0.8.0 — Descoberta de torneios e classificação adaptada à modalidade, 3 novembro 2026**
+
+- Pesquisa de torneios por nome, comunidade e desporto (acentos ignorados).
+- Filtros por estado e modalidade, derivados dos torneios acessíveis à conta.
+- Os torneios a decorrer aparecem antes dos que estão em preparação e dos concluídos.
+- Sem suposições de tabela de futebol para Voleibol, Cricket, Golfe ou modalidades novas.
+- Consulta de todas as comunidades do utilizador em lotes limitados a quatro pedidos simultâneos, sem truncar silenciosamente após 12.
+- Validação local: testes Node + sintaxe TS/TSX aprovados; ainda falta teste em dispositivo.
+
+---
+
+# JYNLO MOBILE — Android / iOS
+
 **v0.7.0 — Percurso de sessões e preparação Android/Play Console, 3 novembro de 2026**
 
 Nesta fase trabalhou-se no **projeto nativo**, não numa nova demonstração HTML:

@@ -28,3 +28,20 @@ test('identificadores de torneio inválidos são rejeitados',()=>{
  for(const value of [0,-1,1.5,Infinity,'abc',null])assert.throws(()=>validTournamentId(value));
  assert.equal(validTournamentId('123'),123);
 });
+
+test('equipas de modalidades sem regras confirmadas não recebem tabela de futebol',()=>{
+ for(const sport of ['Voleibol','Cricket','Golfe','Hóquei em Patins','Desporto Novo']){
+  const kind=classificationKind({sport,entryType:'TEAM',format:'LEAGUE'});
+  assert.equal(kind,'UNSUPPORTED',sport);
+  assert.ok(!standingsColumns(kind).includes('Pts'));
+ }
+});
+test('um scoringMode desconhecido nunca é silenciosamente interpretado como futebol',()=>{
+ assert.equal(classificationKind({sport:'Futebol',entryType:'TEAM',scoringMode:'FUTURE_CUSTOM_MODE'}),'UNSUPPORTED');
+});
+test('listagem não se limita às primeiras 12 comunidades',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/competition-api.ts'),'utf8');
+ assert.doesNotMatch(api,/communities\.slice\(0,12\)/);
+ assert.match(api,/offset\+=4/);
+});

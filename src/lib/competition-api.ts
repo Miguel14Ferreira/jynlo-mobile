@@ -64,9 +64,16 @@ export async function tournamentTable(communityId:number,tournament:JynloTournam
 export async function myTournaments(token:string,username:string):Promise<{communityId:number;communityName:string;tournament:JynloTournament}[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
  const communities=await myCommunities(token,username);const result:{communityId:number;communityName:string;tournament:JynloTournament}[]=[];
- for(const community of communities.slice(0,12)){
-  const tournaments=await tournamentsForCommunity(community.id,token,username);
-  for(const tournament of tournaments)result.push({communityId:community.id,communityName:community.name,tournament});
+ // Include all joined communities without a silent twelve-community cutoff.
+ // Run at most four community requests concurrently to protect the API.
+ const unique=Array.from(new Map(communities.map(c=>[c.id,c])).values());
+ for(let offset=0;offset<unique.length;offset+=4){
+  const batch=await Promise.all(unique.slice(offset,offset+4).map(async community=>({
+   community,tournaments:await tournamentsForCommunity(community.id,token,username)
+  })));
+  for(const {community,tournaments} of batch){
+   for(const tournament of tournaments)result.push({communityId:community.id,communityName:community.name,tournament});
+  }
  }
  return result;
 }
