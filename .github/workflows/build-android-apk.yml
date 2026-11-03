@@ -1,8 +1,8 @@
-name: Jynlo Mobile - Android APK (testes)
+name: Jynlo Mobile - Android APK instalável (testes)
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
     paths:
       - "app/**"
       - "src/**"
@@ -18,10 +18,14 @@ permissions:
   contents: read
 
 jobs:
-  android-debug:
-    name: Validar e compilar APK de testes
+  android-installable:
+    name: Validar e compilar APK autónoma para Android
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      # Nunca ligar uma compilacao de demonstração à producao.
+      EXPO_PUBLIC_JYNLO_API_URL: ""
     steps:
       - name: Checkout do projeto mobile
         uses: actions/checkout@v4
@@ -34,6 +38,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      - name: Preparar cache Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
       - name: Testes e validacao sintatica
@@ -42,13 +48,22 @@ jobs:
         run: npm run typecheck
       - name: Gerar projeto Android nativo
         run: npx expo prebuild --platform android --no-install --clean
-      - name: Compilar APK debug (nao publicar)
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Compilar APK release de testes (JavaScript incluido)
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace --max-workers=2
         working-directory: android
-      - name: Guardar APK para instalacao de teste
+      - name: Confirmar APK autonoma
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          unzip -Z1 "$apk" | grep -q '^assets/index.android.bundle$'
+          ls -lh "$apk"
+          echo "APK inclui o bundle JS. Assinatura de desenvolvimento; nao publicar na Play Store."
+      - name: Guardar APK instalavel no Android
         uses: actions/upload-artifact@v4
         with:
-          name: jynlo-mobile-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: jynlo-mobile-android-installable-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
