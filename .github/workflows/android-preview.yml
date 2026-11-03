@@ -1,0 +1,45 @@
+name: Jynlo Mobile - Android APK (teste)
+
+# Manual workflow: no deploys or extra branches on every commit.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Expo SDK dependency check
+        run: npx expo install --check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Node tests
+        run: npm run test:all
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Build debug APK (not for Play Store)
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: android
+      - name: Upload APK for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-mobile-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

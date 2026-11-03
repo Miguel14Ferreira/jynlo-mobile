@@ -1,0 +1,84 @@
+import React,{useCallback,useState} from 'react';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {useFocusEffect,useRouter} from 'expo-router';
+import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
+import {useAuth} from '../src/lib/auth';
+import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
+import {myNotifications,markNotificationRead} from '../src/lib/notifications-api';
+import {C} from '../src/lib/theme';
+import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
+
+export default function NotificationsScreen(){
+ const auth=useAuth(),router=useRouter();
+ const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
+ const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [busyInvite,setBusyInvite]=useState<number|null>(null);
+ const load=useCallback(async()=>{
+  if(!auth.token||!auth.username){setLoading(false);setItems([]);setInvites([]);return;}
+  setLoading(true);setError('');setItems([]);setInvites([]);
+  const [notifs,invitations]=await Promise.allSettled([
+    myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
+  ]);
+  if(notifs.status==='fulfilled')setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
+  else setError('Não foi possível carregar todas as notificações.');
+  if(invitations.status==='fulfilled')setInvites(invitations.value);
+  else setError('Não foi possível carregar os convites. Tenta atualizar.');
+  setLoading(false);
+ },[auth.token,auth.username]);
+ useFocusEffect(useCallback(()=>{void load();},[load]));
+ async function decide(invite:PendingSessionInvite,accept:boolean){
+  if(!auth.token||busyInvite!==null)return;
+  setBusyInvite(invite.id);setError('');setNotice('');
+  try{
+   const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
+   setInvites(old=>old.filter(x=>x.id!==invite.id));
+   setNotice(accept ? (response && response.state==='WAITLISTED' ? 'Convite aceite: estás na lista de espera.' : 'Convite aceite: presença confirmada.') : 'Convite recusado.');
+  }catch(e){setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
+  finally{setBusyInvite(null);}
+ }
+ async function open(item:JynloNotification){
+  if(!auth.token)return;
+  try{if(!item.read){await markNotificationRead(item.id,auth.token);setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));}}
+  catch{setError('Não foi possível marcar a notificação como lida.');}
+  if(item.type==='COMMUNITY_INVITE'){router.push('/communities/invites');return;}
+  if(item.communityId&&['COMMUNITY_JOIN_REQUEST','COMMUNITY_JOIN_ACCEPTED','COMMUNITY_JOIN_REJECTED'].includes(item.type||'')){
+   router.push({pathname:'/communities/[id]',params:{id:String(item.communityId)}});return;
+  }
+  if(item.sessionId&&item.sessionId>0)router.push({pathname:'/sessions/[id]',params:{id:String(item.sessionId)}});
+ }
+ return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
+  <Text style={styles.title}>Notificações</Text>
+  <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
+  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
+  {loading?<Loader/>:null}
+  {error?<Message tone="error">{error}</Message>:null}
+  {notice?<Message>{notice}</Message>:null}
+  {auth.token&&!loading?<View style={{gap:12}}>
+   <Text style={styles.heading}>Convites para sessões · {invites.length}</Text>
+   {invites.length===0?<Text style={styles.note}>Não tens convites pendentes para sessões.</Text>:invites.map(invite=><View key={invite.id} style={styles.invite}>
+    <Text style={styles.subject}>{invite.sport||'Sessão desportiva'} · {invite.city||'Local a confirmar'}</Text>
+    <Text style={styles.body}>Convidado por @{invite.inviterUsername}</Text>
+    {invite.gameDate?<Text style={styles.note}>{new Date(invite.gameDate).toLocaleString('pt-PT')}</Text>:null}
+    <View style={styles.actions}>
+     <View style={{flex:1}}><Button title={busyInvite===invite.id?'A processar…':'Aceitar'} disabled={busyInvite!==null} onPress={()=>{void decide(invite,true);}}/></View>
+     <View style={{flex:1}}><Button title="Recusar" secondary disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}}/></View>
+    </View>
+   </View>)}
+   <Text style={styles.heading}>Outras notificações · {items.length}</Text>
+   {items.length===0?<Text style={styles.note}>Sem outras notificações.</Text>:items.map(n=><Pressable key={n.id} onPress={()=>{void open(n);}} style={[styles.tile,!n.read&&styles.new]}>
+    <View style={{flex:1,gap:6}}><Text style={styles.subject}>{n.subject||'Jynlo'}</Text><Text style={styles.body}>{n.message}</Text>
+     <Text style={styles.note}>{new Date(n.createdAt).toLocaleString('pt-PT')}</Text></View>
+    {!n.read?<Text style={styles.badge}>●</Text>:null}
+   </Pressable>)}
+  </View>:null}
+  <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={loading||busyInvite!==null}/>
+  <Message>Estas notificações são apresentadas dentro da app. O envio de notificações push com a app fechada ainda não está disponível.</Message>
+ </Page>;
+}
+const styles=StyleSheet.create({
+ title:{fontSize:31,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'800',color:C.white,marginTop:8},
+ note:{fontSize:12,color:C.muted,lineHeight:19},tile:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,flexDirection:'row',gap:9},
+ invite:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.mint,gap:8},
+ actions:{flexDirection:'row',gap:9,marginTop:6},
+ new:{borderColor:C.mint},subject:{color:C.white,fontWeight:'900',fontSize:15},body:{color:C.muted,fontSize:13,lineHeight:20},badge:{color:C.mint,fontSize:16}
+});

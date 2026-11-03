@@ -1,0 +1,28 @@
+import React from 'react';
+import {Stack} from 'expo-router';
+import {StatusBar} from 'expo-status-bar';
+import {AuthProvider,useAuth} from '../src/lib/auth';
+import {C} from '../src/lib/theme';
+function Navigation(){const auth=useAuth();return <>
+  <StatusBar style="light"/>
+  <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
+    headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
+    <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
+    <Stack.Screen name="sessions/[id]" options={{title:'Detalhes da sessão'}}/>
+    <Stack.Screen name="communities/create" options={{title:"Criar comunidade"}}/>
+    <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>
+    <Stack.Screen name="communities/invites" options={{title:"Convites"}}/>
+    <Stack.Screen name="communities/[id]/chat" options={{title:"Chat da comunidade"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
+    <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
+    <Stack.Screen name="feed" options={{title:"Feed"}}/>
+    <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
+    <Stack.Screen name="venues" options={{title:"Recintos"}}/>
+    <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
+    <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
+    <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
+    <Stack.Screen name="mfa" options={{title:'Verificação MFA'}}/>
+  </Stack>
+</>;}
+export default function RootLayout(){return <AuthProvider><Navigation/></AuthProvider>;}

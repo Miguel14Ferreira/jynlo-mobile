@@ -1,0 +1,15 @@
+{
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "env": { "JYNLO_REQUIRE_REAL_API": "1" },
+      "android": { "buildType": "app-bundle" }
+    }
+  }
+}
