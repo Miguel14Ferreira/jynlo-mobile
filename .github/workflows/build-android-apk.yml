@@ -1,0 +1,70 @@
+name: Jynlo Mobile — APK Android de testes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+
+      - name: Verify uploaded source archive
+        run: |
+          test -f JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip || {
+            echo "::error::Source ZIP missing. Upload JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip to the repository root first."
+            exit 1
+          }
+          unzip -t JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
+          unzip -q JYNLO_MOBILE_V07_SESSOES_PLAYSTORE.zip
+          test -f jynlo-mobile-starter/package.json
+          test -f jynlo-mobile-starter/app.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Expo dependencies
+        run: npm install --no-audit --no-fund
+        working-directory: jynlo-mobile-starter
+
+      - name: Run unit and contract tests
+        run: npm run test:all
+        working-directory: jynlo-mobile-starter
+
+      - name: Run TypeScript validation
+        run: npm run typecheck
+        working-directory: jynlo-mobile-starter
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install --clean
+        working-directory: jynlo-mobile-starter
+
+      - name: Assemble Android debug APK
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: jynlo-mobile-starter/android
+
+      - name: Upload test-only APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-mobile-apk-debug-v07
+          path: jynlo-mobile-starter/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
