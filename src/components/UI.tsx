@@ -5,6 +5,7 @@ import {DEMO_MODE} from '../lib/api';
 import {C} from '../lib/theme';
 import type {SessionSummary} from '../lib/types';
 import {vacancies,formatDate,money} from '../lib/format.cjs';
+import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 
 export function Page({children,scroll=true}:{children:React.ReactNode;scroll?:boolean}){
   return <SafeAreaView style={styles.page} edges={['top','left','right']}>
@@ -45,7 +46,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   const available=vacancies(session);
   return <Pressable onPress={onPress} style={({pressed})=>[styles.card,pressed&&{opacity:0.8}]}>
     <View style={styles.cardTop}>
-      <View style={styles.sportBox}><Text style={styles.sportIcon}>{session.sport==='Futebol'?'⚽':session.sport==='Voleibol'?'🏐':session.sport==='Karting'?'🏎️':'🏃'}</Text></View>
+      <View style={styles.sportBox}><Text style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
       <View style={{flex:1}}><Text style={styles.cardTitle}>{session.sport}</Text><Text style={styles.cardCity}>⌖  {session.city}{session.distanceKm!==null?`  ·  ${session.distanceKm.toLocaleString('pt-PT')} km`:''}</Text></View>
       <Text style={styles.arrow}>↗</Text>
     </View>

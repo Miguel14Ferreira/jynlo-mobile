@@ -14,11 +14,11 @@ on:
       - ".github/workflows/build-android-apk.yml"
   workflow_dispatch:
 
-# Para pushes sucessivos em develop, compilar apenas o estado mais recente.
-# Uma execução manual tem o seu próprio grupo e não interrompe o CI de develop.
+# Preservar compilacoes Android ja em execucao; a mais recente fica em fila.
+# Uma execucao manual tem o seu proprio grupo e nao interrompe o CI de develop.
 concurrency:
   group: android-apk-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('branch-{0}', github.ref) }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
