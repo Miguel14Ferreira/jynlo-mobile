@@ -1,5 +1,18 @@
 # JYNLO MOBILE — Android / iOS
 
+**v0.11.0 — Inscrições em torneios individuais (4 novembro 2026)**
+
+- Nova página de participantes com paginação e estados PENDING/CONFIRMED.
+- Pedir inscrição é um clique explícito: PUT `/participants/me` devolve PENDING até aprovação por organizador.
+- Cancelar exige confirmação no telemóvel: DELETE `/participants/me`. Só em DRAFT.
+- OWNER/ADMIN podem confirmar pedidos pendentes com PUT `/participants/{profileId}/confirm`. O servidor valida as permissões.
+- Listas paginadas. Não afirmar ausência de inscrição enquanto existem páginas por consultar.
+- Demonstração isolada: Open de Padel — Inscrições (comunidade Padel da Malveira). Sem escritas na Jynlo de produção.
+- Trabalho em develop; master e repositórios web/backend intactos.
+
+---
+
+
 **v0.10.0 — Competições individuais e resultados especializados (4 novembro de 2026)**
 
 Esta atualização desenvolve a app dedicada **React Native / Expo**, sem alterar a Jynlo Web nem o backend de produção:

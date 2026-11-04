@@ -1,0 +1,10 @@
+import type {JynloTournament} from './types';
+export type ParticipantStatus='PENDING'|'CONFIRMED';
+export type Participant={profileId:number;username:string;displayName:string;joinedAt:string;status:ParticipantStatus};
+export type RegistrationAction='JOIN'|'LEAVE'|'NONE';
+export function canSeeIndividualRoster(tournament:JynloTournament|null):boolean;
+export function canManageConfirmation(role:string|null|undefined,tournament:JynloTournament|null):boolean;
+export function ownEnrollment(entries:Participant[],username:string):Participant|null;
+export function registrationAction(tournament:JynloTournament|null,entries:Participant[],username:string,hasMore:boolean):RegistrationAction;
+export function participantStatus(value:string):string;
+export function canConfirmParticipant(role:string|null|undefined,tournament:JynloTournament|null,participant:Participant):boolean;

@@ -10,6 +10,7 @@ const demoSwimming:JynloTournament={id:940003,name:'100 metros livres',sport:'Na
 const demoLongJump:JynloTournament={id:940004,name:'Salto em comprimento',sport:'Atletismo',entryType:'INDIVIDUAL',scoringMode:'FIELD_BEST_MARK',eventType:'LONG_JUMP',eventDiscipline:'Comprimento',format:'LEAGUE',status:'IN_PROGRESS',createdAt:new Date().toISOString()};
 const demoRelay:JynloTournament={id:940005,name:'Estafetas 4×100m',sport:'Atletismo',entryType:'TEAM',scoringMode:'RELAY_BEST_TIME',eventType:'RELAY',eventDiscipline:'4×100m',format:'LEAGUE',status:'IN_PROGRESS',createdAt:new Date().toISOString()};
 const demoPadel:JynloTournament={id:940006,name:'Torneio de Padel',sport:'Padel',entryType:'INDIVIDUAL',format:'KNOCKOUT',status:'IN_PROGRESS',createdAt:new Date().toISOString()};
+const demoPadelDraft:JynloTournament={id:940007,name:'Open de Padel — Inscrições',sport:'Padel',entryType:'INDIVIDUAL',format:'LEAGUE',status:'DRAFT',createdAt:new Date().toISOString()};
 const demoKarting:JynloTournament={id:940002,name:'Grande Prémio da Amizade',sport:'Karting',entryType:'INDIVIDUAL',scoringMode:'RACE_POINTS',format:'LEAGUE',status:'IN_PROGRESS',createdAt:new Date().toISOString()};
 function demoTournaments(communityId:number):JynloTournament[]{
  // Existing demo public football group and any new team created by Tiago.
@@ -17,13 +18,13 @@ function demoTournaments(communityId:number):JynloTournament[]{
  if(communityId===930002)return [demoKarting];
  if(communityId===930003)return [demoSwimming];
  if(communityId===930004)return [demoLongJump,demoRelay];
- if(communityId===930005)return [demoPadel];
+ if(communityId===930005)return [demoPadel,demoPadelDraft];
  return [];
 }
 export async function tournamentsForCommunity(id:number,token:string,username:string):Promise<JynloTournament[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
  if(DEMO_MODE){const community=await communityDetails(good(id),token,username);
-  if(community.id>=931001)return community.sport==='Karting'?[demoKarting]:['Futebol','Futsal'].includes(community.sport||'')?[demoFootball]:community.sport==='Natação'?[demoSwimming]:community.sport==='Atletismo'?[demoLongJump,demoRelay]:community.sport==='Padel'?[demoPadel]:[];
+  if(community.id>=931001)return community.sport==='Karting'?[demoKarting]:['Futebol','Futsal'].includes(community.sport||'')?[demoFootball]:community.sport==='Natação'?[demoSwimming]:community.sport==='Atletismo'?[demoLongJump,demoRelay]:community.sport==='Padel'?[demoPadel,demoPadelDraft]:[];
   return demoTournaments(good(id));}
  // Read first pages only, no writes and no uncontrolled unbounded pagination.
  const all:JynloTournament[]=[];
