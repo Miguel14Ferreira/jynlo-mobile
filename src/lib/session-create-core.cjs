@@ -43,6 +43,15 @@ function validateWeeklySlots(day,time,slots,recurrence,occurrences,now=Date.now(
  }
  return additionalWeeklyGameDates;
 }
+function changeCommunityMode(form,mode){
+ if(!['INDEPENDENT','SINGLE','SHARED'].includes(mode))throw Error('Tipo de sessão inválido.');
+ const cleared={...form,communityId:null,communityShareIds:[],seasonGame:false,
+  communityRankingsEnabled:false,confirmActivateRankings:false,
+  registrationOpeningMode:'IMMEDIATE',registrationDay:'',registrationTime:'',
+  recurrence:'NONE',additionalWeeklySlots:[]};
+ if(mode==='SHARED')return {...cleared,privateGame:false,password:''};
+ return cleared;
+}
 function createSessionPayload(input,allowedSports,now=Date.now()){
  const sport=String(input.sport||'').trim();
  if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
@@ -127,4 +136,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={parseSessionDate,validateWeeklySlots,createSessionPayload};
+module.exports={parseSessionDate,validateWeeklySlots,changeCommunityMode,createSessionPayload};

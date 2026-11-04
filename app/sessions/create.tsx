@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSession} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -183,16 +183,11 @@ export default function CreateSessionScreen(){
   </View>
   <View style={styles.panel}><Text style={styles.heading}>Tipo de sessão</Text>
    <View style={styles.inline}>
-    <Button title="Independente" secondary={communityMode!=='INDEPENDENT'} disabled={busy}
-     onPress={()=>{setCommunityMode('INDEPENDENT');setForm(prev=>({...prev,communityId:null,communityShareIds:[],
-      registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',additionalWeeklySlots:[],seasonGame:false,
-      communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
-    <Button title="Comunidade" secondary={communityMode!=='SINGLE'} disabled={busy}
-     onPress={()=>{setCommunityMode('SINGLE');setForm(prev=>({...prev,communityShareIds:[],privateGame:false,password:'',
-      communityId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
-    <Button title="Partilhar" secondary={communityMode!=='SHARED'} disabled={busy}
-     onPress={()=>{setCommunityMode('SHARED');setForm(prev=>({...prev,communityId:null,privateGame:false,password:'',
-      communityShareIds:[],seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
+    {(['INDEPENDENT','SINGLE','SHARED'] as const).map(mode=>
+     <Button key={mode} title={mode==='INDEPENDENT'?'Independente':mode==='SINGLE'?'Comunidade':'Partilhar'}
+      secondary={communityMode!==mode} disabled={busy}
+      onPress={()=>{if(communityMode===mode)return;setCommunityMode(mode);setCommunitySearch('');
+       setForm(prev=>changeCommunityMode(prev,mode));setError('');}}/>)}
    </View>
    {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
    {communityMode!=='INDEPENDENT'?<>

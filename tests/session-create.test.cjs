@@ -151,3 +151,25 @@ test('session creation: adding a weekly slot only validates the schedule, not un
  assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'WEEKLY',52,0));
  assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'BIWEEKLY',4,0));
 });
+
+test('session creation: switching community type clears incompatible recurring and registration state',()=>{
+ const {changeCommunityMode}=require('../src/lib/session-create-core.cjs');
+ const previous={...valid,communityId:42,registrationOpeningMode:'SCHEDULED',
+  registrationDay:'2030-06-01',registrationTime:'15:00',
+  recurrence:'WEEKLY',recurrenceOccurrences:'4',additionalWeeklySlots:[{day:'2030-06-12',time:'19:00'}],
+  seasonGame:true,communityRankingsEnabled:true,confirmActivateRankings:true,privateGame:true,password:'secret'};
+ for(const mode of ['INDEPENDENT','SINGLE','SHARED']){
+  const next=changeCommunityMode(previous,mode);
+  assert.equal(next.communityId,null);
+  assert.deepEqual(next.communityShareIds,[]);
+  assert.equal(next.registrationOpeningMode,'IMMEDIATE');
+  assert.equal(next.registrationDay,'');assert.equal(next.registrationTime,'');
+  assert.equal(next.recurrence,'NONE');assert.deepEqual(next.additionalWeeklySlots,[]);
+  assert.equal(next.seasonGame,false);assert.equal(next.confirmActivateRankings,false);
+  assert.equal(next.sport,'Padel');
+  assert.equal(next.privateGame,mode!=='SHARED');
+  if(mode==='SHARED')assert.equal(next.password,'');
+ }
+ assert.equal(previous.communityId,42);
+ assert.throws(()=>changeCommunityMode(previous,'INVALID'));
+});
