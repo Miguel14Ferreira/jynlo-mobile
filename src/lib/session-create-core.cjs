@@ -62,6 +62,29 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   catch{throw Error('Fuso horário inválido para repetição de sessões.');}
   recurrenceTimeZone=zone;
  }
+ const extraSlots=Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots:[];
+ if(extraSlots.length>6)throw Error('Escolhe no máximo sete sessões por semana.');
+ if(recurrence!=='WEEKLY'&&extraSlots.length>0)
+  throw Error('Horários adicionais só estão disponíveis com repetição semanal.');
+ const additionalWeeklyGameDates=[];
+ if(extraSlots.length){
+  const first=Date.parse(gameDate);
+  const endOfWeek=new Date(input.day+'T'+input.time+':00');
+  endOfWeek.setDate(endOfWeek.getDate()+7);
+  const end=endOfWeek.getTime();
+  const unique=new Set([first]);
+  for(const slot of extraSlots){
+   const iso=parseSessionDate(slot?.day||'',slot?.time||'',now);
+   const stamp=Date.parse(iso);
+   if(stamp<=first||stamp>=end)throw Error('Os horários adicionais têm de ser posteriores ao primeiro jogo e nos sete dias seguintes.');
+   if(unique.has(stamp))throw Error('Não podes repetir o mesmo dia e hora.');
+   unique.add(stamp);
+   additionalWeeklyGameDates.push(iso);
+  }
+  if(recurrenceOccurrences*(additionalWeeklyGameDates.length+1)>52)
+   throw Error('O plano pode ter no máximo 52 sessões.');
+  additionalWeeklyGameDates.sort((a,b)=>Date.parse(a)-Date.parse(b));
+ }
  const seasonGame=input.seasonGame===true;
  if(seasonGame&&communityId===null)throw Error('Um jogo de época exige uma comunidade.');
  const confirmActivateRankings=input.confirmActivateRankings===true;
@@ -79,7 +102,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
   communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
-  additionalWeeklyGameDates:[],recurrenceTimeZone,playFormat:null,communityShareIds:[],
+  additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:[],
   seasonCompetitionCommunityId:seasonGame?communityId:null,confirmActivateRankings:seasonGame&&!rankingsEnabled&&confirmActivateRankings,
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };

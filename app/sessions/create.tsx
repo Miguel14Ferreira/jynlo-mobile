@@ -16,8 +16,20 @@ import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false});
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[]});
  const [sportSearch,setSportSearch]=useState('');
+ const [extraDay,setExtraDay]=useState(''),[extraTime,setExtraTime]=useState('');
+ function addWeeklySlot(){
+  const next=[...(form.additionalWeeklySlots||[]),{day:extraDay.trim(),time:extraTime.trim()}];
+  try{
+   const input={...form,additionalWeeklySlots:next};
+   createSessionPayload(input,SPORTS);
+   setForm(input);setExtraDay('');setExtraTime('');setError('');
+  }catch(e){setError(e instanceof Error?e.message:'Horário adicional inválido.');}
+ }
+ function removeWeeklySlot(index:number){
+  setForm(prev=>({...prev,additionalWeeklySlots:(prev.additionalWeeklySlots||[]).filter((_,i)=>i!==index)}));
+ }
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityError,setCommunityError]=useState('');
  const [venueQuery,setVenueQuery]=useState('');
@@ -69,7 +81,7 @@ export default function CreateSessionScreen(){
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
    ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
-   ' · '+(payload.seasonCompetitionCommunityId?'Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':'')+' · ':'')+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' semanas de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
+   ' · '+(payload.seasonCompetitionCommunityId?'Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':'')+' · ':'')+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' ciclos de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · '+(payload.additionalWeeklyGameDates.length+1)+' horários/ciclo · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;
@@ -106,7 +118,7 @@ export default function CreateSessionScreen(){
    {communityError?<Message tone="error">{communityError}</Message>:null}
    <Text style={styles.note}>Uma sessão associada a uma comunidade é apenas para membros. O backend verifica as tuas permissões.</Text>
    <Button title="Sessão independente" secondary={form.communityId!==null} disabled={busy}
-    onPress={()=>setForm(prev=>({...prev,communityId:null,registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}))}/>
+    onPress={()=>setForm(prev=>({...prev,communityId:null,registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',additionalWeeklySlots:[],seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}))}/>
    {communities.map(c=><Button key={c.id} title={c.name+(c.sport?' · '+c.sport:'')}
     secondary={form.communityId!==c.id} disabled={busy}
     onPress={()=>setForm(prev=>({...prev,communityId:c.id,seasonGame:false,communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false}))}/>)}
@@ -158,13 +170,26 @@ export default function CreateSessionScreen(){
    {field('Jogadores já confirmados sem conta (exclui organizador)','externalConfirmedParticipants','0','numeric')}
    <Text style={styles.label}>Repetição</Text>
    <View style={styles.inline}>
-    <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>patch('recurrence','NONE')}/>
+    <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
     <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy||!form.communityId} onPress={()=>patch('recurrence','WEEKLY')}/>
-    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy||!form.communityId} onPress={()=>patch('recurrence','BIWEEKLY')}/>
+    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy||!form.communityId} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
    </View>
    {form.recurrence!=='NONE'?<>
     {field('Número de ciclos (2 a 52)','recurrenceOccurrences','4','numeric')}
-    <Text style={styles.note}>Uma sessão por ciclo, à mesma hora local. O servidor valida todas as datas antes de criar a série (máximo 52 sessões).</Text>
+    <Text style={styles.note}>O primeiro horário é a data indicada acima. O servidor valida os próximos ciclos e garante no máximo 52 sessões.</Text>
+    {form.recurrence==='WEEKLY'?<View style={styles.field}>
+     <Text style={styles.label}>Mais horários na primeira semana (até seis adicionais)</Text>
+     {(form.additionalWeeklySlots||[]).map((slot,index)=><View key={index} style={styles.option}>
+      <Text style={styles.optionText}>{index+2}. {slot.day} às {slot.time}</Text>
+      <Button secondary title="Remover horário" disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
+     </View>)}
+     <TextInput style={styles.input} value={extraDay} onChangeText={setExtraDay}
+      placeholder="Data adicional (AAAA-MM-DD)" placeholderTextColor={C.muted} editable={!busy}/>
+     <TextInput style={styles.input} value={extraTime} onChangeText={setExtraTime}
+      placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} editable={!busy}/>
+     <Button secondary title="Adicionar horário" disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
+      onPress={addWeeklySlot}/>
+    </View>:null}
    </>:null}
    <Text style={styles.label}>Abertura das inscrições</Text>
    <View style={styles.inline}>
@@ -181,7 +206,7 @@ export default function CreateSessionScreen(){
    <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
-   <Text style={styles.note}>Múltiplas sessões por semana e partilha em várias comunidades terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
+   <Text style={styles.note}>Partilha em várias comunidades terá um fluxo específico. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
   <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>

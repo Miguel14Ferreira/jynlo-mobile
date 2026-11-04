@@ -93,3 +93,19 @@ test('session creation: consent is mandatory when rankings are disabled',()=>{
  assert.equal(payload.seasonCompetitionCommunityId,42);
  assert.throws(()=>createSessionPayload({...valid,confirmActivateRankings:true},sports,0));
 });
+
+test('session creation: multiple weekly slots sorted, unique and limited to seven per cycle',()=>{
+ const weekly={...valid,communityId:42,recurrence:'WEEKLY',recurrenceOccurrences:'4',recurrenceTimeZone:'Europe/Lisbon'};
+ const payload=createSessionPayload({...weekly,additionalWeeklySlots:[
+  {day:'2030-06-12',time:'19:00'},{day:'2030-06-11',time:'17:00'}
+ ]},sports,0);
+ assert.equal(payload.additionalWeeklyGameDates.length,2);
+ assert.equal(payload.additionalWeeklyGameDates[0].slice(0,10),'2030-06-11');
+ assert.equal(payload.additionalWeeklyGameDates[1].slice(0,10),'2030-06-12');
+ assert.equal(payload.recurrenceOccurrences*(payload.additionalWeeklyGameDates.length+1),12);
+ assert.throws(()=>createSessionPayload({...weekly,additionalWeeklySlots:[{day:'2030-06-10',time:'18:30'}]},sports,0));
+ assert.throws(()=>createSessionPayload({...weekly,additionalWeeklySlots:[{day:'2030-06-18',time:'18:30'}]},sports,0));
+ assert.throws(()=>createSessionPayload({...weekly,additionalWeeklySlots:[{day:'2030-06-11',time:'17:00'},{day:'2030-06-11',time:'17:00'}]},sports,0));
+ assert.throws(()=>createSessionPayload({...weekly,recurrenceOccurrences:'27',additionalWeeklySlots:[{day:'2030-06-12',time:'19:00'}]},sports,0));
+ assert.throws(()=>createSessionPayload({...weekly,recurrence:'BIWEEKLY',additionalWeeklySlots:[{day:'2030-06-12',time:'19:00'}]},sports,0));
+});
