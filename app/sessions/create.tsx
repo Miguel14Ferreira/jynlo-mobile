@@ -80,7 +80,7 @@ export default function CreateSessionScreen(){
  function useVenue(v:VenueSummary){
   clearVenueSearch();
   setVenueChosen(v);
-  setForm(previous=>({...previous,venueId:v.id,city:v.city,address:v.address}));
+  setForm(previous=>({...previous,venueId:v.id,city:v.city?.trim()||previous.city,address:v.address?.trim()||previous.address}));
  }
  function removeVenue(){
   clearVenueSearch();
@@ -271,7 +271,7 @@ export default function CreateSessionScreen(){
    <Text style={styles.note}>Escreve a data com oito dígitos e a hora com quatro (ex.: 20261208 e 1930). Os separadores são acrescentados automaticamente.</Text>
    {venueChosen?<View style={styles.option}>
     <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
-    <Text style={styles.note}>{venueChosen.address} · {venueChosen.city}</Text>
+    <Text style={styles.note}>{venueChosen.address||'Morada por indicar'} · {venueChosen.city||'Localidade por indicar'}</Text>
     <Button title="Retirar recinto" secondary disabled={busy} onPress={removeVenue}/>
    </View>:null}
    <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
@@ -293,7 +293,9 @@ export default function CreateSessionScreen(){
     <Text style={styles.note}>Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.</Text>:null}
    {venueHasMore?<Button secondary title={venueLoading?'A carregar…':'Mostrar mais recintos'}
     disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
-   {venueChosen?<Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
+   {venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
+    <Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
+    {venueChosen?<Message>Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.</Message>:null}
     {field('Localidade','city','Ex.: Lisboa')}
     {field('Morada','address','Rua e número, recinto ou ponto de referência')}
    </>}
