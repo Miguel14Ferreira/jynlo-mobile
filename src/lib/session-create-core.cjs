@@ -25,6 +25,17 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  const priceText=String(input.price||'0').trim().replace(',','.');
  if(!/^\d{1,6}(?:\.\d{1,2})?$/.test(priceText))throw Error('Indica um preço válido, com até duas casas decimais.');
  const priceAmount=Number(priceText);
+ const externalText=String(input.externalConfirmedParticipants??'0').trim();
+ if(!/^\d{1,2}$/.test(externalText))throw Error('Indica quantos jogadores já tens confirmados.');
+ const externalConfirmedParticipants=Number(externalText);
+ if(externalConfirmedParticipants>maxParticipants-1)throw Error('Os jogadores externos não podem ocupar a vaga do organizador.');
+ const minText=String(input.minParticipants??'2').trim();
+ if(!/^\d{1,3}$/.test(minText))throw Error('Mínimo de participantes inválido.');
+ const minParticipants=Number(minText);
+ if(minParticipants<2||minParticipants>maxParticipants)throw Error('O mínimo deve estar entre 2 e a capacidade total.');
+ const registrationOpeningMode=input.registrationOpeningMode??'IMMEDIATE';
+ if(registrationOpeningMode!=='IMMEDIATE'&&registrationOpeningMode!=='MANUAL')
+  throw Error('Modo de abertura de inscrições inválido.');
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
  if(privateGame&&password.length<4)throw Error('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.');
@@ -34,10 +45,10 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   sport,gameDate:parseSessionDate(input.day,input.time,now),city,address,maxParticipants,
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
   communityId:null,venueId:null,recurrence:'NONE',recurrenceOccurrences:null,
-  externalConfirmedParticipants:0,registrationOpeningMode:'IMMEDIATE',registrationOpensAt:null,
+  externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt:null,
   additionalWeeklyGameDates:[],recurrenceTimeZone:null,playFormat:null,communityShareIds:[],
   seasonCompetitionCommunityId:null,confirmActivateRankings:false,
-  meetingPointInstructions:meetingPointInstructions||null,minParticipants:null
+  meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
 module.exports={parseSessionDate,createSessionPayload};

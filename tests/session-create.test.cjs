@@ -10,6 +10,7 @@ test('session creation: sends official API contract, defaults to immediate one-o
  assert.equal(payload.priceAmount,3.5);assert.equal(payload.recurrence,'NONE');
  assert.equal(payload.registrationOpeningMode,'IMMEDIATE');assert.equal(payload.privateGame,false);
  assert.equal(payload.communityId,null);assert.equal(payload.meetingPointInstructions,'Entrada principal');
+ assert.equal(payload.externalConfirmedParticipants,0);assert.equal(payload.minParticipants,2);
  assert.match(payload.gameDate,/^2030-06-10T/);
 });
 test('session creation: private game requires password and never leaks password into public session',()=>{
@@ -28,4 +29,17 @@ test('session creation: prevents invalid and past local datetimes',()=>{
  assert.throws(()=>parseSessionDate('2030-02-30','18:30',0));
  assert.throws(()=>parseSessionDate('2030-06-10','25:00',0));
  assert.throws(()=>parseSessionDate('2030-06-10','18:30',Date.parse('2030-07-10T00:00:00Z')));
+});
+
+test('session creation: existing players and manual opening use backend fields',()=>{
+ const payload=createSessionPayload({...valid,externalConfirmedParticipants:'4',minParticipants:'6',registrationOpeningMode:'MANUAL'},sports,0);
+ assert.equal(payload.externalConfirmedParticipants,4);
+ assert.equal(payload.minParticipants,6);
+ assert.equal(payload.registrationOpeningMode,'MANUAL');
+ assert.equal(payload.registrationOpensAt,null);
+});
+test('session creation: cannot overbook participants or use unsupported registration opening',()=>{
+ assert.throws(()=>createSessionPayload({...valid,maxParticipants:'5',externalConfirmedParticipants:'5'},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,minParticipants:'11'},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,registrationOpeningMode:'SCHEDULED'},sports,0));
 });

@@ -1,19 +1,19 @@
 import React,{useRef,useState} from 'react';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
-import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
-import {DEMO_MODE} from '../src/lib/api';
-import {useAuth} from '../src/lib/auth';
-import {createSession} from '../src/lib/session-create-api';
-import {createSessionPayload} from '../src/lib/session-create-core.cjs';
-import {SPORTS} from '../src/lib/sports';
-import {C} from '../src/lib/theme';
-import type {CreateSessionForm} from '../src/lib/session-create-core.cjs';
+import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
+import {DEMO_MODE} from '../../src/lib/api';
+import {useAuth} from '../../src/lib/auth';
+import {createSession} from '../../src/lib/session-create-api';
+import {createSessionPayload} from '../../src/lib/session-create-core.cjs';
+import {SPORTS} from '../../src/lib/sports';
+import {C} from '../../src/lib/theme';
+import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:''});
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE'});
  const [sportSearch,setSportSearch]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean)=>setForm(prev=>({...prev,[key]:value}));
@@ -25,7 +25,7 @@ export default function CreateSessionScreen(){
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
    ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
-   '. O organizador fica automaticamente inscrito.',[
+   ' · '+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;
@@ -67,11 +67,19 @@ export default function CreateSessionScreen(){
   <View style={styles.panel}><Text style={styles.heading}>Participação</Text>
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
    {field('Preço por participante (€)','price','0','decimal-pad')}
+   {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
+   {field('Jogadores já confirmados sem conta (exclui organizador)','externalConfirmedParticipants','0','numeric')}
+   <Text style={styles.label}>Abertura das inscrições</Text>
+   <View style={styles.inline}>
+    <Button secondary={form.registrationOpeningMode!=='IMMEDIATE'} title="Imediata" disabled={busy} onPress={()=>patch('registrationOpeningMode','IMMEDIATE')}/>
+    <Button secondary={form.registrationOpeningMode!=='MANUAL'} title="Manual" disabled={busy} onPress={()=>patch('registrationOpeningMode','MANUAL')}/>
+   </View>
+   {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
    <Text style={styles.label}>Visibilidade</Text>
    <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
-   <Text style={styles.note}>As inscrições abrem imediatamente. Recorrência, comunidades, épocas, jogadores externos e recintos associados terão fluxos específicos.</Text>
+   <Text style={styles.note}>Recorrência, comunidades, épocas e recintos associados terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
   <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
