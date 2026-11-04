@@ -1,0 +1,60 @@
+name: Jynlo Mobile - Validar assinatura Google Play (sem AAB)
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - ".github/workflows/play-signing-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-upload-key:
+    name: Validar keystore e chave privada sem compilar Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Verificar assinatura usando apenas segredos protegidos
+        shell: bash
+        env:
+          JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for name in JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 JYNLO_PLAY_UPLOAD_STORE_PASSWORD JYNLO_PLAY_UPLOAD_KEY_PASSWORD JYNLO_PLAY_UPLOAD_KEY_ALIAS; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Falta o GitHub Actions Secret ${name}."
+              exit 1
+            fi
+          done
+          dir="$(mktemp -d)"
+          trap 'rm -rf "$dir"' EXIT
+          if ! printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$dir/upload-keystore" 2>/dev/null; then
+            echo "::error::A keystore Base64 não é válida."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$dir/upload-keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Keystore, STORE_PASSWORD ou KEY_ALIAS inválidos. Confirma os Secrets."
+            exit 1
+          fi
+          echo "Jynlo signing preflight" > "$dir/probe.txt"
+          (cd "$dir" && jar cf probe.jar probe.txt)
+          if ! jarsigner -keystore "$dir/upload-keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -keypass "$JYNLO_PLAY_UPLOAD_KEY_PASSWORD" -signedjar "$dir/probe-signed.jar" "$dir/probe.jar" "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Falha a assinatura com a chave privada: confirma KEY_PASSWORD, STORE_PASSWORD e o formato da keystore."
+            exit 1
+          fi
+          if ! jarsigner -verify "$dir/probe-signed.jar" >/dev/null 2>&1; then
+            echo "::error::A assinatura criada não passou na verificação."
+            exit 1
+          fi
+          echo "UPLOAD_KEY_PREFLIGHT_OK: keystore e passwords permitem assinar e verificar."
