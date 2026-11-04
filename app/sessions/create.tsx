@@ -46,12 +46,13 @@ export default function CreateSessionScreen(){
  const [venueLoading,setVenueLoading]=useState(false);
  const [venuePage,setVenuePage]=useState(0);
  const [venueHasMore,setVenueHasMore]=useState(false);
+ const [venueSearched,setVenueSearched]=useState(false);
  const venueSearchVersion=useRef(0);
  const [venueError,setVenueError]=useState('');
  function clearVenueSearch(){
   venueSearchVersion.current+=1;
   setVenueMatches([]);
-  setVenuePage(0);setVenueHasMore(false);
+  setVenuePage(0);setVenueHasMore(false);setVenueSearched(false);
   setVenueLoading(false);
   setVenueError('');
  }
@@ -60,7 +61,7 @@ export default function CreateSessionScreen(){
   const version=++venueSearchVersion.current;
   const selectedSport=form.sport;
   setVenueLoading(true);setVenueError('');
-  if(page===0){setVenueMatches([]);setVenuePage(0);setVenueHasMore(false);}
+  if(page===0){setVenueMatches([]);setVenuePage(0);setVenueHasMore(false);setVenueSearched(false);}
   try{
    const results=await venues({name:venueQuery.trim(),city:venueCityQuery.trim(),sport:selectedSport||undefined,page});
    if(version!==venueSearchVersion.current)return;
@@ -69,6 +70,7 @@ export default function CreateSessionScreen(){
     [...previous,...matching.filter(v=>!previous.some(old=>old.id===v.id))]);
    setVenuePage(results.page);
    setVenueHasMore(results.hasMore);
+   setVenueSearched(true);
   }catch(e){
    if(version===venueSearchVersion.current)setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');
   }finally{
@@ -274,10 +276,10 @@ export default function CreateSessionScreen(){
    </View>:null}
    <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
    <TextInput style={styles.input} value={venueQuery} onChangeText={v=>{setVenueQuery(v);clearVenueSearch();}}
-    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}
+    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy}
     accessibilityLabel="Nome do recinto a procurar"/>
    <TextInput style={styles.input} value={venueCityQuery} onChangeText={v=>{setVenueCityQuery(v);clearVenueSearch();}}
-    placeholder="Filtrar por localidade (opcional)" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}
+    placeholder="Filtrar por localidade (opcional)" placeholderTextColor={C.muted} editable={!busy}
     accessibilityLabel="Localidade para procurar recintos"/>
    <Text style={styles.note}>Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade da sessão serão atualizadas automaticamente.</Text>
    <Button secondary title={venueLoading?'A pesquisar…':'Procurar recintos'} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
@@ -287,6 +289,8 @@ export default function CreateSessionScreen(){
     <Text style={styles.optionText}>{v.name}</Text>
     <Text style={styles.note}>{v.city} · {v.address}</Text>
    </Pressable>)}
+   {venueSearched&&!venueLoading&&!venueMatches.length&&!venueHasMore?
+    <Text style={styles.note}>Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.</Text>:null}
    {venueHasMore?<Button secondary title={venueLoading?'A carregar…':'Mostrar mais recintos'}
     disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
    {venueChosen?<Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
