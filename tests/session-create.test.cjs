@@ -129,3 +129,15 @@ test('session creation: shared sessions prevent passwords, mixed community modes
  assert.throws(()=>createSessionPayload({...valid,communityShareIds:[2],seasonGame:true,communityRankingsEnabled:true},sports,0));
  assert.throws(()=>createSessionPayload({...valid,communityShareIds:[0]},sports,0));
 });
+
+test('session creation: rejects malformed shared groups rather than silently creating a public session',()=>{
+ for(const groups of ['12,25',{id:12},[12,'25'],[null],[-2],[2,2]]){
+  assert.throws(()=>createSessionPayload({...valid,communityShareIds:groups},sports,0));
+ }
+});
+test('session creation: rejects malformed weekly slots rather than silently dropping them',()=>{
+ const weekly={...valid,communityId:42,recurrence:'WEEKLY',recurrenceOccurrences:'3',recurrenceTimeZone:'Europe/Lisbon'};
+ for(const slots of ['2030-06-12',{},[null],[{day:'2030-06-12'}],[{day:2030,time:'19:00'}]]){
+  assert.throws(()=>createSessionPayload({...weekly,additionalWeeklySlots:slots},sports,0));
+ }
+});

@@ -37,6 +37,8 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(minParticipants<2||minParticipants>maxParticipants)throw Error('O mínimo deve estar entre 2 e a capacidade total.');
  const communityId=input.communityId==null?null:Number(input.communityId);
  if(communityId!==null&&(!Number.isSafeInteger(communityId)||communityId<=0))throw Error('Comunidade inválida.');
+ if(input.communityShareIds!=null&&!Array.isArray(input.communityShareIds))
+  throw Error('A lista de comunidades partilhadas é inválida.');
  const shareIds=Array.isArray(input.communityShareIds)?input.communityShareIds:[];
  if(shareIds.length>5||shareIds.some(id=>!Number.isSafeInteger(id)||id<=0)||new Set(shareIds).size!==shareIds.length)
   throw Error('Seleciona até cinco comunidades distintas e válidas.');
@@ -68,6 +70,8 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   catch{throw Error('Fuso horário inválido para repetição de sessões.');}
   recurrenceTimeZone=zone;
  }
+ if(input.additionalWeeklySlots!=null&&!Array.isArray(input.additionalWeeklySlots))
+  throw Error('A lista de horários adicionais é inválida.');
  const extraSlots=Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots:[];
  if(extraSlots.length>6)throw Error('Escolhe no máximo sete sessões por semana.');
  if(recurrence!=='WEEKLY'&&extraSlots.length>0)
@@ -80,7 +84,10 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   const end=endOfWeek.getTime();
   const unique=new Set([first]);
   for(const slot of extraSlots){
-   const iso=parseSessionDate(slot?.day||'',slot?.time||'',now);
+   if(!slot||typeof slot!=='object'||Array.isArray(slot)||
+      typeof slot.day!=='string'||typeof slot.time!=='string')
+    throw Error('Indica um dia e uma hora válidos para cada sessão adicional.');
+   const iso=parseSessionDate(slot.day,slot.time,now);
    const stamp=Date.parse(iso);
    if(stamp<=first||stamp>=end)throw Error('Os horários adicionais têm de ser posteriores ao primeiro jogo e nos sete dias seguintes.');
    if(unique.has(stamp))throw Error('Não podes repetir o mesmo dia e hora.');
