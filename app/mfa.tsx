@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -11,13 +11,21 @@ export default function MfaScreen(){
  const redirect=safeRedirect(p.redirect);
  const [code,setCode]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
+ const [resendAfter,setResendAfter]=useState(0);
+ const [now,setNow]=useState(Date.now());
+ const secondsUntilResend=Math.max(0,Math.ceil((resendAfter-now)/1000));
+ useEffect(()=>{
+   if(!resendAfter)return;
+   const interval=setInterval(()=>setNow(Date.now()),1000);
+   return()=>clearInterval(interval);
+ },[resendAfter]);
  async function submit(){if(busy)return;setBusy(true);setError('');setNotice('');
    try{await auth.completeMfa(code.trim());setCode('');router.replace(redirect as any);}
    catch(e){setError(e instanceof Error?e.message:'Código não aceite.');}
    finally{setBusy(false);}}
  async function requestNewCode(){
-   if(busy)return;setBusy(true);setError('');setNotice('');
-   try{await auth.resendMfa();setCode('');setNotice('Novo código enviado. Por segurança, só podes voltar a pedir após 60 segundos.');}
+   if(busy||secondsUntilResend>0)return;setBusy(true);setError('');setNotice('');
+   try{await auth.resendMfa();setCode('');setResendAfter(Date.now()+60000);setNow(Date.now());setNotice('Novo código enviado.');}
    catch(e){setError(e instanceof Error?e.message:'Não foi possível reenviar o código. Aguarda um minuto antes de tentar novamente.');}
    finally{setBusy(false);}
  }
@@ -30,7 +38,7 @@ export default function MfaScreen(){
    <TextInput style={styles.input} value={code} onChangeText={setCode} keyboardType="number-pad"
      autoComplete="one-time-code" placeholder="Código MFA" placeholderTextColor={C.muted}/>
    <Button title={busy?'A verificar…':'Confirmar código'} disabled={busy||!code.trim()||!auth.challengeId} onPress={()=>{void submit();}}/>
-   <Button title="Reenviar código" secondary disabled={busy||!auth.challengeId} onPress={()=>{void requestNewCode();}}/>
+   <Button title={secondsUntilResend>0?`Reenviar código (${secondsUntilResend}s)`:'Reenviar código'} secondary disabled={busy||!auth.challengeId||secondsUntilResend>0} onPress={()=>{void requestNewCode();}}/>
    {!auth.challengeId?<Message>Para receberes um código, volta ao ecrã de login.</Message>:null}
  </Page>;
 }
