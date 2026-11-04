@@ -86,11 +86,15 @@ jobs:
           unzip -Z1 "$aab" | grep -q '^base/manifest/AndroidManifest.xml$'
           jarsigner -verify "$aab"
           echo "AAB assinado e gerado para TESTE INTERNO, não publicado."
+      - name: Registar versao, origem e commit do AAB
+        run: node scripts/write-android-build-info.cjs aab
       - name: Guardar AAB para envio manual à Play Console
         uses: actions/upload-artifact@v4
         with:
           name: jynlo-google-play-internal-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android-build-info.json
           if-no-files-found: error
           retention-days: 7
       - name: Apagar chave temporária do runner
