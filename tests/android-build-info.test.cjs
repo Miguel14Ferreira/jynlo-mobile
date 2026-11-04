@@ -20,3 +20,14 @@ test('Fail closed on invalid SHA, API and package name',()=>{
  assert.throws(()=>buildInfo(config,{...env,EXPO_PUBLIC_JYNLO_API_URL:'http://example.com'},'apk'));
  assert.throws(()=>buildInfo({expo:{...config.expo,android:{...config.expo.android,package:'com.other.app'}}},env,'apk'));
 });
+
+test('APK and AAB workflows publish SHA-256 checksums beside build metadata',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ for(const [workflow,extension] of [['build-android-integrated-apk.yml','apk'],['build-play-internal-aab.yml','aab']]){
+   const y=fs.readFileSync(path.join(__dirname,'../.github/workflows',workflow),'utf8');
+   assert.match(y,new RegExp('sha256sum .*app-release\\\\.'+extension));
+   assert.match(y,/android-build-sha256\.txt/);
+   assert.match(y,/android-build-info\.json/);
+ }
+});
