@@ -87,7 +87,11 @@ jobs:
           jarsigner -verify "$aab"
           echo "AAB assinado e gerado para TESTE INTERNO, não publicado."
       - name: Registar versao, origem e commit do AAB
-        run: node scripts/write-android-build-info.cjs aab
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/write-android-build-info.cjs aab
+          sha256sum "android/app/build/outputs/bundle/release/app-release.aab" > android-build-sha256.txt
       - name: Guardar AAB para envio manual à Play Console
         uses: actions/upload-artifact@v4
         with:
@@ -95,6 +99,7 @@ jobs:
           path: |
             android/app/build/outputs/bundle/release/app-release.aab
             android-build-info.json
+            android-build-sha256.txt
           if-no-files-found: error
           retention-days: 7
       - name: Apagar chave temporária do runner
