@@ -43,8 +43,12 @@ jobs:
             echo "::error::A keystore Base64 não é válida."
             exit 1
           fi
+          if ! keytool -list -keystore "$dir/upload-keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::A password de armazenamento não abre a keystore (ou o ficheiro foi corrompido). Confirma KEYSTORE_BASE64 e STORE_PASSWORD."
+            exit 1
+          fi
           if ! keytool -list -keystore "$dir/upload-keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::Keystore, STORE_PASSWORD ou KEY_ALIAS inválidos. Confirma os Secrets."
+            echo "::error::A keystore abriu, mas KEY_ALIAS não corresponde a uma entrada existente."
             exit 1
           fi
           echo "Jynlo signing preflight" > "$dir/probe.txt"
