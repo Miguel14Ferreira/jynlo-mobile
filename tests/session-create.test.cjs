@@ -141,3 +141,13 @@ test('session creation: rejects malformed weekly slots rather than silently drop
   assert.throws(()=>createSessionPayload({...weekly,additionalWeeklySlots:slots},sports,0));
  }
 });
+
+test('session creation: adding a weekly slot only validates the schedule, not unrelated form fields',()=>{
+ const {validateWeeklySlots}=require('../src/lib/session-create-core.cjs');
+ const slots=validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'WEEKLY',4,0);
+ assert.equal(slots.length,1);
+ assert.match(slots[0],/^2030-06-12T/);
+ assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-10',time:'18:30'}],'WEEKLY',4,0));
+ assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'WEEKLY',52,0));
+ assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'BIWEEKLY',4,0));
+});

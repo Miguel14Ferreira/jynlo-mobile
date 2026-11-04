@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSession} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -28,7 +28,9 @@ export default function CreateSessionScreen(){
   const next=[...(form.additionalWeeklySlots||[]),{day:extraDay.trim(),time:extraTime.trim()}];
   try{
    const input={...form,additionalWeeklySlots:next};
-   createSessionPayload(input,SPORTS);
+   const count=Number(form.recurrenceOccurrences||'0');
+   if(!Number.isInteger(count)||count<2||count>52)throw Error('Escolhe entre 2 e 52 ciclos de repetição.');
+   validateWeeklySlots(form.day,form.time,next,form.recurrence||'NONE',count);
    setForm(input);setExtraDay('');setExtraTime('');setError('');
   }catch(e){setError(e instanceof Error?e.message:'Horário adicional inválido.');}
  }

@@ -18,4 +18,6 @@ export interface CreateSessionPayload{
  meetingPointInstructions:string|null;minParticipants:number;
 }
 export function parseSessionDate(day:string,time:string,now?:number):string;
+export function validateWeeklySlots(day:string,time:string,slots:Array<{day:string;time:string}>|undefined,
+ recurrence:'NONE'|'WEEKLY'|'BIWEEKLY',occurrences:number|null,now?:number):string[];
 export function createSessionPayload(input:CreateSessionForm,allowedSports:readonly string[],now?:number):CreateSessionPayload;

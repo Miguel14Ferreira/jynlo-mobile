@@ -11,6 +11,38 @@ function parseSessionDate(day,time,now=Date.now()){
  if(local.getTime()<=now+5*60000)throw Error('Escolhe uma sessão futura, com pelo menos cinco minutos de antecedência.');
  return local.toISOString();
 }
+function validateWeeklySlots(day,time,slots,recurrence,occurrences,now=Date.now()){
+ if(slots!=null&&!Array.isArray(slots))
+  throw Error('A lista de horários adicionais é inválida.');
+ const extraSlots=Array.isArray(slots)?slots:[];
+ if(extraSlots.length>6)throw Error('Escolhe no máximo sete sessões por semana.');
+ if(recurrence!=='WEEKLY'&&extraSlots.length>0)
+  throw Error('Horários adicionais só estão disponíveis com repetição semanal.');
+ const additionalWeeklyGameDates=[];
+ if(extraSlots.length){
+  const gameDate=parseSessionDate(day,time,now);
+  const first=Date.parse(gameDate);
+  const endOfWeek=new Date(day+'T'+time+':00');
+  endOfWeek.setDate(endOfWeek.getDate()+7);
+  const end=endOfWeek.getTime();
+  const unique=new Set([first]);
+  for(const slot of extraSlots){
+   if(!slot||typeof slot!=='object'||Array.isArray(slot)||
+      typeof slot.day!=='string'||typeof slot.time!=='string')
+    throw Error('Indica um dia e uma hora válidos para cada sessão adicional.');
+   const iso=parseSessionDate(slot.day,slot.time,now);
+   const stamp=Date.parse(iso);
+   if(stamp<=first||stamp>=end)throw Error('Os horários adicionais têm de ser posteriores ao primeiro jogo e nos sete dias seguintes.');
+   if(unique.has(stamp))throw Error('Não podes repetir o mesmo dia e hora.');
+   unique.add(stamp);
+   additionalWeeklyGameDates.push(iso);
+  }
+  if(occurrences*(additionalWeeklyGameDates.length+1)>52)
+   throw Error('O plano pode ter no máximo 52 sessões.');
+  additionalWeeklyGameDates.sort((a,b)=>Date.parse(a)-Date.parse(b));
+ }
+ return additionalWeeklyGameDates;
+}
 function createSessionPayload(input,allowedSports,now=Date.now()){
  const sport=String(input.sport||'').trim();
  if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
@@ -70,34 +102,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   catch{throw Error('Fuso horário inválido para repetição de sessões.');}
   recurrenceTimeZone=zone;
  }
- if(input.additionalWeeklySlots!=null&&!Array.isArray(input.additionalWeeklySlots))
-  throw Error('A lista de horários adicionais é inválida.');
- const extraSlots=Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots:[];
- if(extraSlots.length>6)throw Error('Escolhe no máximo sete sessões por semana.');
- if(recurrence!=='WEEKLY'&&extraSlots.length>0)
-  throw Error('Horários adicionais só estão disponíveis com repetição semanal.');
- const additionalWeeklyGameDates=[];
- if(extraSlots.length){
-  const first=Date.parse(gameDate);
-  const endOfWeek=new Date(input.day+'T'+input.time+':00');
-  endOfWeek.setDate(endOfWeek.getDate()+7);
-  const end=endOfWeek.getTime();
-  const unique=new Set([first]);
-  for(const slot of extraSlots){
-   if(!slot||typeof slot!=='object'||Array.isArray(slot)||
-      typeof slot.day!=='string'||typeof slot.time!=='string')
-    throw Error('Indica um dia e uma hora válidos para cada sessão adicional.');
-   const iso=parseSessionDate(slot.day,slot.time,now);
-   const stamp=Date.parse(iso);
-   if(stamp<=first||stamp>=end)throw Error('Os horários adicionais têm de ser posteriores ao primeiro jogo e nos sete dias seguintes.');
-   if(unique.has(stamp))throw Error('Não podes repetir o mesmo dia e hora.');
-   unique.add(stamp);
-   additionalWeeklyGameDates.push(iso);
-  }
-  if(recurrenceOccurrences*(additionalWeeklyGameDates.length+1)>52)
-   throw Error('O plano pode ter no máximo 52 sessões.');
-  additionalWeeklyGameDates.sort((a,b)=>Date.parse(a)-Date.parse(b));
- }
+ const additionalWeeklyGameDates=validateWeeklySlots(input.day,input.time,input.additionalWeeklySlots,recurrence,recurrenceOccurrences,now);
  const seasonGame=input.seasonGame===true;
  if(seasonGame&&shareIds.length)throw Error('Os jogos de época neste formulário exigem uma comunidade direta.');
  if(seasonGame&&communityId===null)throw Error('Um jogo de época exige uma comunidade.');
@@ -122,4 +127,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={parseSessionDate,createSessionPayload};
+module.exports={parseSessionDate,validateWeeklySlots,createSessionPayload};
