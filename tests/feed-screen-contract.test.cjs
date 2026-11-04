@@ -17,3 +17,13 @@ test('contratos do Feed correspondem à API Jynlo e não têm troca rápida de c
   assert.doesNotMatch(read('app/(tabs)/profile.tsx'), /Trocar para Tiago|Trocar para André/);
   assert.doesNotMatch(read('app/(tabs)/index.tsx'), /Trocar para Tiago|Trocar para André/);
 });
+
+test('Feed de visitante nunca pede feed privado nem simula uma conta',()=>{
+  const feed=read('app/(tabs)/index.tsx');
+  assert.match(feed,/auth\.token&&auth\.username\?socialFeed/);
+  assert.match(feed,/auth\.token\?storyFeed/);
+  assert.match(feed,/auth\.token\?discoverPeople/);
+  assert.match(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
+  assert.match(feed,/Explorar todas as sessões/);
+  assert.match(feed,/auth\.token\?'A minha semana desportiva':'Descobre a tua próxima sessão'/);
+});

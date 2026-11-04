@@ -6,6 +6,7 @@ import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSes
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
+import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview} from '../../src/lib/types';
 
@@ -79,7 +80,7 @@ export default function SessionScreen(){
     {error?<Message tone="error">{error}</Message>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
-        <View style={styles.top}><Text style={styles.sportIcon}>{s.sport==='Futebol'?'⚽':s.sport==='Voleibol'?'🏐':s.sport==='Karting'?'🏎️':'🏅'}</Text>
+        <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={detail?.joined?'Confirmado':detail?.waitlisted?'Lista de espera':s.status==='CANCELLED'?'Cancelada':s.status==='FULL'?'Completa':`${spots} vagas`}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <Text style={styles.city}>⌖ {s.city||'Local a confirmar'}</Text>
@@ -89,7 +90,7 @@ export default function SessionScreen(){
         <View style={styles.info}><Text style={styles.label}>DATA E HORA</Text><Text style={styles.value}>{formatDate(s.gameDate)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>VALOR</Text><Text style={styles.value}>{money(s.priceAmount)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>PARTICIPANTES</Text><Text style={styles.value}>{s.participantCount??'—'}/{s.maxParticipants??'—'}</Text></View>
-        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{s.status==='OPEN'?'Aberta':s.status==='FULL'?'Completa':s.status==='CANCELLED'?'Cancelada':s.status||'—'}</Text></View>
+        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{s.status==='OPEN'?'Aberta':s.status==='FULL'?'Completa':s.status==='CANCELLED'?'Cancelada':s.status==='COMPLETED'?'Concluída':s.status||'—'}</Text></View>
       </View>
       <View style={styles.panel}>
         <Eyebrow>RECINTO E ENCONTRO</Eyebrow>
@@ -100,7 +101,8 @@ export default function SessionScreen(){
       {feedback?<Message>{feedback}</Message>:null}
       {detail?.joined?<Message>✓ A tua presença está confirmada.</Message>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
-      {!auth.token?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
+      {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
+      {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>Esta sessão terminou ou foi cancelada. Podes continuar a explorar outras sessões públicas.</Message>:null}
       {auth.token&&detail&&['JOIN','WAITLIST','PASSWORD'].includes(action.kind)?<View style={styles.panel}>
         {detail.privateGame?<>
           <Text style={styles.hint}>Esta sessão exige palavra-passe. Não confundas sessão privada com sessão apenas para membros.</Text>
