@@ -1,6 +1,6 @@
 import React, {createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
 import * as SecureStore from 'expo-secure-store';
-import {DEMO_MODE,confirmMfa,signIn as apiSignIn,logoutServer} from './api';
+import {DEMO_MODE,confirmMfa,resendMfa as apiResendMfa,signIn as apiSignIn,logoutServer} from './api';
 import {assertCanStartLogin} from './account-session.cjs';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
@@ -9,6 +9,7 @@ interface AuthContextValue {
   login:(name:string,password:string)=>Promise<AuthOutcome>;
   loginDemo:(name:string)=>void;
   completeMfa:(code:string)=>Promise<void>;
+  resendMfa:()=>Promise<void>;
   logout:()=>Promise<void>;
 }
 const AuthContext=createContext<AuthContextValue|null>(null);
@@ -40,14 +41,20 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(response.mfaRequired){if(!response.challengeId)throw new Error('Desafio MFA inválido.');
       setChallengeId(response.challengeId);setPendingUsername(name);return 'MFA_REQUIRED';}
     if(!response.token)throw new Error('O servidor não enviou uma sessão válida.');
-    await save(name,response.token);return 'AUTHENTICATED';
+    await save(response.profile?.username?.trim()||name,response.token);return 'AUTHENTICATED';
   },[save,username]);
   const completeMfa=useCallback(async(code:string)=>{
     if(!challengeId||!pendingUsername)throw new Error('Desafio MFA não encontrado.');
     const response=await confirmMfa(challengeId,code);
     if(!response.token)throw new Error('O código não foi aceite.');
-    await save(pendingUsername,response.token);
+    await save(response.profile?.username?.trim()||pendingUsername,response.token);
   },[challengeId,pendingUsername,save]);
+  const resendMfa=useCallback(async()=>{
+    if(!challengeId||!pendingUsername)throw new Error('Desafio MFA não encontrado. Inicia sessão novamente.');
+    const response=await apiResendMfa(challengeId);
+    if(!response.mfaRequired||!response.challengeId)throw new Error('Não foi possível renovar o código MFA. Inicia sessão novamente.');
+    setChallengeId(response.challengeId);
+  },[challengeId,pendingUsername]);
   const loginDemo=useCallback((name:string)=>{
     if(!DEMO_MODE)return;
     assertCanStartLogin(username);
@@ -59,8 +66,8 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(!DEMO_MODE){await Promise.all([
       SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);}
   },[token]);
-  const value=useMemo(()=>({ready,username,token,challengeId,login,loginDemo,completeMfa,logout}),
-    [ready,username,token,challengeId,login,loginDemo,completeMfa,logout]);
+  const value=useMemo(()=>({ready,username,token,challengeId,login,loginDemo,completeMfa,resendMfa,logout}),
+    [ready,username,token,challengeId,login,loginDemo,completeMfa,resendMfa,logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const c=useContext(AuthContext);if(!c)throw new Error('AuthProvider obrigatório');return c;}

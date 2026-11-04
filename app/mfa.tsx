@@ -10,18 +10,28 @@ export default function MfaScreen(){
  const p=useLocalSearchParams<{redirect?:string}>();
  const redirect=safeRedirect(p.redirect);
  const [code,setCode]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
- async function submit(){if(busy)return;setBusy(true);setError('');
+ const [notice,setNotice]=useState('');
+ async function submit(){if(busy)return;setBusy(true);setError('');setNotice('');
    try{await auth.completeMfa(code.trim());setCode('');router.replace(redirect as any);}
    catch(e){setError(e instanceof Error?e.message:'Código não aceite.');}
    finally{setBusy(false);}}
+ async function requestNewCode(){
+   if(busy)return;setBusy(true);setError('');setNotice('');
+   try{await auth.resendMfa();setCode('');setNotice('Novo código enviado. Por segurança, só podes voltar a pedir após 60 segundos.');}
+   catch(e){setError(e instanceof Error?e.message:'Não foi possível reenviar o código. Aguarda um minuto antes de tentar novamente.');}
+   finally{setBusy(false);}
+ }
  return <Page>
    <Eyebrow>SEGURANÇA DA CONTA</Eyebrow>
    <Text style={styles.title}>Verificação em dois passos</Text>
    <Text style={styles.sub}>Introduz o código de verificação associado à tua conta Jynlo.</Text>
    {error?<Message tone="error">{error}</Message>:null}
+   {notice?<Message>{notice}</Message>:null}
    <TextInput style={styles.input} value={code} onChangeText={setCode} keyboardType="number-pad"
      autoComplete="one-time-code" placeholder="Código MFA" placeholderTextColor={C.muted}/>
-   <Button title={busy?'A verificar…':'Confirmar código'} disabled={busy||!code.trim()} onPress={()=>{void submit();}}/>
+   <Button title={busy?'A verificar…':'Confirmar código'} disabled={busy||!code.trim()||!auth.challengeId} onPress={()=>{void submit();}}/>
+   <Button title="Reenviar código" secondary disabled={busy||!auth.challengeId} onPress={()=>{void requestNewCode();}}/>
+   {!auth.challengeId?<Message>Para receberes um código, volta ao ecrã de login.</Message>:null}
  </Page>;
 }
 const styles=StyleSheet.create({

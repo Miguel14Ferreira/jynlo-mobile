@@ -107,3 +107,8 @@ export async function signIn(username:string,password:string):Promise<LoginRespo
 export async function confirmMfa(challengeId:string,code:string):Promise<LoginResponse>{
   return request<LoginResponse>('/api/auth/mfa/confirm',{method:'POST',body:{challengeId,code}});
 }
+
+/** The backend enforces a 60-second cooldown; never retry automatically. */
+export async function resendMfa(challengeId:string):Promise<LoginResponse>{
+  return request<LoginResponse>('/api/auth/mfa/resend',{method:'POST',body:{challengeId}});
+}
