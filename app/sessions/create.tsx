@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -132,9 +132,11 @@ export default function CreateSessionScreen(){
    payload=createSessionPayload(form,SPORTS);setError('');
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
-  Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
-   ' · '+payload.maxParticipants+' participantes · '+(payload.communityShareIds.length?'Apenas membros das comunidades':payload.communityId?'Apenas membros da comunidade':payload.privateGame?'Privada com palavra-passe':'Pública')+
-   ' · '+(payload.communityShareIds.length?'Partilhada com '+sharedCommunities.map(c=>c.name).join(', ')+' · Apenas membros · ':'')+(payload.seasonCompetitionCommunityId?'Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':'')+' · ':'')+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' ciclos de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · '+(payload.additionalWeeklyGameDates.length+1)+' horários/ciclo · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
+  Alert.alert('Criar sessão desportiva?',describeSessionConfirmation(payload,{
+   communityName:selectedCommunity?.name,
+   sharedCommunityNames:sharedCommunities.map(c=>c.name),
+   venueName:venueChosen?.name
+  }),[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;

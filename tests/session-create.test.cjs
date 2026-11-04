@@ -187,3 +187,25 @@ test('session creation: Android numeric date entry formats and limits input safe
  assert.equal(formatLocalTimeInput('193055'),'19:30');
  assert.throws(()=>parseSessionDate(formatLocalDateInput('20300230'),formatLocalTimeInput('1830'),0));
 });
+
+test('session confirmation: public and community visibility reflect the submitted payload',()=>{
+ const {describeSessionConfirmation}=require('../src/lib/session-create-core.cjs');
+ const publicPayload=createSessionPayload(valid,sports,0);
+ const publicText=describeSessionConfirmation(publicPayload);
+ assert.match(publicText,/Pública/);
+ assert.doesNotMatch(publicText,/palavra-passe/);
+ const groupPayload=createSessionPayload({...valid,communityId:12},sports,0);
+ const groupText=describeSessionConfirmation(groupPayload,{communityName:'Equipa A'});
+ assert.match(groupText,/Apenas membros da comunidade/);
+ assert.match(groupText,/Comunidade Equipa A/);
+ assert.doesNotMatch(groupText,/Pública/);
+ const privatePayload=createSessionPayload({...valid,privateGame:true,password:'supersecret'},sports,0);
+ const privateText=describeSessionConfirmation(privatePayload);
+ assert.match(privateText,/Privada com palavra-passe/);
+ assert.doesNotMatch(privateText,/supersecret/);
+ const sharePayload=createSessionPayload({...valid,communityShareIds:[12,13]},sports,0);
+ const shareText=describeSessionConfirmation(sharePayload,{sharedCommunityNames:['Grupo A','Grupo B']});
+ assert.match(shareText,/Apenas membros das comunidades/);
+ assert.match(shareText,/Grupo A, Grupo B/);
+ assert.doesNotMatch(shareText,/Pública/);
+});

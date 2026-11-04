@@ -62,6 +62,27 @@ function changeCommunityMode(form,mode){
  if(mode==='SHARED')return {...cleared,privateGame:false,password:''};
  return cleared;
 }
+function describeSessionConfirmation(payload,context={}){
+ const visibility=payload.communityShareIds.length?'Apenas membros das comunidades':
+  payload.communityId!=null?'Apenas membros da comunidade':
+  payload.privateGame?'Privada com palavra-passe':'Pública';
+ const communityNames=Array.isArray(context.sharedCommunityNames)?context.sharedCommunityNames:[];
+ const parts=[
+  payload.sport,
+  payload.city,
+  payload.gameDate.replace('T',' ').slice(0,16),
+  payload.maxParticipants+' participantes',
+  visibility
+ ];
+ if(payload.communityShareIds.length)parts.push('Partilhada com '+(communityNames.length?communityNames.join(', '):payload.communityShareIds.length+' comunidades'));
+ if(payload.communityId!=null)parts.push('Comunidade '+(context.communityName||'selecionada'));
+ if(payload.seasonCompetitionCommunityId!=null)parts.push('Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':''));
+ if(payload.venueId!=null)parts.push('Recinto '+(context.venueName||'selecionado'));
+ if(payload.recurrence!=='NONE')parts.push(payload.recurrenceOccurrences+' ciclos de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+'), '+(payload.additionalWeeklyGameDates.length+1)+' horários/ciclo');
+ parts.push(payload.externalConfirmedParticipants+' confirmados externos');
+ parts.push('Inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas'));
+ return parts.join(' · ')+'. O organizador fica automaticamente inscrito.';
+}
 function createSessionPayload(input,allowedSports,now=Date.now()){
  const sport=String(input.sport||'').trim();
  if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
@@ -146,4 +167,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,changeCommunityMode,createSessionPayload};
+module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,changeCommunityMode,describeSessionConfirmation,createSessionPayload};
