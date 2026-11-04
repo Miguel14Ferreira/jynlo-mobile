@@ -1,8 +1,12 @@
 name: Jynlo Mobile - Android APK integrada (testes internos)
 
-# Execucao manual e isolada do workflow de demonstracao.
+# Execucao isolada do workflow de demonstracao. Em develop, usar pedido versionado.
 # Usa o backend real; nao distribuir como versao da Play Store.
 on:
+  push:
+    branches: [develop]
+    paths:
+      - ".github/jynlo-integrated-apk.request"
   workflow_dispatch:
     inputs:
       confirm_real_api:
@@ -20,7 +24,7 @@ concurrency:
 jobs:
   integrated-apk:
     name: APK interna ligada ao backend Jynlo
-    if: ${{ inputs.confirm_real_api == 'TESTAR_API_REAL' }}
+    if: ${{ github.event_name == 'push' || inputs.confirm_real_api == 'TESTAR_API_REAL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -30,6 +34,12 @@ jobs:
     steps:
       - name: Checkout do projeto mobile
         uses: actions/checkout@v4
+      - name: Verificar autorizacao do pedido integrado
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/jynlo-integrated-apk.request)" = "TESTAR_API_REAL"
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
