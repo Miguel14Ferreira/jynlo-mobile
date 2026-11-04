@@ -37,10 +37,16 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(minParticipants<2||minParticipants>maxParticipants)throw Error('O mínimo deve estar entre 2 e a capacidade total.');
  const communityId=input.communityId==null?null:Number(input.communityId);
  if(communityId!==null&&(!Number.isSafeInteger(communityId)||communityId<=0))throw Error('Comunidade inválida.');
+ const shareIds=Array.isArray(input.communityShareIds)?input.communityShareIds:[];
+ if(shareIds.length>5||shareIds.some(id=>!Number.isSafeInteger(id)||id<=0)||new Set(shareIds).size!==shareIds.length)
+  throw Error('Seleciona até cinco comunidades distintas e válidas.');
+ if(shareIds.length&&communityId!==null)
+  throw Error('Escolhe uma comunidade direta ou partilha entre comunidades, não ambas.');
+ const hasCommunity=communityId!==null||shareIds.length>0;
  const registrationOpeningMode=input.registrationOpeningMode??'IMMEDIATE';
  if(!['IMMEDIATE','MANUAL','SCHEDULED'].includes(registrationOpeningMode))
   throw Error('Modo de abertura de inscrições inválido.');
- if(communityId===null&&registrationOpeningMode!=='IMMEDIATE')throw Error('Convocatórias manuais ou programadas exigem uma comunidade.');
+ if(!hasCommunity&&registrationOpeningMode!=='IMMEDIATE')throw Error('Convocatórias manuais ou programadas exigem uma comunidade.');
  const gameDate=parseSessionDate(input.day,input.time,now);
  let registrationOpensAt=null;
  if(registrationOpeningMode==='SCHEDULED'){
@@ -50,7 +56,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  }
  const recurrence=input.recurrence??'NONE';
  if(!['NONE','WEEKLY','BIWEEKLY'].includes(recurrence))throw Error('Repetição inválida.');
- if(communityId===null&&recurrence!=='NONE')throw Error('As sessões recorrentes exigem uma comunidade.');
+ if(!hasCommunity&&recurrence!=='NONE')throw Error('As sessões recorrentes exigem uma comunidade.');
  let recurrenceOccurrences=null,recurrenceTimeZone=null;
  if(recurrence!=='NONE'){
   const text=String(input.recurrenceOccurrences??'').trim();
@@ -86,6 +92,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   additionalWeeklyGameDates.sort((a,b)=>Date.parse(a)-Date.parse(b));
  }
  const seasonGame=input.seasonGame===true;
+ if(seasonGame&&shareIds.length)throw Error('Os jogos de época neste formulário exigem uma comunidade direta.');
  if(seasonGame&&communityId===null)throw Error('Um jogo de época exige uma comunidade.');
  const confirmActivateRankings=input.confirmActivateRankings===true;
  if(!seasonGame&&confirmActivateRankings)throw Error('A ativação das classificações exige um jogo de época.');
@@ -94,6 +101,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   throw Error('Confirma a ativação das classificações para criar o jogo de época.');
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
+ if(privateGame&&shareIds.length)throw Error('Sessões partilhadas não podem ter palavra-passe.');
  if(privateGame&&password.length<4)throw Error('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.');
  const meetingPointInstructions=String(input.meetingPointInstructions||'').trim();
  if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error('O ponto de encontro deve ter uma única linha até 240 caracteres.');
@@ -102,7 +110,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
   communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
-  additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:[],
+  additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:shareIds.slice(),
   seasonCompetitionCommunityId:seasonGame?communityId:null,confirmActivateRankings:seasonGame&&!rankingsEnabled&&confirmActivateRankings,
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };

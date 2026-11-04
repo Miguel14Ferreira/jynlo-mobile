@@ -109,3 +109,23 @@ test('session creation: multiple weekly slots sorted, unique and limited to seve
  assert.throws(()=>createSessionPayload({...weekly,recurrenceOccurrences:'27',additionalWeeklySlots:[{day:'2030-06-12',time:'19:00'}]},sports,0));
  assert.throws(()=>createSessionPayload({...weekly,recurrence:'BIWEEKLY',additionalWeeklySlots:[{day:'2030-06-12',time:'19:00'}]},sports,0));
 });
+
+test('session creation: multi-community shares use backend member-only contract',()=>{
+ const shared=createSessionPayload({...valid,communityShareIds:[12,25,47],
+  recurrence:'WEEKLY',recurrenceOccurrences:'3',recurrenceTimeZone:'Europe/Lisbon',
+  registrationOpeningMode:'MANUAL'},sports,0);
+ assert.equal(shared.communityId,null);
+ assert.deepEqual(shared.communityShareIds,[12,25,47]);
+ assert.equal(shared.privateGame,false);
+ assert.equal(shared.registrationOpeningMode,'MANUAL');
+ assert.equal(shared.recurrence,'WEEKLY');
+ assert.equal(shared.seasonCompetitionCommunityId,null);
+});
+test('session creation: shared sessions prevent passwords, mixed community modes and season games',()=>{
+ assert.throws(()=>createSessionPayload({...valid,communityId:12,communityShareIds:[25]},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,communityShareIds:[12,12]},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,communityShareIds:[1,2,3,4,5,6]},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,communityShareIds:[2],privateGame:true,password:'secret'},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,communityShareIds:[2],seasonGame:true,communityRankingsEnabled:true},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,communityShareIds:[0]},sports,0));
+});

@@ -5,6 +5,7 @@ export interface CreateSessionForm {
  registrationDay?:string;registrationTime?:string;
  seasonGame?:boolean;communityRankingsEnabled?:boolean;confirmActivateRankings?:boolean;
  additionalWeeklySlots?:Array<{day:string;time:string}>;
+ communityShareIds?:number[];
  venueId?:number|null;recurrence?:'NONE'|'WEEKLY'|'BIWEEKLY';recurrenceOccurrences?:string;recurrenceTimeZone?:string;
 }
 export interface CreateSessionPayload{
@@ -13,7 +14,7 @@ export interface CreateSessionPayload{
  latitude:null;longitude:null;communityId:number|null;venueId:number|null;recurrence:'NONE'|'WEEKLY'|'BIWEEKLY';
  recurrenceOccurrences:number|null;externalConfirmedParticipants:number;registrationOpeningMode:'IMMEDIATE'|'MANUAL'|'SCHEDULED';
  registrationOpensAt:string|null;additionalWeeklyGameDates:string[];recurrenceTimeZone:string|null;playFormat:null;
- communityShareIds:[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
+ communityShareIds:number[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
  meetingPointInstructions:string|null;minParticipants:number;
 }
 export function parseSessionDate(day:string,time:string,now?:number):string;
