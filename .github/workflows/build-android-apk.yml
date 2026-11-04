@@ -1,17 +1,7 @@
 name: Jynlo Mobile - Android APK instalável (testes)
 
+# Build Android packages explicitly; pushes are validated by the fast CI workflow.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - "app/**"
-      - "src/**"
-      - "assets/**"
-      - "tests/**"
-      - "package.json"
-      - "app.json"
-      - "eas.json"
-      - ".github/workflows/build-android-apk.yml"
   workflow_dispatch:
 
 # Preservar compilacoes Android ja em execucao; a mais recente fica em fila.
