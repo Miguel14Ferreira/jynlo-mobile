@@ -40,6 +40,7 @@ export default function CreateSessionScreen(){
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityError,setCommunityError]=useState('');
  const [venueQuery,setVenueQuery]=useState('');
+ const [venueCityQuery,setVenueCityQuery]=useState('');
  const [venueMatches,setVenueMatches]=useState<VenueSummary[]>([]);
  const [venueChosen,setVenueChosen]=useState<VenueSummary|null>(null);
  const [venueLoading,setVenueLoading]=useState(false);
@@ -61,7 +62,7 @@ export default function CreateSessionScreen(){
   setVenueLoading(true);setVenueError('');
   if(page===0){setVenueMatches([]);setVenuePage(0);setVenueHasMore(false);}
   try{
-   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:selectedSport||undefined,page});
+   const results=await venues({name:venueQuery.trim(),city:venueCityQuery.trim(),sport:selectedSport||undefined,page});
    if(version!==venueSearchVersion.current)return;
    const matching=results.venues.filter(v=>venueSupportsSport(v,selectedSport));
    setVenueMatches(previous=>page===0?matching:
@@ -273,7 +274,12 @@ export default function CreateSessionScreen(){
    </View>:null}
    <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
    <TextInput style={styles.input} value={venueQuery} onChangeText={v=>{setVenueQuery(v);clearVenueSearch();}}
-    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}/>
+    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}
+    accessibilityLabel="Nome do recinto a procurar"/>
+   <TextInput style={styles.input} value={venueCityQuery} onChangeText={v=>{setVenueCityQuery(v);clearVenueSearch();}}
+    placeholder="Filtrar por localidade (opcional)" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}
+    accessibilityLabel="Localidade para procurar recintos"/>
+   <Text style={styles.note}>Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade da sessão serão atualizadas automaticamente.</Text>
    <Button secondary title={venueLoading?'A pesquisar…':'Procurar recintos'} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
    {venueError?<Message tone="error">{venueError}</Message>:null}
    {venueMatches.map(v=><Pressable key={v.id} accessibilityRole="button" style={styles.option} disabled={busy}
