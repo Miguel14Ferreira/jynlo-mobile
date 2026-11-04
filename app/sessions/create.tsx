@@ -209,7 +209,6 @@ export default function CreateSessionScreen(){
     {field('Morada','address','Rua e número, recinto ou ponto de referência')}
    </>}
    {field('Ponto de encontro (opcional)','meetingPointInstructions','Ex.: Entrada principal')}
-  </View>
   </View>:null}
   {step===2?<View style={styles.panel}><Text style={styles.heading}>Participação</Text>
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
@@ -256,7 +255,6 @@ export default function CreateSessionScreen(){
     <Button secondary={!form.privateGame} title="Privada" disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
    <Text style={styles.note}>Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
-  </View>
   </View>:null}
   {step===3?<View style={styles.panel}>
    <Text style={styles.heading}>Rever antes de publicar</Text>
