@@ -17,6 +17,8 @@ export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
+ const [step,setStep]=useState(0);
+ const stepLabels=['Modalidade','Local e data','Participação','Rever'];
  const [sportSearch,setSportSearch]=useState('');
  const [extraDay,setExtraDay]=useState(''),[extraTime,setExtraTime]=useState('');
  function addWeeklySlot(){
@@ -79,8 +81,25 @@ export default function CreateSessionScreen(){
   });
  }
  const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
+ function nextStep(){
+  if(busy)return;
+  setError('');
+  if(step===0){
+   if(!form.sport){setError('Escolhe uma modalidade.');return;}
+   if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
+   if(sharedCommunities.length!==sharedIds.length){setError('Atualiza a seleção de comunidades.');return;}
+  }
+  if(step===1&&!form.day.trim()||step===1&&!form.time.trim()||step===1&&!form.city.trim()||step===1&&!form.address.trim()){
+   setError('Preenche a data, hora, localidade e morada antes de continuar.');return;
+  }
+  if(step===2){
+   try{createSessionPayload(form,SPORTS);}
+   catch(e){setError(e instanceof Error?e.message:'Verifica as informações da sessão.');return;}
+  }
+  setStep(current=>Math.min(3,current+1));
+ }
  function confirm(){
-  if(locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
+  if(step!==3||locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
   let payload:ReturnType<typeof createSessionPayload>;
   try{
    if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
@@ -115,10 +134,17 @@ export default function CreateSessionScreen(){
     editable={!busy} accessibilityLabel={label}/></View>;
  return <Page><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
   <Text style={styles.title}>Criar uma sessão</Text>
-  <Text style={styles.note}>Encontra jogadores para praticar a tua modalidade. Preenche os dados e confirma antes de publicar.</Text>
+  <Text style={styles.note}>Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.</Text>
+  <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}
+   accessibilityRole="button" disabled={busy||index>step} onPress={()=>{setStep(index);setError('');}}
+   style={[styles.stepChip,index===step&&styles.stepActive]}>
+   <Text style={[styles.stepText,index===step&&styles.stepTextActive]}>{index+1}. {label}</Text>
+  </Pressable>)}</View>
+  <Text style={styles.note}>Etapa {step+1} de 4 · {stepLabels[step]}</Text>
   {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
   {DEMO_MODE?<Message>Na demonstração a criação real está desativada. Liga a app à API Jynlo para publicar.</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {step===0?<>
   <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
    {form.sport?<Badge text={form.sport}/>:null}
    <TextInput style={styles.input} value={sportSearch} onChangeText={setSportSearch}
@@ -160,7 +186,8 @@ export default function CreateSessionScreen(){
    </View>:null}
    {form.seasonGame&&selectedCommunity.rankingsEnabled?<Message>As classificações desta comunidade já estão ativas.</Message>:null}
   </View>:null}
-  <View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
+  </>:null}
+  {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
    {venueChosen?<View style={styles.option}>
     <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
@@ -183,7 +210,8 @@ export default function CreateSessionScreen(){
    </>}
    {field('Ponto de encontro (opcional)','meetingPointInstructions','Ex.: Entrada principal')}
   </View>
-  <View style={styles.panel}><Text style={styles.heading}>Participação</Text>
+  </View>:null}
+  {step===2?<View style={styles.panel}><Text style={styles.heading}>Participação</Text>
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
    {field('Preço por participante (€)','price','0','decimal-pad')}
    {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
@@ -229,7 +257,37 @@ export default function CreateSessionScreen(){
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
    <Text style={styles.note}>Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
-  <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
+  </View>:null}
+  {step===3?<View style={styles.panel}>
+   <Text style={styles.heading}>Rever antes de publicar</Text>
+   <Text style={styles.note}>Confirma todos os detalhes. A aplicação não publica nada até autorizares a criação.</Text>
+   <Text style={styles.summaryTitle}>Modalidade e comunidade</Text>
+   <Text style={styles.summaryValue}>{form.sport}</Text>
+   <Text style={styles.summaryValue}>{selectedCommunity?'Comunidade: '+selectedCommunity.name:
+    sharedCommunities.length?'Partilhada com: '+sharedCommunities.map(c=>c.name).join(', '):
+    'Sessão independente'}</Text>
+   <Button secondary title="Editar modalidade e comunidades" disabled={busy} onPress={()=>setStep(0)}/>
+   <Text style={styles.summaryTitle}>Data e recinto</Text>
+   <Text style={styles.summaryValue}>{form.day} às {form.time}</Text>
+   <Text style={styles.summaryValue}>{venueChosen?'Recinto: '+venueChosen.name:form.address}</Text>
+   <Text style={styles.summaryValue}>{form.city}</Text>
+   {form.meetingPointInstructions?<Text style={styles.note}>Ponto de encontro: {form.meetingPointInstructions}</Text>:null}
+   <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
+   <Text style={styles.summaryTitle}>Participação e regras</Text>
+   <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {form.externalConfirmedParticipants} já confirmados externamente</Text>
+   <Text style={styles.summaryValue}>Preço: {form.price||'0'} € · {sharedIds.length?'Apenas membros das comunidades':form.privateGame?'Privada com palavra-passe':selectedCommunity?'Apenas membros da comunidade':'Pública'}</Text>
+   <Text style={styles.summaryValue}>Inscrições: {form.registrationOpeningMode==='SCHEDULED'?'Abertura '+form.registrationDay+' às '+form.registrationTime:form.registrationOpeningMode==='MANUAL'?'Abertura manual':'Abertura imediata'}</Text>
+   <Text style={styles.summaryValue}>{form.recurrence==='NONE'?'Sessão única':
+    (form.recurrence==='WEEKLY'?'Semanal':'Quinzenal')+' · '+form.recurrenceOccurrences+' ciclos · '+((form.additionalWeeklySlots?.length||0)+1)+' horário(s) por ciclo'}</Text>
+   {form.seasonGame?<Text style={styles.summaryValue}>Jogo de época{form.confirmActivateRankings?' · ativa as classificações com autorização':''}</Text>:null}
+   <Button secondary title="Editar participação e inscrições" disabled={busy} onPress={()=>setStep(2)}/>
+   <Message>O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta a sessão criada antes de tentares repetir a operação se houver uma falha de ligação.</Message>
+  </View>:null}
+  <View style={styles.actions}>
+   {step>0?<Button secondary title="Anterior" disabled={busy} onPress={()=>{setStep(current=>Math.max(0,current-1));setError('');}}/>:null}
+   {step<3?<Button title="Continuar" disabled={busy} onPress={nextStep}/>:
+    <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
+  </View>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
  </Page>;
 }
