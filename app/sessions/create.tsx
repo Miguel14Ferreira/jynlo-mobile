@@ -18,6 +18,8 @@ export default function CreateSessionScreen(){
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
  const [step,setStep]=useState(0);
+ // Selection controls whether an existing group of players must be counted explicitly.
+ const [hasExistingPlayers,setHasExistingPlayers]=useState(false);
  const stepLabels=['Modalidade','Local e data','Participação','Rever'];
  const [sportSearch,setSportSearch]=useState('');
  const [showSportResults,setShowSportResults]=useState(false);
@@ -139,8 +141,11 @@ export default function CreateSessionScreen(){
    }catch(e){setError(e instanceof Error?e.message:'Verifica a data e o local.');return;}
   }
   if(step===2){
-   try{createSessionPayload(form,SPORTS);}
-   catch(e){setError(e instanceof Error?e.message:'Verifica as informações da sessão.');return;}
+   try{
+    if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
+     throw Error('Indica quantos jogadores já tens confirmados, sem contar contigo.');
+    createSessionPayload(form,SPORTS);
+   }catch(e){setError(e instanceof Error?e.message:'Verifica as informações da sessão.');return;}
   }
   setStep(current=>Math.min(3,current+1));
  }
@@ -148,6 +153,8 @@ export default function CreateSessionScreen(){
   if(step!==3||locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
   let payload:ReturnType<typeof createSessionPayload>;
   try{
+   if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
+    throw Error('Indica quantos jogadores já tens confirmados antes de criar a sessão.');
    if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error('Escolhe uma comunidade para continuar.');
    if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
    if(sharedCommunities.length!==sharedIds.length)throw Error('Uma comunidade partilhada já não está disponível. Atualiza a seleção.');
@@ -305,7 +312,29 @@ export default function CreateSessionScreen(){
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
    {field('Preço por participante (€)','price','0','decimal-pad')}
    {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
-   {field('Jogadores já confirmados sem conta (exclui organizador)','externalConfirmedParticipants','0','numeric')}
+   <Text style={styles.label}>Como vais reunir os jogadores?</Text>
+   <View style={styles.playerChoices}>
+    <Pressable accessibilityRole="radio" accessibilityState={{checked:!hasExistingPlayers}} disabled={busy}
+      style={[styles.playerChoice,!hasExistingPlayers&&styles.playerChoiceSelected]}
+      onPress={()=>{setHasExistingPlayers(false);patch('externalConfirmedParticipants','0');setError('');}}>
+      <Text style={styles.playerChoiceTitle}>{!hasExistingPlayers?'✓  ':''}Ainda não tenho jogadores</Text>
+      <Text style={styles.note}>Quero abrir a sessão para encontrar participantes na Jynlo.</Text>
+    </Pressable>
+    <Pressable accessibilityRole="radio" accessibilityState={{checked:hasExistingPlayers}} disabled={busy}
+      style={[styles.playerChoice,hasExistingPlayers&&styles.playerChoiceSelected]}
+      onPress={()=>{setHasExistingPlayers(true);setError('');}}>
+      <Text style={styles.playerChoiceTitle}>{hasExistingPlayers?'✓  ':''}Já tenho jogadores e quero completar</Text>
+      <Text style={styles.note}>Conta os jogadores já confirmados fora da app para procurares apenas as vagas que faltam.</Text>
+    </Pressable>
+   </View>
+   {hasExistingPlayers?<>
+    {field('Jogadores já confirmados sem conta (não incluas o organizador)','externalConfirmedParticipants','Ex.: 4','numeric')}
+    <Text style={styles.note}>Indica um número real de jogadores já confirmados. Não são criados perfis ou convites automaticamente.</Text>
+   </>:<Text style={styles.note}>O organizador ficará automaticamente inscrito. Os restantes lugares ficam disponíveis para participantes.</Text>}
+   {Number.isInteger(Number(form.maxParticipants))&&Number(form.maxParticipants)>=2&&
+    Number.isInteger(Number(form.externalConfirmedParticipants))&&Number(form.externalConfirmedParticipants)>=0&&
+    Number(form.externalConfirmedParticipants)<Number(form.maxParticipants)?
+    <Message>Vagas inicialmente disponíveis para novas inscrições: {Number(form.maxParticipants)-1-Number(form.externalConfirmedParticipants)}. O organizador ocupa uma vaga.</Message>:null}
    <Text style={styles.label}>Repetição</Text>
    <View style={styles.inline}>
     <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
@@ -364,7 +393,8 @@ export default function CreateSessionScreen(){
    {form.meetingPointInstructions?<Text style={styles.note}>Ponto de encontro: {form.meetingPointInstructions}</Text>:null}
    <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
    <Text style={styles.summaryTitle}>Participação e regras</Text>
-   <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {form.externalConfirmedParticipants} já confirmados externamente</Text>
+   <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
+   <Text style={styles.summaryValue}>{hasExistingPlayers?'Vou completar um grupo existente':'Vou encontrar jogadores na Jynlo'}</Text>
    <Text style={styles.summaryValue}>Preço: {form.price||'0'} € · {sharedIds.length?'Apenas membros das comunidades':form.privateGame?'Privada com palavra-passe':selectedCommunity?'Apenas membros da comunidade':'Pública'}</Text>
    <Text style={styles.summaryValue}>Inscrições: {form.registrationOpeningMode==='SCHEDULED'?'Abertura '+form.registrationDay+' às '+form.registrationTime:form.registrationOpeningMode==='MANUAL'?'Abertura manual':'Abertura imediata'}</Text>
    <Text style={styles.summaryValue}>{form.recurrence==='NONE'?'Sessão única':
@@ -388,6 +418,10 @@ const styles=StyleSheet.create({
  field:{gap:6},label:{fontSize:13,color:C.muted,fontWeight:'700'},
  input:{borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface2,color:C.white,padding:13,minHeight:48},
  inline:{flexDirection:'row',gap:10,flexWrap:'wrap'},
+ playerChoices:{gap:9},
+ playerChoice:{borderWidth:1,borderColor:C.border,borderRadius:13,padding:14,gap:5,backgroundColor:C.surface2},
+ playerChoiceSelected:{borderColor:C.mint},
+ playerChoiceTitle:{fontWeight:'900',color:C.white,fontSize:14},
  option:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10},
  chosen:{borderColor:C.mint,backgroundColor:C.surface2},optionText:{color:C.white,fontSize:14,fontWeight:'700'},
  steps:{flexDirection:'row',flexWrap:'wrap',gap:7},

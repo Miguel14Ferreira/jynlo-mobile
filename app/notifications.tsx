@@ -32,7 +32,10 @@ export default function NotificationsScreen(){
   try{
    const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
    setInvites(old=>old.filter(x=>x.id!==invite.id));
-   setNotice(accept ? (response && response.state==='WAITLISTED' ? 'Convite aceite: estás na lista de espera.' : 'Convite aceite: presença confirmada.') : 'Convite recusado.');
+   setNotice(!accept?'Convite recusado.':
+    response?.state==='WAITLISTED'?'Convite aceite: estás na lista de espera.':
+    response?.state==='PARTICIPANT'?'Convite aceite: presença confirmada pelo servidor.':
+    'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
   }catch(e){setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
   finally{setBusyInvite(null);}
  }
@@ -59,6 +62,8 @@ export default function NotificationsScreen(){
     <Text style={styles.subject}>{invite.sport||'Sessão desportiva'} · {invite.city||'Local a confirmar'}</Text>
     <Text style={styles.body}>Convidado por @{invite.inviterUsername}</Text>
     {invite.gameDate?<Text style={styles.note}>{new Date(invite.gameDate).toLocaleString('pt-PT')}</Text>:null}
+    <Button secondary title="Ver detalhes da sessão" disabled={busyInvite!==null}
+      onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(invite.sessionId)}})}/>
     <View style={styles.actions}>
      <View style={{flex:1}}><Button title={busyInvite===invite.id?'A processar…':'Aceitar'} disabled={busyInvite!==null} onPress={()=>{void decide(invite,true);}}/></View>
      <View style={{flex:1}}><Button title="Recusar" secondary disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}}/></View>
