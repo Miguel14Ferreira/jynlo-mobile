@@ -43,22 +43,36 @@ export default function CreateSessionScreen(){
  const [venueMatches,setVenueMatches]=useState<VenueSummary[]>([]);
  const [venueChosen,setVenueChosen]=useState<VenueSummary|null>(null);
  const [venueLoading,setVenueLoading]=useState(false);
+ const venueSearchVersion=useRef(0);
  const [venueError,setVenueError]=useState('');
+ function clearVenueSearch(){
+  venueSearchVersion.current+=1;
+  setVenueMatches([]);
+  setVenueLoading(false);
+  setVenueError('');
+ }
  async function findVenues(){
   if(venueLoading||busy)return;
+  const version=++venueSearchVersion.current;
+  const selectedSport=form.sport;
   setVenueLoading(true);setVenueError('');setVenueMatches([]);
   try{
-   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:form.sport||undefined,page:0});
-   setVenueMatches(results.venues.filter(v=>venueSupportsSport(v,form.sport)).slice(0,20));
-  }catch(e){setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');}
-  finally{setVenueLoading(false);}
+   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:selectedSport||undefined,page:0});
+   if(version!==venueSearchVersion.current)return;
+   setVenueMatches(results.venues.filter(v=>venueSupportsSport(v,selectedSport)).slice(0,20));
+  }catch(e){
+   if(version===venueSearchVersion.current)setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');
+  }finally{
+   if(version===venueSearchVersion.current)setVenueLoading(false);
+  }
  }
  function useVenue(v:VenueSummary){
+  clearVenueSearch();
   setVenueChosen(v);
   setForm(previous=>({...previous,venueId:v.id,city:v.city,address:v.address}));
-  setVenueMatches([]);
  }
  function removeVenue(){
+  clearVenueSearch();
   setVenueChosen(null);setForm(previous=>({...previous,venueId:null}));
  }
  function venueSupportsSport(v:VenueSummary,sport:string){
@@ -181,7 +195,7 @@ export default function CreateSessionScreen(){
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
      accessibilityLabel={'Escolher '+s} onPress={()=>{
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
-      if(form.sport!==s){setVenueChosen(null);setVenueMatches([]);}
+      if(form.sport!==s){setVenueChosen(null);clearVenueSearch();}
       setSportSearch('');setShowSportResults(false);
      }} style={[styles.option,form.sport===s&&styles.chosen]}>
      <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
@@ -249,7 +263,7 @@ export default function CreateSessionScreen(){
     <Button title="Retirar recinto" secondary disabled={busy} onPress={removeVenue}/>
    </View>:null}
    <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
-   <TextInput style={styles.input} value={venueQuery} onChangeText={setVenueQuery}
+   <TextInput style={styles.input} value={venueQuery} onChangeText={v=>{setVenueQuery(v);clearVenueSearch();}}
     placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}/>
    <Button secondary title={venueLoading?'A pesquisar…':'Procurar recintos'} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
    {venueError?<Message tone="error">{venueError}</Message>:null}
