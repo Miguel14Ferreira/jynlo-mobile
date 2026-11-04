@@ -107,8 +107,26 @@ export interface JynloTournament {
 export interface JynloTournamentPage {tournaments:JynloTournament[];page:number;hasMore:boolean;}
 export interface TeamStandingRow {position:number;teamId:number;teamName:string;played:number;won:number;drawn:number;lost:number;points:number;}
 export interface IndividualStandingRow {position:number;profileId:number;username:string;displayName:string;played:number;won:number;drawn:number;lost:number;points:number;}
-export interface RaceStandingRow {position:number;playerId:number;fullName:string|null;races:number;wins:number;podiums:number;bestFinish:number|null;championshipPoints:number|null;penaltyPoints:number;}
-export interface TournamentTable {kind:'TEAM'|'INDIVIDUAL'|'RACE';rows:TeamStandingRow[]|IndividualStandingRow[]|RaceStandingRow[];source:string;}
+export interface RaceStandingRow {position:number;playerId:number|null;profileId?:number|null;username?:string|null;fullName:string|null;profilePicUrl?:string|null;races:number;wins:number;podiums:number;bestFinish:number|null;championshipPoints:number|null;penaltyPoints:number;}
+export interface TournamentTable {kind:'TEAM'|'INDIVIDUAL'|'CHESS';rows:TeamStandingRow[]|IndividualStandingRow[];source:string;}
+
+/** Read-only tournament contracts from Jynlo web/BE develop. */
+export interface PerformanceRound {id:number;name:string;sport:string|null;playedAt:string|null;eventType?:string|null;eventDiscipline?:string|null;entries?:unknown[];}
+export interface TimedStanding {position:number;communityPlayerId:number|null;profileId:number|null;username:string|null;fullName:string|null;bestSeconds:number;validAttempts:number;}
+export interface MeasuredStanding {position:number;communityPlayerId:number|null;profileId:number|null;username:string|null;fullName:string|null;bestMetres:number;validMarks:number;}
+export interface TimedOverview {tournamentId:number;eventType:string|null;eventDiscipline:string|null;linkedRounds:PerformanceRound[];availableRounds:PerformanceRound[];standings:TimedStanding[];}
+export interface MeasuredOverview {tournamentId:number;eventType:string|null;eventDiscipline:string|null;linkedRounds:PerformanceRound[];availableRounds:PerformanceRound[];standings:MeasuredStanding[];}
+export interface RaceOverview {tournamentId:number;pointsByPlace:number[];linkedRaces:PerformanceRound[];availableRaces:PerformanceRound[];standings:RaceStandingRow[];}
+export interface RelayStanding {position:number;teamId:number;teamName:string;bestSeconds:number;recordedHeats:number;runnerProfileIds:number[];}
+export interface RelayFinalist {teamId:number;teamName:string;seed:number;qualifyingSeconds:number;}
+export interface RelayHeat {id:number;teamId:number;teamName:string;heatNumber:number;elapsedSeconds:number;runnerProfileIds:number[];recordedAt:string;stage:string|null;decisionStatus:string|null;}
+export interface RelayOverview {tournamentId:number;eventDiscipline:string|null;teams:JynloTournamentTeam[];heats:RelayHeat[];standings:RelayStanding[];finalPublished:boolean;finalists:RelayFinalist[];qualifyingStandings:RelayStanding[];finalStandings:RelayStanding[];}
+export type TournamentPerformanceOverview =
+ |{kind:'RACE';data:RaceOverview}|{kind:'TIMED';data:TimedOverview}|{kind:'MEASURED';data:MeasuredOverview}|{kind:'RELAY';data:RelayOverview};
+export interface TournamentIndividualMatch {id:number;roundNumber:number;homeProfileId:number;homeUsername:string;awayProfileId:number;awayUsername:string;status:'SCHEDULED'|'COMPLETED';homeScore:number|null;awayScore:number|null;}
+export interface TournamentIndividualMatchPage {matches:TournamentIndividualMatch[];page:number;hasMore:boolean;}
+
+
 export interface CommunityChatEntry {
   id:number;communityId:number;kind:'CHAT'|'POST';username:string;body:string;createdAt:string;
   editedAt?:string|null;deletedAt?:string|null;replyToMessageId?:number|null;

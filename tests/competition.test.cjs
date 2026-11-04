@@ -1,13 +1,20 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const {classificationKind,label,standingsColumns,validTournamentId}=require('../src/lib/competition-core.cjs');
-test('Karting e outros desportos motorizados usam tabela de corridas, não futebol',()=>{
+test('corridas só usam pontos quando scoringMode confirma o campeonato',()=>{
  for(const sport of ['Karting','Automobilismo','Motociclismo']){
-   const kind=classificationKind({sport,entryType:'INDIVIDUAL',format:'LEAGUE'});
+   const kind=classificationKind({sport,entryType:'INDIVIDUAL',format:'LEAGUE',scoringMode:'RACE_POINTS'});
    assert.equal(kind,'RACE');
    assert.equal(standingsColumns(kind).includes('Golos'),false);
    assert.equal(standingsColumns(kind).includes('Pódios'),true);
  }
+});
+test('nome da modalidade sem scoringMode não cria pontos de corrida fictícios',()=>{
+ for(const sport of ['BMX','Ciclismo','Karting','Automobilismo'])assert.equal(classificationKind({sport,entryType:'INDIVIDUAL'}),'UNSUPPORTED');
+});
+test('estafetas usam endpoint e classificação próprios, não tempos individuais',()=>{
+ assert.equal(classificationKind({sport:'Atletismo',entryType:'TEAM',scoringMode:'RELAY_BEST_TIME'}),'RELAY');
+ assert.equal(standingsColumns('RELAY').includes('Golos'),false);
 });
 test('RACE_POINTS prevalece mesmo quando o formato de competição é equipa',()=>{
  assert.equal(classificationKind({sport:'Karting',entryType:'TEAM',scoringMode:'RACE_POINTS'}),'RACE');
@@ -31,17 +38,17 @@ test('identificadores de torneio inválidos são rejeitados',()=>{
 
 test('equipas de modalidades sem regras confirmadas não recebem tabela de futebol',()=>{
  for(const sport of ['Voleibol','Cricket','Golfe','Hóquei em Patins','Desporto Novo']){
-  const kind=classificationKind({sport,entryType:'TEAM',format:'LEAGUE'});
-  assert.equal(kind,'UNSUPPORTED',sport);
-  assert.ok(!standingsColumns(kind).includes('Pts'));
+   const kind=classificationKind({sport,entryType:'TEAM',format:'LEAGUE'});
+   assert.equal(kind,'UNSUPPORTED',sport);
+   assert.ok(!standingsColumns(kind).includes('Pts'));
  }
 });
 test('um scoringMode desconhecido nunca é silenciosamente interpretado como futebol',()=>{
  assert.equal(classificationKind({sport:'Futebol',entryType:'TEAM',scoringMode:'FUTURE_CUSTOM_MODE'}),'UNSUPPORTED');
 });
-test('listagem não se limita às primeiras 12 comunidades',()=>{
+test('listagem de torneios não se limita às primeiras 12 comunidades',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const api=fs.readFileSync(path.join(__dirname,'../src/lib/competition-api.ts'),'utf8');
- assert.doesNotMatch(api,/communities\.slice\(0,12\)/);
- assert.match(api,/offset\+=4/);
+ assert.doesNotMatch(api, /communities\.slice\(0,12\)/);
+ assert.match(api, /offset\+=4/);
 });

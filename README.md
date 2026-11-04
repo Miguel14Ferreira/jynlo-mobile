@@ -1,5 +1,21 @@
 # JYNLO MOBILE — Android / iOS
 
+**v0.10.0 — Competições individuais e resultados especializados (4 novembro de 2026)**
+
+Esta atualização desenvolve a app dedicada **React Native / Expo**, sem alterar a Jynlo Web nem o backend de produção:
+
+- Separação explícita das classificações por **pontos de corridas**, **melhores tempos**, **melhores marcas**, **estafetas** e **confrontos individuais**. O campo `scoringMode` é autoritativo: um nome de desporto não autoriza assumir um sistema de pontuação.
+- Novo ecrã de leitura de resultados: `app/tournaments/[communityId]/[id]/results.tsx`; APIs existentes `/races`, `/times`, `/marks` e `/relays`. Para estafetas, o cliente apresenta qualificação e final apenas conforme `finalPublished` e as classificações fornecidas pelo backend.
+- Novo calendário individual: `app/tournaments/[communityId]/[id]/matches.tsx`, a consultar `/matches?page=N` com paginação e sem inventar vencedores ou rondas.
+- **Xadrez:** a tabela de classificação converte unidades de meio ponto (valor da API) em pontos visíveis, sem tratar desempates como diferença de golos.
+- Demonstração adicional, completamente isolada da Jynlo real: comunidades públicas de **Natação**, **Atletismo** e **Padel**. É necessário entrar numa comunidade para a ver em "Meus torneios".
+- **78 testes Node locais PASS** e sintaxe TS/TSX validada. TypeScript completo com dependências Expo e compilação nativa são validados no workflow GitHub; nenhum teste de dispositivo real foi executado nesta etapa.
+- A APK de testes e o lançamento na Play Store são etapas distintas: esta versão do código **não** é uma APK nem altera o estado de verificação da conta Google.
+
+Contratos confirmados em `Miguel14Ferreira/jynlo-web-FE` e `Miguel14Ferreira/jynlo-web-BE`, branch `develop`, incluindo os DTOs Java dos resultados.
+
+---
+
 **v0.9.0 — Páginas de equipas, grupos e jogos por fase (3 de novembro de 2026)**
 
 - Consultar a **fase de grupos** em torneios por equipas, com classificações oficiais de `GET /teams/groups` e estado `knockoutStarted` fornecido pelo servidor.
@@ -13,14 +29,14 @@
 
 ---
 
-**v0.8.0 — Descoberta de torneios e classificação adaptada à modalidade, 3 novembro 2026**
+**v0.8.0 — Torneios: pesquisa, filtros e classificação consciente da modalidade — 3 novembro de 2026**
 
-- Pesquisa de torneios por nome, comunidade e desporto (acentos ignorados).
-- Filtros por estado e modalidade, derivados dos torneios acessíveis à conta.
-- Os torneios a decorrer aparecem antes dos que estão em preparação e dos concluídos.
-- Sem suposições de tabela de futebol para Voleibol, Cricket, Golfe ou modalidades novas.
-- Consulta de todas as comunidades do utilizador em lotes limitados a quatro pedidos simultâneos, sem truncar silenciosamente após 12.
-- Validação local: testes Node + sintaxe TS/TSX aprovados; ainda falta teste em dispositivo.
+- Separador Torneios com pesquisa por nome, comunidade e desporto, insensível a acentos; filtros de estado e modalidade, resultados ordenados por competições a decorrer, preparação e concluídas.
+- Filtros de modalidades derivados dos torneios reais das comunidades do utilizador; não existem atalhos codificados apenas para Futebol/Karting.
+- Corrigida uma associação incorreta: torneios por equipas de modalidades como Voleibol, Cricket, Golfe e Hóquei deixam de receber automaticamente a classificação do Futebol. Quando faltam regras validadas para o mobile, o cliente assinala claramente a ausência em vez de inventar pontos.
+- Consulta de torneios de **todas** as comunidades em que o utilizador está inscrito, em lotes de quatro pedidos paralelos (anteriormente só as primeiras 12 comunidades).
+- Testes Node locais: 57 aprovados; sintaxe de 39 ficheiros TS/TSX validada. **Sem execução nativa no telemóvel ou validação live da integração.**
+- Todas as alterações da app destinam-se à branch `develop` do repositório separado `jynlo-mobile`.
 
 ---
 

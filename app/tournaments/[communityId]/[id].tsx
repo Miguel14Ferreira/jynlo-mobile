@@ -4,7 +4,8 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {tournamentDetails,tournamentTable} from '../../../src/lib/competition-api';
-import {classificationKind,label,standingsColumns} from '../../../src/lib/competition-core.cjs';
+import {classificationKind,label,standingsColumns,isPerformanceKind} from '../../../src/lib/competition-core.cjs';
+import {formatChessPoints} from '../../../src/lib/performance-core.cjs';
 import {C} from '../../../src/lib/theme';
 import type {JynloTournament,TournamentTable} from '../../../src/lib/types';
 export default function TournamentDetailScreen(){
@@ -34,17 +35,20 @@ export default function TournamentDetailScreen(){
        {table.rows.map((row,i)=>{
         const r=row as unknown as Record<string,unknown>;
         const name=String(r.teamName??r.fullName??r.displayName??r.username??'Participante');
-        const points=kind==='RACE'?r.championshipPoints:r.points;
+        const points=kind==='CHESS'?formatChessPoints(r.points):r.points;
         return <View key={i} style={styles.standing}><Text style={styles.position}>{String(r.position)}.</Text>
           <View style={{flex:1}}><Text style={styles.name}>{name}</Text>
-            <Text style={styles.meta}>{kind==='RACE'?`${r.races} corridas · ${r.podiums} pódios`:`${r.played} jogos · ${r.won} vitórias`}</Text></View>
+            <Text style={styles.meta}>{kind==='CHESS'?`${r.played} partidas · ${r.won} vitórias · ${r.drawn} empates`:`${r.played} jogos · ${r.won} vitórias`}</Text></View>
           <Text style={styles.points}>{points==null?'—':String(points)} pts</Text>
         </View>;
        })}
+       {table.rows.length===0?<Text style={styles.meta}>Ainda não existem resultados para apresentar.</Text>:null}
        <Text style={styles.source}>{table.source}</Text>
-     </View>:<Message>Esta modalidade tem regras próprias. A respetiva classificação ainda não está implementada no cliente mobile — não vamos aplicar-lhe a tabela de futebol.</Message>}
-     {tournament.entryType==='TEAM'?<Button title="Equipas e convites" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {tournament.entryType==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?'Fase de grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Ver eliminatórias':'Calendário de jogos'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     </View>:!isPerformanceKind(kind)?<Message>Esta modalidade tem regras próprias. Não aplicamos classificações de futebol sem confirmação das regras.</Message>:null}
+     {isPerformanceKind(kind)?<Button title={kind==='RACE'?'Ver resultados de corridas':kind==='TIMED'?'Ver tempos da prova':kind==='MEASURED'?'Ver marcas da prova':'Ver resultados das estafetas'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {kind==='INDIVIDUAL'||kind==='CHESS'?<Button secondary title="Calendário e jogos individuais" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/matches',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType==='TEAM'&&!isPerformanceKind(kind)?<Button title="Equipas e convites" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType==='TEAM'&&kind==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?'Fase de grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Ver eliminatórias':'Calendário de jogos'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      <Button secondary title="Voltar aos torneios" onPress={()=>router.back()}/>
    </>:null}
  </Page>;

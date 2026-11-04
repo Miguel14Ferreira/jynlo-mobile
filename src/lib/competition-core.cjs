@@ -1,28 +1,31 @@
 'use strict';
-/** Read-only display selection. Never reinterpret non-football results as goal statistics. */
+/** Keep source-specific sporting results separated. The API owns all rankings. */
 const TEAM_MATCH_SPORTS=new Set(['Futebol','Futsal']);
 const RACE_SPORTS=new Set(['Karting','BMX','Ciclismo','Mountain Bike','Ciclocrosse','Ciclismo de Estrada','Ciclismo de Pista','Automobilismo','Motociclismo','Motocross','Corrida','Trail Running','Corrida de obstáculos','Motonáutica']);
+const TIMED_MODES=new Set(['SWIM_BEST_TIME','TRACK_BEST_TIME','CANOE_BEST_TIME','ROWING_BEST_TIME']);
 function classificationKind(t){
-  if (!t||typeof t!=='object') throw Error('Torneio inválido.');
-  const mode=t.scoringMode||null;
-  if(mode==='RACE_POINTS'||(!mode&&RACE_SPORTS.has(t.sport||'')))return 'RACE';
-  if(['SWIM_BEST_TIME','TRACK_BEST_TIME','CANOE_BEST_TIME','ROWING_BEST_TIME','RELAY_BEST_TIME'].includes(mode))return 'TIMED';
-  if(mode==='FIELD_BEST_MARK')return 'MEASURED';
-  if(mode==='CHESS_HALF_POINTS')return 'CHESS';
-  // entryType TEAM does not mean football-style league points.
-  // Volleyball, Cricket, Golf and others require verified rules.
-  if(t.entryType==='TEAM')return (!mode&&TEAM_MATCH_SPORTS.has(t.sport||''))?'TEAM':'UNSUPPORTED';
-  // Individual match standings are supported on the API, but only for the
-  // traditional match point system; unknown discipline rules stay explicit.
-  if((t.sport==='Futebol'||t.sport==='Futsal'||t.sport==='Padel'||t.sport==='Ténis'||t.sport==='Xadrez')&&!mode)return 'INDIVIDUAL';
-  return 'UNSUPPORTED';
+ if(!t||typeof t!=='object')throw Error('Torneio inválido.');
+ const mode=t.scoringMode||null;
+ if(mode==='RACE_POINTS')return 'RACE';
+ if(TIMED_MODES.has(mode))return 'TIMED';
+ if(mode==='FIELD_BEST_MARK')return 'MEASURED';
+ if(mode==='RELAY_BEST_TIME')return 'RELAY'; // /relays, never /times
+ if(mode==='CHESS_HALF_POINTS')return 'CHESS';
+ if(mode)return 'UNSUPPORTED';
+ if(t.entryType==='TEAM')return TEAM_MATCH_SPORTS.has(t.sport||'')?'TEAM':'UNSUPPORTED';
+ if(['Futebol','Futsal','Padel','Ténis','Xadrez'].includes(t.sport||''))return 'INDIVIDUAL';
+ return 'UNSUPPORTED';
 }
-function label(kind){return ({RACE:'Classificação por corrida',TEAM:'Classificação por equipas',INDIVIDUAL:'Classificação individual',TIMED:'Classificação por tempo',MEASURED:'Classificação por marca',CHESS:'Classificação por pontos de xadrez',UNSUPPORTED:'Classificação específica indisponível'})[kind]||'Classificação';}
+function label(kind){return ({RACE:'Campeonato por pontos de corrida',TEAM:'Classificação por equipas',INDIVIDUAL:'Classificação individual',TIMED:'Melhores tempos',MEASURED:'Melhores marcas',RELAY:'Estafetas por tempo',CHESS:'Pontos de xadrez',UNSUPPORTED:'Classificação específica indisponível'})[kind]||'Classificação';}
 function standingsColumns(kind){
-  if(kind==='RACE')return ['Pos.','Piloto','Corridas','Pódios','Pontos'];
-  if(kind==='TEAM')return ['Pos.','Equipa','J','V','E','D','Pts'];
-  if(kind==='INDIVIDUAL')return ['Pos.','Jogador','J','V','E','D','Pts'];
-  return ['Pos.','Participante','Resultado'];
+ if(kind==='RACE')return ['Pos.','Piloto','Corridas','Pódios','Pontos'];
+ if(kind==='TEAM')return ['Pos.','Equipa','J','V','E','D','Pts'];
+ if(kind==='INDIVIDUAL')return ['Pos.','Jogador','J','V','E','D','Pts'];
+ if(kind==='CHESS')return ['Pos.','Jogador','Partidas','V','E','D','Pontos'];
+ if(kind==='TIMED'||kind==='RELAY')return ['Pos.','Participante','Melhor tempo'];
+ if(kind==='MEASURED')return ['Pos.','Participante','Melhor marca'];
+ return ['Pos.','Participante','Resultado'];
 }
+function isPerformanceKind(kind){return ['RACE','TIMED','MEASURED','RELAY'].includes(kind);}
 function validTournamentId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error('Identificador de torneio inválido.');return n;}
-module.exports={RACE_SPORTS,TEAM_MATCH_SPORTS,classificationKind,label,standingsColumns,validTournamentId};
+module.exports={RACE_SPORTS,TEAM_MATCH_SPORTS,classificationKind,label,standingsColumns,isPerformanceKind,validTournamentId};

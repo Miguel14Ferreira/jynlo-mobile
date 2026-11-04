@@ -37,6 +37,17 @@ function makeStore(){
     ownerUsername:'Organizador',memberCount:3,createdAt:new Date().toISOString(),
     members:demoMembers(['Organizador','piloto01','piloto02'],'Organizador')
   });
+  for (const [id,name,sport,members] of [
+    [930003,'Nadadores de Lisboa','Natação',['Organizador','nadador01']],
+    [930004,'Atletismo ao Ar Livre','Atletismo',['Organizador','atleta01']],
+    [930005,'Padel da Malveira','Padel',['Organizador','jogador01']]
+  ]){
+    groups.push({id,name,description:'Comunidade fictícia para experimentar classificações diferentes.',
+      sport,sports:[sport],photoUrl:null,visibility:'PUBLIC',rankingsEnabled:true,
+      individualTournamentsEnabled:true,teamTournamentsEnabled:sport==='Atletismo',
+      ownerUsername:'Organizador',memberCount:members.length,createdAt:new Date().toISOString(),
+      members:demoMembers(members,'Organizador')});
+  }
   const invites=[], requests=[];
   const inviteCandidates=['Tiago','André'];
   function exists(id){const group=groups.find(g=>g.id===safeId(id));if(!group)throw Error('Comunidade não encontrada.');return group;}
