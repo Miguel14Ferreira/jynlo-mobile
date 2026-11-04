@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSession} from '../../src/lib/session-create-api';
-import {createSessionPayload} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -89,8 +89,13 @@ export default function CreateSessionScreen(){
    if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
    if(sharedCommunities.length!==sharedIds.length){setError('Atualiza a seleção de comunidades.');return;}
   }
-  if(step===1&&!form.day.trim()||step===1&&!form.time.trim()||step===1&&!form.city.trim()||step===1&&!form.address.trim()){
-   setError('Preenche a data, hora, localidade e morada antes de continuar.');return;
+  if(step===1){
+   try{
+    parseSessionDate(form.day,form.time);
+    if(!form.city.trim()||!form.address.trim())throw new Error('Indica a localidade e a morada.');
+    if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
+     throw new Error('O recinto selecionado já não é compatível com a modalidade.');
+   }catch(e){setError(e instanceof Error?e.message:'Verifica a data e o local.');return;}
   }
   if(step===2){
    try{createSessionPayload(form,SPORTS);}
@@ -297,5 +302,13 @@ const styles=StyleSheet.create({
  input:{borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface2,color:C.white,padding:13,minHeight:48},
  inline:{flexDirection:'row',gap:10,flexWrap:'wrap'},
  option:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10},
- chosen:{borderColor:C.mint,backgroundColor:C.surface2},optionText:{color:C.white,fontSize:14,fontWeight:'700'}
+ chosen:{borderColor:C.mint,backgroundColor:C.surface2},optionText:{color:C.white,fontSize:14,fontWeight:'700'},
+ steps:{flexDirection:'row',flexWrap:'wrap',gap:7},
+ stepChip:{paddingVertical:10,paddingHorizontal:11,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ stepActive:{borderColor:C.mint,backgroundColor:C.surface2},
+ stepText:{color:C.muted,fontSize:12,fontWeight:'700'},
+ stepTextActive:{color:C.mint},
+ actions:{gap:10,marginTop:6},
+ summaryTitle:{fontSize:14,fontWeight:'900',color:C.mint,marginTop:9},
+ summaryValue:{fontSize:14,lineHeight:21,color:C.white}
 });
