@@ -1,0 +1,98 @@
+name: Jynlo Mobile - Google Play Internal AAB (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Escreve PREPARAR_BETA_REAL para construir um AAB conectado à API real"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jynlo-play-internal-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  build-internal-aab:
+    name: Gerar AAB assinado para testes internos
+    if: ${{ inputs.confirm == 'PREPARAR_BETA_REAL' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      JYNLO_REQUIRE_REAL_API: "1"
+      EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: Validar testes, TypeScript e API real
+        run: |
+          npm run test:all
+          npm run typecheck
+          npm run check:release
+      - name: Gerar Android nativo
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Carregar chave privada só para este runner
+        env:
+          JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 JYNLO_PLAY_UPLOAD_STORE_PASSWORD JYNLO_PLAY_UPLOAD_KEY_PASSWORD JYNLO_PLAY_UPLOAD_KEY_ALIAS; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::A configuração protegida ${name} está em falta. Não será criado nenhum AAB."
+              exit 1
+            fi
+          done
+          target="$RUNNER_TEMP/jynlo-play-upload.jks"
+          printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$target"
+          test -s "$target"
+          chmod 600 "$target"
+          echo "JYNLO_PLAY_UPLOAD_KEYSTORE_PATH=$target" >> "$GITHUB_ENV"
+      - name: Aplicar assinatura de envio à release gerada
+        run: node scripts/configure-play-signing.cjs android/app/build.gradle
+      - name: Gerar AAB release com assinatura do proprietário
+        env:
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        run: ./gradlew :app:bundleRelease --no-daemon --max-workers=2
+        working-directory: android
+      - name: Confirmar assinatura e conteúdo do AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$aab"
+          unzip -Z1 "$aab" | grep -q '^base/manifest/AndroidManifest.xml$'
+          jarsigner -verify "$aab"
+          echo "AAB assinado e gerado para TESTE INTERNO, não publicado."
+      - name: Guardar AAB para envio manual à Play Console
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-google-play-internal-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
+      - name: Apagar chave temporária do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/jynlo-play-upload.jks"
