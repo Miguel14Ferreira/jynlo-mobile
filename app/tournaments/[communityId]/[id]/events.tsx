@@ -31,7 +31,7 @@ export default function TournamentEventsScreen(){
     tournamentDetails(cid,tid,auth.token,auth.username),
     communityDetails(cid,auth.token,auth.username)
    ]);
-   setTournament(t);setRole(community.myRole||null);
+   setTournament(t);setRole('myRole' in community?community.myRole||null:null);
    if(managedKind(t)){
     const results=await performanceOverview(cid,t,auth.token,auth.username);
     setOverview(results);

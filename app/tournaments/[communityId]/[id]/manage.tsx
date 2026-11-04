@@ -9,6 +9,7 @@ import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {teamTournamentMatches} from '../../../../src/lib/tournament-fixtures-api';
 import {individualTournamentMatches} from '../../../../src/lib/performance-api';
 import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentScore} from '../../../../src/lib/tournament-organizer-core.cjs';
+import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch} from '../../../../src/lib/types';
@@ -100,7 +101,11 @@ export default function TournamentManagerScreen(){
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}{notice?<Message>{notice}</Message>:null}
   {!loading&&tournament&&!isOrganizer(role)?<Message>Este painel é exclusivo para proprietários e administradores da comunidade.</Message>:null}
-  {!loading&&tournament&&isOrganizer(role)&&!type?<Message>Esta modalidade utiliza um modelo próprio de competição. Os resultados devem ser registados no fluxo específico da prova, não numa tabela genérica de jogos.</Message>:null}
+  {!loading&&tournament&&isOrganizer(role)&&!type?<><Message>Esta modalidade utiliza regras próprias de resultados. Não aplicamos uma tabela de jogos genérica.</Message>
+    {managedKind(tournament)?<Button secondary title="Gerir jornadas da competição"
+     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/events',
+      params:{communityId:String(cid),id:String(tid)}})}/>:null}
+   </>:null}
   {!loading&&tournament&&isOrganizer(role)&&type?<>
    <View style={styles.row}><Badge text={tournament.sport||'Modalidade'}/><Badge text={tournament.status==='DRAFT'?'Em preparação':tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}/></View>
    {DEMO_MODE?<Message>Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.</Message>:null}

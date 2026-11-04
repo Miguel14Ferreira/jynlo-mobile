@@ -1,5 +1,17 @@
 # JYNLO MOBILE — Android / iOS
 
+**v0.14.0 — Gestão de jornadas de corridas, tempos e marcas (4 novembro 2026)**
+
+- OWNER/ADMIN podem associar ou retirar jornadas já existentes de competições individuais por corridas, melhores tempos e melhores marcas; cada modalidade usa exclusivamente o endpoint do backend adequado.
+- Corridas por pontos: configuração dos pontos por posição antes da primeira jornada, com as mesmas validações do backend.
+- Alterações apenas com confirmação explícita e sem repetição automática; a associação da primeira jornada pode iniciar o torneio e a remoção da última pode repô-lo em preparação.
+- Atalho no detalhe e no painel de gestão. Demonstração sem escritas. Estafetas usam um percurso próprio e permanecem por implementar.
+- Mais detalhes em `docs/mobile-v014-jornadas.md`. A compilação Android e a validação em aparelho são verificações separadas.
+
+---
+
+# JYNLO MOBILE — Android / iOS
+
 **v0.11.0 — Inscrições em torneios individuais (4 novembro 2026)**
 
 - Nova página de participantes com paginação e estados PENDING/CONFIRMED.
