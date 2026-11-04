@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation,detachVenueLocation} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -84,7 +84,7 @@ export default function CreateSessionScreen(){
  }
  function removeVenue(){
   clearVenueSearch();
-  setVenueChosen(null);setForm(previous=>({...previous,venueId:null}));
+  setVenueChosen(null);setForm(previous=>detachVenueLocation(previous));
  }
  function venueSupportsSport(v:VenueSummary,sport:string){
   return !v.sports?.trim()||!sport||v.sports.split(';').map(item=>item.trim().toLocaleLowerCase('pt-PT')).includes(sport.toLocaleLowerCase('pt-PT'));

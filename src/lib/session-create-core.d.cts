@@ -23,6 +23,7 @@ export function parseSessionDate(day:string,time:string,now?:number):string;
 export function validateWeeklySlots(day:string,time:string,slots:Array<{day:string;time:string}>|undefined,
  recurrence:'NONE'|'WEEKLY'|'BIWEEKLY',occurrences:number|null,now?:number):string[];
 export function chooseVenueLocation(form:CreateSessionForm,venue:{id:number;city?:string|null;address?:string|null}):CreateSessionForm;
+export function detachVenueLocation(form:CreateSessionForm):CreateSessionForm;
 export function changeCommunityMode(form:CreateSessionForm,mode:'INDEPENDENT'|'SINGLE'|'SHARED'):CreateSessionForm;
 export function describeSessionConfirmation(payload:CreateSessionPayload,context?:{
  communityName?:string;sharedCommunityNames?:string[];venueName?:string;

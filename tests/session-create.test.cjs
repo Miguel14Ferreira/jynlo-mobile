@@ -236,3 +236,19 @@ test('session creation: changing to a venue with missing location never retains 
  assert.equal(createSessionPayload(completed,sports,0).venueId,11);
  assert.throws(()=>chooseVenueLocation(valid,{id:0,city:'Lisboa',address:'Rua'}));
 });
+
+test('session creation: removing a venue clears its location before manual entry',()=>{
+ const {chooseVenueLocation,detachVenueLocation}=require('../src/lib/session-create-core.cjs');
+ const linked=chooseVenueLocation(valid,{id:42,city:'Lisboa',address:'Rua do Pavilhão 4'});
+ const manual=detachVenueLocation(linked);
+ assert.equal(manual.venueId,null);
+ assert.equal(manual.city,'');
+ assert.equal(manual.address,'');
+ assert.equal(linked.address,'Rua do Pavilhão 4');
+ assert.throws(()=>createSessionPayload(manual,sports,0),/localidade/i);
+ const filled={...manual,city:'Oeiras',address:'Rua da Escola 2'};
+ const payload=createSessionPayload(filled,sports,0);
+ assert.equal(payload.venueId,null);
+ assert.equal(payload.city,'Oeiras');
+ assert.equal(payload.address,'Rua da Escola 2');
+});

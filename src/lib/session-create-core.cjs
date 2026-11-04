@@ -57,6 +57,9 @@ function chooseVenueLocation(form,venue){
  if(!venue||!Number.isSafeInteger(venue.id)||venue.id<=0)throw Error('Recinto inválido.');
  return {...form,venueId:venue.id,city:String(venue.city||'').trim(),address:String(venue.address||'').trim()};
 }
+function detachVenueLocation(form){
+ return {...form,venueId:null,city:'',address:''};
+}
 function changeCommunityMode(form,mode){
  if(!['INDEPENDENT','SINGLE','SHARED'].includes(mode))throw Error('Tipo de sessão inválido.');
  const cleared={...form,communityId:null,communityShareIds:[],seasonGame:false,
@@ -178,4 +181,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,createSessionPayload};
+module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,detachVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,createSessionPayload};
