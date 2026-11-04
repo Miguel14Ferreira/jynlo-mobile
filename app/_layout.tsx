@@ -8,6 +8,7 @@ function Navigation(){const auth=useAuth();return <>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
     <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
+    <Stack.Screen name="welcome" options={{headerShown:false}}/>
     <Stack.Screen name="sessions/[id]" options={{title:'Detalhes da sessão'}}/>
     <Stack.Screen name="communities/create" options={{title:"Criar comunidade"}}/>
     <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>

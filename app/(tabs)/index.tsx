@@ -1,7 +1,7 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,FlatList,Image,ImageBackground,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {Redirect,useFocusEffect,useRouter} from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {VideoView,useVideoPlayer} from 'expo-video';
 import {useAuth} from '../../src/lib/auth';
@@ -96,7 +96,7 @@ export default function JynloFeedHome(){
     if(fetches[0].status==='rejected')setError('Não foi possível carregar o feed. Confirma a ligação e tenta novamente.');
     setLoading(false);
   },[auth.token,auth.username]);
-  useFocusEffect(useCallback(()=>{void load();return ()=>{reloadNumber.current++;};},[load]));
+  useFocusEffect(useCallback(()=>{if(!auth.ready||(!auth.token&&!auth.browsingAsGuest))return;void load();return ()=>{reloadNumber.current++;};},[auth.ready,auth.token,auth.browsingAsGuest,load]));
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void){
@@ -189,6 +189,8 @@ export default function JynloFeedHome(){
     {!people.length?<Text style={styles.mutedText}>Descobre pessoas com quem praticar desporto.</Text>:null}
     <Pressable onPress={()=>router.push('/people')}><Text style={styles.link}>Encontrar pessoas ↗</Text></Pressable>
   </View></View>;
+  if(!auth.ready)return <SafeAreaView style={{flex:1,backgroundColor:INDIGO,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></SafeAreaView>;
+  if(!auth.token&&!auth.browsingAsGuest)return <Redirect href="/welcome"/>;
   return <SafeAreaView style={{flex:1,backgroundColor:INDIGO}} edges={['top','left','right']}>
     <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()} ListFooterComponent={Footer()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}

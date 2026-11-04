@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Linking,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
 import {DEMO_MODE} from '../src/lib/api';
@@ -28,7 +28,7 @@ export default function LoginScreen(){
    <Eyebrow>A TUA CONTA</Eyebrow>
    {auth.username?<Message>Já tens sessão iniciada como {auth.username}. Termina essa sessão no Perfil antes de entrares com outra conta.</Message>:null}
    <Text style={styles.headline}>Joga com a tua malta.</Text>
-   <Text style={styles.sub}>Inicia sessão para confirmar a presença nos jogos.</Text>
+   <Text style={styles.sub}>{DEMO_MODE?'Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.':'Usa a tua conta Jynlo Web para participares nas sessões.'}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {auth.username?null:DEMO_MODE?<View style={styles.demoPanel}>
      <Text style={styles.panelTitle}>Experimentar com personagens fictícias</Text>
@@ -42,7 +42,8 @@ export default function LoginScreen(){
        value={password} onChangeText={setPassword} secureTextEntry autoComplete="password"/>
      <Button title={busy?'A entrar…':'Entrar'} onPress={()=>{void doLogin();}}
        disabled={busy||!username.trim()||!password}/>
-     <Text style={styles.sub}>A autenticação Google e a criação de conta serão integradas numa fase seguinte.</Text>
+     <Text style={styles.sub}>O registo nativo e o login Google estão em desenvolvimento.</Text>
+     <Button title="Criar conta no website" secondary onPress={()=>{void Linking.openURL('https://d24sports.com/login/registerNewUser').catch(()=>Alert.alert('Jynlo','Não foi possível abrir o website.'));}}/>
    </View>}
  </Page>;
 }

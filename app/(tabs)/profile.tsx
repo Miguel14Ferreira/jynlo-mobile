@@ -17,9 +17,9 @@ export default function ProfileScreen(){
     <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
     <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
     <Button title="As minhas sessões" secondary onPress={()=>router.push('/my-sessions')}/>
-    {!auth.username?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:
-      <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(()=>router.replace('/login'),()=>router.replace('/login'));}}/>}
-    <Message>{auth.username?'Para entrares com outra conta, termina a sessão e autentica-te novamente. Não existe troca instantânea entre contas.':'Uma conta de cada vez, tal como na Jynlo Web.'}</Message>
+    {!auth.username?<><Button title={DEMO_MODE?'Experimentar conta de demonstração':'Iniciar sessão'} onPress={()=>router.push('/login')}/><Button title="Voltar às boas-vindas" secondary onPress={()=>router.push('/welcome')}/></>:
+      <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(()=>router.replace('/welcome'),()=>router.replace('/welcome'));}}/>}
+    <Message>{auth.username?'Para entrares com outra conta, termina a sessão e autentica-te novamente. Não existe troca instantânea entre contas.':'Estás a explorar como visitante. Para participar, inicia sessão.'}</Message>
     {DEMO_MODE?<Message>Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.</Message>:null}
   </Page>;
 }

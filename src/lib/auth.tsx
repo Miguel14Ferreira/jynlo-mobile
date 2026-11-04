@@ -8,6 +8,7 @@ import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
 interface AuthContextValue {
   ready:boolean; username:string|null; token:string|null; challengeId:string|null;
+  browsingAsGuest:boolean; browseAsGuest:()=>void;
   login:(name:string,password:string)=>Promise<AuthOutcome>;
   loginDemo:(name:string)=>void;
   completeMfa:(code:string)=>Promise<void>;
@@ -23,6 +24,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const [token,setToken]=useState<string|null>(null);
   const [challengeId,setChallengeId]=useState<string|null>(null);
   const [pendingUsername,setPendingUsername]=useState<string|null>(null);
+  const [browsingAsGuest,setBrowsingAsGuest]=useState(false);
   useEffect(()=>{let active=true;(async()=>{
     try{
       if(!DEMO_MODE){const [savedToken,savedName]=await Promise.all([
@@ -44,6 +46,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const expire=()=>{
       if(isAccessTokenUsable(token))return;
       setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);
+      setBrowsingAsGuest(false);
       void Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).catch(()=>{});
     };
     const expiresAt=accessTokenExpiresAt(token);
@@ -56,6 +59,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
     await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
     setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);
+    setBrowsingAsGuest(false);
   },[]);
   const login=useCallback(async(name:string,password:string):Promise<AuthOutcome>=>{
     assertCanStartLogin(username);
@@ -78,19 +82,21 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(!response.mfaRequired||!response.challengeId)throw new Error('Não foi possível renovar o código MFA. Inicia sessão novamente.');
     setChallengeId(response.challengeId);
   },[challengeId,pendingUsername]);
+  const browseAsGuest=useCallback(()=>{if(!username&&!token)setBrowsingAsGuest(true);},[username,token]);
   const loginDemo=useCallback((name:string)=>{
     if(!DEMO_MODE)return;
     assertCanStartLogin(username);
-    setUsername(name);setToken('LOCAL_DEMO_NOT_A_REAL_TOKEN');
+    setUsername(name);setToken('LOCAL_DEMO_NOT_A_REAL_TOKEN');setBrowsingAsGuest(false);
   },[username]);
   const logout=useCallback(async()=>{
     if(!DEMO_MODE&&token){try{await logoutServer(token);}catch{/* Always revoke local credentials */}}
     setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);
+    setBrowsingAsGuest(false);
     if(!DEMO_MODE){await Promise.all([
       SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);}
   },[token]);
-  const value=useMemo(()=>({ready,username,token,challengeId,login,loginDemo,completeMfa,resendMfa,logout}),
-    [ready,username,token,challengeId,login,loginDemo,completeMfa,resendMfa,logout]);
+  const value=useMemo(()=>({ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,loginDemo,completeMfa,resendMfa,logout}),
+    [ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,loginDemo,completeMfa,resendMfa,logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const c=useContext(AuthContext);if(!c)throw new Error('AuthProvider obrigatório');return c;}
