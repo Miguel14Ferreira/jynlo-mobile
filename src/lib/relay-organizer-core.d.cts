@@ -1,0 +1,10 @@
+import type {JynloTournament,JynloTournamentTeam,RelayOverview,RelayHeat} from './types';
+export function isRelay(t:JynloTournament|null):boolean;
+export function canManageRelay(role:string|null,t:JynloTournament|null):boolean;
+export function positiveId(id:number):number;
+export function validateHeatNumber(value:string|number):number;
+export function validateElapsedSeconds(value:string|number):number;
+export function validateRunners(value:string,team:JynloTournamentTeam|null):number[];
+export function validateDecision(status:string,reason:string):{status:'VALID'|'DISQUALIFIED';reason:string};
+export function canRecordStage(overview:RelayOverview|null,stage:string,tournament:JynloTournament|null):boolean;
+export function decisionAllowed(overview:RelayOverview,heat:RelayHeat,tournament:JynloTournament):boolean;

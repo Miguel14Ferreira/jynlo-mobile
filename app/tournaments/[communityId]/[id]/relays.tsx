@@ -1,0 +1,127 @@
+import React,{useCallback,useRef,useState} from 'react';
+import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
+import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
+import {DEMO_MODE} from '../../../../src/lib/api';
+import {useAuth} from '../../../../src/lib/auth';
+import {tournamentDetails} from '../../../../src/lib/competition-api';
+import {communityDetails} from '../../../../src/lib/community-api';
+import {performanceOverview} from '../../../../src/lib/performance-api';
+import {recordRelayHeat,publishRelayFinal,decideRelayHeat} from '../../../../src/lib/relay-organizer-api';
+import {canManageRelay,canRecordStage,decisionAllowed} from '../../../../src/lib/relay-organizer-core.cjs';
+import {C} from '../../../../src/lib/theme';
+import type {JynloTournament,RelayOverview,JynloTournamentTeam,RelayHeat} from '../../../../src/lib/types';
+
+export default function RelayManagement(){
+ const p=useLocalSearchParams<{communityId:string;id:string}>();
+ const cid=Number(p.communityId),tid=Number(p.id),router=useRouter(),auth=useAuth();
+ const [t,setT]=useState<JynloTournament|null>(null),[role,setRole]=useState<string|null>(null),[data,setData]=useState<RelayOverview|null>(null);
+ const [teamId,setTeamId]=useState<number|null>(null),[stage,setStage]=useState<'QUALIFICATION'|'FINAL'>('QUALIFICATION');
+ const [heat,setHeat]=useState('1'),[seconds,setSeconds]=useState(''),[runners,setRunners]=useState('');
+ const [reason,setReason]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),locked=useRef(false);
+ const load=useCallback(async()=>{
+  if(!auth.token||!auth.username){setLoading(false);setT(null);setData(null);return;}
+  setLoading(true);setError('');setNotice('');setData(null);
+  try{
+   const [tournament,community]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),communityDetails(cid,auth.token,auth.username)]);
+   setT(tournament);setRole('myRole' in community?community.myRole||null:null);
+   const overview=await performanceOverview(cid,tournament,auth.token,auth.username);
+   if(overview.kind!=='RELAY')throw Error('Esta competição não é uma estafeta.');
+   setData(overview.data);
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar as estafetas.');}
+  finally{setLoading(false);}
+ },[cid,tid,auth.token,auth.username]);
+ useFocusEffect(useCallback(()=>{void load();},[load]));
+ const editable=!!t&&canManageRelay(role,t)&&!DEMO_MODE;
+ const selected=data?.teams.find(x=>x.id===teamId)||null;
+ function choose(team:JynloTournamentTeam){
+  setTeamId(team.id);setRunners(team.players.map(x=>x.profileId).join(', '));
+ }
+ async function act(fn:()=>Promise<RelayOverview>,ok:string){
+  if(locked.current)return;
+  locked.current=true;setBusy(true);setError('');setNotice('');
+  try{
+   const updated=await fn();setData(updated);
+   const latest=await tournamentDetails(cid,tid,auth.token!,auth.username!);setT(latest);
+   setNotice(ok);
+  }catch(e){setError((e instanceof Error?e.message:'Falha ao guardar.')+' Confirma os dados atuais antes de repetir.');}
+  finally{locked.current=false;setBusy(false);}
+ }
+ function confirmRecord(){
+  if(!editable||!t||!data||!selected||!auth.token||!auth.username||busy)return;
+  Alert.alert('Registar tempo da estafeta?',selected.name+' · '+stage+' · Série '+heat+' · '+seconds+' s. Esta ação pode substituir um tempo existente.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Confirmar',onPress:()=>{void act(()=>recordRelayHeat(cid,t,role,auth.token!,auth.username!,data,stage,heat,selected,runners,seconds),'Tempo guardado.');}}
+  ]);
+ }
+ function confirmPublish(){
+  if(!editable||!t||!data||!auth.token||!auth.username||busy)return;
+  Alert.alert('Publicar final?','Os finalistas ficam fixos e a qualificação é encerrada. Um empate no limite de acesso impede a publicação.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Publicar final',onPress:()=>{void act(()=>publishRelayFinal(cid,t,role,auth.token!,auth.username!,data),'Final publicada.');}}
+  ]);
+ }
+ function confirmDecision(row:RelayHeat,status:'VALID'|'DISQUALIFIED'){
+  if(!editable||!t||!data||!auth.token||!auth.username||busy)return;
+  Alert.alert(status==='VALID'?'Revalidar tempo?':'Desqualificar tempo?',row.teamName+' · Série '+row.heatNumber+'. A decisão e o fundamento ficam no histórico de júri.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Confirmar',style:status==='DISQUALIFIED'?'destructive':'default',
+    onPress:()=>{void act(()=>decideRelayHeat(cid,t,role,auth.token!,auth.username!,data,row,status,reason),'Decisão registada.');}}
+  ]);
+ }
+ return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
+  <Text style={s.title}>Gerir estafetas</Text>
+  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}{notice?<Message>{notice}</Message>:null}
+  {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
+  {t&&data?<>
+   <Text style={s.heading}>{t.name}</Text>
+   <View style={s.line}><Badge text={data.eventDiscipline||'Estafetas'}/><Badge text={data.finalPublished?'Final publicada':'Qualificação'}/></View>
+   <Message>Os tempos, finalistas, desempates e classificações são validados pelo servidor. A app não atribui lugares automaticamente.</Message>
+   {!editable?<Message>{DEMO_MODE?'Demonstração: alterações desativadas.':'A gestão exige OWNER/ADMIN e uma competição ainda não concluída.'}</Message>:null}
+   <View style={s.panel}><Text style={s.heading}>Registar série</Text>
+    <View style={s.line}><Button secondary={stage!=='QUALIFICATION'} title="Qualificação" disabled={busy||data.finalPublished}
+      onPress={()=>setStage('QUALIFICATION')}/>
+     <Button secondary={stage!=='FINAL'} title="Final" disabled={busy||!data.finalPublished}
+      onPress={()=>setStage('FINAL')}/></View>
+    <Text style={s.note}>Seleciona uma equipa de quatro atletas. A ordem dos IDs determina a ordem dos corredores.</Text>
+    {data.teams.filter(x=>stage!=='FINAL'||data.finalists.some(f=>f.teamId===x.id)).map(team=>
+     <Button key={team.id} secondary={selected?.id!==team.id} disabled={busy}
+      title={team.name+(selected?.id===team.id?' ✓':'')} onPress={()=>choose(team)}/>)}
+    {selected?<Text style={s.note}>Atletas: {selected.players.map(p=>p.displayName||p.username).join(' · ')}</Text>:null}
+    <TextInput style={s.input} keyboardType="number-pad" value={heat} onChangeText={setHeat}
+     placeholder="Número da série (1–20)" placeholderTextColor={C.muted} accessibilityLabel="Número da série" editable={!busy}/>
+    <TextInput style={s.input} keyboardType="decimal-pad" value={seconds} onChangeText={setSeconds}
+     placeholder="Tempo em segundos (ex.: 45.320)" placeholderTextColor={C.muted} accessibilityLabel="Tempo em segundos" editable={!busy}/>
+    <TextInput style={s.input} value={runners} onChangeText={setRunners} placeholder="IDs dos 4 corredores, por ordem"
+     placeholderTextColor={C.muted} accessibilityLabel="Ordem dos quatro corredores" editable={!busy}/>
+    <Button title="Guardar tempo" disabled={!editable||busy||!selected||!canRecordStage(data,stage,t)} onPress={confirmRecord}/>
+   </View>
+   <View style={s.panel}><Text style={s.heading}>Finalistas · {data.finalists.length}</Text>
+    {data.finalPublished?data.finalists.map(f=><Text key={f.teamId} style={s.note}>{f.seed}. {f.teamName} · {f.qualifyingSeconds} s</Text>):
+     <><Text style={s.note}>O backend seleciona até oito equipas pelos tempos válidos e verifica empates na última vaga.</Text>
+      <Button title="Publicar final" disabled={!editable||busy||t.status!=='IN_PROGRESS'||data.qualifyingStandings.length<2} onPress={confirmPublish}/></>}
+   </View>
+   <View style={s.panel}><Text style={s.heading}>Decisões de júri</Text>
+    <TextInput style={[s.input,{minHeight:75}]} multiline value={reason} onChangeText={setReason}
+     placeholder="Fundamento obrigatório, 5–500 caracteres" placeholderTextColor={C.muted}
+     accessibilityLabel="Fundamento da decisão" editable={!busy} maxLength={500}/>
+    {data.heats.length===0?<Text style={s.note}>Não há séries registadas.</Text>:data.heats.map(h=>
+     <View key={h.id} style={s.item}>
+      <Text style={s.name}>{h.teamName} · {h.stage==='FINAL'?'Final':'Qualificação'} · Série {h.heatNumber}</Text>
+      <Text style={s.note}>{h.elapsedSeconds} s · {h.decisionStatus==='DISQUALIFIED'?'Desqualificada':'Válida'}</Text>
+      {editable&&decisionAllowed(data,h,t)?<Button danger={h.decisionStatus!=='DISQUALIFIED'} secondary
+       title={h.decisionStatus==='DISQUALIFIED'?'Revalidar':'Desqualificar'} disabled={busy||reason.trim().length<5}
+       onPress={()=>confirmDecision(h,h.decisionStatus==='DISQUALIFIED'?'VALID':'DISQUALIFIED')}/>:null}
+     </View>)}
+   </View>
+   <Button secondary title="Consultar resultados" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(cid),id:String(tid)}})}/>
+  </>:null}
+  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+ </Page>;
+}
+const s=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'900',color:C.white},
+ line:{flexDirection:'row',flexWrap:'wrap',gap:8},panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface,gap:12},
+ note:{fontSize:12,color:C.muted,lineHeight:18},name:{fontSize:14,color:C.white,fontWeight:'800'},
+ input:{backgroundColor:C.surface2,borderColor:C.border,borderWidth:1,borderRadius:12,minHeight:48,padding:12,color:C.white},
+ item:{borderTopColor:C.border,borderTopWidth:1,paddingTop:12,gap:8}});
