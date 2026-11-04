@@ -72,7 +72,7 @@ export default function CreateTournamentScreen(){
  const selected=communities.find(c=>c.id===communityId);
  const profile=creationProfile(sport,entryType,athleticsMode);
  const effectiveFormat=profile.formats.includes(format)?format:(profile.formats[0]||'LEAGUE');
- const effectiveEvent=profile.events.length===1?profile.events[0]:(profile.events.includes(event)?event:'');
+ const effectiveEvent=profile.events.length===1?(profile.events[0]||''):(profile.events.includes(event)?event:'');
  const disciplines=disciplineChoices(effectiveEvent);
  const effectiveDiscipline=disciplines.includes(discipline)?discipline:'';
  const suggestions=useMemo(()=>{
