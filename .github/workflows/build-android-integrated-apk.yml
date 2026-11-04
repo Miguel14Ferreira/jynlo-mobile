@@ -75,7 +75,11 @@ jobs:
           echo "APK INTERNA: liga-se ao backend Jynlo real. Pode criar e alterar dados reais."
           echo "Assinatura de desenvolvimento: nao publicar na Play Store."
       - name: Registar versao, origem e commit da APK
-        run: node scripts/write-android-build-info.cjs apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/write-android-build-info.cjs apk
+          sha256sum "android/app/build/outputs/apk/release/app-release.apk" > android-build-sha256.txt
       - name: Guardar APK de testes internos
         uses: actions/upload-artifact@v4
         with:
@@ -83,5 +87,6 @@ jobs:
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             android-build-info.json
+            android-build-sha256.txt
           if-no-files-found: error
           retention-days: 14
