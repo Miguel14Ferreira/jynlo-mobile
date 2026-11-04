@@ -17,6 +17,7 @@ export default function MySessionsScreen(){
  const sections:[string,SessionSummary[]][]=[['Criadas por mim',data.created],['Vou participar',data.joined.filter(s=>!owned.has(s.id))],['Lista de espera',data.waitlisted.filter(s=>!owned.has(s.id))]];
  return <Page><Brand subtitle="A TUA ATIVIDADE"/><DemoBanner/><Eyebrow>MINHAS SESSÕES</Eyebrow>
  <Text style={styles.heading}>Os teus próximos <Text style={{color:C.mint}}>desafios.</Text></Text>
+ <Button title="Criar sessão" onPress={()=>router.push('/sessions/create')}/>
  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/my-sessions'}})}/>:null}
  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
  {!loading&&!error?sections.map(([title,items])=><View style={styles.section} key={title}>

@@ -1,0 +1,89 @@
+import React,{useRef,useState} from 'react';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useRouter} from 'expo-router';
+import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
+import {DEMO_MODE} from '../src/lib/api';
+import {useAuth} from '../src/lib/auth';
+import {createSession} from '../src/lib/session-create-api';
+import {createSessionPayload} from '../src/lib/session-create-core.cjs';
+import {SPORTS} from '../src/lib/sports';
+import {C} from '../src/lib/theme';
+import type {CreateSessionForm} from '../src/lib/session-create-core.cjs';
+
+export default function CreateSessionScreen(){
+ const auth=useAuth(),router=useRouter(),locked=useRef(false);
+ const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:''});
+ const [sportSearch,setSportSearch]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const patch=(key:keyof CreateSessionForm,value:string|boolean)=>setForm(prev=>({...prev,[key]:value}));
+ const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
+ function confirm(){
+  if(locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
+  let payload:ReturnType<typeof createSessionPayload>;
+  try{payload=createSessionPayload(form,SPORTS);setError('');}
+  catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
+  Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
+   ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
+   '. O organizador fica automaticamente inscrito.',[
+   {text:'Voltar',style:'cancel'},
+   {text:'Criar sessão',onPress:async()=>{
+    if(locked.current)return;
+    locked.current=true;setBusy(true);setError('');
+    try{
+     const result=await createSession(form,auth.token!,auth.username!);
+     router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
+    }catch(e){setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
+      ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');}
+    finally{locked.current=false;setBusy(false);}
+   }}
+  ]);
+ }
+ const field=(label:string,key:keyof CreateSessionForm,placeholder:string,keyboardType:'default'|'numeric'|'decimal-pad'='default')=>
+  <View style={styles.field}><Text style={styles.label}>{label}</Text>
+   <TextInput style={styles.input} value={String(form[key])} onChangeText={v=>patch(key,v)}
+    placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType}
+    editable={!busy} accessibilityLabel={label}/></View>;
+ return <Page><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
+  <Text style={styles.title}>Criar uma sessão</Text>
+  <Text style={styles.note}>Encontra jogadores para praticar a tua modalidade. Preenche os dados e confirma antes de publicar.</Text>
+  {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
+  {DEMO_MODE?<Message>Na demonstração a criação real está desativada. Liga a app à API Jynlo para publicar.</Message>:null}
+  {error?<Message tone="error">{error}</Message>:null}
+  <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
+   {form.sport?<Badge text={form.sport}/>:null}
+   <TextInput style={styles.input} value={sportSearch} onChangeText={setSportSearch}
+    placeholder="Pesquisar modalidade (ex.: Padel)" placeholderTextColor={C.muted} editable={!busy}/>
+   {suggestions.map(s=><Pressable key={s} accessibilityRole="button" onPress={()=>{patch('sport',s);setSportSearch(s);}} style={[styles.option,form.sport===s&&styles.chosen]}>
+    <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
+   </Pressable>)}
+  </View>
+  <View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
+   {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
+   {field('Localidade','city','Ex.: Lisboa')}
+   {field('Morada','address','Rua e número, recinto ou ponto de referência')}
+   {field('Ponto de encontro (opcional)','meetingPointInstructions','Ex.: Entrada principal')}
+  </View>
+  <View style={styles.panel}><Text style={styles.heading}>Participação</Text>
+   {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
+   {field('Preço por participante (€)','price','0','decimal-pad')}
+   <Text style={styles.label}>Visibilidade</Text>
+   <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
+    <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
+   {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
+   <Text style={styles.note}>As inscrições abrem imediatamente. Recorrência, comunidades, épocas, jogadores externos e recintos associados terão fluxos específicos.</Text>
+  </View>
+  <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
+  <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
+ </Page>;
+}
+const styles=StyleSheet.create({
+ title:{color:C.white,fontSize:28,fontWeight:'900'},note:{color:C.muted,fontSize:12,lineHeight:19},
+ panel:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:18,padding:16,gap:11},
+ heading:{color:C.white,fontWeight:'900',fontSize:19},
+ field:{gap:6},label:{fontSize:13,color:C.muted,fontWeight:'700'},
+ input:{borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface2,color:C.white,padding:13,minHeight:48},
+ inline:{flexDirection:'row',gap:10,flexWrap:'wrap'},
+ option:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10},
+ chosen:{borderColor:C.mint,backgroundColor:C.surface2},optionText:{color:C.white,fontSize:14,fontWeight:'700'}
+});
