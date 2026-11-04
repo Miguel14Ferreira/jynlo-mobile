@@ -24,8 +24,29 @@ permissions:
   contents: read
 
 jobs:
+  validate:
+    name: Testes de contrato, sintaxe e TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout do projeto mobile
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Testes e validacao sintatica
+        run: npm run test:all
+      - name: Validar TypeScript
+        run: npm run typecheck
+
   android-installable:
-    name: Validar e compilar APK autónoma para Android
+    name: Compilar APK autónoma para Android
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -48,10 +69,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Instalar dependencias
         run: npm install --no-audit --no-fund
-      - name: Testes e validacao sintatica
-        run: npm run test:all
-      - name: Validar TypeScript
-        run: npm run typecheck
       - name: Gerar projeto Android nativo
         run: npx expo prebuild --platform android --no-install --clean
       - name: Compilar APK release de testes (JavaScript incluido)
