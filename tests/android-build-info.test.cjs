@@ -26,7 +26,7 @@ test('APK and AAB workflows publish SHA-256 checksums beside build metadata',()=
  const path=require('node:path');
  for(const [workflow,extension] of [['build-android-integrated-apk.yml','apk'],['build-play-internal-aab.yml','aab']]){
    const y=fs.readFileSync(path.join(__dirname,'../.github/workflows',workflow),'utf8');
-   assert.match(y,new RegExp('sha256sum .*app-release\\\\.'+extension));
+   assert.ok(y.includes('app-release.'+extension+'\" > android-build-sha256.txt'),workflow+' missing checksum command');
    assert.match(y,/android-build-sha256\.txt/);
    assert.match(y,/android-build-info\.json/);
  }
