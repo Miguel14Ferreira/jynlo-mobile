@@ -19,7 +19,7 @@ test('Pesquisa de cidade usa debounce e ignora resultados atrasados',()=>{
 });
 test('Acesso a torneios e criacao de sessao mantem login quando necessario',()=>{
  const file=read('app/(tabs)/explore.tsx');
- assert.match(file,/\/(tabs)\/tournaments/);
+ assert.ok(file.includes("router.push('/(tabs)/tournaments')"));
  assert.match(file,/redirect:'\/sessions\/create'/);
  assert.equal(require('../src/lib/routes.cjs').safeRedirect('/sessions/create'),'/sessions/create');
 });
