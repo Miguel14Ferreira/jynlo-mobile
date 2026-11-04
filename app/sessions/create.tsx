@@ -4,7 +4,7 @@ import {useFocusEffect,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
-import {createSession} from '../../src/lib/session-create-api';
+import {createSessionWithPayload} from '../../src/lib/session-create-api';
 import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
@@ -140,7 +140,7 @@ export default function CreateSessionScreen(){
     if(locked.current)return;
     locked.current=true;setBusy(true);setError('');
     try{
-     const result=await createSession(form,auth.token!,auth.username!);
+     const result=await createSessionWithPayload(payload,auth.token!,auth.username!);
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
       ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');}
