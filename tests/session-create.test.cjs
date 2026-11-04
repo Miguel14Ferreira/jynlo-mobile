@@ -209,3 +209,15 @@ test('session confirmation: public and community visibility reflect the submitte
  assert.match(shareText,/Grupo A, Grupo B/);
  assert.doesNotMatch(shareText,/Pública/);
 });
+
+test('session confirmation: UTC API dates display in the device local timezone',()=>{
+ const {formatSessionLocalDateTime,describeSessionConfirmation}=require('../src/lib/session-create-core.cjs');
+ const payload=createSessionPayload(valid,sports,0);
+ const date=new Date(payload.gameDate);
+ const pad=n=>String(n).padStart(2,'0');
+ const expected=date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+
+  ' '+pad(date.getHours())+':'+pad(date.getMinutes());
+ assert.equal(formatSessionLocalDateTime(payload.gameDate),expected);
+ assert.ok(describeSessionConfirmation(payload).includes(expected));
+ assert.throws(()=>formatSessionLocalDateTime('not-a-date'));
+});

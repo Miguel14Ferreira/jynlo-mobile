@@ -62,6 +62,13 @@ function changeCommunityMode(form,mode){
  if(mode==='SHARED')return {...cleared,privateGame:false,password:''};
  return cleared;
 }
+function formatSessionLocalDateTime(iso){
+ const date=new Date(iso);
+ if(!Number.isFinite(date.getTime()))throw Error('Data da sessão inválida.');
+ const pad=value=>String(value).padStart(2,'0');
+ return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+
+  ' '+pad(date.getHours())+':'+pad(date.getMinutes());
+}
 function describeSessionConfirmation(payload,context={}){
  const visibility=payload.communityShareIds.length?'Apenas membros das comunidades':
   payload.communityId!=null?'Apenas membros da comunidade':
@@ -70,7 +77,7 @@ function describeSessionConfirmation(payload,context={}){
  const parts=[
   payload.sport,
   payload.city,
-  payload.gameDate.replace('T',' ').slice(0,16),
+  formatSessionLocalDateTime(payload.gameDate),
   payload.maxParticipants+' participantes',
   visibility
  ];
@@ -167,4 +174,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,changeCommunityMode,describeSessionConfirmation,createSessionPayload};
+module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,createSessionPayload};
