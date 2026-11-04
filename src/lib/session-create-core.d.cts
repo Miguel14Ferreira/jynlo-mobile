@@ -3,13 +3,14 @@ export interface CreateSessionForm {
  maxParticipants:string;price:string;privateGame:boolean;password:string;meetingPointInstructions:string;
  externalConfirmedParticipants?:string;minParticipants?:string;registrationOpeningMode?:'IMMEDIATE'|'MANUAL'|'SCHEDULED';communityId?:number|null;
  registrationDay?:string;registrationTime?:string;
+ recurrence?:'NONE'|'WEEKLY'|'BIWEEKLY';recurrenceOccurrences?:string;recurrenceTimeZone?:string;
 }
 export interface CreateSessionPayload{
  sport:string;gameDate:string;city:string;address:string;maxParticipants:number;
  priceAmount:number;privateGame:boolean;password:string|null;
- latitude:null;longitude:null;communityId:number|null;venueId:null;recurrence:'NONE';
- recurrenceOccurrences:null;externalConfirmedParticipants:number;registrationOpeningMode:'IMMEDIATE'|'MANUAL'|'SCHEDULED';
- registrationOpensAt:string|null;additionalWeeklyGameDates:[];recurrenceTimeZone:null;playFormat:null;
+ latitude:null;longitude:null;communityId:number|null;venueId:null;recurrence:'NONE'|'WEEKLY'|'BIWEEKLY';
+ recurrenceOccurrences:number|null;externalConfirmedParticipants:number;registrationOpeningMode:'IMMEDIATE'|'MANUAL'|'SCHEDULED';
+ registrationOpensAt:string|null;additionalWeeklyGameDates:[];recurrenceTimeZone:string|null;playFormat:null;
  communityShareIds:[];seasonCompetitionCommunityId:null;confirmActivateRankings:false;
  meetingPointInstructions:string|null;minParticipants:number;
 }

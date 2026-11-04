@@ -46,6 +46,20 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   if(Date.parse(registrationOpensAt)>=Date.parse(gameDate))
    throw Error('A abertura das inscrições deve anteceder a sessão.');
  }
+ const recurrence=input.recurrence??'NONE';
+ if(!['NONE','WEEKLY','BIWEEKLY'].includes(recurrence))throw Error('Repetição inválida.');
+ if(communityId===null&&recurrence!=='NONE')throw Error('As sessões recorrentes exigem uma comunidade.');
+ let recurrenceOccurrences=null,recurrenceTimeZone=null;
+ if(recurrence!=='NONE'){
+  const text=String(input.recurrenceOccurrences??'').trim();
+  if(!/^(?:[2-9]|[1-4][0-9]|5[0-2])$/.test(text))throw Error('Escolhe entre 2 e 52 repetições.');
+  recurrenceOccurrences=Number(text);
+  const zone=String(input.recurrenceTimeZone||'').trim();
+  if(!zone||zone.length>64)throw Error('Não foi possível identificar o fuso horário para repetir sessões.');
+  try{new Intl.DateTimeFormat('en-US',{timeZone:zone});}
+  catch{throw Error('Fuso horário inválido para repetição de sessões.');}
+  recurrenceTimeZone=zone;
+ }
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
  if(privateGame&&password.length<4)throw Error('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.');
@@ -54,9 +68,9 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  return {
   sport,gameDate,city,address,maxParticipants,
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
-  communityId,venueId:null,recurrence:'NONE',recurrenceOccurrences:null,
+  communityId,venueId:null,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
-  additionalWeeklyGameDates:[],recurrenceTimeZone:null,playFormat:null,communityShareIds:[],
+  additionalWeeklyGameDates:[],recurrenceTimeZone,playFormat:null,communityShareIds:[],
   seasonCompetitionCommunityId:null,confirmActivateRankings:false,
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };

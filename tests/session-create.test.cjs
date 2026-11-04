@@ -55,3 +55,16 @@ test('session creation: community required for manual and scheduled call-ups',()
  assert.throws(()=>createSessionPayload({...valid,communityId:42,registrationOpeningMode:'SCHEDULED',
   registrationDay:'2030-06-11',registrationTime:'10:00'},sports,0));
 });
+
+test('session creation: weekly and biweekly only for communities with a valid timezone',()=>{
+ const base={...valid,communityId:42,recurrenceOccurrences:'4',recurrenceTimeZone:'Europe/Lisbon'};
+ const weekly=createSessionPayload({...base,recurrence:'WEEKLY'},sports,0);
+ assert.equal(weekly.recurrence,'WEEKLY');assert.equal(weekly.recurrenceOccurrences,4);
+ assert.equal(weekly.recurrenceTimeZone,'Europe/Lisbon');
+ assert.deepEqual(weekly.additionalWeeklyGameDates,[]);
+ const biweekly=createSessionPayload({...base,recurrence:'BIWEEKLY'},sports,0);
+ assert.equal(biweekly.recurrence,'BIWEEKLY');
+ assert.throws(()=>createSessionPayload({...base,communityId:null,recurrence:'WEEKLY'},sports,0));
+ assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceOccurrences:'53'},sports,0));
+ assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceTimeZone:'Fake/Zone'},sports,0));
+});
