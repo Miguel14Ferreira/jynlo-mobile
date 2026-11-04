@@ -21,6 +21,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="tournaments/[communityId]/[id]/results" options={{title:"Resultados por prova"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/matches" options={{title:"Jogos individuais"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/participants" options={{title:"Participantes e inscrições"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/manage" options={{title:"Gerir torneio"}}/>
     <Stack.Screen name="feed" options={{title:"Feed"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>

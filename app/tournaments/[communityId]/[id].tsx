@@ -4,6 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {tournamentDetails,tournamentTable} from '../../../src/lib/competition-api';
+import {communityDetails} from '../../../src/lib/community-api';
 import {classificationKind,label,standingsColumns,isPerformanceKind} from '../../../src/lib/competition-core.cjs';
 import {formatChessPoints} from '../../../src/lib/performance-core.cjs';
 import {C} from '../../../src/lib/theme';
@@ -13,11 +14,13 @@ export default function TournamentDetailScreen(){
  const communityId=Number(params.communityId),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
  const [tournament,setTournament]=useState<JynloTournament|null>(null);
+ const [organizerRole,setOrganizerRole]=useState<string|null>(null);
  const [table,setTable]=useState<TournamentTable|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);return;}
+  if(!auth.token||!auth.username){setOrganizerRole(null);setLoading(false);return;}
   setLoading(true);setError('');
-  try{const result=await tournamentDetails(communityId,id,auth.token,auth.username);
+  try{const [result,community]=await Promise.all([tournamentDetails(communityId,id,auth.token,auth.username),communityDetails(communityId,auth.token,auth.username)]);
+    setOrganizerRole('myRole' in community?community.myRole||null:null);
     setTournament(result);setTable(await tournamentTable(communityId,result,auth.token,auth.username));}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');}
   finally{setLoading(false);}
@@ -50,6 +53,7 @@ export default function TournamentDetailScreen(){
      {tournament.entryType!=='TEAM'?<Button secondary title="Participantes e inscrições" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/participants',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      {tournament.entryType==='TEAM'&&!isPerformanceKind(kind)?<Button title="Equipas e convites" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      {tournament.entryType==='TEAM'&&kind==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?'Fase de grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Ver eliminatórias':'Calendário de jogos'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {(organizerRole==='OWNER'||organizerRole==='ADMIN')?<Button secondary title="Gerir competição" onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/manage",params:{communityId:String(communityId),id:String(id)}})}/>:null}
      <Button secondary title="Voltar aos torneios" onPress={()=>router.back()}/>
    </>:null}
  </Page>;

@@ -1,0 +1,8 @@
+import type {JynloTournament} from './types';
+export type OrganizerFixtureType='TEAM'|'INDIVIDUAL'|null;
+export function isOrganizer(role:string|null|undefined):boolean;
+export function organizerFixtureType(tournament:JynloTournament|null):OrganizerFixtureType;
+export function canGenerateSchedule(role:string|null|undefined,tournament:JynloTournament|null):boolean;
+export function canRecordTournamentResult(role:string|null|undefined,tournament:JynloTournament|null):boolean;
+export function canCompleteTournament(role:string|null|undefined,tournament:JynloTournament|null):boolean;
+export function validateTournamentScore(home:string,away:string):{homeScore:number;awayScore:number};
