@@ -68,6 +68,29 @@ jobs:
           test -s "$target"
           chmod 600 "$target"
           echo "JYNLO_PLAY_UPLOAD_KEYSTORE_PATH=$target" >> "$GITHUB_ENV"
+      - name: Validar chave e passwords antes do Gradle
+        env:
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          keystore="$JYNLO_PLAY_UPLOAD_KEYSTORE_PATH"
+          if ! keytool -list -keystore "$keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::A keystore, a password de armazenamento ou o alias da chave não correspondem. Confirma os GitHub Actions Secrets."
+            exit 1
+          fi
+          # Generate a temporary certificate request to verify the private-key password.
+          # The CSR contains no private key and is never uploaded.
+          csr="$RUNNER_TEMP/jynlo-upload-check.csr"
+          trap 'rm -f "$csr"' EXIT
+          if ! keytool -certreq -keystore "$keystore" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -keypass "$JYNLO_PLAY_UPLOAD_KEY_PASSWORD" -file "$csr" >/dev/null 2>&1; then
+            echo "::error::A chave privada não abriu com a password configurada. Confirma JYNLO_PLAY_UPLOAD_KEY_PASSWORD e JYNLO_PLAY_UPLOAD_STORE_PASSWORD."
+            exit 1
+          fi
+          test -s "$csr"
+          echo "Chave de assinatura validada antes da compilação."
       - name: Aplicar assinatura de envio à release gerada
         run: node scripts/configure-play-signing.cjs android/app/build.gradle
       - name: Gerar AAB release com assinatura do proprietário
