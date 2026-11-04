@@ -24,3 +24,15 @@ test('Internal Play AAB workflow runs only manually and requires secrets',()=>{
  assert.match(y,/jarsigner -verify/);
  assert.match(y,/jynlo-google-play-internal-aab/);
 });
+
+test('Play upload key is verified before the expensive Gradle signing build',()=>{
+ const y=fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8');
+ const preflight=y.indexOf('name: Validar chave e passwords antes do Gradle');
+ const gradle=y.indexOf('name: Gerar AAB release com assinatura do proprietário');
+ assert.ok(preflight>0&&gradle>preflight);
+ assert.match(y,/keytool -list/);
+ assert.match(y,/keytool -certreq/);
+ assert.match(y,/JYNLO_PLAY_UPLOAD_KEY_PASSWORD/);
+ assert.match(y,/jynlo-upload-check\.csr/);
+ assert.match(y,/trap 'rm -f/);
+});
