@@ -14,6 +14,8 @@ function parseSessionDate(day,time,now=Date.now()){
 function createSessionPayload(input,allowedSports,now=Date.now()){
  const sport=String(input.sport||'').trim();
  if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
+ const venueId=input.venueId==null?null:Number(input.venueId);
+ if(venueId!==null&&(!Number.isSafeInteger(venueId)||venueId<=0))throw Error('Recinto inválido.');
  const city=String(input.city||'').trim();
  if(city.length<2||city.length>120||!/^[\p{L}\p{M}][\p{L}\p{M}\d .,'’()/-]{1,119}$/u.test(city))throw Error('Indica uma localidade válida.');
  const address=String(input.address||'').trim();
@@ -68,7 +70,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  return {
   sport,gameDate,city,address,maxParticipants,
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
-  communityId,venueId:null,recurrence,recurrenceOccurrences,
+  communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates:[],recurrenceTimeZone,playFormat:null,communityShareIds:[],
   seasonCompetitionCommunityId:null,confirmActivateRankings:false,

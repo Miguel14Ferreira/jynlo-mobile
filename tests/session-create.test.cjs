@@ -68,3 +68,12 @@ test('session creation: weekly and biweekly only for communities with a valid ti
  assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceOccurrences:'53'},sports,0));
  assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceTimeZone:'Fake/Zone'},sports,0));
 });
+
+test('session creation: optional verified venue ID is sent without inventing coordinates',()=>{
+ const payload=createSessionPayload({...valid,venueId:3595},sports,0);
+ assert.equal(payload.venueId,3595);
+ assert.equal(payload.latitude,null);assert.equal(payload.longitude,null);
+ assert.equal(createSessionPayload(valid,sports,0).venueId,null);
+ assert.throws(()=>createSessionPayload({...valid,venueId:0},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,venueId:'unknown'},sports,0));
+});

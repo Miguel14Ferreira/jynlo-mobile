@@ -9,16 +9,42 @@ import {createSessionPayload} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
-import type {CommunityGroup} from '../../src/lib/types';
+import {venues} from '../../src/lib/parity-api';
+import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||''});
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null});
  const [sportSearch,setSportSearch]=useState('');
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityError,setCommunityError]=useState('');
+ const [venueQuery,setVenueQuery]=useState('');
+ const [venueMatches,setVenueMatches]=useState<VenueSummary[]>([]);
+ const [venueChosen,setVenueChosen]=useState<VenueSummary|null>(null);
+ const [venueLoading,setVenueLoading]=useState(false);
+ const [venueError,setVenueError]=useState('');
+ async function findVenues(){
+  if(venueLoading||busy)return;
+  setVenueLoading(true);setVenueError('');setVenueMatches([]);
+  try{
+   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:form.sport||undefined,page:0});
+   setVenueMatches(results.venues.filter(v=>venueSupportsSport(v,form.sport)).slice(0,20));
+  }catch(e){setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');}
+  finally{setVenueLoading(false);}
+ }
+ function useVenue(v:VenueSummary){
+  setVenueChosen(v);
+  setForm(previous=>({...previous,venueId:v.id,city:v.city,address:v.address}));
+  setVenueMatches([]);
+ }
+ function removeVenue(){
+  setVenueChosen(null);setForm(previous=>({...previous,venueId:null}));
+ }
+ function venueSupportsSport(v:VenueSummary,sport:string){
+  return !v.sports?.trim()||!sport||v.sports.split(';').map(item=>item.trim().toLocaleLowerCase('pt-PT')).includes(sport.toLocaleLowerCase('pt-PT'));
+ }
  const loadCommunities=useCallback(async()=>{
   if(!auth.token||!auth.username){setCommunities([]);return;}
   try{setCommunities(await myCommunities(auth.token,auth.username));setCommunityError('');}
@@ -33,12 +59,14 @@ export default function CreateSessionScreen(){
   let payload:ReturnType<typeof createSessionPayload>;
   try{
    if(form.communityId&&!communities.some(c=>c.id===form.communityId))throw Error('Atualiza a lista de comunidades antes de continuar.');
+   if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
+    throw Error('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.');
    payload=createSessionPayload(form,SPORTS);setError('');
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
    ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
-   ' · '+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' semanas de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
+   ' · '+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' semanas de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;
@@ -67,7 +95,7 @@ export default function CreateSessionScreen(){
    {form.sport?<Badge text={form.sport}/>:null}
    <TextInput style={styles.input} value={sportSearch} onChangeText={setSportSearch}
     placeholder="Pesquisar modalidade (ex.: Padel)" placeholderTextColor={C.muted} editable={!busy}/>
-   {suggestions.map(s=><Pressable key={s} accessibilityRole="button" onPress={()=>{patch('sport',s);setSportSearch(s);}} style={[styles.option,form.sport===s&&styles.chosen]}>
+   {suggestions.map(s=><Pressable key={s} accessibilityRole="button" onPress={()=>{setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));if(form.sport!==s)setVenueChosen(null);setSportSearch(s);}} style={[styles.option,form.sport===s&&styles.chosen]}>
     <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
    </Pressable>)}
   </View>
@@ -82,8 +110,25 @@ export default function CreateSessionScreen(){
   </View>
   <View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
-   {field('Localidade','city','Ex.: Lisboa')}
-   {field('Morada','address','Rua e número, recinto ou ponto de referência')}
+   {venueChosen?<View style={styles.option}>
+    <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
+    <Text style={styles.note}>{venueChosen.address} · {venueChosen.city}</Text>
+    <Button title="Retirar recinto" secondary disabled={busy} onPress={removeVenue}/>
+   </View>:null}
+   <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
+   <TextInput style={styles.input} value={venueQuery} onChangeText={setVenueQuery}
+    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy&&!venueLoading}/>
+   <Button secondary title={venueLoading?'A pesquisar…':'Procurar recintos'} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
+   {venueError?<Message tone="error">{venueError}</Message>:null}
+   {venueMatches.map(v=><Pressable key={v.id} accessibilityRole="button" style={styles.option} disabled={busy}
+    onPress={()=>useVenue(v)}>
+    <Text style={styles.optionText}>{v.name}</Text>
+    <Text style={styles.note}>{v.city} · {v.address}</Text>
+   </Pressable>)}
+   {venueChosen?<Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
+    {field('Localidade','city','Ex.: Lisboa')}
+    {field('Morada','address','Rua e número, recinto ou ponto de referência')}
+   </>}
    {field('Ponto de encontro (opcional)','meetingPointInstructions','Ex.: Entrada principal')}
   </View>
   <View style={styles.panel}><Text style={styles.heading}>Participação</Text>
@@ -116,7 +161,7 @@ export default function CreateSessionScreen(){
    <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
-   <Text style={styles.note}>Jogos de época, múltiplas sessões por semana e recintos associados terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
+   <Text style={styles.note}>Jogos de época e múltiplas sessões por semana terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
   <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
