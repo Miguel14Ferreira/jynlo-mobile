@@ -8,7 +8,7 @@ import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {performanceOverview} from '../../../../src/lib/performance-api';
 import {recordRelayHeat,publishRelayFinal,decideRelayHeat} from '../../../../src/lib/relay-organizer-api';
-import {canManageRelay,canRecordStage,decisionAllowed} from '../../../../src/lib/relay-organizer-core.cjs';
+import {canManageRelay,canRecordStage,decisionAllowed,moveRunner,decisionHistory} from '../../../../src/lib/relay-organizer-core.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,RelayOverview,JynloTournamentTeam,RelayHeat} from '../../../../src/lib/types';
 
@@ -17,7 +17,7 @@ export default function RelayManagement(){
  const cid=Number(p.communityId),tid=Number(p.id),router=useRouter(),auth=useAuth();
  const [t,setT]=useState<JynloTournament|null>(null),[role,setRole]=useState<string|null>(null),[data,setData]=useState<RelayOverview|null>(null);
  const [teamId,setTeamId]=useState<number|null>(null),[stage,setStage]=useState<'QUALIFICATION'|'FINAL'>('QUALIFICATION');
- const [heat,setHeat]=useState('1'),[seconds,setSeconds]=useState(''),[runners,setRunners]=useState('');
+ const [heat,setHeat]=useState('1'),[seconds,setSeconds]=useState(''),[runnerOrder,setRunnerOrder]=useState<number[]>([]);
  const [reason,setReason]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),locked=useRef(false);
  const load=useCallback(async()=>{
@@ -36,7 +36,7 @@ export default function RelayManagement(){
  const editable=!!t&&canManageRelay(role,t)&&!DEMO_MODE;
  const selected=data?.teams.find(x=>x.id===teamId)||null;
  function choose(team:JynloTournamentTeam){
-  setTeamId(team.id);setRunners(team.players.map(x=>x.profileId).join(', '));
+  setTeamId(team.id);setRunnerOrder(team.players.map(x=>x.profileId));
  }
  async function act(fn:()=>Promise<RelayOverview>,ok:string){
   if(locked.current)return;
@@ -52,7 +52,7 @@ export default function RelayManagement(){
   if(!editable||!t||!data||!selected||!auth.token||!auth.username||busy)return;
   Alert.alert('Registar tempo da estafeta?',selected.name+' · '+stage+' · Série '+heat+' · '+seconds+' s. Esta ação pode substituir um tempo existente.',[
    {text:'Cancelar',style:'cancel'},
-   {text:'Confirmar',onPress:()=>{void act(()=>recordRelayHeat(cid,t,role,auth.token!,auth.username!,data,stage,heat,selected,runners,seconds),'Tempo guardado.');}}
+   {text:'Confirmar',onPress:()=>{void act(()=>recordRelayHeat(cid,t,role,auth.token!,auth.username!,data,stage,heat,selected,runnerOrder.join(','),seconds),'Tempo guardado.');}}
   ]);
  }
  function confirmPublish(){
@@ -84,18 +84,29 @@ export default function RelayManagement(){
       onPress={()=>setStage('QUALIFICATION')}/>
      <Button secondary={stage!=='FINAL'} title="Final" disabled={busy||!data.finalPublished}
       onPress={()=>setStage('FINAL')}/></View>
-    <Text style={s.note}>Seleciona uma equipa de quatro atletas. A ordem dos IDs determina a ordem dos corredores.</Text>
+    <Text style={s.note}>Seleciona uma equipa de quatro atletas. A ordem dos corredores pode ser alterada abaixo.</Text>
     {data.teams.filter(x=>stage!=='FINAL'||data.finalists.some(f=>f.teamId===x.id)).map(team=>
      <Button key={team.id} secondary={selected?.id!==team.id} disabled={busy}
       title={team.name+(selected?.id===team.id?' ✓':'')} onPress={()=>choose(team)}/>)}
-    {selected?<Text style={s.note}>Atletas: {selected.players.map(p=>p.displayName||p.username).join(' · ')}</Text>:null}
+    {selected?<View style={s.roster}>
+      {runnerOrder.map((profileId,index)=>{
+       const athlete=selected.players.find(p=>p.profileId===profileId);
+       return <View key={profileId} style={s.athlete}>
+        <Text style={s.name}>{index+1}. {athlete?.displayName||athlete?.username||'Atleta'}</Text>
+        <View style={s.line}>
+         <Button secondary title="Subir" disabled={busy||index===0} onPress={()=>setRunnerOrder(current=>moveRunner(current,index,-1))}/>
+         <Button secondary title="Descer" disabled={busy||index===3} onPress={()=>setRunnerOrder(current=>moveRunner(current,index,1))}/>
+        </View>
+       </View>;
+      })}
+      {runnerOrder.length!==4?<Message>A equipa deve ter quatro atletas confirmados.</Message>:null}
+     </View>:null}
     <TextInput style={s.input} keyboardType="number-pad" value={heat} onChangeText={setHeat}
      placeholder="Número da série (1–20)" placeholderTextColor={C.muted} accessibilityLabel="Número da série" editable={!busy}/>
     <TextInput style={s.input} keyboardType="decimal-pad" value={seconds} onChangeText={setSeconds}
      placeholder="Tempo em segundos (ex.: 45.320)" placeholderTextColor={C.muted} accessibilityLabel="Tempo em segundos" editable={!busy}/>
-    <TextInput style={s.input} value={runners} onChangeText={setRunners} placeholder="IDs dos 4 corredores, por ordem"
-     placeholderTextColor={C.muted} accessibilityLabel="Ordem dos quatro corredores" editable={!busy}/>
-    <Button title="Guardar tempo" disabled={!editable||busy||!selected||!canRecordStage(data,stage,t)} onPress={confirmRecord}/>
+    <Text style={s.note}>O tempo será enviado com os corredores na ordem apresentada.</Text>
+    <Button title="Guardar tempo" disabled={!editable||busy||!selected||runnerOrder.length!==4||!canRecordStage(data,stage,t)} onPress={confirmRecord}/>
    </View>
    <View style={s.panel}><Text style={s.heading}>Finalistas · {data.finalists.length}</Text>
     {data.finalPublished?data.finalists.map(f=><Text key={f.teamId} style={s.note}>{f.seed}. {f.teamName} · {f.qualifyingSeconds} s</Text>):
@@ -115,6 +126,14 @@ export default function RelayManagement(){
        onPress={()=>confirmDecision(h,h.decisionStatus==='DISQUALIFIED'?'VALID':'DISQUALIFIED')}/>:null}
      </View>)}
    </View>
+   <View style={s.panel}><Text style={s.heading}>Histórico de júri</Text>
+    {decisionHistory(data).length===0?<Text style={s.note}>Ainda não há decisões.</Text>:
+     decisionHistory(data).map(d=><View key={d.id} style={s.item}>
+      <Text style={s.name}>{d.status==='DISQUALIFIED'?'Desqualificação':'Revalidação'} · Prova #{d.heatId}</Text>
+      <Text style={s.note}>{d.reason}</Text>
+      <Text style={s.note}>Estado anterior: {d.previousStatus} · Responsável #{d.actorProfileId} · {d.decidedAt}</Text>
+     </View>)}
+   </View>
    <Button secondary title="Consultar resultados" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(cid),id:String(tid)}})}/>
   </>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
@@ -124,4 +143,4 @@ const s=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},he
  line:{flexDirection:'row',flexWrap:'wrap',gap:8},panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface,gap:12},
  note:{fontSize:12,color:C.muted,lineHeight:18},name:{fontSize:14,color:C.white,fontWeight:'800'},
  input:{backgroundColor:C.surface2,borderColor:C.border,borderWidth:1,borderRadius:12,minHeight:48,padding:12,color:C.white},
- item:{borderTopColor:C.border,borderTopWidth:1,paddingTop:12,gap:8}});
+ item:{borderTopColor:C.border,borderTopWidth:1,paddingTop:12,gap:8},roster:{gap:8},athlete:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,gap:8}});

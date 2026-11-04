@@ -36,7 +36,20 @@ function canRecordStage(overview,stage,tournament){
  if(!overview||tournament?.status==='COMPLETED')return false;
  return stage==='FINAL'?overview.finalPublished===true:stage==='QUALIFICATION'&&!overview.finalPublished;
 }
+function moveRunner(ids,index,direction){
+ if(!Array.isArray(ids)||ids.length!==4||new Set(ids).size!==4||ids.some(x=>!Number.isSafeInteger(x)||x<=0))throw Error('Ordem inválida.');
+ if(!Number.isInteger(index)||![-1,1].includes(direction))throw Error('Movimento inválido.');
+ const next=index+direction;
+ if(index<0||index>=4||next<0||next>=4)return ids.slice();
+ const copy=ids.slice();[copy[index],copy[next]]=[copy[next],copy[index]];
+ return copy;
+}
+function decisionHistory(overview){
+ return (Array.isArray(overview?.decisions)?overview.decisions:[])
+  .filter(x=>x&&Number.isSafeInteger(x.id)&&x.id>0&&Number.isSafeInteger(x.heatId)&&x.heatId>0)
+  .slice().sort((a,b)=>b.id-a.id);
+}
 function decisionAllowed(overview,heat,tournament){
  return !!heat&&tournament?.status!=='COMPLETED'&&(heat.stage==='FINAL'||!overview.finalPublished);
 }
-module.exports={isRelay,canManageRelay,positiveId,validateHeatNumber,validateElapsedSeconds,validateRunners,validateDecision,canRecordStage,decisionAllowed};
+module.exports={isRelay,canManageRelay,positiveId,validateHeatNumber,validateElapsedSeconds,validateRunners,validateDecision,canRecordStage,decisionAllowed,moveRunner,decisionHistory};

@@ -8,3 +8,5 @@ export function validateRunners(value:string,team:JynloTournamentTeam|null):numb
 export function validateDecision(status:string,reason:string):{status:'VALID'|'DISQUALIFIED';reason:string};
 export function canRecordStage(overview:RelayOverview|null,stage:string,tournament:JynloTournament|null):boolean;
 export function decisionAllowed(overview:RelayOverview,heat:RelayHeat,tournament:JynloTournament):boolean;
+export function moveRunner(ids:number[],index:number,direction:-1|1):number[];
+export function decisionHistory(overview:RelayOverview|null):import('./types').RelayDecision[];

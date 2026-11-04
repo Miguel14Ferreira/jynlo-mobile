@@ -29,3 +29,16 @@ test('relay: final freezes qualification; decisions require reasons',()=>{
  assert.deepEqual(core.validateDecision('DISQUALIFIED','Falsa partida'),{status:'DISQUALIFIED',reason:'Falsa partida'});
  assert.throws(()=>core.validateDecision('VALID','x'));
 });
+
+test('relay: reorder athlete slots without mutating roster',()=>{
+ const original=[11,12,13,14];
+ assert.deepEqual(core.moveRunner(original,1,-1),[12,11,13,14]);
+ assert.deepEqual(original,[11,12,13,14]);
+ assert.deepEqual(core.moveRunner(original,0,-1),original);
+ assert.throws(()=>core.moveRunner([11,11,13,14],1,1));
+});
+test('relay: jury history is newest first',()=>{
+ const overview={decisions:[{id:1,heatId:5},{id:3,heatId:5},{id:2,heatId:9}]};
+ assert.deepEqual(core.decisionHistory(overview).map(x=>x.id),[3,2,1]);
+ assert.equal(overview.decisions[0].id,1);
+});

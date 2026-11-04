@@ -120,7 +120,8 @@ export interface RaceOverview {tournamentId:number;pointsByPlace:number[];linked
 export interface RelayStanding {position:number;teamId:number;teamName:string;bestSeconds:number;recordedHeats:number;runnerProfileIds:number[];}
 export interface RelayFinalist {teamId:number;teamName:string;seed:number;qualifyingSeconds:number;}
 export interface RelayHeat {id:number;teamId:number;teamName:string;heatNumber:number;elapsedSeconds:number;runnerProfileIds:number[];recordedAt:string;stage:string|null;decisionStatus:string|null;}
-export interface RelayOverview {tournamentId:number;eventDiscipline:string|null;teams:JynloTournamentTeam[];heats:RelayHeat[];standings:RelayStanding[];finalPublished:boolean;finalists:RelayFinalist[];qualifyingStandings:RelayStanding[];finalStandings:RelayStanding[];}
+export interface RelayDecision {id:number;heatId:number;previousStatus:string;status:string;reason:string;actorProfileId:number;decidedAt:string;}
+export interface RelayOverview {tournamentId:number;eventDiscipline:string|null;teams:JynloTournamentTeam[];heats:RelayHeat[];standings:RelayStanding[];finalPublished:boolean;finalists:RelayFinalist[];qualifyingStandings:RelayStanding[];finalStandings:RelayStanding[];decisions?:RelayDecision[];}
 export type TournamentPerformanceOverview =
  |{kind:'RACE';data:RaceOverview}|{kind:'TIMED';data:TimedOverview}|{kind:'MEASURED';data:MeasuredOverview}|{kind:'RELAY';data:RelayOverview};
 export interface TournamentIndividualMatch {id:number;roundNumber:number;homeProfileId:number;homeUsername:string;awayProfileId:number;awayUsername:string;status:'SCHEDULED'|'COMPLETED';homeScore:number|null;awayScore:number|null;}
