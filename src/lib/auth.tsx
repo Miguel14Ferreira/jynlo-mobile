@@ -1,7 +1,9 @@
 import React, {createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
+import {AppState} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import {DEMO_MODE,confirmMfa,resendMfa as apiResendMfa,signIn as apiSignIn,logoutServer} from './api';
 import {assertCanStartLogin} from './account-session.cjs';
+import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
 interface AuthContextValue {
@@ -25,12 +27,33 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     try{
       if(!DEMO_MODE){const [savedToken,savedName]=await Promise.all([
         SecureStore.getItemAsync(TOKEN_KEY),SecureStore.getItemAsync(USER_KEY)]);
-        if(active){setToken(savedToken);setUsername(savedName);}
+        if(active){
+          if(savedToken&&savedName&&isAccessTokenUsable(savedToken)){
+            setToken(savedToken);setUsername(savedName);
+          }else{
+            setToken(null);setUsername(null);
+            if(savedToken||savedName)await Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+          }
+        }
       }
     }catch{ /* secure storage not available; show logged-out state */ }
     finally{if(active)setReady(true);}
   })();return()=>{active=false;};},[]);
+  useEffect(()=>{
+    if(DEMO_MODE||!token)return;
+    const expire=()=>{
+      if(isAccessTokenUsable(token))return;
+      setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);
+      void Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).catch(()=>{});
+    };
+    const expiresAt=accessTokenExpiresAt(token);
+    const delay=Math.max(0,Math.min(2147483647,(expiresAt??0)-Date.now()-15000));
+    const timer=setTimeout(expire,delay);
+    const sub=AppState.addEventListener('change',state=>{if(state==='active')expire();});
+    return()=>{clearTimeout(timer);sub.remove();};
+  },[token]);
   const save=useCallback(async(name:string,accessToken:string)=>{
+    if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
     await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
     setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);
   },[]);
