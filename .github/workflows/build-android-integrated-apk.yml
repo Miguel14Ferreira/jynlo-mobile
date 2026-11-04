@@ -1,0 +1,73 @@
+name: Jynlo Mobile - Android APK integrada (testes internos)
+
+# Execucao manual e isolada do workflow de demonstracao.
+# Usa o backend real; nao distribuir como versao da Play Store.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_real_api:
+        description: "Escreve TESTAR_API_REAL para autorizar esta APK a comunicar com o backend"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-integrated-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  integrated-apk:
+    name: APK interna ligada ao backend Jynlo
+    if: ${{ inputs.confirm_real_api == 'TESTAR_API_REAL' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+      JYNLO_REQUIRE_REAL_API: "1"
+    steps:
+      - name: Checkout do projeto mobile
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Preparar cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Testes e validacao sintatica
+        run: npm run test:all
+      - name: Validar TypeScript
+        run: npm run typecheck
+      - name: Validar ligacao obrigatoria a API real
+        run: npm run check:release
+      - name: Gerar projeto Android nativo
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Compilar APK interna (JavaScript incluido)
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace --max-workers=2
+        working-directory: android
+      - name: Confirmar APK interna autonoma
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          unzip -Z1 "$apk" | grep -q '^assets/index.android.bundle$'
+          ls -lh "$apk"
+          echo "APK INTERNA: liga-se ao backend Jynlo real. Pode criar e alterar dados reais."
+          echo "Assinatura de desenvolvimento: nao publicar na Play Store."
+      - name: Guardar APK de testes internos
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-mobile-android-integrated-internal-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
