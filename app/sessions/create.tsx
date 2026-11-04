@@ -128,7 +128,7 @@ export default function CreateSessionScreen(){
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
-   ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
+   ' · '+payload.maxParticipants+' participantes · '+(payload.communityShareIds.length?'Apenas membros das comunidades':payload.communityId?'Apenas membros da comunidade':payload.privateGame?'Privada com palavra-passe':'Pública')+
    ' · '+(payload.communityShareIds.length?'Partilhada com '+sharedCommunities.map(c=>c.name).join(', ')+' · Apenas membros · ':'')+(payload.seasonCompetitionCommunityId?'Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':'')+' · ':'')+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' ciclos de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · '+(payload.additionalWeeklyGameDates.length+1)+' horários/ciclo · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
@@ -147,6 +147,8 @@ export default function CreateSessionScreen(){
   <View style={styles.field}><Text style={styles.label}>{label}</Text>
    <TextInput style={styles.input} value={String(form[key]??'')} onChangeText={v=>patch(key,v)}
     placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType}
+    secureTextEntry={key==='password'} autoCorrect={key==='password'?false:undefined}
+    autoCapitalize={key==='password'?'none':'sentences'}
     editable={!busy} accessibilityLabel={label}/></View>;
  return <Page><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
   <Text style={styles.title}>Criar uma sessão</Text>
@@ -296,9 +298,10 @@ export default function CreateSessionScreen(){
    {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
    <Text style={styles.label}>Visibilidade</Text>
    {sharedIds.length>0?<Message>Partilha entre comunidades: visibilidade apenas para membros, sem palavra-passe.</Message>:null}
-   <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
+   <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?'Sem palavra-passe':'Pública'} disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
-   {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
+   {form.privateGame?<><Text style={styles.note}>A palavra-passe fica oculta enquanto escreves. Só os jogadores com a palavra-passe podem entrar.</Text>
+    {field('Palavra-passe da sessão','password','Mínimo de 4 caracteres')}</>:null}
    <Text style={styles.note}>Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>:null}
   {step===3?<View style={styles.panel}>
