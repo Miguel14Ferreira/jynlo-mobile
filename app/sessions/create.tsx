@@ -43,23 +43,31 @@ export default function CreateSessionScreen(){
  const [venueMatches,setVenueMatches]=useState<VenueSummary[]>([]);
  const [venueChosen,setVenueChosen]=useState<VenueSummary|null>(null);
  const [venueLoading,setVenueLoading]=useState(false);
+ const [venuePage,setVenuePage]=useState(0);
+ const [venueHasMore,setVenueHasMore]=useState(false);
  const venueSearchVersion=useRef(0);
  const [venueError,setVenueError]=useState('');
  function clearVenueSearch(){
   venueSearchVersion.current+=1;
   setVenueMatches([]);
+  setVenuePage(0);setVenueHasMore(false);
   setVenueLoading(false);
   setVenueError('');
  }
- async function findVenues(){
+ async function findVenues(page=0){
   if(venueLoading||busy)return;
   const version=++venueSearchVersion.current;
   const selectedSport=form.sport;
-  setVenueLoading(true);setVenueError('');setVenueMatches([]);
+  setVenueLoading(true);setVenueError('');
+  if(page===0){setVenueMatches([]);setVenuePage(0);setVenueHasMore(false);}
   try{
-   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:selectedSport||undefined,page:0});
+   const results=await venues({name:venueQuery.trim(),city:form.city.trim(),sport:selectedSport||undefined,page});
    if(version!==venueSearchVersion.current)return;
-   setVenueMatches(results.venues.filter(v=>venueSupportsSport(v,selectedSport)).slice(0,20));
+   const matching=results.venues.filter(v=>venueSupportsSport(v,selectedSport));
+   setVenueMatches(previous=>page===0?matching:
+    [...previous,...matching.filter(v=>!previous.some(old=>old.id===v.id))]);
+   setVenuePage(results.page);
+   setVenueHasMore(results.hasMore);
   }catch(e){
    if(version===venueSearchVersion.current)setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');
   }finally{
@@ -86,6 +94,7 @@ export default function CreateSessionScreen(){
  useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
+  if(key==='city')clearVenueSearch();
   const next=typeof value==='string'?
    (key==='day'||key==='registrationDay'?formatLocalDateInput(value):
     key==='time'||key==='registrationTime'?formatLocalTimeInput(value):value):value;
@@ -272,6 +281,8 @@ export default function CreateSessionScreen(){
     <Text style={styles.optionText}>{v.name}</Text>
     <Text style={styles.note}>{v.city} · {v.address}</Text>
    </Pressable>)}
+   {venueHasMore?<Button secondary title={venueLoading?'A carregar…':'Mostrar mais recintos'}
+    disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
    {venueChosen?<Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
     {field('Localidade','city','Ex.: Lisboa')}
     {field('Morada','address','Rua e número, recinto ou ponto de referência')}
