@@ -33,19 +33,29 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(!/^\d{1,3}$/.test(minText))throw Error('Mínimo de participantes inválido.');
  const minParticipants=Number(minText);
  if(minParticipants<2||minParticipants>maxParticipants)throw Error('O mínimo deve estar entre 2 e a capacidade total.');
+ const communityId=input.communityId==null?null:Number(input.communityId);
+ if(communityId!==null&&(!Number.isSafeInteger(communityId)||communityId<=0))throw Error('Comunidade inválida.');
  const registrationOpeningMode=input.registrationOpeningMode??'IMMEDIATE';
- if(registrationOpeningMode!=='IMMEDIATE'&&registrationOpeningMode!=='MANUAL')
+ if(!['IMMEDIATE','MANUAL','SCHEDULED'].includes(registrationOpeningMode))
   throw Error('Modo de abertura de inscrições inválido.');
+ if(communityId===null&&registrationOpeningMode!=='IMMEDIATE')throw Error('Convocatórias manuais ou programadas exigem uma comunidade.');
+ const gameDate=parseSessionDate(input.day,input.time,now);
+ let registrationOpensAt=null;
+ if(registrationOpeningMode==='SCHEDULED'){
+  registrationOpensAt=parseSessionDate(input.registrationDay||'',input.registrationTime||'',now);
+  if(Date.parse(registrationOpensAt)>=Date.parse(gameDate))
+   throw Error('A abertura das inscrições deve anteceder a sessão.');
+ }
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
  if(privateGame&&password.length<4)throw Error('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.');
  const meetingPointInstructions=String(input.meetingPointInstructions||'').trim();
  if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error('O ponto de encontro deve ter uma única linha até 240 caracteres.');
  return {
-  sport,gameDate:parseSessionDate(input.day,input.time,now),city,address,maxParticipants,
+  sport,gameDate,city,address,maxParticipants,
   priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
-  communityId:null,venueId:null,recurrence:'NONE',recurrenceOccurrences:null,
-  externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt:null,
+  communityId,venueId:null,recurrence:'NONE',recurrenceOccurrences:null,
+  externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates:[],recurrenceTimeZone:null,playFormat:null,communityShareIds:[],
   seasonCompetitionCommunityId:null,confirmActivateRankings:false,
   meetingPointInstructions:meetingPointInstructions||null,minParticipants

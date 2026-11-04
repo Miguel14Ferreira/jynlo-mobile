@@ -32,7 +32,7 @@ test('session creation: prevents invalid and past local datetimes',()=>{
 });
 
 test('session creation: existing players and manual opening use backend fields',()=>{
- const payload=createSessionPayload({...valid,externalConfirmedParticipants:'4',minParticipants:'6',registrationOpeningMode:'MANUAL'},sports,0);
+ const payload=createSessionPayload({...valid,externalConfirmedParticipants:'4',minParticipants:'6',communityId:42,registrationOpeningMode:'MANUAL'},sports,0);
  assert.equal(payload.externalConfirmedParticipants,4);
  assert.equal(payload.minParticipants,6);
  assert.equal(payload.registrationOpeningMode,'MANUAL');
@@ -42,4 +42,16 @@ test('session creation: cannot overbook participants or use unsupported registra
  assert.throws(()=>createSessionPayload({...valid,maxParticipants:'5',externalConfirmedParticipants:'5'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,minParticipants:'11'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,registrationOpeningMode:'SCHEDULED'},sports,0));
+});
+
+test('session creation: community required for manual and scheduled call-ups',()=>{
+ assert.throws(()=>createSessionPayload({...valid,registrationOpeningMode:'MANUAL'},sports,0));
+ const manual=createSessionPayload({...valid,communityId:42,registrationOpeningMode:'MANUAL'},sports,0);
+ assert.equal(manual.communityId,42);assert.equal(manual.registrationOpensAt,null);
+ const scheduled=createSessionPayload({...valid,communityId:42,registrationOpeningMode:'SCHEDULED',
+  registrationDay:'2030-06-08',registrationTime:'11:00'},sports,0);
+ assert.equal(scheduled.registrationOpeningMode,'SCHEDULED');
+ assert.match(scheduled.registrationOpensAt,/^2030-06-08T/);
+ assert.throws(()=>createSessionPayload({...valid,communityId:42,registrationOpeningMode:'SCHEDULED',
+  registrationDay:'2030-06-11',registrationTime:'10:00'},sports,0));
 });

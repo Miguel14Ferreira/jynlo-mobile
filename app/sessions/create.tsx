@@ -1,6 +1,6 @@
-import React,{useRef,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useRouter} from 'expo-router';
+import {useFocusEffect,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
@@ -8,24 +8,37 @@ import {createSession} from '../../src/lib/session-create-api';
 import {createSessionPayload} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
+import {myCommunities} from '../../src/lib/community-api';
+import type {CommunityGroup} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE'});
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:''});
  const [sportSearch,setSportSearch]=useState('');
+ const [communities,setCommunities]=useState<CommunityGroup[]>([]);
+ const [communityError,setCommunityError]=useState('');
+ const loadCommunities=useCallback(async()=>{
+  if(!auth.token||!auth.username){setCommunities([]);return;}
+  try{setCommunities(await myCommunities(auth.token,auth.username));setCommunityError('');}
+  catch{setCommunities([]);setCommunityError('Não foi possível carregar as tuas comunidades.');}
+ },[auth.token,auth.username]);
+ useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean)=>setForm(prev=>({...prev,[key]:value}));
  const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
  function confirm(){
   if(locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
   let payload:ReturnType<typeof createSessionPayload>;
-  try{payload=createSessionPayload(form,SPORTS);setError('');}
+  try{
+   if(form.communityId&&!communities.some(c=>c.id===form.communityId))throw Error('Atualiza a lista de comunidades antes de continuar.');
+   payload=createSessionPayload(form,SPORTS);setError('');
+  }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
    ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
-   ' · '+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':'imediatas')+'. O organizador fica automaticamente inscrito.',[
+   ' · '+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;
@@ -58,6 +71,15 @@ export default function CreateSessionScreen(){
     <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
    </Pressable>)}
   </View>
+  <View style={styles.panel}><Text style={styles.heading}>Comunidade (opcional)</Text>
+   {communityError?<Message tone="error">{communityError}</Message>:null}
+   <Text style={styles.note}>Uma sessão associada a uma comunidade é apenas para membros. O backend verifica as tuas permissões.</Text>
+   <Button title="Sessão independente" secondary={form.communityId!==null} disabled={busy}
+    onPress={()=>setForm(prev=>({...prev,communityId:null,registrationOpeningMode:'IMMEDIATE'}))}/>
+   {communities.map(c=><Button key={c.id} title={c.name+(c.sport?' · '+c.sport:'')}
+    secondary={form.communityId!==c.id} disabled={busy}
+    onPress={()=>patch('communityId',c.id)}/>)}
+  </View>
   <View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
    {field('Localidade','city','Ex.: Lisboa')}
@@ -72,14 +94,19 @@ export default function CreateSessionScreen(){
    <Text style={styles.label}>Abertura das inscrições</Text>
    <View style={styles.inline}>
     <Button secondary={form.registrationOpeningMode!=='IMMEDIATE'} title="Imediata" disabled={busy} onPress={()=>patch('registrationOpeningMode','IMMEDIATE')}/>
-    <Button secondary={form.registrationOpeningMode!=='MANUAL'} title="Manual" disabled={busy} onPress={()=>patch('registrationOpeningMode','MANUAL')}/>
+    <Button secondary={form.registrationOpeningMode!=='MANUAL'} title="Manual" disabled={busy||!form.communityId} onPress={()=>patch('registrationOpeningMode','MANUAL')}/>
+    <Button secondary={form.registrationOpeningMode!=='SCHEDULED'} title="Programada" disabled={busy||!form.communityId} onPress={()=>patch('registrationOpeningMode','SCHEDULED')}/>
    </View>
+   {form.registrationOpeningMode==='SCHEDULED'?<>
+    {field('Data de abertura','registrationDay','AAAA-MM-DD')}
+    {field('Hora de abertura','registrationTime','HH:mm (24h)')}
+   </>:null}
    {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
    <Text style={styles.label}>Visibilidade</Text>
    <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
-   <Text style={styles.note}>Recorrência, comunidades, épocas e recintos associados terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
+   <Text style={styles.note}>Recorrência, jogos de época e recintos associados terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
   <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
