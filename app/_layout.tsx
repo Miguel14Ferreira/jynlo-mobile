@@ -14,6 +14,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="communities/invites" options={{title:"Convites"}}/>
     <Stack.Screen name="communities/[id]/chat" options={{title:"Chat da comunidade"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
+    <Stack.Screen name="tournaments/create" options={{title:"Criar torneio"}}/>
     <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/fixtures" options={{title:"Jogos e fases"}}/>

@@ -27,6 +27,7 @@ export default function TournamentsScreen(){
   <Eyebrow>ALÉM DA PRIMEIRA SESSÃO</Eyebrow><Text style={styles.title}>Torneios</Text>
   <Text style={styles.sub}>Encontra as competições das tuas comunidades e a classificação certa para cada modalidade.</Text>
   {!auth.token?<Button title="Entrar para ver torneios" onPress={()=>router.push('/login')}/>:null}
+  {auth.token?<Button title="Criar torneio" onPress={()=>router.push('/tournaments/create')}/>:null}
   {auth.token?<View style={styles.filters}>
     <TextInput style={styles.search} value={query} onChangeText={setQuery} autoCorrect={false}
       placeholder="Procurar torneio, comunidade ou desporto…" placeholderTextColor={C.muted}

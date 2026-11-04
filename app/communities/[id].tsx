@@ -125,6 +125,7 @@ export default function CommunityDetailScreen(){
         <Text style={styles.sectionTitle}>Juntos, mesmo fora do campo</Text>
         <Button title="Abrir chat da comunidade" onPress={()=>router.push({pathname:"/communities/[id]/chat",params:{id:String(id)}})}/>
         <Button secondary title="Ver torneios" onPress={()=>router.push("/(tabs)/tournaments")}/>
+        {owner?<Button secondary title="Criar torneio nesta comunidade" onPress={()=>router.push({pathname:"/tournaments/create",params:{communityId:String(id)}})}/>:null}
       </View>:null}
       {role?<View style={styles.section}>
         <Text style={styles.sectionTitle}>Próximas sessões</Text>
