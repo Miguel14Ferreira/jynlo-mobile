@@ -62,6 +62,13 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   catch{throw Error('Fuso horário inválido para repetição de sessões.');}
   recurrenceTimeZone=zone;
  }
+ const seasonGame=input.seasonGame===true;
+ if(seasonGame&&communityId===null)throw Error('Um jogo de época exige uma comunidade.');
+ const confirmActivateRankings=input.confirmActivateRankings===true;
+ if(!seasonGame&&confirmActivateRankings)throw Error('A ativação das classificações exige um jogo de época.');
+ const rankingsEnabled=input.communityRankingsEnabled===true;
+ if(seasonGame&&!rankingsEnabled&&!confirmActivateRankings)
+  throw Error('Confirma a ativação das classificações para criar o jogo de época.');
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
  if(privateGame&&password.length<4)throw Error('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.');
@@ -73,7 +80,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates:[],recurrenceTimeZone,playFormat:null,communityShareIds:[],
-  seasonCompetitionCommunityId:null,confirmActivateRankings:false,
+  seasonCompetitionCommunityId:seasonGame?communityId:null,confirmActivateRankings:seasonGame&&!rankingsEnabled&&confirmActivateRankings,
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }

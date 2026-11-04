@@ -77,3 +77,19 @@ test('session creation: optional verified venue ID is sent without inventing coo
  assert.throws(()=>createSessionPayload({...valid,venueId:0},sports,0));
  assert.throws(()=>createSessionPayload({...valid,venueId:'unknown'},sports,0));
 });
+
+test('session creation: a season game belongs to exactly its selected community',()=>{
+ const payload=createSessionPayload({...valid,communityId:42,seasonGame:true,communityRankingsEnabled:true},sports,0);
+ assert.equal(payload.seasonCompetitionCommunityId,42);
+ assert.equal(payload.confirmActivateRankings,false);
+ assert.equal(createSessionPayload({...valid,communityId:42},sports,0).seasonCompetitionCommunityId,null);
+ assert.throws(()=>createSessionPayload({...valid,seasonGame:true,communityRankingsEnabled:true},sports,0));
+});
+test('session creation: consent is mandatory when rankings are disabled',()=>{
+ const base={...valid,communityId:42,seasonGame:true,communityRankingsEnabled:false};
+ assert.throws(()=>createSessionPayload(base,sports,0));
+ const payload=createSessionPayload({...base,confirmActivateRankings:true},sports,0);
+ assert.equal(payload.confirmActivateRankings,true);
+ assert.equal(payload.seasonCompetitionCommunityId,42);
+ assert.throws(()=>createSessionPayload({...valid,confirmActivateRankings:true},sports,0));
+});

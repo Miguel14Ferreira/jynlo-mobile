@@ -16,7 +16,7 @@ import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null});
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false});
  const [sportSearch,setSportSearch]=useState('');
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityError,setCommunityError]=useState('');
@@ -53,12 +53,15 @@ export default function CreateSessionScreen(){
  useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>setForm(prev=>({...prev,[key]:value}));
+ const selectedCommunity=communities.find(c=>c.id===form.communityId)||null;
  const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
  function confirm(){
   if(locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
   let payload:ReturnType<typeof createSessionPayload>;
   try{
-   if(form.communityId&&!communities.some(c=>c.id===form.communityId))throw Error('Atualiza a lista de comunidades antes de continuar.');
+   if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
+   if(form.seasonGame&&(!selectedCommunity||form.communityRankingsEnabled!==selectedCommunity.rankingsEnabled))
+    throw Error('O estado das classificações da comunidade mudou. Seleciona novamente a comunidade.');
    if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
     throw Error('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.');
    payload=createSessionPayload(form,SPORTS);setError('');
@@ -66,7 +69,7 @@ export default function CreateSessionScreen(){
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   Alert.alert('Criar sessão desportiva?',payload.sport+' · '+payload.city+' · '+form.day+' '+form.time+
    ' · '+payload.maxParticipants+' participantes · '+(payload.privateGame?'Privada':'Pública')+
-   ' · '+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' semanas de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
+   ' · '+(payload.seasonCompetitionCommunityId?'Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':'')+' · ':'')+(payload.venueId&&venueChosen?'Recinto '+venueChosen.name+' · ':'')+(payload.recurrence!=='NONE'?payload.recurrenceOccurrences+' semanas de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+') · ':'')+(payload.communityId?'Comunidade '+(communities.find(c=>c.id===payload.communityId)?.name||'selecionada')+' · ':'')+payload.externalConfirmedParticipants+' confirmados externos · inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas')+'. O organizador fica automaticamente inscrito.',[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
     if(locked.current)return;
@@ -103,11 +106,28 @@ export default function CreateSessionScreen(){
    {communityError?<Message tone="error">{communityError}</Message>:null}
    <Text style={styles.note}>Uma sessão associada a uma comunidade é apenas para membros. O backend verifica as tuas permissões.</Text>
    <Button title="Sessão independente" secondary={form.communityId!==null} disabled={busy}
-    onPress={()=>setForm(prev=>({...prev,communityId:null,registrationOpeningMode:'IMMEDIATE',recurrence:'NONE'}))}/>
+    onPress={()=>setForm(prev=>({...prev,communityId:null,registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}))}/>
    {communities.map(c=><Button key={c.id} title={c.name+(c.sport?' · '+c.sport:'')}
     secondary={form.communityId!==c.id} disabled={busy}
-    onPress={()=>patch('communityId',c.id)}/>)}
+    onPress={()=>setForm(prev=>({...prev,communityId:c.id,seasonGame:false,communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false}))}/>)}
   </View>
+  {selectedCommunity?<View style={styles.panel}>
+   <Text style={styles.heading}>Jogo de época</Text>
+   <Text style={styles.note}>Associa esta sessão à época ativa da comunidade. Se não existir, o servidor cria a época por defeito. Os resultados e as classificações dependem da modalidade.</Text>
+   <View style={styles.inline}>
+    <Button title="Não contar para a época" secondary={form.seasonGame===true} disabled={busy}
+     onPress={()=>setForm(prev=>({...prev,seasonGame:false,confirmActivateRankings:false}))}/>
+    <Button title="Contar para a época" secondary={form.seasonGame!==true} disabled={busy}
+     onPress={()=>setForm(prev=>({...prev,seasonGame:true,confirmActivateRankings:false}))}/>
+   </View>
+   {form.seasonGame&&!selectedCommunity.rankingsEnabled?<View style={styles.option}>
+    <Message>As classificações ainda não estão ativas nesta comunidade. A criação de um jogo de época poderá ativá-las e criar uma época por defeito.</Message>
+    <Button title={form.confirmActivateRankings?'Ativação autorizada ✓':'Autorizar ativação das classificações'}
+     secondary={form.confirmActivateRankings!==true} disabled={busy}
+     onPress={()=>patch('confirmActivateRankings',!form.confirmActivateRankings)}/>
+   </View>:null}
+   {form.seasonGame&&selectedCommunity.rankingsEnabled?<Message>As classificações desta comunidade já estão ativas.</Message>:null}
+  </View>:null}
   <View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
    {venueChosen?<View style={styles.option}>
@@ -161,7 +181,7 @@ export default function CreateSessionScreen(){
    <View style={styles.inline}><Button secondary={form.privateGame} title="Pública" disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title="Privada" disabled={busy} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?field('Palavra-passe da sessão','password','Mínimo de 4 caracteres'):null}
-   <Text style={styles.note}>Jogos de época e múltiplas sessões por semana terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
+   <Text style={styles.note}>Múltiplas sessões por semana e partilha em várias comunidades terão fluxos específicos. Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
   </View>
   <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
