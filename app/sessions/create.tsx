@@ -26,7 +26,7 @@ export default function CreateSessionScreen(){
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- const patch=(key:keyof CreateSessionForm,value:string|boolean)=>setForm(prev=>({...prev,[key]:value}));
+ const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>setForm(prev=>({...prev,[key]:value}));
  const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
  function confirm(){
   if(locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
