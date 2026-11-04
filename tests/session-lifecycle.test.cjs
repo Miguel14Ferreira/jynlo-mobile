@@ -21,3 +21,11 @@ test('Vista de sessão pública respeita o estado e mostra ícones próprios por
  assert.ok(view.includes("['CANCELLED','COMPLETED'].includes(s.status||'')"));
  assert.ok(view.includes("s.status==='COMPLETED'?'Concluída'"));
 });
+
+// Contract: the session screen continues to obtain the roster only after authorization.
+test('progresso de participantes nao altera o controlo de acesso a lista',()=>{
+ const {minimumPlayersProgress}=require('../src/lib/session-presentation.cjs');
+ assert.equal(canViewRoster(active,'André'),false);
+ assert.equal(minimumPlayersProgress({...active,minParticipants:6}).missing,1);
+ assert.equal(canViewRoster({...active,joined:true},'André'),true);
+});

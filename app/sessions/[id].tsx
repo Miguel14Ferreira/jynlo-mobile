@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
-import {Alert,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
@@ -7,8 +7,18 @@ import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
+import {resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview} from '../../src/lib/types';
+
+function ParticipantAvatar({participant}:{participant:SessionParticipant}){
+  const photo=resolveJynloMedia(participant.profilePicUrl);
+  return <View style={styles.avatar}>
+    {photo?<Image source={{uri:photo}} style={styles.avatarPhoto} accessibilityLabel={`Fotografia de ${participant.username}`}/>:
+      <Text style={styles.avatarLetter}>{participant.username.slice(0,1).toUpperCase()||'J'}</Text>}
+  </View>;
+}
 
 export default function SessionScreen(){
   const {id:rawId}=useLocalSearchParams<{id:string}>();
@@ -16,6 +26,7 @@ export default function SessionScreen(){
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
+  const [rosterError,setRosterError]=useState('');
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
@@ -23,7 +34,7 @@ export default function SessionScreen(){
 
   const load=useCallback(async()=>{
     if(!Number.isSafeInteger(id)||id<=0){setError('Identificador de sessão inválido.');setLoading(false);return;}
-    setError('');setLoading(true);setDetail(null);setParticipants([]);
+    setError('');setRosterError('');setLoading(true);setDetail(null);setParticipants([]);
     try {
       // The anonymous route must not expose address or roster.
       const pub=await sessionPreview(id);setPreview(pub);
@@ -32,7 +43,7 @@ export default function SessionScreen(){
         setDetail(full);
         if(canViewRoster(full,auth.username)){
           try{setParticipants(await sessionParticipants(id,auth.token));}
-          catch{setParticipants([]);}
+          catch{setParticipants([]);setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');}
         }
       }
     }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');}
@@ -48,6 +59,8 @@ export default function SessionScreen(){
     finally{setBusy(false);}
   };
   const s=detail||preview,spots=Math.max(0,(s?.maxParticipants??0)-(s?.participantCount??0));
+  const minimum=minimumPlayersProgress(detail);
+  const sessionPhoto=resolveJynloMedia(s?.gamePhoto);
   const action=registrationAction(detail,auth.username);
   const join=()=>{void perform(async()=>{
     if(!auth.token)throw new Error('Inicia sessão primeiro.');
@@ -80,10 +93,15 @@ export default function SessionScreen(){
     {error?<Message tone="error">{error}</Message>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
+        {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
         <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={detail?.joined?'Confirmado':detail?.waitlisted?'Lista de espera':s.status==='CANCELLED'?'Cancelada':s.status==='FULL'?'Completa':`${spots} vagas`}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <Text style={styles.city}>⌖ {s.city||'Local a confirmar'}</Text>
+        {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
+          <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(detail.communityId)}})}>
+            <Text style={styles.communityLink}>◎ Abrir comunidade associada ↗</Text>
+          </Pressable>:null}
         {detail?.audience==='COMMUNITY_ONLY'?<Text style={styles.hint}>Sessão reservada a membros da comunidade.</Text>:null}
       </View>
       <View style={styles.infoGrid}>
@@ -92,8 +110,18 @@ export default function SessionScreen(){
         <View style={styles.info}><Text style={styles.label}>PARTICIPANTES</Text><Text style={styles.value}>{s.participantCount??'—'}/{s.maxParticipants??'—'}</Text></View>
         <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{s.status==='OPEN'?'Aberta':s.status==='FULL'?'Completa':s.status==='CANCELLED'?'Cancelada':s.status==='COMPLETED'?'Concluída':s.status||'—'}</Text></View>
       </View>
+      {minimum?<View style={styles.panel}>
+        <View style={styles.minimumHeading}>
+          <Eyebrow>MÍNIMO DE JOGADORES</Eyebrow>
+          <Text style={styles.minimumCount}>{minimum.count}/{minimum.required}</Text>
+        </View>
+        <View style={styles.minimumTrack}><View style={[styles.minimumFill,{width:`${minimum.percent}%` as `${number}%`}]}/></View>
+        <Text style={styles.hint}>{minimum.missing===0?'Mínimo de jogadores atingido.':`Faltam ${minimum.missing} ${minimum.missing===1?'inscrição':'inscrições'} para atingir o mínimo.`}</Text>
+        <Text style={styles.subtleHint}>O estado efetivo da sessão continua a ser determinado pelo servidor.</Text>
+      </View>:null}
       <View style={styles.panel}>
         <Eyebrow>RECINTO E ENCONTRO</Eyebrow>
+        {preview?.venueName?<Text style={styles.venueName}>{preview.venueName}</Text>:null}
         <Text style={styles.panelHeading}>{safeExactAddress(detail,auth.username)||'Morada exata reservada aos participantes autorizados'}</Text>
         {safeMeetingPoint(detail,auth.username)?<Text style={styles.hint}>{safeMeetingPoint(detail,auth.username)}</Text>:null}
         <Text style={styles.hint}>Os detalhes de localização são mostrados apenas quando a API autoriza.</Text>
@@ -127,11 +155,19 @@ export default function SessionScreen(){
       </View>:null}
       {detail&&canViewRoster(detail,auth.username)?<View style={{gap:11}}>
         <View style={styles.top}><Text style={styles.rosterTitle}>Quem vai</Text><Text style={styles.hint}>{participants.length} participantes visíveis</Text></View>
-        {participants.length===0?<Text style={styles.hint}>A lista ainda não está disponível.</Text>:participants.map(p=><View key={p.id} style={styles.member}>
-          <View style={styles.avatar}><Text style={{color:C.mint,fontWeight:'900'}}>{p.username.slice(0,1).toUpperCase()}</Text></View>
-          <Text style={styles.memberName}>{p.username}</Text>
-          {p.username.toLowerCase()===auth.username?.toLowerCase()?<Text style={{color:C.mint,marginLeft:'auto'}}>Tu</Text>:null}
-        </View>)}
+        {rosterError?<Text style={styles.rosterError}>{rosterError}</Text>:null}
+        {!rosterError&&participants.length===0?<Text style={styles.hint}>Ainda não existem participantes visíveis nesta lista.</Text>:null}
+        {participants.map(p=>{
+          const attendance=rosterAttendanceLabel(p.attendanceStatus,detail.status);
+          return <View key={p.id} style={styles.member}>
+            <ParticipantAvatar participant={p}/>
+            <View style={styles.memberInfo}>
+              <Text style={styles.memberName} numberOfLines={1}>{p.username}</Text>
+              {attendance?<Text style={styles.memberStatus}>{attendance}</Text>:null}
+            </View>
+            {p.username.toLowerCase()===auth.username?.toLowerCase()?<Text style={styles.memberYou}>Tu</Text>:null}
+          </View>;
+        })}
       </View>:null}
       <Button title="Partilhar ligação pública" secondary onPress={share}/>
     </>:null}
@@ -140,7 +176,15 @@ export default function SessionScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
-  hero:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:24,padding:22,gap:10},
+  hero:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:24,padding:20,gap:10},
+  sessionPhoto:{width:'100%',height:185,borderRadius:16,marginBottom:7},
+  communityLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:6},
+  minimumHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+  minimumCount:{color:C.white,fontSize:14,fontWeight:'900'},
+  minimumTrack:{height:9,backgroundColor:C.surface2,borderRadius:8,overflow:'hidden'},
+  minimumFill:{height:9,backgroundColor:C.mint,borderRadius:8},
+  subtleHint:{color:C.muted,fontSize:10,lineHeight:16},
+  venueName:{color:C.mint,fontSize:14,fontWeight:'800'},
   top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   sportIcon:{fontSize:39},title:{fontSize:30,fontWeight:'900',color:C.white,letterSpacing:-0.7},
   city:{fontSize:14,color:C.muted},infoGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},
@@ -152,7 +196,14 @@ const styles=StyleSheet.create({
   hint:{color:C.muted,fontSize:12,lineHeight:19},
   input:{backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:13,color:C.white,padding:14,minHeight:50},
   rosterTitle:{color:C.white,fontSize:21,fontWeight:'800'},
-  member:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:C.surface,borderRadius:14,padding:12},
-  avatar:{height:35,width:35,borderRadius:18,backgroundColor:'#225048',alignItems:'center',justifyContent:'center'},
-  memberName:{color:C.white,fontSize:14,fontWeight:'700'},back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
+  rosterError:{color:'#FFB8B8',fontSize:12,lineHeight:19},
+  member:{flexDirection:'row',alignItems:'center',gap:11,backgroundColor:C.surface,borderRadius:14,padding:11,borderWidth:1,borderColor:C.border},
+  avatar:{height:36,width:36,borderRadius:18,backgroundColor:'#225048',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+  avatarPhoto:{height:36,width:36,borderRadius:18},
+  avatarLetter:{color:C.mint,fontWeight:'900',fontSize:14},
+  memberInfo:{flex:1,gap:4},
+  memberName:{color:C.white,fontSize:14,fontWeight:'700'},
+  memberStatus:{color:C.muted,fontSize:11},
+  memberYou:{color:C.mint,fontWeight:'800',fontSize:12},
+  back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
 });
