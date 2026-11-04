@@ -20,6 +20,9 @@ export default function CreateSessionScreen(){
  const [step,setStep]=useState(0);
  const stepLabels=['Modalidade','Local e data','Participação','Rever'];
  const [sportSearch,setSportSearch]=useState('');
+ const [showSportResults,setShowSportResults]=useState(false);
+ const [communitySearch,setCommunitySearch]=useState('');
+ const [communityMode,setCommunityMode]=useState<'INDEPENDENT'|'SINGLE'|'SHARED'>('INDEPENDENT');
  const [extraDay,setExtraDay]=useState(''),[extraTime,setExtraTime]=useState('');
  function addWeeklySlot(){
   const next=[...(form.additionalWeeklySlots||[]),{day:extraDay.trim(),time:extraTime.trim()}];
@@ -80,12 +83,17 @@ export default function CreateSessionScreen(){
     ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const,recurrence:'NONE' as const,additionalWeeklySlots:[]}:null)};
   });
  }
- const suggestions=SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12);
+ const suggestions=sportSearch.trim()
+  ?SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
+  :[];
+ const visibleCommunities=communities.filter(c=>!communitySearch.trim()||
+  (c.name+' '+(c.sport||'')).toLocaleLowerCase('pt-PT').includes(communitySearch.trim().toLocaleLowerCase('pt-PT')));
  function nextStep(){
   if(busy)return;
   setError('');
   if(step===0){
    if(!form.sport){setError('Escolhe uma modalidade.');return;}
+   if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError('Seleciona pelo menos uma comunidade ou escolhe sessão independente.');return;}
    if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
    if(sharedCommunities.length!==sharedIds.length){setError('Atualiza a seleção de comunidades.');return;}
   }
@@ -107,6 +115,7 @@ export default function CreateSessionScreen(){
   if(step!==3||locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
   let payload:ReturnType<typeof createSessionPayload>;
   try{
+   if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error('Escolhe uma comunidade para continuar.');
    if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
    if(sharedCommunities.length!==sharedIds.length)throw Error('Uma comunidade partilhada já não está disponível. Atualiza a seleção.');
    if(form.seasonGame&&(!selectedCommunity||form.communityRankingsEnabled!==selectedCommunity.rankingsEnabled))
@@ -134,7 +143,7 @@ export default function CreateSessionScreen(){
  }
  const field=(label:string,key:keyof CreateSessionForm,placeholder:string,keyboardType:'default'|'numeric'|'decimal-pad'='default')=>
   <View style={styles.field}><Text style={styles.label}>{label}</Text>
-   <TextInput style={styles.input} value={String(form[key])} onChangeText={v=>patch(key,v)}
+   <TextInput style={styles.input} value={String(form[key]??'')} onChangeText={v=>patch(key,v)}
     placeholder={placeholder} placeholderTextColor={C.muted} keyboardType={keyboardType}
     editable={!busy} accessibilityLabel={label}/></View>;
  return <Page><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
@@ -152,27 +161,60 @@ export default function CreateSessionScreen(){
   {step===0?<>
   <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
    {form.sport?<Badge text={form.sport}/>:null}
-   <TextInput style={styles.input} value={sportSearch} onChangeText={setSportSearch}
-    placeholder="Pesquisar modalidade (ex.: Padel)" placeholderTextColor={C.muted} editable={!busy}/>
-   {suggestions.map(s=><Pressable key={s} accessibilityRole="button" onPress={()=>{setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));if(form.sport!==s)setVenueChosen(null);setSportSearch(s);}} style={[styles.option,form.sport===s&&styles.chosen]}>
-    <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
-   </Pressable>)}
+   <TextInput style={styles.input} value={sportSearch}
+    onChangeText={v=>{setSportSearch(v);setShowSportResults(true);}}
+    onFocus={()=>setShowSportResults(true)}
+    placeholder="Procurar uma das 121 modalidades" placeholderTextColor={C.muted} editable={!busy}
+    autoCorrect={false} accessibilityLabel="Pesquisar modalidade"/>
+   {showSportResults&&sportSearch.trim()?<>
+    {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
+     accessibilityLabel={'Escolher '+s} onPress={()=>{
+      setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
+      if(form.sport!==s){setVenueChosen(null);setVenueMatches([]);}
+      setSportSearch('');setShowSportResults(false);
+     }} style={[styles.option,form.sport===s&&styles.chosen]}>
+     <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
+    </Pressable>)}
+    {!suggestions.length?<Text style={styles.note}>Nenhuma modalidade corresponde à pesquisa.</Text>:null}
+   </>:null}
+   {!form.sport?<Text style={styles.note}>Começa a escrever para escolher uma modalidade. Não são aceites nomes fora do catálogo.</Text>:null}
   </View>
-  <View style={styles.panel}><Text style={styles.heading}>Comunidade (opcional)</Text>
-   {communityError?<Message tone="error">{communityError}</Message>:null}
-   <Text style={styles.note}>Uma sessão associada a uma comunidade é apenas para membros. O backend verifica as tuas permissões.</Text>
-   <Button title="Sessão independente" secondary={hasCommunity} disabled={busy}
-    onPress={()=>setForm(prev=>({...prev,communityId:null,communityShareIds:[],registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',additionalWeeklySlots:[],seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}))}/>
-   {communities.map(c=><Button key={c.id} title={c.name+(c.sport?' · '+c.sport:'')}
-    secondary={form.communityId!==c.id} disabled={busy}
-    onPress={()=>setForm(prev=>({...prev,communityId:c.id,communityShareIds:[],seasonGame:false,communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false}))}/>)}
-   <Text style={styles.label}>Partilhar a mesma sessão entre comunidades (até 5)</Text>
-   <Text style={styles.note}>A sessão partilhada é apenas para membros das comunidades escolhidas e não usa palavra-passe. O servidor confirma as permissões de criação em cada comunidade.</Text>
-   {communities.map(c=><Button key={'share-'+c.id}
-    title={(sharedIds.includes(c.id)?'✓ ':'')+c.name}
-    secondary={!sharedIds.includes(c.id)} disabled={busy||(!sharedIds.includes(c.id)&&sharedIds.length>=5)}
-    onPress={()=>toggleShared(c.id)}/>)}
-   {sharedIds.length>0?<Message>{sharedIds.length} comunidade(s) selecionada(s) para partilha.</Message>:null}
+  <View style={styles.panel}><Text style={styles.heading}>Tipo de sessão</Text>
+   <View style={styles.inline}>
+    <Button title="Independente" secondary={communityMode!=='INDEPENDENT'} disabled={busy}
+     onPress={()=>{setCommunityMode('INDEPENDENT');setForm(prev=>({...prev,communityId:null,communityShareIds:[],
+      registrationOpeningMode:'IMMEDIATE',recurrence:'NONE',additionalWeeklySlots:[],seasonGame:false,
+      communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
+    <Button title="Comunidade" secondary={communityMode!=='SINGLE'} disabled={busy}
+     onPress={()=>{setCommunityMode('SINGLE');setForm(prev=>({...prev,communityShareIds:[],privateGame:false,password:'',
+      communityId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
+    <Button title="Partilhar" secondary={communityMode!=='SHARED'} disabled={busy}
+     onPress={()=>{setCommunityMode('SHARED');setForm(prev=>({...prev,communityId:null,privateGame:false,password:'',
+      communityShareIds:[],seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false}));}}/>
+   </View>
+   {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
+   {communityMode!=='INDEPENDENT'?<>
+    <Text style={styles.note}>{communityMode==='SINGLE'
+     ?'Escolhe uma comunidade. As sessões associadas são apenas para os seus membros.'
+     :'Escolhe até cinco comunidades. Os respetivos membros poderão participar, sem palavra-passe.'}</Text>
+    <TextInput style={styles.input} value={communitySearch} onChangeText={setCommunitySearch}
+     placeholder="Pesquisar as minhas comunidades" placeholderTextColor={C.muted}
+     autoCorrect={false} editable={!busy}/>
+    {!visibleCommunities.length?<Text style={styles.note}>Sem comunidades para mostrar. Experimenta outra pesquisa.</Text>:null}
+    {visibleCommunities.map(c=><Pressable key={c.id} accessibilityRole="button"
+     accessibilityLabel={(communityMode==='SINGLE'?'Selecionar ':'Partilhar com ')+c.name}
+     disabled={busy||(communityMode==='SHARED'&&!sharedIds.includes(c.id)&&sharedIds.length>=5)}
+     onPress={()=>{
+      if(communityMode==='SINGLE'){
+       setForm(prev=>({...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
+        communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false}));
+      }else toggleShared(c.id);
+     }} style={[styles.option,(form.communityId===c.id||sharedIds.includes(c.id))&&styles.chosen]}>
+      <Text style={styles.optionText}>{(form.communityId===c.id||sharedIds.includes(c.id))?'✓  ':''}{c.name}</Text>
+      <Text style={styles.note}>{c.sport||'Modalidade não indicada'}</Text>
+    </Pressable>)}
+    {communityMode==='SHARED'?<Text style={styles.note}>Selecionadas: {sharedIds.length}/5. O servidor confirma as permissões em cada comunidade.</Text>:null}
+   </>:null}
   </View>
   {selectedCommunity?<View style={styles.panel}>
    <Text style={styles.heading}>Jogo de época</Text>
@@ -193,7 +235,8 @@ export default function CreateSessionScreen(){
   </View>:null}
   </>:null}
   {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
-   {field('Data','day','AAAA-MM-DD')}{field('Hora local','time','HH:mm (24h)')}
+   {field('Data','day','AAAA-MM-DD','numeric')}{field('Hora local','time','HH:mm (24h)','numeric')}
+   <Text style={styles.note}>Formato: 2026-12-08 e 19:30. Usa a hora local do telemóvel.</Text>
    {venueChosen?<View style={styles.option}>
     <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
     <Text style={styles.note}>{venueChosen.address} · {venueChosen.city}</Text>
@@ -236,9 +279,9 @@ export default function CreateSessionScreen(){
       <Button secondary title="Remover horário" disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
      </View>)}
      <TextInput style={styles.input} value={extraDay} onChangeText={setExtraDay}
-      placeholder="Data adicional (AAAA-MM-DD)" placeholderTextColor={C.muted} editable={!busy}/>
+      placeholder="Data adicional (AAAA-MM-DD)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
      <TextInput style={styles.input} value={extraTime} onChangeText={setExtraTime}
-      placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} editable={!busy}/>
+      placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
      <Button secondary title="Adicionar horário" disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
       onPress={addWeeklySlot}/>
     </View>:null}
@@ -250,8 +293,8 @@ export default function CreateSessionScreen(){
     <Button secondary={form.registrationOpeningMode!=='SCHEDULED'} title="Programada" disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','SCHEDULED')}/>
    </View>
    {form.registrationOpeningMode==='SCHEDULED'?<>
-    {field('Data de abertura','registrationDay','AAAA-MM-DD')}
-    {field('Hora de abertura','registrationTime','HH:mm (24h)')}
+    {field('Data de abertura','registrationDay','AAAA-MM-DD','numeric')}
+    {field('Hora de abertura','registrationTime','HH:mm (24h)','numeric')}
    </>:null}
    {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
    <Text style={styles.label}>Visibilidade</Text>
