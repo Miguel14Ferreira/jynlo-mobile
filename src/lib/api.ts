@@ -19,7 +19,8 @@ export async function request<T>(path:string, {token,method='GET',body}:{token?:
   const timeout = setTimeout(()=>controller.abort(),12000);
   try {
     const response = await fetch(`${API_BASE}${path}`,{
-      method, signal:controller.signal, credentials:'include',
+      // Android authenticates exclusively with bearer tokens; never persist browser refresh cookies.
+      method, signal:controller.signal, credentials:'omit',
       headers:{'Accept':'application/json',
         ...(body === undefined?{}:{'Content-Type':'application/json'}),
         ...(token?{'Authorization':`Bearer ${token}`}:{})},
