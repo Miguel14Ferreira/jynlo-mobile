@@ -10,3 +10,4 @@ export function canRecordStage(overview:RelayOverview|null,stage:string,tourname
 export function decisionAllowed(overview:RelayOverview,heat:RelayHeat,tournament:JynloTournament):boolean;
 export function moveRunner(ids:number[],index:number,direction:-1|1):number[];
 export function decisionHistory(overview:RelayOverview|null):import('./types').RelayDecision[];
+export function existingHeat(overview:RelayOverview|null,stage:'FINAL'|'QUALIFICATION',heatNumber:string|number,teamId:number):import('./types').RelayHeat|null;

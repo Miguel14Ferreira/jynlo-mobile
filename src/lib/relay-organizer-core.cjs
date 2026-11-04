@@ -44,6 +44,11 @@ function moveRunner(ids,index,direction){
  const copy=ids.slice();[copy[index],copy[next]]=[copy[next],copy[index]];
  return copy;
 }
+function existingHeat(overview,stage,heatNumber,teamId){
+ if(!overview||!Array.isArray(overview.heats))return null;
+ const number=validateHeatNumber(heatNumber),id=positiveId(teamId);
+ return overview.heats.find(h=>h.teamId===id&&h.heatNumber===number&&(h.stage||'QUALIFICATION')===stage)||null;
+}
 function decisionHistory(overview){
  return (Array.isArray(overview?.decisions)?overview.decisions:[])
   .filter(x=>x&&Number.isSafeInteger(x.id)&&x.id>0&&Number.isSafeInteger(x.heatId)&&x.heatId>0)
@@ -52,4 +57,4 @@ function decisionHistory(overview){
 function decisionAllowed(overview,heat,tournament){
  return !!heat&&tournament?.status!=='COMPLETED'&&(heat.stage==='FINAL'||!overview.finalPublished);
 }
-module.exports={isRelay,canManageRelay,positiveId,validateHeatNumber,validateElapsedSeconds,validateRunners,validateDecision,canRecordStage,decisionAllowed,moveRunner,decisionHistory};
+module.exports={isRelay,canManageRelay,positiveId,validateHeatNumber,validateElapsedSeconds,validateRunners,validateDecision,canRecordStage,decisionAllowed,moveRunner,decisionHistory,existingHeat};

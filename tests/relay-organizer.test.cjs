@@ -42,3 +42,11 @@ test('relay: jury history is newest first',()=>{
  assert.deepEqual(core.decisionHistory(overview).map(x=>x.id),[3,2,1]);
  assert.equal(overview.decisions[0].id,1);
 });
+
+test('relay: identify exact existing series by phase, team and number',()=>{
+ const overview={heats:[{id:5,teamId:4,heatNumber:1,stage:'QUALIFICATION',elapsedSeconds:49},
+  {id:9,teamId:4,heatNumber:1,stage:'FINAL',elapsedSeconds:48}]};
+ assert.equal(core.existingHeat(overview,'QUALIFICATION','1',4).id,5);
+ assert.equal(core.existingHeat(overview,'FINAL','1',4).id,9);
+ assert.equal(core.existingHeat(overview,'FINAL','2',4),null);
+});
