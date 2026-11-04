@@ -17,6 +17,8 @@ export interface CreateSessionPayload{
  communityShareIds:number[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
  meetingPointInstructions:string|null;minParticipants:number;
 }
+export function formatLocalDateInput(value:string):string;
+export function formatLocalTimeInput(value:string):string;
 export function parseSessionDate(day:string,time:string,now?:number):string;
 export function validateWeeklySlots(day:string,time:string,slots:Array<{day:string;time:string}>|undefined,
  recurrence:'NONE'|'WEEKLY'|'BIWEEKLY',occurrences:number|null,now?:number):string[];

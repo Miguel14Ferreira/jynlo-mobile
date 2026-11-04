@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSession} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -71,7 +71,12 @@ export default function CreateSessionScreen(){
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>setForm(prev=>({...prev,[key]:value}));
+ const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
+  const next=typeof value==='string'?
+   (key==='day'||key==='registrationDay'?formatLocalDateInput(value):
+    key==='time'||key==='registrationTime'?formatLocalTimeInput(value):value):value;
+  setForm(prev=>({...prev,[key]:next}));
+ };
  const selectedCommunity=communities.find(c=>c.id===form.communityId)||null;
  const sharedIds=form.communityShareIds||[];
  const sharedCommunities=communities.filter(c=>sharedIds.includes(c.id));
@@ -235,7 +240,7 @@ export default function CreateSessionScreen(){
   </>:null}
   {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD','numeric')}{field('Hora local','time','HH:mm (24h)','numeric')}
-   <Text style={styles.note}>Formato: 2026-12-08 e 19:30. Usa a hora local do telemóvel.</Text>
+   <Text style={styles.note}>Escreve a data com oito dígitos e a hora com quatro (ex.: 20261208 e 1930). Os separadores são acrescentados automaticamente.</Text>
    {venueChosen?<View style={styles.option}>
     <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
     <Text style={styles.note}>{venueChosen.address} · {venueChosen.city}</Text>
@@ -277,9 +282,9 @@ export default function CreateSessionScreen(){
       <Text style={styles.optionText}>{index+2}. {slot.day} às {slot.time}</Text>
       <Button secondary title="Remover horário" disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
      </View>)}
-     <TextInput style={styles.input} value={extraDay} onChangeText={setExtraDay}
+     <TextInput style={styles.input} value={extraDay} onChangeText={value=>setExtraDay(formatLocalDateInput(value))}
       placeholder="Data adicional (AAAA-MM-DD)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
-     <TextInput style={styles.input} value={extraTime} onChangeText={setExtraTime}
+     <TextInput style={styles.input} value={extraTime} onChangeText={value=>setExtraTime(formatLocalTimeInput(value))}
       placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
      <Button secondary title="Adicionar horário" disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
       onPress={addWeeklySlot}/>

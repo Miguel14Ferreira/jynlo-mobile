@@ -173,3 +173,17 @@ test('session creation: switching community type clears incompatible recurring a
  assert.equal(previous.communityId,42);
  assert.throws(()=>changeCommunityMode(previous,'INVALID'));
 });
+
+test('session creation: Android numeric date entry formats and limits input safely',()=>{
+ const {formatLocalDateInput,formatLocalTimeInput}=require('../src/lib/session-create-core.cjs');
+ assert.equal(formatLocalDateInput('20300610'),'2030-06-10');
+ assert.equal(formatLocalDateInput('2030-06-10'),'2030-06-10');
+ assert.equal(formatLocalDateInput('2030'),'2030');
+ assert.equal(formatLocalDateInput('203006'),'2030-06');
+ assert.equal(formatLocalDateInput('2030061099'),'2030-06-10');
+ assert.equal(formatLocalTimeInput('1930'),'19:30');
+ assert.equal(formatLocalTimeInput('19:30'),'19:30');
+ assert.equal(formatLocalTimeInput('19'),'19');
+ assert.equal(formatLocalTimeInput('193055'),'19:30');
+ assert.throws(()=>parseSessionDate(formatLocalDateInput('20300230'),formatLocalTimeInput('1830'),0));
+});

@@ -1,4 +1,14 @@
 'use strict';
+function formatLocalDateInput(value){
+ const digits=String(value??'').replace(/\D/g,'').slice(0,8);
+ if(digits.length<=4)return digits;
+ if(digits.length<=6)return digits.slice(0,4)+'-'+digits.slice(4);
+ return digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6);
+}
+function formatLocalTimeInput(value){
+ const digits=String(value??'').replace(/\D/g,'').slice(0,4);
+ return digits.length<=2?digits:digits.slice(0,2)+':'+digits.slice(2);
+}
 function parseSessionDate(day,time,now=Date.now()){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(day).trim())||!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(time).trim()))
   throw Error('Indica uma data AAAA-MM-DD e uma hora HH:mm.');
@@ -136,4 +146,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={parseSessionDate,validateWeeklySlots,changeCommunityMode,createSessionPayload};
+module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,changeCommunityMode,createSessionPayload};
