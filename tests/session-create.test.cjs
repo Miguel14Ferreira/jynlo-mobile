@@ -221,3 +221,18 @@ test('session confirmation: UTC API dates display in the device local timezone',
  assert.ok(describeSessionConfirmation(payload).includes(expected));
  assert.throws(()=>formatSessionLocalDateTime('not-a-date'));
 });
+
+test('session creation: changing to a venue with missing location never retains stale address',()=>{
+ const {chooseVenueLocation}=require('../src/lib/session-create-core.cjs');
+ const first=chooseVenueLocation({...valid,venueId:null},{id:10,city:'Lisboa',address:'Rua Antiga 1'});
+ assert.equal(first.venueId,10);
+ const second=chooseVenueLocation(first,{id:11,city:'',address:null});
+ assert.equal(second.venueId,11);
+ assert.equal(second.city,'');
+ assert.equal(second.address,'');
+ assert.equal(first.address,'Rua Antiga 1');
+ assert.throws(()=>createSessionPayload(second,sports,0),/localidade/i);
+ const completed={...second,city:'Cascais',address:'Rua Nova 2'};
+ assert.equal(createSessionPayload(completed,sports,0).venueId,11);
+ assert.throws(()=>chooseVenueLocation(valid,{id:0,city:'Lisboa',address:'Rua'}));
+});

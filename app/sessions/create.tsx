@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -80,7 +80,7 @@ export default function CreateSessionScreen(){
  function useVenue(v:VenueSummary){
   clearVenueSearch();
   setVenueChosen(v);
-  setForm(previous=>({...previous,venueId:v.id,city:v.city?.trim()||previous.city,address:v.address?.trim()||previous.address}));
+  setForm(previous=>chooseVenueLocation(previous,v));
  }
  function removeVenue(){
   clearVenueSearch();
@@ -287,7 +287,7 @@ export default function CreateSessionScreen(){
    {venueMatches.map(v=><Pressable key={v.id} accessibilityRole="button" style={styles.option} disabled={busy}
     onPress={()=>useVenue(v)}>
     <Text style={styles.optionText}>{v.name}</Text>
-    <Text style={styles.note}>{v.city} · {v.address}</Text>
+    <Text style={styles.note}>{v.city||'Localidade por indicar'} · {v.address||'Morada por indicar'}</Text>
    </Pressable>)}
    {venueSearched&&!venueLoading&&!venueMatches.length&&!venueHasMore?
     <Text style={styles.note}>Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.</Text>:null}
