@@ -2,6 +2,7 @@ import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import type {CommunitySummary} from '../lib/types';
+import {communitySports,describeCommunitySports} from '../lib/community-core.cjs';
 
 function icon(sport:string|null):string {
   const normalized=(sport||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -17,10 +18,10 @@ export function CommunityCard({community,onPress,memberCount,role}:{community:Co
   return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Abrir comunidade ${community.name}`}
     style={({pressed})=>[styles.card,pressed&&{opacity:0.77}]}>
     <View style={styles.row}>
-      <View style={styles.picture}><Text style={{fontSize:28}}>{icon(community.sport)}</Text></View>
+      <View style={styles.picture}><Text style={{fontSize:28}}>{icon(communitySports(community)[0]||null)}</Text></View>
       <View style={{flex:1,gap:5}}>
         <Text numberOfLines={2} style={styles.title}>{community.name}</Text>
-        <Text style={styles.meta}>{community.sport||'Multidesporto'} · {community.visibility==='PRIVATE'?'Privada':'Pública'}</Text>
+        <Text style={styles.meta}>{describeCommunitySports(community)} · {community.visibility==='PRIVATE'?'Privada':'Pública'}</Text>
       </View>
       <Text style={styles.arrow}>›</Text>
     </View>

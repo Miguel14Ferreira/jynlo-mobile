@@ -7,7 +7,7 @@ import {
   acceptCommunityRequest,communityDetails,communitySessions,inviteCommunityMember,
   joinPublicCommunity,myPendingCommunityRequest,pendingCommunityRequests,requestCommunityMembership
 } from '../../src/lib/community-api';
-import {communityUrl} from '../../src/lib/community-core.cjs';
+import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary} from '../../src/lib/types';
@@ -83,14 +83,15 @@ export default function CommunityDetailScreen(){
     {community?<>
       <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
       <View style={styles.banner}>
-        <Text style={styles.bannerIcon}>{community.sport==='Futebol'?'⚽':community.sport==='Karting'?'🏎️':community.sport==='Voleibol'?'🏐':'🤝'}</Text>
-        <Text style={styles.bannerText}>{community.sport||'Multidesporto'} · {role?'Fazes parte deste grupo':'Descobre esta comunidade'}</Text>
+        <Text style={styles.bannerIcon}>{communitySports(community)[0]==='Futebol'?'⚽':communitySports(community)[0]==='Karting'?'🏎️':communitySports(community)[0]==='Voleibol'?'🏐':'🤝'}</Text>
+        <Text style={styles.bannerText}>{describeCommunitySports(community,3)} · {role?'Fazes parte deste grupo':'Descobre esta comunidade'}</Text>
       </View>
       <View style={styles.header}>
         <Text style={styles.heading}>{community.name}</Text>
         <Badge text={community.visibility==='PRIVATE'?'Privada':'Pública'}/>
       </View>
       <Text style={styles.subtitle}>{community.description||'Mais do que desporto, uma forma de encontrar pessoas.'}</Text>
+      {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?'A confirmar…':'Juntar-me à comunidade'} disabled={busy} onPress={()=>{void take('join');}}/>:null}
       {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest?<Button title={busy?'A enviar…':'Pedir para entrar'} disabled={busy} onPress={()=>{void take('request');}}/>:null}
       {!role&&myRequest?<Message>O teu pedido de entrada está pendente de aprovação.</Message>:null}
@@ -136,6 +137,9 @@ export default function CommunityDetailScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+  sportList:{flexDirection:'row',flexWrap:'wrap',gap:7},
+  sportPill:{paddingHorizontal:11,paddingVertical:7,borderRadius:11,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
+  sportText:{fontSize:12,color:C.mint,fontWeight:'700'},
   banner:{padding:20,backgroundColor:C.surface2,borderRadius:22,alignItems:'center',gap:9},
   bannerIcon:{fontSize:48},bannerText:{color:C.mint,fontWeight:'800',fontSize:13},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},

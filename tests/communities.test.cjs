@@ -1,6 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {makeStore,communityUrl,safeId,normalizeCommunityInput}=require('../src/lib/community-core.cjs');
+const {makeStore,communityUrl,safeId,normalizeCommunityInput,communitySports,describeCommunitySports}=require('../src/lib/community-core.cjs');
 const fields={name:'Futeboladas à Balda',sport:'Futebol',description:'Um jogo, muitas amizades',visibility:'PRIVATE'};
 test('URL corresponde à rota web real e rejeita IDs inválidos',()=>{
   assert.equal(communityUrl(11),'https://d24sports.com/menu/communities/11');
@@ -63,4 +63,30 @@ test('adesão pública é explícita e sem duplicar membros',()=>{
   const count=first.memberCount;
   const second=d.joinPublic(publicGroup.id,'André');
   assert.equal(second.memberCount,count);
+});
+
+test('a API preserva todas as modalidades de uma comunidade multidesporto',()=>{
+ const mixed={...fields,sport:'Padel',sports:['Padel','Ténis','Voleibol']};
+ const payload=normalizeCommunityInput(mixed);
+ assert.equal(payload.sport,'Padel');
+ assert.deepEqual(payload.sports,mixed.sports);
+ const demo=makeStore(),created=demo.create(mixed,'Tiago');
+ assert.deepEqual(demo.get(created.id,'Tiago').sports,mixed.sports);
+ assert.ok(demo.search('','Ténis').communities.some(c=>c.id===created.id));
+ assert.equal(describeCommunitySports(created),'Padel · Ténis · +1');
+});
+test('compatibilidade com comunidades antigas de um único desporto',()=>{
+ assert.deepEqual(communitySports({sport:'Karting'}),['Karting']);
+ assert.equal(describeCommunitySports({sport:'Karting'}),'Karting');
+});
+test('lista de modalidades rejeita repetições, entradas inválidas e inconsistências',()=>{
+ const invalid=[
+  {sports:[]},{sports:['Padel','pádel'],sport:'Padel'},
+  {sports:['Padel','Ténis'],sport:'Futebol'},
+  {sports:['Padel',null],sport:'Padel'},
+  {sports:'Padel',sport:'Padel'},
+  {sports:Array(129).fill('Padel'),sport:'Padel'},
+  {sports:['x'.repeat(101)],sport:null}
+ ];
+ for(const changes of invalid)assert.throws(()=>normalizeCommunityInput({...fields,...changes}));
 });

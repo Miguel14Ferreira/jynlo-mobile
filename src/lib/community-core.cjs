@@ -8,14 +8,40 @@ function safeId(id) {
 }
 function communityUrl(id) { return CANONICAL_WEB_ORIGIN + '/menu/communities/' + safeId(id); }
 function normalizeCommunityInput(input) {
-  const name = (input?.name || '').trim();
-  if (name.length < 3 || name.length > 100) throw new Error('O nome deve ter entre 3 e 100 caracteres.');
-  const description = (input?.description || '').trim();
-  if (description.length > 2000) throw new Error('A descrição é demasiado longa.');
-  const sport = (input?.sport || '').trim();
-  if (!sport || sport.length > 80) throw new Error('Escolhe uma modalidade válida.');
-  if (!['PUBLIC','PRIVATE'].includes(input?.visibility)) throw new Error('Visibilidade inválida.');
-  return {name,description:description||null,sport,sports:[sport],visibility:input.visibility};
+  const name=typeof input?.name==='string'?input.name.trim():'';
+  if(name.length<3||name.length>100)throw Error('O nome deve ter entre 3 e 100 caracteres.');
+  const description=typeof input?.description==='string'?input.description.trim():'';
+  if(description.length>2000)throw Error('A descrição é demasiado longa.');
+  if(!['PUBLIC','PRIVATE'].includes(input?.visibility))throw Error('Visibilidade inválida.');
+  let sports;
+  // Backend accepts 1-128 selected sports and legacy primary "sport".
+  if(input?.sports===undefined||input.sports===null)
+    sports=typeof input?.sport==='string'&&input.sport.trim()?[input.sport.trim()]:[];
+  else{
+    if(!Array.isArray(input.sports)||!input.sports.length||input.sports.length>128)
+      throw Error('Escolhe entre 1 e 128 modalidades.');
+    sports=input.sports.map(s=>{
+      if(typeof s!=='string'||!s.trim()||s.trim().length>100)
+        throw Error('A lista contém uma modalidade inválida.');
+      return s.trim();
+    });
+  }
+  if(!sports.length)throw Error('Seleciona pelo menos uma modalidade.');
+  const keys=sports.map(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT'));
+  if(new Set(keys).size!==keys.length)throw Error('Não podes repetir modalidades.');
+  const primary=typeof input?.sport==='string'?input.sport.trim():'';
+  if(primary&&primary!==sports[0])throw Error('A modalidade principal deve ser a primeira selecionada.');
+  return {name,description:description||null,sport:sports[0],sports,visibility:input.visibility};
+}
+function communitySports(c){
+  const values=Array.isArray(c?.sports)?c.sports.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()):[];
+  return values.length?[...new Set(values)]:typeof c?.sport==='string'&&c.sport.trim()?[c.sport.trim()]:[];
+}
+function describeCommunitySports(c,limit=2){
+  const values=communitySports(c);
+  if(!values.length)return 'Multidesporto';
+  const count=Number.isSafeInteger(limit)?Math.max(1,Math.min(limit,5)):2;
+  return values.slice(0,count).join(' · ')+(values.length>count?' · +'+(values.length-count):'');
 }
 function makeStore(){
   let nextCommunity=931000, nextInvite=980000, nextRequest=990000;
@@ -57,7 +83,7 @@ function makeStore(){
   function mine(user){needUser(user);return groups.filter(g=>g.members.some(m=>m.username===user)).map(g=>get(g.id,user));}
   function search(name='',sport='',page=0){return{communities:groups.filter(g=>g.visibility==='PUBLIC')
      .filter(g=>g.name.toLocaleLowerCase('pt-PT').includes(name.toLocaleLowerCase('pt-PT')) &&
-       (g.sport||'').toLocaleLowerCase('pt-PT').includes(sport.toLocaleLowerCase('pt-PT')))
+       communitySports(g).some(s=>s.toLocaleLowerCase('pt-PT').includes(sport.toLocaleLowerCase('pt-PT'))))
      .map(({id,name,description,sport,sports,photoUrl,visibility})=>({id,name,description,sport,sports,photoUrl,visibility})),page,hasMore:false};}
   function quota(user){needUser(user);const owned=groups.filter(g=>g.ownerUsername===user).length;const today=new Date().toDateString();const createdToday=groups.filter(g=>g.ownerUsername===user&&new Date(g.createdAt).toDateString()===today).length;
     return {owned,limit:5,canCreate:owned<5&&createdToday<2};}
@@ -90,4 +116,4 @@ function makeStore(){
     if(index<0)throw Error('Convite inexistente ou não autorizado.');invites.splice(index,1);}
   return {get,mine,search,quota,create,joinPublic,requestJoin,myPendingRequest,pendingRequests,acceptRequest,invite,myInvites,acceptInvite,rejectInvite};
 }
-module.exports={safeId,communityUrl,normalizeCommunityInput,makeStore};
+module.exports={safeId,communityUrl,normalizeCommunityInput,communitySports,describeCommunitySports,makeStore};

@@ -1,8 +1,10 @@
-export interface CommunityCreateInput { name:string;description:string|null;sport:string|null;visibility:'PUBLIC'|'PRIVATE'; }
+export interface CommunityCreateInput { name:string;description:string|null;sport:string|null;sports?:string[];visibility:'PUBLIC'|'PRIVATE'; }
 export interface NormalizedCommunityCreate { name:string;description:string|null;sport:string;sports:string[];visibility:'PUBLIC'|'PRIVATE'; }
 export function safeId(id:number|string):number;
 export function communityUrl(id:number):string;
 export function normalizeCommunityInput(input:CommunityCreateInput):NormalizedCommunityCreate;
+export function communitySports(community:{sport?:string|null;sports?:string[]}):string[];
+export function describeCommunitySports(community:{sport?:string|null;sports?:string[]},limit?:number):string;
 export function makeStore():{
   get(id:number,user?:string|null):any;
   mine(user:string):any[];
