@@ -1,6 +1,11 @@
 name: Jynlo Mobile - Enviar AAB à Google Play (teste interno)
 
 on:
+  # A versioned request committed to develop lets us upload without browser automation.
+  push:
+    branches: [develop]
+    paths:
+      - ".github/jynlo-play-upload-016.request"
   workflow_dispatch:
     inputs:
       confirm:
@@ -27,12 +32,19 @@ concurrency:
 jobs:
   upload:
     name: Validar e enviar AAB 0.16.0 ao teste interno
-    if: ${{ github.ref == 'refs/heads/develop' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO' }}
+    if: ${{ github.ref == 'refs/heads/develop' && (github.event_name == 'push' || inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO') }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - name: Obter código da Jynlo
         uses: actions/checkout@v4
+      - name: Exigir pedido de upload autorizado e versionado
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          test "$(cat .github/jynlo-play-upload-016.request)" = "ENVIAR_JYNLO_016_TESTE_INTERNO"
+          test "$(node -p "require('./app.json').expo.version")" = "0.16.0"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "7"
       - name: Preparar Python
         uses: actions/setup-python@v5
         with:
@@ -63,6 +75,6 @@ jobs:
       - name: Enviar exclusivamente para a faixa interna
         env:
           JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          RELEASE_STATUS: ${{ inputs.status }}
+          RELEASE_STATUS: ${{ github.event_name == 'push' && 'draft' || inputs.status }}
         shell: bash
         run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --apply --status "$RELEASE_STATUS"

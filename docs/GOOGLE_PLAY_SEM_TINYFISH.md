@@ -21,3 +21,6 @@
 **Atenção:** o `versionCode 7` não deve ser reenviado após aceitação; para ativar um rascunho existente, usa a Play Console sem carregar novamente o mesmo AAB. A Google pode exigir ações iniciais, documentos e consentimentos que a API não substitui. O login Google no Android distribuído também exige o SHA-1 da chave **Play App Signing** no Google Cloud OAuth.
 
 Referências: https://developers.google.com/android-publisher/getting_started e https://docs.expo.dev/submit/android/
+
+
+**Execução sem navegador:** depois de o proprietário colocar o secret no GitHub, o assistente pode criar em `develop` o ficheiro `.github/jynlo-play-upload-016.request` com a linha `ENVIAR_JYNLO_016_TESTE_INTERNO`. Isto desencadeia o workflow com estado **draft**, sem ações da Play Store em produção. O código valida o pedido e a versão exata antes de usar as credenciais. Não criar este ficheiro enquanto faltar a autorização da conta de serviço.
