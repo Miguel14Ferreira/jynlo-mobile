@@ -9,6 +9,9 @@ test('Google Play só pode enviar através de workflow_dispatch em develop e con
  assert.match(yaml,/github.ref == 'refs\/heads\/develop'/);
  assert.match(yaml,/ENVIAR_JYNLO_016_TESTE_INTERNO/);
  assert.match(yaml,/default: verify-auth/);
+ assert.match(yaml,/verify-artifact/);
+ assert.match(yaml,/inputs.action == 'verify-artifact'/);
+ assert.match(yaml,/Confirmação de validação sem publicação/);
  assert.match(yaml,/default: draft/);
  assert.match(yaml,/run-id: '42023837920'/);
  assert.match(yaml,/inputs.action == 'upload'/);
