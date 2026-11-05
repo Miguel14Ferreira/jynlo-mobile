@@ -1,4 +1,5 @@
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
+import {readSuccessfulResponse} from './response-body.cjs';
 import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite } from './types';
 
 /** Without an explicit environment override, the app is an isolated demo.
@@ -34,8 +35,9 @@ export async function request<T>(path:string, {token,method='GET',body}:{token?:
         'Não foi possível concluir o pedido.';
       throw new ApiError(response.status,fallback);
     }
-    if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    // Some successful DELETE/POST endpoints return 200 with an empty body.
+    // Never misreport a completed mutation as a network failure just because JSON is absent.
+    return (await readSuccessfulResponse(response)) as T;
   }catch(error){
     if(error instanceof ApiError) throw error;
     if(controller.signal.aborted) throw new Error('A ligação demorou demasiado. Verifica o estado da sessão antes de repetir.');

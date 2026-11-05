@@ -3,7 +3,7 @@ import {Alert,Linking,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {DEMO_MODE,request} from '../../src/lib/api';
+import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
 export default function ProfileScreen(){
   const router=useRouter();const auth=useAuth();
@@ -19,11 +19,25 @@ export default function ProfileScreen(){
         setDeleting(true);
         try{
           await request<void>('/api/profile/me',{token:auth.token,method:'DELETE'});
+        }catch(e){
+          // No automatic retry: a timeout can happen AFTER the server has deleted the account.
+          const detail=e instanceof ApiError&&[403,409].includes(e.status)
+            ?'O servidor não autorizou a eliminação. Se tens comunidades próprias, transfere primeiro a propriedade.'
+            :e instanceof ApiError&&e.status===401
+            ?'A sessão expirou. Inicia sessão novamente para verificares o estado da conta.'
+            :'Não foi possível confirmar a resposta do servidor. Verifica se a conta ainda existe antes de repetires o pedido.';
+          Alert.alert('Eliminação não confirmada',detail);
+          setDeleting(false);
+          return;
+        }
+        // Server deletion is confirmed; a subsequent logout/storage error must not undo that result.
+        try{
           await auth.logout();
           router.replace('/welcome');
           Alert.alert('Conta eliminada','A tua conta foi eliminada e a sessão foi terminada.');
         }catch{
-          Alert.alert('Não foi possível eliminar a conta','Verifica a ligação e a sessão. Se és proprietário de comunidades, transfere primeiro a propriedade. A conta não foi confirmada como eliminada.');
+          router.replace('/welcome');
+          Alert.alert('Conta eliminada','O servidor confirmou a eliminação, mas não foi possível concluir a limpeza local. Fecha a aplicação antes de a voltar a utilizar.');
         }finally{setDeleting(false);}
       })();}}
     ]);

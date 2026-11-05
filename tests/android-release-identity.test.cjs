@@ -10,6 +10,9 @@ test('Google Play Android identity stays fixed to registered app',()=>{
   assert.equal(config.expo.ios.bundleIdentifier,'com.jynlo.app');
   assert.ok(Number.isSafeInteger(config.expo.android.versionCode));
   assert.ok(config.expo.android.versionCode>0);
+  // A signed AAB from an older commit must not silently impersonate a newer app release.
+  assert.equal(config.expo.version,require('../package.json').version);
+  assert.equal(config.expo.android.versionCode,5);
 });
 
 test('internal Play workflow uses real HTTPS API, private upload key and no auto publishing',()=>{
