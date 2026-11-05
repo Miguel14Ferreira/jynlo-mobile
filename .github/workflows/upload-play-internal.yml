@@ -55,7 +55,7 @@ jobs:
           service_account: jynlo-play-publisher@jynlo-play-store.iam.gserviceaccount.com
           create_credentials_file: true
       - name: Instalar google-auth
-        run: python3 -m pip install --disable-pip-version-check 'google-auth>=2.36,<3'
+        run: python3 -m pip install --disable-pip-version-check 'google-auth>=2.36,<3' 'requests>=2.31,<3'
       - name: Confirmar autenticação federada (sem publicar)
         shell: bash
         run: |
