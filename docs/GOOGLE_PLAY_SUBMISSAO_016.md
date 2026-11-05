@@ -42,9 +42,9 @@ A Jynlo está numa fase de evolução. Algumas funcionalidades dependem da modal
 ## OAuth Google — certificados distintos
 O backend já expõe `GET /api/auth/google/config` com Web OAuth client ID. O Android usa `GoogleSignin.configure({webClientId})` e envia ID token para `/api/auth/google/login` ou `/api/auth/google/register`.
 
-**Certificado de upload privado** (a impressão digital é pública, a chave privada NÃO):
-- SHA-1 da upload key, calculado localmente por `keytool` e keystore guardada: `25:33:DB:E4:42:17:BA:8A:A3:42:A3:84:82:E4:49:5A:3D:69:5C:5D`
-- SHA-256 da upload key: `7D:FA:10:A7:31:AE:FD:D1:62:0A:6D:47:21:D9:CD:2E:9C:CA:2B:48:40:EE:DE:FB:A8:1D:2D:15:1B:02:9B:F6`
+**Certificado de upload atualmente usado no GitHub** (a impressão digital é pública, a chave privada NÃO). Confirmado por comparação independente dos AABs 0.14.0 e 0.16.0:
+- SHA-1 da assinatura efetiva dos AABs 0.14.0 e 0.16.0: `0A:07:F6:39:81:AC:3D:04:F0:FA:97:D1:97:61:81:4B:AE:D5:BE:99`
+- SHA-256 do certificado assinado nos AABs: `7A:55:D8:17:C0:89:EC:C4:91:07:61:DF:C1:AE:56:5F:9E:23:B0:A4:E9:CB:B9:58:FA:A9:0F:73:39:99:49:1A`
 - **Não confundir com a chave de distribuição da Play Store.** A app publicada pela Google Play é assinada com a **App Signing Key** gerida pela Google. É o SHA-1 desse certificado que tem de estar registado no cliente OAuth Android `com.jynlo.app` do Google Cloud. Obter na Play Console → App Integrity / Play App Signing depois de haver certificado associado à aplicação.
 - Se a Play Console apresentar certificados distintos para dispositivos de gerações diferentes, registar todos os certificados de assinatura de distribuição aplicáveis.
 - Manter o Web OAuth client usado pelo backend como público-alvo do ID token; não incluir `client_secret` nem credenciais privadas na app ou em commits.
@@ -82,3 +82,13 @@ Confirmação independente das três páginas públicas, sem autenticação:
 5. Rever as declarações da Play Console (Data safety, conteúdo, público-alvo, account deletion, data access para revisores) contra as funcionalidades realmente ativadas. Não declarar conformidade sem essa revisão.
 
 Isto não impede necessariamente a compilação ou o **teste interno**, mas impede que consideremos a documentação jurídica fechada para um lançamento público. A obrigação de assegurar conformidade cabe ao titular da conta.
+
+## Continuidade de assinatura e backup (05/11/2026)
+
+Os AABs `0.14.0` e `0.16.0` foram extraídos dos artefactos originais do GitHub Actions e analisados com `keytool -printcert -jarfile`. Ambos apresentam o mesmo SHA-1 `0A:07:F6:39:81:AC:3D:04:F0:FA:97:D1:97:61:81:4B:AE:D5:BE:99`, e a versão `0.16.0` passou em `jarsigner -verify` e no checksum SHA-256 da compilação.
+
+**Importante:** o ZIP `Jynlo_Google_Play_Upload_Key_2026-11-04_GUARDAR_EM_SEGURANCA.zip` foi criado mais cedo (certificado SHA-1 `25:33:DB:E4:42:17:BA:8A:A3:42:A3:84:82:E4:49:5A:3D:69:5C:5D`) e **não corresponde ao certificado que assina atualmente os AABs da GitHub Actions**. Não o utilizar como backup definitivo para atualizações Play.
+
+Uma nova chave RSA-4096 PKCS12 foi gerada na noite de 04/11/2026, com os quatro Secrets atualizados, e foi criado um backup cifrado AES-256-GCM: `jynlo-upload-backup-ENCRYPTED.bin`, acompanhado de `jynlo-upload-recovery-PRIVATE.txt`, também disponibilizados em `jynlo-recuperacao-e-configuracao-PRIVADO.zip`. Confirmar que o proprietário guardou ambos os ficheiros de recuperação em local seguro; sem eles, será necessário recuperar a chave ou pedir à Google a reposição da chave de upload, quando aplicável.
+
+Este SHA-1 é da **upload key**. No Google Cloud OAuth Android da versão entregue pela Play, registar o SHA-1 da **Play App Signing key** obtido na Play Console, não assumir que coincide com este.
