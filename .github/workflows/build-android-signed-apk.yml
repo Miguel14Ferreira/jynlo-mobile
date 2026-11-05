@@ -1,0 +1,132 @@
+name: Jynlo Mobile - Android APK assinada (testes internos)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Escreve TESTAR_API_REAL para construir uma APK ligada à API real"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jynlo-signed-apk-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  build-internal-aab:
+    name: Gerar APK assinada para testes internos
+    if: ${{ inputs.confirm == 'TESTAR_API_REAL' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      JYNLO_REQUIRE_REAL_API: "1"
+      EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: Validar testes, TypeScript e API real
+        run: |
+          npm run test:all
+          npm run typecheck
+          npm run check:release
+      - name: Gerar Android nativo
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Carregar chave privada só para este runner
+        env:
+          JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 JYNLO_PLAY_UPLOAD_STORE_PASSWORD JYNLO_PLAY_UPLOAD_KEY_PASSWORD JYNLO_PLAY_UPLOAD_KEY_ALIAS; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::A configuração protegida ${name} está em falta. Não será criado nenhuma APK."
+              exit 1
+            fi
+          done
+          target="$RUNNER_TEMP/jynlo-play-upload.jks"
+          printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$target"
+          test -s "$target"
+          chmod 600 "$target"
+          echo "JYNLO_PLAY_UPLOAD_KEYSTORE_PATH=$target" >> "$GITHUB_ENV"
+      - name: Validar chave e passwords antes do Gradle
+        env:
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          keystore="$JYNLO_PLAY_UPLOAD_KEYSTORE_PATH"
+          if ! keytool -list -keystore "$keystore" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::A keystore, a password de armazenamento ou o alias da chave não correspondem. Confirma os GitHub Actions Secrets."
+            exit 1
+          fi
+          # Generate a temporary certificate request to verify the private-key password.
+          # The CSR contains no private key and is never uploaded.
+          csr="$RUNNER_TEMP/jynlo-upload-check.csr"
+          trap 'rm -f "$csr"' EXIT
+          if ! keytool -certreq -keystore "$keystore" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -keypass "$JYNLO_PLAY_UPLOAD_KEY_PASSWORD" -file "$csr" >/dev/null 2>&1; then
+            echo "::error::A chave privada não abriu com a password configurada. Confirma JYNLO_PLAY_UPLOAD_KEY_PASSWORD e JYNLO_PLAY_UPLOAD_STORE_PASSWORD."
+            exit 1
+          fi
+          test -s "$csr"
+          echo "Chave de assinatura validada antes da compilação."
+      - name: Aplicar assinatura de envio à release gerada
+        run: node scripts/configure-play-signing.cjs android/app/build.gradle
+      - name: Gerar APK release assinada para testes
+        env:
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2
+        working-directory: android
+      - name: Confirmar assinatura e conteúdo da APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          unzip -Z1 "$apk" | grep -q '^assets/index.android.bundle$'
+          apk_signer="$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          test -n "$apk_signer"
+          "$apk_signer" verify --verbose "$apk"
+          echo "APK interna assinada e validada. Não foi publicada na Google Play."
+      - name: Registar versão, origem e commit da APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/write-android-build-info.cjs apk
+          sha256sum "android/app/build/outputs/apk/release/app-release.apk" > android-build-sha256.txt
+      - name: Guardar APK assinada para testes Android
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-mobile-signed-internal-apk
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android-build-info.json
+            android-build-sha256.txt
+          if-no-files-found: error
+          retention-days: 14
+      - name: Apagar chave temporária do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/jynlo-play-upload.jks"
