@@ -3,8 +3,8 @@ export interface NormalizedCommunityCreate { name:string;description:string|null
 export function safeId(id:number|string):number;
 export function communityUrl(id:number):string;
 export function normalizeCommunityInput(input:CommunityCreateInput):NormalizedCommunityCreate;
-export function communitySports(community:{sport?:string|null;sports?:string[]}):string[];
-export function describeCommunitySports(community:{sport?:string|null;sports?:string[]},limit?:number):string;
+export function communitySports(community:{sport?:string|null;sports?:string[]}|null|undefined):string[];
+export function describeCommunitySports(community:{sport?:string|null;sports?:string[]}|null|undefined,limit?:number):string;
 export function makeStore():{
   get(id:number,user?:string|null):any;
   mine(user:string):any[];
