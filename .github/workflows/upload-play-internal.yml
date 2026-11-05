@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'Verificar autenticação sem enviar nada ou enviar AAB para testes internos'
+        description: 'Verificar autenticação, verificar AAB assinado ou enviar a testes internos'
         required: true
         type: choice
         default: verify-auth
         options:
           - verify-auth
+          - verify-artifact
           - upload
       confirm:
         description: 'Só para upload: escreve ENVIAR_JYNLO_016_TESTE_INTERNO'
@@ -37,7 +38,7 @@ concurrency:
 jobs:
   upload:
     name: Validar OIDC e opcionalmente enviar AAB 0.16.0
-    if: ${{ github.ref == 'refs/heads/develop' && (inputs.action == 'verify-auth' || (inputs.action == 'upload' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO')) }}
+    if: ${{ github.ref == 'refs/heads/develop' && (inputs.action == 'verify-auth' || inputs.action == 'verify-artifact' || (inputs.action == 'upload' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -69,7 +70,7 @@ jobs:
           print("OIDC validado; nenhuma operação de publicação efetuada")
           PY
       - name: Transferir AAB original assinado no GitHub
-        if: ${{ inputs.action == 'upload' }}
+        if: ${{ inputs.action == 'upload' || inputs.action == 'verify-artifact' }}
         uses: actions/download-artifact@v4
         with:
           name: jynlo-google-play-internal-aab
@@ -78,11 +79,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: play-artifact
       - name: Validar origem, versão, manifesto e SHA-256
-        if: ${{ inputs.action == 'upload' }}
+        if: ${{ inputs.action == 'upload' || inputs.action == 'verify-artifact' }}
         run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact
       - name: Confirmar assinatura do AAB
-        if: ${{ inputs.action == 'upload' }}
+        if: ${{ inputs.action == 'upload' || inputs.action == 'verify-artifact' }}
         run: jarsigner -verify play-artifact/android/app/build/outputs/bundle/release/app-release.aab
+      - name: Confirmação de validação sem publicação
+        if: ${{ inputs.action == 'verify-artifact' }}
+        run: echo "AAB 0.16.0 validado localmente; nenhum envio à Google Play foi efetuado"
       - name: Instalar biblioteca da API oficial Google Play
         if: ${{ inputs.action == 'upload' }}
         run: python3 -m pip install --disable-pip-version-check 'google-api-python-client>=2.160,<3' 'google-auth>=2.36,<3' 'google-auth-httplib2>=0.2,<1'
