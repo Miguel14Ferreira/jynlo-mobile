@@ -51,7 +51,7 @@ export default function DiscoverScreen(){
    <View style={styles.shortcuts}>
      <Pressable style={styles.shortcut} onPress={()=>router.push('/feed')} accessibilityRole="button"><Text style={styles.shortcutText}>📰 Feed</Text></Pressable>
      <Pressable style={styles.shortcut} onPress={()=>router.push('/venues')} accessibilityRole="button"><Text style={styles.shortcutText}>📍 Recintos</Text></Pressable>
-     <Pressable style={styles.shortcut} onPress={()=>router.push('/(tabs)/tournaments')} accessibilityRole="button"><Text style={styles.shortcutText}>🏆 Torneios</Text></Pressable>
+     <Pressable style={styles.shortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button"><Text style={styles.shortcutText}>🤝 Comunidades</Text></Pressable>
      <Pressable style={styles.shortcut} onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})} accessibilityRole="button"><Text style={styles.shortcutText}>＋ Criar sessão</Text></Pressable>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={setCity} placeholder="⌖  Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>

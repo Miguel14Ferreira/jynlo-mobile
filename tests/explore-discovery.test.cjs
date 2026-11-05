@@ -17,9 +17,10 @@ test('Pesquisa de cidade usa debounce e ignora resultados atrasados',()=>{
  assert.match(file,/setTimeout\(\(\)=>setDebouncedCity\(city\.trim\(\)\),350\)/);
  assert.match(file,/version===loadVersion\.current/);
 });
-test('Acesso a torneios e criacao de sessao mantem login quando necessario',()=>{
+test('Explorar mostra Comunidades aos visitantes e preserva login na criação de sessão',()=>{
  const file=read('app/(tabs)/explore.tsx');
- assert.ok(file.includes("router.push('/(tabs)/tournaments')"));
+ assert.ok(file.includes("router.push('/(tabs)/communities')"));
+ assert.doesNotMatch(file,/🏆 Torneios/);
  assert.match(file,/redirect:'\/sessions\/create'/);
  assert.equal(require('../src/lib/routes.cjs').safeRedirect('/sessions/create'),'/sessions/create');
 });

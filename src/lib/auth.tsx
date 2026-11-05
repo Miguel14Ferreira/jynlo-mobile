@@ -3,13 +3,19 @@ import {AppState} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import {DEMO_MODE,confirmMfa,resendMfa as apiResendMfa,signIn as apiSignIn,logoutServer} from './api';
 import {assertCanStartLogin} from './account-session.cjs';
+import {googleLoginWithIdToken,googleRegisterWithIdToken} from './google-auth-api';
+import type {GoogleSignupInput} from './google-auth-api';
 import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
+type GoogleAuthOutcome = AuthOutcome|'ONBOARDING_REQUIRED';
 interface AuthContextValue {
   ready:boolean; username:string|null; token:string|null; challengeId:string|null;
   browsingAsGuest:boolean; browseAsGuest:()=>void;
   login:(name:string,password:string)=>Promise<AuthOutcome>;
+  loginGoogle:(credential:string)=>Promise<GoogleAuthOutcome>;
+  googleOnboardingEmail:string|null;
+  completeGoogleRegistration:(input:GoogleSignupInput)=>Promise<void>;
   loginDemo:(name:string)=>void;
   completeMfa:(code:string)=>Promise<void>;
   resendMfa:()=>Promise<void>;
@@ -24,6 +30,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const [token,setToken]=useState<string|null>(null);
   const [challengeId,setChallengeId]=useState<string|null>(null);
   const [pendingUsername,setPendingUsername]=useState<string|null>(null);
+  const [googlePending,setGooglePending]=useState<{credential:string;email:string}|null>(null);
   const [browsingAsGuest,setBrowsingAsGuest]=useState(false);
   useEffect(()=>{let active=true;(async()=>{
     try{
@@ -45,7 +52,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(DEMO_MODE||!token)return;
     const expire=()=>{
       if(isAccessTokenUsable(token))return;
-      setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);
+      setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
       setBrowsingAsGuest(false);
       void Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).catch(()=>{});
     };
@@ -58,7 +65,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const save=useCallback(async(name:string,accessToken:string)=>{
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
     await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
-    setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);
+    setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
   },[]);
   const login=useCallback(async(name:string,password:string):Promise<AuthOutcome>=>{
@@ -70,14 +77,48 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(!response.token)throw new Error('O servidor não enviou uma sessão válida.');
     await save(response.profile?.username?.trim()||name,response.token);return 'AUTHENTICATED';
   },[save,username]);
+  const loginGoogle=useCallback(async(credential:string):Promise<GoogleAuthOutcome>=>{
+    assertCanStartLogin(username);
+    if(DEMO_MODE)throw Error('Autenticação Google indisponível em demonstração.');
+    // The server verifies Google's signature, audience and email before any account is accepted.
+    const googleResponse=await googleLoginWithIdToken(credential);
+    if(googleResponse.onboardingRequired){
+      if(!googleResponse.email)throw Error('O servidor não confirmou o email Google.');
+      setGooglePending({credential,email:googleResponse.email});
+      return 'ONBOARDING_REQUIRED';
+    }
+    setGooglePending(null);
+    if(googleResponse.mfaRequired){
+      if(!googleResponse.challengeId)throw Error('Desafio MFA Google inválido.');
+      setChallengeId(googleResponse.challengeId);
+      // Google MFA does not include a profile until the challenge is confirmed.
+      setPendingUsername(null);
+      return 'MFA_REQUIRED';
+    }
+    if(!googleResponse.token||!googleResponse.profile?.username?.trim())
+      throw Error('O servidor não confirmou uma sessão Jynlo válida.');
+    await save(googleResponse.profile.username.trim(),googleResponse.token);
+    return 'AUTHENTICATED';
+  },[save,username]);
+  const completeGoogleRegistration=useCallback(async(input:GoogleSignupInput)=>{
+    assertCanStartLogin(username);
+    if(!googlePending)throw Error('A sessão de registo Google expirou. Volta a iniciar sessão.');
+    // Never persist Google ID credentials; registration uses the same short-lived verified token.
+    const googleResponse=await googleRegisterWithIdToken(googlePending.credential,input);
+    if(googleResponse.onboardingRequired||googleResponse.mfaRequired||!googleResponse.token||
+       !googleResponse.profile?.username?.trim())throw Error('O registo não devolveu uma sessão válida.');
+    await save(googleResponse.profile.username.trim(),googleResponse.token);
+  },[googlePending,save,username]);
   const completeMfa=useCallback(async(code:string)=>{
-    if(!challengeId||!pendingUsername)throw new Error('Desafio MFA não encontrado.');
+    if(!challengeId)throw new Error('Desafio MFA não encontrado.');
     const response=await confirmMfa(challengeId,code);
     if(!response.token)throw new Error('O código não foi aceite.');
-    await save(response.profile?.username?.trim()||pendingUsername,response.token);
+    const confirmedName=response.profile?.username?.trim()||pendingUsername;
+    if(!confirmedName)throw Error('O servidor não confirmou o utilizador após MFA.');
+    await save(confirmedName,response.token);
   },[challengeId,pendingUsername,save]);
   const resendMfa=useCallback(async()=>{
-    if(!challengeId||!pendingUsername)throw new Error('Desafio MFA não encontrado. Inicia sessão novamente.');
+    if(!challengeId)throw new Error('Desafio MFA não encontrado. Inicia sessão novamente.');
     const response=await apiResendMfa(challengeId);
     if(!response.mfaRequired||!response.challengeId)throw new Error('Não foi possível renovar o código MFA. Inicia sessão novamente.');
     setChallengeId(response.challengeId);
@@ -90,13 +131,15 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   },[username]);
   const logout=useCallback(async()=>{
     if(!DEMO_MODE&&token){try{await logoutServer(token);}catch{/* Always revoke local credentials */}}
-    setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);
+    setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
     if(!DEMO_MODE){await Promise.all([
       SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);}
   },[token]);
-  const value=useMemo(()=>({ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,loginDemo,completeMfa,resendMfa,logout}),
-    [ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,loginDemo,completeMfa,resendMfa,logout]);
+  const value=useMemo(()=>({ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,
+    loginGoogle,googleOnboardingEmail:googlePending?.email||null,completeGoogleRegistration,
+    loginDemo,completeMfa,resendMfa,logout}),
+    [ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,loginGoogle,googlePending,completeGoogleRegistration,loginDemo,completeMfa,resendMfa,logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const c=useContext(AuthContext);if(!c)throw new Error('AuthProvider obrigatório');return c;}

@@ -23,7 +23,7 @@ export default function WelcomeScreen(){
    <Text style={styles.heading}>Encontra o teu desporto. Encontra as tuas pessoas.</Text>
    <Text style={styles.description}>Explora atividades, recintos e comunidades. Inicia sessão para participar.</Text>
    {DEMO_MODE?<DemoBanner/>:null}
-   <Button title={DEMO_MODE?'Experimentar conta fictícia':'Entrar na minha conta'} onPress={()=>router.push('/login')}/>
+   <Button title={DEMO_MODE?'Experimentar conta fictícia':'Entrar na Jynlo · Google ou palavra-passe'} onPress={()=>router.push('/login')}/>
    <Button title="Explorar como visitante" secondary onPress={explore}/>
    <Button title="Criar conta na Jynlo Web" secondary onPress={register}/>
    <View style={styles.legalLinks}>

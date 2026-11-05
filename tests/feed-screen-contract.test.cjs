@@ -27,3 +27,12 @@ test('Feed de visitante nunca pede feed privado nem simula uma conta',()=>{
   assert.match(feed,/Explorar todas as sessões/);
   assert.match(feed,/auth\.token\?'A minha semana desportiva':'Descobre a tua próxima sessão'/);
 });
+
+test('Feed mobile usa hero compacto sem recorte de imagem e separadores respeitam área segura',()=>{
+ const feed=read('app/(tabs)/index.tsx'),tabs=read('app/(tabs)/_layout.tsx');
+ assert.match(feed,/>Feed<\/Text>/);
+ assert.doesNotMatch(feed,/jynlo-feed-sports\.png/);
+ assert.doesNotMatch(feed,/<ImageBackground/);
+ assert.match(tabs,/useSafeAreaInsets/);
+ assert.match(tabs,/Math\.max\(insets\.bottom,8\)/);
+});

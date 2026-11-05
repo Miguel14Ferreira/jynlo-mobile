@@ -2,10 +2,11 @@ import React from 'react';
 import {Tabs} from 'expo-router';
 import {Text} from 'react-native';
 import {C} from '../../src/lib/theme';
-export default function TabsLayout(){return <Tabs screenOptions={{
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+export default function TabsLayout(){const insets=useSafeAreaInsets();return <Tabs screenOptions={{
   headerShown:false,tabBarActiveTintColor:'#26E0CD',tabBarInactiveTintColor:'#85A8B0',
-  tabBarStyle:{backgroundColor:'#06121D',borderTopColor:'#0B3946',height:70,paddingBottom:11,paddingTop:7},
-  tabBarLabelStyle:{fontSize:10,fontWeight:'800'},
+  tabBarStyle:{backgroundColor:'#06121D',borderTopColor:'#0B3946',height:62+Math.max(insets.bottom,0),paddingBottom:Math.max(insets.bottom,8),paddingTop:7},
+  tabBarLabelStyle:{fontSize:11,fontWeight:'800'},
 }}>
   <Tabs.Screen name="index" options={{title:'Feed',tabBarIcon:({color})=><Text style={{fontSize:22,color}}>▣</Text>}}/>
   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color})=><Text style={{fontSize:22,color}}>⌕</Text>}}/>

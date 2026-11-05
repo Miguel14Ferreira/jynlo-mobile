@@ -30,6 +30,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
+    <Stack.Screen name="google-onboarding" options={{title:'Registo com Google'}}/>
     <Stack.Screen name="mfa" options={{title:'Verificação MFA'}}/>
   </Stack>
 </>;}
