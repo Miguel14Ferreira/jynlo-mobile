@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Validate the existing Jynlo AAB and optionally upload it to the INTERNAL Google Play track."""
-import argparse,hashlib,json,os,sys,zipfile
+import argparse,hashlib,json,sys,zipfile
 from pathlib import Path
 
 PKG="com.jynlo.app"
@@ -31,14 +31,11 @@ def validate(base):
     return aab,digest
 
 def send(aab,status):
-    key=os.environ.get("JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON","")
-    if not key: raise RuntimeError("Falta JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; nada enviado")
-    from google.oauth2 import service_account
+    import google.auth
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
     import google_auth_httplib2,httplib2
-    credential=service_account.Credentials.from_service_account_info(
-        json.loads(key),scopes=["https://www.googleapis.com/auth/androidpublisher"])
+    credential,_=google.auth.default(scopes=["https://www.googleapis.com/auth/androidpublisher"])
     client=google_auth_httplib2.AuthorizedHttp(credential,http=httplib2.Http(timeout=240))
     google=build("androidpublisher","v3",http=client,cache_discovery=False)
     edit=google.edits().insert(packageName=PKG,body={}).execute()

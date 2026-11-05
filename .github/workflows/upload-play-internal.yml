@@ -1,16 +1,20 @@
 name: Jynlo Mobile - Enviar AAB à Google Play (teste interno)
 
 on:
-  # A versioned request committed to develop lets us upload without browser automation.
-  push:
-    branches: [develop]
-    paths:
-      - ".github/jynlo-play-upload-016.request"
   workflow_dispatch:
     inputs:
-      confirm:
-        description: 'Escreve ENVIAR_JYNLO_016_TESTE_INTERNO para autorizar o envio ao teste interno'
+      action:
+        description: 'Verificar autenticação sem enviar nada ou enviar AAB para testes internos'
         required: true
+        type: choice
+        default: verify-auth
+        options:
+          - verify-auth
+          - upload
+      confirm:
+        description: 'Só para upload: escreve ENVIAR_JYNLO_016_TESTE_INTERNO'
+        required: false
+        default: ''
         type: string
       status:
         description: 'draft guarda na consola; completed disponibiliza aos testadores autorizados'
@@ -24,6 +28,7 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 concurrency:
   group: jynlo-play-internal-016-upload
@@ -31,25 +36,40 @@ concurrency:
 
 jobs:
   upload:
-    name: Validar e enviar AAB 0.16.0 ao teste interno
-    if: ${{ github.ref == 'refs/heads/develop' && (github.event_name == 'push' || inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO') }}
+    name: Validar OIDC e opcionalmente enviar AAB 0.16.0
+    if: ${{ github.ref == 'refs/heads/develop' && (inputs.action == 'verify-auth' || (inputs.action == 'upload' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - name: Obter código da Jynlo
         uses: actions/checkout@v4
-      - name: Exigir pedido de upload autorizado e versionado
-        if: ${{ github.event_name == 'push' }}
-        shell: bash
-        run: |
-          test "$(cat .github/jynlo-play-upload-016.request)" = "ENVIAR_JYNLO_016_TESTE_INTERNO"
-          test "$(node -p "require('./app.json').expo.version")" = "0.16.0"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "7"
       - name: Preparar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Autenticar via GitHub OIDC (sem chave JSON)
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: jynlo-play-store
+          workload_identity_provider: projects/955491875786/locations/global/workloadIdentityPools/jynlo-github/providers/github-actions
+          service_account: jynlo-play-publisher@jynlo-play-store.iam.gserviceaccount.com
+          create_credentials_file: true
+      - name: Instalar google-auth
+        run: python3 -m pip install --disable-pip-version-check 'google-auth>=2.36,<3'
+      - name: Confirmar autenticação federada (sem publicar)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import google.auth
+          from google.auth.transport.requests import Request
+          credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/androidpublisher"])
+          credentials.refresh(Request())
+          if not credentials.valid:
+              raise RuntimeError("Credenciais federadas inválidas")
+          print("OIDC validado; nenhuma operação de publicação efetuada")
+          PY
       - name: Transferir AAB original assinado no GitHub
+        if: ${{ inputs.action == 'upload' }}
         uses: actions/download-artifact@v4
         with:
           name: jynlo-google-play-internal-aab
@@ -58,23 +78,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: play-artifact
       - name: Validar origem, versão, manifesto e SHA-256
+        if: ${{ inputs.action == 'upload' }}
         run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact
       - name: Confirmar assinatura do AAB
+        if: ${{ inputs.action == 'upload' }}
         run: jarsigner -verify play-artifact/android/app/build/outputs/bundle/release/app-release.aab
-      - name: Exigir autorização Google Play antes de qualquer envio
-        env:
-          JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-        shell: bash
-        run: |
-          if [ -z "$JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
-            echo '::error::Falta JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON. Nada enviado.'
-            exit 1
-          fi
       - name: Instalar biblioteca da API oficial Google Play
+        if: ${{ inputs.action == 'upload' }}
         run: python3 -m pip install --disable-pip-version-check 'google-api-python-client>=2.160,<3' 'google-auth>=2.36,<3' 'google-auth-httplib2>=0.2,<1'
       - name: Enviar exclusivamente para a faixa interna
+        if: ${{ inputs.action == 'upload' }}
         env:
-          JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
-          RELEASE_STATUS: ${{ github.event_name == 'push' && 'draft' || inputs.status }}
+          RELEASE_STATUS: ${{ inputs.status }}
         shell: bash
         run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --apply --status "$RELEASE_STATUS"
