@@ -1,26 +1,33 @@
-# Google Play da Jynlo sem TinyFish
+# Jynlo — Google Play Internal Testing via GitHub OIDC
 
-**Objetivo:** enviar o AAB 0.16.0 já gerado, sem criar mais APKs nem navegar com ferramentas pagas. O GitHub Actions passa a usar a API oficial da Google Play, limitada à **faixa de teste interno**.
+## Estado da configuração (5 de novembro de 2026)
 
-## Configuração única para autorizar a API
+- Repositório: `Miguel14Ferreira/jynlo-mobile`, branch `develop`
+- Aplicação: `com.jynlo.app`
+- AAB assinado: `0.16.0` / `versionCode 7`, artefacto `jynlo-google-play-internal-aab` do run `42023837920`
+- Artefacto GitHub disponível até **12 de novembro de 2026**; depois é necessário gerar novo AAB assinado
+- Projeto: `jynlo-play-store` (número `955491875786`)
+- Provider OIDC: `projects/955491875786/locations/global/workloadIdentityPools/jynlo-github/providers/github-actions`
+- Service Account: `jynlo-play-publisher@jynlo-play-store.iam.gserviceaccount.com`
+- Permissões na Play Console: apenas visualizar a Jynlo e publicar nas faixas de teste; sem acesso a produção, finanças ou administração
+- **Autenticação sem chave JSON**: GitHub Actions `google-github-actions/auth@v3` + Application Default Credentials. Confirmada em `https://github.com/Miguel14Ferreira/jynlo-mobile/actions/runs/42069971490`.
 
-1. Na [Google Cloud Console](https://console.cloud.google.com/), cria/escolhe um projeto e ativa a [Google Play Developer API](https://console.cloud.google.com/apis/library/androidpublisher.googleapis.com).
-2. Cria uma **conta de serviço** (service account) nesse projeto, seguindo as instruções oficiais: https://developers.google.com/android-publisher/getting_started .
-3. Na [Play Console](https://play.google.com/console/), abre **Utilizadores e permissões** e convida o email dessa conta de serviço, atribuindo apenas à app Jynlo as permissões necessárias para **lançamentos de teste**, incluindo *Release apps to testing tracks*. Não conceder acesso financeiro.
-4. Cria uma chave JSON para essa conta de serviço apenas se for necessária; guarda-a como GitHub Actions repository secret **`JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`** em https://github.com/Miguel14Ferreira/jynlo-mobile/settings/secrets/actions . **Nunca enviar a chave em mensagens ou fazer commit dela.**
-5. Abre o [workflow de envio para o teste interno](https://github.com/Miguel14Ferreira/jynlo-mobile/actions/workflows/upload-play-internal.yml). Escolhe `develop`, introduz `ENVIAR_JYNLO_016_TESTE_INTERNO` e deixa o modo `draft` no primeiro envio. O modo `completed` distribui diretamente aos testadores autorizados se a Play Console o permitir.
+## Workflow
 
-## O que este workflow faz
+Abre [Jynlo Mobile — Enviar AAB à Google Play (teste interno)](https://github.com/Miguel14Ferreira/jynlo-mobile/actions/workflows/upload-play-internal.yml), escolhe branch `develop` e uma das opções:
 
-- Transfere o AAB oficial do GitHub Actions run `42023837920` sem compilar outra vez.
-- Confirma pacote `com.jynlo.app`, versão `0.16.0`, `versionCode 7`, SHA-256, commit de origem, manifesto e assinatura.
-- Utiliza a API Google Play Developer com a credencial guardada no GitHub Secrets, sem revelá-la.
-- A única faixa da API é `internal`; **não existe caminho para produção** nem agendamento de publicações.
-- Se faltar a credencial, a execução falha sem enviar nada.
+1. `verify-auth` (padrão): valida a federação OIDC, sem transferir nem enviar o AAB.
+2. `verify-artifact`: descarrega o AAB da execução original, valida metadados de pacote, versão, commit, SHA-256, manifesto e assinatura, **sem enviar nada para a Google Play**.
+3. `upload`: requer no campo de confirmação o texto exato `ENVIAR_JYNLO_016_TESTE_INTERNO`. Por padrão, envia apenas um **rascunho** (`draft`) para a faixa `internal`. `completed` disponibiliza a versão a testadores elegíveis; utilizar apenas mediante autorização explícita.
 
-**Atenção:** o `versionCode 7` não deve ser reenviado após aceitação; para ativar um rascunho existente, usa a Play Console sem carregar novamente o mesmo AAB. A Google pode exigir ações iniciais, documentos e consentimentos que a API não substitui. O login Google no Android distribuído também exige o SHA-1 da chave **Play App Signing** no Google Cloud OAuth.
+O workflow só permite execução manual (`workflow_dispatch`); um push no repositório não inicia a publicação.
 
-Referências: https://developers.google.com/android-publisher/getting_started e https://docs.expo.dev/submit/android/
+## Cuidados
 
+- Não criar ou guardar chaves JSON da Service Account.
+- Não enviar novamente um `versionCode` que já tenha sido aceite na Google Play; consultar a faixa interna antes de uma nova tentativa de upload.
+- A primeira publicação pode exigir etapas e confirmações adicionais na Play Console.
+- Para o login Google funcionar numa versão distribuída pela Play, verificar o SHA-1 da chave **Play App Signing** na configuração OAuth Android.
+- Não criar novos ficheiros `.github/jynlo-play-upload-016.request`: o disparo por push foi removido.
 
-**Execução sem navegador:** depois de o proprietário colocar o secret no GitHub, o assistente pode criar em `develop` o ficheiro `.github/jynlo-play-upload-016.request` com a linha `ENVIAR_JYNLO_016_TESTE_INTERNO`. Isto desencadeia o workflow com estado **draft**, sem ações da Play Store em produção. O código valida o pedido e a versão exata antes de usar as credenciais. Não criar este ficheiro enquanto faltar a autorização da conta de serviço.
+Referências: https://developers.google.com/android-publisher/getting_started e https://github.com/google-github-actions/auth
