@@ -1,10 +1,12 @@
-import React,{useCallback,useMemo,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {myCommunities} from '../../src/lib/community-api';
+import {communitySports} from '../../src/lib/community-core.cjs';
+import {communityAllowsTournamentSport,canCreateTournamentForSport} from '../../src/lib/community-competition-core.cjs';
 import {createTournament} from '../../src/lib/tournament-create-api';
 import {creationProfile,disciplineChoices,isNumericModel,createTournamentDraft} from '../../src/lib/tournament-create-core.cjs';
 import type {TournamentCreateFormat,TournamentEntryChoice,CreateTournamentInput} from '../../src/lib/tournament-create-core.cjs';
@@ -43,7 +45,7 @@ function Choice({title,active,onPress}:{title:string;active:boolean;onPress:()=>
 }
 export default function CreateTournamentScreen(){
  const router=useRouter(),auth=useAuth();
- const params=useLocalSearchParams<{communityId?:string}>();
+ const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityId,setCommunityId]=useState<number|null>(null);
  const [search,setSearch]=useState(''),[sport,setSport]=useState('');
@@ -70,6 +72,13 @@ export default function CreateTournamentScreen(){
  },[auth.token,auth.username,params.communityId]);
  useFocusEffect(useCallback(()=>{void load();},[load]));
  const selected=communities.find(c=>c.id===communityId);
+ const selectedSports=useMemo(()=>communitySports(selected).filter(s=>SPORTS.includes(s)),[selected]);
+ const selectionKey=selectedSports.join('|');
+ useEffect(()=>{
+  const preferred=typeof params.sport==='string'?params.sport.trim():'';
+  setSport(current=>selectedSports.includes(current)?current:selectedSports.includes(preferred)?preferred:'');
+ },[selected?.id,selectionKey,params.sport]);
+ const sportIsAllowed=Boolean(selected&&communityAllowsTournamentSport(selected,sport)&&selectedSports.includes(sport));
  const profile=creationProfile(sport,entryType,athleticsMode);
  const effectiveFormat=profile.formats.includes(format)?format:(profile.formats[0]||'LEAGUE');
  const effectiveEvent=profile.events.length===1?(profile.events[0]||''):(profile.events.includes(event)?event:'');
@@ -77,10 +86,8 @@ export default function CreateTournamentScreen(){
  const effectiveDiscipline=disciplines.includes(discipline)?discipline:'';
  const suggestions=useMemo(()=>{
   const term=normalized(search.trim());
-  if(term)return SPORTS.filter(s=>normalized(s).includes(term)).slice(0,10);
-  const local=[...(selected?.sports||[]),selected?.sport||'',...SPORTS.slice(0,0)];
-  return Array.from(new Set(local.filter(s=>SPORTS.includes(s)))).slice(0,12);
- },[search,selected]);
+  return selectedSports.filter(s=>!term||normalized(s).includes(term)).slice(0,12);
+ },[search,selectionKey]);
  const data:CreateTournamentInput={
   name,sport,entryType,format:effectiveFormat,athleticsMode,
   eventType:effectiveEvent||null,eventDiscipline:effectiveDiscipline||null,
@@ -89,21 +96,22 @@ export default function CreateTournamentScreen(){
  };
  let validation='';
  try{createTournamentDraft(data);}catch(e){validation=e instanceof Error?e.message:'Confirma os campos.';}
- const ready=Boolean(selected&&name.trim().length>=2&&!validation&&!DEMO_MODE&&!busy);
- function pickSport(value:string){setSport(value);setSearch('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');setEvent('');setDiscipline('');}
+ const ready=Boolean(sportIsAllowed&&name.trim().length>=2&&!validation&&!DEMO_MODE&&!busy);
+ function pickSport(value:string){if(!selectedSports.includes(value))return;setSport(value);setSearch('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');setEvent('');setDiscipline('');}
  function setMode(value:TournamentEntryChoice){setEntryType(value);setFormat('LEAGUE');setEvent('');setDiscipline('');}
  function selectFormat(value:TournamentCreateFormat){setFormat(value);}
  async function save(payload:CreateTournamentInput){
   if(!selected||!auth.token||!auth.username||busy||DEMO_MODE)return;
+  if(!communityAllowsTournamentSport(selected,payload.sport)){setError('A modalidade escolhida não pertence a esta comunidade.');return;}
   setBusy(true);setError('');
   try{
-   const tournament=await createTournament(selected.id,payload,auth.token,auth.username,selected.myRole);
+   const tournament=await createTournament(selected.id,payload,auth.token,auth.username,selected.myRole,communitySports(selected));
    router.replace({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(selected.id),id:String(tournament.id)}});
   }catch(e){setError((e instanceof Error?e.message:'Não foi possível criar o torneio.')+' Confirma o estado antes de tentar novamente.');}
   finally{setBusy(false);}
  }
  function confirmCreate(){
-  if(!ready||!selected)return;
+  if(!ready||!selected||!sportIsAllowed)return;
   let payload:CreateTournamentInput;
   try{createTournamentDraft(data);payload={...data};}
   catch(e){setError(e instanceof Error?e.message:'Configuração inválida.');return;}
@@ -114,7 +122,7 @@ export default function CreateTournamentScreen(){
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
   <Text style={styles.title}>Criar competição</Text>
-  <Text style={styles.sub}>Escolhe primeiro a modalidade. Os formatos só aparecem quando a API da Jynlo já tem regras compatíveis.</Text>
+  <Text style={styles.sub}>Escolhe uma das modalidades da comunidade. O formato e a classificação dependem da prova, nunca de uma tabela genérica de futebol.</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!loading&&auth.token&&communities.length===0?<Message>Precisas de ser proprietário ou administrador de uma comunidade para criar torneios.</Message>:null}
@@ -125,15 +133,17 @@ export default function CreateTournamentScreen(){
       setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
     }}/>)}
    </ScrollView>
-   <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar.</Text>
+   <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.</Text>
   </View>
   <View style={styles.panel}>
    <Text style={styles.heading}>2. Modalidade</Text>
-   <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar nas 121 modalidades"
+   <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar modalidades desta comunidade"
     placeholderTextColor={C.muted} accessibilityLabel="Pesquisar modalidade" style={styles.input}/>
    {sport?<Badge text={sport}/>:null}
    <View style={styles.chips}>{suggestions.map(value=><Choice key={value} title={value} active={sport===value} onPress={()=>pickSport(value)}/>)}</View>
-   {!sport?<Text style={styles.helper}>Seleciona uma das modalidades sugeridas ou utiliza a pesquisa.</Text>:null}
+   {selectedSports.length===0?<Message>Esta comunidade ainda não tem modalidades do catálogo atual. Configura-as primeiro na Jynlo Web.</Message>:null}
+   {!sport&&selectedSports.length>0?<Text style={styles.helper}>Escolhe uma das {selectedSports.length} modalidades associadas. Podes pesquisar quando a lista é extensa.</Text>:null}
+   {!!sport&&!sportIsAllowed?<Message tone="error">Este desporto deixou de pertencer à comunidade. Escolhe uma modalidade válida.</Message>:null}
    {sport?<><Text style={styles.label}>TIPO DE COMPETIÇÃO</Text>
     <View style={styles.chips}>
      <Choice title="Individual" active={entryType==='INDIVIDUAL'} onPress={()=>setMode('INDIVIDUAL')}/>
@@ -146,6 +156,7 @@ export default function CreateTournamentScreen(){
      <Choice title="Pista / tempo" active={athleticsMode==='TRACK'} onPress={()=>{setAthleticsMode('TRACK');setEvent('');setDiscipline('');}}/>
     </View></>:null}
    {sport?<Message>{MODEL_HINTS[profile.model]||'Formato específico em preparação.'}</Message>:null}
+   {sport&&selected&&sportIsAllowed&&!canCreateTournamentForSport(selected,sport)?<Message>É possível consultar competições existentes, mas o motor de criação deste desporto ainda não está validado na app mobile.</Message>:null}
   </View>
   {profile.model!=='UNAVAILABLE'?<>
    <View style={styles.panel}>

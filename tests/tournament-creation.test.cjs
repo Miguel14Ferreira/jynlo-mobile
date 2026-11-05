@@ -73,3 +73,14 @@ test('nunca envia escrita na inicialização e desativa criação real na demo',
  assert.match(screen,/Alert\.alert/);assert.match(screen,/createTournament/);
  assert.doesNotMatch(screen,/setInterval\(|retry\(/);
 });
+
+test('a criação restringe-se às modalidades selecionadas pela comunidade, incluindo secundárias',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-create-api.ts'),'utf8');
+ assert.match(screen,/selectedSports=useMemo/);
+ assert.match(screen,/communityAllowsTournamentSport\(selected,sport\)/);
+ assert.match(screen,/canCreateTournamentForSport\(selected,sport\)/);
+ assert.match(screen,/communitySports\(selected\)\)/);
+ assert.match(api,/communityAllowsTournamentSport\(\{sports:allowedSports\},payload.sport\)/);
+ assert.doesNotMatch(screen,/const local=\[\.\.\.\(selected\?\.sports/);
+});

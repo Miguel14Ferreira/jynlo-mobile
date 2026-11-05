@@ -3,7 +3,7 @@
     "name": "Jynlo",
     "slug": "jynlo-mobile",
     "scheme": "jynlo",
-    "version": "0.14.0",
+    "version": "0.15.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/jynlo-icon.png",
@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/jynlo-icon.png",
         "backgroundColor": "#07171D"
       },
-      "versionCode": 5
+      "versionCode": 6
     },
     "plugins": [
       "expo-router",
