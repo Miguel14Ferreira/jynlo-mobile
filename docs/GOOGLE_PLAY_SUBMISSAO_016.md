@@ -65,3 +65,20 @@ O backend já expõe `GET /api/auth/google/config` com Web OAuth client ID. O An
 - A Play Console tinha lançamento interno em rascunho, sem testadores ativos e sem AAB enviado. Não declarar que a app está na loja até receber confirmação inequívoca da consola.
 
 Fontes de configuração: Android `app.json`, código mobile `src/lib/google-credential.ts`, contrato backend `AuthenticationController.java`; Google: https://support.google.com/googleplay/android-developer/answer/9842756 .
+
+
+## Auditoria pública das páginas legais (05/11/2026)
+
+Confirmação independente das três páginas públicas, sem autenticação:
+- `https://d24sports.com/privacy` — acessível e apresenta política provisória.
+- `https://d24sports.com/terms` — acessível e apresenta termos do piloto (idade mínima de 18 anos).
+- `https://d24sports.com/delete-account` — acessível; indica eliminação na app/web, necessidade de transferir propriedade de comunidades e canal de suporte.
+
+**Bloqueios reais à publicação pública e à declaração de conformidade:**
+1. A política de privacidade afirma literalmente que a identificação jurídica completa do responsável pelo tratamento (nome/entidade, NIF e morada) está pendente. Recolher e validar informação com o proprietário; não inventar dados e não remover a ressalva sem confirmação.
+2. A política afirma que os prazos de conservação de mensagens, presenças, contactos e contas inativas ainda serão formalizados. Definir prazos reais, processos de eliminação e exceções legais antes de assinalar a política como final.
+3. A política afirma que a lista e as condições dos fornecedores de infraestrutura, email e autenticação ainda serão consolidadas. Verificar prestadores e adequação de transparência, incluindo Google Sign-In.
+4. A política/termos descrevem mecanismos de exportação e eliminação em desenvolvimento. Confirmar o que já funciona efetivamente e atualizar apenas as afirmações fundamentadas.
+5. Rever as declarações da Play Console (Data safety, conteúdo, público-alvo, account deletion, data access para revisores) contra as funcionalidades realmente ativadas. Não declarar conformidade sem essa revisão.
+
+Isto não impede necessariamente a compilação ou o **teste interno**, mas impede que consideremos a documentação jurídica fechada para um lançamento público. A obrigação de assegurar conformidade cabe ao titular da conta.
