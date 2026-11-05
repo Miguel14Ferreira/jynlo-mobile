@@ -1,6 +1,11 @@
 name: Jynlo Mobile - Google Play Internal AAB (manual)
 
 on:
+  # Versioned commit request on develop. Never publishes to the store.
+  push:
+    branches: [develop]
+    paths:
+      - ".github/jynlo-play-aab.request"
   workflow_dispatch:
     inputs:
       confirm:
@@ -18,7 +23,7 @@ concurrency:
 jobs:
   build-internal-aab:
     name: Gerar AAB assinado para testes internos
-    if: ${{ inputs.confirm == 'PREPARAR_BETA_REAL' }}
+    if: ${{ github.event_name == 'push' || inputs.confirm == 'PREPARAR_BETA_REAL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -28,6 +33,15 @@ jobs:
     steps:
       - name: Obter código
         uses: actions/checkout@v4
+      - name: Validar pedido versionado de AAB 0.16.0
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/jynlo-play-aab.request)" = "PREPARAR_BETA_REAL 0.16.0"
+          test "$(node -p "require('./package.json').version")" = "0.16.0"
+          test "$(node -p "require('./app.json').expo.version")" = "0.16.0"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "7"
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
