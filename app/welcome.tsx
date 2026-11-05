@@ -26,6 +26,10 @@ export default function WelcomeScreen(){
    <Button title={DEMO_MODE?'Experimentar conta fictícia':'Entrar na minha conta'} onPress={()=>router.push('/login')}/>
    <Button title="Explorar como visitante" secondary onPress={explore}/>
    <Button title="Criar conta na Jynlo Web" secondary onPress={register}/>
+   <View style={styles.legalLinks}>
+    <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/privacy").catch(()=>Alert.alert("Jynlo","Não foi possível abrir a Política de Privacidade."));}} accessibilityRole="link">Política de Privacidade</Text>
+    <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/terms").catch(()=>Alert.alert("Jynlo","Não foi possível abrir os Termos de Utilização."));}} accessibilityRole="link">Termos de Utilização</Text>
+   </View>
    <Text style={styles.note}>{DEMO_MODE?'A demonstração não comunica com o servidor real. Escolher uma conta fictícia é voluntário.':'A tua sessão anterior só é restaurada se ainda for válida.'}</Text>
   </View>
  </ScrollView></SafeAreaView>;
@@ -41,6 +45,8 @@ const styles=StyleSheet.create({
  heroTitle:{fontSize:34,lineHeight:39,fontWeight:'900',color:WHITE,maxWidth:320},
  heroText:{color:'#E0F0F3',fontSize:14,lineHeight:20,maxWidth:310},
  actions:{gap:14},
+ legalLinks:{flexDirection:'row',justifyContent:'center',flexWrap:'wrap',gap:18,marginTop:6},
+ legalLink:{color:MINT,fontSize:13,fontWeight:'700',textDecorationLine:'underline'},
  heading:{color:WHITE,fontSize:23,lineHeight:29,fontWeight:'900'},
  description:{color:MUTED,fontSize:15,lineHeight:23},
  note:{color:MUTED,fontSize:12,lineHeight:19,textAlign:'center',marginTop:4},
