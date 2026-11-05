@@ -1,0 +1,68 @@
+name: Jynlo Mobile - Enviar AAB à Google Play (teste interno)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escreve ENVIAR_JYNLO_016_TESTE_INTERNO para autorizar o envio ao teste interno'
+        required: true
+        type: string
+      status:
+        description: 'draft guarda na consola; completed disponibiliza aos testadores autorizados'
+        required: true
+        type: choice
+        default: draft
+        options:
+          - draft
+          - completed
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: jynlo-play-internal-016-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Validar e enviar AAB 0.16.0 ao teste interno
+    if: ${{ github.ref == 'refs/heads/develop' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Obter código da Jynlo
+        uses: actions/checkout@v4
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Transferir AAB original assinado no GitHub
+        uses: actions/download-artifact@v4
+        with:
+          name: jynlo-google-play-internal-aab
+          run-id: '42023837920'
+          repository: Miguel14Ferreira/jynlo-mobile
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: play-artifact
+      - name: Validar origem, versão, manifesto e SHA-256
+        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact
+      - name: Confirmar assinatura do AAB
+        run: jarsigner -verify play-artifact/android/app/build/outputs/bundle/release/app-release.aab
+      - name: Exigir autorização Google Play antes de qualquer envio
+        env:
+          JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          if [ -z "$JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo '::error::Falta JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON. Nada enviado.'
+            exit 1
+          fi
+      - name: Instalar biblioteca da API oficial Google Play
+        run: python3 -m pip install --disable-pip-version-check 'google-api-python-client>=2.160,<3' 'google-auth>=2.36,<3' 'google-auth-httplib2>=0.2,<1'
+      - name: Enviar exclusivamente para a faixa interna
+        env:
+          JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          RELEASE_STATUS: ${{ inputs.status }}
+        shell: bash
+        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --apply --status "$RELEASE_STATUS"

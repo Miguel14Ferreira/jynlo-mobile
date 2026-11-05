@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Validate the existing Jynlo AAB and optionally upload it to the INTERNAL Google Play track."""
+import argparse,hashlib,json,os,sys,zipfile
+from pathlib import Path
+
+PKG="com.jynlo.app"
+CODE=7
+COMMIT="dc9220284661b92f138b4e7162b548d3b51eae37"
+TRACK="internal"
+
+def validate(base):
+    aab=base/"android/app/build/outputs/bundle/release/app-release.aab"
+    meta=base/"android-build-info.json"
+    checksum=base/"android-build-sha256.txt"
+    for f in (aab,meta,checksum):
+        if not f.is_file() or f.stat().st_size==0: raise ValueError("Falta "+f.name)
+    info=json.loads(meta.read_text())
+    for k,v in {"format":"aab","packageName":PKG,"version":"0.16.0","versionCode":CODE,
+                "gitCommit":COMMIT,"distribution":"google-play-internal"}.items():
+        if info.get(k)!=v: raise ValueError("Metadados não correspondem: "+k)
+    if not str(info.get("apiUrl","")).startswith("https://"):
+        raise ValueError("A API não está configurada para HTTPS")
+    bits=checksum.read_text().strip().split()
+    if len(bits)!=2 or bits[1]!="android/app/build/outputs/bundle/release/app-release.aab":
+        raise ValueError("Checksum com nome de ficheiro inesperado")
+    with aab.open("rb") as handle: digest=hashlib.file_digest(handle,"sha256").hexdigest()
+    if digest!=bits[0].lower(): raise ValueError("Checksum SHA-256 incorreto")
+    with zipfile.ZipFile(aab) as bundle:
+        if "base/manifest/AndroidManifest.xml" not in bundle.namelist():
+            raise ValueError("Manifesto Android AAB em falta")
+    return aab,digest
+
+def send(aab,status):
+    key=os.environ.get("JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON","")
+    if not key: raise RuntimeError("Falta JYNLO_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON; nada enviado")
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    import google_auth_httplib2,httplib2
+    credential=service_account.Credentials.from_service_account_info(
+        json.loads(key),scopes=["https://www.googleapis.com/auth/androidpublisher"])
+    client=google_auth_httplib2.AuthorizedHttp(credential,http=httplib2.Http(timeout=240))
+    google=build("androidpublisher","v3",http=client,cache_discovery=False)
+    edit=google.edits().insert(packageName=PKG,body={}).execute()
+    edit_id=edit["id"]
+    uploaded=google.edits().bundles().upload(packageName=PKG,editId=edit_id,
+        media_body=MediaFileUpload(str(aab),mimetype="application/octet-stream",resumable=True)).execute()
+    if int(uploaded.get("versionCode",-1))!=CODE: raise RuntimeError("versionCode inesperado")
+    body={"track":TRACK,"releases":[{"name":"Jynlo Beta 0.16.0 - Teste Interno",
+        "versionCodes":[str(CODE)],"status":status,
+        "releaseNotes":[{"language":"pt-PT","text":"Login Google, melhorias do Feed, acesso a comunidades e competições. Beta para testadores."}]}]}
+    google.edits().tracks().update(packageName=PKG,editId=edit_id,track=TRACK,body=body).execute()
+    google.edits().commit(packageName=PKG,editId=edit_id).execute()
+    print("Google Play confirmou Jynlo 0.16.0 na faixa interna com estado "+status)
+
+def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--artifact-dir",type=Path,default=Path("play-artifact"))
+    parser.add_argument("--apply",action="store_true")
+    parser.add_argument("--status",choices=["draft","completed"],default="draft")
+    args=parser.parse_args()
+    aab,sha=validate(args.artifact_dir)
+    print("AAB original validado: com.jynlo.app 0.16.0 / code 7 / SHA-256 "+sha)
+    if args.apply: send(aab,args.status)
+    else: print("MODO SEM ENVIO: Google Play não foi alterada")
+
+if __name__=="__main__":
+    try: main()
+    except Exception as e:
+        print("ERRO Jynlo Play: "+type(e).__name__+": "+str(e),file=sys.stderr)
+        sys.exit(1)
