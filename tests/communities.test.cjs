@@ -66,7 +66,7 @@ test('adesão pública é explícita e sem duplicar membros',()=>{
 });
 
 test('a API preserva todas as modalidades de uma comunidade multidesporto',()=>{
- const mixed={...fields,sport:'Padel',sports:['Padel','Ténis','Voleibol']};
+ const mixed={...fields,visibility:'PUBLIC',sport:'Padel',sports:['Padel','Ténis','Voleibol']};
  const payload=normalizeCommunityInput(mixed);
  assert.equal(payload.sport,'Padel');
  assert.deepEqual(payload.sports,mixed.sports);
