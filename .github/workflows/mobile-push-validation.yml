@@ -10,6 +10,8 @@ on:
       - 'app/messages/**'
       - 'app/(tabs)/messages.tsx'
       - 'app/communities/**'
+      - 'app/sessions/create.tsx'
+      - 'tests/mobile-session-community-preselection.test.cjs'
       - 'src/lib/community-api.ts'
       - 'tests/mobile-community-detail-lifecycle.test.cjs'
       - 'src/components/ChatPdfComposer.tsx'
