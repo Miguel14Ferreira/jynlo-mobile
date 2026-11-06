@@ -21,7 +21,8 @@ test('preview only fetches on user action and removes private local files',()=>{
  assert.match(screen,/File\(Paths\.cache/);
  assert.match(screen,/await file\.write\(bytes\)/);
  assert.match(screen,/if\(old\?\.exists\)old\.delete\(\)/);
- assert.match(screen,/return \(\)=>\{active\.current=false;setUri\(null\);cleanup\(\);\}/);
+ assert.match(screen,/active\.current=false;setUri\(null\)/);
+ assert.match(screen,/if\(!pdfPreview\.current\)cleanup\(\)/);
  assert.match(screen,/onRequestClose=\{close\}/);
  assert.match(screen,/const bytes=await response\.bytes\(\)/);
  assert.match(screen,/bytes\.length>5\*1024\*1024/);
