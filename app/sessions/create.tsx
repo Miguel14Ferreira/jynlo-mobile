@@ -137,6 +137,7 @@ export default function CreateSessionScreen(){
    setVenueChosen(null);clearVenueSearch();
    createOperation.current++;setBusy(locked.current);setError('');
   }
+  setBusy(locked.current);
   const version=++communityLoadVersion.current;
   void loadCommunities(version);
   return ()=>{
@@ -245,7 +246,7 @@ export default function CreateSessionScreen(){
     }finally{
      // Do not allow another POST until this one has actually settled, even after navigation.
      locked.current=false;
-     if(version===communityLoadVersion.current&&identity===communityLoadIdentity.current)setBusy(false);
+     setBusy(false);
     }
    }}
   ]);
