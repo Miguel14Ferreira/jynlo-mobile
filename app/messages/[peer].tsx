@@ -51,7 +51,7 @@ export default function DirectConversation(){
   if(conversation.current!==identity){
    conversation.current=identity;
    setMessages([]);setDraft('');setPhoto(null);setError('');
-   setSending(false);setPhotoBusy(false);
+   setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
   setPhoto(null);setPhotoAvailable(false);
