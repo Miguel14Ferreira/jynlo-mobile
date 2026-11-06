@@ -96,7 +96,11 @@ test('push tap resolves only an ID returned by the authenticated notification AP
  assert.match(screen,/account\.current!==auth\.username\+'\|'\+auth\.token/);
  assert.match(screen,/\^\[1-9\]\[0-9\]\{0,15\}\$/);
  assert.match(screen,/items\.find\(item=>String\(item\.id\)===notificationId\)/);
- assert.match(screen,/if\(target\)void open\(target\)/);
+ assert.match(screen,/void open\(target\)/);
  assert.match(screen,/router\.setParams\(\{notificationId:''\}\)/);
+ assert.match(screen,/loading\|\|!historyReady/);
+ assert.match(screen,/setHistoryReady\(true\)/);
+ assert.match(screen,/if\(!target\)\{/);
+ assert.match(screen,/if\(account\.current!==initialIdentity\)return/);
  assert.doesNotMatch(screen,/router\.push\(\{pathname:notificationId/);
 });
