@@ -64,3 +64,14 @@ test('push readiness requires a real public EAS project ID without claiming FCM 
  assert.match(code,/process\.env\.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID/);
  assert.ok(read('package.json').includes('"check:push"'));
 });
+
+test('push switch verifies server ownership before displaying enabled state',()=>{
+ const client=read('src/lib/push-device-api.ts');
+ const push=read('src/lib/mobile-push.ts');
+ const screen=read('app/notifications.tsx');
+ assert.match(client,/getPushDeviceStatus\(token:string,deviceId:string\)/);
+ assert.match(client,/\/api\/notifications\/me\/devices\//);
+ assert.match(push,/await getPushDeviceStatus\(token,id\)/);
+ assert.match(push,/if\(!actual\)await SecureStore\.deleteItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
+ assert.match(screen,/pushRegistrationStatus\(auth\.username,auth\.token\)/);
+});
