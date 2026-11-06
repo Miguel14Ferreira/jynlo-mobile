@@ -1,9 +1,13 @@
 import React,{useCallback,useState} from 'react';
 import {Image,Linking,StyleSheet,Text,View} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import {useLocalSearchParams,useFocusEffect} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {venueDetails,venuePhotos,venueRatingSummary,venueSportConditions} from '../../src/lib/parity-api';
 import {C} from '../../src/lib/theme';
+import {DEMO_MODE} from '../../src/lib/api';
+import {useAuth} from '../../src/lib/auth';
+import {uploadVenuePhoto} from '../../src/lib/venue-photo-upload';
 import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} from '../../src/lib/types';
 
 const info=(label:string,value:unknown)=>{
@@ -26,6 +30,7 @@ async function openExternal(url:string){
  catch{ /* The device may not have an app to open this kind of link. */ }
 }
 export default function VenueDetailScreen(){
+ const auth=useAuth();
  const params=useLocalSearchParams<{id:string}>();
  const id=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
  const [venue,setVenue]=useState<VenueSummary|null>(null);
@@ -34,8 +39,11 @@ export default function VenueDetailScreen(){
  const [rating,setRating]=useState<VenueRatingSummary|null>(null);
  const [loading,setLoading]=useState(true),[extraError,setExtraError]=useState(false);
  const [error,setError]=useState('');
+ const [selectedPhoto,setSelectedPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [sendingPhoto,setSendingPhoto]=useState(false),[photoMessage,setPhotoMessage]=useState('');
  useFocusEffect(useCallback(()=>{
   let active=true;setLoading(true);setError('');setVenue(null);setPhotos([]);
+  setSelectedPhoto(null);setPhotoMessage('');
   setConditions([]);setRating(null);setExtraError(false);
   if(!Number.isSafeInteger(id)||id<=0){
    setError('Recinto inválido.');setLoading(false);
@@ -61,6 +69,27 @@ export default function VenueDetailScreen(){
   })();
   return()=>{active=false};
  },[id]));
+ async function choosePhoto(){
+  if(!auth.token||DEMO_MODE||sendingPhoto)return;
+  setPhotoMessage('');
+  try{
+   const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,
+    aspect:[4,3],quality:0.75,exif:false,base64:false});
+   if(!result.canceled&&result.assets?.[0])setSelectedPhoto(result.assets[0]);
+  }catch{setPhotoMessage('Não foi possível abrir a galeria.');}
+ }
+ async function submitPhoto(){
+  if(!auth.token||DEMO_MODE||!selectedPhoto||sendingPhoto||!Number.isSafeInteger(id)||id<=0)return;
+  setSendingPhoto(true);setPhotoMessage('');
+  try{
+   await uploadVenuePhoto(id,auth.token,selectedPhoto);
+   setSelectedPhoto(null);
+   // Refresh authoritative gallery rather than synthesising an image entry.
+   try{setPhotos(await venuePhotos(id));setPhotoMessage('Fotografia enviada com sucesso.');}
+   catch{setPhotoMessage('Fotografia recebida. Reabre o recinto para atualizar a galeria.');}
+  }catch(e){setPhotoMessage(e instanceof Error?e.message:'Não foi possível confirmar o envio.');}
+  finally{setSendingPhoto(false);}
+ }
  const validCoordinates=venue?.latitude!=null&&venue?.longitude!=null&&
     Number.isFinite(venue.latitude)&&Number.isFinite(venue.longitude)&&
     Math.abs(venue.latitude)<=90&&Math.abs(venue.longitude)<=180;
@@ -109,6 +138,17 @@ export default function VenueDetailScreen(){
    {photos.length?photos.filter(photo=>safeHttps(photo.photoUrl)).map(photo=>
     <Image key={photo.id} source={{uri:photo.photoUrl}} style={styles.photo} resizeMode="cover"/>):
     <Text style={styles.meta}>Ainda não existem fotografias disponíveis.</Text>}
+   {auth.token&&!DEMO_MODE?<View style={styles.photoControls}>
+    <Button title="Escolher fotografia do recinto" secondary disabled={sendingPhoto} onPress={()=>{void choosePhoto();}}/>
+    {selectedPhoto?<View style={styles.photoControls}>
+     <Image source={{uri:selectedPhoto.uri}} style={styles.photo} resizeMode="cover"/>
+     <Message>A fotografia só é enviada depois de confirmares.</Message>
+     <Button title={sendingPhoto?'A enviar…':'Enviar fotografia'} disabled={sendingPhoto}
+      onPress={()=>{void submitPhoto();}}/>
+     <Button title="Cancelar fotografia" secondary disabled={sendingPhoto} onPress={()=>setSelectedPhoto(null)}/>
+    </View>:null}
+   </View>:<Message>Inicia sessão para adicionares fotografias ao recinto.</Message>}
+   {photoMessage?<Message>{photoMessage}</Message>:null}
    <Eyebrow>CONDIÇÕES POR MODALIDADE</Eyebrow>
    {conditions.length?conditions.map(condition=><View key={condition.id} style={styles.condition}>
     <Text style={styles.conditionTitle}>{condition.sport}</Text>
@@ -123,5 +163,6 @@ const styles=StyleSheet.create({
  name:{color:C.white,fontSize:25,fontWeight:'900'},meta:{color:C.muted,fontSize:14,lineHeight:21},
  photo:{width:'100%',height:190,borderRadius:12,backgroundColor:C.background},
  condition:{gap:5,padding:12,borderRadius:12,backgroundColor:C.background},
- conditionTitle:{color:C.white,fontSize:15,fontWeight:'800'}
+ conditionTitle:{color:C.white,fontSize:15,fontWeight:'800'},
+ photoControls:{gap:10}
 });
