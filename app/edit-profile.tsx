@@ -36,7 +36,7 @@ const fields:{key:Field;label:string;limit:number}[]=[
 const normalize=(value:unknown)=>typeof value==='string'?value:'';
 function isAdult(date:string){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
- const [y,m,d]=date.split('-').map(Number);
+ const y=Number(date.slice(0,4)),m=Number(date.slice(5,7)),d=Number(date.slice(8,10));
  const dt=new Date(Date.UTC(y,m-1,d));
  if(dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return false;
  const today=new Date(),oldest=new Date(Date.UTC(today.getUTCFullYear()-120,today.getUTCMonth(),today.getUTCDate()));
