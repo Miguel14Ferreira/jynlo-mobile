@@ -6,6 +6,7 @@ import {assertCanStartLogin} from './account-session.cjs';
 import {googleLoginWithIdToken,googleRegisterWithIdToken} from './google-auth-api';
 import type {GoogleSignupInput} from './google-auth-api';
 import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
+import {disableMobilePush} from './mobile-push';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
 type GoogleAuthOutcome = AuthOutcome|'ONBOARDING_REQUIRED';
@@ -130,12 +131,16 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     setUsername(name);setToken('LOCAL_DEMO_NOT_A_REAL_TOKEN');setBrowsingAsGuest(false);
   },[username]);
   const logout=useCallback(async()=>{
-    if(!DEMO_MODE&&token){try{await logoutServer(token);}catch{/* Always revoke local credentials */}}
+    if(!DEMO_MODE&&token){
+      // Revoke this installation before the server invalidates its bearer token.
+      if(username)try{await disableMobilePush(username,token);}catch{/* Keep local registration marker for later recovery. */}
+      try{await logoutServer(token);}catch{/* Always revoke local credentials */}
+    }
     setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
     if(!DEMO_MODE){await Promise.all([
       SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);}
-  },[token]);
+  },[token,username]);
   const value=useMemo(()=>({ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,
     loginGoogle,googleOnboardingEmail:googlePending?.email||null,completeGoogleRegistration,
     loginDemo,completeMfa,resendMfa,logout}),
