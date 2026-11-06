@@ -14,6 +14,11 @@ import {venues} from '../../src/lib/parity-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
+function emptySessionForm():CreateSessionForm{
+ return {sport:'',day:'',time:'',city:'',address:'',
+  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]};
+}
+
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
@@ -21,8 +26,7 @@ export default function CreateSessionScreen(){
  const preselectionApplied=useRef(false);
  const communityLoadVersion=useRef(0),communityLoadIdentity=useRef('');
  const createOperation=useRef(0);
- const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
-  maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
+ const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  const [step,setStep]=useState(0);
  // Selection controls whether an existing group of players must be counted explicitly.
  const [hasExistingPlayers,setHasExistingPlayers]=useState(false);
@@ -132,8 +136,11 @@ export default function CreateSessionScreen(){
    preselectionApplied.current=false;
    setCommunities([]);setCommunityError('');setCommunitySearch('');
    setCommunityMode('INDEPENDENT');
-   setForm(previous=>changeCommunityMode(previous,'INDEPENDENT'));
-   setStep(0);
+   setForm(emptySessionForm());
+   setStep(0);setHasExistingPlayers(false);
+   setSportSearch('');setShowSportResults(false);
+   setExtraDay('');setExtraTime('');
+   setVenueQuery('');setVenueCityQuery('');
    setVenueChosen(null);clearVenueSearch();
    createOperation.current++;setBusy(locked.current);setError('');
   }
