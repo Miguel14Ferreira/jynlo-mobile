@@ -11,6 +11,8 @@ on:
       - 'app/(tabs)/messages.tsx'
       - 'app/communities/**'
       - 'app/sessions/create.tsx'
+      - 'app/tournaments/create.tsx'
+      - 'tests/mobile-tournament-create-lifecycle.test.cjs'
       - 'tests/mobile-session-community-preselection.test.cjs'
       - 'src/lib/session-community-sports.cjs'
       - 'src/lib/session-community-sports.d.cts'
