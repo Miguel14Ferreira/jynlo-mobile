@@ -1,0 +1,46 @@
+name: Jynlo Google Play - AAB para producao
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: '1'
+      EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
+      EXPO_PUBLIC_JYNLO_API_URL: ${{ vars.JYNLO_PLAY_API_URL }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check release configuration
+        shell: bash
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::Configure EXPO_TOKEN in GitHub Actions secrets."; exit 1; }
+          test -n "$EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID" || { echo "::error::Configure the EAS project ID in GitHub Actions variables."; exit 1; }
+          node scripts/verify-release.cjs --production
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate app
+        run: |
+          npm run typecheck
+          npm run test:all
+      - name: Authenticate Expo EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build signed production AAB
+        run: eas build --platform android --profile production --non-interactive --wait
+      - name: Publish only after Google Play review
+        run: echo "AAB built by EAS. Upload it to Google Play Console > Production once the store listing, policies and account access are ready. This workflow never submits or publishes an app."
