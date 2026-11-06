@@ -135,7 +135,7 @@ export default function CreateSessionScreen(){
    setForm(previous=>changeCommunityMode(previous,'INDEPENDENT'));
    setStep(0);
    setVenueChosen(null);clearVenueSearch();
-   createOperation.current++;locked.current=false;setBusy(false);setError('');
+   createOperation.current++;setBusy(locked.current);setError('');
   }
   const version=++communityLoadVersion.current;
   void loadCommunities(version);
@@ -243,9 +243,9 @@ export default function CreateSessionScreen(){
       setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
        ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');
     }finally{
-     if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current){
-      locked.current=false;setBusy(false);
-     }
+     // Do not allow another POST until this one has actually settled, even after navigation.
+     locked.current=false;
+     if(version===communityLoadVersion.current&&identity===communityLoadIdentity.current)setBusy(false);
     }
    }}
   ]);
