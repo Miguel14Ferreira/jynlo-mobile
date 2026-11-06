@@ -121,7 +121,7 @@ export default function CreateSessionScreen(){
        sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
      setCommunityMode('SINGLE');
      setForm(previous=>({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
-      sport:chosenSport||previous.sport,communityRankingsEnabled:chosen.rankingsEnabled}));
+      sport:chosenSport||(sports.includes(previous.sport)?previous.sport:''),communityRankingsEnabled:chosen.rankingsEnabled}));
     }else setCommunityError('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.');
    }
   }
