@@ -26,13 +26,15 @@ export async function tournamentsForCommunity(id:number,token:string,username:st
  if(DEMO_MODE){const community=await communityDetails(good(id),token,username);
   if(community.id>=931001)return community.sport==='Karting'?[demoKarting]:['Futebol','Futsal'].includes(community.sport||'')?[demoFootball]:community.sport==='Natação'?[demoSwimming]:community.sport==='Atletismo'?[demoLongJump,demoRelay]:community.sport==='Padel'?[demoPadel,demoPadelDraft]:[];
   return demoTournaments(good(id));}
- // Read first pages only, no writes and no uncontrolled unbounded pagination.
+ // Continue through server pagination instead of silently hiding tournaments after four pages.
+ // Keep an explicit safety cap so a broken hasMore response cannot cause unbounded requests.
  const all:JynloTournament[]=[];
- for(let page=0;page<4;page++){
+ for(let page=0;page<25;page++){
   const result=await request<JynloTournamentPage>(`${base(id)}?page=${page}`,{token});
-  all.push(...result.tournaments);if(!result.hasMore)break;
+  all.push(...result.tournaments);
+  if(!result.hasMore)return all;
  }
- return all;
+ throw Error('Esta comunidade tem mais torneios do que o limite de leitura atual. Atualiza a lista ou contacta o suporte.');
 }
 export async function tournamentDetails(communityId:number,tournamentId:number,token:string,username:string):Promise<JynloTournament>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
