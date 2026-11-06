@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -13,18 +13,51 @@ export default function TeamsScreen(){
  const cid=Number(rawCommunity),tid=Number(rawTournament),auth=useAuth(),router=useRouter();
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[items,setItems]=useState<JynloTournamentTeam[]>([]);
  const [newName,setNewName]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);return;}
+ const generation=useRef(0),creatingRef=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
+   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');
-  try{const [details,teams]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),tournamentTeams(cid,tid,auth.token,auth.username)]);
+  try{
+   const [details,teams]=await Promise.all([
+    tournamentDetails(cid,tid,auth.token,auth.username),
+    tournamentTeams(cid,tid,auth.token,auth.username)
+   ]);
+   if(version!==generation.current)return;
+   if(details.entryType!=='TEAM'){
+    setTournament(details);setItems([]);return;
+   }
    setTournament(details);setItems(teams);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar as equipas.');}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as equipas.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
- async function create(){if(!auth.token||!auth.username||busy)return;setBusy(true);setError('');setMessage('');
-  try{await createTournamentTeam(cid,tid,newName,auth.token,auth.username);setMessage('Equipa criada. Abre a página para convidares jogadores.');setNewName('');await load();}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível criar.');}finally{setBusy(false);}}
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  setTournament(null);setItems([]);setNewName('');setError('');setMessage('');
+  setBusy(creatingRef.current);setLoading(true);
+  void load(version);
+  return ()=>{generation.current++;};
+ },[load]));
+ async function create(){
+  if(!auth.token||!auth.username||creatingRef.current||!tournament||tournament.entryType!=='TEAM')return;
+  const version=generation.current;
+  creatingRef.current=true;setBusy(true);setError('');setMessage('');
+  try{
+   await createTournamentTeam(cid,tid,newName,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setMessage('Equipa criada. Abre a página para convidares jogadores.');setNewName('');
+   await load(version);
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível criar.')+
+    ' Confirma as equipas antes de repetires para evitar duplicados.');
+  }finally{
+   creatingRef.current=false;
+   if(version===generation.current)setBusy(false);
+  }
+ }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · EQUIPAS</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Equipas'}</Text>
   <Text style={styles.note}>Abre uma equipa para veres o plantel, os jogos e os convites. Assim evitamos uma lista interminável de jogadores neste ecrã.</Text>
