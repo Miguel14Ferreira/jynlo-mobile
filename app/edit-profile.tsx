@@ -52,7 +52,7 @@ export default function EditProfileScreen(){
  useFocusEffect(useCallback(()=>{
   if(!auth.token||DEMO_MODE){setLoading(false);return;}
   let active=true;setLoading(true);setError('');setSuccess(false);
-  request<Profile>('/api/profile/me',{token:auth.token})
+  request<Profile>('/api/profile/me/mobile',{token:auth.token})
    .then(profile=>{if(!active)return;setOriginal(profile);
     const initial:Editable={};
     for(const {key} of fields)initial[key]=normalize(profile[key]);
