@@ -35,7 +35,7 @@ jobs:
       - name: App contracts
         run: npm run test:all
       - name: Expo config and dependencies
-        run: npx expo-doctor
+        run: npx --yes expo-doctor
       - name: Check EAS project binding
         env:
           EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
