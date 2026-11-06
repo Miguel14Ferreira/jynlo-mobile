@@ -7,7 +7,7 @@ import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
 import {myNotifications,markNotificationRead} from '../src/lib/notifications-api';
 import {C} from '../src/lib/theme';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
-const {notificationDestination}=require('../src/lib/notification-route.cjs') as {notificationDestination:(item:JynloNotification)=>{kind:string;id?:string;peer?:string}|null};
+import {notificationDestination} from '../src/lib/notification-route.cjs';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter();
