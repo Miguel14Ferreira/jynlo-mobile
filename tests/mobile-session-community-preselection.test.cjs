@@ -29,3 +29,17 @@ test('a community shortcut preselects a valid member community and its sport onl
  assert.match(source,/communityRankingsEnabled:chosen\.rankingsEnabled/);
  assert.match(source,/Já não pertences a esta comunidade/);
 });
+
+test('session sport is checked against every selected community before review and submit',()=>{
+ assert.match(source,/if\(selectedCommunity&&!communitySports\(selectedCommunity\)\.includes\(form\.sport\)\)/);
+ assert.match(source,/sharedCommunities\.some\(c=>!communitySports\(c\)\.includes\(form\.sport\)\)/);
+ assert.match(source,/A modalidade tem de pertencer a todas as comunidades selecionadas/);
+ assert.match(source,/A modalidade tem de estar disponível em todas as comunidades selecionadas/);
+});
+test('changing community clears incompatible sport and venue selection',()=>{
+ assert.match(source,/const sports=communitySports\(c\)/);
+ assert.match(source,/sports\.includes\(prev\.sport\)\?prev\.sport/);
+ assert.match(source,/sports\.length===1&&typeof sports\[0\]==='string'&&SPORTS\.includes\(sports\[0\]\)/);
+ assert.match(source,/sport,venueId:null/);
+ assert.match(source,/setVenueChosen\(null\);clearVenueSearch\(\)/);
+});
