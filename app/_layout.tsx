@@ -7,11 +7,15 @@ import {C} from '../src/lib/theme';
 function PushNavigation(){
   const auth=useAuth(),router=useRouter(),lastHandled=useRef<string|null>(null);
   useEffect(()=>{
-    if(!auth.token)return;
+    let active=true;
     function open(response:Notifications.NotificationResponse|null){
-      if(!response)return;
+      if(!active||!response)return;
+      // A stored push response must never be replayed after switching accounts.
+      Notifications.clearLastNotificationResponse();
+      if(!auth.token||!auth.username)return;
+      if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
       const data=response.notification.request.content.data;
-      // Route only to the authenticated inbox, which checks actual access.
+      // Never execute routes supplied by a notification. Resolve against own inbox.
       if(data?.kind!=='notification'||typeof data.id!=='number'||
         !Number.isSafeInteger(data.id)||data.id<=0)return;
       const identifier=response.notification.request.identifier;
@@ -21,8 +25,8 @@ function PushNavigation(){
     }
     const listener=Notifications.addNotificationResponseReceivedListener(open);
     void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
-    return ()=>listener.remove();
-  },[auth.token,router]);
+    return ()=>{active=false;listener.remove();};
+  },[auth.token,auth.username,router]);
   return null;
 }
 function Navigation(){const auth=useAuth();return <><PushNavigation/>
