@@ -8,12 +8,15 @@ import {myNotifications,markNotificationRead} from '../src/lib/notifications-api
 import {C} from '../src/lib/theme';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
+import {disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
+ const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
+ const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version)return;
@@ -44,10 +47,28 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);
   }
   const version=++generation.current;
+  setPushEnabled(false);setPushError('');
+  if(auth.username)void pushRegistrationStatus(auth.username).then(value=>{
+   if(generation.current===version)setPushEnabled(value);
+  }).catch(()=>{});
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},20000);
   return ()=>{clearInterval(timer);generation.current++;};
  },[load,auth.username,auth.token]));
+ async function togglePush(){
+  if(!auth.username||!auth.token||pushBusy)return;
+  setPushBusy(true);setPushError('');
+  try{
+   if(pushEnabled){
+    await disableMobilePush(auth.username,auth.token);
+    setPushEnabled(false);
+   }else{
+    await enableMobilePush(auth.username,auth.token);
+    setPushEnabled(true);
+   }
+  }catch(e){setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
+  finally{setPushBusy(false);}
+ }
  async function decide(invite:PendingSessionInvite,accept:boolean){
   if(!auth.token||busyInvite!==null)return;
   setBusyInvite(invite.id);setError('');setNotice('');
@@ -79,6 +100,12 @@ export default function NotificationsScreen(){
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
+  {auth.token?<View style={styles.pushPanel}>
+   <Text style={styles.heading}>Notificações no telemóvel</Text>
+   <Text style={styles.note}>Ativação opcional. Pedimos permissão apenas quando escolheres ativar; o envio de notificações ainda depende da configuração do servidor e das credenciais Android.</Text>
+   <Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>
+   {pushError?<Message tone="error">{pushError}</Message>:null}
+  </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -108,6 +135,7 @@ export default function NotificationsScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ pushPanel:{padding:14,borderRadius:16,backgroundColor:C.surface,gap:10},
  title:{fontSize:31,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'800',color:C.white,marginTop:8},
  note:{fontSize:12,color:C.muted,lineHeight:19},tile:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,flexDirection:'row',gap:9},
  invite:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.mint,gap:8},
