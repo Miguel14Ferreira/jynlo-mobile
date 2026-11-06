@@ -61,7 +61,14 @@
           "cameraPermission": "A Jynlo usa a câmara apenas quando escolhes tirar uma fotografia."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "color": "#07171D",
+          "defaultChannel": "jynlo-messages"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
