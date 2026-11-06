@@ -26,6 +26,23 @@
       "android": {
         "buildType": "apk"
       }
+    },
+    "play-internal": {
+      "distribution": "store",
+      "env": {
+        "JYNLO_REQUIRE_REAL_API": "1"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "play-internal": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
     }
   }
 }
