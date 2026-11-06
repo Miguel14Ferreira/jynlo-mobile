@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -19,53 +19,100 @@ export default function TournamentParticipantsScreen(){
  const [role,setRole]=useState<string|null>(null),[items,setItems]=useState<Participant[]>([]);
  const [page,setPage]=useState(0),[more,setMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);setItems([]);setTournament(null);return;}
+ const generation=useRef(0),readEpoch=useRef(0),mutationRef=useRef(false),pageRef=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  const epoch=++readEpoch.current;
+  if(!auth.token||!auth.username){
+   if(version===generation.current){setLoading(false);setItems([]);setTournament(null);setRole(null);}
+   return;
+  }
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
+   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');
   try{
    const [t,community]=await Promise.all([
     tournamentDetails(cid,tid,auth.token,auth.username),communityDetails(cid,auth.token,auth.username)
    ]);
-   setTournament(t);
+   if(version!==generation.current||epoch!==readEpoch.current)return;
+   if(community.id!==cid)throw Error('A comunidade devolvida não corresponde à selecionada.');
    const currentRole='myRole' in community?community.myRole||null:null;
-   setRole(currentRole);
-   if(!canSeeIndividualRoster(t)){setError('Este torneio tem equipas: consulta o plantel de cada equipa.');setItems([]);return;}
-   if(!currentRole){setError('Só membros da comunidade podem ver as inscrições.');setItems([]);return;}
+   if(!canSeeIndividualRoster(t)){
+    setTournament(t);setRole(currentRole);setError('Este torneio tem equipas: consulta o plantel de cada equipa.');return;
+   }
+   if(!currentRole)throw Error('Só membros da comunidade podem ver as inscrições.');
    const result=await tournamentParticipants(cid,tid,0,auth.token,auth.username);
+   if(version!==generation.current||epoch!==readEpoch.current)return;
+   setTournament(t);setRole(currentRole);
    setItems(result.participants);setPage(result.page);setMore(result.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível obter os participantes.');}
-  finally{setLoading(false);}
+  }catch(e){
+   if(version===generation.current&&epoch===readEpoch.current)
+    setError(e instanceof Error?e.message:'Não foi possível obter os participantes.');
+  }finally{
+   if(version===generation.current&&epoch===readEpoch.current)setLoading(false);
+  }
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  readEpoch.current++;
+  setTournament(null);setRole(null);setItems([]);setPage(0);setMore(false);
+  setNotice('');setError('');setLoading(true);setBusy(mutationRef.current);
+  void load(version);
+  return ()=>{generation.current++;readEpoch.current++;};
+ },[load]));
  const myEntry=ownEnrollment(items,auth.username||'');
  const action=registrationAction(tournament,items,auth.username||'',more);
  async function nextPage(){
-  if(!auth.token||!auth.username||busy||!more)return;
-  setBusy(true);setError('');
-  try{const p=validPage(page+1),data=await tournamentParticipants(cid,tid,p,auth.token,auth.username);
+  if(!auth.token||!auth.username||mutationRef.current||pageRef.current||loading||!more)return;
+  const version=generation.current,epoch=readEpoch.current;
+  pageRef.current=true;setBusy(true);setError('');
+  try{
+   const p=validPage(page+1);
+   const data=await tournamentParticipants(cid,tid,p,auth.token,auth.username);
+   if(version!==generation.current||epoch!==readEpoch.current)return;
    setItems(existing=>[...existing,...data.participants.filter(x=>!existing.some(a=>a.profileId===x.profileId))]);
    setPage(data.page);setMore(data.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar mais participantes.');}
-  finally{setBusy(false);}
+  }catch(e){
+   if(version===generation.current&&epoch===readEpoch.current)
+    setError(e instanceof Error?e.message:'Não foi possível carregar mais participantes.');
+  }finally{
+   pageRef.current=false;
+   if(version===generation.current)setBusy(mutationRef.current);
+  }
  }
- async function mutate(which:'JOIN'|'LEAVE'|'CONFIRM',participant?:Participant){
-  if(!auth.token||!auth.username||busy||!tournament)return;
-  setBusy(true);setError('');setNotice('');
+ async function mutate(which:'JOIN'|'LEAVE'|'CONFIRM',participant?:Participant,expectedVersion=generation.current){
+  if(!auth.token||!auth.username||mutationRef.current||pageRef.current||loading||
+    expectedVersion!==generation.current||!tournament||tournament.status!=='DRAFT'||
+    !canSeeIndividualRoster(tournament))return;
+  if(which==='CONFIRM'&&(!participant||!canConfirmParticipant(role,tournament,participant)))return;
+  if(which==='JOIN'&&registrationAction(tournament,items,auth.username,more)!=='JOIN')return;
+  if(which==='LEAVE'&&registrationAction(tournament,items,auth.username,more)!=='LEAVE')return;
+  const version=generation.current;
+  mutationRef.current=true;setBusy(true);setError('');setNotice('');
   try{
+   let success='';
    if(which==='JOIN'){
     const result=await joinIndividualTournament(cid,tid,auth.token,auth.username);
-    setNotice(result.status==='PENDING'?'Inscrição recebida. Aguarda confirmação do organizador.':'A inscrição foi confirmada pelo servidor.');
+    success=result.status==='PENDING'?'Inscrição recebida. Aguarda confirmação do organizador.':'A inscrição foi confirmada pelo servidor.';
    }else if(which==='LEAVE'){
     await leaveIndividualTournament(cid,tid,auth.token,auth.username);
-    setNotice('Cancelaste a tua inscrição no torneio.');
+    success='Cancelaste a tua inscrição no torneio.';
    }else if(participant){
     const result=await confirmIndividualParticipant(cid,tid,participant.profileId,auth.token,auth.username);
-    setNotice(`Participação de ${result.displayName||result.username} confirmada pelo servidor.`);
+    success=`Participação de ${result.displayName||result.username} confirmada pelo servidor.`;
    }
+   if(version!==generation.current)return;
+   setNotice(success);
    // Re-read authoritative state. No optimistic registration or retry of writes.
-   await load();
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível concluir. Atualiza os participantes antes de tentar novamente.');}
-  finally{setBusy(false);}
+   await load(version);
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível concluir.')+
+    ' Atualiza os participantes antes de tentar novamente, para evitar duplicados.');
+  }finally{
+   mutationRef.current=false;
+   if(version===generation.current)setBusy(pageRef.current);
+  }
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · INSCRIÇÕES</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Participantes individuais'}</Text>
@@ -84,9 +131,10 @@ export default function TournamentParticipantsScreen(){
    </View>:null}
    {action==='JOIN'?<Button title={busy?'A guardar…':'Pedir inscrição no torneio'} disabled={busy} onPress={()=>{void mutate('JOIN');}}/>:null}
    {action==='LEAVE'?<Button danger title={busy?'A aguardar…':'Cancelar a minha inscrição'} disabled={busy} onPress={()=>{
+    const version=generation.current;
     Alert.alert('Cancelar inscrição?','Vais sair deste torneio individual.',[
       {text:'Manter inscrição',style:'cancel'},
-      {text:'Cancelar inscrição',style:'destructive',onPress:()=>{void mutate('LEAVE');}}
+      {text:'Cancelar inscrição',style:'destructive',onPress:()=>{void mutate('LEAVE',undefined,version);}}
     ]);
    }}/>:null}
    {!myEntry&&more&&tournament.status==='DRAFT'?<Message>Carrega as páginas seguintes para confirmar se já estás inscrito antes de pedir uma nova inscrição.</Message>:null}
@@ -100,7 +148,7 @@ export default function TournamentParticipantsScreen(){
     </View>)}
    </View>
    {more?<Button secondary disabled={busy} title={busy?'A carregar…':'Carregar mais participantes'} onPress={()=>{void nextPage();}}/>:null}
-   <Button secondary disabled={busy} title="Atualizar inscrições" onPress={()=>{setNotice('');void load();}}/>
+   <Button secondary disabled={busy||loading} title="Atualizar inscrições" onPress={()=>{setNotice('');void load();}}/>
   </>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
