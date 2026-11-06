@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {Alert,Linking,StyleSheet,Text,TextInput,View} from 'react-native';
+import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
 import {DEMO_MODE} from '../src/lib/api';
@@ -59,7 +59,9 @@ export default function LoginScreen(){
      <Button title={busy?'A entrar…':'Entrar'} onPress={()=>{void doLogin();}}
        disabled={busy||!username.trim()||!password}/>
      <Text style={styles.sub}>Se for a tua primeira vez com Google, concluis o registo Jynlo na aplicação. Poderá ser necessária verificação MFA.</Text>
-     <Button title="Criar conta no website" secondary onPress={()=>{void Linking.openURL('https://d24sports.com/login/registerNewUser').catch(()=>Alert.alert('Jynlo','Não foi possível abrir o website.'));}}/>
+     <Button title="Criar conta na Jynlo" secondary onPress={()=>router.push('/register')}/>
+     <Button title="Esqueci-me da palavra-passe" secondary onPress={()=>router.push('/reset-password')}/>
+     <Button title="Confirmar email ou reenviar confirmação" secondary onPress={()=>router.push('/confirm-email')}/>
    </View>}
  </Page>;
 }

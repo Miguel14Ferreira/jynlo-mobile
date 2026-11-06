@@ -39,3 +39,23 @@ test('Google native module is bundled in Play build, without client secrets',()=
  assert.ok(a.expo.plugins.some(plugin=>plugin==='@react-native-google-signin/google-signin'));
  assert.equal(a.expo.android.package,'com.jynlo.app');
 });
+
+test('registration and password recovery are native screens (no website redirect)',()=>{
+ const login=read('app/login.tsx');
+ const layout=read('app/_layout.tsx');
+ const register=read('app/register.tsx');
+ const api=read('src/lib/native-registration.ts');
+ assert.match(login,/router\.push\('\/register'\)/);
+ assert.match(login,/router\.push\('\/reset-password'\)/);
+ assert.doesNotMatch(login,/Criar conta no website|registerNewUser/);
+ for(const screen of ['register','confirm-email','reset-password']){
+  assert.ok(layout.includes('name="'+screen+'"'),screen);
+ }
+ assert.match(register,/registerNative/);
+ assert.match(register,/acceptedLegalTerms:true/);
+ assert.match(api,/\/api\/auth\/register\/mobile/);
+ assert.match(api,/\/api\/auth\/register\/resend-confirmation/);
+ assert.match(api,/\/api\/auth\/reset-password\/initiate/);
+ assert.match(api,/\/api\/auth\/reset-password\/confirm/);
+ assert.doesNotMatch(register,/Linking\.openURL\('https:\/\/d24sports\.com\/login/);
+});
