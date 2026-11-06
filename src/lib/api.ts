@@ -1,6 +1,6 @@
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
 import {readSuccessfulResponse} from './response-body.cjs';
-import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite } from './types';
+import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite, SessionTeamSuggestion } from './types';
 
 /** Without an explicit environment override, the app is an isolated demo.
  * This avoids writing fictitious activity into Jynlo's real production backend. */
@@ -101,6 +101,18 @@ export async function updateSessionExternalConfirmations(id:number,token:string,
  if(!Number.isInteger(count)||count<0||count>99)throw Error('Indica entre 0 e 99 jogadores confirmados externamente.');
  return request<SessionDetail>(`/api/sessions/${id}/external-confirmations`,{
   token,method:'PATCH',body:{externalConfirmedParticipants:count}
+ });
+}
+
+/** Only organizers are authorized by the backend. GET is a preview; POST persists team assignment. */
+export async function suggestSessionTeams(id:number,token:string,source:'FORM'|'EXCEL_POINTS'):Promise<SessionTeamSuggestion>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para consultar equipas.');
+ return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/suggestion?source=${source}`,{token});
+}
+export async function confirmSessionTeams(id:number,token:string,source:'FORM'|'EXCEL_POINTS'):Promise<SessionTeamSuggestion>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para confirmar equipas.');
+ return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/confirm?source=${source}`,{
+  token,method:'POST'
  });
 }
 

@@ -44,6 +44,8 @@ export interface SessionDetail extends SessionSummary {
   meetingPointInstructions?: string | null;
   minParticipants?: number;
   externalConfirmedParticipants?: number;
+  teamBalanceSupported?: boolean;
+  playFormat?: 'INDIVIDUAL'|'PAIRS'|null;
   registrationOpeningMode?: 'IMMEDIATE' | 'SCHEDULED' | 'MANUAL' | null;
   registrationOpensAt?: string | null;
 }
@@ -53,6 +55,15 @@ export interface SessionParticipant {
   attendanceStatus: 'PENDING' | 'ATTENDED' | 'NO_SHOW' | 'LATE_CANCELLED';
   joinedAt: string;
   profilePicUrl?: string | null;
+}
+export interface SessionTeamPlayer {
+  username:string;displayName?:string|null;guest?:boolean;
+  strengthScore:number;statsAvailable:boolean;
+  games:number;wins:number;goals:number;assists:number;
+}
+export interface SessionTeamSuggestion {
+  teamA:SessionTeamPlayer[];teamB:SessionTeamPlayer[];
+  teamAScore:number;teamBScore:number;playersWithStats:number;totalPlayers:number;
 }
 export interface JoinSessionResponse { state: JoinState; waitlistPosition: number | null; }
 export interface PendingSessionInvite {
