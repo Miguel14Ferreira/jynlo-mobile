@@ -23,3 +23,11 @@ test('old direct-message send cannot erase draft or errors in the next conversat
  assert.match(screen,/setSending\(false\);setPhotoBusy\(false\);sendingNow\.current=false/);
  assert.match(screen,/generation\.current\+\+;\};/);
 });
+
+test('old photo upload cannot clear another conversation attachment or status',()=>{
+ assert.match(screen,/await sendDirectPhoto\(peer,auth\.token,photo\)/);
+ assert.match(screen,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
+ assert.match(screen,/setPhoto\(null\);await refresh\(false,version\)/);
+ assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)\{/);
+ assert.match(screen,/sendingNow\.current=false;setPhotoBusy\(false\)/);
+});
