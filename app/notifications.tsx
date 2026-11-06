@@ -21,6 +21,7 @@ export default function NotificationsScreen(){
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
+ const statusRequest=useRef(0);
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version)return;
   if(!auth.token||!auth.username){
@@ -54,25 +55,29 @@ export default function NotificationsScreen(){
   const version=++generation.current;
   setHistoryReady(false);
   setPushEnabled(false);setPushError('');
+  const requestId=++statusRequest.current;
   if(auth.username&&auth.token)void pushRegistrationStatus(auth.username,auth.token).then(value=>{
-   if(generation.current===version)setPushEnabled(value);
+   if(generation.current===version&&statusRequest.current===requestId)setPushEnabled(value);
   }).catch(()=>{});
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},20000);
-  return ()=>{clearInterval(timer);generation.current++;};
+  return ()=>{clearInterval(timer);generation.current++;statusRequest.current++;};
  },[load,auth.username,auth.token]));
  async function togglePush(){
   if(!auth.username||!auth.token||pushBusy)return;
+  // Ignore an older status lookup while an explicit user choice is processing.
+  statusRequest.current++;
+  const identity=auth.username+'|'+auth.token;
   setPushBusy(true);setPushError('');
   try{
    if(pushEnabled){
     await disableMobilePush(auth.username,auth.token);
-    setPushEnabled(false);
+    if(account.current===identity)setPushEnabled(false);
    }else{
     await enableMobilePush(auth.username,auth.token);
-    setPushEnabled(true);
+    if(account.current===identity)setPushEnabled(true);
    }
-  }catch(e){setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
+  }catch(e){if(account.current===identity)setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
   finally{setPushBusy(false);}
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
