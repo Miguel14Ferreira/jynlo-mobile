@@ -22,7 +22,7 @@ test('old direct-message send cannot erase draft or errors in the next conversat
  assert.match(screen,/await refresh\(false,version\)/);
  assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)/);
  assert.match(screen,/setSending\(false\);setPhotoBusy\(false\);sendingNow\.current=false/);
- assert.match(screen,/generation\.current\+\+;\};/);
+ assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
 });
 
 test('old photo upload cannot clear another conversation attachment or status',()=>{
@@ -54,4 +54,14 @@ test('parallel send actions cannot race and new text is preserved',()=>{
  assert.match(screen,/if\(!auth\.token\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
  assert.match(screen,/const submittedText=draft\.trim\(\)/);
  assert.match(screen,/setDraft\(current=>current===submittedText\?'':current\)/);
+});
+
+test('open direct conversation reloads on foreground push and app resume',()=>{
+ assert.match(screen,/Notifications\.addNotificationReceivedListener\(notification=>/);
+ assert.match(screen,/notification\.request\.content\.data\?\.kind!=='notification'/);
+ assert.match(screen,/AppState\.addEventListener\('change',state=>/);
+ assert.match(screen,/state==='active'&&generation\.current===version/);
+ assert.match(screen,/AppState\.currentState==='active'&&!sendingNow\.current/);
+ assert.match(screen,/resume\.remove\(\);received\.remove\(\)/);
+ assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
 });
