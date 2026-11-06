@@ -16,7 +16,7 @@ test('late community responses cannot overwrite the active session editor',()=>{
  assert.match(source,/const loadCommunities=useCallback\(async\(version=communityLoadVersion\.current\)=>/);
  assert.match(source,/if\(version!==communityLoadVersion\.current\)return/);
  assert.match(source,/const version=\+\+communityLoadVersion\.current/);
- assert.match(source,/return \(\)=>\{communityLoadVersion\.current\+\+;\}/);
+ assert.match(source,/return \(\)=>\{\s*communityLoadVersion\.current\+\+;venueSearchVersion\.current\+\+;/);
  assert.match(source,/if\(version===communityLoadVersion\.current\)\{/);
 });
 
