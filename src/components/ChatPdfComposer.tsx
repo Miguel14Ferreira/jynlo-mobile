@@ -30,6 +30,8 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
   active.current=true;blocked.current=false;
+  // Busy/error flags belong to the previous chat; the old upload may still finish.
+  setBusy(false);setError('');
   return ()=>{
    if(generation.current===version)generation.current++;
    active.current=false;reset();
