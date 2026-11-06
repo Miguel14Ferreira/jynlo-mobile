@@ -48,6 +48,9 @@ test('registration and password recovery are native screens (no website redirect
  assert.match(login,/router\.push\('\/register'\)/);
  assert.match(login,/router\.push\('\/reset-password'\)/);
  assert.doesNotMatch(login,/Criar conta no website|registerNewUser/);
+ const welcome=read('app/welcome.tsx');
+ assert.match(welcome,/router\.push\('\/register'\)/);
+ assert.doesNotMatch(welcome,/Criar conta na Jynlo Web|registerNewUser/);
  for(const screen of ['register','confirm-email','reset-password']){
   assert.ok(layout.includes('name="'+screen+'"'),screen);
  }
