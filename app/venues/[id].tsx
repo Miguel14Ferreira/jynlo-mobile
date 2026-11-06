@@ -1,7 +1,7 @@
 import React,{useCallback,useState} from 'react';
 import {Image,Linking,StyleSheet,Text,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {useLocalSearchParams,useFocusEffect} from 'expo-router';
+import {useLocalSearchParams,useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {venueDetails,venuePhotos,venueRatingSummary,venueSportConditions} from '../../src/lib/parity-api';
 import {C} from '../../src/lib/theme';
@@ -31,6 +31,7 @@ async function openExternal(url:string){
 }
 export default function VenueDetailScreen(){
  const auth=useAuth();
+ const router=useRouter();
  const params=useLocalSearchParams<{id:string}>();
  const id=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
  const [venue,setVenue]=useState<VenueSummary|null>(null);
@@ -130,6 +131,9 @@ export default function VenueDetailScreen(){
    {site?<Button title="Abrir website do recinto" secondary
      onPress={()=>{void openExternal(site);}}/>:null}
    {!venue.contact&&!site?<Text style={styles.meta}>Contactos não disponíveis.</Text>:null}
+   <Eyebrow>AJUDAR A MELHORAR ESTE RECINTO</Eyebrow>
+   <Button title="Sugerir correção das informações" secondary
+    onPress={()=>router.push({pathname:'/venues/[id]/suggest-edit',params:{id:String(id)}})}/>
    <Eyebrow>AVALIAÇÕES</Eyebrow>
    {rating&&rating.averageScore!=null&&rating.ratingCount>=3?
      <Text style={styles.meta}>Avaliação média: {rating.averageScore.toFixed(1)}/5 · {rating.ratingCount} avaliações</Text>:

@@ -28,6 +28,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>
     <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
+    <Stack.Screen name="venues/[id]/suggest-edit" options={{title:"Sugerir correção"}}/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
     <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
