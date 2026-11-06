@@ -4,6 +4,8 @@ import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {venues} from '../src/lib/parity-api';
 import {C} from '../src/lib/theme';
+import {DEMO_MODE} from '../src/lib/api';
+import {useAuth} from '../src/lib/auth';
 import type {VenueSummary} from '../src/lib/types';
 export default function VenuesScreen(){
  const router=useRouter();const [city,setCity]=useState('');const [term,setTerm]=useState('');
