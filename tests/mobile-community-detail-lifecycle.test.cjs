@@ -22,3 +22,11 @@ test('community member can still create a preselected session and view competiti
  assert.match(source,/pathname:'\/communities\/\[id\]\/competitions'/);
  assert.match(source,/pathname:"\/tournaments\/create",params:\{communityId:String\(id\)\}/);
 });
+
+test('old membership and invitation mutations cannot change the next community view',()=>{
+ assert.match(source,/if\(version!==generation\.current\)return;\s*setNotice\(action==='join'/);
+ assert.match(source,/if\(version!==generation\.current\)return;\s*setInviteName\(''\)/);
+ assert.match(source,/if\(version!==generation\.current\)return;\s*setNotice\('Pedido aprovado\.'/);
+ assert.match(source,/if\(version===generation\.current\)setBusy\(false\)/);
+ assert.match(source,/await reload\(version\)/);
+});
