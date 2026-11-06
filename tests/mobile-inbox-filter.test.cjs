@@ -58,4 +58,6 @@ test('inbox cards show last message time and accessible unread counts',()=>{
  assert.match(screen,/accessibilityLabel=\{\x60\$\{item\.kind/);
  assert.match(screen,/accessibilityRole="button"/);
  assert.match(screen,/numberOfLines=\{1\}/);
+ assert.match(screen,/pathname:'\/sessions\/\[id\]\/chat'/);
+ assert.match(screen,/Chat da sessão/);
 });
