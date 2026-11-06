@@ -41,3 +41,20 @@ test('session chat preserves messages on transient polling errors but closes rev
  assert.match(screen,/if\(!silent\|\|\(e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)\)\)/);
  assert.match(screen,/setClosed\(true\);setEntries\(\[\]\)/);
 });
+
+test('session chat photo upload uses private scoped endpoint with confirmation',()=>{
+ const api=read('src/lib/chat-photo-attachment.ts');
+ const screen=read('app/sessions/[id]/chat.tsx');
+ assert.match(api,/kind==='community'\?'communities':'sessions'/);
+ assert.match(api,/\/messages\/attachments/);
+ assert.match(api,/\/availability/);
+ assert.match(api,/5\*1024\*1024/);
+ assert.match(api,/form\.append\('file'/);
+ assert.match(api,/method:'POST'/);
+ assert.match(api,/credentials:'omit'/);
+ assert.match(screen,/chatPhotoAvailable\('session',id,auth\.token\)/);
+ assert.match(screen,/sendChatPhoto\('session',id,auth\.token,photo,reply\?\.id\)/);
+ assert.match(screen,/Confirmar envio da fotografia/);
+ assert.match(screen,/photoReady/);
+ assert.match(screen,/!closed/);
+});
