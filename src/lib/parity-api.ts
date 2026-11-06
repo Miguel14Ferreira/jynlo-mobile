@@ -1,6 +1,6 @@
 import {DEMO_MODE,request} from './api';
 import {demoSessions} from './demo';
-import type {FeedItem,MySessions,VenueSuggestionPage,VenueSummary} from './types';
+import type {FeedItem,MySessions,VenueSuggestionPage,VenueSummary,VenuePhoto,VenueSportCondition,VenueRatingSummary} from './types';
 
 const future=(day:number)=>{const d=new Date();d.setDate(d.getDate()+day);d.setHours(18,0,0,0);return d.toISOString();};
 /** Explicit sample data is only shown when the app has NO API configured. */
@@ -33,6 +33,23 @@ export async function venueDetails(id:number,token?:string|null):Promise<VenueSu
   if(!Number.isSafeInteger(id)||id<=0)throw new Error('Identificador de recinto inválido.');
   return request<VenueSummary>(`/api/venues/${id}`,{token});
 }
+/** Additional public venue details; no authentication or speculative data. */
+export async function venuePhotos(id:number):Promise<VenuePhoto[]>{
+ if(DEMO_MODE)return [];
+ if(!Number.isSafeInteger(id)||id<=0)throw new Error('Identificador de recinto inválido.');
+ return request<VenuePhoto[]>(`/api/venues/${id}/photos`);
+}
+export async function venueSportConditions(id:number):Promise<VenueSportCondition[]>{
+ if(DEMO_MODE)return [];
+ if(!Number.isSafeInteger(id)||id<=0)throw new Error('Identificador de recinto inválido.');
+ return request<VenueSportCondition[]>(`/api/venues/${id}/sport-conditions`);
+}
+export async function venueRatingSummary(id:number):Promise<VenueRatingSummary|null>{
+ if(DEMO_MODE)return null;
+ if(!Number.isSafeInteger(id)||id<=0)throw new Error('Identificador de recinto inválido.');
+ return request<VenueRatingSummary>(`/api/venues/${id}/ratings/summary`);
+}
+
 export async function mySessions(token:string|null,username:string|null):Promise<MySessions>{
   if(!token||!username)throw new Error('Inicia sessão para veres as tuas sessões.');
   if(DEMO_MODE){const all=demoSessions({},username);return {created:username==='Tiago'?all.filter(x=>x.id===900005):[],joined:all.filter(x=>x.joinedByViewer&&!(username==='Tiago'&&x.id===900005)),waitlisted:[]};}
