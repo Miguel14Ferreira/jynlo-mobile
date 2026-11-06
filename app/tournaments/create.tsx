@@ -118,24 +118,29 @@ export default function CreateTournamentScreen(){
  function pickSport(value:string){if(!selectedSports.includes(value))return;setSport(value);setSearch('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');setEvent('');setDiscipline('');}
  function setMode(value:TournamentEntryChoice){setEntryType(value);setFormat('LEAGUE');setEvent('');setDiscipline('');}
  function selectFormat(value:TournamentCreateFormat){setFormat(value);}
- async function save(payload:CreateTournamentInput){
-  if(!selected||!auth.token||!auth.username||busy||DEMO_MODE)return;
+ async function save(payload:CreateTournamentInput,version:number,identity:string,communityIdAtConfirmation:number){
+  if(!selected||!auth.token||!auth.username||savingRef.current||DEMO_MODE||
+    version!==generation.current||identity!==identityRef.current||selected.id!==communityIdAtConfirmation)return;
   if(!communityAllowsTournamentSport(selected,payload.sport)){setError('A modalidade escolhida não pertence a esta comunidade.');return;}
-  setBusy(true);setError('');
+  savingRef.current=true;setBusy(true);setError('');
   try{
    const tournament=await createTournament(selected.id,payload,auth.token,auth.username,selected.myRole,communitySports(selected));
+   if(version!==generation.current||identity!==identityRef.current)return;
    router.replace({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(selected.id),id:String(tournament.id)}});
-  }catch(e){setError((e instanceof Error?e.message:'Não foi possível criar o torneio.')+' Confirma o estado antes de tentar novamente.');}
-  finally{setBusy(false);}
+  }catch(e){
+   if(version===generation.current&&identity===identityRef.current)
+    setError((e instanceof Error?e.message:'Não foi possível criar o torneio.')+' Confirma o estado antes de tentar novamente.');
+  }finally{savingRef.current=false;setBusy(false);}
  }
  function confirmCreate(){
   if(!ready||!selected||!sportIsAllowed)return;
   let payload:CreateTournamentInput;
   try{createTournamentDraft(data);payload={...data};}
   catch(e){setError(e instanceof Error?e.message:'Configuração inválida.');return;}
+  const version=generation.current,identity=identityRef.current,communityIdAtConfirmation=selected.id;
   Alert.alert('Criar torneio?',selected.name+' · '+sport+' · '+FORMAT_LABELS[effectiveFormat]+'. O torneio fica em preparação e não inicia jogos automaticamente.',[
    {text:'Voltar',style:'cancel'},
-   {text:'Criar torneio',onPress:()=>{void save(payload);}}
+   {text:'Criar torneio',onPress:()=>{void save(payload,version,identity,communityIdAtConfirmation);}}
   ]);
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
