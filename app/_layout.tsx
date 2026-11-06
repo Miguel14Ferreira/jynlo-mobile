@@ -7,10 +7,13 @@ import {C} from '../src/lib/theme';
 function PushNavigation(){
   const auth=useAuth(),router=useRouter(),lastHandled=useRef<string|null>(null);
   useEffect(()=>{
+    // A notification may launch the app before SecureStore restores the login.
+    // Keep the native response until authentication is definitively resolved.
+    if(!auth.ready)return;
     let active=true;
     function open(response:Notifications.NotificationResponse|null){
       if(!active||!response)return;
-      // A stored push response must never be replayed after switching accounts.
+      // Never replay an old notification after login or account switching.
       Notifications.clearLastNotificationResponse();
       if(!auth.token||!auth.username)return;
       if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
@@ -24,9 +27,9 @@ function PushNavigation(){
       router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
     }
     const listener=Notifications.addNotificationResponseReceivedListener(open);
-    void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
+    open(Notifications.getLastNotificationResponse());
     return ()=>{active=false;listener.remove();};
-  },[auth.token,auth.username,router]);
+  },[auth.ready,auth.token,auth.username,router]);
   return null;
 }
 function Navigation(){const auth=useAuth();return <><PushNavigation/>
