@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
@@ -30,6 +30,8 @@ export default function SessionScreen(){
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
+  const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
+  const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const owner=isOrganizer(detail,auth.username);
 
   const load=useCallback(async()=>{
@@ -41,6 +43,8 @@ export default function SessionScreen(){
       if(auth.token){
         const full=await sessionDetail(id,auth.token,auth.username||undefined);
         setDetail(full);
+        setMeetingDraft(full.meetingPointInstructions||'');
+        setExternalDraft(String(full.externalConfirmedParticipants??0));
         if(canViewRoster(full,auth.username)){
           try{setParticipants(await sessionParticipants(id,auth.token));}
           catch{setParticipants([]);setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');}
@@ -82,6 +86,33 @@ export default function SessionScreen(){
   const share=()=>{
     if(DEMO_MODE){setFeedback('Não é possível partilhar uma sessão fictícia da demonstração.');return;}
     void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});
+  };
+  const saveMeetingPoint=()=>{
+    if(!auth.token||!owner||!detail||busy)return;
+    if(meetingDraft.length>240||/[\\r\\n\\x00-\\x1f\\x7f]/.test(meetingDraft)){
+      setError('As instruções devem ter uma única linha com até 240 caracteres.');return;
+    }
+    Alert.alert('Atualizar ponto de encontro?',
+      'Esta alteração será visível aos participantes autorizados.',
+      [{text:'Voltar',style:'cancel'},{text:'Guardar',onPress:()=>{
+        void perform(()=>updateSessionMeetingPoint(id,auth.token!,meetingDraft),
+          'Instruções do ponto de encontro atualizadas.');
+        setEditMeetingPoint(false);
+      }}]);
+  };
+  const saveExternalCount=()=>{
+    if(!auth.token||!owner||!detail||busy)return;
+    const raw=externalDraft.trim();
+    if(!/^(0|[1-9]\\d?)$/.test(raw)||Number(raw)>99){
+      setError('Indica um número inteiro de 0 a 99.');return;
+    }
+    Alert.alert('Atualizar confirmações externas?',
+      'Confirma o número de jogadores já confirmados fora da aplicação.',
+      [{text:'Voltar',style:'cancel'},{text:'Guardar',onPress:()=>{
+        void perform(()=>updateSessionExternalConfirmations(id,auth.token!,Number(raw)),
+          'Jogadores externos atualizados.');
+        setEditExternalCount(false);
+      }}]);
   };
   const openAt=detail?.registrationOpensAt&&Number.isFinite(Date.parse(detail.registrationOpensAt))?
     formatDate(detail.registrationOpensAt):null;
@@ -147,6 +178,29 @@ export default function SessionScreen(){
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
+        <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
+        {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}
+          onPress={()=>{setMeetingDraft(detail.meetingPointInstructions||'');setEditMeetingPoint(true);}}/>:
+         <View style={styles.editor}>
+          <Text style={styles.hint}>Nota de chegada para participantes autorizados (máximo 240 caracteres).</Text>
+          <TextInput style={styles.input} value={meetingDraft} onChangeText={setMeetingDraft}
+            maxLength={240} multiline={false} editable={!busy} accessibilityLabel="Instruções do ponto de encontro"
+            placeholder="Porta, entrada ou referência para encontrar o grupo" placeholderTextColor={C.muted}/>
+          <Button title="Guardar ponto de encontro" disabled={busy} onPress={saveMeetingPoint}/>
+          <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditMeetingPoint(false)}/>
+         </View>}
+        <Eyebrow>JOGADORES JÁ CONFIRMADOS FORA DA APP</Eyebrow>
+        <Text style={styles.hint}>Confirmados externos: {detail.externalConfirmedParticipants??0}</Text>
+        {!editExternalCount?<Button secondary title="Atualizar jogadores externos" disabled={busy}
+          onPress={()=>{setExternalDraft(String(detail.externalConfirmedParticipants??0));setEditExternalCount(true);}}/>:
+         <View style={styles.editor}>
+          <TextInput style={styles.input} value={externalDraft} onChangeText={setExternalDraft}
+            maxLength={2} keyboardType="number-pad" editable={!busy}
+            accessibilityLabel="Número de jogadores confirmados externamente"
+            placeholder="0 a 99" placeholderTextColor={C.muted}/>
+          <Button title="Guardar número de jogadores" disabled={busy} onPress={saveExternalCount}/>
+          <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
+         </View>}
         <Text style={styles.hint}>Convidar uma pessoa que já tem conta Jynlo:</Text>
         <TextInput style={styles.input} value={inviteUsername} onChangeText={setInviteUsername}
           autoCapitalize="none" autoCorrect={false} placeholder="Nome de utilizador" placeholderTextColor={C.muted}/>
@@ -192,6 +246,7 @@ const styles=StyleSheet.create({
   label:{fontSize:10,letterSpacing:1,color:C.muted,fontWeight:'800'},
   value:{fontSize:15,color:C.white,fontWeight:'800',marginTop:10},
   panel:{gap:12,padding:17,borderRadius:18,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+  editor:{gap:10},
   panelHeading:{color:C.white,fontSize:16,fontWeight:'800',lineHeight:23},
   hint:{color:C.muted,fontSize:12,lineHeight:19},
   input:{backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:13,color:C.white,padding:14,minHeight:50},
