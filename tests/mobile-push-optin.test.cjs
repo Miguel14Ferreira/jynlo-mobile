@@ -38,3 +38,15 @@ test('Expo plugin and package dependencies are configured without pretending pus
  assert.ok(config.expo.plugins.some(p=>Array.isArray(p)&&p[0]==='expo-notifications'));
  assert.match(read('app/notifications.tsx'),/envio de notificações ainda depende/);
 });
+
+test('push taps navigate only to the authenticated notification inbox',()=>{
+ const layout=read('app/_layout.tsx');
+ assert.match(layout,/Notifications\.addNotificationResponseReceivedListener\(open\)/);
+ assert.match(layout,/Notifications\.getLastNotificationResponseAsync\(\)/);
+ assert.match(layout,/if\(!auth\.token\)return/);
+ assert.match(layout,/data\?\.kind!=='notification'/);
+ assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
+ assert.match(layout,/lastHandled\.current===identifier/);
+ assert.match(layout,/router\.push\('\/notifications'\)/);
+ assert.doesNotMatch(layout,/router\.push\(data/);
+});
