@@ -34,3 +34,10 @@ test('session chat refreshes read-only while focused without overlapping a send'
  assert.match(screen,/sendingNow\.current=true/);
  assert.match(screen,/sendingNow\.current=false/);
 });
+
+test('session chat preserves messages on transient polling errors but closes revoked access',()=>{
+ const screen=read('app/sessions/[id]/chat.tsx');
+ assert.match(screen,/import \{ApiError\} from/);
+ assert.match(screen,/if\(!silent\|\|\(e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)\)\)/);
+ assert.match(screen,/setClosed\(true\);setEntries\(\[\]\)/);
+});
