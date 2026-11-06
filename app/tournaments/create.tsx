@@ -47,6 +47,7 @@ export default function CreateTournamentScreen(){
  const router=useRouter(),auth=useAuth();
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
  const generation=useRef(0),identityRef=useRef(''),savingRef=useRef(false),communityOverridden=useRef(false);
+ const currentCommunityRef=useRef<number|null>(null);
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityId,setCommunityId]=useState<number|null>(null);
  const [search,setSearch]=useState(''),[sport,setSport]=useState('');
@@ -80,7 +81,7 @@ export default function CreateTournamentScreen(){
   const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(params.communityId||'')+'|'+String(params.sport||'');
   if(identityRef.current!==identity){
    identityRef.current=identity;communityOverridden.current=false;
-   setCommunities([]);setCommunityId(null);setSport('');setSearch('');
+   setCommunities([]);setCommunityId(null);currentCommunityRef.current=null;setSport('');setSearch('');
    setName('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');
    setEvent('');setDiscipline('');setError('');
   }
@@ -90,6 +91,7 @@ export default function CreateTournamentScreen(){
   return ()=>{generation.current++;};
  },[load,auth.username,auth.token,params.communityId,params.sport]));
  const selected=communities.find(c=>c.id===communityId);
+ currentCommunityRef.current=communityId;
  const selectedSports=useMemo(()=>communitySports(selected).filter(s=>SPORTS.includes(s)),[selected]);
  const selectionKey=selectedSports.join('|');
  useEffect(()=>{
@@ -120,7 +122,8 @@ export default function CreateTournamentScreen(){
  function selectFormat(value:TournamentCreateFormat){setFormat(value);}
  async function save(payload:CreateTournamentInput,version:number,identity:string,communityIdAtConfirmation:number){
   if(!selected||!auth.token||!auth.username||savingRef.current||DEMO_MODE||
-    version!==generation.current||identity!==identityRef.current||selected.id!==communityIdAtConfirmation)return;
+    version!==generation.current||identity!==identityRef.current||selected.id!==communityIdAtConfirmation||
+    currentCommunityRef.current!==communityIdAtConfirmation)return;
   if(!communityAllowsTournamentSport(selected,payload.sport)){setError('A modalidade escolhida não pertence a esta comunidade.');return;}
   savingRef.current=true;setBusy(true);setError('');
   try{
@@ -153,7 +156,7 @@ export default function CreateTournamentScreen(){
    <Text style={styles.heading}>1. Comunidade</Text>
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
     {communities.map(c=><Choice key={c.id} title={c.name} active={selected?.id===c.id} onPress={()=>{
-      communityOverridden.current=true;setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
+      communityOverridden.current=true;currentCommunityRef.current=c.id;setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
     }}/>)}
    </ScrollView>
    <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.</Text>
