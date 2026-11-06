@@ -27,6 +27,12 @@ test('mobile messages includes private conversations and community chats',()=>{
  assert.match(route,/markDirectRead\(peer,last,auth\.token\)/);
  assert.match(route,/Verifica|Consulta o histórico antes de repetires/);
 });
+test('community tournament pages are not silently truncated after four pages',()=>{
+ const api=read('src/lib/competition-api.ts');
+ assert.match(api,/page<25/);
+ assert.match(api,/if\(!result\.hasMore\)return all/);
+ assert.match(api,/throw Error\('Esta comunidade tem mais torneios/);
+});
 test('member community links to session creation with authenticated preselection',()=>{
  const community=read('app/communities/[id].tsx');
  const wizard=read('app/sessions/create.tsx');
