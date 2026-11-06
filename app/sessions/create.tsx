@@ -299,9 +299,9 @@ export default function CreateSessionScreen(){
        setForm(prev=>{
         const sports=communitySports(c);
         const sport=sports.includes(prev.sport)?prev.sport:
-         sports.length===1&&SPORTS.includes(sports[0])?sports[0]:'';
+         sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
         return {...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
-         sport,venueId:sport===prev.sport?prev.venueId:null,
+         sport,venueId:null,
          communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false};
        });
        setVenueChosen(null);clearVenueSearch();
