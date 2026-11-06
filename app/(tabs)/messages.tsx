@@ -3,20 +3,26 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {communityInbox} from '../../src/lib/chat-api';
+import {communityInbox,directInbox} from '../../src/lib/chat-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
 export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
+ const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const load=useCallback(async()=>{
   if(!auth.token||!auth.username){setItems([]);setInvites([]);setLoading(false);return;}
-  setLoading(true);setError('');
-  try{const [inbox,requests]=await Promise.all([communityInbox(auth.token,auth.username),myCommunityInvites(auth.token,auth.username)]);
-    setItems(inbox.filter(c=>c.kind==='community'));setInvites(requests);
+  setLoading(true);setError('');setChatWarning('');
+  try{const [groups,privateChats,requests]=await Promise.allSettled([communityInbox(auth.token,auth.username),directInbox(auth.token),myCommunityInvites(auth.token,auth.username)]);
+    const communities=groups.status==='fulfilled'?groups.value:[];
+    const directs=privateChats.status==='fulfilled'?privateChats.value:[];
+    setItems([...directs,...communities]);
+    setInvites(requests.status==='fulfilled'?requests.value:[]);
+    if(groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected')
+      setChatWarning('Algumas conversas ou convites não ficaram disponíveis. Atualiza novamente.');
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');}
   finally{setLoading(false);}
  },[auth.token,auth.username]);
@@ -32,18 +38,20 @@ export default function MessagesScreen(){
   </Pressable>:null}
   {auth.token?<Button secondary title="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&auth.token&&items.length===0?<Message>Ainda não tens conversas de comunidades. Participa numa comunidade para começar.</Message>:null}
+  {chatWarning?<Message>{chatWarning}</Message>:null}
+  {!loading&&auth.token&&items.length===0&&!error?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {items.map(item=><Pressable key={`${item.kind}-${item.id}`}
-    onPress={()=>router.push({pathname:'/communities/[id]/chat',params:{id:item.id}})}
+    onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
+      item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):undefined}
     style={({pressed})=>[styles.tile,pressed&&{opacity:.7}]}>
-    <View style={styles.avatar}><Text style={{fontSize:23}}>💬</Text></View>
-    <View style={{flex:1,gap:5}}><Text style={styles.item}>Comunidade #{item.id}</Text>
+    <View style={styles.avatar}><Text style={{fontSize:23}}>{item.kind==='direct'?'👤':'💬'}</Text></View>
+    <View style={{flex:1,gap:5}}><Text style={styles.item}>{item.kind==='direct'?item.id:'Comunidade #'+item.id}</Text>
       <Text numberOfLines={2} style={styles.sub}>{item.latestText||'Abre para começar a conversa'}</Text>
       {!!item.latestSender&&<Text style={styles.tiny}>Última mensagem: {item.latestSender}</Text>}
     </View>
     {!!item.unreadCount?<Text style={styles.unread}>{item.unreadCount}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
-  <Message>Conversas sincronizadas ao abrir. O chat da comunidade liga-se em tempo real enquanto estiveres nele. Push com a app fechada ainda não está implementado.</Message>
+  <Message>Conversas privadas e de comunidades sincronizadas ao abrir. O chat da comunidade liga-se em tempo real; as mensagens privadas atualizam ao entrar ou atualizar manualmente. Push com a app fechada ainda não está implementado.</Message>
  </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
