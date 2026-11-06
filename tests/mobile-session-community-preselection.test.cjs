@@ -8,7 +8,7 @@ test('community preselection is specific to the account and source community',()
  assert.match(source,/communityLoadIdentity\.current!==identity/);
  assert.match(source,/preselectionApplied\.current=false/);
  assert.match(source,/setCommunityMode\('INDEPENDENT'\)/);
- assert.match(source,/setForm\(previous=>changeCommunityMode\(previous,'INDEPENDENT'\)\)/);
+ assert.match(source,/setForm\(emptySessionForm\(\)\)/);
  assert.match(source,/setCommunities\(\[\]\);setCommunityError\(''\);setCommunitySearch\(''\)/);
 });
 
@@ -63,4 +63,22 @@ test('switching accounts invalidates stale venue search results',()=>{
  assert.match(source,/setVenueChosen\(null\);clearVenueSearch\(\)/);
  assert.match(source,/communityLoadVersion\.current\+\+;venueSearchVersion\.current\+\+/);
  assert.match(source,/if\(version!==venueSearchVersion\.current\)return/);
+});
+
+test('changing account or source community clears all previously entered session details',()=>{
+ assert.match(source,/function emptySessionForm\(\):CreateSessionForm/);
+ assert.match(source,/const \[form,setForm\]=useState<CreateSessionForm>\(emptySessionForm\)/);
+ assert.match(source,/setForm\(emptySessionForm\(\)\)/);
+ assert.match(source,/setStep\(0\);setHasExistingPlayers\(false\)/);
+ assert.match(source,/setSportSearch\(''\);setShowSportResults\(false\)/);
+ assert.match(source,/setExtraDay\(''\);setExtraTime\(''\)/);
+ assert.match(source,/setVenueQuery\(''\);setVenueCityQuery\(''\)/);
+});
+test('sports selector uses intersection of community sports, never unsupported sport',()=>{
+ assert.match(source,/const availableSports=availableSessionSports\(/);
+ assert.match(source,/availableSports\.filter\(s=>/);
+ assert.match(source,/const allowed=availableSessionSports\(communities\.filter\(c=>next\.includes\(c\.id\)\),SPORTS\)/);
+ assert.match(source,/const sport=allowed\.includes\(prev\.sport\)\?prev\.sport/);
+ assert.match(source,/sport,venueId:null,privateGame:false/);
+ assert.match(source,/Estas comunidades não têm modalidades em comum/);
 });
