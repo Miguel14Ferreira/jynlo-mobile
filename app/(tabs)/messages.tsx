@@ -8,7 +8,7 @@ import {communityInbox,directInbox} from '../../src/lib/chat-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
-import {filterInbox,unreadInboxCount} from '../../src/lib/inbox-filter.cjs';
+import {filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge} from '../../src/lib/inbox-filter.cjs';
 export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
@@ -107,15 +107,20 @@ export default function MessagesScreen(){
   {!loading&&auth.token&&items.length===0&&!error?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {auth.token&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
+    accessibilityRole="button"
+    accessibilityLabel={`${item.kind==='direct'?'Conversa com':'Comunidade'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):undefined}
     style={({pressed})=>[styles.tile,pressed&&{opacity:.7}]}>
     <View style={styles.avatar}><Text style={{fontSize:23}}>{item.kind==='direct'?'👤':'💬'}</Text></View>
-    <View style={{flex:1,gap:5}}><Text style={styles.item}>{item.kind==='direct'?item.id:'Comunidade #'+item.id}</Text>
+    <View style={{flex:1,gap:5}}><View style={styles.conversationTop}>
+       <Text style={styles.item} numberOfLines={1}>{item.kind==='direct'?item.id:'Comunidade #'+item.id}</Text>
+       {!!item.latestAt&&<Text style={styles.tiny}>{formatInboxTime(item.latestAt)}</Text>}
+      </View>
       <Text numberOfLines={2} style={styles.sub}>{item.latestText||'Abre para começar a conversa'}</Text>
       {!!item.latestSender&&<Text style={styles.tiny}>Última mensagem: {item.latestSender}</Text>}
     </View>
-    {!!item.unreadCount?<Text style={styles.unread}>{item.unreadCount}</Text>:<Text style={styles.arrow}>›</Text>}
+    {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
   <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real; as conversas privadas usam atualização periódica. Push com a app fechada ainda não está implementado.</Message>
  </Page>;
@@ -125,7 +130,8 @@ const styles=StyleSheet.create({
  searchInput:{color:C.white,borderColor:C.border,borderWidth:1,borderRadius:10,paddingHorizontal:13,minHeight:46},
  filterChip:{alignSelf:'flex-start',paddingHorizontal:13,paddingVertical:9,borderRadius:99,borderColor:C.border,borderWidth:1},
  filterActive:{backgroundColor:C.surface2,borderColor:C.mint},filterText:{color:C.mint,fontWeight:'800'},title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
+ conversationTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  tile:{borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,padding:15,flexDirection:'row',alignItems:'center',gap:13},
  avatar:{width:52,height:52,borderRadius:15,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
- item:{fontWeight:'900',fontSize:16,color:C.white},tiny:{fontSize:11,color:C.muted},alert:{backgroundColor:'#27463D',borderColor:'#417060',borderWidth:1,borderRadius:14,padding:13,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ item:{flexShrink:1,fontWeight:'900',fontSize:16,color:C.white},tiny:{fontSize:11,color:C.muted},alert:{backgroundColor:'#27463D',borderColor:'#417060',borderWidth:1,borderRadius:14,padding:13,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  alertText:{color:C.mint,fontWeight:'800',fontSize:13},unread:{fontWeight:'900',color:C.background,backgroundColor:C.mint,paddingHorizontal:9,paddingVertical:5,borderRadius:15},arrow:{color:C.mint,fontSize:25}});
