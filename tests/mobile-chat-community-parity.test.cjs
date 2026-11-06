@@ -56,3 +56,18 @@ test('private conversation polls while focused and never retries sends automatic
  assert.match(screen,/sendingNow\.current=false/);
  assert.match(screen,/Consulta o histórico antes de repetires o envio/);
 });
+
+test('messages inbox refreshes while focused, keeps unread counts, and isolates accounts',()=>{
+ const screen=read('app/(tabs)/messages.tsx');
+ assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},15000\)/);
+ assert.match(screen,/clearInterval\(timer\)/);
+ assert.match(screen,/generation\.current\+\+/);
+ assert.match(screen,/version!==generation\.current/);
+ assert.match(screen,/busyVersion\.current===version/);
+ assert.match(screen,/identity\.current!==currentIdentity/);
+ assert.match(screen,/setItems\(\[\]\);setInvites\(\[\]\)/);
+ assert.match(screen,/previous\.filter\(i=>i\.kind==='direct'\)/);
+ assert.match(screen,/previous\.filter\(i=>i\.kind==='community'\)/);
+ assert.match(screen,/item\.unreadCount/);
+ assert.match(screen,/Push com a app fechada ainda não está implementado/);
+});
