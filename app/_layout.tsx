@@ -30,6 +30,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
+    <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
     <Stack.Screen name="register" options={{title:'Criar conta'}}/>
     <Stack.Screen name="confirm-email" options={{title:'Confirmar email'}}/>
     <Stack.Screen name="reset-password" options={{title:'Recuperar palavra-passe'}}/>

@@ -55,6 +55,7 @@ export default function ProfileScreen(){
     {!auth.username?<><Button title={DEMO_MODE?'Experimentar conta de demonstração':'Iniciar sessão'} onPress={()=>router.push('/login')}/><Button title="Voltar às boas-vindas" secondary onPress={()=>router.push('/welcome')}/></>:
       <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(()=>router.replace('/welcome'),()=>router.replace('/welcome'));}}/>}
     {auth.username&&!DEMO_MODE?<><Eyebrow>GESTÃO DA CONTA</Eyebrow>
+    <Button title="Alterar palavra-passe" secondary onPress={()=>router.push('/change-password')}/>
     <Button title={showDelete?'Ocultar eliminação de conta':'Eliminar a minha conta'} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>
     {showDelete?<View style={styles.deleteBox}>
       <Text style={styles.deleteWarning}>A eliminação é definitiva. As tuas publicações e os teus dados pessoais são apagados ou anonimizados. Se és proprietário de comunidades, transfere primeiro a propriedade.</Text>
