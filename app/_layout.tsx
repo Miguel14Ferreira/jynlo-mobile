@@ -17,7 +17,7 @@ function PushNavigation(){
       const identifier=response.notification.request.identifier;
       if(lastHandled.current===identifier)return;
       lastHandled.current=identifier;
-      router.push('/notifications');
+      router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
     }
     const listener=Notifications.addNotificationResponseReceivedListener(open);
     void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
