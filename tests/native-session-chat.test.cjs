@@ -24,3 +24,13 @@ test('native session chat only appears for confirmed participants before kickoff
  assert.match(screen,/Consulta o histórico antes de voltares a tentar/);
  assert.match(routes,/name="sessions\/\[id\]\/chat"/);
 });
+
+test('session chat refreshes read-only while focused without overlapping a send',()=>{
+ const screen=read('app/sessions/[id]/chat.tsx');
+ assert.match(screen,/setInterval\(\(\)=>\{if\(!sendingNow\.current\)void refresh\(true\);\},15000\)/);
+ assert.match(screen,/clearInterval\(timer\)/);
+ assert.match(screen,/if\(refreshing\.current\)return/);
+ assert.match(screen,/if\(!silent\)setLoading\(true\)/);
+ assert.match(screen,/sendingNow\.current=true/);
+ assert.match(screen,/sendingNow\.current=false/);
+});
