@@ -27,7 +27,7 @@ export default function NotificationsScreen(){
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
-   setLoading(false);setItems([]);setInvites([]);return;
+   setHistoryReady(false);setLoading(false);setItems([]);setInvites([]);return;
   }
   inFlight.current=version;
   if(!silent){setLoading(true);setError('');}
@@ -40,6 +40,7 @@ export default function NotificationsScreen(){
     setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
     setHistoryReady(true);
    }
+   if(notifs.status==='rejected')setHistoryReady(false);
    if(invitations.status==='fulfilled')setInvites(invitations.value);
    if(notifs.status==='rejected'||invitations.status==='rejected'){
     if(!silent)setError('Não foi possível atualizar todas as notificações. A informação anterior foi preservada.');
@@ -103,22 +104,27 @@ export default function NotificationsScreen(){
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
   if(!auth.token||busyInvite!==null)return;
+  const initialIdentity=auth.username+'|'+auth.token;
   setBusyInvite(invite.id);setError('');setNotice('');
   try{
    const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
+   if(account.current!==initialIdentity)return;
    setInvites(old=>old.filter(x=>x.id!==invite.id));
    setNotice(!accept?'Convite recusado.':
     response?.state==='WAITLISTED'?'Convite aceite: estás na lista de espera.':
     response?.state==='PARTICIPANT'?'Convite aceite: presença confirmada pelo servidor.':
     'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
-  }catch(e){setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
+  }catch(e){if(account.current===initialIdentity)setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
   finally{setBusyInvite(null);}
  }
  async function open(item:JynloNotification){
   if(!auth.token||!auth.username)return;
   const initialIdentity=auth.username+'|'+auth.token;
-  try{if(!item.read){await markNotificationRead(item.id,auth.token);setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));}}
-  catch{setError('Não foi possível marcar a notificação como lida.');}
+  try{if(!item.read){
+   await markNotificationRead(item.id,auth.token);
+   if(account.current===initialIdentity)setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));
+  }}
+  catch{if(account.current===initialIdentity)setError('Não foi possível marcar a notificação como lida.');}
   if(account.current!==initialIdentity)return;
   const destination=notificationDestination(item);
   if(!destination)return;
