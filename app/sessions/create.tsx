@@ -171,7 +171,7 @@ export default function CreateSessionScreen(){
    const list=prev.communityShareIds||[];
    const next=list.includes(id)?list.filter(x=>x!==id):list.length<5?[...list,id]:list;
    const allowed=availableSessionSports(communities.filter(c=>next.includes(c.id)),SPORTS);
-   const sport=allowed.includes(prev.sport)?prev.sport:allowed.length===1?allowed[0]:'';
+   const sport=allowed.includes(prev.sport)?prev.sport:allowed.length===1&&typeof allowed[0]==='string'?allowed[0]:'';
    return {...prev,communityId:null,communityShareIds:next,sport,venueId:null,privateGame:false,password:'',
     seasonGame:false,confirmActivateRankings:false,communityRankingsEnabled:false,
     ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const,recurrence:'NONE' as const,additionalWeeklySlots:[]}:null)};
