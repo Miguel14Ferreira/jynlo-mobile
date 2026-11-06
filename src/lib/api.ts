@@ -83,6 +83,18 @@ export async function cancelSession(id:number,token:string,username?:string):Pro
   if(DEMO_MODE){if(!username)throw new Error('Inicia sessão.');demoCancel(id,username);return;}
   await request<void>(`/api/sessions/${id}/cancel`,{token,method:'POST',body:null});
 }
+/** Organizer-only removal of an ACTIVE session membership.
+ * Server authorizes the creator, preserves waitlist promotion, and invalidates old team assignments.
+ * An uncertain DELETE response must never be retried automatically.
+ */
+export async function removeSessionParticipant(sessionId:number,participantId:number,token:string):Promise<void>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir participantes.');
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0||
+    !Number.isSafeInteger(participantId)||participantId<=0)
+  throw Error('Identificador de sessão ou participante inválido.');
+ await request<void>(`/api/sessions/${sessionId}/participants/${participantId}`,{token,method:'DELETE'});
+}
+
 export async function openSessionRegistration(id:number,token:string):Promise<SessionDetail>{
   if(DEMO_MODE)throw new Error('A abertura manual não está disponível nesta demonstração.');
   return request<SessionDetail>(`/api/sessions/${id}/registration/open`,{token,method:'POST',body:null});
