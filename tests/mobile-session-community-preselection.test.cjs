@@ -82,3 +82,14 @@ test('sports selector uses intersection of community sports, never unsupported s
  assert.match(source,/sport,venueId:null,privateGame:false/);
  assert.match(source,/Estas comunidades não têm modalidades em comum/);
 });
+
+test('manual community mode selection wins over a late shortcut response',()=>{
+ assert.match(source,/const preselectionOverridden=useRef\(false\)/);
+ assert.match(source,/requestedCommunityId&&!preselectionApplied\.current&&!preselectionOverridden\.current/);
+ assert.match(source,/preselectionApplied\.current=false;\s*preselectionOverridden\.current=false/);
+ assert.match(source,/onPress=\{\(\)=>\{preselectionOverridden\.current=true;if\(communityMode===mode\)return/);
+ assert.match(source,/preselectionOverridden\.current=true;\s*if\(communityMode==='SINGLE'\)/);
+});
+test('preselected community cannot inherit an unsupported sport from a previous form',()=>{
+ assert.match(source,/sport:chosenSport\|\|\(sports\.includes\(previous\.sport\)\?previous\.sport:''\)/);
+});
