@@ -3,6 +3,7 @@ import {KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} 
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
+import {ApiError} from '../../../src/lib/api';
 import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../../src/lib/session-chat-api';
 import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
 import {C} from '../../../src/lib/theme';
@@ -27,7 +28,7 @@ export default function SessionChat(){
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
    // A transient background refresh must not erase messages or disable composing.
-   if(!silent){setClosed(true);setEntries([]);
+   if(!silent||(e instanceof ApiError&&[401,403,404,409,410].includes(e.status))){setClosed(true);setEntries([]);
     setError(e instanceof Error?e.message:'Chat indisponível.');}
   }finally{if(!silent)setLoading(false);refreshing.current=false;}
  },[auth.token,id]);
