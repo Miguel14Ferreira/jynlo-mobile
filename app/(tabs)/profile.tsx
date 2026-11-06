@@ -1,6 +1,6 @@
-import React,{useState} from 'react';
-import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useRouter} from 'expo-router';
+import React,{useCallback,useState} from 'react';
+import {Alert,Image,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
@@ -8,6 +8,15 @@ import {C} from '../../src/lib/theme';
 export default function ProfileScreen(){
   const router=useRouter();const auth=useAuth();
   const [confirmUsername,setConfirmUsername]=useState('');
+  const [photoUrl,setPhotoUrl]=useState<string|null>(null);
+  useFocusEffect(useCallback(()=>{
+    if(!auth.token||DEMO_MODE){setPhotoUrl(null);return;}
+    let active=true;
+    void request<{profilePicUrl?:string|null}>('/api/profile/me',{token:auth.token})
+      .then(profile=>{if(active)setPhotoUrl(profile.profilePicUrl||null);})
+      .catch(()=>{if(active)setPhotoUrl(null);});
+    return()=>{active=false;};
+  },[auth.token]));
   const [showDelete,setShowDelete]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const canDelete=Boolean(!DEMO_MODE&&auth.username&&auth.token&&confirmUsername.trim()===auth.username&&!deleting);
@@ -44,7 +53,8 @@ export default function ProfileScreen(){
   };
   return <Page><Brand subtitle="A TUA JYNLO"/><DemoBanner/><Eyebrow>PERFIL</Eyebrow>
     <View style={styles.profile}>
-      <View style={styles.avatar}><Text style={{fontSize:28,fontWeight:'900',color:C.mint}}>{auth.username?.charAt(0).toUpperCase()||'?'}</Text></View>
+      <View style={styles.avatar}>{photoUrl?<Image source={{uri:photoUrl}} style={styles.avatarImage}/>:
+       <Text style={{fontSize:28,fontWeight:'900',color:C.mint}}>{auth.username?.charAt(0).toUpperCase()||'?'}</Text>}</View>
       <Text style={styles.name}>{auth.username||'Visitante'}</Text>
       <Text style={styles.sub}>{auth.username?'Sessão iniciada':'Entra para participares nas atividades'}</Text>
     </View>
@@ -75,7 +85,8 @@ export default function ProfileScreen(){
 }
 const styles=StyleSheet.create({
  profile:{padding:26,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:22,alignItems:'center',gap:10},
- avatar:{width:72,height:72,borderRadius:36,backgroundColor:'#245148',alignItems:'center',justifyContent:'center'},
+ avatar:{width:72,height:72,borderRadius:36,backgroundColor:'#245148',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ avatarImage:{width:72,height:72,borderRadius:36},
  name:{color:C.white,fontSize:25,fontWeight:'900'},sub:{color:C.muted,fontSize:13,textAlign:'center'},
  deleteBox:{gap:12,padding:16,borderWidth:1,borderColor:C.danger,borderRadius:16,backgroundColor:C.surface},
  deleteWarning:{fontSize:13,lineHeight:19,color:C.white},
