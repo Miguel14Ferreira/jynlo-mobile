@@ -43,3 +43,24 @@ test('changing community clears incompatible sport and venue selection',()=>{
  assert.match(source,/sport,venueId:null/);
  assert.match(source,/setVenueChosen\(null\);clearVenueSearch\(\)/);
 });
+
+test('stale confirmation alert cannot create a session for a different account or route',()=>{
+ assert.match(source,/const createOperation=useRef\(0\)/);
+ assert.match(source,/const identity=communityLoadIdentity\.current/);
+ assert.match(source,/const version=communityLoadVersion\.current/);
+ assert.match(source,/if\(locked\.current\|\|version!==communityLoadVersion\.current\|\|identity!==communityLoadIdentity\.current\)return/);
+ assert.match(source,/const operation=\+\+createOperation\.current/);
+ assert.match(source,/if\(operation!==createOperation\.current\|\|version!==communityLoadVersion\.current\|\|identity!==communityLoadIdentity\.current\)return/);
+});
+test('single POST lock is kept until pending creation settles after navigation',()=>{
+ assert.match(source,/createOperation\.current\+\+;setBusy\(locked\.current\)/);
+ assert.match(source,/setBusy\(locked\.current\);\s*const version=\+\+communityLoadVersion\.current/);
+ assert.match(source,/locked\.current=true;setBusy\(true\)/);
+ assert.match(source,/locked\.current=false;\s*setBusy\(false\)/);
+ assert.match(source,/Verifica as tuas sessões antes de tentares novamente, para evitar duplicados/);
+});
+test('switching accounts invalidates stale venue search results',()=>{
+ assert.match(source,/setVenueChosen\(null\);clearVenueSearch\(\)/);
+ assert.match(source,/communityLoadVersion\.current\+\+;venueSearchVersion\.current\+\+/);
+ assert.match(source,/if\(version!==venueSearchVersion\.current\)return/);
+});
