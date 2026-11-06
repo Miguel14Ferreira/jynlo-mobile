@@ -94,12 +94,21 @@ export default function DirectConversation(){
  }
  async function uploadPhoto(){
   if(!auth.token||!photo||!photoAvailable||photoBusy||sending)return;
+  const identity=peer+'|'+auth.token;
+  const version=generation.current;
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
    await sendDirectPhoto(peer,auth.token,photo);
-   setPhoto(null);await refresh();
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');}
-  finally{sendingNow.current=false;setPhotoBusy(false);}
+   if(version!==generation.current||conversation.current!==identity)return;
+   setPhoto(null);await refresh(false,version);
+  }catch(e){
+   if(version===generation.current&&conversation.current===identity)
+    setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
+  }finally{
+   if(version===generation.current&&conversation.current===identity){
+    sendingNow.current=false;setPhotoBusy(false);
+   }
+  }
  }
  return <Page><DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
