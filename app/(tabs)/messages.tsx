@@ -108,13 +108,14 @@ export default function MessagesScreen(){
   {auth.token&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
     accessibilityRole="button"
-    accessibilityLabel={`${item.kind==='direct'?'Conversa com':'Comunidade'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
+    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
-      item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):undefined}
+      item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
+      router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
     style={({pressed})=>[styles.tile,pressed&&{opacity:.7}]}>
-    <View style={styles.avatar}><Text style={{fontSize:23}}>{item.kind==='direct'?'👤':'💬'}</Text></View>
+    <View style={styles.avatar}><Text style={{fontSize:23}}>{item.kind==='direct'?'👤':item.kind==='community'?'💬':'🏟️'}</Text></View>
     <View style={{flex:1,gap:5}}><View style={styles.conversationTop}>
-       <Text style={styles.item} numberOfLines={1}>{item.kind==='direct'?item.id:'Comunidade #'+item.id}</Text>
+       <Text style={styles.item} numberOfLines={1}>{item.kind==='direct'?item.id:item.kind==='community'?'Comunidade #'+item.id:'Sessão #'+item.id}</Text>
        {!!item.latestAt&&<Text style={styles.tiny}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
       <Text numberOfLines={2} style={styles.sub}>{item.latestText||'Abre para começar a conversa'}</Text>
