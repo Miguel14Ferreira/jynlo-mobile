@@ -91,3 +91,19 @@ test('private photo attachment uses authenticated private API and requires expli
  assert.match(screen,/photoAvailable\?/);
  assert.match(screen,/Anexo privado:/);
 });
+
+test('community chat photo upload checks private storage and requires confirmation',()=>{
+ const api=read('src/lib/chat-photo-attachment.ts');
+ const chat=read('app/communities/[id]/chat.tsx');
+ assert.match(api,/form\.append\('file'/);
+ assert.match(api,/method:'POST'/);
+ assert.match(api,/replyToMessageId/);
+ assert.match(api,/controller\.abort\(\)/);
+ assert.match(chat,/chatPhotoAvailable\('community',id,auth\.token\)/);
+ assert.match(chat,/sendChatPhoto\('community',id,auth\.token,photo\)/);
+ assert.match(chat,/ImagePicker\.launchImageLibraryAsync/);
+ assert.match(chat,/Confirmar envio da fotografia/);
+ assert.match(chat,/canSendPhoto/);
+ assert.match(chat,/setPhoto\(null\)/);
+ assert.match(chat,/Anexo privado:/);
+});
