@@ -87,6 +87,22 @@ export async function cancelSession(id:number,token:string,username?:string):Pro
  * Server authorizes the creator, preserves waitlist promotion, and invalidates old team assignments.
  * An uncertain DELETE response must never be retried automatically.
  */
+/** Record actual post-game attendance. This is an organizer-only action on the server.
+ * Never retry an uncertain PUT automatically; check authoritative roster first.
+ */
+export async function recordSessionAttendance(
+ sessionId:number,participantId:number,token:string,status:'ATTENDED'|'NO_SHOW'
+):Promise<void>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para registar presenças.');
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0||
+    !Number.isSafeInteger(participantId)||participantId<=0)
+  throw Error('Identificador de sessão ou participante inválido.');
+ if(status!=='ATTENDED'&&status!=='NO_SHOW')throw Error('Estado de presença inválido.');
+ await request<void>(`/api/sessions/${sessionId}/participants/${participantId}/attendance`,{
+  token,method:'PUT',body:{status}
+ });
+}
+
 export async function removeSessionParticipant(sessionId:number,participantId:number,token:string):Promise<void>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir participantes.');
  if(!Number.isSafeInteger(sessionId)||sessionId<=0||
