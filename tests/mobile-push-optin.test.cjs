@@ -75,3 +75,16 @@ test('push switch verifies server ownership before displaying enabled state',()=
  assert.match(push,/if\(!actual\)await SecureStore\.deleteItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
  assert.match(screen,/pushRegistrationStatus\(auth\.username,auth\.token\)/);
 });
+
+test('push-test APK profile always uses real Jynlo API and remains an explicit build',()=>{
+ const eas=JSON.parse(read('eas.json'));
+ const profile=eas.build['push-test'];
+ assert.equal(profile.distribution,'internal');
+ assert.equal(profile.android.buildType,'apk');
+ assert.equal(profile.env.JYNLO_REQUIRE_REAL_API,'1');
+ assert.equal(profile.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+ assert.ok(!eas.build.production.env.JYNLO_PUSH_ENABLED);
+ const workflow=read('.github/workflows/mobile-push-validation.yml');
+ assert.match(workflow,/expo export --platform android/);
+ assert.doesNotMatch(workflow,/eas build --platform android/);
+});
