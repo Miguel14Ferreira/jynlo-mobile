@@ -51,6 +51,7 @@ export default function DirectConversation(){
   if(conversation.current!==identity){
    conversation.current=identity;
    setMessages([]);setDraft('');setPhoto(null);setError('');
+   setSending(false);setPhotoBusy(false);
   }
   const version=++generation.current;
   setPhoto(null);setPhotoAvailable(false);
@@ -76,8 +77,9 @@ export default function DirectConversation(){
     setError((e instanceof Error?e.message:'Não foi possível enviar.')+
      ' Consulta o histórico antes de repetires o envio.');
   }finally{
-   sendingNow.current=false;
-   if(version===generation.current&&conversation.current===identity)setSending(false);
+   if(version===generation.current&&conversation.current===identity){
+    sendingNow.current=false;setSending(false);
+   }
   }
  }
  async function choosePhoto(){
