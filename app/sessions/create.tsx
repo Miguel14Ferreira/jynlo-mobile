@@ -1,6 +1,6 @@
 import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
@@ -9,12 +9,16 @@ import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunit
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
+import {communitySports} from '../../src/lib/community-core.cjs';
 import {venues} from '../../src/lib/parity-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
+ const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
+ const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
+ const preselectionApplied=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
  const [step,setStep]=useState(0);
@@ -93,9 +97,24 @@ export default function CreateSessionScreen(){
  }
  const loadCommunities=useCallback(async()=>{
   if(!auth.token||!auth.username){setCommunities([]);return;}
-  try{setCommunities(await myCommunities(auth.token,auth.username));setCommunityError('');}
+  try{
+   const groups=await myCommunities(auth.token,auth.username);
+   setCommunities(groups);setCommunityError('');
+   if(requestedCommunityId&&!preselectionApplied.current){
+    const chosen=groups.find(c=>c.id===requestedCommunityId);
+    if(chosen){
+     preselectionApplied.current=true;
+     const sports=communitySports(chosen);
+     const chosenSport=typeof params.sport==='string'&&sports.includes(params.sport)&&SPORTS.includes(params.sport)?params.sport:
+       sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
+     setCommunityMode('SINGLE');
+     setForm(previous=>({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
+      sport:chosenSport||previous.sport,communityRankingsEnabled:chosen.rankingsEnabled}));
+    }else setCommunityError('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.');
+   }
+  }
   catch{setCommunities([]);setCommunityError('Não foi possível carregar as tuas comunidades.');}
- },[auth.token,auth.username]);
+ },[auth.token,auth.username,requestedCommunityId,params.sport]);
  useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{

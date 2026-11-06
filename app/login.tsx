@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
 import {DEMO_MODE} from '../src/lib/api';
@@ -50,7 +50,13 @@ export default function LoginScreen(){
      <Button title="Continuar como Tiago" onPress={()=>demoAs('Tiago')}/>
      <Button title="Continuar como André" secondary onPress={()=>demoAs('André')}/>
    </View>:<View style={{gap:15}}>
-     <Button title={busy?'A autenticar…':'Continuar com Google'} onPress={()=>{void doGoogleLogin();}} disabled={busy}/>
+     <Pressable accessibilityRole="button" accessibilityLabel="Continuar com Google"
+       disabled={busy} onPress={()=>{void doGoogleLogin();}}
+       style={({pressed})=>[styles.googleButton,(busy||pressed)&&{opacity:0.65}]}>
+       <Image source={{uri:'https://developers.google.com/static/identity/images/g-logo.png'}}
+         style={styles.googleLogo} accessibilityLabel="Símbolo da Google"/>
+       <Text style={styles.googleLabel}>{busy?'A autenticar…':'Continuar com Google'}</Text>
+     </Pressable>
      <Text style={styles.separator}>ou entra com utilizador e palavra-passe</Text>
      <TextInput style={styles.input} placeholder="Nome de utilizador" placeholderTextColor={C.muted}
        value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username"/>
@@ -67,6 +73,8 @@ export default function LoginScreen(){
 }
 const styles=StyleSheet.create({
  headline:{color:C.white,fontSize:31,fontWeight:'900',lineHeight:38},
+ googleButton:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12,minHeight:54,borderRadius:15,backgroundColor:'#FFFFFF',paddingHorizontal:16},
+ googleLogo:{height:24,width:24},googleLabel:{fontSize:15,fontWeight:'800',color:'#202124'},
  sub:{color:C.muted,fontSize:14,lineHeight:21},separator:{textAlign:'center',color:C.muted,fontSize:12,marginVertical:3},
  demoPanel:{padding:20,backgroundColor:C.surface,borderRadius:20,borderWidth:1,borderColor:C.border,gap:16},
  panelTitle:{fontSize:19,color:C.white,fontWeight:'800'},
