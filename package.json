@@ -13,7 +13,8 @@
     "test:syntax": "node tests/check-ts-syntax.cjs",
     "test:all": "node tests/check-ts-syntax.cjs && node --test tests/*.test.cjs",
     "eas-build-pre-install": "node scripts/verify-release.cjs",
-    "check:release": "node scripts/verify-release.cjs --production"
+    "check:release": "node scripts/verify-release.cjs --production",
+    "check:push": "node scripts/check-push-readiness.cjs"
   },
   "dependencies": {
     "expo": "~58.0.22",
