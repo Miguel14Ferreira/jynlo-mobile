@@ -10,6 +10,7 @@ import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
+import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
 import {venues} from '../../src/lib/parity-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
@@ -165,16 +166,21 @@ export default function CreateSessionScreen(){
  const sharedCommunities=communities.filter(c=>sharedIds.includes(c.id));
  const hasCommunity=!!form.communityId||sharedIds.length>0;
  function toggleShared(id:number){
+  setVenueChosen(null);clearVenueSearch();
   setForm(prev=>{
    const list=prev.communityShareIds||[];
    const next=list.includes(id)?list.filter(x=>x!==id):list.length<5?[...list,id]:list;
-   return {...prev,communityId:null,communityShareIds:next,privateGame:false,password:'',
+   const allowed=availableSessionSports(communities.filter(c=>next.includes(c.id)),SPORTS);
+   const sport=allowed.includes(prev.sport)?prev.sport:allowed.length===1?allowed[0]:'';
+   return {...prev,communityId:null,communityShareIds:next,sport,venueId:null,privateGame:false,password:'',
     seasonGame:false,confirmActivateRankings:false,communityRankingsEnabled:false,
     ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const,recurrence:'NONE' as const,additionalWeeklySlots:[]}:null)};
   });
  }
+ const availableSports=availableSessionSports(communityMode==='SINGLE'?(selectedCommunity?[selectedCommunity]:[]):
+  communityMode==='SHARED'?sharedCommunities:[],SPORTS);
  const suggestions=sportSearch.trim()
-  ?SPORTS.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
+  ?availableSports.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
   :[];
  const visibleCommunities=communities.filter(c=>!communitySearch.trim()||
   (c.name+' '+(c.sport||'')).toLocaleLowerCase('pt-PT').includes(communitySearch.trim().toLocaleLowerCase('pt-PT')));
@@ -297,6 +303,10 @@ export default function CreateSessionScreen(){
     {!suggestions.length?<Text style={styles.note}>Nenhuma modalidade corresponde à pesquisa.</Text>:null}
    </>:null}
    {!form.sport?<Text style={styles.note}>Começa a escrever para escolher uma modalidade. Não são aceites nomes fora do catálogo.</Text>:null}
+   {communityMode!=='INDEPENDENT'&&hasCommunity?<Text style={styles.note}>
+    {availableSports.length?`${availableSports.length} modalidades compatíveis com ${communityMode==='SINGLE'?'a comunidade':'as comunidades'} selecionadas.`:
+     'Estas comunidades não têm modalidades em comum. Retira uma comunidade ou escolhe outra combinação.'}
+   </Text>:null}
   </View>
   <View style={styles.panel}><Text style={styles.heading}>Tipo de sessão</Text>
    <View style={styles.inline}>
