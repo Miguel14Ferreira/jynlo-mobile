@@ -1,3 +1,4 @@
+import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useEffect,useState} from 'react';
 import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -77,6 +78,7 @@ export default function CommunityChatScreen(){
      {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="community" conversationId={id} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
      <Text style={styles.time}>{new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>
    </View>)}
+   <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={canSendPhoto&&!sending&&!uploading} onSent={async()=>{await refresh();}}/>
    {auth.token&&canSendPhoto?<Button secondary title="Escolher fotografia" disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
    {photo?<View style={styles.photoPanel}>
      <Image source={{uri:photo.uri}} style={styles.preview} resizeMode="contain"/>
