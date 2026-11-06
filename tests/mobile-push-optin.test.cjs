@@ -143,6 +143,6 @@ test('stale push-device queries cannot overwrite explicit opt-in or account chan
  assert.match(screen,/statusRequest\.current===requestId/);
  assert.match(screen,/statusRequest\.current\+\+;\n  const identity=/);
  assert.match(screen,/generation\.current\+\+;statusRequest\.current\+\+/);
- assert.match(screen,/if\(account\.current===identity\)setPushEnabled\(true\)/);
- assert.match(screen,/if\(account\.current===identity\)setPushEnabled\(false\)/);
+ assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushEnabled\(true\)/);
+ assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushEnabled\(false\)/);
 });
