@@ -12,6 +12,8 @@ on:
       - 'app/communities/**'
       - 'app/sessions/create.tsx'
       - 'app/tournaments/create.tsx'
+      - 'app/tournaments/[communityId]/[id].tsx'
+      - 'tests/mobile-tournament-detail-lifecycle.test.cjs'
       - 'tests/mobile-tournament-create-lifecycle.test.cjs'
       - 'tests/mobile-session-community-preselection.test.cjs'
       - 'src/lib/session-community-sports.cjs'
