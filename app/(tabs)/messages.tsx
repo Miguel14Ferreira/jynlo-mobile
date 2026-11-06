@@ -62,6 +62,7 @@ export default function MessagesScreen(){
   if(identity.current!==currentIdentity){
    identity.current=currentIdentity;setItems([]);setInvites([]);
    setLastSyncedAt(null);setChatWarning('');setError('');
+   setSearch('');setUnreadOnly(false);
   }
   const version=++generation.current;
   pendingRefresh.current=false;
