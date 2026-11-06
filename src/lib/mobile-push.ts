@@ -10,7 +10,8 @@ const INSTALL_ID_KEY='jynlo.mobile.push.installId';
 const REGISTERED_ACCOUNT_KEY='jynlo.mobile.push.account';
 
 function projectId():string{
- const configured=Constants.easConfig?.projectId||Constants.expoConfig?.extra?.eas?.projectId;
+ const configured=Constants.easConfig?.projectId||Constants.expoConfig?.extra?.eas?.projectId||
+  process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID;
  if(typeof configured!=='string'||! /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(configured))
   throw Error('O projeto Expo EAS ainda não está configurado para notificações push.');
  return configured;
