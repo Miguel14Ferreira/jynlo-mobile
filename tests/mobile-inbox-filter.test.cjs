@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {filterInbox,unreadInboxCount}=require('../src/lib/inbox-filter.cjs');
+const {filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge}=require('../src/lib/inbox-filter.cjs');
 const fs=require('node:fs'),path=require('node:path');
 const screen=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
 
@@ -36,4 +36,26 @@ test('filter is local to the authenticated inbox with accessible controls',()=>{
  assert.match(screen,/displayed\.map\(item=>/);
  assert.match(screen,/Não foram encontradas conversas com estes filtros/);
  assert.match(screen,/setSearch\(''\);setUnreadOnly\(false\)/);
+});
+
+test('last-message timestamp stays empty for missing or malformed dates',()=>{
+ assert.equal(formatInboxTime(null),'');
+ assert.equal(formatInboxTime('not-a-date'),'');
+ assert.match(formatInboxTime('2026-11-06T18:30:00Z'),/\d{2}\/\d{2}/);
+});
+test('unread badge caps at 99+ and rejects invalid counts',()=>{
+ assert.equal(formatUnreadBadge(0),'');
+ assert.equal(formatUnreadBadge(-1),'');
+ assert.equal(formatUnreadBadge(2.5),'');
+ assert.equal(formatUnreadBadge(1),'1');
+ assert.equal(formatUnreadBadge(99),'99');
+ assert.equal(formatUnreadBadge(100),'99+');
+ assert.equal(formatUnreadBadge(Number.NaN),'');
+});
+test('inbox cards show last message time and accessible unread counts',()=>{
+ assert.match(screen,/formatInboxTime\(item\.latestAt\)/);
+ assert.match(screen,/formatUnreadBadge\(item\.unreadCount\)/);
+ assert.match(screen,/accessibilityLabel=\{\x60\$\{item\.kind/);
+ assert.match(screen,/accessibilityRole="button"/);
+ assert.match(screen,/numberOfLines=\{1\}/);
 });
