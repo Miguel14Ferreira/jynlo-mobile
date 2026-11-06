@@ -1,8 +1,9 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -73,8 +74,20 @@ export default function DirectConversation(){
   }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
   void refresh(false,version);
   // Poll only while focused; old responses cannot overwrite a new conversation.
-  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true,version);},15000);
-  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;};
+  const timer=setInterval(()=>{
+   if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);
+  },15000);
+  const resume=AppState.addEventListener('change',state=>{
+   if(state==='active'&&generation.current===version)void refresh(true,version);
+  });
+  const received=Notifications.addNotificationReceivedListener(notification=>{
+   if(notification.request.content.data?.kind!=='notification'||generation.current!==version)return;
+   if(auth.token)void refresh(true,version);
+  });
+  return ()=>{
+   active=false;clearInterval(timer);resume.remove();received.remove();
+   pendingRefresh.current=false;generation.current++;
+  };
  },[refresh,peer,auth.token]));
  async function send(){
   if(sending||sendingNow.current||!auth.token||!draft.trim())return;
