@@ -24,7 +24,7 @@ export default function DirectConversation(){
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
  const generation=useRef(0),conversation=useRef('');
  const pendingRefresh=useRef(false);
- const refresh=useCallback(async(silent=false,version=generation.current)=>{
+ const refresh:(silent?:boolean,version?:number)=>Promise<void>=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){
    // A send may finish while the 15-second history poll is still running.
    // Queue one fresh server read instead of silently dropping it.
