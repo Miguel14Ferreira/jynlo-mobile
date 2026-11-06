@@ -5,9 +5,9 @@ const screen=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'
 
 test('direct chat history loads are scoped to current account and focused conversation',()=>{
  assert.match(screen,/const generation=useRef\(0\),conversation=useRef\(''\)/);
- assert.match(screen,/if\(refreshing\.current===version\)return/);
+ assert.match(screen,/if\(refreshing\.current===version\)\{/);
  assert.match(screen,/if\(version!==generation\.current\)return/);
- assert.match(screen,/if\(version===generation\.current&&!silent\)setLoading\(false\)/);
+ assert.match(screen,/if\(!silent\)setLoading\(false\)/);
  assert.match(screen,/const identity=peer\+'\|'\+auth\.token/);
  assert.match(screen,/conversation\.current=identity/);
  assert.match(screen,/setMessages\(\[\]\);setDraft\(''\)/);
