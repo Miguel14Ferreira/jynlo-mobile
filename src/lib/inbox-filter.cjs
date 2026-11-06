@@ -20,4 +20,14 @@ function unreadInboxCount(items){
   return total+(Number.isSafeInteger(count)&&count>0?count:0);
  },0);
 }
-module.exports={filterInbox,unreadInboxCount};
+function formatInboxTime(value){
+ if(!value)return '';
+ const date=new Date(value);
+ if(!Number.isFinite(date.getTime()))return '';
+ return date.toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function formatUnreadBadge(value){
+ if(!Number.isSafeInteger(value)||value<=0)return '';
+ return value>99?'99+':String(value);
+}
+module.exports={filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge};
