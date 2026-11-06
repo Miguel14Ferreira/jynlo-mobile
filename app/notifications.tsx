@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
@@ -69,6 +69,9 @@ export default function NotificationsScreen(){
   }).catch(()=>{});
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},20000);
+  const resume=AppState.addEventListener('change',state=>{
+   if(state==='active'&&generation.current===version)void load(true,version);
+  });
   const received=Notifications.addNotificationReceivedListener(notification=>{
    const payload=notification.request.content.data;
    // The backend sends only this notification kind; never navigate on receipt.
@@ -77,7 +80,7 @@ export default function NotificationsScreen(){
    void load(true,version);
   });
   return ()=>{
-   clearInterval(timer);received.remove();pendingRefresh.current=false;
+   clearInterval(timer);received.remove();resume.remove();pendingRefresh.current=false;
    generation.current++;statusRequest.current++;
   };
  },[load,auth.username,auth.token]));
