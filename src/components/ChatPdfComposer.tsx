@@ -53,7 +53,10 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   try{
    await sendChatPdf(target,token,asset,replyId);
    reset();
-   if(active.current)await onSent();
+   if(active.current){
+    try{await onSent();}
+    catch{setError('PDF enviado. Atualiza a conversa para veres o anexo.');}
+   }
   }catch(e){
    // The POST may have completed even if its result was lost. Never retry this file automatically.
    blocked.current=true;
