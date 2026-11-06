@@ -1,0 +1,46 @@
+name: Jynlo Google Play - AAB de teste interno
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-play-internal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: '1'
+      EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
+      EXPO_PUBLIC_JYNLO_API_URL: ${{ vars.JYNLO_PLAY_API_URL }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify credentials and API configuration
+        shell: bash
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::Add EXPO_TOKEN to Actions secrets (never commit it)."; exit 1; }
+          test -n "$EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID" || { echo "::error::Set EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID in Actions variables."; exit 1; }
+          node scripts/verify-release.cjs --production
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate TypeScript and contracts
+        run: |
+          npm run typecheck
+          npm run test:all
+      - name: Configure EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build signed Google Play app bundle (.aab)
+        run: eas build --platform android --profile play-internal --non-interactive --wait
+      - name: Next step
+        run: echo "Download the signed AAB from Expo EAS build dashboard, then upload to Google Play Console > Testing > Internal testing."
