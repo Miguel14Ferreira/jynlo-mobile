@@ -1,4 +1,4 @@
-name: Jynlo mobile push validation
+name: Jynlo mobile validation
 
 on:
   push:
@@ -7,6 +7,14 @@ on:
       - 'src/lib/mobile-push.ts'
       - 'src/lib/push-device-api.ts'
       - 'app/notifications.tsx'
+      - 'app/messages/**'
+      - 'app/(tabs)/messages.tsx'
+      - 'src/components/ChatPdfComposer.tsx'
+      - 'src/lib/chat-pdf-attachment.ts'
+      - 'src/lib/chat-api.ts'
+      - 'tests/mobile-chat-pdf-lifecycle.test.cjs'
+      - 'tests/mobile-direct-chat-lifecycle.test.cjs'
+      - 'tests/mobile-inbox-lifecycle.test.cjs'
       - 'app/_layout.tsx'
       - 'app.json'
       - 'eas.json'
