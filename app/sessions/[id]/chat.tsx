@@ -1,3 +1,4 @@
+import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
 import {Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -87,6 +88,7 @@ export default function SessionChat(){
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
   </Pressable>)}
+  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async()=>{setReply(null);await refresh();}}/>
   {auth.token&&!closed&&photoReady?<Button title="Escolher fotografia" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <Image source={{uri:photo.uri}} style={styles.preview} resizeMode="contain"/>
