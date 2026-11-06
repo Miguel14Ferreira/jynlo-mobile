@@ -34,6 +34,10 @@ jobs:
         run: npm run typecheck
       - name: App contracts
         run: npm run test:all
+      - name: Android JavaScript bundle
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+        run: npx expo export --platform android --output-dir /tmp/jynlo-android-bundle
       - name: Expo config and dependencies
         run: npx --yes expo-doctor
       - name: Check EAS project binding
