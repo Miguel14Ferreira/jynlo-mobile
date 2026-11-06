@@ -125,7 +125,7 @@ export default function CreateSessionScreen(){
   }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
  useFocusEffect(useCallback(()=>{
-  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'');
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'');
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
    preselectionApplied.current=false;
