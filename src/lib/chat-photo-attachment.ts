@@ -1,0 +1,45 @@
+import {API_BASE,DEMO_MODE} from './api';
+import type {ImagePickerAsset} from 'expo-image-picker';
+import type {CommunityChatEntry} from './types';
+import type {SessionChatEntry} from './session-chat-api';
+
+type ChatKind='community'|'session';
+function photoUrl(kind:ChatKind,id:number):string{
+ if(!Number.isSafeInteger(id)||id<=0)throw Error('Identificador inválido.');
+ return API_BASE+'/api/'+(kind==='community'?'communities':'sessions')+'/'+id+'/messages/attachments';
+}
+export async function chatPhotoAvailable(kind:ChatKind,id:number,token:string):Promise<boolean>{
+ if(DEMO_MODE||!token)return false;
+ const response=await fetch(photoUrl(kind,id)+'/availability',{
+  headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit'
+ });
+ if(!response.ok)return false;
+ return ((await response.json()) as {available?:boolean}).available===true;
+}
+export async function sendChatPhoto(kind:'community',id:number,token:string,asset:ImagePickerAsset,replyId?:number|null):Promise<CommunityChatEntry>;
+export async function sendChatPhoto(kind:'session',id:number,token:string,asset:ImagePickerAsset,replyId?:number|null):Promise<SessionChatEntry>;
+export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:ImagePickerAsset,replyId?:number|null):Promise<CommunityChatEntry|SessionChatEntry>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para enviar uma fotografia.');
+ const url=photoUrl(kind,id);
+ if(asset.type!=='image'||!asset.uri)throw Error('Fotografia inválida.');
+ if(!asset.fileSize||asset.fileSize>5*1024*1024)throw Error('Fotografia com mais de 5 MB ou tamanho desconhecido.');
+ const formats:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+ const extension=formats[asset.mimeType||''];
+ if(!extension)throw Error('Formato de fotografia não suportado.');
+ if(replyId!=null&&(!Number.isSafeInteger(replyId)||replyId<=0))throw Error('Resposta inválida.');
+ const form=new FormData();
+ form.append('file',{uri:asset.uri,name:'jynlo-chat.'+extension,type:asset.mimeType} as unknown as Blob);
+ if(replyId!=null)form.append('replyToMessageId',String(replyId));
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),30000);
+ try{
+  const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',body:form,signal:controller.signal});
+  if(!response.ok)throw Error('O servidor recusou o envio ('+response.status+').');
+  const result=await response.json() as CommunityChatEntry|SessionChatEntry;
+  if(!Number.isSafeInteger(result.id)||!result.attachmentName)throw Error('Envio não confirmado.');
+  return result;
+ }catch(e){
+  if(controller.signal.aborted)throw Error('Tempo esgotado. Confirma o histórico antes de repetir.');
+  throw e instanceof Error?e:Error('Falha no envio. Confirma o histórico antes de repetir.');
+ }finally{clearTimeout(timer);}
+}
