@@ -1,9 +1,30 @@
-import React from 'react';
-import {Stack} from 'expo-router';
+import React,{useEffect,useRef} from 'react';
+import * as Notifications from 'expo-notifications';
+import {Stack,useRouter} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
 import {AuthProvider,useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
-function Navigation(){const auth=useAuth();return <>
+function PushNavigation(){
+  const auth=useAuth(),router=useRouter(),lastHandled=useRef<string|null>(null);
+  useEffect(()=>{
+    if(!auth.token)return;
+    function open(response:Notifications.NotificationResponse|null){
+      if(!response)return;
+      const data=response.notification.request.content.data;
+      // Route only to the authenticated inbox, which checks actual access.
+      if(data?.kind!=='notification'||!Number.isSafeInteger(data.id)||data.id<=0)return;
+      const identifier=response.notification.request.identifier;
+      if(lastHandled.current===identifier)return;
+      lastHandled.current=identifier;
+      router.push('/notifications');
+    }
+    const listener=Notifications.addNotificationResponseReceivedListener(open);
+    void Notifications.getLastNotificationResponseAsync().then(open).catch(()=>{});
+    return ()=>listener.remove();
+  },[auth.token,router]);
+  return null;
+}
+function Navigation(){const auth=useAuth();return <><PushNavigation/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
