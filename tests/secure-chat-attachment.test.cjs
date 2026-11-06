@@ -40,3 +40,18 @@ test('all chat kinds only expose attachments from non-deleted messages',()=>{
  const pkg=JSON.parse(read('package.json'));
  assert.equal(pkg.dependencies['expo-file-system'],'~58.0.11');
 });
+
+test('PDF attachments use authenticated byte download and platform native preview',()=>{
+ const screen=read('src/components/SecureChatAttachment.tsx');
+ assert.match(screen,/['"]application\/pdf['"]:['"]pdf['"]/);
+ assert.match(screen,/Authorization:'Bearer '\+token/);
+ assert.match(screen,/redirect:'error'/);
+ assert.match(screen,/File\.canPreview\(cached\.current,\{mimeType:'application\/pdf'\}\)/);
+ assert.match(screen,/File\.preview\(cached\.current,\{mimeType:'application\/pdf',title:'Documento privado'\}\)/);
+ assert.match(screen,/AppState\.addEventListener\('change'/);
+ assert.match(screen,/state==='active'&&wasBackgrounded\.current&&pdfPreview\.current/);
+ assert.match(screen,/Limpar PDF temporário/);
+ assert.match(screen,/bytes\.length>5\*1024\*1024/);
+ assert.doesNotMatch(screen,/Sharing\.shareAsync/);
+ assert.doesNotMatch(screen,/Linking\.openURL/);
+});
