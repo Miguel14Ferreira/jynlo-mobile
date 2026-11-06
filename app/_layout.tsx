@@ -33,6 +33,7 @@ function Navigation(){const auth=useAuth();return <>
     <Stack.Screen name="register" options={{title:'Criar conta'}}/>
     <Stack.Screen name="confirm-email" options={{title:'Confirmar email'}}/>
     <Stack.Screen name="reset-password" options={{title:'Recuperar palavra-passe'}}/>
+    <Stack.Screen name="legal" options={{title:'Informação legal'}}/>
     <Stack.Screen name="google-onboarding" options={{title:'Registo com Google'}}/>
     <Stack.Screen name="mfa" options={{title:'Verificação MFA'}}/>
   </Stack>

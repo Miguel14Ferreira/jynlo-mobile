@@ -17,7 +17,59 @@
         "foregroundImage": "./assets/jynlo-icon.png",
         "backgroundColor": "#07171D"
       },
-      "versionCode": 7
+      "versionCode": 7,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "path": "/"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "pathPrefix": "/login/resetPassword/"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "pathPrefix": "/login/registerNewUser/confirmTokenRegistration/"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "pathPrefix": "/sessions/"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "pathPrefix": "/venues/"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "path": "/privacy"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "path": "/terms"
+            },
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "path": "/delete-account"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",

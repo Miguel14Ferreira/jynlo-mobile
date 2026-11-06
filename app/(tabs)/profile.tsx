@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {Alert,Linking,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -64,9 +64,9 @@ export default function ProfileScreen(){
     </View>:null}
     </>:null}
     <Eyebrow>INFORMAÇÃO LEGAL</Eyebrow>
-    <Button title="Política de Privacidade" secondary onPress={()=>{void Linking.openURL("https://d24sports.com/privacy").catch(()=>Alert.alert("Jynlo","Não foi possível abrir a Política de Privacidade."));}}/>
-    <Button title="Termos de Utilização" secondary onPress={()=>{void Linking.openURL("https://d24sports.com/terms").catch(()=>Alert.alert("Jynlo","Não foi possível abrir os Termos de Utilização."));}}/>
-    <Button title="Como pedir a eliminação da conta" secondary onPress={()=>{void Linking.openURL("https://d24sports.com/delete-account").catch(()=>Alert.alert("Jynlo","Não foi possível abrir as instruções de eliminação."));}}/>
+    <Button title="Política de Privacidade" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
+    <Button title="Termos de Utilização" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
+    <Button title="Como pedir a eliminação da conta" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'delete'}})}/>
     <Message>{auth.username?'Para entrares com outra conta, termina a sessão e autentica-te novamente. Não existe troca instantânea entre contas.':'Estás a explorar como visitante. Para participar, inicia sessão.'}</Message>
     {DEMO_MODE?<Message>Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.</Message>:null}
   </Page>;

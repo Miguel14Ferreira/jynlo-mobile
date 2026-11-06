@@ -62,3 +62,16 @@ test('registration and password recovery are native screens (no website redirect
  assert.match(api,/\/api\/auth\/reset-password\/confirm/);
  assert.doesNotMatch(register,/Linking\.openURL\('https:\/\/d24sports\.com\/login/);
 });
+
+test('legal texts are accessible via native Jynlo screens',()=>{
+ const welcome=read('app/welcome.tsx');
+ const profile=read('app/(tabs)/profile.tsx');
+ const google=read('app/google-onboarding.tsx');
+ const register=read('app/register.tsx');
+ const layout=read('app/_layout.tsx');
+ assert.ok(layout.includes('name="legal"'));
+ for(const source of [welcome,profile,google,register]){
+  assert.equal(source.includes('Linking.openURL("https://d24sports.com/'),false);
+ }
+ assert.ok(register.includes("pathname:'/legal'"));
+});

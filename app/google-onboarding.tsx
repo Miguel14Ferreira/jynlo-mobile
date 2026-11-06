@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter,useLocalSearchParams} from 'expo-router';
 import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
@@ -62,8 +62,8 @@ export default function GoogleOnboarding(){
     <Text style={styles.consentText}>Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.</Text>
   </Pressable>
   <View style={styles.links}>
-   <Text style={styles.link} onPress={()=>{void Linking.openURL('https://d24sports.com/terms')}}>Termos de Utilização</Text>
-   <Text style={styles.link} onPress={()=>{void Linking.openURL('https://d24sports.com/privacy')}}>Política de Privacidade</Text>
+   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}>Termos de Utilização</Text>
+   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}>Política de Privacidade</Text>
   </View>
   <Button title={busy?'A criar conta…':'Concluir registo'} disabled={!ready} onPress={()=>{void submit();}}/>
   <Text style={styles.hint}>A Google autentica a identidade; a Jynlo valida e cria o teu perfil no servidor. Não guardamos aqui a tua palavra-passe Google.</Text>
