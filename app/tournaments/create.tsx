@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useMemo,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -46,6 +46,7 @@ function Choice({title,active,onPress}:{title:string;active:boolean;onPress:()=>
 export default function CreateTournamentScreen(){
  const router=useRouter(),auth=useAuth();
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
+ const generation=useRef(0),identityRef=useRef(''),savingRef=useRef(false),communityOverridden=useRef(false);
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [communityId,setCommunityId]=useState<number|null>(null);
  const [search,setSearch]=useState(''),[sport,setSport]=useState('');
@@ -56,21 +57,38 @@ export default function CreateTournamentScreen(){
  const [groupCount,setGroupCount]=useState<2|4>(2),[teamSize,setTeamSize]=useState('5'),[legs,setLegs]=useState<1|2>(1);
  const [win,setWin]=useState('3'),[draw,setDraw]=useState('1'),[loss,setLoss]=useState('0');
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setCommunities([]);setLoading(false);return;}
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){
+   if(version===generation.current){setCommunities([]);setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');
   try{
    const all=await myCommunities(auth.token,auth.username);
+   if(version!==generation.current)return;
    const allowed=all.filter(c=>c.myRole==='OWNER'||c.myRole==='ADMIN');
    setCommunities(allowed);
    setCommunityId(current=>{
     const preferred=Number(params.communityId);
-    return allowed.some(c=>c.id===preferred)?preferred:allowed.some(c=>c.id===current)?current:(allowed[0]?.id??null);
+    return communityOverridden.current&&allowed.some(c=>c.id===current)?current:
+     allowed.some(c=>c.id===preferred)?preferred:allowed.some(c=>c.id===current)?current:(allowed[0]?.id??null);
    });
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível consultar as comunidades.');}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar as comunidades.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[auth.token,auth.username,params.communityId]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(params.communityId||'')+'|'+String(params.sport||'');
+  if(identityRef.current!==identity){
+   identityRef.current=identity;communityOverridden.current=false;
+   setCommunities([]);setCommunityId(null);setSport('');setSearch('');
+   setName('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');
+   setEvent('');setDiscipline('');setError('');
+  }
+  setBusy(savingRef.current);
+  const version=++generation.current;
+  void load(version);
+  return ()=>{generation.current++;};
+ },[load,auth.username,auth.token,params.communityId,params.sport]));
  const selected=communities.find(c=>c.id===communityId);
  const selectedSports=useMemo(()=>communitySports(selected).filter(s=>SPORTS.includes(s)),[selected]);
  const selectionKey=selectedSports.join('|');
@@ -130,7 +148,7 @@ export default function CreateTournamentScreen(){
    <Text style={styles.heading}>1. Comunidade</Text>
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
     {communities.map(c=><Choice key={c.id} title={c.name} active={selected?.id===c.id} onPress={()=>{
-      setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
+      communityOverridden.current=true;setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
     }}/>)}
    </ScrollView>
    <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.</Text>
