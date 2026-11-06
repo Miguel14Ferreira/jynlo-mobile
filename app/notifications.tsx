@@ -1,6 +1,6 @@
-import React,{useCallback,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
@@ -11,7 +11,9 @@ import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 
 export default function NotificationsScreen(){
- const auth=useAuth(),router=useRouter();
+ const auth=useAuth(),router=useRouter(),isFocused=useIsFocused();
+ const {notificationId}=useLocalSearchParams<{notificationId?:string}>();
+ const lastPushHandled=useRef<string|null>(null);
  const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
@@ -97,6 +99,19 @@ export default function NotificationsScreen(){
    case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
   }
  }
+ useEffect(()=>{
+  if(!isFocused||!auth.token||!auth.username||loading)return;
+  if(account.current!==auth.username+'|'+auth.token)return;
+  // Push data is untrusted. Resolve the ID only against this account's API history.
+  if(typeof notificationId!=='string'||!/^[1-9][0-9]{0,15}$/.test(notificationId))return;
+  const key=auth.username+'|'+auth.token+'|'+notificationId;
+  if(lastPushHandled.current===key)return;
+  lastPushHandled.current=key;
+  const target=items.find(item=>String(item.id)===notificationId);
+  if(target)void open(target);
+  else setNotice('A notificação já não está disponível nesta conta. Atualiza a lista para confirmar.');
+  router.setParams({notificationId:''});
+ },[isFocused,auth.token,auth.username,notificationId,loading,items,router]);
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
