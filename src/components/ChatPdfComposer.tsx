@@ -39,6 +39,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
    });
    if(picked.canceled||!picked.assets?.[0])return;
    const asset=picked.assets[0];
+   if(!active.current){cleanup(asset);return;}
    try{checkPdfAsset(asset);}
    catch(e){cleanup(asset);throw e;}
    reset();blocked.current=false;
