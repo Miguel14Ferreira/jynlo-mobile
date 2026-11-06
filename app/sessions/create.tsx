@@ -19,6 +19,7 @@ export default function CreateSessionScreen(){
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
  const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
+ const communityLoadVersion=useRef(0),communityLoadIdentity=useRef('');
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
  const [step,setStep]=useState(0);
@@ -95,10 +96,14 @@ export default function CreateSessionScreen(){
  function venueSupportsSport(v:VenueSummary,sport:string){
   return !v.sports?.trim()||!sport||v.sports.split(';').map(item=>item.trim().toLocaleLowerCase('pt-PT')).includes(sport.toLocaleLowerCase('pt-PT'));
  }
- const loadCommunities=useCallback(async()=>{
-  if(!auth.token||!auth.username){setCommunities([]);return;}
+ const loadCommunities=useCallback(async(version=communityLoadVersion.current)=>{
+  if(!auth.token||!auth.username){
+   if(version===communityLoadVersion.current)setCommunities([]);
+   return;
+  }
   try{
    const groups=await myCommunities(auth.token,auth.username);
+   if(version!==communityLoadVersion.current)return;
    setCommunities(groups);setCommunityError('');
    if(requestedCommunityId&&!preselectionApplied.current){
     const chosen=groups.find(c=>c.id===requestedCommunityId);
@@ -113,9 +118,26 @@ export default function CreateSessionScreen(){
     }else setCommunityError('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.');
    }
   }
-  catch{setCommunities([]);setCommunityError('Não foi possível carregar as tuas comunidades.');}
+  catch{
+   if(version===communityLoadVersion.current){
+    setCommunities([]);setCommunityError('Não foi possível carregar as tuas comunidades.');
+   }
+  }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
- useFocusEffect(useCallback(()=>{void loadCommunities();},[loadCommunities]));
+ useFocusEffect(useCallback(()=>{
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'');
+  if(communityLoadIdentity.current!==identity){
+   communityLoadIdentity.current=identity;
+   preselectionApplied.current=false;
+   setCommunities([]);setCommunityError('');setCommunitySearch('');
+   setCommunityMode('INDEPENDENT');
+   setForm(previous=>changeCommunityMode(previous,'INDEPENDENT'));
+   setStep(0);
+  }
+  const version=++communityLoadVersion.current;
+  void loadCommunities(version);
+  return ()=>{communityLoadVersion.current++;};
+ },[loadCommunities,auth.username,auth.token,requestedCommunityId]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
   if(key==='city')clearVenueSearch();
