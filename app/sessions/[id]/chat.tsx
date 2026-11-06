@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -13,9 +13,13 @@ export default function SessionChat(){
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
- const refresh=useCallback(async()=>{
-  if(!auth.token||!Number.isSafeInteger(id)||id<=0){setEntries([]);setLoading(false);return;}
-  setLoading(true);setError('');
+ const refreshing=useRef(false),sendingNow=useRef(false);
+ const refresh=useCallback(async(silent=false)=>{
+  if(refreshing.current)return;
+  refreshing.current=true;
+  if(!auth.token||!Number.isSafeInteger(id)||id<=0){setEntries([]);setLoading(false);refreshing.current=false;return;}
+  if(!silent)setLoading(true);
+  setError('');
   try{
    const history=await sessionChatHistory(id,auth.token);
    setEntries(history);setClosed(false);
@@ -24,17 +28,22 @@ export default function SessionChat(){
   }catch(e){
    setClosed(true);setEntries([]);
    setError(e instanceof Error?e.message:'Chat indisponível.');
-  }finally{setLoading(false);}
+  }finally{if(!silent)setLoading(false);refreshing.current=false;}
  },[auth.token,id]);
- useFocusEffect(useCallback(()=>{void refresh();},[refresh]));
+ useFocusEffect(useCallback(()=>{
+  void refresh();
+  // Read-only polling while focused; a send is never retried automatically.
+  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000);
+  return ()=>clearInterval(timer);
+ },[refresh]));
  async function send(){
   if(sending||closed||!auth.token||!draft.trim())return;
-  setSending(true);setError('');
+  sendingNow.current=true;setSending(true);setError('');
   try{await postSessionChat(id,draft,auth.token,reply?.id);
    setDraft('');setReply(null);await refresh();
   }catch(e){setError((e instanceof Error?e.message:'Falha no envio.')+
    ' Consulta o histórico antes de voltares a tentar.');}
-  finally{setSending(false);}
+  finally{sendingNow.current=false;setSending(false);}
  }
  return <Page><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
