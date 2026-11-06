@@ -1,3 +1,4 @@
+import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useEffect,useState} from 'react';
 import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -73,7 +74,7 @@ export default function CommunityChatScreen(){
    {!loading&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
    {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <Text style={styles.sender}>{m.username}</Text><Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
-     {m.attachmentName&&!m.deletedAt?<Text style={styles.note}>Anexo privado: {m.attachmentName} · abertura ainda indisponível</Text>:null}
+     {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="community" conversationId={id} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
      <Text style={styles.time}>{new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>
    </View>)}
    {auth.token&&canSendPhoto?<Button secondary title="Escolher fotografia" disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
