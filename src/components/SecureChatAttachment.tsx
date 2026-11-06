@@ -50,7 +50,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   const subscription=AppState.addEventListener('change',state=>{
    if(state==='background'||state==='inactive')wasBackgrounded.current=true;
    if(state==='active'&&wasBackgrounded.current&&pdfPreview.current){
-    pdfPreview.current=false;wasBackgrounded.current=false;
+    pdfPreview.current=false;
     cleanup();
    }
   });
@@ -87,10 +87,11 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
     if(!await File.canPreview(cached.current,{mimeType:'application/pdf'})){
      throw Error('Não existe um visualizador de PDF disponível neste dispositivo.');
     }
+    wasBackgrounded.current=false;
     pdfPreview.current=true;
     // Expo hands the file to the native viewer. Its promise does not wait for closing.
     await File.preview(cached.current,{mimeType:'application/pdf',title:'Documento privado'});
-    if(!wasBackgrounded.current){
+    if(!wasBackgrounded.current&&cached.current){
      // iOS may display the viewer inside the app. Keep cache until user closes it.
      setUri(cached.current.uri);
     }
