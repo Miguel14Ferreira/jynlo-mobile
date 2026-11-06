@@ -11,7 +11,7 @@ export default function WelcomeScreen(){
  if(!auth.ready)return <SafeAreaView style={styles.loading}><ActivityIndicator color={MINT}/></SafeAreaView>;
  if(auth.token&&auth.username)return <Redirect href="/(tabs)"/>;
  const explore=()=>{auth.browseAsGuest();router.replace('/(tabs)/explore');};
- const register=()=>{void Linking.openURL('https://d24sports.com/login/registerNewUser').catch(()=>Alert.alert('Jynlo','Não foi possível abrir o registo. Acede a d24sports.com.'));};
+ const register=()=>router.push('/register');
  return <SafeAreaView style={styles.page} edges={['top','bottom']}><ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
   <Brand subtitle="ENCONTRA AS TUAS PESSOAS"/>
   <ImageBackground source={require('../assets/jynlo-feed-sports.png')} style={styles.hero} imageStyle={styles.heroImage}>
@@ -25,7 +25,7 @@ export default function WelcomeScreen(){
    {DEMO_MODE?<DemoBanner/>:null}
    <Button title={DEMO_MODE?'Experimentar conta fictícia':'Entrar na Jynlo · Google ou palavra-passe'} onPress={()=>router.push('/login')}/>
    <Button title="Explorar como visitante" secondary onPress={explore}/>
-   <Button title="Criar conta na Jynlo Web" secondary onPress={register}/>
+   <Button title="Criar conta na Jynlo" secondary onPress={register}/>
    <View style={styles.legalLinks}>
     <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/privacy").catch(()=>Alert.alert("Jynlo","Não foi possível abrir a Política de Privacidade."));}} accessibilityRole="link">Política de Privacidade</Text>
     <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/terms").catch(()=>Alert.alert("Jynlo","Não foi possível abrir os Termos de Utilização."));}} accessibilityRole="link">Termos de Utilização</Text>
