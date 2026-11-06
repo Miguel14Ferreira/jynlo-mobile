@@ -64,8 +64,8 @@ export default function TournamentDetailScreen(){
         const points=kind==='CHESS'?formatChessPoints(r.points):r.points;
         return <View key={i} style={styles.standing}><Text style={styles.position}>{String(r.position)}.</Text>
           <View style={{flex:1}}><Text style={styles.name}>{name}</Text>
-            <Text style={styles.meta}>{kind==='CHESS'?`${r.played} partidas · ${r.won} vitórias · ${r.drawn} empates`:`${r.played} jogos · ${r.won} vitórias`}</Text></View>
-          <Text style={styles.points}>{points==null?'—':String(points)} pts</Text>
+            <Text style={styles.meta}>{`${r.played??'—'} ${kind==='CHESS'?'partidas':'jogos'} · ${r.won??'—'} vitórias · ${r.drawn??'—'} empates · ${r.lost??'—'} derrotas`}</Text></View>
+          <Text style={styles.points}>{points==null?'—':String(points)} {kind==='CHESS'?'pontos':'pts'}</Text>
         </View>;
        })}
        {table.rows.length===0?<Text style={styles.meta}>Ainda não existem resultados para apresentar.</Text>:null}
