@@ -17,7 +17,7 @@ import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
- const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9]\\d*$/.test(params.communityId)?Number(params.communityId):null;
+ const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
