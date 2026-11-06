@@ -1,5 +1,6 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
+import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -15,8 +16,9 @@ export default function MessagesScreen(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
  const identity=useRef('');
+ const pendingRefresh=useRef(false);
  const load=useCallback(async(silent=false,version=generation.current)=>{
-  if(busyVersion.current===version)return;
+  if(busyVersion.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
    setItems([]);setInvites([]);setLoading(false);return;
   }
@@ -41,7 +43,10 @@ export default function MessagesScreen(){
     setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
   }finally{
    if(busyVersion.current===version)busyVersion.current=null;
-   if(version===generation.current&&!silent)setLoading(false);
+   if(version===generation.current){
+    if(!silent)setLoading(false);
+    if(pendingRefresh.current){pendingRefresh.current=false;void load(true,version);}
+   }
   }
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -50,9 +55,20 @@ export default function MessagesScreen(){
    identity.current=currentIdentity;setItems([]);setInvites([]);
   }
   const version=++generation.current;
+  pendingRefresh.current=false;
   void load(false,version);
-  const timer=setInterval(()=>{void load(true,version);},15000);
-  return ()=>{clearInterval(timer);generation.current++;};
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void load(true,version);},15000);
+  const resume=AppState.addEventListener('change',state=>{
+   if(state==='active'&&generation.current===version)void load(true,version);
+  });
+  const received=Notifications.addNotificationReceivedListener(notification=>{
+   if(notification.request.content.data?.kind!=='notification'||generation.current!==version)return;
+   if(auth.token&&auth.username)void load(true,version);
+  });
+  return ()=>{
+   clearInterval(timer);resume.remove();received.remove();pendingRefresh.current=false;
+   generation.current++;
+  };
  },[load,auth.username,auth.token]));
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <Eyebrow>COMUNIDADE É CONVERSA</Eyebrow>
