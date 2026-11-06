@@ -89,6 +89,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
  }
  if(!enabled||!token)return null;
  return <View style={styles.panel}>
+  {busyRef.current&&!selected?<Text style={styles.note}>Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.</Text>:null}
   <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current} onPress={()=>{void choose();}}/>
   {selected?<View style={styles.details}>
    <Text style={styles.name}>{selected.name}</Text>
