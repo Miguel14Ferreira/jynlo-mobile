@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -15,30 +15,39 @@ export default function DirectConversation(){
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
- const refresh=useCallback(async()=>{
+ const refreshing=useRef(false),sendingNow=useRef(false);
+ const refresh=useCallback(async(silent=false)=>{
+  if(refreshing.current)return;
+  refreshing.current=true;
   if(!auth.token||!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer)){
-   setLoading(false);setMessages([]);return;
+   setLoading(false);setMessages([]);refreshing.current=false;return;
   }
-  setLoading(true);setError('');
+  if(!silent)setLoading(true);
+  if(!silent)setError('');
   try{
    const results=await directChatHistory(peer,auth.token);
    setMessages(results);
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
    if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');}
-  finally{setLoading(false);}
+  }catch(e){if(!silent)setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');}
+  finally{if(!silent)setLoading(false);refreshing.current=false;}
  },[peer,auth.token]);
- useFocusEffect(useCallback(()=>{void refresh();},[refresh]));
+ useFocusEffect(useCallback(()=>{
+  void refresh();
+  // Poll only while focused; read requests are safe, message sends are never retried.
+  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000);
+  return ()=>clearInterval(timer);
+ },[refresh]));
  async function send(){
   if(sending||!auth.token||!draft.trim())return;
-  setSending(true);setError('');
+  sendingNow.current=true;setSending(true);setError('');
   try{
    await sendDirectChat(peer,draft,auth.token);
    setDraft('');await refresh();
   }catch(e){
    setError((e instanceof Error?e.message:'Não foi possível enviar.')+
     ' Consulta o histórico antes de repetires o envio.');
-  }finally{setSending(false);}
+  }finally{sendingNow.current=false;setSending(false);}
  }
  return <Page><DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
