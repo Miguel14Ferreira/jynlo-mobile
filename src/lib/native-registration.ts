@@ -8,7 +8,7 @@ export type NativeRegistrationInput={
 
 export function validAdultDate(date:string,now=new Date()):boolean{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return false;
- const [year,month,day]=date.split('-').map(Number);
+ const year=Number(date.slice(0,4)),month=Number(date.slice(5,7)),day=Number(date.slice(8,10));
  const birth=new Date(Date.UTC(year,month-1,day));
  if(birth.getUTCFullYear()!==year||birth.getUTCMonth()!==month-1||birth.getUTCDate()!==day)return false;
  const today=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
