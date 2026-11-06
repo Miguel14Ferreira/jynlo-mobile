@@ -248,6 +248,10 @@ export default function SessionScreen(){
         <Text style={styles.hint}>Os detalhes de localização são mostrados apenas quando a API autoriza.</Text>
       </View>
       {feedback?<Message>{feedback}</Message>:null}
+      {auth.token&&detail&&(owner||detail.joined)&&
+        s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
+        Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
+        <Button title="Abrir chat da sessão" onPress={()=>router.push({pathname:'/sessions/[id]/chat',params:{id:String(id)}})}/>:null}
       {detail?.joined?<Message>✓ A tua presença está confirmada.</Message>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
