@@ -26,8 +26,9 @@ export default function SessionChat(){
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
-   setClosed(true);setEntries([]);
-   setError(e instanceof Error?e.message:'Chat indisponível.');
+   // A transient background refresh must not erase messages or disable composing.
+   if(!silent){setClosed(true);setEntries([]);
+    setError(e instanceof Error?e.message:'Chat indisponível.');}
   }finally{if(!silent)setLoading(false);refreshing.current=false;}
  },[auth.token,id]);
  useFocusEffect(useCallback(()=>{
