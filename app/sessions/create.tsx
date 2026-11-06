@@ -171,6 +171,12 @@ export default function CreateSessionScreen(){
    if(!form.sport){setError('Escolhe uma modalidade.');return;}
    if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError('Seleciona pelo menos uma comunidade ou escolhe sessão independente.');return;}
    if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
+   if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport)){
+    setError('Escolhe uma modalidade permitida nesta comunidade.');return;
+   }
+   if(sharedCommunities.some(c=>!communitySports(c).includes(form.sport))){
+    setError('A modalidade tem de pertencer a todas as comunidades selecionadas.');return;
+   }
    if(sharedCommunities.length!==sharedIds.length){setError('Atualiza a seleção de comunidades.');return;}
   }
   if(step===1){
@@ -198,6 +204,10 @@ export default function CreateSessionScreen(){
     throw Error('Indica quantos jogadores já tens confirmados antes de criar a sessão.');
    if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error('Escolhe uma comunidade para continuar.');
    if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
+   if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport))
+    throw Error('Esta modalidade não está configurada na comunidade selecionada.');
+   if(sharedCommunities.some(c=>!communitySports(c).includes(form.sport)))
+    throw Error('A modalidade tem de estar disponível em todas as comunidades selecionadas.');
    if(sharedCommunities.length!==sharedIds.length)throw Error('Uma comunidade partilhada já não está disponível. Atualiza a seleção.');
    if(form.seasonGame&&(!selectedCommunity||form.communityRankingsEnabled!==selectedCommunity.rankingsEnabled))
     throw Error('O estado das classificações da comunidade mudou. Seleciona novamente a comunidade.');
@@ -286,8 +296,15 @@ export default function CreateSessionScreen(){
      disabled={busy||(communityMode==='SHARED'&&!sharedIds.includes(c.id)&&sharedIds.length>=5)}
      onPress={()=>{
       if(communityMode==='SINGLE'){
-       setForm(prev=>({...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
-        communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false}));
+       setForm(prev=>{
+        const sports=communitySports(c);
+        const sport=sports.includes(prev.sport)?prev.sport:
+         sports.length===1&&SPORTS.includes(sports[0])?sports[0]:'';
+        return {...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
+         sport,venueId:sport===prev.sport?prev.venueId:null,
+         communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false};
+       });
+       setVenueChosen(null);clearVenueSearch();
       }else toggleShared(c.id);
      }} style={[styles.option,(form.communityId===c.id||sharedIds.includes(c.id))&&styles.chosen]}>
       <Text style={styles.optionText}>{(form.communityId===c.id||sharedIds.includes(c.id))?'✓  ':''}{c.name}</Text>
