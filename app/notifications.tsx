@@ -24,6 +24,7 @@ export default function NotificationsScreen(){
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
  const pendingRefresh=useRef(false);
  const statusRequest=useRef(0);
+ const pushOperation=useRef(0),inviteOperation=useRef(0);
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
@@ -59,6 +60,9 @@ export default function NotificationsScreen(){
   const identity=auth.username+'|'+auth.token;
   if(identity!==account.current){
    account.current=identity;setItems([]);setInvites([]);
+   // Invalidate in-flight mutations started by the previous account.
+   pushOperation.current++;inviteOperation.current++;
+   setPushBusy(false);setBusyInvite(null);setNotice('');
   }
   const version=++generation.current;
   pendingRefresh.current=false;
@@ -90,32 +94,36 @@ export default function NotificationsScreen(){
   // Ignore an older status lookup while an explicit user choice is processing.
   statusRequest.current++;
   const identity=auth.username+'|'+auth.token;
+  const operation=++pushOperation.current;
   setPushBusy(true);setPushError('');
   try{
    if(pushEnabled){
     await disableMobilePush(auth.username,auth.token);
-    if(account.current===identity)setPushEnabled(false);
+    if(account.current===identity&&pushOperation.current===operation)setPushEnabled(false);
    }else{
     await enableMobilePush(auth.username,auth.token);
-    if(account.current===identity)setPushEnabled(true);
+    if(account.current===identity&&pushOperation.current===operation)setPushEnabled(true);
    }
-  }catch(e){if(account.current===identity)setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
-  finally{setPushBusy(false);}
+  }catch(e){if(account.current===identity&&pushOperation.current===operation)
+   setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
+  finally{if(pushOperation.current===operation)setPushBusy(false);}
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
   if(!auth.token||busyInvite!==null)return;
   const initialIdentity=auth.username+'|'+auth.token;
+  const operation=++inviteOperation.current;
   setBusyInvite(invite.id);setError('');setNotice('');
   try{
    const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
-   if(account.current!==initialIdentity)return;
+   if(account.current!==initialIdentity||inviteOperation.current!==operation)return;
    setInvites(old=>old.filter(x=>x.id!==invite.id));
    setNotice(!accept?'Convite recusado.':
     response?.state==='WAITLISTED'?'Convite aceite: estás na lista de espera.':
     response?.state==='PARTICIPANT'?'Convite aceite: presença confirmada pelo servidor.':
     'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
-  }catch(e){if(account.current===initialIdentity)setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
-  finally{if(account.current===initialIdentity)setBusyInvite(null);}
+  }catch(e){if(account.current===initialIdentity&&inviteOperation.current===operation)
+   setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
+  finally{if(account.current===initialIdentity&&inviteOperation.current===operation)setBusyInvite(null);}
  }
  async function open(item:JynloNotification){
   if(!auth.token||!auth.username)return;
