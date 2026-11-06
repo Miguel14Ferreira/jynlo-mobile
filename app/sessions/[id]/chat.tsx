@@ -1,3 +1,4 @@
+import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
 import {Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -82,7 +83,7 @@ export default function SessionChat(){
     <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
-    {m.attachmentName&&!m.deletedAt?<Text style={styles.note}>Anexo: {m.attachmentName} (pré-visualização indisponível na app)</Text>:null}
+    {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="session" conversationId={id} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
   </Pressable>)}
