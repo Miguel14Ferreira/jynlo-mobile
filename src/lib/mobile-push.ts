@@ -4,7 +4,7 @@ import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import {DEMO_MODE} from './api';
-import {registerPushDevice,unregisterPushDevice} from './push-device-api';
+import {registerPushDevice,unregisterPushDevice,getPushDeviceStatus} from './push-device-api';
 
 const INSTALL_ID_KEY='jynlo.mobile.push.installId';
 const REGISTERED_ACCOUNT_KEY='jynlo.mobile.push.account';
@@ -23,10 +23,16 @@ async function installId():Promise<string>{
  await SecureStore.setItemAsync(INSTALL_ID_KEY,id);
  return id;
 }
-export async function pushRegistrationStatus(username:string):Promise<boolean>{
- if(!username||DEMO_MODE)return false;
+export async function pushRegistrationStatus(username:string,token:string):Promise<boolean>{
+ if(!username||!token||DEMO_MODE)return false;
  const registered=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
- return registered===username.toLowerCase();
+ if(registered!==username.toLowerCase())return false;
+ const id=await SecureStore.getItemAsync(INSTALL_ID_KEY);
+ if(!id)return false;
+ // Local marker alone does not prove a server-side registration remains active.
+ const actual=await getPushDeviceStatus(token,id);
+ if(!actual)await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
+ return actual;
 }
 /** Explicit opt-in only. No permission prompt occurs at launch or login. */
 export async function enableMobilePush(username:string,token:string):Promise<void>{
