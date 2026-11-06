@@ -13,13 +13,14 @@ export default function MessagesScreen(){
  const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const busy=useRef(false),generation=useRef(0);
+ const busyVersion=useRef<number|null>(null),generation=useRef(0);
+ const identity=useRef('');
  const load=useCallback(async(silent=false,version=generation.current)=>{
-  if(busy.current)return;
+  if(busyVersion.current===version)return;
   if(!auth.token||!auth.username){
    setItems([]);setInvites([]);setLoading(false);return;
   }
-  busy.current=true;
+  busyVersion.current=version;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
    const [groups,privateChats,requests]=await Promise.allSettled([
@@ -39,16 +40,20 @@ export default function MessagesScreen(){
    if(version===generation.current&&!silent)
     setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
   }finally{
-   busy.current=false;
+   if(busyVersion.current===version)busyVersion.current=null;
    if(version===generation.current&&!silent)setLoading(false);
   }
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
+  const currentIdentity=auth.username+'|'+auth.token;
+  if(identity.current!==currentIdentity){
+   identity.current=currentIdentity;setItems([]);setInvites([]);
+  }
   const version=++generation.current;
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},15000);
   return ()=>{clearInterval(timer);generation.current++;};
- },[load]));
+ },[load,auth.username,auth.token]));
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <Eyebrow>COMUNIDADE É CONVERSA</Eyebrow>
   <Button secondary title="🔔 Notificações" onPress={()=>router.push("/notifications")}/>
