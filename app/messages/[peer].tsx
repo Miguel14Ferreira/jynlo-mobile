@@ -21,33 +21,46 @@ export default function DirectConversation(){
  const [error,setError]=useState('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
- const refreshing=useRef(false),sendingNow=useRef(false);
- const refresh=useCallback(async(silent=false)=>{
-  if(refreshing.current)return;
-  refreshing.current=true;
+ const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
+ const generation=useRef(0),conversation=useRef('');
+ const refresh=useCallback(async(silent=false,version=generation.current)=>{
+  if(refreshing.current===version)return;
   if(!auth.token||!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer)){
-   setLoading(false);setMessages([]);refreshing.current=false;return;
+   if(version===generation.current){setLoading(false);setMessages([]);}
+   return;
   }
-  if(!silent)setLoading(true);
-  if(!silent)setError('');
+  refreshing.current=version;
+  if(!silent){setLoading(true);setError('');}
   try{
    const results=await directChatHistory(peer,auth.token);
+   if(version!==generation.current)return;
    setMessages(results);
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
    if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
-  }catch(e){if(!silent)setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');}
-  finally{if(!silent)setLoading(false);refreshing.current=false;}
+  }catch(e){
+   if(version===generation.current&&!silent)
+    setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+  }finally{
+   if(refreshing.current===version)refreshing.current=null;
+   if(version===generation.current&&!silent)setLoading(false);
+  }
  },[peer,auth.token]);
  useFocusEffect(useCallback(()=>{
   let active=true;
+  const identity=peer+'|'+auth.token;
+  if(conversation.current!==identity){
+   conversation.current=identity;
+   setMessages([]);setDraft('');setPhoto(null);setError('');
+  }
+  const version=++generation.current;
   setPhoto(null);setPhotoAvailable(false);
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
-   if(active)setPhotoAvailable(available);
-  }).catch(()=>{if(active)setPhotoAvailable(false);});
-  void refresh();
-  // Poll only while focused; read requests are safe, message sends are never retried.
-  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000);
-  return ()=>{active=false;clearInterval(timer);};
+   if(active&&generation.current===version)setPhotoAvailable(available);
+  }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
+  void refresh(false,version);
+  // Poll only while focused; old responses cannot overwrite a new conversation.
+  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true,version);},15000);
+  return ()=>{active=false;clearInterval(timer);generation.current++;};
  },[refresh,peer,auth.token]));
  async function send(){
   if(sending||!auth.token||!draft.trim())return;
