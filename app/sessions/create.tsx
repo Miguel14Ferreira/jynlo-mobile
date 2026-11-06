@@ -106,7 +106,7 @@ export default function CreateSessionScreen(){
      preselectionApplied.current=true;
      const sports=communitySports(chosen);
      const chosenSport=typeof params.sport==='string'&&sports.includes(params.sport)&&SPORTS.includes(params.sport)?params.sport:
-       sports.length===1&&SPORTS.includes(sports[0])?sports[0]:'';
+       sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
      setCommunityMode('SINGLE');
      setForm(previous=>({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
       sport:chosenSport||previous.sport,communityRankingsEnabled:chosen.rankingsEnabled}));
