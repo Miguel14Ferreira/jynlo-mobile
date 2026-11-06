@@ -1,8 +1,8 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
@@ -27,6 +27,9 @@ export default function SessionScreen(){
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
+  const removalInFlight=useRef(false);
+  const [removingParticipantId,setRemovingParticipantId]=useState<number|null>(null);
+  const [rosterFeedback,setRosterFeedback]=useState('');
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
@@ -86,6 +89,32 @@ export default function SessionScreen(){
     {text:'Manter sessão',style:'cancel'},
     {text:'Cancelar sessão',style:'destructive',onPress:()=>{if(auth.token)void perform(()=>cancelSession(id,auth.token!,auth.username||undefined),'Sessão cancelada.');}}
   ]);
+  function confirmRemoveParticipant(participant:SessionParticipant){
+    if(!auth.token||DEMO_MODE||!owner||!detail||loading||busy||removalInFlight.current)return;
+    if(!['OPEN','FULL'].includes(detail.status)||
+       !Number.isSafeInteger(participant.id)||participant.id<=0||
+       participant.username.toLowerCase()===auth.username?.toLowerCase()||
+       participant.username.toLowerCase()===detail.creatorUsername?.toLowerCase())return;
+    Alert.alert('Remover jogador da sessão?',
+      'Remover '+participant.username+' desta sessão? A lista de espera pode ser atualizada e as equipas confirmadas podem ser anuladas.',
+      [{text:'Manter jogador',style:'cancel'},
+       {text:'Remover jogador',style:'destructive',onPress:()=>{
+        if(removalInFlight.current||!auth.token)return;
+        removalInFlight.current=true;
+        setRemovingParticipantId(participant.id);setRosterError('');setRosterFeedback('');
+        void removeSessionParticipant(id,participant.id,auth.token).then(async()=>{
+          await load();
+          setRosterFeedback('A remoção foi confirmada pelo servidor. A lista de participantes foi atualizada.');
+        }).catch(e=>{
+          const message=e instanceof ApiError&&e.status===403?
+            'O servidor não autorizou esta remoção.':
+            e instanceof ApiError&&e.status===409?
+            'A sessão já não permite remover participantes.':
+            'Não foi possível confirmar a remoção. Atualiza a sessão e consulta a lista antes de tentares novamente.';
+          setRosterError(message);
+        }).finally(()=>{removalInFlight.current=false;setRemovingParticipantId(null);});
+       }}]);
+  }
   const sendInvite=()=>{const invitee=inviteUsername.trim();if(!invitee||!auth.token)return;
     void perform(async()=>{await inviteToSession(id,invitee,auth.token!,auth.username||undefined);setInviteUsername('');},'Convite enviado. A outra pessoa tem de o aceitar.');};
   const share=()=>{
@@ -264,6 +293,7 @@ export default function SessionScreen(){
       {detail&&canViewRoster(detail,auth.username)?<View style={{gap:11}}>
         <View style={styles.top}><Text style={styles.rosterTitle}>Quem vai</Text><Text style={styles.hint}>{participants.length} participantes visíveis</Text></View>
         {rosterError?<Text style={styles.rosterError}>{rosterError}</Text>:null}
+        {rosterFeedback?<Message>{rosterFeedback}</Message>:null}
         {!rosterError&&participants.length===0?<Text style={styles.hint}>Ainda não existem participantes visíveis nesta lista.</Text>:null}
         {participants.map(p=>{
           const attendance=rosterAttendanceLabel(p.attendanceStatus,detail.status);
@@ -274,6 +304,14 @@ export default function SessionScreen(){
               {attendance?<Text style={styles.memberStatus}>{attendance}</Text>:null}
             </View>
             {p.username.toLowerCase()===auth.username?.toLowerCase()?<Text style={styles.memberYou}>Tu</Text>:null}
+            {auth.token&&!DEMO_MODE&&owner&&['OPEN','FULL'].includes(detail.status)&&
+              p.username.toLowerCase()!==detail.creatorUsername?.toLowerCase()&&
+              p.username.toLowerCase()!==auth.username?.toLowerCase()?
+              <Pressable accessibilityRole="button" accessibilityLabel={'Remover '+p.username+' da sessão'}
+                disabled={busy||loading||removingParticipantId!==null} onPress={()=>confirmRemoveParticipant(p)}
+                style={({pressed})=>[styles.removePlayerButton,{opacity:pressed||removingParticipantId!==null?0.6:1}]}>
+                <Text style={styles.removePlayerLabel}>{removingParticipantId===p.id?'A remover…':'Remover'}</Text>
+              </Pressable>:null}
           </View>;
         })}
       </View>:null}
@@ -316,5 +354,7 @@ const styles=StyleSheet.create({
   memberName:{color:C.white,fontSize:14,fontWeight:'700'},
   memberStatus:{color:C.muted,fontSize:11},
   memberYou:{color:C.mint,fontWeight:'800',fontSize:12},
+  removePlayerButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:10,borderWidth:1,borderColor:C.danger},
+  removePlayerLabel:{color:'#FFB8B8',fontSize:12,fontWeight:'800'},
   back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
 });
