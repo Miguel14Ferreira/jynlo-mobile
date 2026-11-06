@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../../src/components/UI';
@@ -22,27 +22,52 @@ export default function CommunityDetailScreen(){
   const [myRequest,setMyRequest]=useState<CommunityJoinRequest|null>(null);
   const [inviteName,setInviteName]=useState('');const [busy,setBusy]=useState(false);
   const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [notice,setNotice]=useState('');
-  const reload=useCallback(async()=>{
-    if(!Number.isSafeInteger(id)||id<=0){setError('Comunidade inválida.');setLoading(false);return;}
+  const generation=useRef(0);
+  const reload=useCallback(async(version=generation.current)=>{
+    if(!Number.isSafeInteger(id)||id<=0){
+      if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
+      return;
+    }
     setLoading(true);setError('');
     try{
       const c=await communityDetails(id,auth.token,auth.username);
+      if(version!==generation.current)return;
       setCommunity(c);
       if(auth.token&&auth.username&&isMember(c)){
-        try{setSessions(await communitySessions(id,auth.token,auth.username));}catch{setSessions([]);}
+        try{
+          const next=await communitySessions(id,auth.token,auth.username);
+          if(version!==generation.current)return;
+          setSessions(next);
+        }catch{if(version===generation.current)setSessions([]);}
         if(c.myRole==='OWNER'||c.myRole==='ADMIN'){
-          try{setRequests(await pendingCommunityRequests(id,auth.token,auth.username));}catch{setRequests([]);}
+          try{
+            const next=await pendingCommunityRequests(id,auth.token,auth.username);
+            if(version!==generation.current)return;
+            setRequests(next);
+          }catch{if(version===generation.current)setRequests([]);}
         }else setRequests([]);
       }else{
         setSessions([]);setRequests([]);
         if(auth.token&&auth.username&&c.visibility==='PRIVATE'){
-          try{setMyRequest(await myPendingCommunityRequest(id,auth.token,auth.username));}catch{setMyRequest(null);}
+          try{
+            const next=await myPendingCommunityRequest(id,auth.token,auth.username);
+            if(version!==generation.current)return;
+            setMyRequest(next);
+          }catch{if(version===generation.current)setMyRequest(null);}
         }else setMyRequest(null);
       }
-    }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a comunidade.');}
-    finally{setLoading(false);}
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a comunidade.');
+    }finally{if(version===generation.current)setLoading(false);}
   },[id,auth.token,auth.username]);
-  useFocusEffect(useCallback(()=>{void reload();},[reload]));
+  useFocusEffect(useCallback(()=>{
+    const version=++generation.current;
+    // Never show another community or account while the new request is pending.
+    setCommunity(null);setSessions([]);setRequests([]);setMyRequest(null);
+    setError('');setNotice('');setBusy(false);
+    void reload(version);
+    return ()=>{generation.current++;};
+  },[reload]));
   const role=community&&isMember(community)?community.myRole:null;
   const owner=role==='OWNER'||role==='ADMIN';
   async function take(action:'join'|'request'){
