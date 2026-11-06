@@ -1,0 +1,54 @@
+name: Android APK para partilha
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/android-share-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: '1'
+      EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install JavaScript dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate TypeScript
+        run: npm run typecheck
+      - name: Validate contracts and syntax
+        run: npm run test:all
+      - name: Verify real API
+        run: node scripts/verify-release.cjs --production
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Android standalone release APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+      - name: Publish installable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jynlo-Android-APK
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
