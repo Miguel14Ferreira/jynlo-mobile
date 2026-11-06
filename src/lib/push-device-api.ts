@@ -25,3 +25,12 @@ export async function unregisterPushDevice(token:string,deviceId:string):Promise
   token,method:'DELETE'
  });
 }
+
+export async function getPushDeviceStatus(token:string,deviceId:string):Promise<boolean>{
+ if(DEMO_MODE||!token)return false;
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deviceId))
+  throw Error('Identificador de dispositivo inválido.');
+ const result=await request<{registered:boolean}>(
+  '/api/notifications/me/devices/'+encodeURIComponent(deviceId),{token});
+ return result?.registered===true;
+}
