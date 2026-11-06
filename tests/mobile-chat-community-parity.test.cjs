@@ -45,3 +45,14 @@ test('member community links to session creation with authenticated preselection
  assert.match(wizard,/sports\.length===1/);
  assert.match(wizard,/preselectionApplied\.current=true/);
 });
+
+test('private conversation polls while focused and never retries sends automatically',()=>{
+ const screen=read('app/messages/[peer].tsx');
+ assert.match(screen,/setInterval\(\(\)=>\{if\(!sendingNow\.current\)void refresh\(true\);\},15000\)/);
+ assert.match(screen,/return \(\)=>clearInterval\(timer\)/);
+ assert.match(screen,/if\(refreshing\.current\)return/);
+ assert.match(screen,/if\(!silent\)setLoading\(true\)/);
+ assert.match(screen,/sendingNow\.current=true/);
+ assert.match(screen,/sendingNow\.current=false/);
+ assert.match(screen,/Consulta o histórico antes de repetires o envio/);
+});
