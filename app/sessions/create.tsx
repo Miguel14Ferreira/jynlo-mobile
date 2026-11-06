@@ -315,7 +315,7 @@ export default function CreateSessionScreen(){
     {(['INDEPENDENT','SINGLE','SHARED'] as const).map(mode=>
      <Button key={mode} title={mode==='INDEPENDENT'?'Independente':mode==='SINGLE'?'Comunidade':'Partilhar'}
       secondary={communityMode!==mode} disabled={busy}
-      onPress={()=>{if(communityMode===mode)return;preselectionOverridden.current=true;setCommunityMode(mode);setCommunitySearch('');
+      onPress={()=>{preselectionOverridden.current=true;if(communityMode===mode)return;setCommunityMode(mode);setCommunitySearch('');
        setForm(prev=>changeCommunityMode(prev,mode));setError('');}}/>)}
    </View>
    {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
