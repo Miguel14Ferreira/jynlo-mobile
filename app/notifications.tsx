@@ -115,7 +115,7 @@ export default function NotificationsScreen(){
     response?.state==='PARTICIPANT'?'Convite aceite: presença confirmada pelo servidor.':
     'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
   }catch(e){if(account.current===initialIdentity)setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
-  finally{setBusyInvite(null);}
+  finally{if(account.current===initialIdentity)setBusyInvite(null);}
  }
  async function open(item:JynloNotification){
   if(!auth.token||!auth.username)return;
