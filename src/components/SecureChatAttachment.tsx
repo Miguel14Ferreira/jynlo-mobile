@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
+import {AppState,Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {File,Paths} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
 import {useFocusEffect} from 'expo-router';
@@ -10,7 +10,8 @@ type Scope='direct'|'community'|'session';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
  name:string;mime:string|null|undefined;size:number|null|undefined};
 const formats:Record<string,string>={
- 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'
+ 'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif',
+ 'application/pdf':'pdf'
 };
 function attachmentPath(scope:Scope,id:string|number,messageId:number):string{
  if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Anexo inválido.');
@@ -26,11 +27,12 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number):string{
   '/messages/attachments/'+messageId;
 }
 
-/** Files are held in private app cache only while the authenticated chat is focused. */
+/** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
 export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const cached=useRef<File|null>(null),active=useRef(false),pending=useRef(false);
  const abort=useRef<AbortController|null>(null);
+ const pdfPreview=useRef(false),wasBackgrounded=useRef(false);
  const cleanup=useCallback(()=>{
   abort.current?.abort();abort.current=null;
   const old=cached.current;cached.current=null;
@@ -38,10 +40,24 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  },[]);
  useFocusEffect(useCallback(()=>{
   active.current=true;
-  return ()=>{active.current=false;setUri(null);cleanup();};
+  return ()=>{
+   active.current=false;setUri(null);
+   // Do not remove a PDF handed to Android while its external viewer is opening.
+   if(!pdfPreview.current)cleanup();
+  };
  },[cleanup,scope,conversationId,token]));
+ React.useEffect(()=>{
+  const subscription=AppState.addEventListener('change',state=>{
+   if(state==='background'||state==='inactive')wasBackgrounded.current=true;
+   if(state==='active'&&wasBackgrounded.current&&pdfPreview.current){
+    pdfPreview.current=false;wasBackgrounded.current=false;
+    cleanup();
+   }
+  });
+  return ()=>{subscription.remove();if(!pdfPreview.current)cleanup();};
+ },[cleanup]);
  async function open(){
-  if(pending.current||!token||DEMO_MODE||!formats[mime||''])return;
+  if(pending.current||pdfPreview.current||!token||DEMO_MODE||!formats[mime||''])return;
   if(!Number.isFinite(size)||!size||size<=0||size>5*1024*1024){
    setError('Tamanho do anexo inválido.');return;
   }
@@ -66,8 +82,21 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    file=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+formats[mime!]);
    await file.write(bytes);
    if(!active.current||controller.signal.aborted)return;
-   cached.current=file;setUri(file.uri);file=null;
+   cached.current=file;file=null;
+   if(mime==='application/pdf'){
+    if(!await File.canPreview(cached.current,{mimeType:'application/pdf'})){
+     throw Error('Não existe um visualizador de PDF disponível neste dispositivo.');
+    }
+    pdfPreview.current=true;
+    // Expo hands the file to the native viewer. Its promise does not wait for closing.
+    await File.preview(cached.current,{mimeType:'application/pdf',title:'Documento privado'});
+    if(!wasBackgrounded.current){
+     // iOS may display the viewer inside the app. Keep cache until user closes it.
+     setUri(cached.current.uri);
+    }
+   }else setUri(cached.current.uri);
   }catch(e){
+   pdfPreview.current=false;cleanup();
    if(active.current)setError(e instanceof Error?e.message:'Não foi possível abrir o anexo.');
   }finally{
    if(file?.exists)try{file.delete();}catch{}
@@ -78,15 +107,16 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   }
  }
  function close(){
-  setUri(null);cleanup();
+  setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
  }
  if(!formats[mime||''])return <Text style={styles.note}>Anexo privado: {name} (formato ainda sem visualizador)</Text>;
  return <View style={styles.container}>
   <Pressable accessibilityRole="button" disabled={busy||!token} onPress={()=>{void open();}} style={styles.button}>
-   <Text style={styles.action}>{busy?'A abrir fotografia…':'Ver fotografia · '+name}</Text>
+   <Text style={styles.action}>{busy?'A abrir anexo…':mime==='application/pdf'?'Abrir PDF · '+name:'Ver fotografia · '+name}</Text>
   </Pressable>
   {error?<Text style={styles.error}>{error}</Text>:null}
-  <Modal visible={!!uri} transparent animationType="fade" onRequestClose={close}>
+  {mime==='application/pdf'&&uri?<Pressable accessibilityRole="button" onPress={close} style={styles.button}><Text style={styles.action}>Limpar PDF temporário</Text></Pressable>:null}
+  <Modal visible={!!uri&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
    <View style={styles.overlay}>
     {uri?<Image source={{uri}} resizeMode="contain" style={styles.image}/>:null}
     <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
