@@ -38,7 +38,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  },[]);
  useFocusEffect(useCallback(()=>{
   active.current=true;
-  return ()=>{active.current=false;cleanup();};
+  return ()=>{active.current=false;setUri(null);cleanup();};
  },[cleanup,scope,conversationId,token]));
  async function open(){
   if(pending.current||!token||DEMO_MODE||!formats[mime||''])return;
@@ -52,7 +52,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   try{
    const path=attachmentPath(scope,conversationId,messageId);
    const response=await expoFetch(API_BASE+path,{
-    headers:{Authorization:'Bearer '+token,Accept:mime!},credentials:'omit',
+    headers:{Authorization:'Bearer '+token,Accept:mime!},credentials:'omit',redirect:'error',
     signal:controller.signal
    });
    if(!response.ok)throw Error('Não foi possível abrir o anexo. Verifica as permissões.');
