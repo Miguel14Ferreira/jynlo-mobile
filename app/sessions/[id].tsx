@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
@@ -10,7 +10,7 @@ import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
-import type {SessionDetail,SessionParticipant,PublicSessionPreview} from '../../src/lib/types';
+import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -32,11 +32,16 @@ export default function SessionScreen(){
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
+  const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'>('FORM');
+  const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
+  const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
+  const [teamsMessage,setTeamsMessage]=useState('');
   const owner=isOrganizer(detail,auth.username);
 
   const load=useCallback(async()=>{
     if(!Number.isSafeInteger(id)||id<=0){setError('Identificador de sessão inválido.');setLoading(false);return;}
     setError('');setRosterError('');setLoading(true);setDetail(null);setParticipants([]);
+    setTeamPreview(null);
     try {
       // The anonymous route must not expose address or roster.
       const pub=await sessionPreview(id);setPreview(pub);
@@ -87,6 +92,34 @@ export default function SessionScreen(){
     if(DEMO_MODE){setFeedback('Não é possível partilhar uma sessão fictícia da demonstração.');return;}
     void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});
   };
+  async function previewBalancedTeams(){
+    if(!auth.token||!owner||!detail||teamsBusy)return;
+    setTeamsBusy(true);setTeamsError('');setTeamsMessage('');setTeamPreview(null);
+    try{setTeamPreview(await suggestSessionTeams(id,auth.token,teamSource));}
+    catch(e){setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');}
+    finally{setTeamsBusy(false);}
+  }
+  function persistBalancedTeams(){
+    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy)return;
+    // Confirming recalculates the current roster on the server, never trusts the client preview.
+    Alert.alert('Confirmar equipas?',
+      'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
+      [{text:'Voltar',style:'cancel'},{text:'Confirmar equipas',onPress:()=>{
+        if(teamsBusy)return;
+        setTeamsBusy(true);setTeamsError('');setTeamsMessage('');
+        void confirmSessionTeams(id,auth.token!,teamSource)
+          .then(result=>{setTeamPreview(result);setTeamsMessage('Equipas confirmadas pelo servidor.');return load();})
+          .catch(()=>{setTeamPreview(null);setTeamsError('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.');})
+          .finally(()=>setTeamsBusy(false));
+      }}]);
+  }
+  const renderTeam=(title:string,players:SessionTeamPlayer[],score:number)=>
+    <View style={styles.teamPanel}>
+      <Text style={styles.teamHeading}>{title} · Pontuação estimada {score.toFixed(2)}</Text>
+      {players.map((p,index)=><Text key={p.username+':'+index} style={styles.hint}>
+        {p.displayName||p.username}{p.statsAvailable?' · classificação disponível':''}
+      </Text>)}
+    </View>;
   const saveMeetingPoint=()=>{
     if(!auth.token||!owner||!detail||busy)return;
     if(meetingDraft.length>240||/[\\r\\n\\x00-\\x1f\\x7f]/.test(meetingDraft)){
@@ -201,6 +234,27 @@ export default function SessionScreen(){
           <Button title="Guardar número de jogadores" disabled={busy} onPress={saveExternalCount}/>
           <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
+        {detail.communityId&&detail.teamBalanceSupported?<View style={styles.editor}>
+          <Eyebrow>EQUILIBRAR EQUIPAS</Eyebrow>
+          <Text style={styles.hint}>O servidor calcula as equipas com base na classificação da comunidade. É necessário ter os jogadores identificados e a sessão completa.</Text>
+          <View style={styles.top}>
+            <Button title="Classificação da comunidade" secondary={teamSource!=='FORM'} disabled={teamsBusy}
+              onPress={()=>{setTeamSource('FORM');setTeamPreview(null);setTeamsMessage('');}}/>
+          </View>
+          <Button title="Classificação Excel" secondary={teamSource!=='EXCEL_POINTS'} disabled={teamsBusy}
+            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>
+          <Button title={teamsBusy?'A calcular…':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
+            onPress={()=>{void previewBalancedTeams();}}/>
+          {teamsError?<Message tone="error">{teamsError}</Message>:null}
+          {teamsMessage?<Message>{teamsMessage}</Message>:null}
+          {teamPreview?<View style={styles.editor}>
+            <Text style={styles.hint}>{teamPreview.playersWithStats} de {teamPreview.totalPlayers} jogadores com estatísticas.</Text>
+            {renderTeam('Equipa A',teamPreview.teamA,teamPreview.teamAScore)}
+            {renderTeam('Equipa B',teamPreview.teamB,teamPreview.teamBScore)}
+            <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy}
+              onPress={persistBalancedTeams}/>
+          </View>:null}
+        </View>:null}
         <Text style={styles.hint}>Convidar uma pessoa que já tem conta Jynlo:</Text>
         <TextInput style={styles.input} value={inviteUsername} onChangeText={setInviteUsername}
           autoCapitalize="none" autoCorrect={false} placeholder="Nome de utilizador" placeholderTextColor={C.muted}/>
@@ -247,6 +301,8 @@ const styles=StyleSheet.create({
   value:{fontSize:15,color:C.white,fontWeight:'800',marginTop:10},
   panel:{gap:12,padding:17,borderRadius:18,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
   editor:{gap:10},
+  teamPanel:{padding:12,gap:7,borderColor:C.border,borderWidth:1,borderRadius:12},
+  teamHeading:{fontSize:14,fontWeight:'800',color:C.white},
   panelHeading:{color:C.white,fontSize:16,fontWeight:'800',lineHeight:23},
   hint:{color:C.muted,fontSize:12,lineHeight:19},
   input:{backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:13,color:C.white,padding:14,minHeight:50},
