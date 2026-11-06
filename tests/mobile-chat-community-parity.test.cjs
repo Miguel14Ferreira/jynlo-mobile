@@ -71,3 +71,23 @@ test('messages inbox refreshes while focused, keeps unread counts, and isolates 
  assert.match(screen,/item\.unreadCount/);
  assert.match(screen,/Push com a app fechada ainda não está implementado/);
 });
+
+test('private photo attachment uses authenticated private API and requires explicit confirmation',()=>{
+ const api=read('src/lib/direct-photo-attachment.ts');
+ const screen=read('app/messages/[peer].tsx');
+ assert.match(api,/\/api\/chat\/me\/.*encodeURIComponent\(peer\).*\/attachments/);
+ assert.match(api,/\/availability/);
+ assert.match(api,/5\*1024\*1024/);
+ assert.match(api,/method:'POST'/);
+ assert.match(api,/form\.append\('file'/);
+ assert.match(api,/Authorization:'Bearer '\+token/);
+ assert.match(api,/credentials:'omit'/);
+ assert.match(api,/Consulta o histórico antes de repetir/);
+ assert.match(screen,/directPhotoAvailable\(peer,auth\.token\)/);
+ assert.match(screen,/ImagePicker\.launchImageLibraryAsync/);
+ assert.match(screen,/Confirmar envio da fotografia/);
+ assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo\)/);
+ assert.match(screen,/setPhoto\(null\)/);
+ assert.match(screen,/photoAvailable\?/);
+ assert.match(screen,/Anexo privado:/);
+});
