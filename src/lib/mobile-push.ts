@@ -68,3 +68,9 @@ export async function disableMobilePush(username:string,token:string):Promise<vo
  if(id)await unregisterPushDevice(token,id);
  await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
 }
+
+/** Clear notification-tray content and consumed navigation intent on account exit. */
+export async function clearNativePushPresentation():Promise<void>{
+ Notifications.clearLastNotificationResponse();
+ await Notifications.dismissAllNotificationsAsync();
+}
