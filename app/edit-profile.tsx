@@ -1,5 +1,5 @@
 import React,{useCallback,useState} from 'react';
-import {Image,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
@@ -7,6 +7,7 @@ import {useAuth} from '../src/lib/auth';
 import {DEMO_MODE,request} from '../src/lib/api';
 import {C} from '../src/lib/theme';
 import {uploadMyProfilePhoto} from '../src/lib/profile-photo';
+import {parseFavoriteSports,normalizeCatalog,toggleFavoriteSport,validateFavoriteSports,filterSports} from '../src/lib/favorite-sports.cjs';
 
 type Profile={
  username:string;fullName?:string|null;nickname?:string|null;
@@ -33,7 +34,6 @@ const fields:{key:Field;label:string;limit:number}[]=[
  {key:'postalCode',label:'Código postal',limit:32},
  {key:'indicativePhone',label:'Indicativo (sem +)',limit:4},
  {key:'phone',label:'Telemóvel',limit:15},
- {key:'favoriteSports',label:'Desportos favoritos (catálogo Jynlo)',limit:255},
  {key:'availability',label:'Disponibilidade',limit:120},
 ];
 const normalize=(value:unknown)=>typeof value==='string'?value:'';
@@ -54,11 +54,15 @@ export default function EditProfileScreen(){
  const [error,setError]=useState(''),[success,setSuccess]=useState(false);
  const [selectedPhoto,setSelectedPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoBusy,setPhotoBusy]=useState(false),[photoSuccess,setPhotoSuccess]=useState(false);
+ const [catalog,setCatalog]=useState<string[]>([]),[catalogReady,setCatalogReady]=useState(false);
+ const [sportsSearch,setSportsSearch]=useState(''),[showSports,setShowSports]=useState(false);
  useFocusEffect(useCallback(()=>{
   if(!auth.token||DEMO_MODE){setLoading(false);return;}
   let active=true;setLoading(true);setError('');setSuccess(false);setPhotoSuccess(false);setSelectedPhoto(null);
-  request<Profile>('/api/profile/me/mobile',{token:auth.token})
-   .then(profile=>{if(!active)return;setOriginal(profile);
+  setCatalogReady(false);setCatalog([]);
+  Promise.all([request<Profile>('/api/profile/me/mobile',{token:auth.token}),
+    request<string[]>('/api/profile/sports-catalog',{token:auth.token})])
+   .then(([profile,sports])=>{if(!active)return;setCatalog(normalizeCatalog(sports));setCatalogReady(true);setOriginal(profile);
     const initial:Editable={};
     for(const {key} of fields)initial[key]=normalize(profile[key]);
     initial.gender=normalize(profile.gender);
@@ -94,6 +98,8 @@ export default function EditProfileScreen(){
  async function save(){
   if(busy||!original||!auth.token||DEMO_MODE)return;
   const date=normalize(values.dateOfBirth),email=normalize(values.email).trim();
+  const sportsError=validateFavoriteSports(normalize(values.favoriteSports),catalog);
+  if(!catalogReady||sportsError){setError(sportsError||'Carrega o catálogo de modalidades antes de guardar.');return;}
   if(!isAdult(date)){setError('Introduz uma data de nascimento válida (mínimo de 18 anos).');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError('Introduz um email válido.');return;}
   const indicativePhone=normalize(values.indicativePhone).trim(),phone=normalize(values.phone).trim();
@@ -108,7 +114,7 @@ export default function EditProfileScreen(){
     dateOfBirth:date,address:normalize(values.address).trim(),country:normalize(values.country).trim(),
     location:normalize(values.location).trim(),postalCode:normalize(values.postalCode).trim(),
     indicativePhone,phone,gender:normalize(values.gender),
-    email,favoriteSports:normalize(values.favoriteSports).trim(),bio:normalize(values.bio).trim(),
+    email,favoriteSports:parseFavoriteSports(values.favoriteSports).join(','),bio:normalize(values.bio).trim(),
     skillLevel:normalize(values.skillLevel),availability:normalize(values.availability).trim(),
     // Never silently disable or enable MFA when editing unrelated profile fields.
     mfa:original.mfa??false
@@ -146,6 +152,33 @@ export default function EditProfileScreen(){
      keyboardType={key==='email'?'email-address':key==='phone'||key==='indicativePhone'?'phone-pad':'default'}
      editable={!busy} placeholderTextColor={C.muted}/>
    </View>)}
+   <Eyebrow>MODALIDADES FAVORITAS</Eyebrow>
+   <Text style={styles.label}>Escolhe as modalidades que praticas</Text>
+   <Text style={styles.identity}>{parseFavoriteSports(values.favoriteSports).length} selecionadas</Text>
+   <View style={styles.options}>{parseFavoriteSports(values.favoriteSports).map(sport=><Pressable
+     accessibilityRole="checkbox" accessibilityState={{checked:true}} key={sport}
+     style={[styles.option,styles.selected]} disabled={busy||!catalogReady}
+     onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));}
+      catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar a seleção.');}}}>
+     <Text style={styles.selected}>✓ {sport} ×</Text>
+    </Pressable>)}</View>
+   <Button title={showSports?'Fechar modalidades':'Adicionar modalidades'} secondary
+     disabled={!catalogReady||busy} onPress={()=>setShowSports(v=>!v)}/>
+   {showSports&&catalogReady?<View style={styles.sportsSearchBox}>
+    <TextInput style={styles.input} value={sportsSearch} onChangeText={setSportsSearch}
+      placeholder="Pesquisar modalidades" placeholderTextColor={C.muted}/>
+    {filterSports(catalog,sportsSearch).slice(0,30).map(sport=>{
+     const checked=parseFavoriteSports(values.favoriteSports).includes(sport);
+     return <Pressable key={sport} accessibilityRole="checkbox" accessibilityState={{checked}}
+       style={[styles.sportRow,checked&&styles.sportRowSelected]}
+       disabled={busy||photoBusy}
+       onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));setError('');}
+        catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar a seleção.');}}}>
+      <Text style={styles.sportText}>{checked?'☑':'☐'} {sport}</Text>
+     </Pressable>;
+    })}
+    {filterSports(catalog,sportsSearch).length>30?<Text style={styles.identity}>Mostradas 30 modalidades. Pesquisa para veres mais.</Text>:null}
+   </View>:null}
    <Text style={styles.label}>Género</Text>
    <View style={styles.options}>{(['','masculino','feminino','outro'] as const).map(v=>
     <Text key={v} style={[styles.option,values.gender===v&&styles.selected]} onPress={()=>set('gender',v)}>
@@ -155,8 +188,8 @@ export default function EditProfileScreen(){
    <View style={styles.options}>{(['','BEGINNER','INTERMEDIATE','ADVANCED'] as const).map(v=>
     <Text key={v} style={[styles.option,values.skillLevel===v&&styles.selected]}
      onPress={()=>set('skillLevel',v)}>{v||'Não indicar'}</Text>)}</View>
-   <Message>Os desportos favoritos têm de corresponder aos nomes do catálogo Jynlo. A segurança MFA é gerida separadamente.</Message>
-   <Button title={busy?'A guardar…':'Guardar alterações'} disabled={busy} onPress={()=>{void save();}}/>
+   <Message>Modalidades sincronizadas com o catálogo da Jynlo. A segurança MFA é gerida separadamente.</Message>
+   <Button title={busy?'A guardar…':'Guardar alterações'} disabled={busy||!catalogReady||photoBusy} onPress={()=>{void save();}}/>
   </View>:null}
   <Button title="Voltar ao perfil" secondary onPress={()=>router.back()}/>
  </Page>;
@@ -172,5 +205,9 @@ const styles=StyleSheet.create({
   borderRadius:9,padding:9,fontSize:12},
  selected:{color:C.mint,borderColor:C.mint},
  photo:{height:124,width:124,borderRadius:62,alignSelf:'center',backgroundColor:C.surface},
- photoActions:{gap:8}
+ photoActions:{gap:8},
+ sportsSearchBox:{gap:8,padding:12,borderRadius:14,backgroundColor:C.surface},
+ sportRow:{padding:12,borderColor:C.border,borderWidth:1,borderRadius:10},
+ sportRowSelected:{borderColor:C.mint},
+ sportText:{color:C.white,fontSize:14}
 });
