@@ -54,6 +54,7 @@ export interface DirectChatEntry {
  id:number;username1:string;username2:string;text:string|null;date:string|null;
  replyToMessageId?:number|null;replyToSender?:string|null;replyToText?:string|null;
  editedAt?:string|null;deletedAt?:string|null;
+ attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
 }
 export async function directConversationPeers(token:string):Promise<string[]>{
  if(!token||DEMO_MODE)return [];
