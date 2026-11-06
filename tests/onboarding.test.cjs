@@ -12,12 +12,15 @@ test('Primeira entrada mostra escolha explícita e bloqueia feed até visitante 
  assert.ok(welcome.includes('Explorar como visitante'));
  assert.ok(welcome.includes('Experimentar conta fictícia'));
 });
-test('Demo é opcional e registo é encaminhado ao site oficial',()=>{
+test('Demo é opcional e registo navega dentro da aplicação',()=>{
  const auth=read('src/lib/auth.tsx'),welcome=read('app/welcome.tsx'),login=read('app/login.tsx');
  assert.ok(auth.includes('browsingAsGuest:boolean'));
  assert.ok(auth.includes('setBrowsingAsGuest(false)'));
  assert.ok(auth.includes('const loginDemo=useCallback'));
- assert.ok(welcome.includes('d24sports.com/login/registerNewUser'));
+ assert.ok(welcome.includes("router.push('/register')"));
+ assert.ok(login.includes("router.push('/register')"));
+ assert.ok(!welcome.includes('registerNewUser'));
+ assert.ok(!login.includes('registerNewUser'));
  assert.ok(login.includes('As contas reais não funcionam nesta demonstração.'));
 });
 test('Logout leva à escolha inicial',()=>{
