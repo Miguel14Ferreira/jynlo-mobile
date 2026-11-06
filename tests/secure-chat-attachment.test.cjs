@@ -1,0 +1,42 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+
+test('private chat attachment preview only uses authorized scoped API routes',()=>{
+ const screen=read('src/components/SecureChatAttachment.tsx');
+ assert.match(screen,/encodeURIComponent\(peer\)/);
+ assert.match(screen,/\/api\/chat\/me\//);
+ assert.match(screen,/\/messages\/attachments\//);
+ assert.match(screen,/Number\.isSafeInteger\(messageId\)/);
+ assert.match(screen,/Number\.isSafeInteger\(numeric\)/);
+ assert.match(screen,/Authorization:'Bearer '\+token/);
+ assert.match(screen,/redirect:'error'/);
+ assert.doesNotMatch(screen,/Linking\.openURL/);
+ assert.doesNotMatch(screen,/\/media\//);
+});
+test('preview only fetches on user action and removes private local files',()=>{
+ const screen=read('src/components/SecureChatAttachment.tsx');
+ assert.match(screen,/onPress=\{\(\)=>\{void open\(\);\}\}/);
+ assert.match(screen,/File\(Paths\.cache/);
+ assert.match(screen,/await file\.write\(bytes\)/);
+ assert.match(screen,/if\(old\?\.exists\)old\.delete\(\)/);
+ assert.match(screen,/return \(\)=>\{active\.current=false;setUri\(null\);cleanup\(\);\}/);
+ assert.match(screen,/onRequestClose=\{close\}/);
+ assert.match(screen,/const bytes=await response\.bytes\(\)/);
+ assert.match(screen,/bytes\.length>5\*1024\*1024/);
+ assert.match(screen,/type!==mime/);
+ assert.match(screen,/!active\.current\|\|controller\.signal\.aborted/);
+});
+test('all chat kinds only expose attachments from non-deleted messages',()=>{
+ for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+  const screen=read(file);
+  assert.match(screen,/SecureChatAttachment/);
+  assert.match(screen,/m\.attachmentName&&!m\.deletedAt/);
+  assert.match(screen,/token=\{auth\.token\}/);
+  assert.match(screen,/mime=\{m\.attachmentMimeType\}/);
+  assert.match(screen,/size=\{m\.attachmentSize\}/);
+ }
+ const pkg=JSON.parse(read('package.json'));
+ assert.equal(pkg.dependencies['expo-file-system'],'~58.0.11');
+});
