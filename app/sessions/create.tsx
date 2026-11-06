@@ -25,6 +25,7 @@ export default function CreateSessionScreen(){
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
  const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
+ const preselectionOverridden=useRef(false);
  const communityLoadVersion=useRef(0),communityLoadIdentity=useRef('');
  const createOperation=useRef(0);
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
@@ -111,7 +112,7 @@ export default function CreateSessionScreen(){
    const groups=await myCommunities(auth.token,auth.username);
    if(version!==communityLoadVersion.current)return;
    setCommunities(groups);setCommunityError('');
-   if(requestedCommunityId&&!preselectionApplied.current){
+   if(requestedCommunityId&&!preselectionApplied.current&&!preselectionOverridden.current){
     const chosen=groups.find(c=>c.id===requestedCommunityId);
     if(chosen){
      preselectionApplied.current=true;
@@ -135,6 +136,7 @@ export default function CreateSessionScreen(){
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
    preselectionApplied.current=false;
+   preselectionOverridden.current=false;
    setCommunities([]);setCommunityError('');setCommunitySearch('');
    setCommunityMode('INDEPENDENT');
    setForm(emptySessionForm());
@@ -313,7 +315,7 @@ export default function CreateSessionScreen(){
     {(['INDEPENDENT','SINGLE','SHARED'] as const).map(mode=>
      <Button key={mode} title={mode==='INDEPENDENT'?'Independente':mode==='SINGLE'?'Comunidade':'Partilhar'}
       secondary={communityMode!==mode} disabled={busy}
-      onPress={()=>{if(communityMode===mode)return;setCommunityMode(mode);setCommunitySearch('');
+      onPress={()=>{if(communityMode===mode)return;preselectionOverridden.current=true;setCommunityMode(mode);setCommunitySearch('');
        setForm(prev=>changeCommunityMode(prev,mode));setError('');}}/>)}
    </View>
    {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
@@ -329,6 +331,7 @@ export default function CreateSessionScreen(){
      accessibilityLabel={(communityMode==='SINGLE'?'Selecionar ':'Partilhar com ')+c.name}
      disabled={busy||(communityMode==='SHARED'&&!sharedIds.includes(c.id)&&sharedIds.length>=5)}
      onPress={()=>{
+      preselectionOverridden.current=true;
       if(communityMode==='SINGLE'){
        setForm(prev=>{
         const sports=communitySports(c);
