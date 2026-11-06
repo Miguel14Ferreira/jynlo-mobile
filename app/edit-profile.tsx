@@ -1,10 +1,12 @@
 import React,{useCallback,useState} from 'react';
-import {StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,StyleSheet,Text,TextInput,View} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {DEMO_MODE,request} from '../src/lib/api';
 import {C} from '../src/lib/theme';
+import {uploadMyProfilePhoto} from '../src/lib/profile-photo';
 
 type Profile={
  username:string;fullName?:string|null;nickname?:string|null;
@@ -13,6 +15,7 @@ type Profile={
  indicativePhone?:string|null;phone?:string|null;gender?:string|null;
  email?:string|null;favoriteSports?:string|null;bio?:string|null;
  skillLevel?:string|null;availability?:string|null;mfa?:boolean|null;
+ profilePicUrl?:string|null;
 };
 type Editable=Pick<Profile,'fullName'|'nickname'|'dateOfBirth'|'address'|'country'|'location'|
  'postalCode'|'indicativePhone'|'phone'|'gender'|'email'|'favoriteSports'|'bio'|
@@ -49,9 +52,11 @@ export default function EditProfileScreen(){
  const [values,setValues]=useState<Editable>({});
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[success,setSuccess]=useState(false);
+ const [selectedPhoto,setSelectedPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [photoBusy,setPhotoBusy]=useState(false),[photoSuccess,setPhotoSuccess]=useState(false);
  useFocusEffect(useCallback(()=>{
   if(!auth.token||DEMO_MODE){setLoading(false);return;}
-  let active=true;setLoading(true);setError('');setSuccess(false);
+  let active=true;setLoading(true);setError('');setSuccess(false);setPhotoSuccess(false);setSelectedPhoto(null);
   request<Profile>('/api/profile/me/mobile',{token:auth.token})
    .then(profile=>{if(!active)return;setOriginal(profile);
     const initial:Editable={};
@@ -64,6 +69,28 @@ export default function EditProfileScreen(){
   return()=>{active=false;};
  },[auth.token]));
  const set=(key:Field,value:string)=>setValues(v=>({...v,[key]:value}));
+ async function choosePhoto(){
+  if(photoBusy||busy||!auth.token||DEMO_MODE)return;
+  setError('');setPhotoSuccess(false);
+  try{
+   const result=await ImagePicker.launchImageLibraryAsync({
+    mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.75,
+    exif:false,base64:false
+   });
+   if(!result.canceled&&result.assets?.[0])setSelectedPhoto(result.assets[0]);
+  }catch{setError('Não foi possível abrir a galeria de fotografias.');}
+ }
+ async function savePhoto(){
+  if(!selectedPhoto||photoBusy||busy||!auth.token||DEMO_MODE)return;
+  setError('');setPhotoBusy(true);setPhotoSuccess(false);
+  try{
+   const updated=await uploadMyProfilePhoto(auth.token,selectedPhoto);
+   setOriginal(prev=>prev?{...prev,profilePicUrl:updated.profilePicUrl}:prev);
+   setSelectedPhoto(null);
+   setPhotoSuccess(true);
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível confirmar o envio da fotografia.');}
+  finally{setPhotoBusy(false);}
+ }
  async function save(){
   if(busy||!original||!auth.token||DEMO_MODE)return;
   const date=normalize(values.dateOfBirth),email=normalize(values.email).trim();
@@ -96,8 +123,21 @@ export default function EditProfileScreen(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {success?<Message>Dados guardados com sucesso.</Message>:null}
+  {photoSuccess?<Message>Fotografia atualizada com sucesso.</Message>:null}
   {original&&!loading?<View style={styles.form}>
    <Text style={styles.identity}>Conta: {original.username}</Text>
+   <Eyebrow>FOTOGRAFIA DE PERFIL</Eyebrow>
+   {selectedPhoto?.uri||original.profilePicUrl?
+    <Image source={{uri:selectedPhoto?.uri||original.profilePicUrl||''}} style={styles.photo}/>:
+    <Message>Ainda não tens fotografia de perfil.</Message>}
+   <Button title="Escolher fotografia" secondary onPress={()=>{void choosePhoto();}} disabled={busy||photoBusy}/>
+   {selectedPhoto?<View style={styles.photoActions}>
+    <Message>A fotografia selecionada só será enviada quando confirmares.</Message>
+    <Button title={photoBusy?'A enviar…':'Guardar fotografia'} disabled={photoBusy||busy}
+     onPress={()=>{void savePhoto();}}/>
+    <Button title="Cancelar seleção" secondary disabled={photoBusy}
+     onPress={()=>setSelectedPhoto(null)}/>
+   </View>:null}
    {fields.map(({key,label,limit})=><View key={key} style={styles.field}>
     <Text style={styles.label}>{label}</Text>
     <TextInput style={[styles.input,key==='bio'&&styles.bio]} value={normalize(values[key])}
@@ -130,5 +170,7 @@ const styles=StyleSheet.create({
  options:{flexDirection:'row',flexWrap:'wrap',gap:7},
  option:{color:C.white,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,
   borderRadius:9,padding:9,fontSize:12},
- selected:{color:C.mint,borderColor:C.mint}
+ selected:{color:C.mint,borderColor:C.mint},
+ photo:{height:124,width:124,borderRadius:62,alignSelf:'center',backgroundColor:C.surface},
+ photoActions:{gap:8}
 });
