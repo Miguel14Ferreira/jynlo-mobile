@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -13,20 +13,42 @@ export default function MessagesScreen(){
  const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setItems([]);setInvites([]);setLoading(false);return;}
-  setLoading(true);setError('');setChatWarning('');
-  try{const [groups,privateChats,requests]=await Promise.allSettled([communityInbox(auth.token,auth.username),directInbox(auth.token),myCommunityInvites(auth.token,auth.username)]);
-    const communities=groups.status==='fulfilled'?groups.value:[];
-    const directs=privateChats.status==='fulfilled'?privateChats.value:[];
-    setItems([...directs,...communities]);
-    setInvites(requests.status==='fulfilled'?requests.value:[]);
-    if(groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected')
-      setChatWarning('Algumas conversas ou convites não ficaram disponíveis. Atualiza novamente.');
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');}
-  finally{setLoading(false);}
+ const busy=useRef(false),generation=useRef(0);
+ const load=useCallback(async(silent=false,version=generation.current)=>{
+  if(busy.current)return;
+  if(!auth.token||!auth.username){
+   setItems([]);setInvites([]);setLoading(false);return;
+  }
+  busy.current=true;
+  if(!silent){setLoading(true);setError('');setChatWarning('');}
+  try{
+   const [groups,privateChats,requests]=await Promise.allSettled([
+    communityInbox(auth.token,auth.username),directInbox(auth.token),
+    myCommunityInvites(auth.token,auth.username)
+   ]);
+   if(version!==generation.current)return;
+   // A failing source must not erase healthy conversations from the other source.
+   setItems(previous=>[
+    ...(privateChats.status==='fulfilled'?privateChats.value:previous.filter(i=>i.kind==='direct')),
+    ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community'))
+   ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
+   if(requests.status==='fulfilled')setInvites(requests.value);
+   setChatWarning(groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected'?
+    'Algumas conversas ou convites não ficaram disponíveis. A informação anterior foi preservada.':'');
+  }catch(e){
+   if(version===generation.current&&!silent)
+    setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
+  }finally{
+   busy.current=false;
+   if(version===generation.current&&!silent)setLoading(false);
+  }
  },[auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  void load(false,version);
+  const timer=setInterval(()=>{void load(true,version);},15000);
+  return ()=>{clearInterval(timer);generation.current++;};
+ },[load]));
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <Eyebrow>COMUNIDADE É CONVERSA</Eyebrow>
   <Button secondary title="🔔 Notificações" onPress={()=>router.push("/notifications")}/>
@@ -51,7 +73,7 @@ export default function MessagesScreen(){
     </View>
     {!!item.unreadCount?<Text style={styles.unread}>{item.unreadCount}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
-  <Message>Conversas privadas e de comunidades sincronizadas ao abrir. O chat da comunidade liga-se em tempo real; as mensagens privadas atualizam ao entrar ou atualizar manualmente. Push com a app fechada ainda não está implementado.</Message>
+  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real; as conversas privadas usam atualização periódica. Push com a app fechada ainda não está implementado.</Message>
  </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
