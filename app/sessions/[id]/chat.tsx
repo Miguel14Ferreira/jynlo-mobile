@@ -1,11 +1,11 @@
 import React,{useCallback,useState} from 'react';
 import {KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {useAuth} from '../../src/lib/auth';
-import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../src/lib/session-chat-api';
-import type {SessionChatEntry} from '../../src/lib/session-chat-api';
-import {C} from '../../src/lib/theme';
+import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
+import {useAuth} from '../../../src/lib/auth';
+import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../../src/lib/session-chat-api';
+import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
+import {C} from '../../../src/lib/theme';
 export default function SessionChat(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
