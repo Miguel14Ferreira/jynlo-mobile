@@ -46,3 +46,51 @@ export async function markCommunityRead(id:number,lastSeenMessageId:number,token
  await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'community',id:String(id),lastSeenMessageId}});
 }
 const demoRead=new Map<string,number>();
+
+/** Private conversations belong to the signed-in account. The server filters
+ * removed/blocked peers before returning them; never infer conversations from a public profile.
+ */
+export interface DirectChatEntry {
+ id:number;username1:string;username2:string;text:string|null;date:string|null;
+ replyToMessageId?:number|null;replyToSender?:string|null;replyToText?:string|null;
+ editedAt?:string|null;deletedAt?:string|null;
+}
+export async function directConversationPeers(token:string):Promise<string[]>{
+ if(!token||DEMO_MODE)return [];
+ return request<string[]>('/api/chat/me/peers',{token});
+}
+export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
+ const peers=await directConversationPeers(token);
+ if(!peers.length)return [];
+ const summaries:JynloInboxSummary[]=[];
+ for(let i=0;i<peers.length;i+=100){
+  const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
+   token,method:'POST',body:{conversations:peers.slice(i,i+100).map(id=>({kind:'direct',id}))}
+  });
+  summaries.push(...batch);
+ }
+ return summaries.filter(s=>s.kind==='direct'&&s.latestMessageId!=null)
+   .sort((a,b)=>Date.parse(b.latestAt||'')-Date.parse(a.latestAt||''));
+}
+export async function directChatHistory(peer:string,token:string):Promise<DirectChatEntry[]>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para ver as mensagens privadas.');
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error('Conversa inválida.');
+ return request<DirectChatEntry[]>('/api/chat/me/'+encodeURIComponent(peer),{token});
+}
+export async function sendDirectChat(peer:string,text:string,token:string):Promise<DirectChatEntry>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para enviar mensagens.');
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error('Conversa inválida.');
+ const body=text.trim();
+ if(!body||body.length>2000)throw Error('Escreve uma mensagem até 2000 caracteres.');
+ // Do not automatically repeat an uncertain POST, to avoid duplicated messages.
+ return request<DirectChatEntry>('/api/chat/me/'+encodeURIComponent(peer),{
+  token,method:'POST',body:{text:body}
+ });
+}
+export async function markDirectRead(peer:string,lastSeenMessageId:number,token:string):Promise<void>{
+ if(!token||DEMO_MODE||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))return;
+ await request('/api/messages/inbox/read',{
+  token,method:'PUT',body:{kind:'direct',id:peer.toLowerCase(),lastSeenMessageId}
+ });
+}
