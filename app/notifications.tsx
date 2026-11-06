@@ -89,9 +89,11 @@ export default function NotificationsScreen(){
   finally{setBusyInvite(null);}
  }
  async function open(item:JynloNotification){
-  if(!auth.token)return;
+  if(!auth.token||!auth.username)return;
+  const initialIdentity=auth.username+'|'+auth.token;
   try{if(!item.read){await markNotificationRead(item.id,auth.token);setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));}}
   catch{setError('Não foi possível marcar a notificação como lida.');}
+  if(account.current!==initialIdentity)return;
   const destination=notificationDestination(item);
   if(!destination)return;
   switch(destination.kind){
