@@ -41,3 +41,11 @@ test('foreground push refreshes authenticated inbox immediately without dropping
  assert.match(screen,/pendingRefresh\.current=false;\s*void load\(true,version\)/);
  assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},20000\)/);
 });
+
+test('returning to foreground refreshes the inbox and removes background subscriptions on blur',()=>{
+ assert.match(screen,/AppState\.addEventListener\('change',state=>/);
+ assert.match(screen,/state==='active'&&generation\.current===version/);
+ assert.match(screen,/resume\.remove\(\)/);
+ assert.match(screen,/received\.remove\(\)/);
+ assert.match(screen,/clearInterval\(timer\)/);
+});
