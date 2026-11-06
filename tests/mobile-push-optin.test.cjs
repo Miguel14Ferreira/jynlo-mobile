@@ -114,3 +114,14 @@ test('native push responses are consumed once and cannot replay after logout',()
  assert.match(layout,/active=false;listener\.remove\(\)/);
  assert.match(layout,/lastHandled\.current===identifier/);
 });
+
+test('logout and token expiry clear previous account notification presentation',()=>{
+ const auth=read('src/lib/auth.tsx');
+ const native=read('src/lib/mobile-push.ts');
+ assert.match(native,/Notifications\.clearLastNotificationResponse\(\)/);
+ assert.match(native,/Notifications\.dismissAllNotificationsAsync\(\)/);
+ assert.match(auth,/try\{await clearNativePushPresentation\(\);\}catch/);
+ assert.match(auth,/void clearNativePushPresentation\(\)\.catch/);
+ assert.ok(auth.indexOf('try{await clearNativePushPresentation();}')<
+    auth.indexOf('await logoutServer(token)'));
+});
