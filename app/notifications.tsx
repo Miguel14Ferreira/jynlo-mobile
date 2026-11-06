@@ -48,7 +48,7 @@ export default function NotificationsScreen(){
   }
   const version=++generation.current;
   setPushEnabled(false);setPushError('');
-  if(auth.username)void pushRegistrationStatus(auth.username).then(value=>{
+  if(auth.username&&auth.token)void pushRegistrationStatus(auth.username,auth.token).then(value=>{
    if(generation.current===version)setPushEnabled(value);
   }).catch(()=>{});
   void load(false,version);
