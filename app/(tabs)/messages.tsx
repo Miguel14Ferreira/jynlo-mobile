@@ -1,5 +1,5 @@
-import React,{useCallback,useRef,useState} from 'react';
-import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
+import React,{useCallback,useMemo,useRef,useState} from 'react';
+import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -8,6 +8,7 @@ import {communityInbox,directInbox} from '../../src/lib/chat-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
+import {filterInbox,unreadInboxCount} from '../../src/lib/inbox-filter.cjs';
 export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
@@ -15,6 +16,9 @@ export default function MessagesScreen(){
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
+ const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
+ const displayed=useMemo(()=>filterInbox(items,search,unreadOnly) as JynloInboxSummary[],[items,search,unreadOnly]);
+ const unreadTotal=useMemo(()=>unreadInboxCount(items) as number,[items]);
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
  const identity=useRef('');
  const pendingRefresh=useRef(false);
@@ -80,6 +84,16 @@ export default function MessagesScreen(){
   <Button secondary title="🔔 Notificações" onPress={()=>router.push("/notifications")}/>
   <Text style={styles.title}>As tuas conversas</Text>
   <Text style={styles.sub}>Fala com quem joga contigo, antes e depois das sessões.</Text>
+  {auth.token?<View style={styles.searchBox}>
+   <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar conversas…"
+    placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
+    accessibilityLabel="Pesquisar conversas pelo contacto ou mensagem"/>
+   <Pressable accessibilityRole="button" accessibilityState={{selected:unreadOnly}}
+    onPress={()=>setUnreadOnly(current=>!current)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
+    <Text style={styles.filterText}>{unreadOnly?'✓ Não lidas':'Não lidas'} · {unreadTotal}</Text>
+   </Pressable>
+   <Text style={styles.tiny}>{displayed.length} de {items.length} conversas</Text>
+  </View>:null}
   {!auth.token?<Button title="Entrar para ver mensagens" onPress={()=>router.push('/login')}/>:null}
   {auth.token&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
     <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
@@ -90,7 +104,8 @@ export default function MessagesScreen(){
   {auth.token&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
   {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
   {!loading&&auth.token&&items.length===0&&!error?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
-  {items.map(item=><Pressable key={`${item.kind}-${item.id}`}
+  {auth.token&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
+  {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):undefined}
     style={({pressed})=>[styles.tile,pressed&&{opacity:.7}]}>
@@ -104,7 +119,11 @@ export default function MessagesScreen(){
   <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real; as conversas privadas usam atualização periódica. Push com a app fechada ainda não está implementado.</Message>
  </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
+const styles=StyleSheet.create({
+ searchBox:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface},
+ searchInput:{color:C.white,borderColor:C.border,borderWidth:1,borderRadius:10,paddingHorizontal:13,minHeight:46},
+ filterChip:{alignSelf:'flex-start',paddingHorizontal:13,paddingVertical:9,borderRadius:99,borderColor:C.border,borderWidth:1},
+ filterActive:{backgroundColor:C.surface2,borderColor:C.mint},filterText:{color:C.mint,fontWeight:'800'},title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
  tile:{borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,padding:15,flexDirection:'row',alignItems:'center',gap:13},
  avatar:{width:52,height:52,borderRadius:15,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
  item:{fontWeight:'900',fontSize:16,color:C.white},tiny:{fontSize:11,color:C.muted},alert:{backgroundColor:'#27463D',borderColor:'#417060',borderWidth:1,borderRadius:14,padding:13,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
