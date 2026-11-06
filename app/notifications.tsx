@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
@@ -7,25 +7,47 @@ import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
 import {myNotifications,markNotificationRead} from '../src/lib/notifications-api';
 import {C} from '../src/lib/theme';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
+const {notificationDestination}=require('../src/lib/notification-route.cjs') as {notificationDestination:(item:JynloNotification)=>{kind:string;id?:string;peer?:string}|null};
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);setItems([]);setInvites([]);return;}
-  setLoading(true);setError('');setItems([]);setInvites([]);
-  const [notifs,invitations]=await Promise.allSettled([
+ const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
+ const load=useCallback(async(silent=false,version=generation.current)=>{
+  if(inFlight.current===version)return;
+  if(!auth.token||!auth.username){
+   setLoading(false);setItems([]);setInvites([]);return;
+  }
+  inFlight.current=version;
+  if(!silent){setLoading(true);setError('');}
+  try{
+   const [notifs,invitations]=await Promise.allSettled([
     myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
-  ]);
-  if(notifs.status==='fulfilled')setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
-  else setError('Não foi possível carregar todas as notificações.');
-  if(invitations.status==='fulfilled')setInvites(invitations.value);
-  else setError('Não foi possível carregar os convites. Tenta atualizar.');
-  setLoading(false);
+   ]);
+   if(version!==generation.current)return;
+   if(notifs.status==='fulfilled')
+    setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
+   if(invitations.status==='fulfilled')setInvites(invitations.value);
+   if(notifs.status==='rejected'||invitations.status==='rejected'){
+    if(!silent)setError('Não foi possível atualizar todas as notificações. A informação anterior foi preservada.');
+   }else if(!silent)setError('');
+  }finally{
+   if(inFlight.current===version)inFlight.current=null;
+   if(version===generation.current&&!silent)setLoading(false);
+  }
  },[auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const identity=auth.username+'|'+auth.token;
+  if(identity!==account.current){
+   account.current=identity;setItems([]);setInvites([]);
+  }
+  const version=++generation.current;
+  void load(false,version);
+  const timer=setInterval(()=>{void load(true,version);},20000);
+  return ()=>{clearInterval(timer);generation.current++;};
+ },[load,auth.username,auth.token]));
  async function decide(invite:PendingSessionInvite,accept:boolean){
   if(!auth.token||busyInvite!==null)return;
   setBusyInvite(invite.id);setError('');setNotice('');
@@ -43,11 +65,16 @@ export default function NotificationsScreen(){
   if(!auth.token)return;
   try{if(!item.read){await markNotificationRead(item.id,auth.token);setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));}}
   catch{setError('Não foi possível marcar a notificação como lida.');}
-  if(item.type==='COMMUNITY_INVITE'){router.push('/communities/invites');return;}
-  if(item.communityId&&['COMMUNITY_JOIN_REQUEST','COMMUNITY_JOIN_ACCEPTED','COMMUNITY_JOIN_REJECTED'].includes(item.type||'')){
-   router.push({pathname:'/communities/[id]',params:{id:String(item.communityId)}});return;
+  const destination=notificationDestination(item);
+  if(!destination)return;
+  switch(destination.kind){
+   case 'invites':router.push('/communities/invites');break;
+   case 'community':router.push({pathname:'/communities/[id]',params:{id:destination.id!}});break;
+   case 'session':router.push({pathname:'/sessions/[id]',params:{id:destination.id!}});break;
+   case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
+   case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
+   case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
   }
-  if(item.sessionId&&item.sessionId>0)router.push({pathname:'/sessions/[id]',params:{id:String(item.sessionId)}});
  }
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
@@ -77,7 +104,7 @@ export default function NotificationsScreen(){
    </Pressable>)}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={loading||busyInvite!==null}/>
-  <Message>Estas notificações são apresentadas dentro da app. O envio de notificações push com a app fechada ainda não está disponível.</Message>
+  <Message>Notificações atualizadas automaticamente de 20 em 20 segundos enquanto este ecrã está aberto. O envio push com a app fechada ainda não está disponível.</Message>
  </Page>;
 }
 const styles=StyleSheet.create({
