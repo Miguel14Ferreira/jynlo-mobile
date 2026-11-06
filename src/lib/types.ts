@@ -173,7 +173,17 @@ export interface VenueSummary {
   id:number;name:string;city:string;district?:string|null;address:string;
   sports:string|null;venueType:string|null;latitude:number|null;longitude:number|null;
   contact?:string|null;website?:string|null;lighting:boolean;parking:boolean;
+  district?:string|null;openingHours?:string|null;priceInfo?:string|null;
+  transport?:string|null;services?:string|null;surfaceType?:string|null;
+  environmentType?:string|null;ownershipType?:string|null;
+  indoor?:boolean|null;changingRooms?:boolean|null;toilets?:boolean|null;
+  showers?:boolean|null;accessible?:boolean|null;wifi?:boolean|null;
+  locationStatus?:string|null;
 }
+export interface VenuePhoto {id:number;photoUrl:string;uploadedByUsername?:string|null;createdAt?:string|null;}
+export interface VenueSportCondition {id:number;sport:string;conditions:string;informationSource?:string|null;createdByUsername?:string|null;createdAt?:string|null;}
+/** The server intentionally hides the count and mean until the privacy threshold is met. */
+export interface VenueRatingSummary {venueId:number;ratingCount:number;averageScore:number|null;}
 export interface VenueSuggestionPage {venues:VenueSummary[];page:number;hasMore:boolean;}
 export interface MySessions {created:SessionSummary[];joined:SessionSummary[];waitlisted:SessionSummary[];}
 
