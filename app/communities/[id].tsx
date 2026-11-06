@@ -72,33 +72,49 @@ export default function CommunityDetailScreen(){
   const owner=role==='OWNER'||role==='ADMIN';
   async function take(action:'join'|'request'){
     if(!auth.token||!auth.username){router.push({pathname:'/login',params:{redirect:`/communities/${id}`}});return;}
-    if(busy)return;setBusy(true);setError('');setNotice('');
+    if(busy)return;
+    const version=generation.current;
+    setBusy(true);setError('');setNotice('');
     try{
-      if(action==='join'){await joinPublicCommunity(id,auth.token,auth.username);setNotice('Já fazes parte desta comunidade!');}
-      else{await requestCommunityMembership(id,auth.token,auth.username);setNotice('Pedido enviado. Aguarda a decisão do organizador.');}
-      await reload();
-    }catch(e){setError((e instanceof Error?e.message:'Operação não concluída.')+' Verifica o estado antes de repetir.');}
-    finally{setBusy(false);}
+      if(action==='join')await joinPublicCommunity(id,auth.token,auth.username);
+      else await requestCommunityMembership(id,auth.token,auth.username);
+      if(version!==generation.current)return;
+      setNotice(action==='join'?'Já fazes parte desta comunidade!':'Pedido enviado. Aguarda a decisão do organizador.');
+      await reload(version);
+    }catch(e){
+      if(version===generation.current)setError((e instanceof Error?e.message:'Operação não concluída.')+' Verifica o estado antes de repetir.');
+    }finally{if(version===generation.current)setBusy(false);}
   }
   async function sendInvite(){
-    if(!auth.token||!auth.username||busy)return;setBusy(true);setError('');setNotice('');
+    if(!auth.token||!auth.username||busy)return;
+    const version=generation.current;
+    setBusy(true);setError('');setNotice('');
     try{
       await inviteCommunityMember(id,inviteName,auth.token,auth.username);
+      if(version!==generation.current)return;
       setInviteName('');setNotice('Convite enviado! A pessoa poderá aceitá-lo em Comunidades → Convites.');
-    }catch(e){setError(e instanceof Error?e.message:'Não foi possível enviar o convite.');}
-    finally{setBusy(false);}
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível enviar o convite.');
+    }finally{if(version===generation.current)setBusy(false);}
   }
   async function approve(requestId:number){
-    if(!auth.token||!auth.username||busy)return;setBusy(true);setError('');
-    try{await acceptCommunityRequest(id,requestId,auth.token,auth.username);setNotice('Pedido aprovado.');await reload();}
-    catch(e){setError(e instanceof Error?e.message:'Não foi possível aprovar o pedido.');}
-    finally{setBusy(false);}
+    if(!auth.token||!auth.username||busy)return;
+    const version=generation.current;
+    setBusy(true);setError('');
+    try{
+      await acceptCommunityRequest(id,requestId,auth.token,auth.username);
+      if(version!==generation.current)return;
+      setNotice('Pedido aprovado.');await reload(version);
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível aprovar o pedido.');
+    }finally{if(version===generation.current)setBusy(false);}
   }
   async function share(){
     if(!owner||!community)return;
     if(DEMO_MODE){setNotice('Na demonstração, os convites funcionam entre Tiago e André, sem links para comunidades fictícias.');return;}
+    const version=generation.current;
     try{await Share.share({message:`Junta-te à comunidade ${community.name} na Jynlo!\n${communityUrl(id)}`,url:communityUrl(id)});}
-    catch{setError('Não foi possível abrir a partilha.');}
+    catch{if(version===generation.current)setError('Não foi possível abrir a partilha.');}
   }
   return <Page><DemoBanner/>
     {params.created==='1'?<Message>Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.</Message>:null}
