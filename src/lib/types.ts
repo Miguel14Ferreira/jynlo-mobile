@@ -43,6 +43,7 @@ export interface SessionDetail extends SessionSummary {
   gamePhoto: string | null;
   meetingPointInstructions?: string | null;
   minParticipants?: number;
+  externalConfirmedParticipants?: number;
   registrationOpeningMode?: 'IMMEDIATE' | 'SCHEDULED' | 'MANUAL' | null;
   registrationOpensAt?: string | null;
 }
