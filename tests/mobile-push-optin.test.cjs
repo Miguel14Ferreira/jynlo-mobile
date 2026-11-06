@@ -47,7 +47,7 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
  assert.match(layout,/data\?\.kind!=='notification'/);
  assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
  assert.match(layout,/lastHandled\.current===identifier/);
- assert.match(layout,/router\.push\('\/notifications'\)/);
+ assert.match(layout,/pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}/);
  assert.doesNotMatch(layout,/router\.push\(data/);
 });
 
@@ -87,4 +87,16 @@ test('push-test APK profile always uses real Jynlo API and remains an explicit b
  const workflow=read('.github/workflows/mobile-push-validation.yml');
  assert.match(workflow,/expo export --platform android/);
  assert.doesNotMatch(workflow,/eas build --platform android/);
+});
+
+test('push tap resolves only an ID returned by the authenticated notification API',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/useLocalSearchParams/);
+ assert.match(screen,/useIsFocused/);
+ assert.match(screen,/account\.current!==auth\.username\+'\|'\+auth\.token/);
+ assert.match(screen,/\^\[1-9\]\[0-9\]\{0,15\}\$/);
+ assert.match(screen,/items\.find\(item=>String\(item\.id\)===notificationId\)/);
+ assert.match(screen,/if\(target\)void open\(target\)/);
+ assert.match(screen,/router\.setParams\(\{notificationId:''\}\)/);
+ assert.doesNotMatch(screen,/router\.push\(\{pathname:notificationId/);
 });
