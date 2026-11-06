@@ -14,6 +14,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
  const [selected,setSelected]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false),active=useRef(false),blocked=useRef(false);
+ const generation=useRef(0);
  const selectedRef=useRef<DocumentPicker.DocumentPickerAsset|null>(null);
  const cleanup=useCallback((asset:DocumentPicker.DocumentPickerAsset|null)=>{
   if(!asset)return;
@@ -27,11 +28,16 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   setSelected(null);cleanup(current);
  },[cleanup]);
  useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
   active.current=true;blocked.current=false;
-  return ()=>{active.current=false;reset();};
+  return ()=>{
+   if(generation.current===version)generation.current++;
+   active.current=false;reset();
+  };
  },[reset,target.scope,target.id,token]));
  async function choose(){
   if(!enabled||!token||busyRef.current)return;
+  const version=generation.current;
   setError('');
   try{
    const picked=await DocumentPicker.getDocumentAsync({
@@ -39,31 +45,41 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
    });
    if(picked.canceled||!picked.assets?.[0])return;
    const asset=picked.assets[0];
-   if(!active.current){cleanup(asset);return;}
+   if(!active.current||generation.current!==version){cleanup(asset);return;}
    try{checkPdfAsset(asset);}
    catch(e){cleanup(asset);throw e;}
    reset();blocked.current=false;
    selectedRef.current=asset;
    if(active.current)setSelected(asset);
-  }catch(e){if(active.current)setError(e instanceof Error?e.message:'Não foi possível selecionar o PDF.');}
+  }catch(e){
+   if(active.current&&generation.current===version)
+    setError(e instanceof Error?e.message:'Não foi possível selecionar o PDF.');
+  }
  }
  async function send(){
   const asset=selectedRef.current;
   if(!asset||!enabled||!token||busyRef.current||blocked.current)return;
+  const version=generation.current;
   busyRef.current=true;setBusy(true);setError('');
   try{
    await sendChatPdf(target,token,asset,replyId);
-   reset();
-   if(active.current){
-    try{await onSent();}
-    catch{setError('PDF enviado. Atualiza a conversa para veres o anexo.');}
+   if(!active.current||generation.current!==version)return;
+   if(selectedRef.current===asset)reset();
+   try{await onSent();}
+   catch{
+    if(active.current&&generation.current===version)
+     setError('PDF enviado. Atualiza a conversa para veres o anexo.');
    }
   }catch(e){
    // The POST may have completed even if its result was lost. Never retry this file automatically.
+   if(!active.current||generation.current!==version)return;
    blocked.current=true;
-   if(active.current)setError((e instanceof Error?e.message:'Envio incerto.')+
+   setError((e instanceof Error?e.message:'Envio incerto.')+
      ' Verifica o histórico antes de escolher novamente o documento.');
-  }finally{busyRef.current=false;if(active.current)setBusy(false);}
+  }finally{
+   busyRef.current=false;
+   if(active.current&&generation.current===version)setBusy(false);
+  }
  }
  if(!enabled||!token)return null;
  return <View style={styles.panel}>
