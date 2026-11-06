@@ -65,3 +65,8 @@ test('open direct conversation reloads on foreground push and app resume',()=>{
  assert.match(screen,/resume\.remove\(\);received\.remove\(\)/);
  assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
 });
+
+test('late PDF attachment completion cannot refresh a different direct chat',()=>{
+ assert.match(screen,/if\(conversation\.current!==peer\+'\|'\+auth\.token\)return/);
+ assert.match(screen,/await refresh\(true,generation\.current\)/);
+});
