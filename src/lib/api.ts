@@ -14,7 +14,7 @@ export const API_BASE = configuredUrl;
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name='ApiError'; }
 }
-export async function request<T>(path:string, {token,method='GET',body}:{token?:string|null;method?:'GET'|'POST'|'PUT'|'DELETE';body?:unknown}={}):Promise<T>{
+export async function request<T>(path:string, {token,method='GET',body}:{token?:string|null;method?:'GET'|'POST'|'PUT'|'PATCH'|'DELETE';body?:unknown}={}):Promise<T>{
   if (DEMO_MODE) throw new Error('Os pedidos HTTP estão desativados na demonstração.');
   const controller = new AbortController();
   const timeout = setTimeout(()=>controller.abort(),12000);
@@ -87,6 +87,23 @@ export async function openSessionRegistration(id:number,token:string):Promise<Se
   if(DEMO_MODE)throw new Error('A abertura manual não está disponível nesta demonstração.');
   return request<SessionDetail>(`/api/sessions/${id}/registration/open`,{token,method:'POST',body:null});
 }
+/** Organizer-only changes. Never retry PATCH after an uncertain network failure. */
+export async function updateSessionMeetingPoint(id:number,token:string,instructions:string):Promise<SessionDetail>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir o ponto de encontro.');
+ if(instructions.length>240||/[\\r\\n\\x00-\\x1f\\x7f]/.test(instructions))
+  throw Error('As instruções devem ter uma única linha até 240 caracteres.');
+ return request<SessionDetail>(`/api/sessions/${id}/meeting-point`,{
+  token,method:'PATCH',body:{meetingPointInstructions:instructions.trim()||null}
+ });
+}
+export async function updateSessionExternalConfirmations(id:number,token:string,count:number):Promise<SessionDetail>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir os jogadores.');
+ if(!Number.isInteger(count)||count<0||count>99)throw Error('Indica entre 0 e 99 jogadores confirmados externamente.');
+ return request<SessionDetail>(`/api/sessions/${id}/external-confirmations`,{
+  token,method:'PATCH',body:{externalConfirmedParticipants:count}
+ });
+}
+
 export async function pendingSessionInvites(token:string,username?:string):Promise<PendingSessionInvite[]>{
   if(DEMO_MODE)return username?demoInvites(username):[];
   return request<PendingSessionInvite[]>('/api/session-invites/pending',{token});
