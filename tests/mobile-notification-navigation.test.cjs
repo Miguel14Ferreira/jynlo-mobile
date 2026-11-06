@@ -49,3 +49,11 @@ test('returning to foreground refreshes the inbox and removes background subscri
  assert.match(screen,/received\.remove\(\)/);
  assert.match(screen,/clearInterval\(timer\)/);
 });
+
+test('stale inbox and invitation requests cannot change account after switching users',()=>{
+ assert.match(screen,/if\(notifs\.status==='rejected'\)setHistoryReady\(false\)/);
+ assert.match(screen,/setHistoryReady\(false\);setLoading\(false\);setItems\(\[\]\)/);
+ assert.match(screen,/if\(account\.current!==initialIdentity\)return;\s*setInvites\(/);
+ assert.match(screen,/if\(account\.current===initialIdentity\)setItems\(/);
+ assert.match(screen,/if\(account\.current===initialIdentity\)setError\(/);
+});
