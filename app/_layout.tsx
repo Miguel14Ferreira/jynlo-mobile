@@ -12,7 +12,8 @@ function PushNavigation(){
       if(!response)return;
       const data=response.notification.request.content.data;
       // Route only to the authenticated inbox, which checks actual access.
-      if(data?.kind!=='notification'||!Number.isSafeInteger(data.id)||data.id<=0)return;
+      if(data?.kind!=='notification'||typeof data.id!=='number'||
+        !Number.isSafeInteger(data.id)||data.id<=0)return;
       const identifier=response.notification.request.identifier;
       if(lastHandled.current===identifier)return;
       lastHandled.current=identifier;
