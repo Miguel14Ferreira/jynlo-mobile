@@ -64,14 +64,21 @@ export default function DirectConversation(){
  },[refresh,peer,auth.token]));
  async function send(){
   if(sending||!auth.token||!draft.trim())return;
+  const identity=peer+'|'+auth.token;
+  const version=generation.current;
   sendingNow.current=true;setSending(true);setError('');
   try{
    await sendDirectChat(peer,draft,auth.token);
-   setDraft('');await refresh();
+   if(version!==generation.current||conversation.current!==identity)return;
+   setDraft('');await refresh(false,version);
   }catch(e){
-   setError((e instanceof Error?e.message:'Não foi possível enviar.')+
-    ' Consulta o histórico antes de repetires o envio.');
-  }finally{sendingNow.current=false;setSending(false);}
+   if(version===generation.current&&conversation.current===identity)
+    setError((e instanceof Error?e.message:'Não foi possível enviar.')+
+     ' Consulta o histórico antes de repetires o envio.');
+  }finally{
+   sendingNow.current=false;
+   if(version===generation.current&&conversation.current===identity)setSending(false);
+  }
  }
  async function choosePhoto(){
   if(!auth.token||!photoAvailable||photoBusy)return;
