@@ -30,3 +30,14 @@ test('notifications refresh safely while focused without clearing on partial err
  assert.match(screen,/pathname:'\/communities\/\[id\]\/chat'/);
  assert.match(screen,/pathname:'\/sessions\/\[id\]\/chat'/);
 });
+
+test('foreground push refreshes authenticated inbox immediately without dropping concurrent updates',()=>{
+ assert.match(screen,/Notifications\.addNotificationReceivedListener\(notification=>/);
+ assert.match(screen,/payload\?\.kind!=='notification'/);
+ assert.match(screen,/generation\.current!==version/);
+ assert.match(screen,/received\.remove\(\)/);
+ assert.match(screen,/if\(inFlight\.current===version\)\{pendingRefresh\.current=true;return;\}/);
+ assert.match(screen,/if\(pendingRefresh\.current\)\{/);
+ assert.match(screen,/pendingRefresh\.current=false;\s*void load\(true,version\)/);
+ assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},20000\)/);
+});
