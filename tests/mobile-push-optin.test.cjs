@@ -43,7 +43,7 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
  const layout=read('app/_layout.tsx');
  assert.match(layout,/Notifications\.addNotificationResponseReceivedListener\(open\)/);
  assert.match(layout,/Notifications\.getLastNotificationResponseAsync\(\)/);
- assert.match(layout,/if\(!auth\.token\)return/);
+ assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/data\?\.kind!=='notification'/);
  assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
  assert.match(layout,/lastHandled\.current===identifier/);
@@ -103,4 +103,14 @@ test('push tap resolves only an ID returned by the authenticated notification AP
  assert.match(screen,/if\(!target\)\{/);
  assert.match(screen,/if\(account\.current!==initialIdentity\)return/);
  assert.doesNotMatch(screen,/router\.push\(\{pathname:notificationId/);
+});
+
+test('native push responses are consumed once and cannot replay after logout',()=>{
+ const layout=read('app/_layout.tsx');
+ assert.match(layout,/Notifications\.clearLastNotificationResponse\(\)/);
+ assert.match(layout,/response\.actionIdentifier!==Notifications\.DEFAULT_ACTION_IDENTIFIER/);
+ assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
+ assert.match(layout,/let active=true/);
+ assert.match(layout,/active=false;listener\.remove\(\)/);
+ assert.match(layout,/lastHandled\.current===identifier/);
 });
