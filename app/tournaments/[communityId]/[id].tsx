@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -16,16 +16,39 @@ export default function TournamentDetailScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null);
  const [organizerRole,setOrganizerRole]=useState<string|null>(null);
  const [table,setTable]=useState<TournamentTable|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setOrganizerRole(null);setLoading(false);return;}
+ const generation=useRef(0);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){
+   if(version===generation.current)setLoading(false);
+   return;
+  }
+  if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(id)||id<=0){
+   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');
-  try{const [result,community]=await Promise.all([tournamentDetails(communityId,id,auth.token,auth.username),communityDetails(communityId,auth.token,auth.username)]);
-    setOrganizerRole('myRole' in community?community.myRole||null:null);
-    setTournament(result);setTable(await tournamentTable(communityId,result,auth.token,auth.username));}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');}
-  finally{setLoading(false);}
+  try{
+   const [result,community]=await Promise.all([
+    tournamentDetails(communityId,id,auth.token,auth.username),
+    communityDetails(communityId,auth.token,auth.username)
+   ]);
+   if(version!==generation.current)return;
+   if(community.id!==communityId)throw Error('A comunidade devolvida não corresponde à selecionada.');
+   if(!('myRole' in community)||!community.myRole)throw Error('Já não pertences a esta comunidade.');
+   setOrganizerRole(community.myRole);
+   setTournament(result);
+   const standings=await tournamentTable(communityId,result,auth.token,auth.username);
+   if(version===generation.current)setTable(standings);
+  }catch(e){
+   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');
+  }finally{if(version===generation.current)setLoading(false);}
  },[communityId,id,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  setTournament(null);setOrganizerRole(null);setTable(null);setError('');setLoading(true);
+  void load(version);
+  return ()=>{generation.current++;};
+ },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
  return <Page><DemoBanner/><Eyebrow>COMPETIÇÃO JYNLO</Eyebrow>
    {!auth.token?<Button title="Entrar para ver torneio" onPress={()=>router.push('/login')}/>:null}
