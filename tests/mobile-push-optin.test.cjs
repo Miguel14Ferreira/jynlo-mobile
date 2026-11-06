@@ -50,3 +50,17 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
  assert.match(layout,/router\.push\('\/notifications'\)/);
  assert.doesNotMatch(layout,/router\.push\(data/);
 });
+
+test('push readiness requires a real public EAS project ID without claiming FCM readiness',()=>{
+ const {checkPushReadiness}=require('../scripts/check-push-readiness.cjs');
+ const missing=checkPushReadiness({});
+ assert.equal(missing.ready,false);
+ assert.equal(missing.projectIdConfigured,false);
+ assert.ok(missing.issues.some(issue=>issue.includes('EAS projectId')));
+ const configured=checkPushReadiness({EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID:'12345678-1234-4234-8234-123456789012'});
+ assert.equal(configured.projectIdConfigured,true);
+ assert.equal(configured.ready,true);
+ const code=read('src/lib/mobile-push.ts');
+ assert.match(code,/process\.env\.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID/);
+ assert.ok(read('package.json').includes('"check:push"'));
+});
