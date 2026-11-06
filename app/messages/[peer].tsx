@@ -160,7 +160,10 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={photoAvailable&&!sending&&!photoBusy} onSent={async()=>{await refresh();}}/>
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
+   if(conversation.current!==peer+'|'+auth.token)return;
+   await refresh(true,generation.current);
+  }}/>
   {auth.token&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{void choosePhoto();}}/>:null}
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
