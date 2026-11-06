@@ -15,7 +15,8 @@ export default function NotificationsScreen(){
  const {notificationId}=useLocalSearchParams<{notificationId?:string}>();
  const lastPushHandled=useRef<string|null>(null);
  const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
- const [loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [loading,setLoading]=useState(true),[historyReady,setHistoryReady]=useState(false);
+ const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
  const [pushError,setPushError]=useState('');
@@ -32,8 +33,10 @@ export default function NotificationsScreen(){
     myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
    ]);
    if(version!==generation.current)return;
-   if(notifs.status==='fulfilled')
+   if(notifs.status==='fulfilled'){
     setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
+    setHistoryReady(true);
+   }
    if(invitations.status==='fulfilled')setInvites(invitations.value);
    if(notifs.status==='rejected'||invitations.status==='rejected'){
     if(!silent)setError('Não foi possível atualizar todas as notificações. A informação anterior foi preservada.');
@@ -49,6 +52,7 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);
   }
   const version=++generation.current;
+  setHistoryReady(false);
   setPushEnabled(false);setPushError('');
   if(auth.username&&auth.token)void pushRegistrationStatus(auth.username,auth.token).then(value=>{
    if(generation.current===version)setPushEnabled(value);
@@ -100,18 +104,23 @@ export default function NotificationsScreen(){
   }
  }
  useEffect(()=>{
-  if(!isFocused||!auth.token||!auth.username||loading)return;
+  if(!isFocused||!auth.token||!auth.username||loading||!historyReady)return;
   if(account.current!==auth.username+'|'+auth.token)return;
   // Push data is untrusted. Resolve the ID only against this account's API history.
   if(typeof notificationId!=='string'||!/^[1-9][0-9]{0,15}$/.test(notificationId))return;
   const key=auth.username+'|'+auth.token+'|'+notificationId;
   if(lastPushHandled.current===key)return;
-  lastPushHandled.current=key;
   const target=items.find(item=>String(item.id)===notificationId);
-  if(target)void open(target);
-  else setNotice('A notificação já não está disponível nesta conta. Atualiza a lista para confirmar.');
+  if(!target){
+   // A newly committed notification may not be visible in the first API reply.
+   // Keep the ID so the next successful refresh can resolve it.
+   setNotice('A confirmar a notificação no servidor. Podes atualizar a lista.');
+   return;
+  }
+  lastPushHandled.current=key;
   router.setParams({notificationId:''});
- },[isFocused,auth.token,auth.username,notificationId,loading,items,router]);
+  void open(target);
+ },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
