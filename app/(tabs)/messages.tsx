@@ -14,13 +14,14 @@ export default function MessagesScreen(){
  const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
  const identity=useRef('');
  const pendingRefresh=useRef(false);
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(busyVersion.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
-   setItems([]);setInvites([]);setLoading(false);return;
+   setItems([]);setInvites([]);setLastSyncedAt(null);setLoading(false);return;
   }
   busyVersion.current=version;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
@@ -36,11 +37,14 @@ export default function MessagesScreen(){
     ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
-   setChatWarning(groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected'?
-    'Algumas conversas ou convites não ficaram disponíveis. A informação anterior foi preservada.':'');
+   const partial=groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected';
+   setChatWarning(partial?'Não foi possível sincronizar todas as conversas. Os dados anteriores podem estar desatualizados.':'');
+   if(!partial)setLastSyncedAt(new Date());
   }catch(e){
-   if(version===generation.current&&!silent)
-    setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
+   if(version===generation.current){
+    if(!silent)setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
+    else setChatWarning('A atualização automática falhou. Confirma a ligação e volta a atualizar.');
+   }
   }finally{
    if(busyVersion.current===version)busyVersion.current=null;
    if(version===generation.current){
@@ -53,6 +57,7 @@ export default function MessagesScreen(){
   const currentIdentity=auth.username+'|'+auth.token;
   if(identity.current!==currentIdentity){
    identity.current=currentIdentity;setItems([]);setInvites([]);
+   setLastSyncedAt(null);setChatWarning('');setError('');
   }
   const version=++generation.current;
   pendingRefresh.current=false;
@@ -82,6 +87,8 @@ export default function MessagesScreen(){
   {auth.token?<Button secondary title="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
+  {auth.token&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
+  {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
   {!loading&&auth.token&&items.length===0&&!error?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {items.map(item=><Pressable key={`${item.kind}-${item.id}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
