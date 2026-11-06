@@ -35,4 +35,5 @@ test('filter is local to the authenticated inbox with accessible controls',()=>{
  assert.match(screen,/accessibilityState=\{\{selected:unreadOnly\}\}/);
  assert.match(screen,/displayed\.map\(item=>/);
  assert.match(screen,/Não foram encontradas conversas com estes filtros/);
+ assert.match(screen,/setSearch\(''\);setUnreadOnly\(false\)/);
 });
