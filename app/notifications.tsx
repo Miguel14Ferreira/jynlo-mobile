@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
+import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
@@ -21,9 +22,10 @@ export default function NotificationsScreen(){
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
+ const pendingRefresh=useRef(false);
  const statusRequest=useRef(0);
  const load=useCallback(async(silent=false,version=generation.current)=>{
-  if(inFlight.current===version)return;
+  if(inFlight.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
    setLoading(false);setItems([]);setInvites([]);return;
   }
@@ -44,7 +46,13 @@ export default function NotificationsScreen(){
    }else if(!silent)setError('');
   }finally{
    if(inFlight.current===version)inFlight.current=null;
-   if(version===generation.current&&!silent)setLoading(false);
+   if(version===generation.current){
+    if(!silent)setLoading(false);
+    if(pendingRefresh.current){
+     pendingRefresh.current=false;
+     void load(true,version);
+    }
+   }
   }
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -53,6 +61,7 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);
   }
   const version=++generation.current;
+  pendingRefresh.current=false;
   setHistoryReady(false);
   setPushEnabled(false);setPushError('');
   const requestId=++statusRequest.current;
@@ -61,7 +70,17 @@ export default function NotificationsScreen(){
   }).catch(()=>{});
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},20000);
-  return ()=>{clearInterval(timer);generation.current++;statusRequest.current++;};
+  const received=Notifications.addNotificationReceivedListener(notification=>{
+   const payload=notification.request.content.data;
+   // The backend sends only this notification kind; never navigate on receipt.
+   if(payload?.kind!=='notification'||generation.current!==version)return;
+   if(!auth.token||!auth.username)return;
+   void load(true,version);
+  });
+  return ()=>{
+   clearInterval(timer);received.remove();pendingRefresh.current=false;
+   generation.current++;statusRequest.current++;
+  };
  },[load,auth.username,auth.token]));
  async function togglePush(){
   if(!auth.username||!auth.token||pushBusy)return;
