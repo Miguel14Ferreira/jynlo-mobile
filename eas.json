@@ -5,11 +5,27 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
-      "env": { "JYNLO_REQUIRE_REAL_API": "1" },
-      "android": { "buildType": "app-bundle" }
+      "env": {
+        "JYNLO_REQUIRE_REAL_API": "1"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "push-test": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_JYNLO_API_URL": "https://desporto24-preview-api.onrender.com",
+        "JYNLO_REQUIRE_REAL_API": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   }
 }
