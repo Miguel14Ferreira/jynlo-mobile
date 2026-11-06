@@ -23,8 +23,14 @@ export default function DirectConversation(){
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
  const generation=useRef(0),conversation=useRef('');
+ const pendingRefresh=useRef(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
-  if(refreshing.current===version)return;
+  if(refreshing.current===version){
+   // A send may finish while the 15-second history poll is still running.
+   // Queue one fresh server read instead of silently dropping it.
+   pendingRefresh.current=true;
+   return;
+  }
   if(!auth.token||!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer)){
    if(version===generation.current){setLoading(false);setMessages([]);}
    return;
@@ -42,7 +48,13 @@ export default function DirectConversation(){
     setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
   }finally{
    if(refreshing.current===version)refreshing.current=null;
-   if(version===generation.current&&!silent)setLoading(false);
+   if(version===generation.current){
+    if(!silent)setLoading(false);
+    if(pendingRefresh.current){
+     pendingRefresh.current=false;
+     void refresh(true,version);
+    }
+   }
   }
  },[peer,auth.token]);
  useFocusEffect(useCallback(()=>{
@@ -54,6 +66,7 @@ export default function DirectConversation(){
    setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
+  pendingRefresh.current=false;
   setPhoto(null);setPhotoAvailable(false);
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
    if(active&&generation.current===version)setPhotoAvailable(available);
@@ -61,17 +74,20 @@ export default function DirectConversation(){
   void refresh(false,version);
   // Poll only while focused; old responses cannot overwrite a new conversation.
   const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true,version);},15000);
-  return ()=>{active=false;clearInterval(timer);generation.current++;};
+  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;};
  },[refresh,peer,auth.token]));
  async function send(){
-  if(sending||!auth.token||!draft.trim())return;
+  if(sending||sendingNow.current||!auth.token||!draft.trim())return;
+  const submittedText=draft.trim();
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   sendingNow.current=true;setSending(true);setError('');
   try{
-   await sendDirectChat(peer,draft,auth.token);
+   await sendDirectChat(peer,submittedText,auth.token);
    if(version!==generation.current||conversation.current!==identity)return;
-   setDraft('');await refresh(false,version);
+   // Preserve anything typed while the previous message was being sent.
+   setDraft(current=>current===submittedText?'':current);
+   await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError((e instanceof Error?e.message:'Não foi possível enviar.')+
@@ -84,16 +100,22 @@ export default function DirectConversation(){
  }
  async function choosePhoto(){
   if(!auth.token||!photoAvailable||photoBusy)return;
+  const identity=peer+'|'+auth.token;
+  const version=generation.current;
   setError('');
   try{
    const selected=await ImagePicker.launchImageLibraryAsync({
     mediaTypes:['images'],quality:0.8,exif:false,base64:false
    });
+   if(version!==generation.current||conversation.current!==identity)return;
    if(!selected.canceled&&selected.assets?.[0])setPhoto(selected.assets[0]);
-  }catch{setError('Não foi possível abrir a galeria.');}
+  }catch{
+   if(version===generation.current&&conversation.current===identity)
+    setError('Não foi possível abrir a galeria.');
+  }
  }
  async function uploadPhoto(){
-  if(!auth.token||!photo||!photoAvailable||photoBusy||sending)return;
+  if(!auth.token||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setPhotoBusy(true);sendingNow.current=true;setError('');
