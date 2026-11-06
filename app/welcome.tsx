@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator,Alert,ImageBackground,Linking,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,ImageBackground,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Redirect,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,Button,DemoBanner} from '../src/components/UI';
@@ -27,8 +27,8 @@ export default function WelcomeScreen(){
    <Button title="Explorar como visitante" secondary onPress={explore}/>
    <Button title="Criar conta na Jynlo" secondary onPress={register}/>
    <View style={styles.legalLinks}>
-    <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/privacy").catch(()=>Alert.alert("Jynlo","Não foi possível abrir a Política de Privacidade."));}} accessibilityRole="link">Política de Privacidade</Text>
-    <Text style={styles.legalLink} onPress={()=>{void Linking.openURL("https://d24sports.com/terms").catch(()=>Alert.alert("Jynlo","Não foi possível abrir os Termos de Utilização."));}} accessibilityRole="link">Termos de Utilização</Text>
+    <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})} accessibilityRole="link">Política de Privacidade</Text>
+    <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})} accessibilityRole="link">Termos de Utilização</Text>
    </View>
    <Text style={styles.note}>{DEMO_MODE?'A demonstração não comunica com o servidor real. Escolher uma conta fictícia é voluntário.':'A tua sessão anterior só é restaurada se ainda for válida.'}</Text>
   </View>

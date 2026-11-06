@@ -77,7 +77,8 @@ export default function RegisterScreen(){
     accessibilityState={{checked:acceptedLegalTerms}} style={styles.legal}>
     {acceptedLegalTerms?'☑':'☐'} Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.
    </Text>
-   <Text style={styles.hint}>Os termos e a política de privacidade estão disponíveis em d24sports.com/terms e d24sports.com/privacy.</Text>
+   <Button title="Ler Termos de Utilização" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
+   <Button title="Ler Política de Privacidade" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
    <Button title={busy?'A criar conta…':'Criar conta'} disabled={busy} onPress={()=>{void submit();}}/>
    <Button title="Já tenho conta" secondary onPress={()=>router.replace('/login')}/>
   </View>
