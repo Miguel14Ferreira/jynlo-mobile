@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {formatDate,money} from '../../src/lib/format.cjs';
@@ -30,6 +30,8 @@ export default function SessionScreen(){
   const removalInFlight=useRef(false);
   const [removingParticipantId,setRemovingParticipantId]=useState<number|null>(null);
   const [rosterFeedback,setRosterFeedback]=useState('');
+  const attendanceInFlight=useRef(false);
+  const [attendanceParticipantId,setAttendanceParticipantId]=useState<number|null>(null);
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
@@ -113,6 +115,32 @@ export default function SessionScreen(){
             'Não foi possível confirmar a remoção. Atualiza a sessão e consulta a lista antes de tentares novamente.';
           setRosterError(message);
         }).finally(()=>{removalInFlight.current=false;setRemovingParticipantId(null);});
+       }}]);
+  }
+  function confirmAttendance(participant:SessionParticipant,status:'ATTENDED'|'NO_SHOW'){
+    if(!auth.token||DEMO_MODE||!owner||!detail||busy||loading||
+       removalInFlight.current||attendanceInFlight.current)return;
+    if(detail.status==='CANCELLED'||!detail.gameDate||
+       !Number.isFinite(Date.parse(detail.gameDate))||Date.parse(detail.gameDate)>Date.now()||
+       !Number.isSafeInteger(participant.id)||participant.id<=0)return;
+    const present=status==='ATTENDED';
+    Alert.alert(present?'Confirmar presença?':'Registar falta?',
+      present?'Confirmas que '+participant.username+' compareceu à sessão?':
+      'Confirmas que '+participant.username+' não compareceu? Esta marcação pode afetar o histórico de fiabilidade do jogador.',
+      [{text:'Voltar',style:'cancel'},
+       {text:present?'Confirmar presença':'Registar falta',style:present?'default':'destructive',onPress:()=>{
+        if(attendanceInFlight.current||!auth.token)return;
+        attendanceInFlight.current=true;
+        setAttendanceParticipantId(participant.id);setRosterError('');setRosterFeedback('');
+        void recordSessionAttendance(id,participant.id,auth.token,status)
+          .then(async()=>{
+            await load();
+            setRosterFeedback(present?'Presença registada pelo servidor.':'Falta registada pelo servidor.');
+          }).catch(e=>{
+            setRosterError(e instanceof ApiError&&e.status===403?
+              'O servidor não autorizou a marcação de presença.':
+              'Não foi possível confirmar a marcação. Atualiza a lista antes de tentar novamente; o servidor só permite registar presenças após o intervalo previsto.');
+          }).finally(()=>{attendanceInFlight.current=false;setAttendanceParticipantId(null);});
        }}]);
   }
   const sendInvite=()=>{const invitee=inviteUsername.trim();if(!invitee||!auth.token)return;
@@ -304,6 +332,20 @@ export default function SessionScreen(){
               {attendance?<Text style={styles.memberStatus}>{attendance}</Text>:null}
             </View>
             {p.username.toLowerCase()===auth.username?.toLowerCase()?<Text style={styles.memberYou}>Tu</Text>:null}
+            {auth.token&&!DEMO_MODE&&owner&&detail.status!=='CANCELLED'&&
+              detail.gameDate&&Number.isFinite(Date.parse(detail.gameDate))&&
+              Date.parse(detail.gameDate)<=Date.now()?<View style={styles.attendanceActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel={'Confirmar presença de '+p.username}
+                  disabled={busy||loading||attendanceParticipantId!==null||removingParticipantId!==null}
+                  style={styles.attendanceButton} onPress={()=>confirmAttendance(p,'ATTENDED')}>
+                  <Text style={styles.attendancePresent}>Presente</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={'Registar falta de '+p.username}
+                  disabled={busy||loading||attendanceParticipantId!==null||removingParticipantId!==null}
+                  style={styles.attendanceButton} onPress={()=>confirmAttendance(p,'NO_SHOW')}>
+                  <Text style={styles.attendanceAbsent}>Faltou</Text>
+                </Pressable>
+              </View>:null}
             {auth.token&&!DEMO_MODE&&owner&&['OPEN','FULL'].includes(detail.status)&&
               p.username.toLowerCase()!==detail.creatorUsername?.toLowerCase()&&
               p.username.toLowerCase()!==auth.username?.toLowerCase()?
@@ -354,6 +396,10 @@ const styles=StyleSheet.create({
   memberName:{color:C.white,fontSize:14,fontWeight:'700'},
   memberStatus:{color:C.muted,fontSize:11},
   memberYou:{color:C.mint,fontWeight:'800',fontSize:12},
+  attendanceActions:{flexDirection:'row',gap:5,alignItems:'center'},
+  attendanceButton:{borderColor:C.border,borderWidth:1,borderRadius:8,paddingHorizontal:7,paddingVertical:8},
+  attendancePresent:{color:C.mint,fontSize:11,fontWeight:'700'},
+  attendanceAbsent:{color:'#FFB8B8',fontSize:11,fontWeight:'700'},
   removePlayerButton:{paddingHorizontal:11,paddingVertical:8,borderRadius:10,borderWidth:1,borderColor:C.danger},
   removePlayerLabel:{color:'#FFB8B8',fontSize:12,fontWeight:'800'},
   back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
