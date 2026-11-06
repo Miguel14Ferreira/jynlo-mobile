@@ -16,8 +16,9 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
  const busyRef=useRef(false),active=useRef(false),blocked=useRef(false);
  const generation=useRef(0);
  const selectedRef=useRef<DocumentPicker.DocumentPickerAsset|null>(null);
+ const uploadingRef=useRef<DocumentPicker.DocumentPickerAsset|null>(null);
  const cleanup=useCallback((asset:DocumentPicker.DocumentPickerAsset|null)=>{
-  if(!asset)return;
+  if(!asset||uploadingRef.current===asset)return;
   try{
    const file=new File(asset.uri);
    if(file.exists)file.delete();
@@ -31,7 +32,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   const version=++generation.current;
   active.current=true;blocked.current=false;
   // Busy/error flags belong to the previous chat; the old upload may still finish.
-  setBusy(false);setError('');
+  setBusy(busyRef.current);setError('');
   return ()=>{
    if(generation.current===version)generation.current++;
    active.current=false;reset();
@@ -62,7 +63,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   const asset=selectedRef.current;
   if(!asset||!enabled||!token||busyRef.current||blocked.current)return;
   const version=generation.current;
-  busyRef.current=true;setBusy(true);setError('');
+  busyRef.current=true;uploadingRef.current=asset;setBusy(true);setError('');
   try{
    await sendChatPdf(target,token,asset,replyId);
    if(!active.current||generation.current!==version)return;
@@ -79,13 +80,16 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
    setError((e instanceof Error?e.message:'Envio incerto.')+
      ' Verifica o histórico antes de escolher novamente o documento.');
   }finally{
+   // An upload still needs its temporary bytes if navigation changes mid-request.
+   uploadingRef.current=null;
+   cleanup(asset);
    busyRef.current=false;
-   if(active.current&&generation.current===version)setBusy(false);
+   if(active.current)setBusy(false);
   }
  }
  if(!enabled||!token)return null;
  return <View style={styles.panel}>
-  <Button title="Selecionar PDF" secondary disabled={busy} onPress={()=>{void choose();}}/>
+  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current} onPress={()=>{void choose();}}/>
   {selected?<View style={styles.details}>
    <Text style={styles.name}>{selected.name}</Text>
    <Text style={styles.note}>{Math.ceil((selected.size||0)/1024)} KB · O ficheiro só é enviado após confirmação.</Text>
