@@ -42,7 +42,7 @@ test('Expo plugin and package dependencies are configured without pretending pus
 test('push taps navigate only to the authenticated notification inbox',()=>{
  const layout=read('app/_layout.tsx');
  assert.match(layout,/Notifications\.addNotificationResponseReceivedListener\(open\)/);
- assert.match(layout,/Notifications\.getLastNotificationResponseAsync\(\)/);
+ assert.match(layout,/Notifications\.getLastNotificationResponse\(\)/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/data\?\.kind!=='notification'/);
  assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
@@ -124,4 +124,14 @@ test('logout and token expiry clear previous account notification presentation',
  assert.match(auth,/void clearNativePushPresentation\(\)\.catch/);
  assert.ok(auth.indexOf('try{await clearNativePushPresentation();}')<
     auth.indexOf('await logoutServer(token)'));
+});
+
+test('cold start processes push only after SecureStore authentication restoration',()=>{
+ const layout=read('app/_layout.tsx');
+ assert.match(layout,/if\(!auth\.ready\)return/);
+ assert.match(layout,/open\(Notifications\.getLastNotificationResponse\(\)\)/);
+ assert.match(layout,/\[auth\.ready,auth\.token,auth\.username,router\]/);
+ assert.doesNotMatch(layout,/getLastNotificationResponseAsync/);
+ assert.ok(layout.indexOf('if(!auth.ready)return')<
+           layout.indexOf('Notifications.clearLastNotificationResponse()'));
 });
