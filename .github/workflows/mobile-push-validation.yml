@@ -1,0 +1,48 @@
+name: Jynlo mobile push validation
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/lib/mobile-push.ts'
+      - 'src/lib/push-device-api.ts'
+      - 'app/notifications.tsx'
+      - 'app/_layout.tsx'
+      - 'app.json'
+      - 'eas.json'
+      - 'package.json'
+      - 'scripts/check-push-readiness.cjs'
+      - 'tests/mobile-push*.test.cjs'
+      - '.github/workflows/mobile-push-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: TypeScript
+        run: npm run typecheck
+      - name: App contracts
+        run: npm run test:all
+      - name: Expo config and dependencies
+        run: npx expo-doctor
+      - name: Check EAS project binding
+        env:
+          EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
+        shell: bash
+        run: |
+          if [[ -z "$EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID" ]]; then
+            echo "::notice::No EAS project ID configured yet; push token registration remains unavailable."
+          else
+            npm run check:push
+          fi
