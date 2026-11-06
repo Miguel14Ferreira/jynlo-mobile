@@ -1,0 +1,32 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const {notificationDestination}=require('../src/lib/notification-route.cjs');
+const screen=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+test('notification routes only navigate valid authenticated targets',()=>{
+ assert.deepEqual(notificationDestination({type:'COMMUNITY_INVITE'}),{kind:'invites'});
+ assert.deepEqual(notificationDestination({type:'COMMUNITY_JOIN_ACCEPTED',communityId:11}),{kind:'community',id:'11'});
+ assert.deepEqual(notificationDestination({type:'SESSION_CHAT_MESSAGE',sessionId:23}),{kind:'session-chat',id:'23'});
+ assert.deepEqual(notificationDestination({type:'COMMUNITY_CHAT_MESSAGE',communityId:7}),{kind:'community-chat',id:'7'});
+ assert.deepEqual(notificationDestination({type:'DIRECT_MESSAGE',relatedUsername:'player_2'}),{kind:'direct-chat',peer:'player_2'});
+ assert.deepEqual(notificationDestination({type:'SESSION_INVITE',sessionId:19}),{kind:'session',id:'19'});
+ assert.equal(notificationDestination({type:'DIRECT_MESSAGE',relatedUsername:'../bad'}),null);
+ assert.equal(notificationDestination({type:'COMMUNITY_CHAT_MESSAGE',communityId:-1}),null);
+ assert.equal(notificationDestination({type:'SESSION_CHAT_MESSAGE',sessionId:'2'}),null);
+ assert.equal(notificationDestination({type:'UNKNOWN',relatedUsername:'player_2'}),null);
+});
+test('notifications refresh safely while focused without clearing on partial errors',()=>{
+ assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},20000\)/);
+ assert.match(screen,/clearInterval\(timer\)/);
+ assert.match(screen,/generation\.current\+\+/);
+ assert.match(screen,/version!==generation\.current/);
+ assert.match(screen,/inFlight\.current===version/);
+ assert.match(screen,/identity!==account\.current/);
+ assert.match(screen,/setItems\(\[\]\);setInvites\(\[\]\)/);
+ assert.match(screen,/if\(notifs\.status==='fulfilled'\)/);
+ assert.match(screen,/if\(invitations\.status==='fulfilled'\)/);
+ assert.match(screen,/notificationDestination\(item\)/);
+ assert.match(screen,/pathname:'\/messages\/\[peer\]'/);
+ assert.match(screen,/pathname:'\/communities\/\[id\]\/chat'/);
+ assert.match(screen,/pathname:'\/sessions\/\[id\]\/chat'/);
+});
