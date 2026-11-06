@@ -135,3 +135,14 @@ test('cold start processes push only after SecureStore authentication restoratio
  assert.ok(layout.indexOf('if(!auth.ready)return')<
            layout.indexOf('Notifications.clearLastNotificationResponse()'));
 });
+
+test('stale push-device queries cannot overwrite explicit opt-in or account changes',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/const statusRequest=useRef\(0\)/);
+ assert.match(screen,/const requestId=\+\+statusRequest\.current/);
+ assert.match(screen,/statusRequest\.current===requestId/);
+ assert.match(screen,/statusRequest\.current\+\+;\n  const identity=/);
+ assert.match(screen,/generation\.current\+\+;statusRequest\.current\+\+/);
+ assert.match(screen,/if\(account\.current===identity\)setPushEnabled\(true\)/);
+ assert.match(screen,/if\(account\.current===identity\)setPushEnabled\(false\)/);
+});
