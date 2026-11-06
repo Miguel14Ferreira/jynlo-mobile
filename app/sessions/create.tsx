@@ -20,6 +20,7 @@ export default function CreateSessionScreen(){
  const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
  const communityLoadVersion=useRef(0),communityLoadIdentity=useRef('');
+ const createOperation=useRef(0);
  const [form,setForm]=useState<CreateSessionForm>({sport:'',day:'',time:'',city:'',address:'',
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]});
  const [step,setStep]=useState(0);
@@ -133,10 +134,15 @@ export default function CreateSessionScreen(){
    setCommunityMode('INDEPENDENT');
    setForm(previous=>changeCommunityMode(previous,'INDEPENDENT'));
    setStep(0);
+   setVenueChosen(null);clearVenueSearch();
+   createOperation.current++;locked.current=false;setBusy(false);setError('');
   }
   const version=++communityLoadVersion.current;
   void loadCommunities(version);
-  return ()=>{communityLoadVersion.current++;};
+  return ()=>{
+   communityLoadVersion.current++;venueSearchVersion.current++;
+   createOperation.current++;
+  };
  },[loadCommunities,auth.username,auth.token,requestedCommunityId]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
@@ -216,6 +222,8 @@ export default function CreateSessionScreen(){
    payload=createSessionPayload(form,SPORTS);setError('');
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
+  const identity=communityLoadIdentity.current;
+  const version=communityLoadVersion.current;
   Alert.alert('Criar sessão desportiva?',describeSessionConfirmation(payload,{
    communityName:selectedCommunity?.name,
    sharedCommunityNames:sharedCommunities.map(c=>c.name),
@@ -223,14 +231,22 @@ export default function CreateSessionScreen(){
   }),[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
-    if(locked.current)return;
+    if(locked.current||version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
+    const operation=++createOperation.current;
     locked.current=true;setBusy(true);setError('');
     try{
      const result=await createSessionWithPayload(payload,auth.token!,auth.username!);
+     if(operation!==createOperation.current||version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
-    }catch(e){setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
-      ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');}
-    finally{locked.current=false;setBusy(false);}
+    }catch(e){
+     if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current)
+      setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
+       ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');
+    }finally{
+     if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current){
+      locked.current=false;setBusy(false);
+     }
+    }
    }}
   ]);
  }
