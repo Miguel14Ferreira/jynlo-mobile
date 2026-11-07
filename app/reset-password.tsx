@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -12,26 +12,27 @@ export default function ResetPasswordScreen(){
  const [token,setToken]=useState(typeof params.token==='string'?params.token:'');
  const [password,setPassword]=useState('');
  const [confirmPassword,setConfirmPassword]=useState('');
+ const requestInFlight=useRef(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
  async function requestReset(){
-  if(busy||!email.trim())return;
-  setBusy(true);setError('');setMessage('');
+  if(requestInFlight.current||!email.trim())return;
+  requestInFlight.current=true;setBusy(true);setError('');setMessage('');
   try{await initiateNativePasswordReset(email);setMessage('Se o email estiver associado a uma conta, receberás instruções de recuperação.');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível pedir a recuperação.');}
-  finally{setBusy(false);}
+  finally{requestInFlight.current=false;setBusy(false);}
  }
  async function finishReset(){
-  if(busy)return;
+  if(requestInFlight.current)return;
   if(!token.trim()||password.length<8||password.length>128||password!==confirmPassword){
    setError('Introduz o token recebido e duas palavras-passe iguais (8 a 128 caracteres).');return;
   }
-  setBusy(true);setError('');setMessage('');
+  requestInFlight.current=true;setBusy(true);setError('');setMessage('');
   try{await confirmNativePasswordReset(token,password);setPassword('');setConfirmPassword('');setToken('');
    setMessage('Palavra-passe alterada. Já podes iniciar sessão.');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar a palavra-passe.');}
-  finally{setBusy(false);}
+  finally{requestInFlight.current=false;setBusy(false);}
  }
  return <Page>
   <Brand subtitle="SEGURANÇA DA CONTA"/>
