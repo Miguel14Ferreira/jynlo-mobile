@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter,useLocalSearchParams} from 'expo-router';
 import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -16,12 +16,13 @@ export default function GoogleOnboarding(){
  const [birth,setBirth]=useState('');
  const [country,setCountry]=useState('Portugal');
  const [accepted,setAccepted]=useState(false);
+ const submitInFlight=useRef(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const ready=Boolean(auth.googleOnboardingEmail&&username.trim().length>=3&&
   /^\d{4}-\d{2}-\d{2}$/.test(birth.trim())&&country.trim()&&accepted&&!busy);
  async function submit(){
-  if(!ready||busy)return;
-  setBusy(true);setError('');
+  if(!ready||submitInFlight.current)return;
+  submitInFlight.current=true;setBusy(true);setError('');
   try{
    await auth.completeGoogleRegistration({
     username:username.trim(),nickname:nickname.trim()||null,dateOfBirth:birth.trim(),
@@ -29,7 +30,7 @@ export default function GoogleOnboarding(){
    });
    router.replace(redirect as any);
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível concluir o registo Google.');}
-  finally{setBusy(false);}
+  finally{submitInFlight.current=false;setBusy(false);}
  }
  if(!auth.googleOnboardingEmail)return <Page><Message>
   O registo Google não está ativo. Volta ao login e escolhe novamente a tua conta Google.
