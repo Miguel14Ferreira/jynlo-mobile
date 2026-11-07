@@ -72,7 +72,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
     signal:controller.signal
    });
    if(!response.ok)throw Error('Não foi possível abrir o anexo. Verifica as permissões.');
-   const type=(response.headers.get('content-type')||'').split(';')[0].trim().toLowerCase();
+   const type=(response.headers.get('content-type')||'').split(';')[0]?.trim().toLowerCase()||'';
    if(type!==mime)throw Error('O formato recebido não corresponde ao anexo.');
    const declared=Number(response.headers.get('content-length'));
    if(declared>5*1024*1024)throw Error('O anexo ultrapassa 5 MB.');
