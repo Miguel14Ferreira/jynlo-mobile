@@ -11,7 +11,7 @@ test('PDF picker uses app cache and explicit send confirmation',()=>{
  assert.match(composer,/Confirmar envio do PDF/);
  assert.match(composer,/sendChatPdf\(target,token,asset,replyId\)/);
  assert.match(composer,/blocked\.current=true/);
- assert.match(composer,/if\(!active\.current\)\{cleanup\(asset\);return;\}/);
+ assert.match(composer,/if\(!active\.current\|\|generation\.current!==version\)\{cleanup\(asset\);return;\}/);
  assert.match(composer,/if\(file\.exists\)file\.delete\(\)/);
 });
 test('PDF API uses private authenticated scoped endpoints and signed PDF bytes',()=>{
