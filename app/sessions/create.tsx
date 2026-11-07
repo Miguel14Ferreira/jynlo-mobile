@@ -296,6 +296,8 @@ export default function CreateSessionScreen(){
    {showSportResults&&sportSearch.trim()?<>
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
      accessibilityLabel={'Escolher '+s} onPress={()=>{
+      // A late membership request must not overwrite a sport chosen by the user.
+      preselectionOverridden.current=true;
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
       if(form.sport!==s){setVenueChosen(null);clearVenueSearch();}
       setSportSearch('');setShowSportResults(false);
