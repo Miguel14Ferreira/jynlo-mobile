@@ -5,6 +5,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../../src/
 import {TournamentMatchCard} from '../../../../../src/components/TournamentMatchUI';
 import {useAuth} from '../../../../../src/lib/auth';
 import {tournamentDetails} from '../../../../../src/lib/competition-api';
+import {communityDetails} from '../../../../../src/lib/community-api';
 import {teamProfileMatches} from '../../../../../src/lib/tournament-fixtures-api';
 import {canListMatches} from '../../../../../src/lib/tournament-fixtures-core.cjs';
 import {acceptTeamPlace,shareableTeamInvite,tournamentTeams} from '../../../../../src/lib/team-api';
@@ -13,6 +14,7 @@ import type {JynloTournament,JynloTournamentTeam,TournamentTeamMatch} from '../.
 export default function TournamentTeamProfileScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string;teamId:string}>();
  const cid=Number(params.communityId),tid=Number(params.id),teamId=Number(params.teamId),router=useRouter(),auth=useAuth();
+ const [needsCommunity,setNeedsCommunity]=useState(false);
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[team,setTeam]=useState<JynloTournamentTeam|null>(null);
  const [matches,setMatches]=useState<TournamentTeamMatch[]>([]),[page,setPage]=useState(0),[hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
@@ -23,8 +25,15 @@ export default function TournamentTeamProfileScreen(){
    if(version===generation.current){setError('Identificador de equipa inválido.');setLoading(false);}
    return;
   }
-  setLoading(true);setError('');setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);
+  setLoading(true);setError('');setNeedsCommunity(false);setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);
   try{
+   const community=await communityDetails(cid,auth.token,auth.username);
+   if(version!==generation.current)return;
+   if(!('myRole' in community)||!community.myRole){
+    setNeedsCommunity(true);
+    setError('Para participares nesta equipa, primeiro tens de aderir à comunidade.');
+    return;
+   }
    const [t,teams]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),tournamentTeams(cid,tid,auth.token,auth.username)]);
    if(version!==generation.current)return;
    setTournament(t);
@@ -42,7 +51,7 @@ export default function TournamentTeamProfileScreen(){
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
   setLoadingMore(false);
-  setTournament(null);setTeam(null);setMatches([]);setPage(0);setHasMore(false);setError('');setMessage('');setLoading(true);
+  setTournament(null);setTeam(null);setMatches([]);setPage(0);setHasMore(false);setNeedsCommunity(false);setError('');setMessage('');setLoading(true);
   void load(version);
   return ()=>{generation.current++;};
  },[load]));
@@ -83,7 +92,8 @@ export default function TournamentTeamProfileScreen(){
   {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||'Multidesporto'}</Text>:null}
   {!auth.token?<><Message>Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.</Message>
    <Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}
-  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}{message?<Message>{message}</Message>:null}
+  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
+  {needsCommunity?<Button title="Entrar na comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(cid)}})}/>:null}{message?<Message>{message}</Message>:null}
   {team?<>
    <View style={styles.panel}>
     <Text style={styles.heading}>Plantel</Text>
