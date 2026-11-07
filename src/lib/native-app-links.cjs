@@ -27,6 +27,7 @@ function nativeRouteForWebLink(path){
   // Keep the exact destination so the user can request a place in the native app.
   const community=url.pathname.match(/^\/menu\/communities\/([1-9]\d*)$/);
   if(community){
+   if(!Number.isSafeInteger(Number(community[1])))return path;
    const tournament=url.searchParams.get('tournament');
    const team=url.searchParams.get('teamPage')||url.searchParams.get('team');
    const valid=(v)=>typeof v==='string'&&/^[1-9]\d*$/.test(v)&&Number.isSafeInteger(Number(v));
