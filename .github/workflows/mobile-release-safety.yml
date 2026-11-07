@@ -21,6 +21,8 @@ jobs:
       # No package-lock.json is committed yet; npm ci would always fail.
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Validate Expo SDK dependency compatibility
+        run: npx expo install --check
       - name: Run all mobile contract and syntax tests
         run: npm run test:all
       - name: Typecheck mobile app
