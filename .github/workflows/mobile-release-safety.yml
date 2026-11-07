@@ -2,10 +2,6 @@ name: Mobile release safety
 on:
   push:
     branches: [develop, master]
-    paths:
-      - 'scripts/verify-release.cjs'
-      - 'tests/release-guard.test.cjs'
-      - '.github/workflows/mobile-release-safety.yml'
   pull_request:
     branches: [develop, master]
   workflow_dispatch:
@@ -22,8 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test production release safety
-        run: node --test tests/release-guard.test.cjs
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run all mobile contract and syntax tests
+        run: npm run test:all
+      - name: Typecheck mobile app
+        run: npm run typecheck
       - name: Reject demo release without API URL
         env:
           JYNLO_REQUIRE_REAL_API: '1'
