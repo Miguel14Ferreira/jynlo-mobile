@@ -7,7 +7,8 @@ function nativeRouteForWebLink(path){
  if(typeof path!=='string'||!path.trim())return path;
  try{
   const url=new URL(path,'https://d24sports.com');
-  if(url.protocol!=='https:'||url.hostname!=='d24sports.com')return path;
+  if(url.protocol!=='https:'||url.hostname!=='d24sports.com'||
+     url.port||url.username||url.password)return path;
   const token=(v)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'')?v:null;
   if(url.pathname==='/'){
    const confirmation=token(url.searchParams.get('confirmRegistration'));
