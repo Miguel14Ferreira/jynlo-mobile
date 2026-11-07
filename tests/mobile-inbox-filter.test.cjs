@@ -61,3 +61,10 @@ test('inbox cards show last message time and accessible unread counts',()=>{
  assert.match(screen,/pathname:'\/sessions\/\[id\]\/chat'/);
  assert.match(screen,/Chat da sessão/);
 });
+
+test('account changes hide cached inbox and reject responses from previous identity',()=>{
+ assert.match(screen,/sameIdentity\?filterInbox\(items,search,unreadOnly\)/);
+ assert.match(screen,/sameIdentity&&invites\.length>0/);
+ assert.match(screen,/version!==generation\.current\|\|identity\.current!==auth\.username\+'\|'\+auth\.token/);
+ assert.match(screen,/setItems\(\[\]\);setInvites\(\[\]\)/);
+});
