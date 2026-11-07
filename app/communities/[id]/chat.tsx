@@ -1,6 +1,6 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -17,32 +17,37 @@ import type {CommunityChatEntry} from '../../../src/lib/types';
 export default function CommunityChatScreen(){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
+ const generation=useRef(0);
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('offline');
  useEffect(()=>{setMessages([]);setName('Comunidade');setPhoto(null);setCanSendPhoto(false);},[id,auth.username]);
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){setMessages([]);setLoading(false);return;}
   setLoading(true);setError('');
   try{const [chat,community]=await Promise.all([communityMessages(id,auth.token,auth.username),communityDetails(id,auth.token,auth.username)]);
+    if(version!==generation.current)return;
     setMessages(old=>mergeMessages(old,chat));setName(community.name);
     const last=chat.at(-1)?.id;if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');setMessages([]);}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current){setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');setMessages([]);}}
+  finally{if(version===generation.current)setLoading(false);}
  },[id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
    let active=true;
+   const version=++generation.current;
+   setMessages([]);setName('Comunidade');setError('');setLoading(true);
    setCanSendPhoto(false);
    if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active)setCanSendPhoto(ok);}).catch(()=>{});
-   void refresh();
-   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return;
-   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:setConnection,
-    onMessage:(msg)=>{setMessages(old=>mergeMessages(old,[msg]));
+   void refresh(version);
+   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return ()=>{active=false;generation.current++;};
+   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current)setConnection(status);},
+    onMessage:(msg)=>{if(!active||version!==generation.current)return;
+      setMessages(old=>mergeMessages(old,[msg]));
       if(msg.username!==auth.username)void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
    });
-   return ()=>{active=false;disconnect();};
+   return ()=>{active=false;generation.current++;disconnect();};
  },[refresh,id,auth.token,auth.username]));
  async function send(){
   if(sending||!auth.token||!auth.username||!draft.trim())return;
