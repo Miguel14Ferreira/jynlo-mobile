@@ -35,7 +35,7 @@ export default function MessagesScreen(){
     communityInbox(auth.token,auth.username),directInbox(auth.token),
     myCommunityInvites(auth.token,auth.username)
    ]);
-   if(version!==generation.current)return;
+   if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
    setItems(previous=>[
     ...(privateChats.status==='fulfilled'?privateChats.value:previous.filter(i=>i.kind==='direct')),
@@ -46,13 +46,13 @@ export default function MessagesScreen(){
    setChatWarning(partial?'Não foi possível sincronizar todas as conversas. Os dados anteriores podem estar desatualizados.':'');
    if(!partial)setLastSyncedAt(new Date());
   }catch(e){
-   if(version===generation.current){
+   if(version===generation.current&&identity.current===auth.username+'|'+auth.token){
     if(!silent)setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
     else setChatWarning('A atualização automática falhou. Confirma a ligação e volta a atualizar.');
    }
   }finally{
    if(busyVersion.current===version)busyVersion.current=null;
-   if(version===generation.current){
+   if(version===generation.current&&identity.current===auth.username+'|'+auth.token){
     if(!silent)setLoading(false);
     if(pendingRefresh.current){pendingRefresh.current=false;void load(true,version);}
    }
