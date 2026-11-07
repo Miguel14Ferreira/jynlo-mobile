@@ -9,6 +9,7 @@ export default function MfaScreen(){
  const router=useRouter();const auth=useAuth();
  const p=useLocalSearchParams<{redirect?:string}>();
  const redirect=safeRedirect(p.redirect);
+ const requestInFlight=useRef(false);
  const [code,setCode]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [resendAfter,setResendAfter]=useState(0);
