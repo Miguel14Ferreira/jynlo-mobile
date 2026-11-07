@@ -93,7 +93,7 @@ export default function TournamentTeamProfileScreen(){
   {!auth.token?<><Message>Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.</Message>
    <Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {needsCommunity?<Button title="Entrar na comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(cid)}})}/>:null}{message?<Message>{message}</Message>:null}
+  {needsCommunity?<Button title="Entrar na comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(cid),returnTo:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/>:null}{message?<Message>{message}</Message>:null}
   {team?<>
    <View style={styles.panel}>
     <Text style={styles.heading}>Plantel</Text>
