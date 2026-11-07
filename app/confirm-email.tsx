@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -10,23 +10,24 @@ export default function ConfirmEmailScreen(){
  const params=useLocalSearchParams<{token?:string;username?:string}>();
  const [token,setToken]=useState(typeof params.token==='string'?params.token:'');
  const [username,setUsername]=useState(typeof params.username==='string'?params.username:'');
+ const requestInFlight=useRef(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
  const [lastResend,setLastResend]=useState(0);
  async function confirm(){
-  if(busy||!token.trim())return;
-  setBusy(true);setError('');setMessage('');
+  if(requestInFlight.current||!token.trim())return;
+  requestInFlight.current=true;setBusy(true);setError('');setMessage('');
   try{await confirmNativeEmail(token);setMessage('Email confirmado! Já podes iniciar sessão na Jynlo.');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível confirmar o email.');}
-  finally{setBusy(false);}
+  finally{requestInFlight.current=false;setBusy(false);}
  }
  async function resend(){
-  if(busy||!username.trim()||Date.now()-lastResend<60000)return;
-  setBusy(true);setError('');setMessage('');
+  if(requestInFlight.current||!username.trim()||Date.now()-lastResend<60000)return;
+  requestInFlight.current=true;setBusy(true);setError('');setMessage('');
   try{await resendRegistrationConfirmation(username);setLastResend(Date.now());setMessage('Se a conta existir, receberás um email de confirmação.');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível reenviar o email.');}
-  finally{setBusy(false);}
+  finally{requestInFlight.current=false;setBusy(false);}
  }
  return <Page>
   <Brand subtitle="CONFIRMAÇÃO DE CONTA"/>
