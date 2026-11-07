@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
@@ -16,15 +16,16 @@ export default function RegisterScreen(){
  const [country,setCountry]=useState('Portugal');
  const [gender,setGender]=useState<string|null>(null);
  const [acceptedLegalTerms,setAcceptedLegalTerms]=useState(false);
+ const submitInFlight=useRef(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [registered,setRegistered]=useState(false);
 
  async function submit(){
-  if(busy)return;
+  if(submitInFlight.current||registered)return;
   const reason=validateNativeRegistration({username,password,confirmPassword,email,dateOfBirth,country,acceptedLegalTerms});
   if(reason){setError(reason);return;}
-  setBusy(true);setError('');
+  submitInFlight.current=true;setBusy(true);setError('');
   try{
    await registerNative({
     username:username.trim(),email:email.trim(),password,nickname:nickname.trim()||null,
@@ -34,7 +35,7 @@ export default function RegisterScreen(){
    });
    setPassword('');setConfirmPassword('');setRegistered(true);
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a conta.');}
-  finally{setBusy(false);}
+  finally{submitInFlight.current=false;setBusy(false);}
  }
  if(registered)return <Page>
   <Brand subtitle="CONTA CRIADA"/>
