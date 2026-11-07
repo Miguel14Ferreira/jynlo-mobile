@@ -18,8 +18,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install locked dependencies
-        run: npm ci
+      # No package-lock.json is committed yet; npm ci would always fail.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
       - name: Run all mobile contract and syntax tests
         run: npm run test:all
       - name: Typecheck mobile app
