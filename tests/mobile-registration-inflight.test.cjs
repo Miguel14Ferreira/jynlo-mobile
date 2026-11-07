@@ -10,3 +10,10 @@ for(const file of ['register.tsx','google-onboarding.tsx']){
   assert.match(src,/finally\{submitInFlight\.current=false;setBusy\(false\);\}/);
  });
 }
+
+test('Google onboarding validates real adult birth dates like native registration',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'../app/google-onboarding.tsx'),'utf8');
+ assert.match(src,/import \{validAdultDate\} from '\.\.\/src\/lib\/native-registration'/);
+ assert.match(src,/validAdultDate\(birth\.trim\(\)\)/);
+ assert.doesNotMatch(src,/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$/);
+});
