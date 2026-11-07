@@ -35,3 +35,23 @@ test('local demo mode is allowed only without release flags',()=>{
   assert.equal(result.status,0,result.stderr);
   assert.match(result.stdout,/OK \(demo\)/);
 });
+
+test('internal preview APK is configured against a real API',()=>{
+  const eas=require('../eas.json');
+  const preview=eas.build.preview;
+  assert.equal(preview.distribution,'internal');
+  assert.equal(preview.android.buildType,'apk');
+  assert.equal(preview.env.JYNLO_REQUIRE_REAL_API,'1');
+  const result=run(preview.env.EXPO_PUBLIC_JYNLO_API_URL,'preview');
+  assert.equal(result.status,0,result.stderr);
+  const missing=run('','preview');
+  assert.notEqual(missing.status,0,'preview must reject missing API URL');
+});
+test('Google Play build produces an Android App Bundle',()=>{
+  const eas=require('../eas.json');
+  const app=require('../app.json').expo;
+  assert.equal(app.android.package,'com.jynlo.app');
+  assert.equal(eas.build.production.android.buildType,'app-bundle');
+  assert.equal(eas.build['play-internal'].android.buildType,'app-bundle');
+  assert.equal(eas.build['play-internal'].env.JYNLO_REQUIRE_REAL_API,'1');
+});
