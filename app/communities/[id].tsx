@@ -9,12 +9,15 @@ import {
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import {useAuth} from '../../src/lib/auth';
+import {safeRedirect} from '../../src/lib/routes.cjs';
 import {C} from '../../src/lib/theme';
 import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary} from '../../src/lib/types';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
 export default function CommunityDetailScreen(){
-  const params=useLocalSearchParams<{id:string;created?:string}>();const id=Number(params.id);
+  const params=useLocalSearchParams<{id:string;created?:string;returnTo?:string}>();const id=Number(params.id);
+  const returnTo=safeRedirect(params.returnTo);
+  const teamDestination=returnTo.startsWith('/tournaments/'+id+'/')&&returnTo!=='/(tabs)'?returnTo:null;
   const auth=useAuth(),router=useRouter();
   const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
@@ -81,6 +84,7 @@ export default function CommunityDetailScreen(){
       if(version!==generation.current)return;
       setNotice(action==='join'?'Já fazes parte desta comunidade!':'Pedido enviado. Aguarda a decisão do organizador.');
       await reload(version);
+      if(version===generation.current&&action==='join'&&teamDestination)router.replace(teamDestination as any);
     }catch(e){
       if(version===generation.current)setError((e instanceof Error?e.message:'Operação não concluída.')+' Verifica o estado antes de repetir.');
     }finally{if(version===generation.current)setBusy(false);}
@@ -137,6 +141,8 @@ export default function CommunityDetailScreen(){
       {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest?<Button title={busy?'A enviar…':'Pedir para entrar'} disabled={busy} onPress={()=>{void take('request');}}/>:null}
       {!role&&myRequest?<Message>O teu pedido de entrada está pendente de aprovação.</Message>:null}
       {!role&&!auth.token?<Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/communities/${id}`}})}/>:null}
+      {teamDestination&&role?<Button title="Continuar para a equipa do convite" onPress={()=>router.replace(teamDestination as any)}/>:null}
+      {teamDestination&&!role&&myRequest?<Message>Quando o organizador aprovar o pedido, volta a esta página para continuares para a equipa.</Message>:null}
       {role?<View style={styles.section}>
         <View style={styles.header}><Text style={styles.sectionTitle}>Membros</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
         {(community as CommunityGroup).members.map(m=><View key={m.profileId+':'+m.username} style={styles.member}>
