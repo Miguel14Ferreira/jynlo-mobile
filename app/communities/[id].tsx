@@ -31,7 +31,7 @@ export default function CommunityDetailScreen(){
       if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
       return;
     }
-    setLoading(true);setError('');
+    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setRequests([]);
     try{
       const c=await communityDetails(id,auth.token,auth.username);
       if(version!==generation.current)return;
@@ -84,8 +84,9 @@ export default function CommunityDetailScreen(){
       else await requestCommunityMembership(id,auth.token,auth.username);
       if(version!==generation.current)return;
       setNotice(action==='join'?'Já fazes parte desta comunidade!':'Pedido enviado. Aguarda a decisão do organizador.');
-      await reload(version);
-      if(version===generation.current&&action==='join'&&teamDestination)router.replace(teamDestination as any);
+      if(action==='join'&&teamDestination){
+        router.replace(teamDestination as any);
+      }else await reload(version);
     }catch(e){
       if(version===generation.current)setError((e instanceof Error?e.message:'Operação não concluída.')+' Verifica o estado antes de repetir.');
     }finally{if(version===generation.current)setBusy(false);}
