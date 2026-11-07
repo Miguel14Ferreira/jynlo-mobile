@@ -104,7 +104,7 @@ export default function MessagesScreen(){
   {chatWarning?<Message>{chatWarning}</Message>:null}
   {auth.token&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
   {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
-  {!loading&&auth.token&&items.length===0&&!error?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
+  {!loading&&auth.token&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {auth.token&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
     accessibilityRole="button"
