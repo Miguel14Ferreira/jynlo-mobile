@@ -17,11 +17,11 @@ export default function MessagesScreen(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
+ const identity=useRef('');
  const sameIdentity=!!auth.token&&!!auth.username&&identity.current===auth.username+'|'+auth.token;
  const displayed=useMemo(()=>sameIdentity?filterInbox(items,search,unreadOnly) as JynloInboxSummary[]:[],[items,search,unreadOnly,sameIdentity]);
  const unreadTotal=useMemo(()=>sameIdentity?unreadInboxCount(items) as number:0,[items,sameIdentity]);
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
- const identity=useRef('');
  const pendingRefresh=useRef(false);
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(busyVersion.current===version){pendingRefresh.current=true;return;}
