@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useRef,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
@@ -12,10 +12,10 @@ export default function LoginScreen(){
  const params=useLocalSearchParams<{redirect?:string}>();
  const redirect=safeRedirect(params.redirect);
  const [username,setUsername]=useState('');const [password,setPassword]=useState('');
- const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+ const [busy,setBusy]=useState(false);const loginInFlight=useRef(false);const [error,setError]=useState('');
  async function doGoogleLogin(){
-   if(busy||auth.username)return;
-   setError('');setBusy(true);
+   if(loginInFlight.current||auth.username)return;
+   loginInFlight.current=true;setError('');setBusy(true);
    try{
      const credential=await chooseGoogleIdentity();
      if(!credential)return; // user cancelled Google picker
@@ -24,16 +24,17 @@ export default function LoginScreen(){
      else if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
      else router.replace(redirect as any);
    }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar sessão com a Google.');}
-   finally{setBusy(false);}
+   finally{loginInFlight.current=false;setBusy(false);}
  }
  async function doLogin(){
-   if(busy)return;setError('');setBusy(true);
+   if(loginInFlight.current||auth.username)return;
+   loginInFlight.current=true;setError('');setBusy(true);
    try{const outcome=await auth.login(username.trim(),password);
       setPassword('');
       if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
       else router.replace(redirect as any);
    }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar sessão.');}
-   finally{setBusy(false);}
+   finally{loginInFlight.current=false;setBusy(false);}
  }
  function demoAs(name:string){try{auth.loginDemo(name);router.replace(redirect as any);}catch(e){setError(e instanceof Error?e.message:'Inicia sessão novamente.');}}
  return <Page>
