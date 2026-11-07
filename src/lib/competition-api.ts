@@ -29,10 +29,19 @@ export async function tournamentsForCommunity(id:number,token:string,username:st
  // Continue through server pagination instead of silently hiding tournaments after four pages.
  // Keep an explicit safety cap so a broken hasMore response cannot cause unbounded requests.
  const all:JynloTournament[]=[];
+ const seen=new Set<number>();
  for(let page=0;page<25;page++){
   const result=await request<JynloTournamentPage>(`${base(id)}?page=${page}`,{token});
-  all.push(...result.tournaments);
+  if(!result||!Array.isArray(result.tournaments)||typeof result.hasMore!=='boolean')
+   throw Error('Resposta inválida ao carregar torneios. Tenta novamente.');
+  for(const tournament of result.tournaments){
+   if(!tournament||!Number.isSafeInteger(tournament.id)||tournament.id<=0||seen.has(tournament.id))continue;
+   seen.add(tournament.id);
+   all.push(tournament);
+  }
   if(!result.hasMore)return all;
+  if(result.tournaments.length===0)
+   throw Error('A paginação dos torneios não avançou. Tenta novamente.');
  }
  throw Error('Esta comunidade tem mais torneios do que o limite de leitura atual. Atualiza a lista ou contacta o suporte.');
 }
