@@ -13,9 +13,10 @@ function PushNavigation(){
     let active=true;
     function open(response:Notifications.NotificationResponse|null){
       if(!active||!response)return;
-      // Never replay an old notification after login or account switching.
-      Notifications.clearLastNotificationResponse();
+      // Preserve a cold-start notification while SecureStore/login is still resolving.
+      // Only consume it after authentication; the destination is resolved in our own inbox.
       if(!auth.token||!auth.username)return;
+      Notifications.clearLastNotificationResponse();
       if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
       const data=response.notification.request.content.data;
       // Never execute routes supplied by a notification. Resolve against own inbox.
