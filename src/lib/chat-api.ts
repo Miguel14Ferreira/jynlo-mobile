@@ -61,7 +61,17 @@ export async function directConversationPeers(token:string):Promise<string[]>{
  return request<string[]>('/api/chat/me/peers',{token});
 }
 export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
- const peers=await directConversationPeers(token);
+ const rawPeers=await directConversationPeers(token);
+ // The backend can return duplicate peers with different letter casing.
+ // Never let a malformed peer invalidate the entire inbox request.
+ const seen=new Set<string>();
+ const peers=rawPeers.filter(peer=>{
+  if(typeof peer!=='string'||!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))return false;
+  const key=peer.toLowerCase();
+  if(seen.has(key))return false;
+  seen.add(key);
+  return true;
+ });
  if(!peers.length)return [];
  const summaries:JynloInboxSummary[]=[];
  for(let i=0;i<peers.length;i+=100){
