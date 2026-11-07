@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 30
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
       EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
       JYNLO_REQUIRE_REAL_API: '1'
     steps:
@@ -43,12 +44,14 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const app = JSON.parse(fs.readFileSync('app.json', 'utf8')).expo;
-          const projectId = app.extra?.eas?.projectId || process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '';
+          const projectId = app.extra?.eas?.projectId || process.env.EAS_PROJECT_ID || '';
           if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
             console.error('::error::EAS projectId em falta. Liga este repositório ao projeto Expo existente antes de gerar APKs não interativas.');
             process.exit(1);
           }
           console.log('EAS projectId: configured');
           NODE
+      - name: Link existing Expo project in CI
+        run: npx --yes eas-cli init --id "$EAS_PROJECT_ID" --non-interactive
       - name: Queue Android preview APK on EAS
         run: npx --yes eas-cli build --platform android --profile preview --non-interactive --no-wait
