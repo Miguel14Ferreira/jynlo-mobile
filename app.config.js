@@ -1,11 +1,12 @@
-// Keep the app config static unless the linked EAS project is supplied by CI.
-// Never commit Expo access tokens or Android signing credentials.
-const app = require('./app.json').expo;
-const projectId = (process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '').trim();
-
-module.exports = {
-  expo: {
-    ...app,
-    ...(projectId ? {extra: {...app.extra, eas: {...(app.extra?.eas || {}), projectId}}} : {}),
-  },
+// Expo passes the merged static app.json configuration as 'config'.
+// Keep static identifiers, permissions and signing metadata from app.json intact.
+// The EAS project binding is injected only by the CI environment.
+module.exports = ({config}) => {
+  const projectId = (process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '').trim();
+  return {
+    ...config,
+    ...(projectId
+      ? {extra: {...(config.extra || {}), eas: {...(config.extra?.eas || {}), projectId}}}
+      : {}),
+  };
 };
