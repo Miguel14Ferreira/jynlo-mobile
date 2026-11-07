@@ -1,0 +1,35 @@
+name: Mobile release safety
+on:
+  push:
+    branches: [develop, master]
+    paths:
+      - 'scripts/verify-release.cjs'
+      - 'tests/release-guard.test.cjs'
+      - '.github/workflows/mobile-release-safety.yml'
+  pull_request:
+    branches: [develop, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test production release safety
+        run: node --test tests/release-guard.test.cjs
+      - name: Reject demo release without API URL
+        env:
+          JYNLO_REQUIRE_REAL_API: '1'
+          EXPO_PUBLIC_JYNLO_API_URL: ''
+        run: |
+          if node scripts/verify-release.cjs --production; then
+            echo "ERROR: release guard accepted a demo build"
+            exit 1
+          fi
