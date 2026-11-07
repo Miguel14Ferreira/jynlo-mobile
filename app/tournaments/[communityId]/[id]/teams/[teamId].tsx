@@ -16,9 +16,13 @@ export default function TournamentTeamProfileScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[team,setTeam]=useState<JynloTournamentTeam|null>(null);
  const [matches,setMatches]=useState<TournamentTeamMatch[]>([]),[page,setPage]=useState(0),[hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- const generation=useRef(0),joining=useRef(false);
+ const generation=useRef(0),joining=useRef(false),paging=useRef(false);
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
+  if(![cid,tid,teamId].every(n=>Number.isSafeInteger(n)&&n>0)){
+   if(version===generation.current){setError('Identificador de equipa inválido.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);
   try{
    const [t,teams]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),tournamentTeams(cid,tid,auth.token,auth.username)]);
@@ -37,6 +41,7 @@ export default function TournamentTeamProfileScreen(){
  },[cid,tid,teamId,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
+  setLoadingMore(false);
   setTournament(null);setTeam(null);setMatches([]);setPage(0);setHasMore(false);setError('');setMessage('');setLoading(true);
   void load(version);
   return ()=>{generation.current++;};
@@ -58,12 +63,17 @@ export default function TournamentTeamProfileScreen(){
    await Share.share({message:`🏆 ${team.name} — ${tournament?.name||'Torneio Jynlo'}\nPara participar, entra na comunidade e aguarda a validação do servidor.\n${url}`});
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível partilhar.');}
  }
- async function more(){if(!auth.token||!auth.username||loadingMore||!hasMore)return;
-  setLoadingMore(true);setError('');
-  try{const next=page+1,part=await teamProfileMatches(cid,tid,teamId,next,auth.token,auth.username);
-   setMatches(prev=>[...prev,...part.matches.filter(m=>!prev.some(x=>x.id===m.id))]);setPage(next);setHasMore(part.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{setLoadingMore(false);}
+ async function more(){if(!auth.token||!auth.username||paging.current||loading||!hasMore)return;
+  const version=generation.current;
+  paging.current=true;setLoadingMore(true);setError('');
+  try{
+   const next=page+1;
+   const part=await teamProfileMatches(cid,tid,teamId,next,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setMatches(prev=>[...prev,...part.matches.filter(m=>!prev.some(x=>x.id===m.id))]);
+   setPage(next);setHasMore(part.hasMore);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  finally{paging.current=false;if(version===generation.current)setLoadingMore(false);}
  }
  const isMember=!!team?.players.some(p=>p.username===auth.username);
  const full=!!team&&team.playersPerTeam!=null&&team.players.length>=team.playersPerTeam;
