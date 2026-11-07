@@ -35,8 +35,10 @@ function nativeRouteForWebLink(path){
     return '/tournaments/'+community[1]+'/'+tournament+'/teams/'+team;
    return '/communities/'+community[1];
   }
-  if(/^\/sessions\/[1-9]\d*$/.test(url.pathname))return url.pathname;
-  if(/^\/venues\/[1-9]\d*$/.test(url.pathname))return url.pathname;
+  const session=url.pathname.match(/^\/sessions\/([1-9]\d*)$/);
+  if(session&&Number.isSafeInteger(Number(session[1])))return url.pathname;
+  const venue=url.pathname.match(/^\/venues\/([1-9]\d*)$/);
+  if(venue&&Number.isSafeInteger(Number(venue[1])))return url.pathname;
   if(['/privacy','/terms','/delete-account'].includes(url.pathname))
    return '/legal?document='+encodeURIComponent(url.pathname.slice(1));
   return path;
