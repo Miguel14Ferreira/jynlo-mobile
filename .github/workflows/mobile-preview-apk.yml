@@ -12,7 +12,7 @@ concurrency:
 jobs:
   android-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
@@ -60,5 +60,19 @@ jobs:
       - name: Link existing Expo project in CI
         if: env.EAS_PROJECT_ID != ''
         run: npx --yes eas-cli init --id "$EAS_PROJECT_ID" --non-interactive
-      - name: Queue Android preview APK on EAS
-        run: npx --yes eas-cli build --platform android --profile preview --non-interactive --no-wait
+      - name: Build Android preview APK and wait for result
+        run: npx --yes eas-cli build --platform android --profile preview --non-interactive --wait
+      - name: Confirm completed Android build
+        run: |
+          npx --yes eas-cli build:list --platform android --build-profile preview --limit 1 --json --non-interactive > eas-preview-result.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const builds = JSON.parse(fs.readFileSync('eas-preview-result.json','utf8'));
+          const build = builds[0];
+          if (!build || build.status !== 'FINISHED' || !build.artifacts?.buildUrl) {
+            console.error('::error::Não foi possível confirmar uma APK Android concluída com URL de download.');
+            process.exit(1);
+          }
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `APK Jynlo pronta: ${build.artifacts.buildUrl}\n`);
+          console.log('APK build confirmed');
+          NODE
