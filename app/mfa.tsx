@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -19,15 +19,15 @@ export default function MfaScreen(){
    const interval=setInterval(()=>setNow(Date.now()),1000);
    return()=>clearInterval(interval);
  },[resendAfter]);
- async function submit(){if(busy)return;setBusy(true);setError('');setNotice('');
+ async function submit(){if(requestInFlight.current)return;requestInFlight.current=true;setBusy(true);setError('');setNotice('');
    try{await auth.completeMfa(code.trim());setCode('');router.replace(redirect as any);}
    catch(e){setError(e instanceof Error?e.message:'Código não aceite.');}
-   finally{setBusy(false);}}
+   finally{requestInFlight.current=false;setBusy(false);}}
  async function requestNewCode(){
-   if(busy||secondsUntilResend>0)return;setBusy(true);setError('');setNotice('');
+   if(requestInFlight.current||secondsUntilResend>0)return;requestInFlight.current=true;setBusy(true);setError('');setNotice('');
    try{await auth.resendMfa();setCode('');setResendAfter(Date.now()+60000);setNow(Date.now());setNotice('Novo código enviado.');}
    catch(e){setError(e instanceof Error?e.message:'Não foi possível reenviar o código. Aguarda um minuto antes de tentar novamente.');}
-   finally{setBusy(false);}
+   finally{requestInFlight.current=false;setBusy(false);}
  }
  return <Page>
    <Eyebrow>SEGURANÇA DA CONTA</Eyebrow>
