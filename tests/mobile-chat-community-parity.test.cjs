@@ -51,7 +51,7 @@ test('private conversation polls while focused and never retries sends automatic
  assert.match(screen,/setInterval\(\(\)=>\{\s*if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\s*\},15000\)/);
  assert.match(screen,/clearInterval\(timer\);resume\.remove\(\);received\.remove\(\)/);
  assert.match(screen,/if\(refreshing\.current===version\)/);
- assert.match(screen,/if\(!silent\)setLoading\(true\)/);
+ assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
  assert.match(screen,/sendingNow\.current=true/);
  assert.match(screen,/sendingNow\.current=false/);
  assert.match(screen,/Consulta o histórico antes de repetires o envio/);
