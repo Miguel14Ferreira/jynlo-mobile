@@ -36,3 +36,8 @@ test('chat inbox reports freshness without erasing loaded conversations on parti
  assert.match(source,/Última sincronização completa:/);
  assert.match(source,/title="Atualizar conversas" disabled=\{loading\} onPress=\{\(\)=>\{void load\(false\);\}\}/);
 });
+
+test('partial sync failures never masquerade as an empty inbox',()=>{
+ assert.match(source,/items\.length===0&&!error&&!chatWarning\?<Message>Não foram encontradas conversas acessíveis/);
+ assert.match(source,/setChatWarning\(partial\?'Não foi possível sincronizar todas as conversas/);
+});
