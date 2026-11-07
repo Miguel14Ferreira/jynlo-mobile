@@ -12,7 +12,7 @@ test('focus changes invalidate tournament details and ranking responses',()=>{
  assert.match(source,/if\(version===generation\.current\)setTable\(standings\)/);
 });
 test('previous tournament, account and organizer controls are cleared when opening another',()=>{
- assert.match(source,/setTournament\(null\);setOrganizerRole\(null\);setTable\(null\);setError\(''\);setLoading\(true\)/);
+ assert.match(source,/setTournament\(null\);setOrganizerRole\(null\);setTable\(null\);setTableError\(''\);setError\(''\);setLoading\(true\)/);
  assert.match(source,/if\(version===generation\.current\)setLoading\(false\)/);
  assert.match(source,/if\(version===generation\.current\)setError\(/);
 });
