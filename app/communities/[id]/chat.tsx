@@ -1,6 +1,6 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -23,14 +23,14 @@ export default function CommunityChatScreen(){
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('offline');
- useEffect(()=>{setMessages([]);setName('Comunidade');setPhoto(null);setCanSendPhoto(false);},[id,auth.username]);
  const refresh=useCallback(async(version=generation.current)=>{
-  if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){setMessages([]);setLoading(false);return;}
+  if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setMessages([]);setLoading(false);}return;}
   setLoading(true);setError('');
   try{const [chat,community]=await Promise.all([communityMessages(id,auth.token,auth.username),communityDetails(id,auth.token,auth.username)]);
     if(version!==generation.current)return;
     setMessages(old=>mergeMessages(old,chat));setName(community.name);
-    const last=chat.at(-1)?.id;if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
+    const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
+    if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
   }catch(e){if(version===generation.current){setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');setMessages([]);}}
   finally{if(version===generation.current)setLoading(false);}
  },[id,auth.token,auth.username]);
@@ -38,8 +38,9 @@ export default function CommunityChatScreen(){
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setLoading(true);
+   setDraft('');setPhoto(null);setConnection('offline');
    setCanSendPhoto(false);
-   if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active)setCanSendPhoto(ok);}).catch(()=>{});
+   if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active&&version===generation.current)setCanSendPhoto(ok);}).catch(()=>{});
    void refresh(version);
    if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return ()=>{active=false;generation.current++;};
    const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current)setConnection(status);},
