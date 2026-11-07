@@ -33,11 +33,18 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
    latestSender:last?.username??null,latestAt:last?.createdAt??null,unreadCount:(threads.get(c.id)||[]).filter(m=>m.username!==username&&m.id>(demoRead.get(username+':'+c.id)||0)).length};
  });
  if(groups.length===0)return [];
+ // Avoid duplicate conversations when membership lists contain repeated records.
+ const seenIds=new Set<number>();
+ const uniqueGroups=groups.filter(c=>{
+  if(!Number.isSafeInteger(c.id)||c.id<=0||seenIds.has(c.id))return false;
+  seenIds.add(c.id);
+  return true;
+ });
  // Keep inbox summary requests bounded, as for direct conversations.
  const summaries:JynloInboxSummary[]=[];
- for(let i=0;i<groups.length;i+=100){
+ for(let i=0;i<uniqueGroups.length;i+=100){
   const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
-   token,method:'POST',body:{conversations:groups.slice(i,i+100).map(c=>({kind:'community',id:String(c.id)}))}
+   token,method:'POST',body:{conversations:uniqueGroups.slice(i,i+100).map(c=>({kind:'community',id:String(c.id)}))}
   });
   summaries.push(...batch);
  }
