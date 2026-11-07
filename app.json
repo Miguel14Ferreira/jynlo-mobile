@@ -48,6 +48,21 @@
             "BROWSABLE",
             "DEFAULT"
           ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
+              "pathPrefix": "/menu/communities/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
