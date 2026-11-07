@@ -67,7 +67,7 @@ jobs:
           fi
       - name: Build Android preview APK and wait for result
         run: |
-          date -u +%Y-%m-%dT%H:%M:%SZ > eas-build-started-at.txt
+          date -u +%Y-%m-%dT%H:%M:00Z > eas-build-started-at.txt
           npx --yes eas-cli build --platform android --profile preview --non-interactive
       - name: Confirm completed Android build
         run: |
@@ -79,7 +79,8 @@ jobs:
           const startedAt = new Date(fs.readFileSync('eas-build-started-at.txt','utf8').trim());
           const createdAt = build?.createdAt ? new Date(build.createdAt) : null;
           if (!build || build.status !== 'FINISHED' || !build.artifacts?.buildUrl ||
-              !createdAt || Number.isNaN(createdAt.getTime()) || createdAt < startedAt) {
+              !createdAt || Number.isNaN(createdAt.getTime()) || createdAt < startedAt ||
+              build.platform !== 'ANDROID' || build.buildProfile !== 'preview') {
             console.error('::error::Não foi possível confirmar uma APK Android concluída com URL de download.');
             process.exit(1);
           }
