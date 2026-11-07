@@ -20,3 +20,16 @@ test('reject untrusted and malformed team destinations',()=>{
  assert.equal(safeRedirect('/tournaments/12/34/teams/99999999999999999999'),'/(tabs)');
  assert.equal(nativeRouteForWebLink('https://evil.example/menu/communities/12?team=56&tournament=34'),'https://evil.example/menu/communities/12?team=56&tournament=34');
 });
+
+test('oversized community identifiers are not converted into native routes',()=>{
+ const url='https://d24sports.com/menu/communities/999999999999999999999?team=56&tournament=34';
+ assert.equal(nativeRouteForWebLink(url),url);
+});
+test('valid team parameter works without teamPage',()=>{
+ const url='https://d24sports.com/menu/communities/12?tournament=34&team=56';
+ assert.equal(nativeRouteForWebLink(url),'/tournaments/12/34/teams/56');
+});
+test('invalid or absent tournament information falls back to community',()=>{
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/menu/communities/12?team=56'),'/communities/12');
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/menu/communities/12?tournament=34&team=0'),'/communities/12');
+});
