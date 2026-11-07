@@ -22,7 +22,7 @@ test('mobile messages includes private conversations and community chats',()=>{
  assert.match(api,/kind:'direct'/);
  assert.match(api,/\/api\/chat\/me\/.*encodeURIComponent\(peer\)/);
  const route=read('app/messages/[peer].tsx');
- assert.match(route,/sendDirectChat\(peer,draft,auth\.token\)/);
+ assert.match(route,/sendDirectChat\(peer,submittedText,auth\.token\)/);
  assert.match(route,/directChatHistory\(peer,auth\.token\)/);
  assert.match(route,/markDirectRead\(peer,last,auth\.token\)/);
  assert.match(route,/Verifica|Consulta o histórico antes de repetires/);
@@ -48,9 +48,9 @@ test('member community links to session creation with authenticated preselection
 
 test('private conversation polls while focused and never retries sends automatically',()=>{
  const screen=read('app/messages/[peer].tsx');
- assert.match(screen,/setInterval\(\(\)=>\{if\(!sendingNow\.current\)void refresh\(true\);\},15000\)/);
- assert.match(screen,/return \(\)=>clearInterval\(timer\)/);
- assert.match(screen,/if\(refreshing\.current\)return/);
+ assert.match(screen,/setInterval\(\(\)=>\{\s*if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\s*\},15000\)/);
+ assert.match(screen,/clearInterval\(timer\);resume\.remove\(\);received\.remove\(\)/);
+ assert.match(screen,/if\(refreshing\.current===version\)/);
  assert.match(screen,/if\(!silent\)setLoading\(true\)/);
  assert.match(screen,/sendingNow\.current=true/);
  assert.match(screen,/sendingNow\.current=false/);
@@ -59,7 +59,7 @@ test('private conversation polls while focused and never retries sends automatic
 
 test('messages inbox refreshes while focused, keeps unread counts, and isolates accounts',()=>{
  const screen=read('app/(tabs)/messages.tsx');
- assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},15000\)/);
+ assert.match(screen,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'\)void load\(true,version\);\},15000\)/);
  assert.match(screen,/clearInterval\(timer\)/);
  assert.match(screen,/generation\.current\+\+/);
  assert.match(screen,/version!==generation\.current/);
@@ -89,7 +89,7 @@ test('private photo attachment uses authenticated private API and requires expli
  assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo\)/);
  assert.match(screen,/setPhoto\(null\)/);
  assert.match(screen,/photoAvailable\?/);
- assert.match(screen,/Anexo privado:/);
+ assert.match(screen,/SecureChatAttachment scope="direct"/);
 });
 
 test('community chat photo upload checks private storage and requires confirmation',()=>{
@@ -105,5 +105,5 @@ test('community chat photo upload checks private storage and requires confirmati
  assert.match(chat,/Confirmar envio da fotografia/);
  assert.match(chat,/canSendPhoto/);
  assert.match(chat,/setPhoto\(null\)/);
- assert.match(chat,/Anexo privado:/);
+ assert.match(chat,/SecureChatAttachment scope="community"/);
 });
