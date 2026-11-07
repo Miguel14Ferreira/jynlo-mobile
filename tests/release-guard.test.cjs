@@ -13,6 +13,7 @@ function run(url,profile='production'){
 test('store builds require a real HTTPS API',()=>{
   for(const url of ['', 'http://api.example.org', 'https://localhost', 'https://127.0.0.1',
     'https://192.168.1.5', 'https://10.0.0.1', 'https://172.16.0.1',
+    'https://127.1.2.3', 'https://8.8.8.8', 'https://[::1]', 'https://[2001:db8::1]',
     'https://demo.example.org', 'https://example.com', 'https://api.example.org/path',
     'https://api.example.org?token=secret', 'https://user:password@api.example.org']){
     const result=run(url);
