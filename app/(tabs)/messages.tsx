@@ -17,8 +17,9 @@ export default function MessagesScreen(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
- const displayed=useMemo(()=>filterInbox(items,search,unreadOnly) as JynloInboxSummary[],[items,search,unreadOnly]);
- const unreadTotal=useMemo(()=>unreadInboxCount(items) as number,[items]);
+ const sameIdentity=!!auth.token&&!!auth.username&&identity.current===auth.username+'|'+auth.token;
+ const displayed=useMemo(()=>sameIdentity?filterInbox(items,search,unreadOnly) as JynloInboxSummary[]:[],[items,search,unreadOnly,sameIdentity]);
+ const unreadTotal=useMemo(()=>sameIdentity?unreadInboxCount(items) as number:0,[items,sameIdentity]);
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
  const identity=useRef('');
  const pendingRefresh=useRef(false);
@@ -93,19 +94,19 @@ export default function MessagesScreen(){
     onPress={()=>setUnreadOnly(current=>!current)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
     <Text style={styles.filterText}>{unreadOnly?'✓ Não lidas':'Não lidas'} · {unreadTotal}</Text>
    </Pressable>
-   <Text style={styles.tiny}>{displayed.length} de {items.length} conversas</Text>
+   <Text style={styles.tiny}>{displayed.length} de {sameIdentity?items.length:0} conversas</Text>
   </View>:null}
   {!auth.token?<Button title="Entrar para ver mensagens" onPress={()=>router.push('/login')}/>:null}
-  {auth.token&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
+  {sameIdentity&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
     <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
   </Pressable>:null}
   {auth.token?<Button secondary title="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
-  {auth.token&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
+  {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
   {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
-  {!loading&&auth.token&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
-  {auth.token&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
+  {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
+  {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
     accessibilityRole="button"
     accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
