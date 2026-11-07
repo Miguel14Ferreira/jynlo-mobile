@@ -1,16 +1,18 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
+import {DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/chat-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C} from '../../src/lib/theme';
+import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 
 export default function DirectConversation(){
  const params=useLocalSearchParams<{peer:string}>();
@@ -25,6 +27,10 @@ export default function DirectConversation(){
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
  const generation=useRef(0),conversation=useRef('');
  const pendingRefresh=useRef(false);
+ const [blocked,setBlocked]=useState(false);
+ const [safetyBusy,setSafetyBusy]=useState(false);
+ const [showReport,setShowReport]=useState(false);
+ const [reportReason,setReportReason]=useState('');
  const refresh:(silent?:boolean,version?:number)=>Promise<void>=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){
    // A send may finish while the 15-second history poll is still running.
@@ -73,6 +79,12 @@ export default function DirectConversation(){
    if(active&&generation.current===version)setPhotoAvailable(available);
   }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
   void refresh(false,version);
+  setShowReport(false);setReportReason('');setBlocked(false);
+  if(auth.token&&peer&&peer.toLowerCase()!==auth.username?.toLowerCase()&&!DEMO_MODE){
+   void userBlockStatus(peer,auth.token).then(value=>{
+    if(active&&generation.current===version)setBlocked(value);
+   }).catch(()=>{ /* A failed status read must not claim anyone is blocked. */ });
+  }
   // Poll only while focused; old responses cannot overwrite a new conversation.
   const timer=setInterval(()=>{
    if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);
@@ -89,8 +101,36 @@ export default function DirectConversation(){
    pendingRefresh.current=false;generation.current++;
   };
  },[refresh,peer,auth.token]));
+ async function updateBlock(){
+  if(!auth.token||safetyBusy||!peer)return;
+  const identity=peer+'|'+auth.token;
+  setSafetyBusy(true);setError('');
+  try{
+   const value=blocked?await unblockUser(peer,auth.token):await blockUser(peer,auth.token);
+   if(conversation.current!==identity)return;
+   setBlocked(value);
+   Alert.alert(value?'Utilizador bloqueado':'Utilizador desbloqueado',
+    value?'Deixaste de poder trocar mensagens com este utilizador.':'Podes voltar a comunicar com este utilizador.');
+   await refresh(true,generation.current);
+  }catch(e){
+   if(conversation.current===identity)setError(e instanceof Error?e.message:'Não foi possível alterar o bloqueio. Confirma o estado antes de repetir.');
+  }finally{if(conversation.current===identity)setSafetyBusy(false);}
+ }
+ async function submitReport(){
+  if(!auth.token||safetyBusy||!reportReason.trim())return;
+  const identity=peer+'|'+auth.token;
+  setSafetyBusy(true);setError('');
+  try{
+   await reportUser(peer,reportReason,auth.token);
+   if(conversation.current!==identity)return;
+   setShowReport(false);setReportReason('');
+   Alert.alert('Denúncia enviada','Obrigado. A equipa Jynlo poderá analisar a situação.');
+  }catch(e){
+   if(conversation.current===identity)setError(e instanceof Error?e.message:'Não foi possível confirmar a denúncia. Verifica antes de repetires.');
+  }finally{if(conversation.current===identity)setSafetyBusy(false);}
+ }
  async function send(){
-  if(sending||sendingNow.current||!auth.token||!draft.trim())return;
+  if(sending||sendingNow.current||blocked||!auth.token||!draft.trim())return;
   const submittedText=draft.trim();
   const identity=peer+'|'+auth.token;
   const version=generation.current;
@@ -112,7 +152,7 @@ export default function DirectConversation(){
   }
  }
  async function choosePhoto(){
-  if(!auth.token||!photoAvailable||photoBusy)return;
+  if(!auth.token||blocked||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setError('');
@@ -128,7 +168,7 @@ export default function DirectConversation(){
   }
  }
  async function uploadPhoto(){
-  if(!auth.token||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
+  if(!auth.token||blocked||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setPhotoBusy(true);sendingNow.current=true;setError('');
@@ -160,18 +200,18 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    await refresh(true,generation.current);
   }}/>
-  {auth.token&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{void choosePhoto();}}/>:null}
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
    <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
    <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
    <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
-  {auth.token?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
+  {auth.token&&!blocked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
@@ -180,11 +220,33 @@ export default function DirectConversation(){
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </KeyboardAvoidingView>:null}
+  {auth.token&&!DEMO_MODE&&peer.toLowerCase()!==auth.username?.toLowerCase()?<View style={styles.safety}>
+   <Eyebrow>SEGURANÇA DA CONVERSA</Eyebrow>
+   {blocked?<Message>Bloqueaste este utilizador. As mensagens estão desativadas.</Message>:null}
+   <Button secondary title={blocked?'Desbloquear utilizador':'Bloquear utilizador'}
+    disabled={safetyBusy} onPress={()=>Alert.alert(
+      blocked?'Desbloquear utilizador?':'Bloquear utilizador?',
+      blocked?'Voltarás a permitir a comunicação com este utilizador.':'Esta pessoa deixará de poder trocar mensagens contigo.',
+      [{text:'Cancelar',style:'cancel'},{text:'Confirmar',style:blocked?'default':'destructive',onPress:()=>{void updateBlock();}}])}/>
+   <Button secondary title={showReport?'Cancelar denúncia':'Denunciar utilizador'}
+    disabled={safetyBusy} onPress={()=>{setShowReport(v=>!v);setReportReason('');}}/>
+   {showReport?<View style={styles.report}>
+    <Text style={styles.note}>Descreve o problema para a equipa Jynlo (até 1000 caracteres). Não incluas palavras-passe.</Text>
+    <TextInput multiline value={reportReason} onChangeText={setReportReason}
+      maxLength={1000} accessibilityLabel="Motivo da denúncia" placeholder="Descreve o motivo da denúncia…"
+      placeholderTextColor={C.muted} style={styles.reportInput}/>
+    <Button danger title={safetyBusy?'A enviar denúncia…':'Enviar denúncia'} 
+      disabled={safetyBusy||!reportReason.trim()} onPress={()=>{void submitReport();}}/>
+   </View>:null}
+  </View>:null}
   <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
   <Button secondary title="Voltar às mensagens" onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({
+ safety:{gap:10,padding:14,borderRadius:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ report:{gap:10},
+ reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
  title:{fontSize:26,fontWeight:'900',color:C.white},
  note:{fontSize:12,color:C.muted,lineHeight:19},
  message:{padding:14,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:6},
