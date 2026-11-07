@@ -42,7 +42,7 @@ export default function TeamsScreen(){
   return ()=>{generation.current++;};
  },[load]));
  async function create(){
-  if(!auth.token||!auth.username||creatingRef.current||!tournament||tournament.entryType!=='TEAM')return;
+  if(!auth.token||!auth.username||creatingRef.current||!tournament||tournament.entryType!=='TEAM'||tournament.status!=='DRAFT')return;
   const version=generation.current;
   creatingRef.current=true;setBusy(true);setError('');setMessage('');
   try{
@@ -69,7 +69,8 @@ export default function TeamsScreen(){
    <Text style={styles.note}>{t.players.length}/{t.playersPerTeam??'Sem limite'} jogadores · Plantel e jogos na página da equipa</Text>
    <Button title="Abrir página da equipa" secondary onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(t.id)}})}/>
   </View>)}
-  {tournament?.entryType==='TEAM'?<View style={styles.team}>
+  {tournament?.entryType==='TEAM'&&tournament.status!=='DRAFT'?<Message>Este torneio já começou ou terminou. As equipas estão disponíveis apenas para consulta.</Message>:null}
+  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'?<View style={styles.team}>
    <Text style={styles.teamName}>Nova equipa</Text>
    <TextInput accessibilityLabel="Nome da equipa" value={newName} onChangeText={setNewName} style={styles.input} maxLength={100} placeholder="Nome da equipa" placeholderTextColor={C.muted}/>
    <Button title={busy?'A guardar…':'Criar equipa'} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
