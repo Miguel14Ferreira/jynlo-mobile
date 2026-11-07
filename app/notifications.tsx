@@ -55,6 +55,7 @@ export default function NotificationsScreen(){
      void load(true,version);
     }
    }
+  }
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const identity=auth.username+'|'+auth.token;
