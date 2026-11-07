@@ -17,7 +17,7 @@ const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
 export default function CommunityDetailScreen(){
   const params=useLocalSearchParams<{id:string;created?:string;returnTo?:string}>();const id=Number(params.id);
   const returnTo=safeRedirect(params.returnTo);
-  const teamDestination=returnTo.startsWith('/tournaments/'+id+'/')&&returnTo!=='/(tabs)'?returnTo:null;
+  const teamDestination=Number.isSafeInteger(id)&&id>0&&returnTo.startsWith('/tournaments/'+id+'/')?returnTo:null;
   const auth=useAuth(),router=useRouter();
   const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
@@ -37,6 +37,7 @@ export default function CommunityDetailScreen(){
       if(version!==generation.current)return;
       setCommunity(c);
       if(auth.token&&auth.username&&isMember(c)){
+        setMyRequest(null);
         try{
           const next=await communitySessions(id,auth.token,auth.username);
           if(version!==generation.current)return;
@@ -142,7 +143,8 @@ export default function CommunityDetailScreen(){
       {!role&&myRequest?<Message>O teu pedido de entrada está pendente de aprovação.</Message>:null}
       {!role&&!auth.token?<Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/communities/${id}`}})}/>:null}
       {teamDestination&&role?<Button title="Continuar para a equipa do convite" onPress={()=>router.replace(teamDestination as any)}/>:null}
-      {teamDestination&&!role&&myRequest?<Message>Quando o organizador aprovar o pedido, volta a esta página para continuares para a equipa.</Message>:null}
+      {teamDestination&&!role&&myRequest?<Message>O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.</Message>:null}
+      {teamDestination&&!role&&auth.token&&!loading?<Button secondary title="Verificar aprovação da comunidade" disabled={busy} onPress={()=>{void reload();}}/>:null}
       {role?<View style={styles.section}>
         <View style={styles.header}><Text style={styles.sectionTitle}>Membros</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
         {(community as CommunityGroup).members.map(m=><View key={m.profileId+':'+m.username} style={styles.member}>
