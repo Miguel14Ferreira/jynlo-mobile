@@ -1,0 +1,42 @@
+name: Build Jynlo Android preview APK
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jynlo-mobile-preview-apk
+  cancel-in-progress: false
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require Expo access token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Missing EXPO_TOKEN repository secret. Configure an Expo access token before building."
+            exit 1
+          fi
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run tests
+        run: npm run test:all
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Reject demo backend
+        run: node scripts/verify-release.cjs --production
+      - name: Queue Android preview APK on EAS
+        run: npx --yes eas-cli build --platform android --profile preview --non-interactive --no-wait
