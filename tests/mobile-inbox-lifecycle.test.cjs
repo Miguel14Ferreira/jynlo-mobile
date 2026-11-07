@@ -18,7 +18,7 @@ test('in-flight requests queue exactly one additional inbox reload',()=>{
  assert.match(source,/if\(busyVersion\.current===version\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(source,/if\(pendingRefresh\.current\)\{pendingRefresh\.current=false;void load\(true,version\);\}/);
  assert.match(source,/pendingRefresh\.current=false;\s*generation\.current\+\+/);
- assert.match(source,/if\(version!==generation\.current\)return/);
+ assert.match(source,/if\(version!==generation\.current\|\|identity\.current!==auth\.username\+'\|'\+auth\.token\)return/);
 });
 test('account switch resets prior inbox before fetching the next user',()=>{
  assert.match(source,/identity\.current=currentIdentity;setItems\(\[\]\);setInvites\(\[\]\)/);
