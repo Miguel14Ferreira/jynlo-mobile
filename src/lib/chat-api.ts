@@ -20,7 +20,7 @@ export async function sendCommunityMessage(id:number,body:string,token:string,us
  await member(id,token,username);const text=body.trim();
  if(!text||text.length>4000)throw Error('Escreve uma mensagem até 4000 caracteres.');
  if(DEMO_MODE){const msg:CommunityChatEntry={id:++nextId,communityId:id,kind:'CHAT',username,body:text,createdAt:new Date().toISOString()};
-  threads.set(safeId(id),[...(threads.get(id)||[]),msg]);notifyDemoCommunityMessage(msg);return msg;}
+  threads.set(safeId(id),[...(threads.get(safeId(id))||[]),msg]);notifyDemoCommunityMessage(msg);return msg;}
  // Never repeat this POST after a timeout without verifying history.
  return request<CommunityChatEntry>(base(id),{token,method:'POST',body:{body:text}});
 }
