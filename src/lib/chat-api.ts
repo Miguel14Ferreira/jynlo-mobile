@@ -33,9 +33,15 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
    latestSender:last?.username??null,latestAt:last?.createdAt??null,unreadCount:(threads.get(c.id)||[]).filter(m=>m.username!==username&&m.id>(demoRead.get(username+':'+c.id)||0)).length};
  });
  if(groups.length===0)return [];
- return request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
-  token,method:'POST',body:{conversations:groups.map(c=>({kind:'community',id:String(c.id)}))}
- });
+ // Keep inbox summary requests bounded, as for direct conversations.
+ const summaries:JynloInboxSummary[]=[];
+ for(let i=0;i<groups.length;i+=100){
+  const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
+   token,method:'POST',body:{conversations:groups.slice(i,i+100).map(c=>({kind:'community',id:String(c.id)}))}
+  });
+  summaries.push(...batch);
+ }
+ return summaries;
 }
 
 /** Server-verified read cursor. Only acknowledge messages actually displayed. */
