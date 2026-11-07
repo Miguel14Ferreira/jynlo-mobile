@@ -3,6 +3,7 @@ import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter,useLocalSearchParams} from 'expo-router';
 import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
+import {validAdultDate} from '../src/lib/native-registration';
 import {safeRedirect} from '../src/lib/routes.cjs';
 import {C} from '../src/lib/theme';
 
@@ -19,7 +20,7 @@ export default function GoogleOnboarding(){
  const submitInFlight=useRef(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const ready=Boolean(auth.googleOnboardingEmail&&username.trim().length>=3&&
-  /^\d{4}-\d{2}-\d{2}$/.test(birth.trim())&&country.trim()&&accepted&&!busy);
+  validAdultDate(birth.trim())&&country.trim()&&accepted&&!busy);
  async function submit(){
   if(!ready||submitInFlight.current)return;
   submitInFlight.current=true;setBusy(true);setError('');
