@@ -25,6 +25,25 @@ jobs:
         run: npm run test:all
       - name: Typecheck mobile app
         run: npm run typecheck
+      - name: Validate preview APK uses real API
+        env:
+          EAS_BUILD_PROFILE: preview
+          JYNLO_REQUIRE_REAL_API: '1'
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+        run: node scripts/verify-release.cjs --production
+      - name: Validate Android build configuration
+        run: |
+          node - <<'NODE'
+          const assert = require('node:assert/strict');
+          const app = require('./app.json').expo;
+          const eas = require('./eas.json');
+          assert.equal(app.android.package, 'com.jynlo.app');
+          assert.equal(eas.build.preview.android.buildType, 'apk');
+          assert.equal(eas.build.preview.distribution, 'internal');
+          assert.equal(eas.build.preview.env.JYNLO_REQUIRE_REAL_API, '1');
+          assert.equal(eas.build.production.android.buildType, 'app-bundle');
+          console.log('Android release config: OK');
+          NODE
       - name: Reject demo release without API URL
         env:
           JYNLO_REQUIRE_REAL_API: '1'
