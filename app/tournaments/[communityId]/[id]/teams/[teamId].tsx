@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Share,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../../src/components/UI';
@@ -16,11 +16,13 @@ export default function TournamentTeamProfileScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[team,setTeam]=useState<JynloTournamentTeam|null>(null);
  const [matches,setMatches]=useState<TournamentTeamMatch[]>([]),[page,setPage]=useState(0),[hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);return;}
+ const generation=useRef(0),joining=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   setLoading(true);setError('');setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);
   try{
    const [t,teams]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),tournamentTeams(cid,tid,auth.token,auth.username)]);
+   if(version!==generation.current)return;
    setTournament(t);
    if(t.entryType!=='TEAM')throw Error('Este torneio não tem equipas.');
    const selected=teams.find(x=>x.id===teamId);
@@ -28,16 +30,28 @@ export default function TournamentTeamProfileScreen(){
    setTeam(selected);
    if(canListMatches(t)){
     const response=await teamProfileMatches(cid,tid,teamId,0,auth.token,auth.username);
-    setMatches(response.matches);setHasMore(response.hasMore);
+    if(version===generation.current){setMatches(response.matches);setHasMore(response.hasMore);}
    }
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a equipa.');}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a equipa.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,teamId,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
- async function join(){if(!auth.token||!auth.username||busy)return;setBusy(true);setError('');setMessage('');
-  try{await acceptTeamPlace(cid,tid,teamId,auth.token,auth.username);setMessage('Presença na equipa confirmada pelo servidor.');await load();}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível entrar na equipa.');}
-  finally{setBusy(false);}
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  setTournament(null);setTeam(null);setMatches([]);setPage(0);setHasMore(false);setError('');setMessage('');setLoading(true);
+  void load(version);
+  return ()=>{generation.current++;};
+ },[load]));
+ async function join(){
+  if(!auth.token||!auth.username||joining.current||loading||!team||!tournament||tournament.status!=='DRAFT'||
+   team.players.some(p=>p.username===auth.username)||
+   (team.playersPerTeam!=null&&team.players.length>=team.playersPerTeam))return;
+  const version=generation.current;
+  joining.current=true;setBusy(true);setError('');setMessage('');
+  try{await acceptTeamPlace(cid,tid,teamId,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setMessage('Presença na equipa confirmada pelo servidor.');await load(version);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível entrar na equipa.');}
+  finally{joining.current=false;if(version===generation.current)setBusy(false);}
  }
  async function share(){if(!team)return;
   try{const url=shareableTeamInvite(cid,tid,team.id);
@@ -52,6 +66,8 @@ export default function TournamentTeamProfileScreen(){
   finally{setLoadingMore(false);}
  }
  const isMember=!!team?.players.some(p=>p.username===auth.username);
+ const full=!!team&&team.playersPerTeam!=null&&team.players.length>=team.playersPerTeam;
+ const accepting=!!tournament&&tournament.status==='DRAFT';
  return <Page><DemoBanner/><Eyebrow>TORNEIO · EQUIPA</Eyebrow>
   <Text style={styles.title}>{team?.name||'Perfil da equipa'}</Text>
   {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||'Multidesporto'}</Text>:null}
@@ -66,7 +82,10 @@ export default function TournamentTeamProfileScreen(){
     </View>):<Text style={styles.subtitle}>Ainda não há jogadores inscritos.</Text>}
    </View>
    <Button title="Partilhar convite da equipa" onPress={()=>{void share();}} secondary/>
-   {!isMember?<Button title={busy?'A confirmar…':'Pedir lugar na equipa'} onPress={()=>{void join();}} disabled={busy}/>:<Message>Já fazes parte desta equipa.</Message>}
+   {isMember?<Message>Já fazes parte desta equipa.</Message>:
+    !accepting?<Message>As inscrições nesta equipa estão encerradas.</Message>:
+    full?<Message>Esta equipa já tem o plantel completo.</Message>:
+    <Button title={busy?'A confirmar…':'Pedir lugar na equipa'} onPress={()=>{void join();}} disabled={busy||loading}/> }
    <Text style={styles.heading}>Jogos da equipa</Text>
    {canListMatches(tournament)?<>
      {matches.map(match=><TournamentMatchCard key={match.id} match={match}/>)}
