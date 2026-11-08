@@ -14,7 +14,7 @@ test('team balance endpoints preserve server-only authorization and explicit POS
 test('only organizer of eligible community session sees team balancing',()=>{
  const screen=read('app/sessions/[id].tsx');
  assert.match(screen,/auth\.token&&owner&&detail/);
- assert.match(screen,/detail\.communityId&&detail\.teamBalanceSupported/);
+ assert.match(screen,/detail\.communityId\?<View style=\{styles\.editor\}>/);
  assert.match(screen,/suggestSessionTeams\(id,auth\.token,teamSource\)/);
  assert.match(screen,/confirmSessionTeams\(id,auth\.token!,teamSource\)/);
  assert.match(screen,/Alert\.alert\('Confirmar equipas\?'/);
@@ -29,9 +29,9 @@ test('team response is server sourced and typed',()=>{
 
 test('random team option is available without rankings and never uses server ranking endpoint',()=>{
  assert.match(screen,/title="Equipas aleatórias"/);
- assert.match(screen,/teamSource==='RANDOM'\?drawRandomTeams\(participants\):await suggestSessionTeams/);
- assert.match(screen,/teamSource==='RANDOM'\?\s*'Sortear equipas'/);
- assert.match(screen,/teamSource==='RANDOM'\?<Button secondary title="Sortear novamente"/);
+ assert.match(screen,/\(teamSource==='RANDOM'\|\|!detail\.teamBalanceSupported\)\?drawRandomTeams\(participants\):await suggestSessionTeams/);
+ assert.match(screen,/\(!detail\.teamBalanceSupported\|\|teamSource==='RANDOM'\)\?'Sortear equipas'/);
+ assert.match(screen,/\(teamSource==='RANDOM'\|\|!detail\.teamBalanceSupported\)\?<Button secondary title="Sortear novamente"/);
  assert.match(screen,/Ainda não guarda as equipas no servidor/);
  assert.match(screen,/teamsBusy\|\|teamSource==='RANDOM'/);
 });
