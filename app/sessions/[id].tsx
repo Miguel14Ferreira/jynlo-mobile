@@ -11,7 +11,6 @@ import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
-import {drawRandomTeams} from '../../src/lib/random-teams';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -153,19 +152,19 @@ export default function SessionScreen(){
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsBusy)return;
     setTeamsBusy(true);setTeamsError('');setTeamsMessage('');setTeamPreview(null);
-    try{setTeamPreview((teamSource==='RANDOM'||!detail.teamBalanceSupported)?drawRandomTeams(participants):await suggestSessionTeams(id,auth.token,teamSource));}
+    try{setTeamPreview(await suggestSessionTeams(id,auth.token,!detail.teamBalanceSupported?'RANDOM':teamSource));}
     catch(e){setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');}
     finally{setTeamsBusy(false);}
   }
   function persistBalancedTeams(){
-    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy||teamSource==='RANDOM')return;
+    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy)return;
     // Confirming recalculates the current roster on the server, never trusts the client preview.
     Alert.alert('Confirmar equipas?',
-      'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
+      teamSource==='RANDOM'||!detail.teamBalanceSupported?'O servidor vai guardar exatamente as equipas sorteadas, se a lista de participantes não tiver mudado.':'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
       [{text:'Voltar',style:'cancel'},{text:'Confirmar equipas',onPress:()=>{
         if(teamsBusy)return;
         setTeamsBusy(true);setTeamsError('');setTeamsMessage('');
-        void confirmSessionTeams(id,auth.token!,teamSource)
+        void confirmSessionTeams(id,auth.token!,!detail.teamBalanceSupported?'RANDOM':teamSource,teamPreview)
           .then(result=>{setTeamPreview(result);setTeamsMessage('Equipas confirmadas pelo servidor.');return load();})
           .catch(()=>{setTeamPreview(null);setTeamsError('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.');})
           .finally(()=>setTeamsBusy(false));
@@ -312,11 +311,11 @@ export default function SessionScreen(){
           {teamsError?<Message tone="error">{teamsError}</Message>:null}
           {teamsMessage?<Message>{teamsMessage}</Message>:null}
           {teamPreview?<View style={styles.editor}>
-            <Text style={styles.hint}>{(teamSource==='RANDOM'||!detail.teamBalanceSupported)?'Sorteio local, sem classificação. Ainda não guarda as equipas no servidor.':`${teamPreview.playersWithStats} de ${teamPreview.totalPlayers} jogadores com estatísticas.`}</Text>
+            <Text style={styles.hint}>{(teamSource==='RANDOM'||!detail.teamBalanceSupported)?'Sorteio sem classificação. Confirma para guardar estas equipas para todos os participantes.':`${teamPreview.playersWithStats} de ${teamPreview.totalPlayers} jogadores com estatísticas.`}</Text>
             {renderTeam('Equipa A',teamPreview.teamA,teamPreview.teamAScore)}
             {renderTeam('Equipa B',teamPreview.teamB,teamPreview.teamBScore)}
-            {(teamSource==='RANDOM'||!detail.teamBalanceSupported)?<Button secondary title="Sortear novamente" disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:
-             <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>}
+            {(teamSource==='RANDOM'||!detail.teamBalanceSupported)?<Button secondary title="Sortear novamente" disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:null}
+            <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>
           </View>:null}
         </View>:null}
         <Text style={styles.hint}>Convidar uma pessoa que já tem conta Jynlo:</Text>
