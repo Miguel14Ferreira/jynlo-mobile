@@ -54,6 +54,7 @@ export interface SessionParticipant {
   username: string;
   attendanceStatus: 'PENDING' | 'ATTENDED' | 'NO_SHOW' | 'LATE_CANCELLED';
   joinedAt: string;
+  teamCode?: 'A' | 'B' | null;
   profilePicUrl?: string | null;
 }
 export interface SessionTeamPlayer {
