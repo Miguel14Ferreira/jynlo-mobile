@@ -93,6 +93,16 @@ jobs:
           fi
           test -s "$csr"
           echo "Chave de assinatura validada antes da compilação."
+      - name: Mostrar SHA-1 público do certificado de assinatura para OAuth Android
+        env:
+          JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
+          JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Apenas a impressão digital pública, nunca a chave privada ou passwords.
+          keytool -list -v -keystore "$JYNLO_PLAY_UPLOAD_KEYSTORE_PATH" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" | grep -E '^\s*SHA1:'
+          echo "Regista este SHA-1 no OAuth Android com o package com.jynlo.app para APKs instaladas fora da Play Store."
       - name: Aplicar assinatura de envio à release gerada
         run: node scripts/configure-play-signing.cjs android/app/build.gradle
       - name: Gerar APK release assinada para testes
