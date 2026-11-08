@@ -59,6 +59,7 @@ export default function JynloFeedHome(){
   const [storyViewer,setStoryViewer]=useState<StoriesGroup|null>(null);
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
+  const [composerOpen,setComposerOpen]=useState(false);
   const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia|null>(null);
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
@@ -91,7 +92,7 @@ export default function JynloFeedHome(){
     }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
   }
   async function submitPost(){if(!requireLogin()||publishing||(!composerText.trim()&&!composerMedia))return;
-    setPublishing(true);try{await publishPost(composerText,composerMedia,auth.token,auth.username);setComposerText('');setComposerMedia(null);await load();}
+    setPublishing(true);try{await publishPost(composerText,composerMedia,auth.token,auth.username);setComposerText('');setComposerMedia(null);setComposerOpen(false);await load();}
     catch(e){Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível publicar.');}finally{setPublishing(false);}
   }
   async function submitStory(){if(!requireLogin()||storyPublishing||!storyMedia)return;
@@ -145,10 +146,10 @@ export default function JynloFeedHome(){
         <View style={styles.storyRing}><CircleAvatar name={group.name} image={group.avatar} size={57}/></View><Text style={styles.storyItemName} numberOfLines={1}>{group.name}</Text></Pressable>)}</ScrollView>
         :<Pressable onPress={()=>requireLogin()&&setStoryComposer(true)} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><Text style={{color:TEAL,fontSize:23}}>{auth.token?'＋':'◎'}</Text></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
     </View>
-    {auth.token?<View style={styles.composerCard}><Text style={styles.composerHeading}>Partilhar com a comunidade</Text><TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que se passa na tua vida desportiva?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
+    {auth.token?<View style={styles.composerCard}><Pressable accessibilityRole="button" accessibilityLabel={composerOpen?'Fechar criação de publicação':'Criar publicação'} onPress={()=>setComposerOpen(open=>!open)} style={styles.composerBottom}><CircleAvatar name={auth.username||'Jynlo'} size={34}/><Text style={[styles.composerHeading,{flex:1}]}>{composerOpen?'Nova publicação':'Partilhar um momento…'}</Text><Text style={{color:TEAL,fontSize:20}}>{composerOpen?'−':'＋'}</Text></Pressable>{composerOpen?<><TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que se passa na tua vida desportiva?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
       {composerMedia?<View style={styles.attachedMedia}><Text style={styles.attachedText}>{composerMedia.type==='image'?'Foto':'Vídeo'}: {composerMedia.fileName}</Text><Pressable onPress={()=>setComposerMedia(null)}><Text style={{color:TEAL,fontWeight:'800'}}>Remover</Text></Pressable></View>:null}
       <View style={styles.composerBottom}><Pressable onPress={()=>{void pickMedia(setComposerMedia);}} style={styles.attachButton}><Text style={styles.attachIcon}>▧</Text><Text style={styles.attachText}>Foto / vídeo</Text></Pressable><Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text><Pressable onPress={()=>{void submitPost();}} style={[styles.primaryButton,(!composerText.trim()&&!composerMedia||publishing)&&{opacity:.5}]} disabled={publishing||(!composerText.trim()&&!composerMedia)}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Publicar'}</Text></Pressable></View>
-    </View>:<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>}
+    </>:null}</View>:<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>}
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
     {loading&&posts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
