@@ -93,10 +93,22 @@ export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
   });
   summaries.push(...batch);
  }
- // The server already restricts peers to accessible conversations. A valid
- // conversation may not have a latest message yet; do not hide it from the inbox.
- return summaries.filter(s=>s.kind==='direct'&&peers.some(peer=>peer.toLowerCase()===s.id.toLowerCase()))
-   .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
+ // The peers endpoint is authoritative for accessible conversations. The
+ // summaries endpoint may omit a conversation that has no messages yet.
+ const authorized=new Map(peers.map(peer=>[peer.toLowerCase(),peer]));
+ const returned=new Set<string>();
+ const visible=summaries.filter(s=>{
+  if(s?.kind!=='direct'||typeof s.id!=='string')return false;
+  const key=s.id.toLowerCase();
+  if(!authorized.has(key)||returned.has(key))return false;
+  returned.add(key);
+  return true;
+ });
+ for(const [key,peer] of authorized){
+  if(!returned.has(key))visible.push({kind:'direct',id:peer,latestMessageId:null,
+   latestText:null,latestSender:null,latestAt:null,unreadCount:0});
+ }
+ return visible.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 export async function directChatHistory(peer:string,token:string):Promise<DirectChatEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para ver as mensagens privadas.');
