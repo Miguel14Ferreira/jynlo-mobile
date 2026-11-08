@@ -6,22 +6,15 @@ import * as ImagePicker from 'expo-image-picker';
 import {VideoView,useVideoPlayer} from 'expo-video';
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
-import {discoverSessions} from '../../src/lib/api';
-import {mySessions} from '../../src/lib/parity-api';
-import {myCommunities} from '../../src/lib/community-api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,discoverPeople,resolveJynloMedia} from '../../src/lib/social-feed-api';
-import {futureWeek,groupStories,uniqueSessions,validateMedia} from '../../src/lib/social-feed-core.cjs';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {C} from '../../src/lib/theme';
-import type {FeedItem,SocialStory,SocialComment,SessionSummary,CommunityGroup,FeedUserSuggestion,MobileMedia} from '../../src/lib/types';
+import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
 const INDIGO='#051824',PANEL='#082635',BORDER='#0B5264',TEAL='#22DFCB',MUTED='#A6C6CD',WHITE='#F6FCFE';
 const maxPostLength=1000;
 const startLetter=(s:string)=>s.replace(/^@/,'').charAt(0).toUpperCase()||'J';
-const prettyDate=(s:string|null|undefined)=>{
-  if(!s)return 'Data a confirmar';const d=new Date(s);if(!Number.isFinite(d.getTime()))return 'Data a confirmar';
-  return d.toLocaleDateString('pt-PT',{weekday:'short',day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
-};
 const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return 'Recentemente';const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return 'Agora';if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
 
@@ -58,16 +51,10 @@ function StoryViewer({group,onClose,onDeleted}:{group:StoriesGroup|null;onClose:
     </SafeAreaView>
   </Modal>;
 }
-function WeekTile({icon,title,detail,footer,onPress}:{icon:string;title:string;detail:string;footer:string;onPress:()=>void}){
-  return <Pressable onPress={onPress} style={styles.weekCard} accessibilityRole="button"><View style={styles.weekIcon}><Text style={styles.weekIconText}>{icon}</Text></View><Text style={styles.weekTitle}>{title}</Text><Text style={styles.weekDetail} numberOfLines={3}>{detail}</Text><View style={{flex:1}}/><Text style={styles.weekFooter}>{footer}  ↗</Text></Pressable>;
-}
-
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
   const [posts,setPosts]=useState<FeedItem[]>([]);
   const [stories,setStories]=useState<SocialStory[]>([]),[ownStories,setOwnStories]=useState<SocialStory[]>([]);
-  const [weekSessions,setWeekSessions]=useState<SessionSummary[]>([]),[weekOffers,setWeekOffers]=useState<SessionSummary[]>([]),[communities,setCommunities]=useState<CommunityGroup[]>([]);
-  const [people,setPeople]=useState<FeedUserSuggestion[]>([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [storyViewer,setStoryViewer]=useState<StoriesGroup|null>(null);
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
@@ -81,20 +68,11 @@ export default function JynloFeedHome(){
     const fetches=await Promise.allSettled([
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?storyFeed(auth.token):Promise.resolve([]),
-      auth.token?myStories(auth.token,auth.username):Promise.resolve([]),
-      auth.token?mySessions(auth.token,auth.username):Promise.resolve({created:[],joined:[],waitlisted:[]}),
-      discoverSessions({availableOnly:true},auth.token,auth.username||undefined),
-      auth.token&&auth.username?myCommunities(auth.token,auth.username):Promise.resolve([]),
-      auth.token?discoverPeople(auth.token):Promise.resolve([])
+      auth.token?myStories(auth.token,auth.username):Promise.resolve([])
     ]);
     if(id!==reloadNumber.current)return;
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
-    setPosts(value(0,[] as FeedItem[]));setStories(value(1,[] as SocialStory[]));setOwnStories(value(2,[] as SocialStory[]));
-    const week=value(3,{created:[] as SessionSummary[],joined:[] as SessionSummary[],waitlisted:[] as SessionSummary[]});
-    const weekItems=uniqueSessions(week.created,week.joined).filter(s=>futureWeek(s)).sort((a,b)=>Date.parse(a.gameDate)-Date.parse(b.gameDate));
-    setWeekSessions(weekItems);
-    setWeekOffers(value(4,[] as SessionSummary[]).filter(s=>futureWeek(s)).sort((a,b)=>Date.parse(a.gameDate)-Date.parse(b.gameDate)));
-    setCommunities(value(5,[] as CommunityGroup[]));setPeople(value(6,[] as FeedUserSuggestion[]));
+    setPosts(value(0,[] as FeedItem[]).filter(item=>item.type==='POST'));setStories(value(1,[] as SocialStory[]));setOwnStories(value(2,[] as SocialStory[]));
     if(fetches[0].status==='rejected')setError('Não foi possível carregar o feed. Confirma a ligação e tenta novamente.');
     setLoading(false);
   },[auth.token,auth.username]);
@@ -161,55 +139,25 @@ export default function JynloFeedHome(){
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><Text style={styles.headerIcon}>♧</Text><View style={styles.pulse}/></Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
-    <View style={styles.hero}>
-      <Text style={styles.heroEyebrow}>{auth.token?'A TUA COMUNIDADE DESPORTIVA':'BEM-VINDO À JYNLO'}</Text>
-      <Text style={styles.heroTitle}>Feed</Text>
-      <Text style={styles.heroSub}>{auth.token?'Acompanha os amigos, as sessões e as novidades das tuas comunidades.':'Descobre sessões e comunidades. Entra com a tua conta para partilhares os teus momentos.'}</Text>
-    </View>
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories" action={auth.token?'+ Criar Story':'Entrar'} onPress={()=>requireLogin()&&setStoryComposer(true)}/>
-      <Text style={styles.storiesIntro}>{auth.token?'Os melhores momentos dos teus amigos e comunidades, durante 24 horas.':'Inicia sessão para acompanhares as Stories dos teus amigos e comunidades.'}</Text>
       {storyGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{storyGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
         <View style={styles.storyRing}><CircleAvatar name={group.name} image={group.avatar} size={57}/></View><Text style={styles.storyItemName} numberOfLines={1}>{group.name}</Text></Pressable>)}</ScrollView>
         :<Pressable onPress={()=>requireLogin()&&setStoryComposer(true)} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><Text style={{color:TEAL,fontSize:23}}>{auth.token?'＋':'◎'}</Text></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
     </View>
-    <View style={styles.weekPanel}><SectionHeader title={auth.token?'A minha semana desportiva':'Descobre a tua próxima sessão'} action={auth.token?'Ver todas ↗':'Explorar ↗'} onPress={()=>router.push(auth.token?'/my-sessions':'/(tabs)/explore')}/>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRail}>
-        {auth.token?<WeekTile icon="▦" title="Os meus próximos jogos" detail={weekSessions.length?`${weekSessions[0]!.sport} · ${weekSessions[0]!.city}\n${prettyDate(weekSessions[0]!.gameDate)}`:'Ainda não tens jogos marcados para os próximos 7 dias.'} footer="As minhas sessões" onPress={()=>router.push('/my-sessions')}/>:null}
-        <WeekTile icon="✦" title="Jogos com vagas" detail={weekOffers.length?`${weekOffers[0]!.sport} · ${weekOffers[0]!.city}\n${Math.max(0,weekOffers[0]!.maxParticipants-weekOffers[0]!.participantCount)} vagas disponíveis`:'Não há jogos com vagas para os próximos 7 dias.'} footer="Encontrar jogos" onPress={()=>router.push('/(tabs)/explore')}/>
-        <WeekTile icon="◎" title={auth.token?'As minhas comunidades':'Comunidades desportivas'} detail={auth.token&&communities.length?`${communities.slice(0,2).map(c=>c.name).join(' · ')}\n${communities.length} comunidades`:'Encontra pessoas que praticam os mesmos desportos que tu.'} footer="Ver comunidades" onPress={()=>router.push('/(tabs)/communities')}/>
-      </ScrollView>
-    </View>
     {auth.token?<View style={styles.composerCard}><Text style={styles.composerHeading}>Partilhar com a comunidade</Text><TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que se passa na tua vida desportiva?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
       {composerMedia?<View style={styles.attachedMedia}><Text style={styles.attachedText}>{composerMedia.type==='image'?'Foto':'Vídeo'}: {composerMedia.fileName}</Text><Pressable onPress={()=>setComposerMedia(null)}><Text style={{color:TEAL,fontWeight:'800'}}>Remover</Text></Pressable></View>:null}
       <View style={styles.composerBottom}><Pressable onPress={()=>{void pickMedia(setComposerMedia);}} style={styles.attachButton}><Text style={styles.attachIcon}>▧</Text><Text style={styles.attachText}>Foto / vídeo</Text></Pressable><Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text><Pressable onPress={()=>{void submitPost();}} style={[styles.primaryButton,(!composerText.trim()&&!composerMedia||publishing)&&{opacity:.5}]} disabled={publishing||(!composerText.trim()&&!composerMedia)}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Publicar'}</Text></Pressable></View>
-    </View>:<View style={styles.visitorCard}>
-      <Text style={styles.visitorTitle}>A tua próxima sessão está à tua espera.</Text>
-      <Text style={styles.visitorDescription}>Podes descobrir sessões e recintos sem conta. Inicia sessão apenas quando quiseres participar ou publicar.</Text>
-      {weekOffers.slice(0,3).map(session=><Pressable key={session.id} style={styles.visitorSession} accessibilityRole="button"
-        onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(session.id)}})}>
-        <Text style={styles.visitorSessionSport}>{session.sport}</Text>
-        <Text style={styles.visitorSessionMeta}>{session.city} · {prettyDate(session.gameDate)}</Text>
-        <Text style={styles.visitorSessionMeta}>{Math.max(0,session.maxParticipants-session.participantCount)} vagas disponíveis · Ver detalhes ↗</Text>
-      </Pressable>)}
-      <Pressable onPress={()=>router.push('/(tabs)/explore')} style={styles.visitorPrimary} accessibilityRole="button"><Text style={styles.visitorPrimaryText}>Explorar todas as sessões</Text></Pressable>
-      <Pressable onPress={()=>router.push('/login')} style={styles.visitorSecondary} accessibilityRole="button"><Text style={styles.visitorSecondaryText}>Já tenho conta · Entrar</Text></Pressable>
-    </View>}
-    <View style={styles.latestTitle}><Text style={styles.sectionTitle}>{auth.token?'Últimas publicações':'Sessões e comunidade'}</Text><Pressable onPress={()=>router.push('/(tabs)/explore')}><Text style={styles.link}>Explorar ↗</Text></Pressable></View>
+    </View>:<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>}
+    <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
     {loading&&posts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
     {!loading&&!error&&auth.token&&posts.length===0?<Text style={styles.mutedText}>Ainda não há publicações. Partilha o teu primeiro momento!</Text>:null}
   </View>;
-  const Footer=()=> <View style={[styles.screenPad,{paddingTop:12,paddingBottom:32}]}><View style={styles.discoveryCard}>
-    <SectionHeader title={auth.token?'Pessoas para conhecer':'Comunidades para descobrir'} action={auth.token?'Ver todos ↗':'Explorar ↗'} onPress={()=>router.push(auth.token?'/people':'/(tabs)/communities')}/>
-    {people.slice(0,3).map(person=><View key={person.username} style={styles.personRow}><CircleAvatar name={person.displayName} image={person.photoUrl} size={34}/><View style={{flex:1}}><Text style={styles.personName}>{person.displayName}</Text><Text style={styles.mutedText}>@{person.username} · {person.sport||'Desporto'}</Text></View></View>)}
-    {!people.length?<Text style={styles.mutedText}>{auth.token?'Descobre pessoas com quem praticar desporto.':'Encontra grupos, jogos e pessoas com interesses desportivos semelhantes.'}</Text>:null}
-    <Pressable onPress={()=>router.push(auth.token?'/people':'/(tabs)/communities')}><Text style={styles.link}>{auth.token?'Encontrar pessoas ↗':'Ver comunidades ↗'}</Text></Pressable>
-  </View></View>;
   if(!auth.ready)return <SafeAreaView style={{flex:1,backgroundColor:INDIGO,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></SafeAreaView>;
   if(!auth.token&&!auth.browsingAsGuest)return <Redirect href="/welcome"/>;
   return <SafeAreaView style={{flex:1,backgroundColor:INDIGO}} edges={['top','left','right']}>
-    <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()} ListFooterComponent={Footer()}
+    <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
     <StoryViewer group={storyViewer} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()}/>
