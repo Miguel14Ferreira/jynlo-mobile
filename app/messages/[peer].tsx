@@ -22,6 +22,7 @@ export default function DirectConversation(){
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
+ const [syncWarning,setSyncWarning]=useState('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
@@ -47,12 +48,14 @@ export default function DirectConversation(){
   try{
    const results=await directChatHistory(peer,auth.token);
    if(version!==generation.current)return;
-   setMessages(results);
+   setMessages(results);setSyncWarning('');
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
    if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
   }catch(e){
-   if(version===generation.current&&!silent)
-    setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+   if(version===generation.current){
+    if(silent)setSyncWarning('Não foi possível atualizar as mensagens. O histórico apresentado pode estar desatualizado.');
+    else setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+   }
   }finally{
    if(refreshing.current===version)refreshing.current=null;
    if(version===generation.current){
@@ -69,7 +72,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setPhoto(null);setError('');
+   setMessages([]);setDraft('');setPhoto(null);setError('');setSyncWarning('');
    setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
@@ -191,6 +194,7 @@ export default function DirectConversation(){
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
   {!loading&&!error&&messages.length===0?<Message>Ainda não existem mensagens nesta conversa.</Message>:null}
   {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
    <Text style={styles.sender}>{m.username1}</Text>
