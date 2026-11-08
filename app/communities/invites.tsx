@@ -1,5 +1,5 @@
-import React,{useCallback,useState} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import React,{useCallback,useRef,useState} from 'react';
+import {Alert,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {myCommunityInvites,respondCommunityInvite} from '../../src/lib/community-api';
@@ -11,24 +11,58 @@ export default function CommunityInvitesScreen(){
   const [invites,setInvites]=useState<CommunityInvite[]>([]);
   const [loading,setLoading]=useState(false);const [busyId,setBusyId]=useState<number|null>(null);
   const [error,setError]=useState('');const [message,setMessage]=useState('');
-  const reload=useCallback(async()=>{
-    if(!auth.token||!auth.username){setInvites([]);return;}
+  const [loaded,setLoaded]=useState(false);
+  const generation=useRef(0);
+  const responding=useRef(false);
+  const reload=useCallback(async(version=generation.current)=>{
+    if(!auth.token||!auth.username){
+      if(version===generation.current){setInvites([]);setLoaded(false);setLoading(false);}
+      return;
+    }
     setLoading(true);setError('');
-    try{setInvites(await myCommunityInvites(auth.token,auth.username));}
-    catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar os convites.');}
-    finally{setLoading(false);}
+    try{
+      const next=await myCommunityInvites(auth.token,auth.username);
+      if(version!==generation.current)return;
+      setInvites(next);setLoaded(true);
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os convites.');
+    }finally{if(version===generation.current)setLoading(false);}
   },[auth.token,auth.username]);
-  useFocusEffect(useCallback(()=>{void reload();},[reload]));
+  useFocusEffect(useCallback(()=>{
+    const version=++generation.current;
+    responding.current=false;setBusyId(null);setInvites([]);setLoaded(false);
+    setError('');setMessage('');
+    void reload(version);
+    return ()=>{generation.current++;responding.current=false;};
+  },[reload]));
   async function respond(inviteId:number,action:'accept'|'reject'){
-    if(busyId!==null||!auth.token||!auth.username)return;
-    setBusyId(inviteId);setError('');setMessage('');
+    if(responding.current||!auth.token||!auth.username)return;
+    const version=generation.current;
+    responding.current=true;setBusyId(inviteId);setError('');setMessage('');
     try{
       const group=await respondCommunityInvite(inviteId,action,auth.token,auth.username);
+      if(version!==generation.current)return;
+      // A resposta foi aceite pelo servidor; não mostrar este convite outra vez.
+      setInvites(current=>current.filter(invite=>invite.id!==inviteId));
       setMessage(action==='accept'?'Convite aceite. Bem-vindo à comunidade!':'Convite recusado.');
-      await reload();
-      if(action==='accept'&&group?.id)router.push({pathname:'/communities/[id]',params:{id:String(group.id)}});
-    }catch(e){setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Verifica a lista antes de repetires.');}
-    finally{setBusyId(null);}
+      if(action==='accept'&&group?.id){
+        router.push({pathname:'/communities/[id]',params:{id:String(group.id)}});
+      }else{
+        await reload(version);
+        if(version===generation.current)setMessage(action==='accept'?'Convite aceite. Bem-vindo à comunidade!':'Convite recusado.');
+      }
+    }catch(e){
+      if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Verifica a lista antes de repetires.');
+    }finally{
+      if(version===generation.current){responding.current=false;setBusyId(null);}
+    }
+  }
+  function confirmReject(inviteId:number,communityName:string){
+    if(responding.current)return;
+    Alert.alert('Recusar convite',`Queres recusar o convite para ${communityName}?`,[
+      {text:'Voltar',style:'cancel'},
+      {text:'Recusar',style:'destructive',onPress:()=>{void respond(inviteId,'reject');}}
+    ]);
   }
   return <Page><DemoBanner/><Eyebrow>COMUNIDADES</Eyebrow>
     <Text style={styles.title}>Os teus <Text style={{color:C.mint}}>convites.</Text></Text>
@@ -36,8 +70,9 @@ export default function CommunityInvitesScreen(){
     {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/invites'}})}/>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
+    {error?<Button secondary title="Atualizar convites" disabled={loading||busyId!==null} onPress={()=>{void reload();}}/>:null}
     {message?<Message>{message}</Message>:null}
-    {!loading&&auth.token&&invites.length===0?<View style={styles.empty}>
+    {!loading&&loaded&&!error&&auth.token&&invites.length===0?<View style={styles.empty}>
       <Text style={{fontSize:40}}>✉️</Text>
       <Text style={styles.emptyTitle}>Sem convites pendentes</Text>
       <Text style={styles.sub}>Quando alguém te convidar para uma comunidade, o convite aparecerá aqui.</Text>
@@ -47,7 +82,7 @@ export default function CommunityInvitesScreen(){
       <Text style={styles.sub}>Convidado por @{invite.invitedByUsername}</Text>
       <View style={styles.buttons}>
         <View style={{flex:1}}><Button title={busyId===invite.id?'A processar…':'Aceitar'} disabled={busyId!==null} onPress={()=>{void respond(invite.id,'accept');}}/></View>
-        <View style={{flex:1}}><Button secondary title="Recusar" disabled={busyId!==null} onPress={()=>{void respond(invite.id,'reject');}}/></View>
+        <View style={{flex:1}}><Button secondary title="Recusar" disabled={busyId!==null} onPress={()=>confirmReject(invite.id,invite.communityName)}/></View>
       </View>
     </View>)}
   </Page>;
