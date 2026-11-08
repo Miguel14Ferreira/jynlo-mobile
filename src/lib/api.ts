@@ -137,7 +137,7 @@ export async function suggestSessionTeams(id:number,token:string,source:'FORM'|'
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para consultar equipas.');
  return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/suggestion?source=${source}`,{token});
 }
-export async function confirmSessionTeams(id:number,token:string,source:'FORM'|'EXCEL_POINTS'):Promise<SessionTeamSuggestion>{
+export async function confirmSessionTeams(id:number,token:string,source:'FORM'|'EXCEL_POINTS'|'RANDOM',preview?:SessionTeamSuggestion):Promise<SessionTeamSuggestion>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para confirmar equipas.');
  return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/confirm?source=${source}`,{
   token,method:'POST',...(source==='RANDOM'?{body:{teamA:preview?.teamA.map(p=>p.username)??[],teamB:preview?.teamB.map(p=>p.username)??[]}}:{})
