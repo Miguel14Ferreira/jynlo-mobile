@@ -25,6 +25,7 @@ export default function CommunityDetailScreen(){
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
   const [requestsError,setRequestsError]=useState('');
   const [myRequest,setMyRequest]=useState<CommunityJoinRequest|null>(null);
+  const [myRequestError,setMyRequestError]=useState('');
   const [inviteName,setInviteName]=useState('');const [busy,setBusy]=useState(false);
   const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [notice,setNotice]=useState('');
   const generation=useRef(0);
@@ -33,7 +34,7 @@ export default function CommunityDetailScreen(){
       if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
       return;
     }
-    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
+    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setMyRequestError('');setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
     try{
       const c=await communityDetails(id,auth.token,auth.username);
       if(version!==generation.current)return;
@@ -58,8 +59,8 @@ export default function CommunityDetailScreen(){
           try{
             const next=await myPendingCommunityRequest(id,auth.token,auth.username);
             if(version!==generation.current)return;
-            setMyRequest(next);
-          }catch{if(version===generation.current)setMyRequest(null);}
+            setMyRequest(next);setMyRequestError('');
+          }catch{if(version===generation.current){setMyRequest(null);setMyRequestError('Não foi possível confirmar o estado do teu pedido de adesão.');}}
         }else setMyRequest(null);
       }
     }catch(e){
@@ -69,7 +70,7 @@ export default function CommunityDetailScreen(){
   useFocusEffect(useCallback(()=>{
     const version=++generation.current;
     // Never show another community or account while the new request is pending.
-    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);
+    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);setMyRequestError('');
     setError('');setNotice('');setBusy(false);
     void reload(version);
     return ()=>{generation.current++;};
@@ -144,7 +145,9 @@ export default function CommunityDetailScreen(){
       <Text style={styles.subtitle}>{community.description||'Mais do que desporto, uma forma de encontrar pessoas.'}</Text>
       {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?'A confirmar…':'Juntar-me à comunidade'} disabled={busy} onPress={()=>{void take('join');}}/>:null}
-      {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest?<Button title={busy?'A enviar…':'Pedir para entrar'} disabled={busy} onPress={()=>{void take('request');}}/>:null}
+      {!role&&myRequestError?<Message tone="error">{myRequestError}</Message>:null}
+      {!role&&myRequestError?<Button secondary title="Verificar estado do pedido novamente" disabled={busy||loading} onPress={()=>{void reload();}}/>:null}
+      {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest&&!myRequestError?<Button title={busy?'A enviar…':'Pedir para entrar'} disabled={busy} onPress={()=>{void take('request');}}/>:null}
       {!role&&myRequest?<Message>O teu pedido de entrada está pendente de aprovação.</Message>:null}
       {!role&&!auth.token?<Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/communities/${id}`}})}/>:null}
       {teamDestination&&role?<Button title="Continuar para a equipa do convite" onPress={()=>router.replace(teamDestination as any)}/>:null}
