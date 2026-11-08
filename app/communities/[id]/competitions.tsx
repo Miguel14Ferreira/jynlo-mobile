@@ -24,9 +24,9 @@ export default function CommunityCompetitions(){
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
-   if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);setChampionships([]);}return;}
-   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setError('Comunidade inválida.');}return;}
-   setLoading(true);setError('');setChampionshipError('');setCommunity(null);setTournaments([]);
+   if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);setChampionships([]);setChampionshipError('');}return;}
+   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setChampionships([]);setChampionshipError('');setError('Comunidade inválida.');}return;}
+   setLoading(true);setError('');setChampionshipError('');setCommunity(null);setTournaments([]);setChampionships([]);
    try{
     const c=await communityDetails(id,auth.token,auth.username);
     if(!active)return;
