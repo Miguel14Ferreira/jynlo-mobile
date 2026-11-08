@@ -18,7 +18,16 @@ export async function chooseGoogleIdentity():Promise<string|null>{
   throw Error('O login Google ainda não está configurado no servidor Jynlo. Não é possível iniciar sessão.');
  GoogleSignin.configure({webClientId,offlineAccess:false});
  await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog:true});
- const result=await GoogleSignin.signIn();
+ let result;
+ try{
+  result=await GoogleSignin.signIn();
+ }catch(error){
+  const code=typeof error==='object'&&error!==null&&'code' in error?String(error.code):'';
+  const message=error instanceof Error?error.message:'';
+  if(code==='10'||code==='DEVELOPER_ERROR'||message.includes('DEVELOPER_ERROR'))
+   throw Error('Google Sign-In recusado (DEVELOPER_ERROR). A assinatura SHA-1 desta APK e o pacote com.jynlo.app têm de estar registados no cliente OAuth Android do mesmo projeto Google Cloud que o cliente Web da Jynlo.');
+  throw error;
+ }
  if(result.type==='cancelled')return null;
  if(result.type!=='success'||!result.data.idToken)
   throw Error('A Google não devolveu uma credencial válida. Verifica a configuração OAuth da app Android.');
