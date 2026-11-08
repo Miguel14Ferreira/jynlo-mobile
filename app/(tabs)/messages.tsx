@@ -42,8 +42,13 @@ export default function MessagesScreen(){
     ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
-   const partial=groups.status==='rejected'||privateChats.status==='rejected'||requests.status==='rejected';
-   setChatWarning(partial?'Não foi possível sincronizar todas as conversas. Os dados anteriores podem estar desatualizados.':'');
+   const failedSources=[
+    ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
+    ...(groups.status==='rejected'?['comunidades']:[]),
+    ...(requests.status==='rejected'?['convites']:[])
+   ];
+   const partial=failedSources.length>0;
+   setChatWarning(partial?`Não foi possível sincronizar: ${failedSources.join(', ')}. Os dados anteriores podem estar desatualizados. Tenta atualizar novamente.`:'');
    if(!partial)setLastSyncedAt(new Date());
   }catch(e){
    if(version===generation.current&&identity.current===auth.username+'|'+auth.token){
