@@ -45,3 +45,11 @@ test('Feed apresenta stories sem painel pesado e compositor recolhido por defeit
  assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:10\}/);
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
 });
+
+test('criar story mantém-se acessível na fila mesmo quando já existem stories',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(feed,/storyGroups\.length\?<ScrollView[^]*?accessibilityLabel="Criar a minha story"/);
+ assert.match(feed,/onPress=\{\(\)=>setStoryComposer\(true\)\} style=\{styles\.storyItem\}/);
+ assert.match(feed,/>A tua story<\/Text>/);
+ assert.match(feed,/storyCreateBadge:\{/);
+});
