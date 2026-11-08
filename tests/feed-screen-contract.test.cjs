@@ -36,3 +36,12 @@ test('Feed mobile usa hero compacto sem recorte de imagem e separadores respeita
  assert.match(tabs,/useSafeAreaInsets/);
  assert.match(tabs,/Math\.max\(insets\.bottom,8\)/);
 });
+
+test('Feed apresenta stories sem painel pesado e compositor recolhido por defeito',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(feed,/const \[composerOpen,setComposerOpen\]=useState\(false\)/);
+ assert.match(feed,/\{composerOpen\?<><TextInput/);
+ assert.match(feed,/storiesCard:\{paddingVertical:10,gap:8\}/);
+ assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:10\}/);
+ assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
+});
