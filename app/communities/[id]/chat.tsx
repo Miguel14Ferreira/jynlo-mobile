@@ -17,7 +17,7 @@ import type {CommunityChatEntry} from '../../../src/lib/types';
 export default function CommunityChatScreen(){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
- const generation=useRef(0);
+ const generation=useRef(0),sendingNow=useRef(false),uploadingNow=useRef(false);
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
@@ -43,6 +43,7 @@ export default function CommunityChatScreen(){
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');setLoading(true);
    setDraft('');setPhoto(null);setConnection('offline');
+   sendingNow.current=false;uploadingNow.current=false;setSending(false);setUploading(false);
    setCanSendPhoto(false);
    if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active&&version===generation.current)setCanSendPhoto(ok);}).catch(()=>{});
    void refresh(version);
@@ -55,27 +56,45 @@ export default function CommunityChatScreen(){
    return ()=>{active=false;generation.current++;disconnect();};
  },[refresh,id,auth.token,auth.username]));
  async function send(){
-  if(sending||!auth.token||!auth.username||!draft.trim())return;
-  const message=draft.trim();setSending(true);setError('');
-  try{await sendCommunityMessage(id,message,auth.token,auth.username);setDraft('');await refresh();}
-  catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');}
-  finally{setSending(false);}
+  if(sendingNow.current||uploadingNow.current||!auth.token||!auth.username||!draft.trim())return;
+  const version=generation.current,token=auth.token,username=auth.username;
+  const message=draft.trim();
+  sendingNow.current=true;setSending(true);setError('');
+  try{
+   await sendCommunityMessage(id,message,token,username);
+   if(version!==generation.current)return;
+   setDraft(current=>current===message?'':current);
+   await refresh(version);
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
+  }finally{
+   if(version===generation.current){sendingNow.current=false;setSending(false);}
+  }
  }
  async function choosePhoto(){
-  if(!auth.token||!canSendPhoto||uploading||sending)return;
+  if(!auth.token||!canSendPhoto||uploadingNow.current||sendingNow.current)return;
+  const version=generation.current;
   try{
    const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false});
-   if(!selected.canceled&&selected.assets[0])setPhoto(selected.assets[0]);
-  }catch{setError('Não foi possível abrir a galeria.');}
+   if(version!==generation.current)return;
+   if(!selected.canceled&&selected.assets?.[0])setPhoto(selected.assets[0]);
+  }catch{
+   if(version===generation.current)setError('Não foi possível abrir a galeria.');
+  }
  }
  async function uploadPhoto(){
-  if(!auth.token||!photo||!canSendPhoto||uploading||sending)return;
-  setUploading(true);setError('');
+  if(!auth.token||!photo||!canSendPhoto||uploadingNow.current||sendingNow.current)return;
+  const version=generation.current,token=auth.token,selectedPhoto=photo;
+  uploadingNow.current=true;setUploading(true);setError('');
   try{
-   await sendChatPhoto('community',id,auth.token,photo);
-   setPhoto(null);await refresh();
-  }catch(e){setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');}
-  finally{setUploading(false);}
+   await sendChatPhoto('community',id,token,selectedPhoto);
+   if(version!==generation.current)return;
+   setPhoto(null);await refresh(version);
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
+  }finally{
+   if(version===generation.current){uploadingNow.current=false;setUploading(false);}
+  }
  }
  return <Page>
    <DemoBanner/><Eyebrow>CHAT DA COMUNIDADE</Eyebrow><Text style={styles.title}>{name}</Text>
