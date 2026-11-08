@@ -27,3 +27,35 @@
 ### Escopo do primeiro PR de autenticação
 
 O presente PR substitui o redirecionamento de registo por ecrã nativo, introduz o endpoint JSON no backend e disponibiliza confirmação/reenvio e recuperação diretamente dentro da aplicação. **Não significa que toda a paridade esteja pronta**. A fotografia opcional, os App Links verificados e as restantes lacunas deverão ser concluídos em PRs próprios, com testes.
+
+## Auditoria incremental — 2026-11-08 (verificação de rotas Android)
+
+Esta secção distingue **ecrã existente** de **paridade funcional validada**. A presença de uma rota não prova que todos os fluxos, permissões, chamadas de API ou estados de erro estejam corretos.
+
+| Percurso prioritário | Evidência Android no repositório | Estado | Próxima validação |
+|---|---|---|---|
+| Comunidade → chat | `app/communities/[id].tsx` → `app/communities/[id]/chat.tsx` | Ecrã e navegação existentes | Enviar, receber, multimédia e permissões com duas contas reais |
+| Comunidade → competições | `app/communities/[id].tsx` → `app/communities/[id]/competitions.tsx` | Ecrã e navegação existentes | Conferir todos os modos/modalidades e gestão de resultados |
+| Comunidade → criar sessão | `app/communities/[id].tsx` → `app/sessions/create.tsx` | Ecrã e navegação existentes | Repetições, convocatórias, privacidade e presença com contas reais |
+| Sessão → chat | `app/sessions/[id]/chat.tsx` | Ecrã existente | Restringir aos participantes autorizados e testar ciclo de vida |
+| Torneio → detalhe | `app/tournaments/[communityId]/[id].tsx` | Ecrã existente | Grupos, eliminatórias, campeonato, resultados e estatísticas |
+| Feed → stories/publicações | `app/(tabs)/index.tsx` | Redesign implementado e CI validado | Usabilidade e multimédia em Android real |
+| Recintos | `app/venues.tsx`, `app/venues/` | Ecrãs existentes | Criar/sugerir contacto, localização, moderação e avaliações |
+| Mensagens privadas | `app/(tabs)/messages.tsx`, `app/messages/[peer].tsx` | Ecrãs existentes | Testar entrega, não lidas, anexos e chamadas |
+
+### Política de conclusão
+
+- **Implementado**: código e ecrãs nativos presentes; não equivale a validado.
+- **Validado automaticamente**: testes e TypeScript aprovados para o commit correspondente.
+- **Validado ponta a ponta**: fluxo real exercitado em Android com backend e pelo menos duas contas quando aplicável.
+- **Pronto para produção**: validação ponta a ponta, permissões, erros e regressões concluídos.
+
+### Ordem de execução
+
+1. Comunidades: criação, adesão, gestão, convites, chat e sessões.
+2. Sessões: criação, repetições, confirmação, cancelamento, equipas e privacidade.
+3. Competições: formatos por modalidade, campeonatos, classificações, resultados e estatísticas.
+4. Mensagens e chamadas: conversas privadas/de grupo, multimédia e voz/vídeo.
+5. Explorar, recintos, perfil, notificações e acabamento de release.
+
+A APK interna assinada é um **artefacto de testes**, não prova de paridade nem autorização de publicação na Play Store.
