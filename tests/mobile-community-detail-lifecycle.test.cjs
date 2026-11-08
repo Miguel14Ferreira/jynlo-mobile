@@ -30,3 +30,8 @@ test('old membership and invitation mutations cannot change the next community v
  assert.match(source,/if\(version===generation\.current\)setBusy\(false\)/);
  assert.match(source,/await reload\(version\)/);
 });
+
+test('community detail shows a retry when initial loading fails',()=>{
+ assert.match(source,/\{error&&!community&&!loading\?<Button secondary title="Tentar carregar comunidade novamente"/);
+ assert.match(source,/onPress=\{\(\)=>\{void reload\(\);\}\}/);
+});
