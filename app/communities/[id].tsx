@@ -21,6 +21,7 @@ export default function CommunityDetailScreen(){
   const auth=useAuth(),router=useRouter();
   const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
+  const [sessionsError,setSessionsError]=useState('');
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
   const [myRequest,setMyRequest]=useState<CommunityJoinRequest|null>(null);
   const [inviteName,setInviteName]=useState('');const [busy,setBusy]=useState(false);
@@ -31,7 +32,7 @@ export default function CommunityDetailScreen(){
       if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
       return;
     }
-    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setRequests([]);
+    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setSessionsError('');setRequests([]);
     try{
       const c=await communityDetails(id,auth.token,auth.username);
       if(version!==generation.current)return;
@@ -41,8 +42,8 @@ export default function CommunityDetailScreen(){
         try{
           const next=await communitySessions(id,auth.token,auth.username);
           if(version!==generation.current)return;
-          setSessions(next);
-        }catch{if(version===generation.current)setSessions([]);}
+          setSessions(next);setSessionsError('');
+        }catch{if(version===generation.current){setSessions([]);setSessionsError('Não foi possível carregar as sessões. Tenta novamente.');}}
         if(c.myRole==='OWNER'||c.myRole==='ADMIN'){
           try{
             const next=await pendingCommunityRequests(id,auth.token,auth.username);
@@ -51,7 +52,7 @@ export default function CommunityDetailScreen(){
           }catch{if(version===generation.current)setRequests([]);}
         }else setRequests([]);
       }else{
-        setSessions([]);setRequests([]);
+        setSessions([]);setSessionsError('');setRequests([]);
         if(auth.token&&auth.username&&c.visibility==='PRIVATE'){
           try{
             const next=await myPendingCommunityRequest(id,auth.token,auth.username);
@@ -67,7 +68,7 @@ export default function CommunityDetailScreen(){
   useFocusEffect(useCallback(()=>{
     const version=++generation.current;
     // Never show another community or account while the new request is pending.
-    setCommunity(null);setSessions([]);setRequests([]);setMyRequest(null);
+    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setMyRequest(null);
     setError('');setNotice('');setBusy(false);
     void reload(version);
     return ()=>{generation.current++;};
@@ -181,7 +182,9 @@ export default function CommunityDetailScreen(){
       </View>:null}
       {role?<View style={styles.section}>
         <Text style={styles.sectionTitle}>Próximas sessões</Text>
-        {sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
+        {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
+        {sessionsError?<Button secondary title="Tentar carregar sessões novamente" disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
+        {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
         {sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
       </View>:null}
     </>:null}
