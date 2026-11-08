@@ -153,7 +153,7 @@ export default function SessionScreen(){
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsBusy)return;
     setTeamsBusy(true);setTeamsError('');setTeamsMessage('');setTeamPreview(null);
-    try{setTeamPreview(teamSource==='RANDOM'?drawRandomTeams(participants):await suggestSessionTeams(id,auth.token,teamSource));}
+    try{setTeamPreview((teamSource==='RANDOM'||!detail.teamBalanceSupported)?drawRandomTeams(participants):await suggestSessionTeams(id,auth.token,teamSource));}
     catch(e){setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');}
     finally{setTeamsBusy(false);}
   }
@@ -296,26 +296,26 @@ export default function SessionScreen(){
           <Button title="Guardar número de jogadores" disabled={busy} onPress={saveExternalCount}/>
           <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
-        {detail.communityId&&detail.teamBalanceSupported?<View style={styles.editor}>
+        {detail.communityId?<View style={styles.editor}>
           <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
           <Text style={styles.hint}>Escolhe uma classificação para equilibrar equipas no servidor ou sorteia duas equipas sem classificação.</Text>
-          <View style={styles.top}>
+          {detail.teamBalanceSupported?<View style={styles.top}>
             <Button title="Classificação da comunidade" secondary={teamSource!=='FORM'} disabled={teamsBusy}
               onPress={()=>{setTeamSource('FORM');setTeamPreview(null);setTeamsMessage('');}}/>
           </View>
           <Button title="Classificação Excel" secondary={teamSource!=='EXCEL_POINTS'} disabled={teamsBusy}
-            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>
+            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>:null}
           <Button title="Equipas aleatórias" secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
-          <Button title={teamsBusy?'A calcular…':teamSource==='RANDOM'?'Sortear equipas':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
+          <Button title={teamsBusy?'A calcular…':(!detail.teamBalanceSupported||teamSource==='RANDOM')?'Sortear equipas':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
             onPress={()=>{void previewBalancedTeams();}}/>
           {teamsError?<Message tone="error">{teamsError}</Message>:null}
           {teamsMessage?<Message>{teamsMessage}</Message>:null}
           {teamPreview?<View style={styles.editor}>
-            <Text style={styles.hint}>{teamSource==='RANDOM'?'Sorteio local, sem classificação. Ainda não guarda as equipas no servidor.':`${teamPreview.playersWithStats} de ${teamPreview.totalPlayers} jogadores com estatísticas.`}</Text>
+            <Text style={styles.hint}>{(teamSource==='RANDOM'||!detail.teamBalanceSupported)?'Sorteio local, sem classificação. Ainda não guarda as equipas no servidor.':`${teamPreview.playersWithStats} de ${teamPreview.totalPlayers} jogadores com estatísticas.`}</Text>
             {renderTeam('Equipa A',teamPreview.teamA,teamPreview.teamAScore)}
             {renderTeam('Equipa B',teamPreview.teamB,teamPreview.teamBScore)}
-            {teamSource==='RANDOM'?<Button secondary title="Sortear novamente" disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:
+            {(teamSource==='RANDOM'||!detail.teamBalanceSupported)?<Button secondary title="Sortear novamente" disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:
              <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>}
           </View>:null}
         </View>:null}
