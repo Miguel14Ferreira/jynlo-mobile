@@ -11,6 +11,7 @@ import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
+import {drawRandomTeams} from '../../src/lib/random-teams';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -37,7 +38,7 @@ export default function SessionScreen(){
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
-  const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'>('FORM');
+  const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'|'RANDOM'>('FORM');
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
   const [teamsMessage,setTeamsMessage]=useState('');
@@ -152,12 +153,12 @@ export default function SessionScreen(){
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsBusy)return;
     setTeamsBusy(true);setTeamsError('');setTeamsMessage('');setTeamPreview(null);
-    try{setTeamPreview(await suggestSessionTeams(id,auth.token,teamSource));}
+    try{setTeamPreview(teamSource==='RANDOM'?drawRandomTeams(participants):await suggestSessionTeams(id,auth.token,teamSource));}
     catch(e){setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');}
     finally{setTeamsBusy(false);}
   }
   function persistBalancedTeams(){
-    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy)return;
+    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy||teamSource==='RANDOM')return;
     // Confirming recalculates the current roster on the server, never trusts the client preview.
     Alert.alert('Confirmar equipas?',
       'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
@@ -172,7 +173,7 @@ export default function SessionScreen(){
   }
   const renderTeam=(title:string,players:SessionTeamPlayer[],score:number)=>
     <View style={styles.teamPanel}>
-      <Text style={styles.teamHeading}>{title} · Pontuação estimada {score.toFixed(2)}</Text>
+      <Text style={styles.teamHeading}>{title}{teamSource==='RANDOM'?'':` · Pontuação estimada ${score.toFixed(2)}`}</Text>
       {players.map((p,index)=><Text key={p.username+':'+index} style={styles.hint}>
         {p.displayName||p.username}{p.statsAvailable?' · classificação disponível':''}
       </Text>)}
@@ -296,24 +297,26 @@ export default function SessionScreen(){
           <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
         {detail.communityId&&detail.teamBalanceSupported?<View style={styles.editor}>
-          <Eyebrow>EQUILIBRAR EQUIPAS</Eyebrow>
-          <Text style={styles.hint}>O servidor calcula as equipas com base na classificação da comunidade. É necessário ter os jogadores identificados e a sessão completa.</Text>
+          <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
+          <Text style={styles.hint}>Escolhe uma classificação para equilibrar equipas no servidor ou sorteia duas equipas sem classificação.</Text>
           <View style={styles.top}>
             <Button title="Classificação da comunidade" secondary={teamSource!=='FORM'} disabled={teamsBusy}
               onPress={()=>{setTeamSource('FORM');setTeamPreview(null);setTeamsMessage('');}}/>
           </View>
           <Button title="Classificação Excel" secondary={teamSource!=='EXCEL_POINTS'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>
-          <Button title={teamsBusy?'A calcular…':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
+          <Button title="Equipas aleatórias" secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
+            onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
+          <Button title={teamsBusy?'A calcular…':teamSource==='RANDOM'?'Sortear equipas':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
             onPress={()=>{void previewBalancedTeams();}}/>
           {teamsError?<Message tone="error">{teamsError}</Message>:null}
           {teamsMessage?<Message>{teamsMessage}</Message>:null}
           {teamPreview?<View style={styles.editor}>
-            <Text style={styles.hint}>{teamPreview.playersWithStats} de {teamPreview.totalPlayers} jogadores com estatísticas.</Text>
+            <Text style={styles.hint}>{teamSource==='RANDOM'?'Sorteio local, sem classificação. Ainda não guarda as equipas no servidor.':`${teamPreview.playersWithStats} de ${teamPreview.totalPlayers} jogadores com estatísticas.`}</Text>
             {renderTeam('Equipa A',teamPreview.teamA,teamPreview.teamAScore)}
             {renderTeam('Equipa B',teamPreview.teamB,teamPreview.teamBScore)}
-            <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy}
-              onPress={persistBalancedTeams}/>
+            {teamSource==='RANDOM'?<Button secondary title="Sortear novamente" disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:
+             <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>}
           </View>:null}
         </View>:null}
         <Text style={styles.hint}>Convidar uma pessoa que já tem conta Jynlo:</Text>
