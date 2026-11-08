@@ -5,6 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/
 import {useAuth} from '../../../src/lib/auth';
 import {communityDetails} from '../../../src/lib/community-api';
 import {tournamentsForCommunity} from '../../../src/lib/competition-api';
+import {communityChampionships,type CommunityChampionship} from '../../../src/lib/championship-api';
 import {canCreateTournamentForSport,groupCommunityTournaments} from '../../../src/lib/community-competition-core.cjs';
 import {label} from '../../../src/lib/competition-core.cjs';
 import {sportIcon} from '../../../src/lib/tournament-discovery-core.cjs';
@@ -16,21 +17,27 @@ export default function CommunityCompetitions(){
  const router=useRouter(),auth=useAuth();
  const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
  const [tournaments,setTournaments]=useState<JynloTournament[]>([]);
+ const [championships,setChampionships]=useState<CommunityChampionship[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [retryCount,setRetryCount]=useState(0);
+ const [championshipError,setChampionshipError]=useState('');
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
-   if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);}return;}
+   if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);setChampionships([]);}return;}
    if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setError('Comunidade inválida.');}return;}
-   setLoading(true);setError('');setCommunity(null);setTournaments([]);
+   setLoading(true);setError('');setChampionshipError('');setCommunity(null);setTournaments([]);
    try{
     const c=await communityDetails(id,auth.token,auth.username);
     if(!active)return;
     setCommunity(c);
     if(!('myRole' in c)||!c.myRole){setTournaments([]);return;}
-    const data=await tournamentsForCommunity(id,auth.token,auth.username);
-    if(active)setTournaments(data);
+    const [data,championshipData]=await Promise.allSettled([tournamentsForCommunity(id,auth.token,auth.username),communityChampionships(id,auth.token)]);
+    if(!active)return;
+    if(data.status==='fulfilled')setTournaments(data.value);
+    else throw data.reason;
+    if(championshipData.status==='fulfilled')setChampionships(championshipData.value);
+    else setChampionshipError(championshipData.reason instanceof Error?championshipData.reason.message:'Não foi possível carregar campeonatos.');
    }catch(e){if(active)setError(e instanceof Error?e.message:'Não foi possível carregar as competições.');}
    finally{if(active)setLoading(false);}
   };
@@ -48,6 +55,20 @@ export default function CommunityCompetitions(){
   {error&&auth.token?<Button secondary title="Tentar carregar competições novamente" onPress={()=>setRetryCount(current=>current+1)}/>:null}
   {community?<Text style={styles.sub}>{community.name} · Cada torneio mantém a sua própria classificação e regras de resultados.</Text>:null}
   {community&&!role?<Message>Entra na comunidade para veres os seus torneios e respetivas classificações.</Message>:null}
+  {!loading&&!error&&!!role?<View style={styles.section}>
+   <Text style={styles.sectionTitle}>Campeonatos</Text>
+   <Text style={styles.small}>Um campeonato reúne vários torneios e as respetivas classificações.</Text>
+   {championshipError?<Message tone="error">{championshipError}</Message>:null}
+   {championshipError?<Button secondary title="Tentar carregar campeonatos novamente" onPress={()=>setRetryCount(value=>value+1)}/>:null}
+   {!championshipError&&championships.length===0?<Text style={styles.small}>Ainda não existem campeonatos nesta comunidade.</Text>:null}
+   {championships.map(championship=><Pressable key={championship.id} accessibilityRole="button" accessibilityLabel={'Abrir campeonato '+championship.name} style={styles.tournament}
+    onPress={()=>router.push({pathname:'/communities/[id]/championships/[championshipId]',params:{id:String(id),championshipId:String(championship.id)}})}>
+    <View style={{flex:1,gap:5}}><Text style={styles.tournamentTitle}>{championship.name}</Text>
+     <Text style={styles.classification}>{championship.sport} · {championship.seasonLabel}</Text>
+     <Text style={styles.small}>{championship.competitions.length} {championship.competitions.length===1?'torneio':'torneios'} associados</Text></View>
+    <Text style={styles.chevron}>›</Text>
+   </Pressable>)}
+  </View>:null}
   {!loading&&!error&&!!role&&sections.length===0?<Message>Esta comunidade ainda não tem modalidades configuradas.</Message>:null}
   {!loading&&!error&&!!role?sections.map(section=><View key={section.sport} style={styles.section}>
    <View style={styles.header}>
