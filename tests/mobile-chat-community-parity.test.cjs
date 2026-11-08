@@ -100,7 +100,7 @@ test('community chat photo upload checks private storage and requires confirmati
  assert.match(api,/replyToMessageId/);
  assert.match(api,/controller\.abort\(\)/);
  assert.match(chat,/chatPhotoAvailable\('community',id,auth\.token\)/);
- assert.match(chat,/sendChatPhoto\('community',id,auth\.token,photo\)/);
+ assert.match(chat,/sendChatPhoto\('community',id,token,selectedPhoto\)/);
  assert.match(chat,/ImagePicker\.launchImageLibraryAsync/);
  assert.match(chat,/Confirmar envio da fotografia/);
  assert.match(chat,/canSendPhoto/);
