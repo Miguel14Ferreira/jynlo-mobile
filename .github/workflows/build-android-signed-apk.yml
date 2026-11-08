@@ -1,6 +1,8 @@
 name: Jynlo Mobile - Android APK assinada (testes internos)
 
 on:
+  push:
+    branches: [develop]
   workflow_dispatch:
     inputs:
       confirm:
@@ -12,13 +14,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: jynlo-signed-apk-${{ github.run_id }}
-  cancel-in-progress: false
+  group: jynlo-signed-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-internal-aab:
     name: Gerar APK assinada para testes internos
-    if: ${{ inputs.confirm == 'TESTAR_API_REAL' }}
+    if: ${{ github.event_name == 'push' || inputs.confirm == 'TESTAR_API_REAL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
