@@ -28,7 +28,7 @@ test('account switch resets prior inbox before fetching the next user',()=>{
 
 test('chat inbox reports freshness without erasing loaded conversations on partial API failure',()=>{
  assert.match(source,/const \[lastSyncedAt,setLastSyncedAt\]=useState<Date\|null>\(null\)/);
- assert.match(source,/const partial=groups\.status==='rejected'\|\|privateChats\.status==='rejected'\|\|requests\.status==='rejected'/);
+ assert.match(source,/const partial=failedSources\.length>0/);
  assert.match(source,/if\(!partial\)setLastSyncedAt\(new Date\(\)\)/);
  assert.match(source,/Os dados anteriores podem estar desatualizados/);
  assert.match(source,/else setChatWarning\('A atualização automática falhou/);
@@ -39,5 +39,5 @@ test('chat inbox reports freshness without erasing loaded conversations on parti
 
 test('partial sync failures never masquerade as an empty inbox',()=>{
  assert.match(source,/items\.length===0&&!error&&!chatWarning\?<Message>Não foram encontradas conversas acessíveis/);
- assert.match(source,/setChatWarning\(partial\?'Não foi possível sincronizar todas as conversas/);
+ assert.match(source,/setChatWarning\(partial\?`Não foi possível sincronizar:/);
 });
