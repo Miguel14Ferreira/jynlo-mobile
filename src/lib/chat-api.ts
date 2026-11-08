@@ -93,8 +93,10 @@ export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
   });
   summaries.push(...batch);
  }
- return summaries.filter(s=>s.kind==='direct'&&s.latestMessageId!=null)
-   .sort((a,b)=>Date.parse(b.latestAt||'')-Date.parse(a.latestAt||''));
+ // The server already restricts peers to accessible conversations. A valid
+ // conversation may not have a latest message yet; do not hide it from the inbox.
+ return summaries.filter(s=>s.kind==='direct'&&peers.some(peer=>peer.toLowerCase()===s.id.toLowerCase()))
+   .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 export async function directChatHistory(peer:string,token:string):Promise<DirectChatEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para ver as mensagens privadas.');
