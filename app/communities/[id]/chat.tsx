@@ -22,22 +22,26 @@ export default function CommunityChatScreen(){
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
+ const [refreshWarning,setRefreshWarning]=useState('');
  const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('offline');
  const refresh=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setMessages([]);setLoading(false);}return;}
   setLoading(true);setError('');
   try{const [chat,community]=await Promise.all([communityMessages(id,auth.token,auth.username),communityDetails(id,auth.token,auth.username)]);
     if(version!==generation.current)return;
-    setMessages(old=>mergeMessages(old,chat));setName(community.name);
+    setMessages(old=>mergeMessages(old,chat));setName(community.name);setRefreshWarning('');
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
     if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
-  }catch(e){if(version===generation.current){setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');setMessages([]);}}
+  }catch(e){if(version===generation.current){
+    setRefreshWarning('Não foi possível sincronizar o chat. As mensagens apresentadas podem estar desatualizadas.');
+    setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');
+  }}
   finally{if(version===generation.current)setLoading(false);}
  },[id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
    let active=true;
    const version=++generation.current;
-   setMessages([]);setName('Comunidade');setError('');setLoading(true);
+   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');setLoading(true);
    setDraft('');setPhoto(null);setConnection('offline');
    setCanSendPhoto(false);
    if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active&&version===generation.current)setCanSendPhoto(ok);}).catch(()=>{});
@@ -78,7 +82,8 @@ export default function CommunityChatScreen(){
    <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ Offline'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
-   {!loading&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
+   {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
+   {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
    {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <Text style={styles.sender}>{m.username}</Text><Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
      {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="community" conversationId={id} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
