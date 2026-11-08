@@ -17,6 +17,7 @@ export default function CommunityCompetitions(){
  const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
  const [tournaments,setTournaments]=useState<JynloTournament[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [retryCount,setRetryCount]=useState(0);
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
@@ -35,7 +36,7 @@ export default function CommunityCompetitions(){
   };
   void load();
   return()=>{active=false;};
- },[id,auth.token,auth.username]));
+ },[id,auth.token,auth.username,retryCount]));
  const sections=useMemo(()=>groupCommunityTournaments(community,tournaments),[community,tournaments]);
  const role=community&&'myRole' in community?community.myRole:null;
  const organizer=role==='OWNER'||role==='ADMIN';
@@ -44,10 +45,11 @@ export default function CommunityCompetitions(){
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {error&&auth.token?<Button secondary title="Tentar carregar competições novamente" onPress={()=>setRetryCount(current=>current+1)}/>:null}
   {community?<Text style={styles.sub}>{community.name} · Cada torneio mantém a sua própria classificação e regras de resultados.</Text>:null}
   {community&&!role?<Message>Entra na comunidade para veres os seus torneios e respetivas classificações.</Message>:null}
-  {!loading&&!!role&&sections.length===0?<Message>Esta comunidade ainda não tem modalidades configuradas.</Message>:null}
-  {!loading&&!!role?sections.map(section=><View key={section.sport} style={styles.section}>
+  {!loading&&!error&&!!role&&sections.length===0?<Message>Esta comunidade ainda não tem modalidades configuradas.</Message>:null}
+  {!loading&&!error&&!!role?sections.map(section=><View key={section.sport} style={styles.section}>
    <View style={styles.header}>
     <Text style={styles.icon}>{sportIcon(section.sport)}</Text>
     <View style={{flex:1,gap:4}}>
