@@ -7,9 +7,11 @@ test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',(
   assert.ok(fs.existsSync(path.join(root,'app/(tabs)/explore.tsx')));
   assert.ok(fs.existsSync(path.join(root,'app/people.tsx')));
 });
-test('Feed mobile inclui stories, semana, posts, fotos, gostos, comentários',()=>{
+test('Feed mobile centra-se em stories e publicações com compositor compacto',()=>{
   const feed=read('app/(tabs)/index.tsx');
-  for(const fragment of ['Stories','A minha semana desportiva','Últimas publicações','Partilhar com a comunidade','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker'])assert.ok(feed.includes(fragment),fragment);
+  for(const fragment of ['Stories','Publicações','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker','composerOpen','Partilhar um momento…'])assert.ok(feed.includes(fragment),fragment);
+  for(const removed of ['A minha semana desportiva','Jogos com vagas','Pessoas para conhecer','discoverSessions','mySessions','myCommunities'])assert.ok(!feed.includes(removed),removed);
+  assert.match(feed,/\.filter\(item=>item\.type==='POST'\)/);
 });
 test('contratos do Feed correspondem à API Jynlo e não têm troca rápida de conta',()=>{
   const api=read('src/lib/social-feed-api.ts');
@@ -18,19 +20,17 @@ test('contratos do Feed correspondem à API Jynlo e não têm troca rápida de c
   assert.doesNotMatch(read('app/(tabs)/index.tsx'), /Trocar para Tiago|Trocar para André/);
 });
 
-test('Feed de visitante nunca pede feed privado nem simula uma conta',()=>{
+test('Feed de visitante não pede feed privado e apresenta entrada simples',()=>{
   const feed=read('app/(tabs)/index.tsx');
   assert.match(feed,/auth\.token&&auth\.username\?socialFeed/);
   assert.match(feed,/auth\.token\?storyFeed/);
-  assert.match(feed,/auth\.token\?discoverPeople/);
   assert.match(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
-  assert.match(feed,/Explorar todas as sessões/);
-  assert.match(feed,/auth\.token\?'A minha semana desportiva':'Descobre a tua próxima sessão'/);
+  assert.match(feed,/Iniciar sessão/);
+  assert.doesNotMatch(feed,/auth\.token\?discoverPeople/);
 });
-
 test('Feed mobile usa hero compacto sem recorte de imagem e separadores respeitam área segura',()=>{
  const feed=read('app/(tabs)/index.tsx'),tabs=read('app/(tabs)/_layout.tsx');
- assert.match(feed,/>Feed<\/Text>/);
+ assert.match(feed,/>Publicações<\/Text>/);
  assert.doesNotMatch(feed,/jynlo-feed-sports\.png/);
  assert.doesNotMatch(feed,/<ImageBackground/);
  assert.match(tabs,/useSafeAreaInsets/);
