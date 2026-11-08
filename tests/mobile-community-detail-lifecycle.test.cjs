@@ -35,3 +35,10 @@ test('community detail shows a retry when initial loading fails',()=>{
  assert.match(source,/\{error&&!community&&!loading\?<Button secondary title="Tentar carregar comunidade novamente"/);
  assert.match(source,/onPress=\{\(\)=>\{void reload\(\);\}\}/);
 });
+
+test('organizer sees request loading failures and can retry',()=>{
+ assert.match(source,/const \[requestsError,setRequestsError\]=useState\(''\)/);
+ assert.match(source,/setRequestsError\('Não foi possível carregar os pedidos de adesão\.'\)/);
+ assert.match(source,/\{owner&&requestsError\?<View style=\{styles\.section\}>/);
+ assert.match(source,/title="Tentar carregar pedidos novamente"/);
+});
