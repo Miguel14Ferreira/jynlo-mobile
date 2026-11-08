@@ -26,3 +26,12 @@ test('team response is server sourced and typed',()=>{
    'playersWithStats:number','teamAScore:number','teamBalanceSupported?: boolean'])
   assert.ok(types.includes(term),term);
 });
+
+test('random team option is available without rankings and never uses server ranking endpoint',()=>{
+ assert.match(screen,/title="Equipas aleatórias"/);
+ assert.match(screen,/teamSource==='RANDOM'\?drawRandomTeams\(participants\):await suggestSessionTeams/);
+ assert.match(screen,/teamSource==='RANDOM'\?\s*'Sortear equipas'/);
+ assert.match(screen,/teamSource==='RANDOM'\?<Button secondary title="Sortear novamente"/);
+ assert.match(screen,/Ainda não guarda as equipas no servidor/);
+ assert.match(screen,/teamsBusy\|\|teamSource==='RANDOM'/);
+});
