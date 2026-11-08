@@ -19,6 +19,6 @@ test('retry refreshes both membership and competitions without stale focus resul
 });
 
 test('sign-out and invalid community identifiers clear stale competition data',()=>{
- assert.match(source,/if\(!auth\.token\|\|!auth\.username\)\{if\(active\)\{setLoading\(false\);setError\(''\);setCommunity\(null\);setTournaments\(\[\]\);\}return;\}/);
- assert.match(source,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\)\{if\(active\)\{setLoading\(false\);setCommunity\(null\);setTournaments\(\[\]\);setError\('Comunidade inválida\.'\);\}return;\}/);
+ assert.match(source,/if\(!auth\.token\|\|!auth\.username\)\{if\(active\)\{setLoading\(false\);setError\(''\);setCommunity\(null\);setTournaments\(\[\]\);setChampionships\(\[\]\);setChampionshipError\(''\);\}return;\}/);
+ assert.match(source,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\)\{if\(active\)\{setLoading\(false\);setCommunity\(null\);setTournaments\(\[\]\);setChampionships\(\[\]\);setChampionshipError\(''\);setError\('Comunidade inválida\.'\);\}return;\}/);
 });
