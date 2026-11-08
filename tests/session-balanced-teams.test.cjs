@@ -27,11 +27,11 @@ test('team response is server sourced and typed',()=>{
   assert.ok(types.includes(term),term);
 });
 
-test('random team option is available without rankings and never uses server ranking endpoint',()=>{
+test('random team option uses server preview and preserves confirmed assignment',()=>{
  assert.match(screen,/title="Equipas aleatórias"/);
  assert.match(screen,/\(teamSource==='RANDOM'\|\|!detail\.teamBalanceSupported\)\?drawRandomTeams\(participants\):await suggestSessionTeams/);
  assert.match(screen,/\(!detail\.teamBalanceSupported\|\|teamSource==='RANDOM'\)\?'Sortear equipas'/);
  assert.match(screen,/\(teamSource==='RANDOM'\|\|!detail\.teamBalanceSupported\)\?<Button secondary title="Sortear novamente"/);
- assert.match(screen,/Ainda não guarda as equipas no servidor/);
+ assert.match(screen,/Confirma para guardar estas equipas/);
  assert.match(screen,/teamsBusy\|\|teamSource==='RANDOM'/);
 });
