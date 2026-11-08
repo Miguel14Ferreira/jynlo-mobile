@@ -127,6 +127,7 @@ export default function CommunityDetailScreen(){
     {params.created==='1'?<Message>Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.</Message>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
+    {error&&!community&&!loading?<Button secondary title="Tentar carregar comunidade novamente" disabled={busy} onPress={()=>{void reload();}}/>:null}
     {!!notice?<Message>{notice}</Message>:null}
     {community?<>
       <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
