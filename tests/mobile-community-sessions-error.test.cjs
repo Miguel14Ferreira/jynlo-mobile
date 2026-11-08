@@ -13,5 +13,5 @@ test('community sessions load errors are not displayed as empty schedules',()=>{
 });
 test('community session errors reset on reload and identity changes',()=>{
  assert.match(source,/setLoading\(true\);setError\(''\);setCommunity\(null\);setMyRequest\(null\);setSessions\(\[\]\);setSessionsError\(''\)/);
- assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setMyRequest\(null\)/);
+ assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setRequestsError\(''\);setMyRequest\(null\)/);
 });
