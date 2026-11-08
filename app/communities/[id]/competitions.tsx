@@ -21,8 +21,8 @@ export default function CommunityCompetitions(){
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
-   if(!auth.token||!auth.username){if(active){setLoading(false);setCommunity(null);setTournaments([]);}return;}
-   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setError('Comunidade inválida.');}return;}
+   if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);}return;}
+   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setError('Comunidade inválida.');}return;}
    setLoading(true);setError('');setCommunity(null);setTournaments([]);
    try{
     const c=await communityDetails(id,auth.token,auth.username);
