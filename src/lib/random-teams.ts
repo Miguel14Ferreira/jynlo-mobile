@@ -11,7 +11,9 @@ export function drawRandomTeams(participants:SessionParticipant[],random:()=>num
   const r=random();
   if(!Number.isFinite(r)||r<0||r>=1)throw Error('Não foi possível realizar o sorteio.');
   const j=Math.floor(r*(i+1));
-  [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  const current=shuffled[i]!;
+  shuffled[i]=shuffled[j]!;
+  shuffled[j]=current;
  }
  const players=shuffled.map((p):SessionTeamPlayer=>({
   username:p.username,displayName:p.username,guest:false,strengthScore:0,statsAvailable:false,
