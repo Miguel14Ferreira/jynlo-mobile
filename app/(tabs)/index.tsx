@@ -64,8 +64,13 @@ export default function JynloFeedHome(){
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
+  const feedIdentity=useRef('');
   const load=useCallback(async()=>{
-    const id=++reloadNumber.current;setLoading(true);setError('');
+    const id=++reloadNumber.current;
+    const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
+    const identityChanged=feedIdentity.current!==identity;
+    if(identityChanged){feedIdentity.current=identity;setPosts([]);setStories([]);setOwnStories([]);}
+    setLoading(true);setError('');
     const fetches=await Promise.allSettled([
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?storyFeed(auth.token):Promise.resolve([]),
@@ -73,8 +78,10 @@ export default function JynloFeedHome(){
     ]);
     if(id!==reloadNumber.current)return;
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
-    setPosts(value(0,[] as FeedItem[]).filter(item=>item.type==='POST'));setStories(value(1,[] as SocialStory[]));setOwnStories(value(2,[] as SocialStory[]));
-    if(fetches[0].status==='rejected')setError('Não foi possível carregar o feed. Confirma a ligação e tenta novamente.');
+    if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]).filter(item=>item.type==='POST'));
+    if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
+    if(fetches[2].status==='fulfilled')setOwnStories(value(2,[] as SocialStory[]));
+    if(fetches[0].status==='rejected')setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
     setLoading(false);
   },[auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{if(!auth.ready||(!auth.token&&!auth.browsingAsGuest))return;void load();return ()=>{reloadNumber.current++;};},[auth.ready,auth.token,auth.browsingAsGuest,load]));
