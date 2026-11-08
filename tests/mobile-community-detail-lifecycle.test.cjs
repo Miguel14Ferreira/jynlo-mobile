@@ -9,7 +9,7 @@ test('community loads are scoped to the focused community and authenticated sess
  assert.match(source,/if\(version!==generation\.current\)return/);
  assert.match(source,/const version=\+\+generation\.current/);
  assert.match(source,/return \(\)=>\{generation\.current\+\+;\}/);
- assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setRequestsError\(''\);setMyRequest\(null\)/);
+ assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setRequestsError\(''\);setMyRequest\(null\);setMyRequestError\(''\)/);
 });
 test('late community sessions and membership requests cannot overwrite another community',()=>{
  assert.match(source,/const next=await communitySessions\(id,auth\.token,auth\.username\);\s*if\(version!==generation\.current\)return;\s*setSessions\(next\)/);
@@ -26,7 +26,7 @@ test('community member can still create a preselected session and view competiti
 test('old membership and invitation mutations cannot change the next community view',()=>{
  assert.match(source,/if\(version!==generation\.current\)return;\s*setNotice\(action==='join'/);
  assert.match(source,/if\(version!==generation\.current\)return;\s*setInviteName\(''\)/);
- assert.match(source,/if\(version!==generation\.current\)return;\s*setNotice\('Pedido aprovado\.'/);
+ assert.match(source,/await reload\(version\);\s*if\(version===generation\.current\)setNotice\('Pedido aprovado\.'/);
  assert.match(source,/if\(version===generation\.current\)setBusy\(false\)/);
  assert.match(source,/await reload\(version\)/);
 });
