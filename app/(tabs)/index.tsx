@@ -121,8 +121,6 @@ export default function JynloFeedHome(){
           <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></View>
         <Text style={{color:MUTED,fontSize:20}}>•••</Text></View>
       {item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
-      {item.type!=='POST'&&item.sport?<Pressable onPress={()=>item.sessionId?router.push({pathname:'/sessions/[id]',params:{id:String(item.sessionId)}}):undefined} style={styles.activityBox}>
-        <Text style={{fontSize:23}}>⚽</Text><View style={{flex:1}}><Text style={styles.activityTitle}>{item.sport} · {item.city||'Local a confirmar'}</Text><Text style={styles.activityMeta}>{prettyDate(item.gameDate)}</Text></View><Text style={{color:TEAL}}>↗</Text></Pressable>:null}
       {media?<Image source={{uri:media}} style={styles.postImage} resizeMode="cover"/>:null}
       {video?<MediaVideo uri={video}/>:null}
       {item.type==='POST'?<><View style={styles.postActions}>
