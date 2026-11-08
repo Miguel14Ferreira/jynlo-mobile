@@ -285,6 +285,8 @@ export default function CreateSessionScreen(){
   {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
   {DEMO_MODE?<Message>Na demonstração a criação real está desativada. Liga a app à API Jynlo para publicar.</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {communityError?<Message tone="error">{communityError}</Message>:null}
+  {communityError&&auth.token&&auth.username?<Button secondary title="Voltar a carregar comunidades" disabled={busy} onPress={()=>{void loadCommunities();}}/>:null}
   {step===0?<>
   <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
    {form.sport?<Badge text={form.sport}/>:null}
