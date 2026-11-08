@@ -23,6 +23,7 @@ export default function CommunityDetailScreen(){
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
+  const [requestsError,setRequestsError]=useState('');
   const [myRequest,setMyRequest]=useState<CommunityJoinRequest|null>(null);
   const [inviteName,setInviteName]=useState('');const [busy,setBusy]=useState(false);
   const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [notice,setNotice]=useState('');
@@ -32,7 +33,7 @@ export default function CommunityDetailScreen(){
       if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
       return;
     }
-    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setSessionsError('');setRequests([]);
+    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
     try{
       const c=await communityDetails(id,auth.token,auth.username);
       if(version!==generation.current)return;
@@ -48,11 +49,11 @@ export default function CommunityDetailScreen(){
           try{
             const next=await pendingCommunityRequests(id,auth.token,auth.username);
             if(version!==generation.current)return;
-            setRequests(next);
-          }catch{if(version===generation.current)setRequests([]);}
-        }else setRequests([]);
+            setRequests(next);setRequestsError('');
+          }catch{if(version===generation.current){setRequests([]);setRequestsError('Não foi possível carregar os pedidos de adesão.');}}
+        }else {setRequests([]);setRequestsError('');}
       }else{
-        setSessions([]);setSessionsError('');setRequests([]);
+        setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
         if(auth.token&&auth.username&&c.visibility==='PRIVATE'){
           try{
             const next=await myPendingCommunityRequest(id,auth.token,auth.username);
@@ -68,7 +69,7 @@ export default function CommunityDetailScreen(){
   useFocusEffect(useCallback(()=>{
     const version=++generation.current;
     // Never show another community or account while the new request is pending.
-    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setMyRequest(null);
+    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);
     setError('');setNotice('');setBusy(false);
     void reload(version);
     return ()=>{generation.current++;};
@@ -166,6 +167,7 @@ export default function CommunityDetailScreen(){
         <Button title={busy?'A enviar…':'Enviar convite'} disabled={busy||inviteName.trim().length<2} onPress={()=>{void sendInvite();}}/>
         <Button secondary title="Partilhar ligação da comunidade" onPress={()=>{void share();}}/>
       </View>:null}
+      {owner&&requestsError?<View style={styles.section}><Message tone="error">{requestsError}</Message><Button secondary title="Tentar carregar pedidos novamente" disabled={loading||busy} onPress={()=>{void reload();}}/></View>:null}
       {owner&&requests.length>0?<View style={styles.section}>
         <Text style={styles.sectionTitle}>Pedidos para entrar</Text>
         {requests.map(r=><View key={r.id} style={styles.request}>
