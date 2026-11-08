@@ -42,3 +42,9 @@ test('organizer sees request loading failures and can retry',()=>{
  assert.match(source,/\{owner&&requestsError\?<View style=\{styles\.section\}>/);
  assert.match(source,/title="Tentar carregar pedidos novamente"/);
 });
+
+test('private membership status lookup errors do not invite duplicate requests',()=>{
+ assert.match(source,/setMyRequestError\('Não foi possível confirmar o estado do teu pedido de adesão\.'\)/);
+ assert.match(source,/community\.visibility==='PRIVATE'&&!myRequest&&!myRequestError/);
+ assert.match(source,/title="Verificar estado do pedido novamente"/);
+});
