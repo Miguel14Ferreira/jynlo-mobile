@@ -9,7 +9,7 @@ test('community loads are scoped to the focused community and authenticated sess
  assert.match(source,/if\(version!==generation\.current\)return/);
  assert.match(source,/const version=\+\+generation\.current/);
  assert.match(source,/return \(\)=>\{generation\.current\+\+;\}/);
- assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setMyRequest\(null\)/);
+ assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setRequestsError\(''\);setMyRequest\(null\)/);
 });
 test('late community sessions and membership requests cannot overwrite another community',()=>{
  assert.match(source,/const next=await communitySessions\(id,auth\.token,auth\.username\);\s*if\(version!==generation\.current\)return;\s*setSessions\(next\)/);
