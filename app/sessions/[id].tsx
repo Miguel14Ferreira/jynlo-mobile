@@ -336,6 +336,7 @@ export default function SessionScreen(){
             <View style={styles.memberInfo}>
               <Text style={styles.memberName} numberOfLines={1}>{p.username}</Text>
               {attendance?<Text style={styles.memberStatus}>{attendance}</Text>:null}
+              {p.teamCode?<Text style={styles.memberStatus}>Equipa {p.teamCode}</Text>:null}
             </View>
             {p.username.toLowerCase()===auth.username?.toLowerCase()?<Text style={styles.memberYou}>Tu</Text>:null}
             {auth.token&&!DEMO_MODE&&owner&&detail.status!=='CANCELLED'&&
