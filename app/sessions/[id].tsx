@@ -299,12 +299,12 @@ export default function SessionScreen(){
         {detail.communityId?<View style={styles.editor}>
           <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
           <Text style={styles.hint}>Escolhe uma classificação para equilibrar equipas no servidor ou sorteia duas equipas sem classificação.</Text>
-          {detail.teamBalanceSupported?<View style={styles.top}>
+          {detail.teamBalanceSupported?<>\n          <View style={styles.top}>
             <Button title="Classificação da comunidade" secondary={teamSource!=='FORM'} disabled={teamsBusy}
               onPress={()=>{setTeamSource('FORM');setTeamPreview(null);setTeamsMessage('');}}/>
           </View>
           <Button title="Classificação Excel" secondary={teamSource!=='EXCEL_POINTS'} disabled={teamsBusy}
-            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>:null}
+            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>\n          </>:null}
           <Button title="Equipas aleatórias" secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
           <Button title={teamsBusy?'A calcular…':(!detail.teamBalanceSupported||teamSource==='RANDOM')?'Sortear equipas':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
