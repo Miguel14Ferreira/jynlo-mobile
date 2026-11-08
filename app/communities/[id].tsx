@@ -112,7 +112,8 @@ export default function CommunityDetailScreen(){
     try{
       await acceptCommunityRequest(id,requestId,auth.token,auth.username);
       if(version!==generation.current)return;
-      setNotice('Pedido aprovado.');await reload(version);
+      await reload(version);
+      if(version===generation.current)setNotice('Pedido aprovado.');
     }catch(e){
       if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível aprovar o pedido.');
     }finally{if(version===generation.current)setBusy(false);}
