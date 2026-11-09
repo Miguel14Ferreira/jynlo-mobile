@@ -1,0 +1,41 @@
+name: Jynlo Google Play official icon 512px
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/play-store-icon.yml
+      - assets/jynlo-icon.png
+permissions:
+  contents: read
+jobs:
+  icon:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pillow
+        run: python3 -m pip install --user Pillow
+      - name: Export original logo for Play Store without redesign
+        run: |
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source=Path("assets/jynlo-icon.png")
+          icon=Image.open(source)
+          assert icon.format=="PNG", "Expected original PNG"
+          assert min(icon.size)>=256, "Source icon is too small"
+          target=icon.convert("RGBA").resize((512,512),Image.Resampling.LANCZOS)
+          out=Path("play-store-assets")
+          out.mkdir(exist_ok=True)
+          target.save(out/"jynlo-play-icon-512.png",optimize=True)
+          assert (out/"jynlo-play-icon-512.png").stat().st_size<=1024*1024
+          print("Official Jynlo icon exported:",icon.size,"to",(512,512))
+          PY
+      - name: Upload official Google Play icon
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-google-play-icon-512
+          path: play-store-assets/jynlo-play-icon-512.png
+          if-no-files-found: error
+          retention-days: 30
