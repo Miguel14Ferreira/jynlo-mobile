@@ -192,6 +192,7 @@ export default function DirectConversation(){
  return <Page><DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
+  {auth.token&&!DEMO_MODE&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
