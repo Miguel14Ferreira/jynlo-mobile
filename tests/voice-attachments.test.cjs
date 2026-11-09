@@ -25,3 +25,11 @@ test('voice playback is stopped when attachment is released',()=>{
  assert.match(component,/if\(!pdfPreview\.current\)cleanup\(\)/);
  assert.match(component,/Modal visible=\{!!uri&&!isVoice\(mime\)/);
 });
+
+test('private audio cache is detached before deletion and pauses on background',()=>{
+ const detached=component.indexOf('player.replace(null)');
+ const deleted=component.indexOf('if(old?.exists)old.delete()');
+ assert.ok(detached>=0&&deleted>detached);
+ assert.match(component,/state==='background'\|\|state==='inactive'/);
+ assert.match(component,/try\{player.pause\(\);\}catch\{\}/);
+});
