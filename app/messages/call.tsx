@@ -174,7 +174,7 @@ export default function DirectCallScreen(){
   {session&&!connectedToPeer?<Text style={styles.note}>À espera de resposta do contacto…</Text>:null}
   {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
-   onError={e=>setError(e.message)}>
+   onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}>
     <MediaControls media={session.media} onHangup={()=>{void hangup();}}/>
    </LiveKitRoom>:!session?<>
    {!loading&&!available?<Message>As chamadas estão indisponíveis neste momento ({providerStatus||'sem ligação ao servidor'}). O chat continua disponível.</Message>:null}
