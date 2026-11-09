@@ -45,6 +45,7 @@ export default function MessagesScreen(){
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
    if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
+   else setIncomingCall(null); // Never present an unverified stale invitation as active.
    const failedSources=[
     ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
     ...(groups.status==='rejected'?['comunidades']:[]),
