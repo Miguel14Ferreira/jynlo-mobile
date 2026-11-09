@@ -1,7 +1,7 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -18,59 +18,67 @@ export default function SessionChat(){
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
- const refreshing=useRef(false),sendingNow=useRef(false);
+ const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
- const refresh=useCallback(async(silent=false)=>{
-  if(refreshing.current)return;
-  refreshing.current=true;
-  if(!auth.token||!Number.isSafeInteger(id)||id<=0){setEntries([]);setLoading(false);refreshing.current=false;return;}
+ const refresh=useCallback(async(silent=false,version=generation.current)=>{
+  if(refreshing.current===version)return;
+  refreshing.current=version;
+  if(!auth.token||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setEntries([]);setLoading(false);}refreshing.current=null;return;}
   if(!silent)setLoading(true);
   setError('');
   try{
    const history=await sessionChatHistory(id,auth.token);
+   if(version!==generation.current)return;
    setEntries(history);setClosed(false);
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
    // A transient background refresh must not erase messages or disable composing.
-   if(!silent||(e instanceof ApiError&&[401,403,404,409,410].includes(e.status))){setClosed(true);setEntries([]);
+   if(version===generation.current&&(!silent||(e instanceof ApiError&&[401,403,404,409,410].includes(e.status)))){setClosed(true);setEntries([]);
     setError(e instanceof Error?e.message:'Chat indisponível.');}
-  }finally{if(!silent)setLoading(false);refreshing.current=false;}
+  }finally{if(version===generation.current&&!silent)setLoading(false);if(refreshing.current===version)refreshing.current=null;}
  },[auth.token,id]);
  useFocusEffect(useCallback(()=>{
   let active=true;
+  const version=++generation.current;
+  setEntries([]);setClosed(false);setError('');setLoading(true);setDraft('');setReply(null);
   setPhoto(null);setPhotoReady(false);
-  if(auth.token&&!closed)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active)setPhotoReady(ok);}).catch(()=>{});
-  void refresh();
+  if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
+  void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
-  const timer=setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000);
-  return ()=>{active=false;clearInterval(timer);};
+  const timer=setInterval(()=>{if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);},15000);
+  return ()=>{active=false;clearInterval(timer);generation.current++;};
  },[refresh,auth.token,id]));
  async function send(){
-  if(sending||closed||!auth.token||!draft.trim())return;
+  if(sendingNow.current||closed||!auth.token||!draft.trim())return;
+  const version=generation.current;
   sendingNow.current=true;setSending(true);setError('');
   try{await postSessionChat(id,draft,auth.token,reply?.id);
-   setDraft('');setReply(null);await refresh();
-  }catch(e){setError((e instanceof Error?e.message:'Falha no envio.')+
+   if(version!==generation.current)return;
+   setDraft('');setReply(null);await refresh(false,version);
+  }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Falha no envio.')+
    ' Consulta o histórico antes de voltares a tentar.');}
-  finally{sendingNow.current=false;setSending(false);}
+  finally{sendingNow.current=false;if(version===generation.current)setSending(false);}
  }
  async function choosePhoto(){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
+  const version=generation.current;
   try{
    const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false});
-   if(!chosen.canceled&&chosen.assets[0])setPhoto(chosen.assets[0]);
-  }catch{setError('Não foi possível abrir a galeria.');}
+   if(version===generation.current&&!chosen.canceled&&chosen.assets[0])setPhoto(chosen.assets[0]);
+  }catch{if(version===generation.current)setError('Não foi possível abrir a galeria.');}
  }
  async function uploadPhoto(){
-  if(!auth.token||!photo||!photoReady||closed||sending||uploading)return;
+  if(!auth.token||!photo||!photoReady||closed||sendingNow.current||uploading)return;
+  const version=generation.current;
   sendingNow.current=true;setUploading(true);setError('');
   try{
    await sendChatPhoto('session',id,auth.token,photo,reply?.id);
-   setPhoto(null);setReply(null);await refresh();
-  }catch(e){setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
-  finally{sendingNow.current=false;setUploading(false);}
+   if(version!==generation.current)return;
+   setPhoto(null);setReply(null);await refresh(false,version);
+  }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
+  finally{sendingNow.current=false;if(version===generation.current)setUploading(false);}
  }
  return <Page><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
