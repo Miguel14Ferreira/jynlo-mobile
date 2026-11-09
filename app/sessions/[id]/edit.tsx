@@ -6,6 +6,7 @@ import {sessionDetail,DEMO_MODE} from '../../../src/lib/api';
 import {updateSessionDetails} from '../../../src/lib/session-details-edit-api';
 import type {SessionDetailsUpdate} from '../../../src/lib/session-details-edit-api';
 import {editSessionPayload} from '../../../src/lib/session-details-edit-core.cjs';
+import {formatLocalDateInput,formatLocalTimeInput} from '../../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../../src/lib/sports';
 import {isOrganizer} from '../../../src/lib/session-state.cjs';
 import {useAuth} from '../../../src/lib/auth';
@@ -72,7 +73,9 @@ export default function EditSession(){
  const field=(label:string,key:keyof Draft,options?:{keyboardType?:'number-pad'|'decimal-pad';placeholder?:string})=>
   <View style={styles.field} key={key}>
    <Text style={styles.label}>{label}</Text>
-   <TextInput style={styles.input} value={draft?.[key]||''} onChangeText={value=>set(key,value)}
+   <TextInput style={styles.input} value={draft?.[key]||''}
+    onChangeText={value=>set(key,key==='date'?formatLocalDateInput(value):key==='hour'?formatLocalTimeInput(value):value)}
+    maxLength={key==='date'?10:key==='hour'?5:undefined}
     editable={!busy} autoCorrect={false} placeholder={options?.placeholder}
     placeholderTextColor={C.muted} keyboardType={options?.keyboardType||'default'}/>
   </View>;
