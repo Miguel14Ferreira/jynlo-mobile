@@ -66,7 +66,13 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   },[token]);
   const save=useCallback(async(name:string,accessToken:string)=>{
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
-    await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
+    try{
+      await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
+    }catch{
+      // A partial storage write must never restore mismatched username/token on next launch.
+      await Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+      throw new Error('Não foi possível guardar a sessão em segurança. Tenta iniciar sessão novamente.');
+    }
     setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
   },[]);
