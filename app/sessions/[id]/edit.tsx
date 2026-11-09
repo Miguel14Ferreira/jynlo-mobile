@@ -4,6 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,Loader,Message,Page} from '../../../src/components/UI';
 import {sessionDetail,DEMO_MODE} from '../../../src/lib/api';
 import {updateSessionDetails} from '../../../src/lib/session-details-edit-api';
+import type {SessionDetailsUpdate} from '../../../src/lib/session-details-edit-api';
 import {editSessionPayload} from '../../../src/lib/session-details-edit-core.cjs';
 import {SPORTS} from '../../../src/lib/sports';
 import {isOrganizer} from '../../../src/lib/session-state.cjs';
@@ -51,7 +52,7 @@ export default function EditSession(){
  const matches=SPORTS.filter(name=>name.toLocaleLowerCase('pt-PT').includes(sportQuery.toLocaleLowerCase('pt-PT'))).slice(0,15);
  function confirm(){
   if(!draft||!session||!auth.token||busy||saving.current||DEMO_MODE)return;
-  let payload:ReturnType<typeof editSessionPayload>;
+  let payload:SessionDetailsUpdate;
   try{payload=editSessionPayload(draft,SPORTS);}catch(e){setError(e instanceof Error?e.message:'Confirma os campos.');return;}
   const version=generation.current,token=auth.token,sessionId=id;
   Alert.alert('Guardar alterações?', 'Os participantes podem ser afetados por mudanças na data, no local ou na capacidade. Confirma antes de guardar.',[
