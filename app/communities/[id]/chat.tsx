@@ -58,12 +58,13 @@ export default function CommunityChatScreen(){
  async function send(){
   if(sendingNow.current||uploadingNow.current||!auth.token||!auth.username||!draft.trim())return;
   const version=generation.current,token=auth.token,username=auth.username;
-  const message=draft.trim();
+  const originalDraft=draft;
+  const message=originalDraft.trim();
   sendingNow.current=true;setSending(true);setError('');
   try{
    await sendCommunityMessage(id,message,token,username);
    if(version!==generation.current)return;
-   setDraft(current=>current===message?'':current);
+   setDraft(current=>current===originalDraft?'':current);
    await refresh(version);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
@@ -106,7 +107,7 @@ export default function CommunityChatScreen(){
    {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <Text style={styles.sender}>{m.username}</Text><Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
      {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="community" conversationId={id} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
-     <Text style={styles.time}>{new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>
+     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
    </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={canSendPhoto&&!sending&&!uploading} onSent={async()=>{await refresh();}}/>
    {auth.token&&canSendPhoto?<Button secondary title="Escolher fotografia" disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
