@@ -28,9 +28,9 @@ module.exports = ({config}) => {
     slug: 'jynlo',
     plugins,
     // The native map UI must never mount in binaries without a configured SDK.
-    extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey)},
     ...(projectId
-      ? {extra: {...(config.extra || {}), eas: {...(config.extra?.eas || {}), projectId}}}
+      ? {extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey),
+          eas: {...(config.extra?.eas || {}), projectId}}}
       : {}),
   };
 };
