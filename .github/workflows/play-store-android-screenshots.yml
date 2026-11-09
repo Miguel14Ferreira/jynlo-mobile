@@ -47,16 +47,14 @@ jobs:
           from pathlib import Path
           p=Path('android/app/build.gradle')
           content=p.read_text()
-          original=content
-          # Expo-generated Gradle release typically uses these expressions.
-          for old,new in [
-            ('minifyEnabled enableProguardInReleaseBuilds', 'minifyEnabled false'),
-            ('shrinkResources (findProperty(\'android.enableShrinkResourcesInReleaseBuilds\')?.toBoolean() ?: false)', 'shrinkResources false'),
-            ('minifyEnabled (findProperty(\'android.enableMinifyInReleaseBuilds\')?.toBoolean() ?: false)', 'minifyEnabled false'),
-          ]:
-            content=content.replace(old,new)
-          if content==original or 'minifyEnabled false' not in content:
-            raise SystemExit('Cannot verify R8/minify disabled in screenshot-only build.gradle')
+          import re
+          # Scope to Android application Gradle generated from this commit.
+          # Replace only the release optimization settings, leaving source and
+          # production workflows untouched.
+          content, count=re.subn(r'(?m)^(\\s*)minifyEnabled\\s+[^\\n]+$',r'\\1minifyEnabled false',content)
+          if count!=1:
+            raise SystemExit(f'Expected one minifyEnabled setting; found {count}')
+          content=re.sub(r'(?m)^(\\s*)shrinkResources\\s+[^\\n]+$',r'\\1shrinkResources false',content)
           p.write_text(content)
           PY
           (cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2)
