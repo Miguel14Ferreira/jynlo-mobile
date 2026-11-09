@@ -40,7 +40,8 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  const abort=useRef<AbortController|null>(null);
  const pdfPreview=useRef(false),wasBackgrounded=useRef(false);
  const cleanup=useCallback(()=>{
-  try{player.pause();}catch{}
+  // Release the native decoder's reference before deleting the private cache file.
+  try{player.pause();player.replace(null);}catch{}
   abort.current?.abort();abort.current=null;
   const old=cached.current;cached.current=null;
   try{if(old?.exists)old.delete();}catch{}
@@ -58,14 +59,18 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  },[cleanup,scope,conversationId,messageId,token]));
  React.useEffect(()=>{
   const subscription=AppState.addEventListener('change',state=>{
-   if(state==='background'||state==='inactive')wasBackgrounded.current=true;
+   if(state==='background'||state==='inactive'){
+    wasBackgrounded.current=true;
+    // Voice messages must not continue playing after this chat is backgrounded.
+    try{player.pause();}catch{}
+   }
    if(state==='active'&&wasBackgrounded.current&&pdfPreview.current){
     pdfPreview.current=false;
     cleanup();
    }
   });
   return ()=>{subscription.remove();if(!pdfPreview.current)cleanup();};
- },[cleanup]);
+ },[cleanup,player]);
  async function open(){
   if(isVoice(mime)&&uri){
    try{
