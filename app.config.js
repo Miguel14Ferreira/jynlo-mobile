@@ -1,6 +1,11 @@
 // Preserve static identifiers and signing metadata from app.json.
 module.exports = ({config}) => {
-  const projectId = (process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '').trim();
+  // Existing Expo project: tmf14s-team/jynlo. Keep all builds bound to this UUID.
+  const projectId = '5628b5c4-513a-4b82-b0fb-7a50cace5cb6';
+  const overriddenProjectId = (process.env.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '').trim();
+  if (overriddenProjectId && overriddenProjectId !== projectId) {
+    throw new Error('O EAS Project ID configurado não corresponde ao projeto Jynlo.');
+  }
   const diagnostic = process.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8 === '1';
   // Disable native shrinking only in internal EAS diagnostic builds.
   // Never silently change the signed Play Store production profile.
@@ -13,6 +18,7 @@ module.exports = ({config}) => {
   return {
     ...config,
     owner: 'tmf14s-team',
+    slug: 'jynlo',
     plugins,
     ...(projectId
       ? {extra: {...(config.extra || {}), eas: {...(config.extra?.eas || {}), projectId}}}
