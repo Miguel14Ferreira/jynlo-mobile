@@ -12,7 +12,7 @@ import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/cha
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C} from '../../src/lib/theme';
-const {giphyImageUrl}=require('../../src/lib/chat-giphy.cjs') as {giphyImageUrl:(text:string|null)=>string|null};
+import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 
 export default function DirectConversation(){
