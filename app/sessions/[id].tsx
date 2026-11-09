@@ -48,17 +48,22 @@ export default function SessionScreen(){
     setError('');setRosterError('');setLoading(true);setDetail(null);setParticipants([]);
     setTeamPreview(null);
     try {
-      // The anonymous route must not expose address or roster.
-      const pub=await sessionPreview(id);setPreview(pub);
       if(auth.token){
+        // The organizer may own a private/community-only session whose public
+        // preview returns 403. Never block an authorized detail behind it.
         const full=await sessionDetail(id,auth.token,auth.username||undefined);
         setDetail(full);
         setMeetingDraft(full.meetingPointInstructions||'');
         setExternalDraft(String(full.externalConfirmedParticipants??0));
+        try{setPreview(await sessionPreview(id));}
+        catch{setPreview(null);}
         if(canViewRoster(full,auth.username)){
           try{setParticipants(await sessionParticipants(id,auth.token));}
           catch{setParticipants([]);setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');}
         }
+      }else{
+        // Guests only ever receive the explicitly public preview.
+        setPreview(await sessionPreview(id));
       }
     }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');}
     finally{setLoading(false);}
