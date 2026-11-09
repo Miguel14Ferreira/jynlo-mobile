@@ -64,12 +64,22 @@ export default function JynloFeedHome(){
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
+  const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
   const load=useCallback(async()=>{
     const id=++reloadNumber.current;
     const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
     const identityChanged=feedIdentity.current!==identity;
-    if(identityChanged){feedIdentity.current=identity;setPosts([]);setStories([]);setOwnStories([]);}
+    if(identityChanged){
+      feedIdentity.current=identity;
+      // Never keep previous-account stories, private comments or pending media
+      // visible when a user logs out or signs into a different account.
+      commentsRequest.current++;
+      setPosts([]);setStories([]);setOwnStories([]);
+      setStoryViewer(null);setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
+      setComposerOpen(false);setComposerMedia(null);setComposerText('');
+      setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
+    }
     setLoading(true);setError('');
     const fetches=await Promise.allSettled([
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
@@ -111,9 +121,17 @@ export default function JynloFeedHome(){
     catch(e){Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}finally{setBusyPost(null);}
   }
   async function openComments(item:FeedItem){if(!item.postId)return;const id=item.postId;
+    const requestId=++commentsRequest.current;
     if(expandedComments===id){setExpandedComments(null);return;}
     setExpandedComments(id);setComments([]);setCommentText('');setCommentsLoading(true);
-    try{setComments(await postComments(id,auth.token));}catch{Alert.alert('Comentários','Não foi possível carregar os comentários.');}finally{setCommentsLoading(false);}
+    try{
+      const next=await postComments(id,auth.token);
+      if(requestId===commentsRequest.current)setComments(next);
+    }catch{
+      if(requestId===commentsRequest.current)Alert.alert('Comentários','Não foi possível carregar os comentários.');
+    }finally{
+      if(requestId===commentsRequest.current)setCommentsLoading(false);
+    }
   }
   async function submitComment(postId:number){if(!requireLogin()||busyPost!==null||!commentText.trim())return;setBusyPost(postId);
     try{const created=await addPostComment(postId,commentText,auth.token,auth.username);setComments(prev=>[...prev,created]);setCommentText('');await load();}
