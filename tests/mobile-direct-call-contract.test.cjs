@@ -209,3 +209,15 @@ test('signed APK bundle check consumes unzip output under pipefail',()=>{
  assert.ok(!workflow.includes("grep -q '^assets/index.android.bundle$'"));
  assert.ok(workflow.includes('apksigner'));
 });
+
+test('signed internal APK uses a narrowly scoped LiveKit R8 JNI workaround',()=>{
+ const workflow=read('.github/workflows/build-android-signed-apk.yml');
+ assert.ok(workflow.includes('Aplicar regras R8 específicas do JNI LiveKit para a APK interna'));
+ assert.ok(workflow.includes('-keep class livekit.org.jni_zero.JniInit { *; }'));
+ assert.ok(workflow.includes('-keep class livekit.org.jni_zero.JniZero { *; }'));
+ assert.ok(workflow.includes('-dontwarn livekit.org.jni_zero.JniZeroJni'));
+ assert.ok(workflow.indexOf('npx expo prebuild --platform android --no-install --clean')<workflow.indexOf('-dontwarn livekit.org.jni_zero.JniZeroJni'));
+ assert.ok(workflow.indexOf('-dontwarn livekit.org.jni_zero.JniZeroJni')<workflow.indexOf('./gradlew :app:assembleRelease'));
+ assert.ok(!workflow.includes('-dontwarn livekit.**'));
+ assert.ok(!workflow.includes('minifyEnabled false'));
+});
