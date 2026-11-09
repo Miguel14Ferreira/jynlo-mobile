@@ -18,7 +18,7 @@ registerGlobals();
 const PEER=/^[a-zA-Z0-9_.@-]{1,128}$/;
 async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
  if(Platform.OS!=='android')return;
- const needed=[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
+ const needed:string[]=[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
  if(media==='video')needed.push(PermissionsAndroid.PERMISSIONS.CAMERA);
  const results=await PermissionsAndroid.requestMultiple(needed);
  if(needed.some(permission=>results[permission]!==PermissionsAndroid.RESULTS.GRANTED)){
