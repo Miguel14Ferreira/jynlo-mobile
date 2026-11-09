@@ -119,18 +119,19 @@ export default function DirectCallScreen(){
     if(active&&sessionRef.current?.callId===callId)setConnectedToPeer(members.participants.length>=2);
    }catch(e){
     if(!active||sessionRef.current?.callId!==callId)return;
-    // Ringing calls return 403 until the recipient accepts; don't call this a failure.
-    if(e instanceof ApiError&&e.status===403)return;
-    if(e instanceof ApiError&&[404,410].includes(e.status)){
+    // A caller may receive 403 while the invitation is still ringing.
+    // Once connected, 403 instead means the session is no longer accessible.
+    if(e instanceof ApiError&&e.status===403&&!connectedToPeer)return;
+    if(e instanceof ApiError&&[403,404,410].includes(e.status)){
      sessionRef.current=null;setSession(null);setConnectedToPeer(false);
-     setError('A chamada terminou ou o convite expirou.');
+     setError('A chamada terminou, expirou ou deixou de estar acessível.');
     }
    }finally{inspectInFlight=false;}
   };
   void inspect();
   const timer=setInterval(()=>{if(AppState.currentState==='active')void inspect();},8000);
   return()=>{active=false;clearInterval(timer);};
- },[session?.callId,auth.token]);
+ },[session?.callId,auth.token,connectedToPeer]);
  async function create(media:DirectCallMedia){
   if(operation.current||!auth.token||!available||!PEER.test(peer))return;
   const version=generation.current;operation.current=true;setBusy(true);setError('');
