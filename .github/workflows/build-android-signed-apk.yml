@@ -52,24 +52,33 @@ jobs:
           npm run check:release
       - name: Gerar Android nativo
         run: npx expo prebuild --platform android --no-install --clean
-      - name: Aplicar regras R8 específicas do JNI LiveKit para a APK interna
+      # The internal APK is for real-device troubleshooting, not store release.
+      # The previously signed R8-minified APK contains a reference to a missing
+      # livekit.org.jni_zero.JniZeroJni class. Silencing it with -dontwarn can
+      # produce a signed but unlaunchable build. Avoid R8 for this diagnostic APK.
+      - name: Desativar minificação R8 apenas para APK interna de diagnóstico
         shell: bash
         run: |
           set -euo pipefail
-          rules="android/app/proguard-rules.pro"
-          test -f "$rules"
-          cat >> "$rules" <<'LIVEKIT_JNI_RULES'
-
-          # LiveKit WebRTC JNI bootstrap: class referenced by the native loader.
-          -keep class livekit.org.jni_zero.JniInit { *; }
-          -keep class livekit.org.jni_zero.JniZero { *; }
-          # This generated JNI shim is absent from the shipped Android dependency.
-          # Suppress only this exact missing-symbol diagnostic; test a real call
-          # before using this signed internal APK as a Play Store release.
-          -dontwarn livekit.org.jni_zero.JniZeroJni
-          LIVEKIT_JNI_RULES
-          grep -Fx -- '-dontwarn livekit.org.jni_zero.JniZeroJni' "$rules"
-          echo "Applied the specific LiveKit JNI R8 compatibility rules."
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          source = p.read_text()
+          import re
+          minify = re.findall(r'(?m)^(\\s*)minifyEnabled\\s+.*$', source)
+          shrink = re.findall(r'(?m)^(\\s*)shrinkResources\\s+.*$', source)
+          if len(minify) != 1 or len(shrink) != 1:
+              raise SystemExit('Unexpected generated Gradle release config; refusing to change signing or build settings')
+          source = re.sub(r'(?m)^(\\s*)minifyEnabled\\s+.*$', r'\\1minifyEnabled false', source)
+          source = re.sub(r'(?m)^(\\s*)shrinkResources\\s+.*$', r'\\1shrinkResources false', source)
+          p.write_text(source)
+          assert 'minifyEnabled false' in source and 'shrinkResources false' in source
+          print('R8/shrinking disabled for this signed INTERNAL diagnostic APK only.')
+          PY
+          if grep -qF -- '-dontwarn livekit.org.jni_zero.JniZeroJni' android/app/proguard-rules.pro; then
+            echo "::error::Do not mask missing LiveKit JNI classes in release rules"
+            exit 1
+          fi
       - name: Carregar chave privada só para este runner
         env:
           JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
@@ -162,6 +171,9 @@ jobs:
           test -n "$apk_signer"
           "$apk_signer" verify --verbose "$apk"
           echo "APK interna assinada e validada. Não foi publicada na Google Play."
+      - name: Avisar que esta APK não foi validada para publicação
+        run: |
+          echo "::notice::APK de diagnóstico interna, sem R8. Exige teste de abertura no dispositivo antes de distribuição."
       - name: Registar versão, origem e commit da APK
         shell: bash
         run: |
