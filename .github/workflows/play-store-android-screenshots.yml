@@ -41,6 +41,30 @@ jobs:
           npx expo prebuild --platform android --no-install --clean
           (cd android && ./gradlew :app:assembleDebug --no-daemon --max-workers=2)
           test -s android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Free disk space after APK build before emulator installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+          echo "Disk before cleanup:"
+          df -h /
+          du -sh node_modules "$HOME/.gradle" android/app/build android/.gradle 2>/dev/null || true
+          # Only the compiled APK is needed by the emulator. Reclaim build
+          # dependencies and transient Gradle caches before installing Android SDK.
+          mkdir -p "$RUNNER_TEMP/jynlo-apk"
+          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-debug.apk"
+          rm -rf node_modules android/.gradle android/build android/app/build "$HOME/.gradle/caches"
+          mkdir -p android/app/build/outputs/apk/debug
+          cp "$RUNNER_TEMP/jynlo-apk/jynlo-debug.apk" "$apk"
+          test -s "$apk"
+          echo "Disk after cleanup:"
+          df -h /
+          free_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$free_kb" -lt 3500000 ]; then
+            echo "::error::At least 3.5 GB disk space is required to install Android emulator image"
+            exit 1
+          fi
       - name: Boot emulator and capture screenshots
         uses: reactivecircus/android-emulator-runner@v2
         with:
