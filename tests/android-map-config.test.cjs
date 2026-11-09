@@ -37,3 +37,13 @@ test('explore screen prevents Android native MapView mount in unconfigured build
  assert.match(screen,/Pesquisar nesta zona/);
  assert.match(screen,/OpenStreetMap/);
 });
+
+test('EAS Android preview build explicitly reads the preview environment and real backend',()=>{
+ const eas=JSON.parse(source('eas.json'));
+ assert.equal(eas.build.preview.environment,'preview');
+ assert.equal(eas.build.preview.distribution,'internal');
+ assert.equal(eas.build.preview.android.buildType,'apk');
+ assert.equal(eas.build.preview.env.JYNLO_REQUIRE_REAL_API,'1');
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+ assert.equal('JYNLO_GOOGLE_MAPS_ANDROID_API_KEY' in eas.build.preview.env,false);
+});
