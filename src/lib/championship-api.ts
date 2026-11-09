@@ -84,3 +84,28 @@ export async function closeCommunityChampionship(communityId:number,championship
  if(!Number.isSafeInteger(championshipId)||championshipId<=0)throw Error('Campeonato inválido.');
  return request<CommunityChampionship>(`${base(communityId)}/${championshipId}/close`,{token,method:'POST'});
 }
+
+export interface ChampionshipTeams {
+ championshipId:number;
+ teams:{id:number;name:string}[];
+ competitionTeams:{id:number;tournamentId:number;tournamentName:string;name:string;championshipTeamId:number|null}[];
+}
+const championshipTeamsBase=(communityId:number,championshipId:number)=>{
+ if(!Number.isSafeInteger(championshipId)||championshipId<=0)throw Error('Campeonato inválido.');
+ return `${base(communityId)}/${championshipId}`;
+};
+export async function getChampionshipTeams(communityId:number,championshipId:number,token:string):Promise<ChampionshipTeams>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar as equipas do campeonato.');
+ return request<ChampionshipTeams>(`${championshipTeamsBase(communityId,championshipId)}/teams`,{token});
+}
+export async function createChampionshipTeam(communityId:number,championshipId:number,name:string,token:string):Promise<ChampionshipTeams>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para criar equipas.');
+ const normalized=name.trim().replace(/\s+/g,' ');
+ if(!normalized||normalized.length>100)throw Error('O nome da equipa deve ter entre 1 e 100 caracteres.');
+ return request<ChampionshipTeams>(`${championshipTeamsBase(communityId,championshipId)}/teams`,{token,method:'POST',body:{name:normalized}});
+}
+export async function linkChampionshipTeam(communityId:number,championshipId:number,tournamentTeamId:number,championshipTeamId:number,token:string):Promise<ChampionshipTeams>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para associar equipas.');
+ if(!Number.isSafeInteger(tournamentTeamId)||tournamentTeamId<=0||!Number.isSafeInteger(championshipTeamId)||championshipTeamId<=0)throw Error('Identificador de equipa inválido.');
+ return request<ChampionshipTeams>(`${championshipTeamsBase(communityId,championshipId)}/competition-teams/${tournamentTeamId}`,{token,method:'PUT',body:{championshipTeamId}});
+}
