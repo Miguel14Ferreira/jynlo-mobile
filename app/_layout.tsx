@@ -16,7 +16,6 @@ function PushNavigation(){
       // Preserve a cold-start notification while SecureStore/login is still resolving.
       // Only consume it after authentication; the destination is resolved in our own inbox.
       if(!auth.token||!auth.username)return;
-      Notifications.clearLastNotificationResponse();
       if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
       const data=response.notification.request.content.data;
       // Never execute routes supplied by a notification. Resolve against own inbox.
@@ -24,7 +23,10 @@ function PushNavigation(){
         !Number.isSafeInteger(data.id)||data.id<=0)return;
       const identifier=response.notification.request.identifier;
       if(lastHandled.current===identifier)return;
+      // Consume only a validated, newly handled notification. Otherwise, an
+      // unrelated action or malformed payload could erase a legitimate tap.
       lastHandled.current=identifier;
+      Notifications.clearLastNotificationResponse();
       router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
     }
     const listener=Notifications.addNotificationResponseReceivedListener(open);
