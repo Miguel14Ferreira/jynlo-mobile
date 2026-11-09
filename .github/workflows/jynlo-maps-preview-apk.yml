@@ -1,0 +1,44 @@
+name: Jynlo Maps Preview APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jynlo-maps-preview-apk
+  cancel-in-progress: false
+
+jobs:
+  preview-apk:
+    name: Validate and request EAS preview APK
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      CI: "1"
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Expo token exists
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Define EXPO_TOKEN em GitHub Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run contract and syntax checks
+        run: npm run test:all
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Request Android APK using EAS Preview
+        run: npx --yes eas-cli@latest build --platform android --profile preview --non-interactive --no-wait
