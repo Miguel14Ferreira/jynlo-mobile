@@ -60,3 +60,17 @@ test('native call room uses server-issued credentials and manages microphone, ca
  assert.ok(direct.includes("pathname:'/messages/call'"));
  assert.ok(!screen.includes('LIVEKIT_API_SECRET'));
 });
+
+test('native calls only connect after audio is ready and release server session on exit',()=>{
+ const screen=read('app/messages/call.tsx');
+ for(const text of [
+  'setAudioReady(false)',
+  'AudioSession.startAudioSession().then',
+  'session&&audioReady?<LiveKitRoom',
+  'session&&!audioReady?',
+  "void endDirectCall(orphan.callId,auth.token).catch(()=>{})",
+  'sessionRef.current=result;setSession(result)',
+  "if(AppState.currentState==='active'&&!operation.current&&!sessionRef.current)",
+  "As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa"
+ ])assert.ok(screen.includes(text),text);
+});
