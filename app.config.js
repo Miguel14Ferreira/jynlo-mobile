@@ -9,17 +9,26 @@ module.exports = ({config}) => {
   const diagnostic = process.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8 === '1';
   // Disable native shrinking only in internal EAS diagnostic builds.
   // Never silently change the signed Play Store production profile.
-  const plugins = diagnostic
-    ? [...(config.plugins || []), ['expo-build-properties', {android:{
-        enableMinifyInReleaseBuilds: false,
-        enableShrinkResourcesInReleaseBuilds: false,
-      }}]]
-    : (config.plugins || []);
+  // A signed Android binary cannot initialize react-native-maps without a
+  // configured Google Maps SDK key. Inject it at build time, never hardcode it.
+  const mapsKey = (process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY || '').trim();
+  if(mapsKey && !/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
+    throw new Error('A chave da Google Maps Android não tem o formato esperado.');
+  const plugins = [
+    ...(config.plugins || []),
+    ...(mapsKey ? [['react-native-maps', {androidGoogleMapsApiKey: mapsKey}]] : []),
+    ...(diagnostic ? [['expo-build-properties', {android:{
+      enableMinifyInReleaseBuilds: false,
+      enableShrinkResourcesInReleaseBuilds: false,
+    }}]] : []),
+  ];
   return {
     ...config,
     owner: 'tmf14s-team',
     slug: 'jynlo',
     plugins,
+    // The native map UI must never mount in binaries without a configured SDK.
+    extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey)},
     ...(projectId
       ? {extra: {...(config.extra || {}), eas: {...(config.extra?.eas || {}), projectId}}}
       : {}),
