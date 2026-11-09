@@ -41,7 +41,7 @@ test('championship detail manages existing tournaments and winner points with se
  const screen=read('app/communities/[id]/championships/[championshipId].tsx');
  for(const item of ['addChampionshipCompetition','setChampionshipWinnerPoints','/winner-points','method:\'PUT\'','method:\'POST\''])
   assert.ok(api.includes(item),item);
- for(const item of ['tournamentsForCommunity','item.sport===selected.sport','organizer','Associar torneios existentes','Adicionar ao campeonato','Guardar pontuação','setChampionshipWinnerPoints','addChampionshipCompetition'])
+ for(const item of ['tournamentsForCommunity','t.sport===selected.sport','organizer','Associar torneios existentes','Adicionar ao campeonato','Guardar pontuação','setChampionshipWinnerPoints','addChampionshipCompetition'])
   assert.ok(screen.includes(item),item);
  assert.ok(!screen.includes('Linking.openURL'));
 });
