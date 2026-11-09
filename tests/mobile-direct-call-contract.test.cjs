@@ -168,3 +168,13 @@ test('CI validates LiveKit Android native prebuild before relying on signed APK 
  assert.ok(apk.includes('npm run test:all'));
  assert.ok(apk.includes('npm run typecheck'));
 });
+
+test('Android and iOS advertise call-media permissions before a LiveKit release',()=>{
+ const expo=JSON.parse(read('app.json')).expo;
+ const permissions=expo.android.permissions;
+ for(const permission of ['android.permission.RECORD_AUDIO','android.permission.CAMERA','android.permission.MODIFY_AUDIO_SETTINGS'])
+  assert.ok(permissions.includes(permission),permission);
+ assert.match(expo.ios.infoPlist.NSMicrophoneUsageDescription,/microfone/);
+ assert.match(expo.ios.infoPlist.NSCameraUsageDescription,/câmara/);
+ assert.equal(new Set(permissions).size,permissions.length);
+});
