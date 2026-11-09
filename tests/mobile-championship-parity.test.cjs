@@ -63,3 +63,14 @@ test('numeric score validation recognizes digits rather than literal backslash-d
  assert.ok(!api.includes(String.raw`/^\\d{1,5}$/`),'do not double-escape digit classes');
  assert.ok(!screen.includes(String.raw`/^\\d+$/`),'do not double-escape digit classes');
 });
+
+test('championship finalization is explicit, organizer-only and archives become read-only',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const screen=read('app/communities/[id]/championships/[championshipId].tsx');
+ for(const token of ['closeCommunityChampionship','/close','method:\'POST\'','closedAt:string|null','championDisplayName:string|null'])
+  assert.ok(api.includes(token),token);
+ for(const token of ['Encerrar definitivamente','style:\'destructive\'','closeCommunityChampionship','!championship.closedAt','Campeonato encerrado','item.status===\'DRAFT\''])
+  assert.ok(screen.includes(token),token);
+ assert.ok(screen.includes('championship?.closedAt'),'closed championship must reject local mutation attempts');
+ assert.ok(!screen.includes('Linking.openURL'));
+});
