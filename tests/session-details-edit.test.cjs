@@ -51,3 +51,11 @@ test('capacity cannot displace existing participants or externally confirmed pla
  assert.throws(()=>editSessionPayload({...input(),maxParticipants:'9',currentExternalConfirmedParticipants:9},['Padel']),/externos/);
  assert.equal(editSessionPayload({...input(),currentParticipantCount:8,currentExternalConfirmedParticipants:5},['Padel']).maxParticipants,10);
 });
+
+test('edit form reuses stable local date/time input formatters',()=>{
+ const edit=source('app/sessions/[id]/edit.tsx');
+ assert.match(edit,/formatLocalDateInput\(value\)/);
+ assert.match(edit,/formatLocalTimeInput\(value\)/);
+ assert.match(edit,/currentParticipantCount:session\.participantCount/);
+ assert.match(edit,/currentExternalConfirmedParticipants:session\.externalConfirmedParticipants/);
+});
