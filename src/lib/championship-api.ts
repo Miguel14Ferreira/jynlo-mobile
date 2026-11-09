@@ -41,3 +41,17 @@ export async function createCommunityChampionship(communityId:number,token:strin
   throw Error('Preenche o nome, a modalidade e a época dentro dos limites permitidos.');
  return request<CommunityChampionship>(base(communityId),{token,method:'POST',body:{name,sport,seasonLabel}});
 }
+
+export async function addChampionshipCompetition(communityId:number,championshipId:number,tournamentId:number,token:string):Promise<CommunityChampionship>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para gerir campeonatos.');
+ if(!Number.isSafeInteger(championshipId)||championshipId<=0||!Number.isSafeInteger(tournamentId)||tournamentId<=0)
+  throw Error('Campeonato ou torneio inválido.');
+ return request<CommunityChampionship>(`${base(communityId)}/${championshipId}/competitions/${tournamentId}`,{token,method:'POST'});
+}
+export async function setChampionshipWinnerPoints(communityId:number,championshipId:number,tournamentId:number,points:number,token:string):Promise<CommunityChampionship>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para gerir campeonatos.');
+ if(!Number.isSafeInteger(championshipId)||championshipId<=0||!Number.isSafeInteger(tournamentId)||tournamentId<=0)
+  throw Error('Campeonato ou torneio inválido.');
+ if(!Number.isInteger(points)||points<0||points>10000)throw Error('A pontuação deve estar entre 0 e 10000.');
+ return request<CommunityChampionship>(`${base(communityId)}/${championshipId}/competitions/${tournamentId}/winner-points`,{token,method:'PUT',body:{points}});
+}
