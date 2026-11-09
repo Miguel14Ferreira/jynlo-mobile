@@ -43,6 +43,7 @@ export default function SessionChat(){
   let active=true;
   const version=++generation.current;
   setEntries([]);setClosed(false);setError('');setLoading(true);setDraft('');setReply(null);
+  sendingNow.current=false;setSending(false);setUploading(false);
   setPhoto(null);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
   void refresh(false,version);
@@ -59,7 +60,7 @@ export default function SessionChat(){
    setDraft('');setReply(null);await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Falha no envio.')+
    ' Consulta o histórico antes de voltares a tentar.');}
-  finally{sendingNow.current=false;if(version===generation.current)setSending(false);}
+  finally{if(version===generation.current){sendingNow.current=false;setSending(false);}}
  }
  async function choosePhoto(){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
@@ -78,7 +79,7 @@ export default function SessionChat(){
    if(version!==generation.current)return;
    setPhoto(null);setReply(null);await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
-  finally{sendingNow.current=false;if(version===generation.current)setUploading(false);}
+  finally{if(version===generation.current){sendingNow.current=false;setUploading(false);}}
  }
  return <Page><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
