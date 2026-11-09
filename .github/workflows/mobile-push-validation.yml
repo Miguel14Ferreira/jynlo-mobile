@@ -84,6 +84,8 @@ jobs:
         run: npx expo export --platform android --output-dir /tmp/jynlo-android-bundle
       - name: Expo config and dependencies
         run: npx --yes expo-doctor
+      - name: Validate native Android generation (LiveKit / WebRTC)
+        run: npx expo prebuild --platform android --no-install --clean
       - name: Check EAS project binding
         env:
           EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
