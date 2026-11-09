@@ -178,3 +178,19 @@ test('Android and iOS advertise call-media permissions before a LiveKit release'
  assert.match(expo.ios.infoPlist.NSCameraUsageDescription,/câmara/);
  assert.equal(new Set(permissions).size,permissions.length);
 });
+
+test('Android requests the correct media permissions before initiating or accepting calls',()=>{
+ const screen=read('app/messages/call.tsx');
+ for(const marker of [
+  "if(Platform.OS!=='android')return",
+  'PermissionsAndroid.PERMISSIONS.RECORD_AUDIO',
+  "if(media==='video')needed.push(PermissionsAndroid.PERMISSIONS.CAMERA)",
+  'PermissionsAndroid.requestMultiple(needed)',
+  'PermissionsAndroid.RESULTS.GRANTED',
+  'await ensureCallPermissions(media)',
+  'await ensureCallPermissions(invitation.media)',
+  'if(version!==generation.current)return;'
+ ])assert.ok(screen.includes(marker),marker);
+ assert.ok(screen.indexOf('await ensureCallPermissions(media)')<screen.indexOf('await startDirectCall(peer,media,auth.token)'));
+ assert.ok(screen.indexOf('await ensureCallPermissions(invitation.media)')<screen.indexOf('await acceptDirectCall(invitation.callId,auth.token)'));
+});
