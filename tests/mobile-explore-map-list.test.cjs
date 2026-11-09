@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('map and list use the same filtered discoverSessions response',()=>{
  const screen=read('app/(tabs)/explore.tsx');
  assert.ok(screen.includes("const [display,setDisplay]=useState<'map'|'list'>('list')"));
- assert.ok(screen.includes('discoverSessions({sport:sport||undefined,city:debouncedCity,availableOnly}'));
+ assert.ok(screen.includes('discoverSessions({sport:sport||undefined,city:mapArea?undefined:debouncedCity,availableOnly,'));
  assert.ok(screen.includes("setDisplay('map')"));
  assert.ok(screen.includes("setDisplay('list')"));
  assert.ok(screen.includes("display==='map'?"));
@@ -38,4 +38,22 @@ test('native map package is Expo SDK 58 compatible and uses OpenStreetMap tiles'
  assert.ok(screen.includes("import MapView,{Marker,UrlTile} from 'react-native-maps'"));
  assert.ok(screen.includes('mapType="none"'));
  assert.ok(screen.includes('https://tile.openstreetmap.org/{z}/{x}/{y}.png'));
+});
+
+test('map-area search is explicit, bounded, cleared by city changes and shares sport/vacancy filters',()=>{
+ const screen=read('app/(tabs)/explore.tsx');
+ for(const text of [
+  'onRegionChangeComplete={region=>{viewport.current=region;}}',
+  'Pesquisar nesta área',
+  'setMapArea({latitude:r.latitude,longitude:r.longitude,radiusKm})',
+  'setMapArea(null)',
+  'const updateCity=(value:string)=>{setCity(value);setMapArea(null);};',
+  "sport:sport||undefined,city:mapArea?undefined:debouncedCity,availableOnly,",
+  "...(mapArea?{...mapArea,sort:'distance' as const}:{})"
+ ]) assert.ok(screen.includes(text),text);
+ const api=read('src/lib/api.ts');
+ for(const text of ["q.set('latitude'","q.set('longitude'","q.set('radiusKm'","filters.radiusKm>=5&&filters.radiusKm<=500","filters.sort==='distance'&&hasMapArea"])
+  assert.ok(api.includes(text),text);
+ const types=read('src/lib/types.ts');
+ assert.ok(types.includes("radiusKm?: number; sort?: 'date' | 'distance'"));
 });
