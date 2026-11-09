@@ -1,4 +1,4 @@
-import React,{useCallback,useMemo,useState} from 'react';
+import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {Page,Brand,DemoBanner,Loader,Message} from '../src/components/UI';
@@ -9,8 +9,25 @@ import type {FeedUserSuggestion} from '../src/lib/types';
 export default function DiscoverPeople(){
   const auth=useAuth();const [people,setPeople]=useState<FeedUserSuggestion[]>([]);
   const [query,setQuery]=useState(''),[loading,setLoading]=useState(false),[error,setError]=useState('');
-  const load=useCallback(async()=>{setLoading(true);setError('');try{setPeople(await discoverPeople(auth.token));}catch{setError('Não foi possível procurar pessoas.');}finally{setLoading(false);}},[auth.token]);
-  useFocusEffect(useCallback(()=>{void load();},[load]));
+  const generation=useRef(0);
+  const load=useCallback(async()=>{
+    const requestId=++generation.current;
+    // Clearing previous suggestions immediately prevents private results
+    // from being shown after a logout or account change.
+    setPeople([]);setLoading(true);setError('');
+    try{
+      const next=await discoverPeople(auth.token);
+      if(requestId===generation.current)setPeople(next);
+    }catch{
+      if(requestId===generation.current)setError('Não foi possível procurar pessoas.');
+    }finally{
+      if(requestId===generation.current)setLoading(false);
+    }
+  },[auth.token]);
+  useFocusEffect(useCallback(()=>{
+    void load();
+    return()=>{generation.current++;setPeople([]);};
+  },[load]));
   const filtered=useMemo(()=>people.filter(p=>(`${p.username} ${p.displayName} ${p.sport||''} ${p.city||''}`).toLowerCase().includes(query.trim().toLowerCase())),[people,query]);
   return <Page><Brand subtitle="AS TUAS PESSOAS"/><DemoBanner/>
     <Text style={styles.title}>Pessoas para conhecer</Text>
