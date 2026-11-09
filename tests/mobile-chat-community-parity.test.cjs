@@ -145,3 +145,19 @@ test('private send does not erase unsent text with a different original value',(
  assert.ok(direct.includes('const submittedText=originalDraft.trim()'));
  assert.ok(direct.includes("setDraft(current=>current===originalDraft?'':current)"));
 });
+
+test('private attachment downloads ignore responses from previous chat identities',()=>{
+ const attachment=read('src/components/SecureChatAttachment.tsx');
+ for(const item of [
+  'generation=useRef(0)','const version=++generation.current',
+  'if(generation.current===version)generation.current++',
+  'generation.current!==version','[cleanup,scope,conversationId,messageId,token]',
+  'if(generation.current===version){pending.current=false'
+ ])assert.ok(attachment.includes(item),item);
+ assert.ok(attachment.includes("if(file?.exists)try{file.delete();}catch{}"));
+});
+test('PDF composer stale upload completion must not clear busy flag of new conversation',()=>{
+ const composer=read('src/components/ChatPdfComposer.tsx');
+ assert.ok(composer.includes('if(active.current&&generation.current===version)setBusy(false)'));
+ assert.ok(composer.includes('generation.current!==version'));
+});
