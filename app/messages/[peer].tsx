@@ -209,24 +209,6 @@ export default function DirectConversation(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
-  {!loading&&!error&&messages.length===0?<Message>Ainda não existem mensagens nesta conversa.</Message>:null}
-  {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
-   <Text style={styles.sender}>{m.username1}</Text>
-   {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
-   {m.deletedAt?<Text style={styles.body}>Mensagem removida</Text>:
-    giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
-      accessibilityLabel="GIF enviado na conversa"/>:
-    <Text style={styles.body}>{m.text||m.attachmentName||'Mensagem sem texto'}</Text>}
-   {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
-   <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
-     new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
-  </View>)}
-  {photo?<View style={styles.photoContainer}>
-   <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
-   <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
-   <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
-  </View>:null}
   {auth.token&&!DEMO_MODE&&peer.toLowerCase()!==auth.username?.toLowerCase()?<View style={styles.safety}>
    <Eyebrow>SEGURANÇA DA CONVERSA</Eyebrow>
    {blocked?<Message>Bloqueaste este utilizador. As mensagens estão desativadas.</Message>:null}
@@ -245,6 +227,24 @@ export default function DirectConversation(){
     <Button danger title={safetyBusy?'A enviar denúncia…':'Enviar denúncia'} 
       disabled={safetyBusy||!reportReason.trim()} onPress={()=>{void submitReport();}}/>
    </View>:null}
+  </View>:null}
+  {!loading&&!error&&messages.length===0?<Message>Ainda não existem mensagens nesta conversa.</Message>:null}
+  {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
+   <Text style={styles.sender}>{m.username1}</Text>
+   {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
+   {m.deletedAt?<Text style={styles.body}>Mensagem removida</Text>:
+    giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
+      accessibilityLabel="GIF enviado na conversa"/>:
+    <Text style={styles.body}>{m.text||m.attachmentName||'Mensagem sem texto'}</Text>}
+   {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
+   <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
+     new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
+  </View>)}
+  {photo?<View style={styles.photoContainer}>
+   <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
+   <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
+   <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
+   <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
   <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
   </ScrollView>
