@@ -50,7 +50,16 @@ function encodeFilters(filters:SessionFilters): string {
   if(filters.sport?.trim())q.set('sport',filters.sport.trim());
   if(filters.city?.trim())q.set('city',filters.city.trim());
   if(filters.availableOnly)q.set('availability','available');
-  q.set('sort','date');
+  const hasMapArea=typeof filters.latitude==='number'&&typeof filters.longitude==='number'&&typeof filters.radiusKm==='number'
+    &&Number.isFinite(filters.latitude)&&Number.isFinite(filters.longitude)&&Number.isFinite(filters.radiusKm)
+    &&Math.abs(filters.latitude)<=90&&Math.abs(filters.longitude)<=180
+    &&filters.radiusKm>=5&&filters.radiusKm<=500;
+  if(hasMapArea){
+    q.set('latitude',String(filters.latitude));
+    q.set('longitude',String(filters.longitude));
+    q.set('radiusKm',String(filters.radiusKm));
+  }
+  q.set('sort',filters.sort==='distance'&&hasMapArea?'distance':'date');
   return q.toString();
 }
 export async function discoverSessions(filters:SessionFilters,token?:string|null,username?:string):Promise<SessionSummary[]>{
