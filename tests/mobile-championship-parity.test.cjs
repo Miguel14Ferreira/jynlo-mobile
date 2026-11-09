@@ -74,3 +74,15 @@ test('championship finalization is explicit, organizer-only and archives become 
  assert.ok(screen.includes('championship?.closedAt'),'closed championship must reject local mutation attempts');
  assert.ok(!screen.includes('Linking.openURL'));
 });
+
+test('season teams are managed with native championship endpoints and confirmed writes',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const screen=read('app/communities/[id]/championships/teams.tsx');
+ const detail=read('app/communities/[id]/championships/[championshipId].tsx');
+ for(const token of ['getChampionshipTeams','createChampionshipTeam','linkChampionshipTeam','/teams','/competition-teams/','championshipTeamId','method:\'PUT\''])
+  assert.ok(api.includes(token),token);
+ for(const token of ['communityDetails','role===\'OWNER\'||role===\'ADMIN\'','closedAt','Alert.alert','createChampionshipTeam','linkChampionshipTeam','competitionTeams','setSelected'])
+  assert.ok(screen.includes(token),token);
+ assert.ok(detail.includes('championships/teams'),'championship detail links to native team management');
+ assert.ok(!screen.includes('Linking.openURL'),'must not send users back to the website');
+});
