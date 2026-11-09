@@ -156,3 +156,15 @@ test('active LiveKit calls close if permission is revoked; ringing invitations r
  assert.ok(screen.includes('[403,404,410].includes(e.status)'));
  assert.ok(screen.includes('sessionRef.current=null;setSession(null);setConnectedToPeer(false)'));
 });
+
+test('CI validates LiveKit Android native prebuild before relying on signed APK output',()=>{
+ const ci=read('.github/workflows/mobile-push-validation.yml');
+ const apk=read('.github/workflows/build-android-signed-apk.yml');
+ const native='npx expo prebuild --platform android --no-install --clean';
+ assert.ok(ci.includes(native));
+ assert.ok(ci.includes("name: Validate native Android generation (LiveKit / WebRTC)"));
+ assert.ok(ci.indexOf(native)>ci.indexOf('npx expo export --platform android'));
+ assert.ok(apk.includes(native));
+ assert.ok(apk.includes('npm run test:all'));
+ assert.ok(apk.includes('npm run typecheck'));
+});
