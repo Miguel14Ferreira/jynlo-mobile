@@ -29,6 +29,7 @@ export default function DirectConversation(){
  const generation=useRef(0),conversation=useRef('');
  const pendingRefresh=useRef(false);
  const [blocked,setBlocked]=useState(false);
+ const [blockStatusKnown,setBlockStatusKnown]=useState(false);
  const [safetyBusy,setSafetyBusy]=useState(false);
  const [showReport,setShowReport]=useState(false);
  const [reportReason,setReportReason]=useState('');
@@ -82,11 +83,11 @@ export default function DirectConversation(){
    if(active&&generation.current===version)setPhotoAvailable(available);
   }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
   void refresh(false,version);
-  setShowReport(false);setReportReason('');setBlocked(false);
+  setShowReport(false);setReportReason('');setBlocked(false);setBlockStatusKnown(false);
   if(auth.token&&peer&&peer.toLowerCase()!==auth.username?.toLowerCase()&&!DEMO_MODE){
    void userBlockStatus(peer,auth.token).then(value=>{
-    if(active&&generation.current===version)setBlocked(value);
-   }).catch(()=>{ /* A failed status read must not claim anyone is blocked. */ });
+    if(active&&generation.current===version){setBlocked(value);setBlockStatusKnown(true);}
+   }).catch(()=>{ /* Keep calls disabled when the block status cannot be verified. */ });
   }
   // Poll only while focused; old responses cannot overwrite a new conversation.
   const timer=setInterval(()=>{
@@ -111,7 +112,7 @@ export default function DirectConversation(){
   try{
    const value=blocked?await unblockUser(peer,auth.token):await blockUser(peer,auth.token);
    if(conversation.current!==identity)return;
-   setBlocked(value);
+   setBlocked(value);setBlockStatusKnown(true);
    Alert.alert(value?'Utilizador bloqueado':'Utilizador desbloqueado',
     value?'Deixaste de poder trocar mensagens com este utilizador.':'Podes voltar a comunicar com este utilizador.');
    await refresh(true,generation.current);
@@ -192,7 +193,7 @@ export default function DirectConversation(){
  return <Page><DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
-  {auth.token&&!DEMO_MODE&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
+  {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
