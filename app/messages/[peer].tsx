@@ -260,7 +260,15 @@ export default function DirectConversation(){
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
     style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
-  {!blockStatusKnown&&auth.token?<Text style={styles.note}>A verificar se esta conversa permite enviar mensagens…</Text>:null}
+  {blocked?<Text style={styles.note}>Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.</Text>:null}
+  {!blockStatusKnown&&auth.token&&!DEMO_MODE?<View style={{gap:7}}>
+    <Text style={styles.note}>Não foi possível confirmar ainda se esta conversa permite enviar mensagens.</Text>
+    <Pressable accessibilityRole="button" onPress={()=>{
+      if(!auth.token||!peer)return;
+      void userBlockStatus(peer,auth.token).then(value=>{setBlocked(value);setBlockStatusKnown(true);})
+        .catch(()=>setError('Não foi possível verificar o estado do contacto. Tenta novamente.'));
+    }}><Text style={styles.attachmentToggleText}>Verificar novamente</Text></Pressable>
+  </View>:null}
   <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
   <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
