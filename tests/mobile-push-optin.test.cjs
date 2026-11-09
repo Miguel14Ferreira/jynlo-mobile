@@ -124,7 +124,7 @@ test('logout and token expiry clear previous account notification presentation',
  assert.match(auth,/try\{await clearNativePushPresentation\(\);\}catch/);
  assert.match(auth,/void clearNativePushPresentation\(\)\.catch/);
  assert.ok(auth.indexOf('try{await clearNativePushPresentation();}')<
-    auth.indexOf('await logoutServer(token)'));
+    auth.indexOf('await logoutServer(tokenToRevoke)'));
 });
 
 test('cold start processes push only after SecureStore authentication restoration',()=>{
