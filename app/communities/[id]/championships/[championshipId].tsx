@@ -75,7 +75,7 @@ export default function ChampionshipDetail(){
      <Button secondary title="Guardar pontuação" disabled={saving} onPress={()=>{
       const raw=pointsDraft[item.id]??String(item.winnerPoints);
       const points=Number(raw);
-      if(!/^\\d+$/.test(raw)||!Number.isInteger(points)||points>10000){setManageError('Indica uma pontuação inteira entre 0 e 10000.');return;}
+      if(!/^\d+$/.test(raw)||!Number.isInteger(points)||points>10000){setManageError('Indica uma pontuação inteira entre 0 e 10000.');return;}
       void update(()=>setChampionshipWinnerPoints(communityId,competitionId,item.id,points,auth.token!));
      }}/>
     </View>:null}
