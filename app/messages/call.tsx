@@ -61,7 +61,8 @@ export default function DirectCallScreen(){
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [audioReady,setAudioReady]=useState(false),[connectedToPeer,setConnectedToPeer]=useState(false);
  const generation=useRef(0),operation=useRef(false),sessionRef=useRef<DirectCallSession|null>(null),ending=useRef(false);
- useEffect(()=>{sessionRef.current=session;},[session]);
+ // Session ownership is updated synchronously in start/accept/end handlers.
+ // A delayed React effect must never resurrect an already closed server session.
  const refresh=useCallback(async(version:number)=>{
   if(!auth.token||!PEER.test(peer))return;
   try{
@@ -80,7 +81,10 @@ export default function DirectCallScreen(){
   return()=>{
    clearInterval(timer);generation.current++;
    const orphan=sessionRef.current;
-   if(orphan&&auth.token){sessionRef.current=null;void endDirectCall(orphan.callId,auth.token).catch(()=>{});}
+   if(orphan){
+    sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false);
+    if(auth.token)void endDirectCall(orphan.callId,auth.token).catch(()=>{});
+   }
   };
  },[refresh]));
  useEffect(()=>{
@@ -106,7 +110,10 @@ export default function DirectCallScreen(){
   if(!session||!auth.token){setConnectedToPeer(false);return;}
   let active=true;
   const callId=session.callId;
+  let inspectInFlight=false;
   const inspect=async()=>{
+   if(inspectInFlight)return;
+   inspectInFlight=true;
    try{
     const members=await directCallMembers(callId,auth.token!);
     if(active&&sessionRef.current?.callId===callId)setConnectedToPeer(members.participants.length>=2);
@@ -118,7 +125,7 @@ export default function DirectCallScreen(){
      sessionRef.current=null;setSession(null);setConnectedToPeer(false);
      setError('A chamada terminou ou o convite expirou.');
     }
-   }
+   }finally{inspectInFlight=false;}
   };
   void inspect();
   const timer=setInterval(()=>{if(AppState.currentState==='active')void inspect();},8000);
