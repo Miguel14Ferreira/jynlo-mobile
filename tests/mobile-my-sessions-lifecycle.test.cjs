@@ -1,0 +1,25 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const code=fs.readFileSync(path.join(__dirname,'../app/my-sessions.tsx'),'utf8');
+
+test('my-sessions invalidates stale responses after account or focus change',()=>{
+ assert.match(code,/const generation=useRef\(0\)/);
+ assert.match(code,/const requestId=\+\+generation\.current/);
+ assert.match(code,/if\(requestId===generation\.current\)setData\(next\)/);
+ assert.match(code,/if\(requestId===generation\.current\)setError/);
+ assert.match(code,/if\(requestId===generation\.current\)setLoading\(false\)/);
+ assert.match(code,/\},\[auth\.token,auth\.username\]\)/);
+});
+
+test('my-sessions removes previously visible roster immediately and on screen exit',()=>{
+ assert.match(code,/setData\(\{created:\[\],joined:\[\],waitlisted:\[\]\}\);setError\(''\)/);
+ assert.match(code,/return\(\)=>\{generation\.current\+\+;setData\(\{created:\[\],joined:\[\],waitlisted:\[\]\}\);\}/);
+});
+
+test('my-sessions never loads private roster without both auth credentials',()=>{
+ assert.match(code,/if\(!auth\.token\|\|!auth\.username\)\{setLoading\(false\);return;\}/);
+ assert.match(code,/mySessions\(auth\.token,auth\.username\)/);
+});
