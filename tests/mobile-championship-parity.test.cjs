@@ -86,3 +86,16 @@ test('season teams are managed with native championship endpoints and confirmed 
  assert.ok(detail.includes('championships/teams'),'championship detail links to native team management');
  assert.ok(!screen.includes('Linking.openURL'),'must not send users back to the website');
 });
+
+test('championship honours use official closed season results and preserve team identity boundaries',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const screen=read('app/communities/[id]/championships/honours.tsx');
+ const listing=read('app/communities/[id]/competitions.tsx');
+ for(const token of ['championshipHonours','/honours','completedSeasons','individualHonours','championName','championshipId'])
+  assert.ok(api.includes(token),token);
+ for(const token of ['championshipHonours','useFocusEffect','honours.titles.map','individualHonours.map','entryType','router.push'])
+  assert.ok(screen.includes(token),token);
+ assert.ok(screen.includes('Equipas de épocas diferentes não são associadas apenas pelo nome.'));
+ assert.ok(listing.includes('championships/honours'));
+ assert.ok(!screen.includes('Linking.openURL'));
+});
