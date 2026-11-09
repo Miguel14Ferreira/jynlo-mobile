@@ -106,3 +106,15 @@ test('championship section stays visible if only tournament retrieval fails',()=
  assert.ok(listing.includes("else setChampionshipError("),'championship errors remain independent');
  assert.ok(listing.includes("else setError("),'tournament errors remain independent');
 });
+
+test('season team selection blocks duplicate mappings within one tournament only',()=>{
+ const screen=read('app/communities/[id]/championships/teams.tsx');
+ for(const token of ['conflictingTeamIds','other.tournamentId===entry.tournamentId','other.id!==entry.id','conflictingTeamIds.has(team.id)','conflictingTeamIds.has(picked)','Já utilizada nesta prova'])
+  assert.ok(screen.includes(token),token);
+});
+test('championship edits and tests trigger mobile validation workflow',()=>{
+ const workflow=read('.github/workflows/mobile-push-validation.yml');
+ assert.ok(workflow.includes("'src/lib/championship-api.ts'"));
+ assert.ok(workflow.includes("'tests/mobile-championship-parity.test.cjs'"));
+ assert.ok(workflow.includes("'app/communities/**'"));
+});
