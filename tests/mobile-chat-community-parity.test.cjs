@@ -117,7 +117,7 @@ test('session chat discards stale responses after navigation and never auto-retr
   'refreshing.current===version', 'if(version===generation.current){sendingNow.current=false',
   "Consulta o histórico antes de voltares a tentar."
  ])assert.ok(screen.includes(marker),marker);
- assert.ok(screen.includes("postSessionChat(id,draft,auth.token,reply?.id)"));
+ assert.ok(screen.includes("postSessionChat(id,originalDraft,auth.token,originalReplyId)"));
  assert.ok(!screen.includes("setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000)"));
 });
 
