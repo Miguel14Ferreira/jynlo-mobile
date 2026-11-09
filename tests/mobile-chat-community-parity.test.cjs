@@ -107,3 +107,16 @@ test('community chat photo upload checks private storage and requires confirmati
  assert.match(chat,/setPhoto\(null\)/);
  assert.match(chat,/SecureChatAttachment scope="community"/);
 });
+
+test('session chat discards stale responses after navigation and never auto-retries sends',()=>{
+ const screen=read('app/sessions/[id]/chat.tsx');
+ for(const marker of [
+  'generation=useRef(0)', 'const version=++generation.current',
+  'version!==generation.current', 'generation.current++',
+  "AppState.currentState==='active'", "void refresh(true,version)",
+  'refreshing.current===version', 'if(version===generation.current){sendingNow.current=false',
+  "Consulta o histórico antes de voltares a tentar."
+ ])assert.ok(screen.includes(marker),marker);
+ assert.ok(screen.includes("postSessionChat(id,draft,auth.token,reply?.id)"));
+ assert.ok(!screen.includes("setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000)"));
+});
