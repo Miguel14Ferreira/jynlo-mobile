@@ -118,3 +118,10 @@ test('championship edits and tests trigger mobile validation workflow',()=>{
  assert.ok(workflow.includes("'tests/mobile-championship-parity.test.cjs'"));
  assert.ok(workflow.includes("'app/communities/**'"));
 });
+
+test('community championship list labels archived seasons and official champion',()=>{
+ const listing=read('app/communities/[id]/competitions.tsx');
+ assert.ok(listing.includes("championship.closedAt?'Encerrado':'Em curso'"));
+ assert.ok(listing.includes('championship.championDisplayName'));
+ assert.ok(listing.includes('Campeão:'));
+});
