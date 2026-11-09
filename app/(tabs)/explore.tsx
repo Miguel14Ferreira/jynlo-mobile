@@ -116,6 +116,7 @@ export default function DiscoverScreen(){
           onPress={()=>setSelectedPin(s.id)}/>)}
      </MapView>
      <Text style={styles.mapNotice}>{mappedSessions.length} sessões com localização pública no mapa · {sessions.length} resultados nos filtros</Text>
+     <Text style={styles.mapNotice}>© OpenStreetMap contributors</Text>
      {sessions.length>0&&mappedSessions.length===0?<Message>Estas sessões ainda não têm coordenadas públicas no servidor. Podes consultá-las na vista Lista; não mostramos pins aproximados nem moradas privadas.</Message>:null}
      {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
    </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
