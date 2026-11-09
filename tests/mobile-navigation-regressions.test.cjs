@@ -41,3 +41,10 @@ test('session detail ignores delayed responses after navigation or account chang
  assert.match(code,/return \(\)=>\{detailRequestGeneration\.current\+\+;\}/);
  assert.match(code,/setPreview\(null\);setParticipants\(\[\]\)/);
 });
+
+test('private chat does not send before the server confirms contact safety status',()=>{
+ const code=source('app/messages/[peer].tsx');
+ assert.match(code,/blocked\|\|!blockStatusKnown\|\|!auth\.token\|\|!draft\.trim\(\)/);
+ assert.match(code,/auth\.token&&!blocked&&blockStatusKnown\?<View style=\{styles\.composer\}>/);
+ assert.match(code,/Verificar novamente/);
+});
