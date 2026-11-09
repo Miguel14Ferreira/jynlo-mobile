@@ -43,3 +43,10 @@ test('Google signing diagnostics and build validation are preserved',()=>{
   'app/login.tsx','app/google-onboarding.tsx','app/mfa.tsx','tests/mobile-google-auth-validation.test.cjs'])
   assert.ok(validation.includes("'"+name+"'"),name);
 });
+
+test('a partially persisted token and username are deleted before reporting a failed login',()=>{
+ const auth=read('src/lib/auth.tsx');
+ assert.ok(auth.includes('Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)])'));
+ assert.ok(auth.includes('Não foi possível guardar a sessão em segurança'));
+ assert.ok(auth.indexOf('setUsername(name);')>auth.indexOf('Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY)'));
+});
