@@ -46,6 +46,8 @@ function Choice({title,active,onPress}:{title:string;active:boolean;onPress:()=>
 export default function CreateTournamentScreen(){
  const router=useRouter(),auth=useAuth();
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
+ const requestedCommunityId=Number(params.communityId);
+ const scopedToCommunity=Number.isSafeInteger(requestedCommunityId)&&requestedCommunityId>0;
  const generation=useRef(0),identityRef=useRef(''),savingRef=useRef(false),communityOverridden=useRef(false);
  const currentCommunityRef=useRef<number|null>(null);
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
@@ -67,7 +69,7 @@ export default function CreateTournamentScreen(){
   try{
    const all=await myCommunities(auth.token,auth.username);
    if(version!==generation.current)return;
-   const allowed=all.filter(c=>c.myRole==='OWNER'||c.myRole==='ADMIN');
+   const allowed=all.filter(c=>(c.myRole==='OWNER'||c.myRole==='ADMIN')&&(!scopedToCommunity||c.id===requestedCommunityId));
    setCommunities(allowed);
    setCommunityId(current=>{
     const preferred=Number(params.communityId);
@@ -76,7 +78,7 @@ export default function CreateTournamentScreen(){
    });
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar as comunidades.');}
   finally{if(version===generation.current)setLoading(false);}
- },[auth.token,auth.username,params.communityId]);
+ },[auth.token,auth.username,params.communityId,scopedToCommunity,requestedCommunityId]);
  useFocusEffect(useCallback(()=>{
   const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(params.communityId||'')+'|'+String(params.sport||'');
   if(identityRef.current!==identity){
@@ -151,14 +153,14 @@ export default function CreateTournamentScreen(){
   <Text style={styles.sub}>Escolhe uma das modalidades da comunidade. O formato e a classificação dependem da prova, nunca de uma tabela genérica de futebol.</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&auth.token&&communities.length===0?<Message>Precisas de ser proprietário ou administrador de uma comunidade para criar torneios.</Message>:null}
+  {!loading&&auth.token&&communities.length===0?<Message>Não tens permissões para criar torneios nesta comunidade. Confirma que és proprietário ou administrador.</Message>:null}
   {!loading&&communities.length>0?<><View style={styles.panel}>
    <Text style={styles.heading}>1. Comunidade</Text>
-   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+   {scopedToCommunity?<Text style={styles.helper}>{selected?.name||'Comunidade selecionada'} · estás a criar um torneio nesta comunidade.</Text>:<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
     {communities.map(c=><Choice key={c.id} title={c.name} active={selected?.id===c.id} onPress={()=>{
       communityOverridden.current=true;currentCommunityRef.current=c.id;setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
     }}/>)}
-   </ScrollView>
+   </ScrollView>}
    <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.</Text>
   </View>
   <View style={styles.panel}>
