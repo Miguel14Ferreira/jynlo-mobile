@@ -55,7 +55,7 @@ export default function CommunityCompetitions(){
   {error&&auth.token?<Button secondary title="Tentar carregar competições novamente" onPress={()=>setRetryCount(current=>current+1)}/>:null}
   {community?<Text style={styles.sub}>{community.name} · Cada torneio mantém a sua própria classificação e regras de resultados.</Text>:null}
   {community&&!role?<Message>Entra na comunidade para veres os seus torneios e respetivas classificações.</Message>:null}
-  {!loading&&!error&&!!role?<View style={styles.section}>
+  {!loading&&!!role?<View style={styles.section}>
    <Text style={styles.sectionTitle}>Campeonatos</Text>
    <Text style={styles.small}>Um campeonato reúne vários torneios e as respetivas classificações.</Text>
    <Button secondary title="Palmarés dos campeonatos" onPress={()=>router.push({pathname:'/communities/[id]/championships/honours',params:{id:String(id)}})}/>
