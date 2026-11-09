@@ -133,7 +133,7 @@ export default function DirectCallScreen(){
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
    onError={e=>setError(e.message)}>
     <MediaControls media={session.media} onHangup={()=>{void hangup();}}/>
-   </LiveKitRoom>:<>
+   </LiveKitRoom>:!session?<>
    {!loading&&!available?<Message>As chamadas estão indisponíveis neste momento ({providerStatus||'sem ligação ao servidor'}). O chat continua disponível.</Message>:null}
    {pending?<View style={styles.mediaPanel}>
     <Text style={styles.heading}>{peer} está a ligar</Text>
@@ -145,7 +145,7 @@ export default function DirectCallScreen(){
     <Button title={busy?'A iniciar…':'Chamada de voz'} disabled={busy} onPress={()=>{void create('voice');}}/>
     <Button title="Chamada de vídeo" secondary disabled={busy} onPress={()=>{void create('video');}}/>
    </View>:null}
-  </>}
+  </>:null}
   {!session?<Button title="Voltar ao chat" secondary onPress={()=>router.back()}/>:null}
  </Page>;
 }
