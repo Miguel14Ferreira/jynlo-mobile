@@ -32,3 +32,12 @@ test('chat attachment menu remains mounted and photo confirmation is next to com
  assert.ok(code.indexOf('{photo?<View')<code.indexOf('style={styles.composer}'));
  assert.match(code,/safetyOpen\?<\>/);
 });
+
+test('session detail ignores delayed responses after navigation or account changes',()=>{
+ const code=source('app/sessions/[id].tsx');
+ assert.match(code,/const version=\+\+detailRequestGeneration\.current/);
+ assert.match(code,/if\(version!==detailRequestGeneration\.current\)return/);
+ assert.match(code,/useFocusEffect\(useCallback\(\(\)=>\{/);
+ assert.match(code,/return \(\)=>\{detailRequestGeneration\.current\+\+;\}/);
+ assert.match(code,/setPreview\(null\);setParticipants\(\[\]\)/);
+});
