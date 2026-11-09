@@ -128,3 +128,20 @@ test('community chat clears only the submitted draft and never renders invalid t
  assert.ok(screen.includes('Number.isFinite(Date.parse(m.createdAt))'));
  assert.ok(screen.includes('version!==generation.current'));
 });
+
+test('queued session history refreshes and pending send do not erase new edits',()=>{
+ const session=read('app/sessions/[id]/chat.tsx');
+ for(const item of ['pendingRefresh=useRef(false)','pendingRefresh.current=true',
+  'pendingRefresh.current=false;void refresh(true,version)',
+  'const version=generation.current,originalDraft=draft,originalReplyId=reply?.id',
+  "setDraft(current=>current===originalDraft?'':current)",
+  'setReply(current=>current?.id===originalReplyId?null:current)'])
+  assert.ok(session.includes(item),item);
+ assert.ok(session.includes("if(!silent)setError('')"));
+});
+test('private send does not erase unsent text with a different original value',()=>{
+ const direct=read('app/messages/[peer].tsx');
+ assert.ok(direct.includes('const originalDraft=draft'));
+ assert.ok(direct.includes('const submittedText=originalDraft.trim()'));
+ assert.ok(direct.includes("setDraft(current=>current===originalDraft?'':current)"));
+});
