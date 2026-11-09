@@ -3,7 +3,7 @@ import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
 import {useAuth} from '../../../../src/lib/auth';
-import {communityChampionships,championshipStandings,addChampionshipCompetition,setChampionshipWinnerPoints,setChampionshipPlacementPoints,type CommunityChampionship,type ChampionshipStandings} from '../../../../src/lib/championship-api';
+import {communityChampionships,championshipStandings,addChampionshipCompetition,setChampionshipWinnerPoints,setChampionshipPlacementPoints,closeCommunityChampionship,type CommunityChampionship,type ChampionshipStandings} from '../../../../src/lib/championship-api';
 import {C} from '../../../../src/lib/theme';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentsForCommunity} from '../../../../src/lib/competition-api';
@@ -37,7 +37,7 @@ export default function ChampionshipDetail(){
       const role='myRole' in group?group.myRole:null;
       const canManage=role==='OWNER'||role==='ADMIN';
       setOrganizer(canManage);
-      if(canManage){const all=await tournamentsForCommunity(communityId,auth.token,auth.username);
+      if(canManage&&!selected.closedAt){const all=await tournamentsForCommunity(communityId,auth.token,auth.username);
        if(active)setAvailable(all.filter(t=>t.sport===selected.sport&&!selected.competitions.some(item=>item.id===t.id)));}
      }catch(e){if(active)setManageError(e instanceof Error?e.message:'Não foi possível carregar as opções de gestão.');}
     }
@@ -51,7 +51,7 @@ export default function ChampionshipDetail(){
   void load();return()=>{active=false;};
  },[communityId,competitionId,auth.token,auth.username,retry]));
  async function update(action:()=>Promise<CommunityChampionship>){
-  if(saving||!auth.token||!organizer)return;
+  if(saving||!auth.token||!organizer||championship?.closedAt)return;
   setSaving(true);setManageError('');
   try{await action();setRetry(n=>n+1);}
   catch(e){setManageError(e instanceof Error?e.message:'Não foi possível guardar a alteração.');}
@@ -64,12 +64,13 @@ export default function ChampionshipDetail(){
   {championship?<View style={styles.card}>
    <Text style={styles.heading}>{championship.name}</Text>
    <Text style={styles.sub}>{championship.sport} · Época {championship.seasonLabel}</Text>
+   {championship.closedAt?<Message>Campeonato encerrado · Classificação e resultados arquivados{championship.championDisplayName?` · Campeão: ${championship.championDisplayName}`:''}</Message>:null}
    <Text style={styles.title}>Provas do campeonato</Text>
    {championship.competitions.length===0?<Text style={styles.sub}>Ainda não há torneios associados.</Text>:null}
    {championship.competitions.map(item=><View key={item.id} style={styles.row}>
     <Text style={styles.name}>{item.name}</Text>
     <Text style={styles.sub}>{item.status} · {item.winnerConfirmed?'Vencedor confirmado':'Resultado pendente'}</Text>
-    {organizer?<View style={styles.scoring}>
+    {organizer&&!championship.closedAt&&item.status==='DRAFT'?<View style={styles.scoring}>
      <Text style={styles.sub}>Pontos atribuídos ao vencedor</Text>
      <TextInput style={styles.input} keyboardType="number-pad" value={pointsDraft[item.id]??String(item.winnerPoints)} onChangeText={value=>setPointsDraft(current=>({...current,[item.id]:value}))} editable={!saving} maxLength={5}/>
      <Button secondary title="Guardar pontuação" disabled={saving} onPress={()=>{
@@ -79,14 +80,14 @@ export default function ChampionshipDetail(){
       void update(()=>setChampionshipWinnerPoints(communityId,competitionId,item.id,points,auth.token!));
      }}/>
     </View>:null}
-    {organizer&&item.status==='DRAFT'?<View style={styles.scoring}>
+    {organizer&&!championship.closedAt&&item.status==='DRAFT'?<View style={styles.scoring}>
      <Text style={styles.sub}>Pontos por posição (2 a 20 lugares, por ordem decrescente)</Text>
      <TextInput style={styles.input} keyboardType="numbers-and-punctuation" value={placementDraft[item.id]??item.pointsByPlace??''} onChangeText={value=>setPlacementDraft(current=>({...current,[item.id]:value}))} editable={!saving} maxLength={120} placeholder="Ex.: 25,18,15,12,10" placeholderTextColor={C.muted}/>
      <Button secondary title="Guardar pontos por posição" disabled={saving} onPress={()=>{void update(()=>setChampionshipPlacementPoints(communityId,competitionId,item.id,placementDraft[item.id]??item.pointsByPlace??'',auth.token!));}}/>
     </View>:null}
     <Button secondary title="Ver torneio" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(communityId),id:String(item.id)}})}/>
    </View>)}
-   {organizer?<View style={styles.row}>
+   {organizer&&!championship.closedAt?<View style={styles.row}>
     <Text style={styles.title}>Associar torneios existentes</Text>
     {manageError?<Message tone="error">{manageError}</Message>:null}
     {available.length===0?<Text style={styles.sub}>Não existem torneios da mesma modalidade por associar.</Text>:null}
@@ -100,6 +101,14 @@ export default function ChampionshipDetail(){
    {standingsError?<Button secondary title="Recarregar classificação" onPress={()=>setRetry(value=>value+1)}/>:null}
    {standings?<Text style={styles.sub}>{standings.fullyScoredCompetitions} provas pontuadas · {standings.winnerOnlyCompetitions} só com vencedor · {standings.pendingCompetitions} pendentes</Text>:null}
    {standings&&standings.standings.length===0?<Text style={styles.sub}>Ainda não existem resultados confirmados para a classificação.</Text>:null}
+   {organizer&&!championship.closedAt&&standings&&!standingsError?<View style={styles.row}>
+    <Text style={styles.title}>Encerrar campeonato</Text>
+    <Text style={styles.sub}>O encerramento guarda a classificação final e impede futuras alterações. O servidor verifica os resultados e desempates antes de aceitar.</Text>
+    <Button secondary title="Encerrar campeonato" disabled={saving} onPress={()=>Alert.alert('Encerrar campeonato?', 'Esta ação é definitiva. A classificação final e os resultados ficam arquivados e não poderão ser alterados.',[
+     {text:'Cancelar',style:'cancel'},
+     {text:'Encerrar definitivamente',style:'destructive',onPress:()=>{void update(()=>closeCommunityChampionship(communityId,competitionId,auth.token!));}}
+    ])}/>
+   </View>:null}
    {standings?.standings.map((row,index)=><View key={row.entryType+':'+row.participantId} style={styles.standing}>
     <Text style={styles.name}>{index+1}. {row.name}</Text>
     <Text style={styles.sub}>{row.points} pontos · {row.victories} vitórias · {row.awardedCompetitions} provas</Text>
