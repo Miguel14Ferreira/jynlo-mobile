@@ -1,0 +1,45 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+
+test('Google sign-in is native and uses server-provided OAuth web client ID',()=>{
+ const google=read('src/lib/google-credential.ts');
+ assert.ok(google.includes("Platform.OS!=='android'"));
+ assert.ok(google.includes("'/api/auth/google/config'"));
+ assert.ok(google.includes('GoogleSignin.configure({webClientId,offlineAccess:false})'));
+ assert.ok(google.includes('GoogleSignin.hasPlayServices'));
+ assert.ok(google.includes('GoogleSignin.signIn()'));
+ assert.ok(google.includes("result.type==='cancelled'"));
+ assert.ok(google.includes('result.data.idToken'));
+ assert.ok(google.includes('DEVELOPER_ERROR'));
+ assert.ok(!google.includes('Linking.openURL'),'Google authentication must remain native');
+});
+
+test('server verifies Google credentials and onboarding remains inside the mobile application',()=>{
+ const api=read('src/lib/google-auth-api.ts');
+ const auth=read('src/lib/auth.tsx');
+ const login=read('app/login.tsx');
+ const onboarding=read('app/google-onboarding.tsx');
+ assert.ok(api.includes("'/api/auth/google/login'"));
+ assert.ok(api.includes("'/api/auth/google/register'"));
+ assert.ok(auth.includes('googleLoginWithIdToken(credential)'));
+ assert.ok(auth.includes('googleRegisterWithIdToken(googlePending.credential,input)'));
+ assert.ok(login.includes("pathname:'/google-onboarding'"));
+ assert.ok(onboarding.includes('completeGoogleRegistration'));
+ assert.ok(!onboarding.includes('Linking.openURL'));
+ assert.ok(!login.includes('Linking.openURL'));
+});
+
+test('Google signing diagnostics and build validation are preserved',()=>{
+ const workflow=read('.github/workflows/build-android-signed-apk.yml');
+ const validation=read('.github/workflows/mobile-push-validation.yml');
+ const app=JSON.parse(read('app.json'));
+ assert.equal(app.expo.android.package,'com.jynlo.app');
+ assert.ok(workflow.includes('SHA1:'));
+ assert.ok(workflow.includes('npm run typecheck'));
+ assert.ok(workflow.includes('npm run test:all'));
+ assert.ok(workflow.includes('apksigner'));
+ for(const name of ['src/lib/auth.tsx','src/lib/google-credential.ts','src/lib/google-auth-api.ts',
+  'app/login.tsx','app/google-onboarding.tsx','app/mfa.tsx','tests/mobile-google-auth-validation.test.cjs'])
+  assert.ok(validation.includes("'"+name+"'"),name);
+});
