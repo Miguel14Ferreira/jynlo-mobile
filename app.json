@@ -9,7 +9,11 @@
     "icon": "./assets/jynlo-icon.png",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.jynlo.app"
+      "bundleIdentifier": "com.jynlo.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "A Jynlo utiliza o microfone apenas quando participas numa chamada de voz ou vídeo.",
+        "NSCameraUsageDescription": "A Jynlo utiliza a câmara quando decides participar numa chamada de vídeo."
+      }
     },
     "android": {
       "package": "com.jynlo.app",
@@ -64,6 +68,11 @@
             "DEFAULT"
           ]
         }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
