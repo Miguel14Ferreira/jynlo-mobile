@@ -10,7 +10,9 @@ export default function ProfileScreen(){
   const [confirmUsername,setConfirmUsername]=useState('');
   const [photoUrl,setPhotoUrl]=useState<string|null>(null);
   useFocusEffect(useCallback(()=>{
-    if(!auth.token||DEMO_MODE){setPhotoUrl(null);return;}
+    // Do not show the previous user's photo while the new account loads.
+    setPhotoUrl(null);
+    if(!auth.token||DEMO_MODE)return;
     let active=true;
     void request<{profilePicUrl?:string|null}>('/api/profile/me',{token:auth.token})
       .then(profile=>{if(active)setPhotoUrl(profile.profilePicUrl||null);})
