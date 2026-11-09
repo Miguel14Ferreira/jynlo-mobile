@@ -35,3 +35,13 @@ test('championship creation is native, organizer gated and posts the validated b
  assert.ok(listing.includes('championships/create'));
  assert.ok(!create.includes('Linking.openURL'));
 });
+
+test('championship detail manages existing tournaments and winner points with server APIs',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const screen=read('app/communities/[id]/championships/[championshipId].tsx');
+ for(const item of ['addChampionshipCompetition','setChampionshipWinnerPoints','/winner-points','method:\'PUT\'','method:\'POST\''])
+  assert.ok(api.includes(item),item);
+ for(const item of ['tournamentsForCommunity','item.sport===selected.sport','organizer','Associar torneios existentes','Adicionar ao campeonato','Guardar pontuação','setChampionshipWinnerPoints','addChampionshipCompetition'])
+  assert.ok(screen.includes(item),item);
+ assert.ok(!screen.includes('Linking.openURL'));
+});
