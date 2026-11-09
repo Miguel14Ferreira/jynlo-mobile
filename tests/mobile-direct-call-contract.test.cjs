@@ -134,3 +134,9 @@ test('leaving a call clears local ownership and limits overlapping server status
  ])assert.ok(screen.includes(marker),marker);
  assert.ok(!screen.includes('useEffect(()=>{sessionRef.current=session;},[session])'));
 });
+
+test('LiveKit native failures close the media room rather than leaving a dead call onscreen',()=>{
+ const screen=read('app/messages/call.tsx');
+ assert.ok(screen.includes("onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}"));
+ assert.ok(screen.includes("onDisconnected={()=>{void hangup();}}"));
+});
