@@ -12,6 +12,7 @@ import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/cha
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C} from '../../src/lib/theme';
+const {giphyImageUrl}=require('../../src/lib/chat-giphy.cjs') as {giphyImageUrl:(text:string|null)=>string|null};
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 
 export default function DirectConversation(){
@@ -202,7 +203,10 @@ export default function DirectConversation(){
   {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
    <Text style={styles.sender}>{m.username1}</Text>
    {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
-   <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.text||m.attachmentName||'Mensagem sem texto'}</Text>
+   {m.deletedAt?<Text style={styles.body}>Mensagem removida</Text>:
+    giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
+      accessibilityLabel="GIF enviado na conversa"/>:
+    <Text style={styles.body}>{m.text||m.attachmentName||'Mensagem sem texto'}</Text>}
    {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
@@ -261,6 +265,7 @@ const styles=StyleSheet.create({
  sender:{fontSize:11,color:C.mint,fontWeight:'800'},
  quote:{fontSize:12,color:C.muted,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8},
  body:{fontSize:15,color:C.white,lineHeight:21},
+ gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoContainer:{gap:10,padding:12,borderRadius:14,backgroundColor:C.surface},
  photoPreview:{height:190,width:'100%',borderRadius:12},
