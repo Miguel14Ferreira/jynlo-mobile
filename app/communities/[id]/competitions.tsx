@@ -67,7 +67,8 @@ export default function CommunityCompetitions(){
     onPress={()=>router.push({pathname:'/communities/[id]/championships/[championshipId]',params:{id:String(id),championshipId:String(championship.id)}})}>
     <View style={{flex:1,gap:5}}><Text style={styles.tournamentTitle}>{championship.name}</Text>
      <Text style={styles.classification}>{championship.sport} · {championship.seasonLabel}</Text>
-     <Text style={styles.small}>{championship.competitions.length} {championship.competitions.length===1?'torneio':'torneios'} associados</Text></View>
+     <Text style={styles.small}>{championship.closedAt?'Encerrado':'Em curso'} · {championship.competitions.length} {championship.competitions.length===1?'torneio':'torneios'} associados</Text>
+     {championship.closedAt&&championship.championDisplayName?<Text style={styles.small}>Campeão: {championship.championDisplayName}</Text>:null}</View>
     <Text style={styles.chevron}>›</Text>
    </Pressable>)}
   </View>:null}
