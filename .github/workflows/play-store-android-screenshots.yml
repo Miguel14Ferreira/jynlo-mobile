@@ -39,13 +39,33 @@ jobs:
             exit 1
           fi
           npx expo prebuild --platform android --no-install --clean
-          (cd android && ./gradlew :app:assembleDebug --no-daemon --max-workers=2)
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          # A debug APK would require a Metro server. Capture an offline,
+          # isolated release variant with JS bundled into the APK instead.
+          # Disable R8/minification ONLY for these screenshots; never for
+          # signed production releases.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle')
+          content=p.read_text()
+          original=content
+          # Expo-generated Gradle release typically uses these expressions.
+          for old,new in [
+            ('minifyEnabled enableProguardInReleaseBuilds', 'minifyEnabled false'),
+            ('shrinkResources (findProperty(\'android.enableShrinkResourcesInReleaseBuilds\')?.toBoolean() ?: false)', 'shrinkResources false'),
+            ('minifyEnabled (findProperty(\'android.enableMinifyInReleaseBuilds\')?.toBoolean() ?: false)', 'minifyEnabled false'),
+          ]:
+            content=content.replace(old,new)
+          if content==original or 'minifyEnabled false' not in content:
+            raise SystemExit('Cannot verify R8/minify disabled in screenshot-only build.gradle')
+          p.write_text(content)
+          PY
+          (cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2)
+          test -s android/app/build/outputs/apk/release/app-release.apk
       - name: Free disk space after APK build before emulator installation
         shell: bash
         run: |
           set -euo pipefail
-          apk="android/app/build/outputs/apk/debug/app-debug.apk"
+          apk="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$apk"
           echo "Disk before cleanup:"
           df -h /
@@ -53,10 +73,10 @@ jobs:
           # Only the compiled APK is needed by the emulator. Reclaim build
           # dependencies and transient Gradle caches before installing Android SDK.
           mkdir -p "$RUNNER_TEMP/jynlo-apk"
-          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-debug.apk"
+          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk"
           rm -rf node_modules android/.gradle android/build android/app/build "$HOME/.gradle/caches"
-          mkdir -p android/app/build/outputs/apk/debug
-          cp "$RUNNER_TEMP/jynlo-apk/jynlo-debug.apk" "$apk"
+          mkdir -p android/app/build/outputs/apk/release
+          cp "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk" "$apk"
           test -s "$apk"
           echo "Disk after cleanup:"
           df -h /
@@ -76,7 +96,7 @@ jobs:
             set -euo pipefail
             adb shell wm size 1080x1920
             adb shell wm density 420
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
             mkdir -p play-store-screenshots
             adb shell am force-stop com.jynlo.app || true
             adb shell monkey -p com.jynlo.app 1
