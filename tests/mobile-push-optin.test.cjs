@@ -25,10 +25,11 @@ test('registered device is removed before bearer session logout',()=>{
  const auth=read('src/lib/auth.tsx');
  assert.match(service,/await unregisterPushDevice\(token,id\)/);
  assert.match(service,/await SecureStore\.deleteItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
- assert.match(auth,/await disableMobilePush\(username,token\)/);
- const revokeIndex=auth.indexOf('await disableMobilePush(username,token)');
- const logoutIndex=auth.indexOf('await logoutServer(token)');
- assert.ok(revokeIndex>0&&logoutIndex>revokeIndex);
+ assert.match(auth,/await disableMobilePush\(nameToRevoke,tokenToRevoke\)/);
+ const clearIndex=auth.indexOf('setToken(null)',auth.indexOf('const logout=useCallback'));
+ const revokeIndex=auth.indexOf('await disableMobilePush(nameToRevoke,tokenToRevoke)');
+ const logoutIndex=auth.indexOf('await logoutServer(tokenToRevoke)');
+ assert.ok(clearIndex>=0&&revokeIndex>clearIndex&&logoutIndex>revokeIndex);
 });
 test('Expo plugin and package dependencies are configured without pretending push delivery is enabled',()=>{
  const pkg=JSON.parse(read('package.json'));
