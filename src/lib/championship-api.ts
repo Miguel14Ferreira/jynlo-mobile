@@ -61,7 +61,7 @@ export function validateChampionshipPlacementPoints(csv:string):string{
  if(raw.length<2||raw.length>20)throw Error('Define entre 2 e 20 posições.');
  let previous=10001;
  const values=raw.map(x=>{
-  if(!/^\\d{1,5}$/.test(x))throw Error('Indica pontos inteiros não negativos, separados por vírgulas.');
+  if(!/^\d{1,5}$/.test(x))throw Error('Indica pontos inteiros não negativos, separados por vírgulas.');
   const value=Number(x);
   if(value>10000||value>previous)throw Error('Os pontos devem ser até 10000 e não podem aumentar nas posições seguintes.');
   previous=value;return value;
