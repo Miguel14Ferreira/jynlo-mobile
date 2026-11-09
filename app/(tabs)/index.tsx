@@ -172,6 +172,8 @@ export default function JynloFeedHome(){
         <Text style={styles.storiesIntro}>Partilha uma fotografia ou vídeo que fica visível durante 24 horas.</Text>
         <Pressable onPress={()=>void pickMedia(setStoryMedia)} style={styles.mediaPicker}><Text style={{fontSize:32,color:TEAL}}>▧</Text><Text style={{color:WHITE,fontWeight:'800'}}>{storyMedia?storyMedia.fileName:'Escolher foto ou vídeo'}</Text></Pressable>
         {storyMedia?.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreview}/>:null}
+        {storyMedia?.type==='video'?<View style={styles.storyPreview}><MediaVideo uri={storyMedia.uri} story/></View>:null}
+        {storyMedia?<Pressable accessibilityRole="button" onPress={()=>setStoryMedia(null)} style={{alignSelf:'flex-start',paddingVertical:8}}><Text style={{color:TEAL,fontWeight:'800'}}>Trocar ou remover ficheiro</Text></Pressable>:null}
         <TextInput value={storyCaption} onChangeText={setStoryCaption} maxLength={180} placeholder="Legenda (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/><Text style={styles.countText}>{storyCaption.length}/180</Text>
         <Pressable onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}><Text style={styles.primaryButtonText}>{storyPublishing?'A publicar…':'Publicar Story'}</Text></Pressable>
       </SafeAreaView>
