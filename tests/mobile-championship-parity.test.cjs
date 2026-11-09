@@ -17,3 +17,11 @@ test('championship detail shows competitions and general standings without websi
   assert.ok(screen.includes(item),item);
  assert.ok(!screen.includes('Linking.openURL'));
 });
+
+test('championships and tournaments have independent failure handling',()=>{
+ const screen=read('app/communities/[id]/competitions.tsx');
+ assert.match(screen,/Promise\.allSettled\(\[tournamentsForCommunity\(/);
+ assert.match(screen,/if\(data\.status==='fulfilled'\)setTournaments\(data\.value\);\s*else setError\(/);
+ assert.match(screen,/if\(championshipData\.status==='fulfilled'\)setChampionships\(championshipData\.value\);\s*else setChampionshipError\(/);
+ assert.doesNotMatch(screen,/else throw data\.reason/);
+});
