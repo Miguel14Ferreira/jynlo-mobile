@@ -94,10 +94,10 @@ test('call screen checks server state and leaves the room when invitation expire
  for(const marker of [
   'directCallMembers(callId,auth.token!)',
   'members.participants.length>=2',
-  'e instanceof ApiError&&e.status===403',
-  '[404,410].includes(e.status)',
+  'e instanceof ApiError&&e.status===403&&!connectedToPeer',
+  '[403,404,410].includes(e.status)',
   'setSession(null)',
-  "setError('A chamada terminou ou o convite expirou.')",
+  "setError('A chamada terminou, expirou ou deixou de estar acessível.')",
   "if(AppState.currentState==='active')void inspect()",
   'clearInterval(timer)',
   'À espera de resposta do contacto'
@@ -139,4 +139,20 @@ test('LiveKit native failures close the media room rather than leaving a dead ca
  const screen=read('app/messages/call.tsx');
  assert.ok(screen.includes("onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}"));
  assert.ok(screen.includes("onDisconnected={()=>{void hangup();}}"));
+});
+
+test('call action is hidden until contact block status has been verified',()=>{
+ const chat=read('app/messages/[peer].tsx');
+ for(const marker of [
+  'blockStatusKnown,setBlockStatusKnown',
+  'setBlocked(false);setBlockStatusKnown(false)',
+  'setBlocked(value);setBlockStatusKnown(true)',
+  '!DEMO_MODE&&blockStatusKnown&&!blocked'
+ ])assert.ok(chat.includes(marker),marker);
+});
+test('active LiveKit calls close if permission is revoked; ringing invitations remain pending',()=>{
+ const screen=read('app/messages/call.tsx');
+ assert.ok(screen.includes('e.status===403&&!connectedToPeer'));
+ assert.ok(screen.includes('[403,404,410].includes(e.status)'));
+ assert.ok(screen.includes('sessionRef.current=null;setSession(null);setConnectedToPeer(false)'));
 });
