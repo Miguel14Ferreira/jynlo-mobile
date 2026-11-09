@@ -40,3 +40,14 @@ test('only the authenticated organizer can open the edit route',()=>{
  assert.match(detail,/pathname:'\/sessions\/\[id\]\/edit'/);
  assert.match(layout,/name="sessions\/\[id\]\/edit"/);
 });
+
+test('editor honors creation capacity and address limits',()=>{
+ assert.throws(()=>editSessionPayload({...input(),maxParticipants:'101'},['Padel']),/Máximo/);
+ assert.equal(editSessionPayload({...input(),address:'A'.repeat(500)},['Padel']).address.length,500);
+ assert.throws(()=>editSessionPayload({...input(),address:'A'.repeat(501)},['Padel']),/morada/);
+});
+test('capacity cannot displace existing participants or externally confirmed players',()=>{
+ assert.throws(()=>editSessionPayload({...input(),maxParticipants:'9',currentParticipantCount:10},['Padel']),/inscritos/);
+ assert.throws(()=>editSessionPayload({...input(),maxParticipants:'9',currentExternalConfirmedParticipants:9},['Padel']),/externos/);
+ assert.equal(editSessionPayload({...input(),currentParticipantCount:8,currentExternalConfirmedParticipants:5},['Padel']).maxParticipants,10);
+});
