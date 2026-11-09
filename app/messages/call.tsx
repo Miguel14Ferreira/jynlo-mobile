@@ -96,7 +96,7 @@ export default function DirectCallScreen(){
   try{
    const result=await startDirectCall(peer,media,auth.token);
    if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
-   setPending(null);ending.current=false;setSession(result);
+   setPending(null);ending.current=false;sessionRef.current=result;setSession(result);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível iniciar a chamada.');}
   finally{operation.current=false;if(version===generation.current)setBusy(false);}
  }
@@ -108,7 +108,7 @@ export default function DirectCallScreen(){
    if(accept){
     const result=await acceptDirectCall(invitation.callId,auth.token);
     if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
-    ending.current=false;setSession(result);
+    ending.current=false;sessionRef.current=result;setSession(result);
    }else await declineDirectCall(invitation.callId,auth.token);
    if(version===generation.current)setPending(null);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível responder à chamada.');}
@@ -126,6 +126,7 @@ export default function DirectCallScreen(){
  if(!auth.token||!PEER.test(peer))return <Page><Message tone="error">Inicia sessão e escolhe um contacto válido para realizar chamadas.</Message><Button title="Voltar" secondary onPress={()=>router.back()}/></Page>;
  return <Page><DemoBanner/><Eyebrow>CHAMADAS PRIVADAS</Eyebrow>
   <Text style={styles.heading}>Chamada com {peer}</Text>
+  {!session?<Text style={styles.note}>Para receberes um convite, abre este ecrã. As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa.</Text>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>A preparar o áudio da chamada…</Text><Button title="Terminar chamada" danger onPress={()=>{void hangup();}}/></View>:null}
