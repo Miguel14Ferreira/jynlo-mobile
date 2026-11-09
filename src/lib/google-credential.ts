@@ -24,6 +24,9 @@ export async function chooseGoogleIdentity():Promise<string|null>{
  }catch(error){
   const code=typeof error==='object'&&error!==null&&'code' in error?String(error.code):'';
   const message=error instanceof Error?error.message:'';
+  // Android can report a closed Google account picker as an exception rather
+  // than a {type:'cancelled'} result. This is not an authentication failure.
+  if(code==='SIGN_IN_CANCELLED'||code==='12501')return null;
   if(code==='10'||code==='DEVELOPER_ERROR'||message.includes('DEVELOPER_ERROR'))
    throw Error('Google Sign-In recusado (DEVELOPER_ERROR). A assinatura SHA-1 desta APK e o pacote com.jynlo.app têm de estar registados no cliente OAuth Android do mesmo projeto Google Cloud que o cliente Web da Jynlo.');
   throw error;
