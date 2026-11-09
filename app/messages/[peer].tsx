@@ -24,6 +24,7 @@ export default function DirectConversation(){
  const conversationScroll=useRef<ScrollView|null>(null);
  const nearBottom=useRef(true);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
+ const [safetyOpen,setSafetyOpen]=useState(false);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
@@ -79,6 +80,7 @@ export default function DirectConversation(){
   if(conversation.current!==identity){
    conversation.current=identity;
    setMessages([]);setDraft('');setPhoto(null);setError('');setSyncWarning('');
+   setAttachmentsOpen(false);setSafetyOpen(false);
    setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
@@ -210,7 +212,10 @@ export default function DirectConversation(){
   {error?<Message tone="error">{error}</Message>:null}
   {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
   {auth.token&&!DEMO_MODE&&peer.toLowerCase()!==auth.username?.toLowerCase()?<View style={styles.safety}>
-   <Eyebrow>SEGURANÇA DA CONVERSA</Eyebrow>
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:safetyOpen}} onPress={()=>setSafetyOpen(open=>!open)}>
+    <Text style={styles.safetyToggle}>{safetyOpen?'Ocultar opções de segurança':'Segurança da conversa ▾'}</Text>
+   </Pressable>
+   {safetyOpen?<>
    {blocked?<Message>Bloqueaste este utilizador. As mensagens estão desativadas.</Message>:null}
    <Button secondary title={blocked?'Desbloquear utilizador':'Bloquear utilizador'}
     disabled={safetyBusy} onPress={()=>Alert.alert(
@@ -227,6 +232,7 @@ export default function DirectConversation(){
     <Button danger title={safetyBusy?'A enviar denúncia…':'Enviar denúncia'} 
       disabled={safetyBusy||!reportReason.trim()} onPress={()=>{void submitReport();}}/>
    </View>:null}
+   </>:null}
   </View>:null}
   {!loading&&!error&&messages.length===0?<Message>Ainda não existem mensagens nesta conversa.</Message>:null}
   {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
@@ -241,26 +247,27 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
+  <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
+  </ScrollView>
+  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
    <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
    <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
    <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
-  <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
-  </ScrollView>
-  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.footer}>
+
   {auth.token&&!blocked&&photoAvailable?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
     style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
-  {attachmentsOpen?<View style={styles.attachmentOptions}>
+  <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
   <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
   {auth.token&&!blocked&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
 
-  </View>:null}
+  </View>
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
@@ -281,6 +288,8 @@ const styles=StyleSheet.create({
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:7,paddingHorizontal:10},
  attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},
  attachmentOptions:{gap:7,maxHeight:180},
+ hidden:{display:'none'},
+ safetyToggle:{fontSize:12,color:C.mint,fontWeight:'800'},
  safety:{gap:10,padding:14,borderRadius:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  report:{gap:10},
  reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
@@ -294,7 +303,7 @@ const styles=StyleSheet.create({
  gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoContainer:{gap:10,padding:12,borderRadius:14,backgroundColor:C.surface},
- photoPreview:{height:190,width:'100%',borderRadius:12},
+ photoPreview:{height:110,width:'100%',borderRadius:12},
  composer:{flexDirection:'row',alignItems:'flex-end',gap:9},
  input:{flex:1,minHeight:55,maxHeight:145,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,color:C.white,padding:14,borderRadius:15},
  send:{backgroundColor:C.mint,borderRadius:13,padding:14,minHeight:53,justifyContent:'center'},
