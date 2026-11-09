@@ -84,7 +84,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
    uploadingRef.current=null;
    cleanup(asset);
    busyRef.current=false;
-   if(active.current)setBusy(false);
+   if(active.current&&generation.current===version)setBusy(false);
   }
  }
  if(!enabled||!token)return null;
