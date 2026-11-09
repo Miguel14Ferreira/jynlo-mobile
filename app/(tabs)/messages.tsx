@@ -5,6 +5,7 @@ import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {communityInbox,directInbox} from '../../src/lib/chat-api';
+import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
@@ -14,6 +15,7 @@ export default function MessagesScreen(){
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
  const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
+ const [incomingCall,setIncomingCall]=useState<DirectCallInvitation|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
@@ -26,14 +28,14 @@ export default function MessagesScreen(){
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(busyVersion.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
-   setItems([]);setInvites([]);setLastSyncedAt(null);setLoading(false);return;
+   setItems([]);setInvites([]);setIncomingCall(null);setLastSyncedAt(null);setLoading(false);return;
   }
   busyVersion.current=version;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
-   const [groups,privateChats,requests]=await Promise.allSettled([
+   const [groups,privateChats,requests,call]=await Promise.allSettled([
     communityInbox(auth.token,auth.username),directInbox(auth.token),
-    myCommunityInvites(auth.token,auth.username)
+    myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token)
    ]);
    if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
@@ -42,6 +44,7 @@ export default function MessagesScreen(){
     ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
+   if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
    const failedSources=[
     ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
     ...(groups.status==='rejected'?['comunidades']:[]),
@@ -66,7 +69,7 @@ export default function MessagesScreen(){
  useFocusEffect(useCallback(()=>{
   const currentIdentity=auth.username+'|'+auth.token;
   if(identity.current!==currentIdentity){
-   identity.current=currentIdentity;setItems([]);setInvites([]);
+   identity.current=currentIdentity;setItems([]);setInvites([]);setIncomingCall(null);
    setLastSyncedAt(null);setChatWarning('');setError('');
    setSearch('');setUnreadOnly(false);
   }
@@ -102,6 +105,15 @@ export default function MessagesScreen(){
    <Text style={styles.tiny}>{displayed.length} de {sameIdentity?items.length:0} conversas</Text>
   </View>:null}
   {!auth.token?<Button title="Entrar para ver mensagens" onPress={()=>router.push('/login')}/>:null}
+  {sameIdentity&&incomingCall?<Pressable accessibilityRole="button"
+    accessibilityLabel={'Atender chamada de '+incomingCall.caller}
+    onPress={()=>router.push({pathname:'/messages/call',params:{peer:incomingCall.caller}})}
+    style={styles.alert}>
+    <View style={{flex:1,gap:4}}>
+     <Text style={styles.alertText}>Chamada {incomingCall.media==='video'?'de vídeo':'de voz'} de {incomingCall.caller}</Text>
+     <Text style={styles.tiny}>Abrir chamada para aceitar ou recusar</Text>
+    </View><Text style={styles.arrow}>›</Text>
+   </Pressable>:null}
   {sameIdentity&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
     <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
   </Pressable>:null}
