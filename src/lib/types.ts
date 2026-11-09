@@ -8,6 +8,9 @@ export interface SessionSummary {
   city: string;
   gameDate: string;
   distanceKm: number | null;
+  /** Optional public session coordinates. Never derive pins from city names or hidden addresses. */
+  latitude?: number | null;
+  longitude?: number | null;
   participantCount: number;
   maxParticipants: number;
   priceAmount: number;
