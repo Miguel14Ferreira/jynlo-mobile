@@ -27,12 +27,13 @@ test('direct call credentials remain scoped to authenticated endpoints and IDs a
  assert.ok(!api.includes('LIVEKIT_API_KEY'));
 });
 
-test('direct call transport is not presented as a functional audio/video UI without a native media client',()=>{
+test('call UI enters through an authenticated private conversation and uses the native LiveKit screen',()=>{
  const direct=read('app/messages/[peer].tsx');
- const api=read('src/lib/direct-call-api.ts');
- assert.ok(api.includes('Do not use start/accept until native LiveKit media is integrated'));
- assert.ok(!direct.includes('startDirectCall('));
- assert.ok(!direct.includes('acceptDirectCall('));
+ const screen=read('app/messages/call.tsx');
+ assert.ok(direct.includes("pathname:'/messages/call'"));
+ assert.ok(direct.includes('!blocked'));
+ assert.ok(screen.includes('<LiveKitRoom'));
+ assert.ok(screen.includes('AudioSession.startAudioSession()'));
 });
 
 test('Expo release includes a native LiveKit engine and the required media plugins',()=>{
@@ -73,4 +74,17 @@ test('native calls only connect after audio is ready and release server session 
   "if(AppState.currentState==='active'&&!operation.current&&!sessionRef.current)",
   "As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa"
  ])assert.ok(screen.includes(text),text);
+});
+
+test('failed or late native audio initialization releases server calls and cannot leave a frozen spinner',()=>{
+ const screen=read('app/messages/call.tsx');
+ for(const marker of [
+  'if(!active){void AudioSession.stopAudioSession();return;}',
+  'const failedSession=sessionRef.current',
+  'failedSession?.callId===session.callId',
+  'sessionRef.current=null',
+  'setSession(null)',
+  'endDirectCall(failedSession.callId,auth.token)',
+  'A chamada foi terminada.'
+ ])assert.ok(screen.includes(marker),marker);
 });
