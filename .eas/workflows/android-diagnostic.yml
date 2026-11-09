@@ -1,0 +1,14 @@
+name: Jynlo Android - diagnostico manual
+
+# Executed on Expo infrastructure. No GitHub Actions runner is used.
+# Deliberately no automatic push trigger to protect free build quota.
+on:
+  workflow_dispatch:
+
+jobs:
+  android_diagnostic:
+    name: Gerar APK interna de diagnostico (sem R8)
+    type: build
+    params:
+      platform: android
+      profile: diagnostic

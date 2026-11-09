@@ -48,7 +48,8 @@
         "JYNLO_ANDROID_DIAGNOSTIC_NO_R8": "1"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "latest"
       }
     }
   },
