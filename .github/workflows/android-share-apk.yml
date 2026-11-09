@@ -2,11 +2,6 @@ name: Android APK para partilha
 
 on:
   workflow_dispatch:
-  push:
-    branches: [develop]
-    paths:
-      - '.github/workflows/android-share-apk.yml'
-
 permissions:
   contents: read
 

@@ -1,8 +1,6 @@
 name: Jynlo Mobile - Android APK assinada (testes internos)
 
 on:
-  push:
-    branches: [develop]
   workflow_dispatch:
     inputs:
       confirm:

@@ -2,11 +2,6 @@ name: Jynlo Play Store real Android screenshots
 
 on:
   workflow_dispatch:
-  push:
-    branches: [develop]
-    paths:
-      - .github/workflows/play-store-android-screenshots.yml
-
 permissions:
   contents: read
 

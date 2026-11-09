@@ -1,11 +1,6 @@
 name: Jynlo Google Play official icon 512px
 on:
   workflow_dispatch:
-  push:
-    branches: [develop]
-    paths:
-      - .github/workflows/play-store-icon.yml
-      - assets/jynlo-icon.png
 permissions:
   contents: read
 jobs:

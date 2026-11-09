@@ -1,11 +1,6 @@
 name: Jynlo Mobile - Google Play Internal AAB (manual)
 
 on:
-  # Versioned commit request on develop. Never publishes to the store.
-  push:
-    branches: [develop]
-    paths:
-      - ".github/jynlo-play-aab.request"
   workflow_dispatch:
     inputs:
       confirm:

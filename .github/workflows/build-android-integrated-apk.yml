@@ -3,10 +3,6 @@ name: Jynlo Mobile - Android APK integrada (testes internos)
 # Execucao isolada do workflow de demonstracao. Em develop, usar pedido versionado.
 # Usa o backend real; nao distribuir como versao da Play Store.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - ".github/jynlo-integrated-apk.request"
   workflow_dispatch:
     inputs:
       confirm_real_api:
