@@ -18,7 +18,7 @@ test('direct chat history loads are scoped to current account and focused conver
 test('old direct-message send cannot erase draft or errors in the next conversation',()=>{
  assert.match(screen,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
  assert.match(screen,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
- assert.match(screen,/setDraft\(current=>current===submittedText\?'':current\)/);
+ assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
  assert.match(screen,/await refresh\(false,version\)/);
  assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)/);
  assert.match(screen,/setSending\(false\);setPhotoBusy\(false\);sendingNow\.current=false/);
@@ -52,8 +52,8 @@ test('late gallery result cannot replace selected photo in another conversation'
 test('parallel send actions cannot race and new text is preserved',()=>{
  assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!auth\.token/);
  assert.match(screen,/if\(!auth\.token\|\|blocked\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
- assert.match(screen,/const submittedText=draft\.trim\(\)/);
- assert.match(screen,/setDraft\(current=>current===submittedText\?'':current\)/);
+ assert.match(screen,/const submittedText=originalDraft\.trim\(\)/);
+ assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
 });
 
 test('open direct conversation reloads on foreground push and app resume',()=>{
