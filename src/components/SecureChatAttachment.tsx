@@ -30,7 +30,7 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number):string{
 /** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
 export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const cached=useRef<File|null>(null),active=useRef(false),pending=useRef(false);
+ const cached=useRef<File|null>(null),active=useRef(false),pending=useRef(false),generation=useRef(0);
  const abort=useRef<AbortController|null>(null);
  const pdfPreview=useRef(false),wasBackgrounded=useRef(false);
  const cleanup=useCallback(()=>{
@@ -39,13 +39,16 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   try{if(old?.exists)old.delete();}catch{}
  },[]);
  useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
   active.current=true;
+  pending.current=false;setBusy(false);setError('');setUri(null);
   return ()=>{
+   if(generation.current===version)generation.current++;
    active.current=false;setUri(null);
    // Do not remove a PDF handed to Android while its external viewer is opening.
    if(!pdfPreview.current)cleanup();
   };
- },[cleanup,scope,conversationId,token]));
+ },[cleanup,scope,conversationId,messageId,token]));
  React.useEffect(()=>{
   const subscription=AppState.addEventListener('change',state=>{
    if(state==='background'||state==='inactive')wasBackgrounded.current=true;
@@ -61,6 +64,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   if(!Number.isFinite(size)||!size||size<=0||size>5*1024*1024){
    setError('Tamanho do anexo inválido.');return;
   }
+  const version=generation.current;
   pending.current=true;setBusy(true);setError('');
   const controller=new AbortController();abort.current=controller;
   const timeout=setTimeout(()=>controller.abort(),20000);
@@ -78,7 +82,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    if(declared>5*1024*1024)throw Error('O anexo ultrapassa 5 MB.');
    const bytes=await response.bytes();
    if(!bytes.length||bytes.length>5*1024*1024)throw Error('O tamanho do anexo é inválido.');
-   if(!active.current||controller.signal.aborted)return;
+   if(!active.current||generation.current!==version||controller.signal.aborted)return;
    file=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+formats[mime!]);
    await file.write(bytes);
    if(!active.current||controller.signal.aborted)return;
@@ -91,20 +95,21 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
     pdfPreview.current=true;
     // Expo hands the file to the native viewer. Its promise does not wait for closing.
     await File.preview(cached.current,{mimeType:'application/pdf',title:'Documento privado'});
-    if(!wasBackgrounded.current&&cached.current){
+    if(active.current&&generation.current===version&&!wasBackgrounded.current&&cached.current){
      // iOS may display the viewer inside the app. Keep cache until user closes it.
      setUri(cached.current.uri);
     }
-   }else setUri(cached.current.uri);
+   }else if(active.current&&generation.current===version)setUri(cached.current.uri);
   }catch(e){
-   pdfPreview.current=false;cleanup();
-   if(active.current)setError(e instanceof Error?e.message:'Não foi possível abrir o anexo.');
+   if(generation.current===version){
+    pdfPreview.current=false;cleanup();
+    if(active.current)setError(e instanceof Error?e.message:'Não foi possível abrir o anexo.');
+   }
   }finally{
    if(file?.exists)try{file.delete();}catch{}
    clearTimeout(timeout);
    if(abort.current===controller)abort.current=null;
-   pending.current=false;
-   if(active.current)setBusy(false);
+   if(generation.current===version){pending.current=false;if(active.current)setBusy(false);}
   }
  }
  function close(){
