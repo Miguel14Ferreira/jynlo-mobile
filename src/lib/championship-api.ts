@@ -33,3 +33,11 @@ export async function championshipStandings(communityId:number,championshipId:nu
  if(!Number.isSafeInteger(championshipId)||championshipId<=0)throw Error('Campeonato inválido.');
  return request<ChampionshipStandings>(`${base(communityId)}/${championshipId}/standings`,{token});
 }
+
+export async function createCommunityChampionship(communityId:number,token:string,input:{name:string;sport:string;seasonLabel:string}):Promise<CommunityChampionship>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para criar campeonatos.');
+ const name=input.name.trim(),sport=input.sport.trim(),seasonLabel=input.seasonLabel.trim();
+ if(!name||name.length>120||!sport||sport.length>100||!seasonLabel||seasonLabel.length>50)
+  throw Error('Preenche o nome, a modalidade e a época dentro dos limites permitidos.');
+ return request<CommunityChampionship>(base(communityId),{token,method:'POST',body:{name,sport,seasonLabel}});
+}
