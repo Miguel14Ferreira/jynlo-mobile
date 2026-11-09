@@ -194,3 +194,18 @@ test('Android requests the correct media permissions before initiating or accept
  assert.ok(screen.indexOf('await ensureCallPermissions(media)')<screen.indexOf('await startDirectCall(peer,media,auth.token)'));
  assert.ok(screen.indexOf('await ensureCallPermissions(invitation.media)')<screen.indexOf('await acceptDirectCall(invitation.callId,auth.token)'));
 });
+
+test('signed APK builds are not cancelled by subsequent develop pushes',()=>{
+ const workflow=read('.github/workflows/build-android-signed-apk.yml');
+ assert.match(workflow,/concurrency:\s*\n\s*group:\s*jynlo-signed-apk-/);
+ assert.match(workflow,/cancel-in-progress:\s*false/);
+ assert.doesNotMatch(workflow,/cancel-in-progress:\s*true/);
+ assert.match(workflow,/runs-on:\s*ubuntu-latest/);
+ assert.match(workflow,/npx expo prebuild --platform android --no-install --clean/);
+});
+test('signed APK bundle check consumes unzip output under pipefail',()=>{
+ const workflow=read('.github/workflows/build-android-signed-apk.yml');
+ assert.ok(workflow.includes("unzip -Z1 \"$apk\" | grep -Fx 'assets/index.android.bundle' >/dev/null"));
+ assert.ok(!workflow.includes("grep -q '^assets/index.android.bundle$'"));
+ assert.ok(workflow.includes('apksigner'));
+});
