@@ -134,6 +134,24 @@ export default function DiscoverScreen(){
        {mappedSessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
          title={s.sport} description={s.city} onPress={()=>setSelectedPin(s.id)}/>)}
      </MapView>:<Message>O mapa integrado requer configuração da Google Maps SDK nesta versão da aplicação. Para evitar encerramentos inesperados, podes abrir o mapa no navegador.</Message>}
+     {NATIVE_MAP_READY?<View style={styles.mapActions}>
+       <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar sessões nesta área do mapa"
+         style={styles.areaSearch} onPress={()=>{
+           const r=viewport.current;
+           if(![r.latitude,r.longitude,r.latitudeDelta,r.longitudeDelta].every(Number.isFinite)||
+             Math.abs(r.latitude)>90||Math.abs(r.longitude)>180||r.latitudeDelta<=0||r.longitudeDelta<=0)return;
+           const latKm=Math.abs(r.latitudeDelta)*111.2/2;
+           const lonKm=Math.abs(r.longitudeDelta)*111.2*Math.max(0,Math.cos(r.latitude*Math.PI/180))/2;
+           setMapArea({latitude:r.latitude,longitude:r.longitude,
+             radiusKm:Math.max(5,Math.min(500,Math.ceil(Math.hypot(latKm,lonKm))))});
+         }}>
+         <Text style={styles.areaSearchText}>⌕ Pesquisar nesta zona</Text>
+       </Pressable>
+       {mapArea?<Pressable accessibilityRole="button" style={styles.clearArea} onPress={()=>setMapArea(null)}>
+         <Text style={styles.clearAreaText}>Limpar zona</Text>
+       </Pressable>:null}
+     </View>:null}
+     {mapArea?<Text style={styles.mapNotice}>Pesquisa num raio aproximado de {mapArea.radiusKm} km</Text>:null}
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir OpenStreetMap no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
        <Text style={styles.areaSearchText}>⌖ Abrir OpenStreetMap</Text>
      </Pressable>
