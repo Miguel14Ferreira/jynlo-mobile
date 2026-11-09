@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
 import {Track} from 'livekit-client';
@@ -86,10 +86,21 @@ export default function DirectCallScreen(){
   if(!session){setAudioReady(false);return;}
   let active=true;
   setAudioReady(false);
-  void AudioSession.startAudioSession().then(()=>{if(active)setAudioReady(true);})
-   .catch(e=>{if(active)setError(e instanceof Error?e.message:'Não foi possível iniciar o áudio.');});
+  void AudioSession.startAudioSession().then(()=>{
+   if(!active){void AudioSession.stopAudioSession();return;}
+   setAudioReady(true);
+  }).catch(e=>{
+   if(!active)return;
+   setError((e instanceof Error?e.message:'Não foi possível iniciar o áudio.')+' A chamada foi terminada.');
+   const failedSession=sessionRef.current;
+   if(failedSession?.callId===session.callId){
+    sessionRef.current=null;
+    setSession(null);
+    if(auth.token)void endDirectCall(failedSession.callId,auth.token).catch(()=>{});
+   }
+  });
   return()=>{active=false;void AudioSession.stopAudioSession();};
- },[session?.callId]);
+ },[session?.callId,auth.token]);
  async function create(media:DirectCallMedia){
   if(operation.current||!auth.token||!available||!PEER.test(peer))return;
   const version=generation.current;operation.current=true;setBusy(true);setError('');
