@@ -23,6 +23,8 @@ on:
       - 'src/lib/session-community-sports.cjs'
       - 'src/lib/session-community-sports.d.cts'
       - 'tests/mobile-session-community-sports.test.cjs'
+      - 'src/lib/direct-call-api.ts'
+      - 'tests/mobile-direct-call-contract.test.cjs'
       - 'src/lib/auth.tsx'
       - 'src/lib/google-credential.ts'
       - 'src/lib/google-auth-api.ts'
