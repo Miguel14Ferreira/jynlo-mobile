@@ -88,3 +88,19 @@ test('failed or late native audio initialization releases server calls and canno
   'A chamada foi terminada.'
  ])assert.ok(screen.includes(marker),marker);
 });
+
+test('call screen checks server state and leaves the room when invitation expires or call ends',()=>{
+ const screen=read('app/messages/call.tsx');
+ for(const marker of [
+  'directCallMembers(callId,auth.token!)',
+  'members.participants.length>=2',
+  'e instanceof ApiError&&e.status===403',
+  '[404,410].includes(e.status)',
+  'setSession(null)',
+  "setError('A chamada terminou ou o convite expirou.')",
+  "if(AppState.currentState==='active')void inspect()",
+  'clearInterval(timer)',
+  'À espera de resposta do contacto'
+ ])assert.ok(screen.includes(marker),marker);
+ assert.ok(!screen.includes('setConnectedToPeer(false);setConnectedToPeer(false)'));
+});
