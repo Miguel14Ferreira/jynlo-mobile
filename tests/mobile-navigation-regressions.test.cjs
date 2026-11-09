@@ -1,0 +1,26 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=(file)=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+
+test('private conversation keeps the composer outside the scrollable history',()=>{
+ const code=source('app/messages/[peer].tsx');
+ const endHistory=code.indexOf('</ScrollView>');
+ const footer=code.indexOf('style={styles.footer}');
+ const composer=code.indexOf('style={styles.composer}');
+ assert.ok(endHistory>0&&footer>endHistory&&composer>footer);
+ assert.match(code,/onContentSizeChange=.*nearBottom\.current/s);
+});
+test('community-scoped tournament creation does not show other communities',()=>{
+ const code=source('app/tournaments/create.tsx');
+ assert.match(code,/scopedToCommunity\|\|c\.id===requestedCommunityId/);
+ assert.match(code,/scopedToCommunity\?<Text/);
+});
+test('session organizer detail is fetched before optional anonymous preview',()=>{
+ const code=source('app/sessions/[id].tsx');
+ const detail=code.indexOf('const full=await sessionDetail(');
+ const preview=code.indexOf('setPreview(await sessionPreview(id))');
+ assert.ok(detail>=0&&preview>detail);
+});
