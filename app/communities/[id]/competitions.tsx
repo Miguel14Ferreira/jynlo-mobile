@@ -58,6 +58,7 @@ export default function CommunityCompetitions(){
   {!loading&&!error&&!!role?<View style={styles.section}>
    <Text style={styles.sectionTitle}>Campeonatos</Text>
    <Text style={styles.small}>Um campeonato reúne vários torneios e as respetivas classificações.</Text>
+   <Button secondary title="Palmarés dos campeonatos" onPress={()=>router.push({pathname:'/communities/[id]/championships/honours',params:{id:String(id)}})}/>
    {organizer?<Button secondary title="Criar campeonato" onPress={()=>router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}})}/>:null}
    {championshipError?<Message tone="error">{championshipError}</Message>:null}
    {championshipError?<Button secondary title="Tentar carregar campeonatos novamente" onPress={()=>setRetryCount(value=>value+1)}/>:null}
