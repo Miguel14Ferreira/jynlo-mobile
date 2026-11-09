@@ -120,3 +120,11 @@ test('session chat discards stale responses after navigation and never auto-retr
  assert.ok(screen.includes("postSessionChat(id,draft,auth.token,reply?.id)"));
  assert.ok(!screen.includes("setInterval(()=>{if(!sendingNow.current)void refresh(true);},15000)"));
 });
+
+test('community chat clears only the submitted draft and never renders invalid timestamps',()=>{
+ const screen=read('app/communities/[id]/chat.tsx');
+ assert.ok(screen.includes('const originalDraft=draft'));
+ assert.ok(screen.includes("setDraft(current=>current===originalDraft?'':current)"));
+ assert.ok(screen.includes('Number.isFinite(Date.parse(m.createdAt))'));
+ assert.ok(screen.includes('version!==generation.current'));
+});
