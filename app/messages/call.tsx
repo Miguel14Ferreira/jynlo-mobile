@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,PermissionsAndroid,Platform,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
 import {Track} from 'livekit-client';
@@ -16,6 +16,15 @@ import {
 registerGlobals();
 
 const PEER=/^[a-zA-Z0-9_.@-]{1,128}$/;
+async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
+ if(Platform.OS!=='android')return;
+ const needed=[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO];
+ if(media==='video')needed.push(PermissionsAndroid.PERMISSIONS.CAMERA);
+ const results=await PermissionsAndroid.requestMultiple(needed);
+ if(needed.some(permission=>results[permission]!==PermissionsAndroid.RESULTS.GRANTED)){
+  throw Error('Para participares nesta chamada, permite o acesso ao microfone'+(media==='video'?' e à câmara':'')+' nas definições do Android.');
+ }
+}
 function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void}){
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
@@ -136,6 +145,8 @@ export default function DirectCallScreen(){
   if(operation.current||!auth.token||!available||!PEER.test(peer))return;
   const version=generation.current;operation.current=true;setBusy(true);setError('');
   try{
+   await ensureCallPermissions(media);
+   if(version!==generation.current)return;
    const result=await startDirectCall(peer,media,auth.token);
    if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
    setPending(null);setConnectedToPeer(false);ending.current=false;sessionRef.current=result;setSession(result);
@@ -148,6 +159,8 @@ export default function DirectCallScreen(){
   operation.current=true;setBusy(true);setError('');
   try{
    if(accept){
+    await ensureCallPermissions(invitation.media);
+    if(version!==generation.current)return;
     const result=await acceptDirectCall(invitation.callId,auth.token);
     if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
     setConnectedToPeer(true);ending.current=false;sessionRef.current=result;setSession(result);
