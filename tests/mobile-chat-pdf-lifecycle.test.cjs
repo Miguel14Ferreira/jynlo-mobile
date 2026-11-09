@@ -19,7 +19,7 @@ test('PDF send completion cannot mutate the next chat or clear its PDF',()=>{
  assert.match(source,/if\(!active\.current\|\|generation\.current!==version\)return/);
  assert.match(source,/if\(selectedRef\.current===asset\)reset\(\)/);
  assert.match(source,/if\(active\.current&&generation\.current===version\)\s*setError\('PDF enviado/);
- assert.match(source,/if\(active\.current\)setBusy\(false\)/);
+ assert.match(source,/if\(active\.current&&generation\.current===version\)setBusy\(false\)/);
  assert.match(source,/setBusy\(busyRef\.current\);setError\(''\)/);
 });
 
