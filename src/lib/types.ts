@@ -83,7 +83,7 @@ export interface LoginResponse {
   token: string | null;
   profile: { username?: string } | null;
 }
-export interface SessionFilters { sport?: string; city?: string; availableOnly?: boolean; }
+export interface SessionFilters { sport?: string; city?: string; availableOnly?: boolean; latitude?: number; longitude?: number; radiusKm?: number; sort?: 'date' | 'distance'; }
 
 export type CommunityVisibility = 'PUBLIC' | 'PRIVATE';
 export type CommunityRole = 'OWNER' | 'ADMIN' | 'MEMBER';
