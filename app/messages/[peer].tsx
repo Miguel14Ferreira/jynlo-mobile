@@ -141,7 +141,7 @@ export default function DirectConversation(){
   }finally{if(conversation.current===identity)setSafetyBusy(false);}
  }
  async function send(){
-  if(sending||sendingNow.current||blocked||!auth.token||!draft.trim())return;
+  if(sending||sendingNow.current||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
   const originalDraft=draft;
   const submittedText=originalDraft.trim();
   const identity=peer+'|'+auth.token;
@@ -164,7 +164,7 @@ export default function DirectConversation(){
   }
  }
  async function choosePhoto(){
-  if(!auth.token||blocked||!photoAvailable||photoBusy)return;
+  if(!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setError('');
@@ -180,7 +180,7 @@ export default function DirectConversation(){
   }
  }
  async function uploadPhoto(){
-  if(!auth.token||blocked||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
+  if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setPhotoBusy(true);sendingNow.current=true;setError('');
@@ -257,18 +257,19 @@ export default function DirectConversation(){
    <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
 
-  {auth.token&&!blocked&&photoAvailable?<Pressable accessibilityRole="button"
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
     style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
+  {!blockStatusKnown&&auth.token?<Text style={styles.note}>A verificar se esta conversa permite enviar mensagens…</Text>:null}
   <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
 
   </View>
-  {auth.token&&!blocked?<View style={styles.composer}>
+  {auth.token&&!blocked&&blockStatusKnown?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
