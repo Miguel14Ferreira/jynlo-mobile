@@ -39,6 +39,17 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "diagnostic": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_JYNLO_API_URL": "https://desporto24-preview-api.onrender.com",
+        "JYNLO_REQUIRE_REAL_API": "1",
+        "JYNLO_ANDROID_DIAGNOSTIC_NO_R8": "1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
