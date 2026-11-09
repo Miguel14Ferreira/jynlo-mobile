@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import MapView,{Marker,UrlTile} from 'react-native-maps';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/components/UI';
@@ -9,11 +10,20 @@ import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 
+const PORTUGAL={latitude:39.65,longitude:-8.0,latitudeDelta:6.0,longitudeDelta:4.5};
+const validPin=(session:SessionSummary)=>session.privateGame!==true&&session.audience!=='COMMUNITY_ONLY'&&
+ typeof session.latitude==='number'&&typeof session.longitude==='number'&&
+ Number.isFinite(session.latitude)&&Number.isFinite(session.longitude)&&
+ session.latitude>=-90&&session.latitude<=90&&session.longitude>=-180&&session.longitude<=180;
 const POPULAR_SPORTS=['Futebol','Padel','Basquetebol','Voleibol','Karting','Corrida'] as const;
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT').trim();
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
+ const [display,setDisplay]=useState<'map'|'list'>('list');
+ const [selectedPin,setSelectedPin]=useState<number|null>(null);
+ const mappedSessions=useMemo(()=>sessions.filter(validPin),[sessions]);
+ const currentPin=useMemo(()=>mappedSessions.find(s=>s.id===selectedPin)||null,[mappedSessions,selectedPin]);
  const [sport,setSport]=useState(''),[sportQuery,setSportQuery]=useState('');
  const [sportPickerVisible,setSportPickerVisible]=useState(false);
  const [city,setCity]=useState(''),[debouncedCity,setDebouncedCity]=useState('');
@@ -31,7 +41,7 @@ export default function DiscoverScreen(){
    setLoading(true);setError('');
    try{
      const next=await discoverSessions({sport:sport||undefined,city:debouncedCity,availableOnly},auth.token,auth.username||undefined);
-     if(version===loadVersion.current)setSessions(next);
+     if(version===loadVersion.current){setSessions(next);setSelectedPin(null);}
    }catch(e){
      if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');}
    }finally{if(version===loadVersion.current)setLoading(false);}
@@ -84,11 +94,32 @@ export default function DiscoverScreen(){
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
    </Pressable>
-   <View style={styles.section}><Text style={styles.sectionTitle}>Sessões para ti</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>
+   <View style={styles.section}><Text style={styles.sectionTitle}>Encontrar jogos</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>
+   <View style={styles.switcher}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões no mapa" accessibilityState={{selected:display==='map'}}
+       style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
+       <Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>⌖ Mapa</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões em lista" accessibilityState={{selected:display==='list'}}
+       style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
+       <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>☷ Lista</Text>
+     </Pressable>
+   </View>
    {loading&&sessions.length===0?<Loader/>:null}
    {error?<Message tone="error">{error}</Message>:null}
    {!loading&&!error&&sessions.length===0?<Message>Não encontrámos sessões para estes filtros. Experimenta outra cidade ou modalidade.</Message>:null}
-   {sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
+   {display==='map'?<View style={styles.mapPanel}>
+     <MapView style={styles.map} initialRegion={PORTUGAL} mapType="none" loadingEnabled accessibilityLabel="Mapa de sessões em Portugal">
+       <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false}/>
+       {mappedSessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
+          title={s.sport} description={s.city+' · '+new Date(s.gameDate).toLocaleString('pt-PT')}
+          onPress={()=>setSelectedPin(s.id)}/>)}
+     </MapView>
+     <Text style={styles.mapNotice}>{mappedSessions.length} sessões com localização pública no mapa · {sessions.length} resultados nos filtros</Text>
+     {sessions.length>0&&mappedSessions.length===0?<Message>Estas sessões ainda não têm coordenadas públicas no servidor. Podes consultá-las na vista Lista; não mostramos pins aproximados nem moradas privadas.</Message>:null}
+     {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
+   </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
+   {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>Ver todas as sessões na lista →</Text></Pressable>:null}
   </ScrollView>
  </SafeAreaView>;
 }
@@ -113,4 +144,10 @@ const styles=StyleSheet.create({
  filter:{flexDirection:'row',alignItems:'center',gap:11},square:{width:21,height:21,borderWidth:1,borderColor:C.mint,borderRadius:6,alignItems:'center'},squareSelected:{backgroundColor:C.mint},
  section:{marginTop:6,flexDirection:'row',justifyContent:'space-between',alignItems:'baseline'},
  sectionTitle:{color:C.white,fontWeight:'800',fontSize:21},total:{color:C.muted,fontSize:12},
+ switcher:{flexDirection:'row',gap:4,padding:5,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ switchOption:{flex:1,alignItems:'center',paddingVertical:12,borderRadius:12},
+ switchSelected:{backgroundColor:C.mint},switchLabel:{color:C.white,fontWeight:'800',fontSize:15},switchLabelSelected:{color:C.background},
+ mapPanel:{gap:12},map:{height:430,borderRadius:14,overflow:'hidden'},mapNotice:{color:C.muted,fontSize:12},
+ pinCard:{gap:8},showList:{padding:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:12,alignItems:'center'},
+ showListText:{color:C.mint,fontWeight:'800'},
 });
