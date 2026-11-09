@@ -24,11 +24,17 @@ function editSessionPayload(fields,allowedSports,now=Date.now()){
  if(!allowedSports.includes(sport))throw Error('Escolhe uma modalidade válida do catálogo Jynlo.');
  const city=String(fields.city||'').trim(),address=String(fields.address||'').trim();
  if(city.length<2||city.length>120)throw Error('Indica uma cidade entre 2 e 120 caracteres.');
- if(address.length<3||address.length>250)throw Error('Indica uma morada entre 3 e 250 caracteres.');
+ if(address.length<1||address.length>500)throw Error('Indica uma morada até 500 caracteres.');
  const meeting=String(fields.meetingPointInstructions||'').trim();
  if(meeting.length>240||/[\r\n\x00-\x1f\x7f]/.test(meeting))
   throw Error('O ponto de encontro deve ter uma linha até 240 caracteres.');
- const maxParticipants=asInt(fields.maxParticipants,'Máximo de jogadores',2,1000);
+ const maxParticipants=asInt(fields.maxParticipants,'Máximo de jogadores',2,100);
+ const occupied=Number(fields.currentParticipantCount);
+ const external=Number(fields.currentExternalConfirmedParticipants);
+ if(fields.currentParticipantCount!=null&&Number.isSafeInteger(occupied)&&occupied>=0&&maxParticipants<occupied)
+  throw Error('A capacidade não pode ser inferior ao número de jogadores já inscritos.');
+ if(fields.currentExternalConfirmedParticipants!=null&&Number.isSafeInteger(external)&&external>=0&&maxParticipants<external+1)
+  throw Error('A capacidade deve incluir os jogadores externos e a vaga do organizador.');
  const minParticipants=asInt(fields.minParticipants,'Mínimo de jogadores',2,maxParticipants);
  const priceText=String(fields.priceAmount??'').trim().replace(',','.');
  if(!/^\d+(\.\d{1,2})?$/.test(priceText))throw Error('Indica um preço válido até duas casas decimais.');
