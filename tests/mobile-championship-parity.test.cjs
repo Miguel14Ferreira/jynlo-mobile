@@ -99,3 +99,10 @@ test('championship honours use official closed season results and preserve team 
  assert.ok(listing.includes('championships/honours'));
  assert.ok(!screen.includes('Linking.openURL'));
 });
+
+test('championship section stays visible if only tournament retrieval fails',()=>{
+ const listing=read('app/communities/[id]/competitions.tsx');
+ assert.ok(listing.includes('{!loading&&!!role?<View style={styles.section}>'),'championships must not depend on tournament request failure');
+ assert.ok(listing.includes("else setChampionshipError("),'championship errors remain independent');
+ assert.ok(listing.includes("else setError("),'tournament errors remain independent');
+});
