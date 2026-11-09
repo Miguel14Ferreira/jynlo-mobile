@@ -1,11 +1,12 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
+import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/chat-api';
@@ -20,6 +21,7 @@ export default function DirectConversation(){
  const peer=typeof params.peer==='string'?params.peer:'';
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
+ const conversationScroll=useRef<ScrollView|null>(null);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
@@ -191,7 +193,10 @@ export default function DirectConversation(){
    }
   }
  }
- return <Page><DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
+ return <SafeAreaView style={styles.screen} edges={['top','left','right']}>
+  <ScrollView ref={conversationScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
+    onContentSizeChange={()=>conversationScroll.current?.scrollToEnd({animated:false})}>
+  <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
   {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
@@ -222,15 +227,6 @@ export default function DirectConversation(){
    <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
    <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
-  {auth.token&&!blocked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
-   <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
-    placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-    maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
-   <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={sending||!draft.trim()} onPress={()=>{void send();}}>
-    {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
-   </Pressable>
-  </KeyboardAvoidingView>:null}
   {auth.token&&!DEMO_MODE&&peer.toLowerCase()!==auth.username?.toLowerCase()?<View style={styles.safety}>
    <Eyebrow>SEGURANÇA DA CONVERSA</Eyebrow>
    {blocked?<Message>Bloqueaste este utilizador. As mensagens estão desativadas.</Message>:null}
@@ -251,10 +247,25 @@ export default function DirectConversation(){
    </View>:null}
   </View>:null}
   <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
-  <Button secondary title="Voltar às mensagens" onPress={()=>router.back()}/>
- </Page>;
+  </ScrollView>
+  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.footer}>
+  {auth.token&&!blocked?<View style={styles.composer}>
+   <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
+    placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
+    maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
+   <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
+    disabled={sending||!draft.trim()} onPress={()=>{void send();}}>
+    {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
+   </Pressable>
+  </View>:null}
+
+  </KeyboardAvoidingView>
+ </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ screen:{flex:1,backgroundColor:C.background},
+ history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12},
+ footer:{paddingHorizontal:12,paddingVertical:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background},
  safety:{gap:10,padding:14,borderRadius:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  report:{gap:10},
  reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
