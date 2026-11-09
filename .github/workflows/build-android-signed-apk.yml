@@ -132,6 +132,24 @@ jobs:
           JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
         run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2
         working-directory: android
+      - name: Diagnóstico R8 e dependências LiveKit em caso de falha
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p android-build-diagnostics
+          if [ -f android/app/build/outputs/mapping/release/missing_rules.txt ]; then
+            cp android/app/build/outputs/mapping/release/missing_rules.txt android-build-diagnostics/r8-missing-rules.txt
+          fi
+          (cd android && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --offline --no-daemon > ../android-build-diagnostics/release-dependencies.txt 2>&1) || true
+          grep -iE 'livekit|webrtc|jni.zero|jni_zero|react-native-webrtc' android-build-diagnostics/release-dependencies.txt > android-build-diagnostics/livekit-dependencies.txt || true
+      - name: Guardar diagnóstico da compilação falhada
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-r8-livekit-build-diagnostics
+          path: android-build-diagnostics/
+          if-no-files-found: warn
+          retention-days: 7
       - name: Confirmar assinatura e conteúdo da APK
         shell: bash
         run: |
