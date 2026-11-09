@@ -111,6 +111,7 @@ test('the messages inbox shows authenticated, unexpired incoming call invitation
   'pendingDirectCall(auth.token)',
   'setIncomingCall(null)',
   "call.status==='fulfilled'",
+  'else setIncomingCall(null);',
   'Date.parse(call.value.expiresAt)>Date.now()',
   'sameIdentity&&incomingCall',
   "pathname:'/messages/call'",
