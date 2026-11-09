@@ -235,7 +235,8 @@ export default function DirectConversation(){
    {m.deletedAt?<Text style={styles.body}>Mensagem removida</Text>:
     giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
       accessibilityLabel="GIF enviado na conversa"/>:
-    <Text style={styles.body}>{m.text||m.attachmentName||'Mensagem sem texto'}</Text>}
+    m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
+    <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
    {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
