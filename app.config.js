@@ -12,6 +12,7 @@ module.exports = ({config}) => {
     : (config.plugins || []);
   return {
     ...config,
+    owner: 'tmf14s-team',
     plugins,
     ...(projectId
       ? {extra: {...(config.extra || {}), eas: {...(config.extra?.eas || {}), projectId}}}
