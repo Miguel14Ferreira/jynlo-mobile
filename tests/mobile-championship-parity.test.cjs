@@ -45,3 +45,12 @@ test('championship detail manages existing tournaments and winner points with se
   assert.ok(screen.includes(item),item);
  assert.ok(!screen.includes('Linking.openURL'));
 });
+
+test('placement scoring mirrors backend validation and is only editable for draft competitions',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const screen=read('app/communities/[id]/championships/[championshipId].tsx');
+ for(const item of ['validateChampionshipPlacementPoints','raw.length<2||raw.length>20','value>10000||value>previous','/placement-points','pointsByPlace:validateChampionshipPlacementPoints'])
+  assert.ok(api.includes(item),item);
+ for(const item of ["item.status==='DRAFT'",'Guardar pontos por posição','setChampionshipPlacementPoints'])
+  assert.ok(screen.includes(item),item);
+});
