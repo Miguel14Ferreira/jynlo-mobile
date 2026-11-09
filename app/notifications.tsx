@@ -25,6 +25,11 @@ export default function NotificationsScreen(){
  const pendingRefresh=useRef(false);
  const statusRequest=useRef(0);
  const pushOperation=useRef(0),inviteOperation=useRef(0);
+ // Gate private content during render, before the focus effect has time to
+ // clear state left by a different signed-in account.
+ const sameAccount=Boolean(auth.token&&auth.username&&account.current===auth.username+'|'+auth.token);
+ const visibleItems=sameAccount?items:[];
+ const visibleInvites=sameAccount?invites:[];
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
@@ -36,7 +41,7 @@ export default function NotificationsScreen(){
    const [notifs,invitations]=await Promise.allSettled([
     myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
    ]);
-   if(version!==generation.current)return;
+   if(version!==generation.current||account.current!==auth.username+'|'+auth.token)return;
    if(notifs.status==='fulfilled'){
     setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
     setHistoryReady(true);
@@ -48,7 +53,7 @@ export default function NotificationsScreen(){
    }else if(!silent)setError('');
   }finally{
    if(inFlight.current===version)inFlight.current=null;
-   if(version===generation.current){
+   if(version===generation.current&&account.current===auth.username+'|'+auth.token){
     if(!silent)setLoading(false);
     if(pendingRefresh.current){
      pendingRefresh.current=false;
@@ -91,7 +96,7 @@ export default function NotificationsScreen(){
   };
  },[load,auth.username,auth.token]));
  async function togglePush(){
-  if(!auth.username||!auth.token||pushBusy)return;
+  if(!sameAccount||!auth.username||!auth.token||pushBusy)return;
   // Ignore an older status lookup while an explicit user choice is processing.
   statusRequest.current++;
   const identity=auth.username+'|'+auth.token;
@@ -110,7 +115,7 @@ export default function NotificationsScreen(){
   finally{if(pushOperation.current===operation)setPushBusy(false);}
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
-  if(!auth.token||busyInvite!==null)return;
+  if(!sameAccount||!auth.token||busyInvite!==null)return;
   const initialIdentity=auth.username+'|'+auth.token;
   const operation=++inviteOperation.current;
   setBusyInvite(invite.id);setError('');setNotice('');
@@ -127,7 +132,7 @@ export default function NotificationsScreen(){
   finally{if(account.current===initialIdentity&&inviteOperation.current===operation)setBusyInvite(null);}
  }
  async function open(item:JynloNotification){
-  if(!auth.token||!auth.username)return;
+  if(!sameAccount||!auth.token||!auth.username)return;
   const initialIdentity=auth.username+'|'+auth.token;
   try{if(!item.read){
    await markNotificationRead(item.id,auth.token);
@@ -167,7 +172,7 @@ export default function NotificationsScreen(){
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
-  {auth.token?<View style={styles.pushPanel}>
+  {sameAccount?<View style={styles.pushPanel}>
    <Text style={styles.heading}>Notificações no telemóvel</Text>
    <Text style={styles.note}>Ativação opcional. Pedimos permissão apenas quando escolheres ativar; o envio de notificações ainda depende da configuração do servidor e das credenciais Android.</Text>
    <Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>
@@ -175,11 +180,11 @@ export default function NotificationsScreen(){
   </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
   {loading?<Loader/>:null}
-  {error?<Message tone="error">{error}</Message>:null}
-  {notice?<Message>{notice}</Message>:null}
-  {auth.token&&!loading?<View style={{gap:12}}>
-   <Text style={styles.heading}>Convites para sessões · {invites.length}</Text>
-   {invites.length===0?<Text style={styles.note}>Não tens convites pendentes para sessões.</Text>:invites.map(invite=><View key={invite.id} style={styles.invite}>
+  {sameAccount&&error?<Message tone="error">{error}</Message>:null}
+  {sameAccount&&notice?<Message>{notice}</Message>:null}
+  {sameAccount&&!loading?<View style={{gap:12}}>
+   <Text style={styles.heading}>Convites para sessões · {visibleInvites.length}</Text>
+   {visibleInvites.length===0?<Text style={styles.note}>Não tens convites pendentes para sessões.</Text>:visibleInvites.map(invite=><View key={invite.id} style={styles.invite}>
     <Text style={styles.subject}>{invite.sport||'Sessão desportiva'} · {invite.city||'Local a confirmar'}</Text>
     <Text style={styles.body}>Convidado por @{invite.inviterUsername}</Text>
     {invite.gameDate?<Text style={styles.note}>{new Date(invite.gameDate).toLocaleString('pt-PT')}</Text>:null}
@@ -190,14 +195,14 @@ export default function NotificationsScreen(){
      <View style={{flex:1}}><Button title="Recusar" secondary disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}}/></View>
     </View>
    </View>)}
-   <Text style={styles.heading}>Outras notificações · {items.length}</Text>
-   {items.length===0?<Text style={styles.note}>Sem outras notificações.</Text>:items.map(n=><Pressable key={n.id} onPress={()=>{void open(n);}} style={[styles.tile,!n.read&&styles.new]}>
+   <Text style={styles.heading}>Outras notificações · {visibleItems.length}</Text>
+   {visibleItems.length===0?<Text style={styles.note}>Sem outras notificações.</Text>:visibleItems.map(n=><Pressable key={n.id} onPress={()=>{void open(n);}} style={[styles.tile,!n.read&&styles.new]}>
     <View style={{flex:1,gap:6}}><Text style={styles.subject}>{n.subject||'Jynlo'}</Text><Text style={styles.body}>{n.message}</Text>
      <Text style={styles.note}>{new Date(n.createdAt).toLocaleString('pt-PT')}</Text></View>
     {!n.read?<Text style={styles.badge}>●</Text>:null}
    </Pressable>)}
   </View>:null}
-  <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={loading||busyInvite!==null}/>
+  <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
   <Message>Notificações atualizadas automaticamente de 20 em 20 segundos enquanto este ecrã está aberto. O envio push com a app fechada ainda não está disponível.</Message>
  </Page>;
 }
