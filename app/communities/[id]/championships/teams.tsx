@@ -70,14 +70,17 @@ export default function ChampionshipTeamsScreen(){
    {data.competitionTeams.map(entry=>{
     const linked=data.teams.find(team=>team.id===entry.championshipTeamId);
     const picked=selected[entry.id]??entry.championshipTeamId;
+    const conflictingTeamIds=new Set(data.competitionTeams
+     .filter(other=>other.tournamentId===entry.tournamentId&&other.id!==entry.id&&other.championshipTeamId!==null)
+     .map(other=>other.championshipTeamId));
     return <View key={entry.id} style={styles.section}>
      <Text style={styles.label}>{entry.name}</Text>
      <Text style={styles.hint}>{entry.tournamentName} · {linked?'Equipa da época: '+linked.name:'Sem associação'}</Text>
      {organizer&&!closed?<View style={styles.section}>
-      {data.teams.map(team=><Pressable key={team.id} onPress={()=>setSelected(current=>({...current,[entry.id]:team.id}))} disabled={saving} accessibilityRole="radio" accessibilityState={{selected:picked===team.id}} style={[styles.choice,picked===team.id&&styles.selected]}>
-       <Text style={styles.team}>{picked===team.id?'●':'○'} {team.name}</Text>
+      {data.teams.map(team=><Pressable key={team.id} onPress={()=>setSelected(current=>({...current,[entry.id]:team.id}))} disabled={saving||conflictingTeamIds.has(team.id)} accessibilityRole="radio" accessibilityState={{selected:picked===team.id,disabled:conflictingTeamIds.has(team.id)}} style={[styles.choice,picked===team.id&&styles.selected,conflictingTeamIds.has(team.id)&&styles.unavailable]}>
+       <Text style={styles.team}>{picked===team.id?'●':'○'} {team.name}{conflictingTeamIds.has(team.id)?' · Já utilizada nesta prova':''}</Text>
       </Pressable>)}
-      <Button secondary title="Guardar associação" disabled={saving||!picked||picked===entry.championshipTeamId} onPress={()=>{
+      <Button secondary title="Guardar associação" disabled={saving||!picked||picked===entry.championshipTeamId||conflictingTeamIds.has(picked)} onPress={()=>{
        if(!picked)return;
        const target=data.teams.find(team=>team.id===picked);
        Alert.alert('Associar equipa?',entry.name+' → '+(target?.name||''),[
@@ -99,5 +102,5 @@ const styles=StyleSheet.create({
  team:{color:C.white,fontSize:14},section:{gap:9,paddingVertical:10,borderBottomWidth:1,borderBottomColor:C.border},
  input:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,backgroundColor:C.surface2},
  choice:{padding:12,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:12},
- selected:{borderColor:C.mint}
+ selected:{borderColor:C.mint},unavailable:{opacity:0.45}
 });
