@@ -10,6 +10,7 @@ export interface ChampionshipLeader {
 export interface CommunityChampionship {
  id:number;communityId:number;name:string;sport:string;seasonLabel:string;
  createdAt:string;competitions:ChampionshipCompetition[];winnerStandings:ChampionshipLeader[];
+ closedAt:string|null;championEntryType:string|null;championParticipantId:number|null;championDisplayName:string|null;
 }
 export interface ChampionshipStanding {
  entryType:string;participantId:number;name:string;points:number;victories:number;awardedCompetitions:number;
@@ -75,4 +76,11 @@ export async function setChampionshipPlacementPoints(communityId:number,champion
  return request<CommunityChampionship>(`${base(communityId)}/${championshipId}/competitions/${tournamentId}/placement-points`,{
   token,method:'PUT',body:{pointsByPlace:validateChampionshipPlacementPoints(pointsByPlace)}
  });
+}
+
+/** Closing freezes standings and competition results on the server. Never retry a failed or timed-out POST automatically. */
+export async function closeCommunityChampionship(communityId:number,championshipId:number,token:string):Promise<CommunityChampionship>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para encerrar campeonatos.');
+ if(!Number.isSafeInteger(championshipId)||championshipId<=0)throw Error('Campeonato inválido.');
+ return request<CommunityChampionship>(`${base(communityId)}/${championshipId}/close`,{token,method:'POST'});
 }
