@@ -42,6 +42,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
     <Stack.Screen name="welcome" options={{headerShown:false}}/>
     <Stack.Screen name="sessions/[id]" options={{title:'Detalhes da sessão'}}/>
+    <Stack.Screen name="sessions/[id]/edit" options={{title:'Editar sessão'}}/>
     <Stack.Screen name="sessions/[id]/chat" options={{title:'Chat da sessão'}}/>
     <Stack.Screen name="communities/create" options={{title:"Criar comunidade"}}/>
     <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>
