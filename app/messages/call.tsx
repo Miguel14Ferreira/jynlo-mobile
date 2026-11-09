@@ -5,9 +5,10 @@ import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,use
 import {Track} from 'livekit-client';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
+import {ApiError} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
 import {
- directCallAvailability,pendingDirectCall,startDirectCall,acceptDirectCall,declineDirectCall,endDirectCall,
+ directCallAvailability,pendingDirectCall,startDirectCall,acceptDirectCall,declineDirectCall,endDirectCall,directCallMembers,
  type DirectCallSession,type DirectCallInvitation,type DirectCallMedia
 } from '../../src/lib/direct-call-api';
 
@@ -58,7 +59,7 @@ export default function DirectCallScreen(){
  const [pending,setPending]=useState<DirectCallInvitation|null>(null);
  const [session,setSession]=useState<DirectCallSession|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const [audioReady,setAudioReady]=useState(false);
+ const [audioReady,setAudioReady]=useState(false),[connectedToPeer,setConnectedToPeer]=useState(false);
  const generation=useRef(0),operation=useRef(false),sessionRef=useRef<DirectCallSession|null>(null),ending=useRef(false);
  useEffect(()=>{sessionRef.current=session;},[session]);
  const refresh=useCallback(async(version:number)=>{
@@ -101,13 +102,35 @@ export default function DirectCallScreen(){
   });
   return()=>{active=false;void AudioSession.stopAudioSession();};
  },[session?.callId,auth.token]);
+ useEffect(()=>{
+  if(!session||!auth.token){setConnectedToPeer(false);return;}
+  let active=true;
+  const callId=session.callId;
+  const inspect=async()=>{
+   try{
+    const members=await directCallMembers(callId,auth.token!);
+    if(active&&sessionRef.current?.callId===callId)setConnectedToPeer(members.participants.length>=2);
+   }catch(e){
+    if(!active||sessionRef.current?.callId!==callId)return;
+    // Ringing calls return 403 until the recipient accepts; don't call this a failure.
+    if(e instanceof ApiError&&e.status===403)return;
+    if(e instanceof ApiError&&[404,410].includes(e.status)){
+     sessionRef.current=null;setSession(null);setConnectedToPeer(false);setConnectedToPeer(false);
+     setError('A chamada terminou ou o convite expirou.');
+    }
+   }
+  };
+  void inspect();
+  const timer=setInterval(()=>{if(AppState.currentState==='active')void inspect();},8000);
+  return()=>{active=false;clearInterval(timer);};
+ },[session?.callId,auth.token]);
  async function create(media:DirectCallMedia){
   if(operation.current||!auth.token||!available||!PEER.test(peer))return;
   const version=generation.current;operation.current=true;setBusy(true);setError('');
   try{
    const result=await startDirectCall(peer,media,auth.token);
    if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
-   setPending(null);ending.current=false;sessionRef.current=result;setSession(result);
+   setPending(null);setConnectedToPeer(false);ending.current=false;sessionRef.current=result;setSession(result);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível iniciar a chamada.');}
   finally{operation.current=false;if(version===generation.current)setBusy(false);}
  }
@@ -119,7 +142,7 @@ export default function DirectCallScreen(){
    if(accept){
     const result=await acceptDirectCall(invitation.callId,auth.token);
     if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
-    ending.current=false;sessionRef.current=result;setSession(result);
+    setConnectedToPeer(true);ending.current=false;sessionRef.current=result;setSession(result);
    }else await declineDirectCall(invitation.callId,auth.token);
    if(version===generation.current)setPending(null);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível responder à chamada.');}
@@ -141,6 +164,7 @@ export default function DirectCallScreen(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>A preparar o áudio da chamada…</Text><Button title="Terminar chamada" danger onPress={()=>{void hangup();}}/></View>:null}
+  {session&&!connectedToPeer?<Text style={styles.note}>À espera de resposta do contacto…</Text>:null}
   {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
    onError={e=>setError(e.message)}>
