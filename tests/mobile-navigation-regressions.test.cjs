@@ -24,3 +24,11 @@ test('session organizer detail is fetched before optional anonymous preview',()=
  const preview=code.indexOf('setPreview(await sessionPreview(id))');
  assert.ok(detail>=0&&preview>detail);
 });
+
+test('chat attachment menu remains mounted and photo confirmation is next to composer',()=>{
+ const code=source('app/messages/[peer].tsx');
+ assert.match(code,/style=\{\[styles\.attachmentOptions,!attachmentsOpen&&styles\.hidden\]\}/);
+ assert.ok(code.indexOf('{photo?<View')>code.indexOf('</ScrollView>'));
+ assert.ok(code.indexOf('{photo?<View')<code.indexOf('style={styles.composer}'));
+ assert.match(code,/safetyOpen\?<\>/);
+});
