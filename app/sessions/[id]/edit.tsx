@@ -53,7 +53,8 @@ export default function EditSession(){
  function confirm(){
   if(!draft||!session||!auth.token||busy||saving.current||DEMO_MODE)return;
   let payload:SessionDetailsUpdate;
-  try{payload=editSessionPayload(draft,SPORTS);}catch(e){setError(e instanceof Error?e.message:'Confirma os campos.');return;}
+  try{payload=editSessionPayload({...draft,currentParticipantCount:session.participantCount,
+   currentExternalConfirmedParticipants:session.externalConfirmedParticipants},SPORTS);}catch(e){setError(e instanceof Error?e.message:'Confirma os campos.');return;}
   const version=generation.current,token=auth.token,sessionId=id;
   Alert.alert('Guardar alterações?', 'Os participantes podem ser afetados por mudanças na data, no local ou na capacidade. Confirma antes de guardar.',[
    {text:'Voltar',style:'cancel'},
