@@ -303,6 +303,8 @@ export default function SessionScreen(){
       {auth.token&&detail&&canLeave(detail)?<Button danger title="Cancelar a minha presença" disabled={busy} onPress={leave}/>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
+        <Button title="Editar dados da sessão" secondary disabled={busy||loading}
+          onPress={()=>router.push({pathname:'/sessions/[id]/edit',params:{id:String(id)}})}/>
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
         <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
         {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}
