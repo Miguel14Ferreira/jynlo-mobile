@@ -120,3 +120,17 @@ test('the messages inbox shows authenticated, unexpired incoming call invitation
  ])assert.ok(inbox.includes(marker),marker);
  assert.ok(inbox.includes("if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return"));
 });
+
+test('leaving a call clears local ownership and limits overlapping server status requests',()=>{
+ const screen=read('app/messages/call.tsx');
+ for(const marker of [
+  'const orphan=sessionRef.current;',
+  'sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false)',
+  'if(auth.token)void endDirectCall(orphan.callId,auth.token).catch(()=>{})',
+  'let inspectInFlight=false',
+  'if(inspectInFlight)return',
+  'inspectInFlight=true',
+  'finally{inspectInFlight=false;}'
+ ])assert.ok(screen.includes(marker),marker);
+ assert.ok(!screen.includes('useEffect(()=>{sessionRef.current=session;},[session])'));
+});
