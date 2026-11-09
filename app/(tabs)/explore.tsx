@@ -1,7 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
-import MapView,{Marker,UrlTile} from 'react-native-maps';
-import type {Region} from 'react-native-maps';
+import {Linking,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/components/UI';
@@ -23,7 +21,15 @@ export default function DiscoverScreen(){
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
  const [display,setDisplay]=useState<'map'|'list'>('list');
  const [selectedPin,setSelectedPin]=useState<number|null>(null);
- const viewport=useRef<Region>(PORTUGAL);
+ const openMap=async()=>{
+   // A native map currently crashes some signed Android APKs on first mount.
+   // Use the system browser until the native map has passed device diagnostics.
+   const pin=mappedSessions[0];
+   const latitude=pin?.latitude??PORTUGAL.latitude;
+   const longitude=pin?.longitude??PORTUGAL.longitude;
+   const url=`https://www.openstreetmap.org/#map=10/${latitude}/${longitude}`;
+   try{await Linking.openURL(url);}catch{setError('Não foi possível abrir o mapa no navegador. Consulta as sessões na lista.');}
+ };
  const [mapArea,setMapArea]=useState<{latitude:number;longitude:number;radiusKm:number}|null>(null);
  const mappedSessions=useMemo(()=>sessions.filter(validPin),[sessions]);
  const currentPin=useMemo(()=>mappedSessions.find(s=>s.id===selectedPin)||null,[mappedSessions,selectedPin]);
@@ -114,36 +120,13 @@ export default function DiscoverScreen(){
    {error?<Message tone="error">{error}</Message>:null}
    {!loading&&!error&&sessions.length===0?<Message>Não encontrámos sessões para estes filtros. Experimenta outra cidade ou modalidade.</Message>:null}
    {display==='map'?<View style={styles.mapPanel}>
-     <View style={styles.mapActions}>
-       <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar jogos nesta área do mapa" style={styles.areaSearch}
-         onPress={()=>{
-           const r=viewport.current;
-           const valid=[r.latitude,r.longitude,r.latitudeDelta,r.longitudeDelta].every(Number.isFinite)
-             &&Math.abs(r.latitude)<=90&&Math.abs(r.longitude)<=180&&r.latitudeDelta>0&&r.longitudeDelta>0;
-           if(!valid)return;
-           const north=Math.min(85,r.latitude+Math.abs(r.latitudeDelta)/2);
-           const east=Math.min(180,r.longitude+Math.abs(r.longitudeDelta)/2);
-           const latKm=Math.abs(north-r.latitude)*111.2;
-           const lonKm=Math.abs(east-r.longitude)*111.2*Math.max(0,Math.cos(r.latitude*Math.PI/180));
-           const radiusKm=Math.max(5,Math.min(500,Math.ceil(Math.hypot(latKm,lonKm))));
-           setMapArea({latitude:r.latitude,longitude:r.longitude,radiusKm});
-         }}>
-         <Text style={styles.areaSearchText}>⌕ Pesquisar nesta área</Text>
-       </Pressable>
-       {mapArea?<Pressable accessibilityRole="button" onPress={()=>setMapArea(null)} style={styles.clearArea}>
-         <Text style={styles.clearAreaText}>Limpar zona</Text>
-       </Pressable>:null}
-     </View>
-     {mapArea?<Text style={styles.mapNotice}>Resultados nesta zona aproximada · raio {mapArea.radiusKm} km</Text>:null}
-     <MapView style={styles.map} initialRegion={PORTUGAL} onRegionChangeComplete={region=>{viewport.current=region;}}
-       mapType="none" loadingEnabled accessibilityLabel="Mapa de sessões em Portugal">
-       <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false}/>
-       {mappedSessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
-          title={s.sport} description={s.city+' · '+new Date(s.gameDate).toLocaleString('pt-PT')}
-          onPress={()=>setSelectedPin(s.id)}/>)}
-     </MapView>
+     <Message>O mapa nativo está temporariamente desativado nesta APK por provocar um fecho inesperado em Android. Podes abrir o mapa no OpenStreetMap ou consultar as sessões abaixo sem sair da Jynlo.</Message>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir OpenStreetMap no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
+       <Text style={styles.areaSearchText}>⌖ Abrir mapa no navegador</Text>
+     </Pressable>
+     {mappedSessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
      <Text style={styles.mapNotice}>{mappedSessions.length} sessões com zona aproximada no mapa · {sessions.length} resultados nos filtros</Text>
-     <Text style={styles.mapNotice}>© OpenStreetMap contributors</Text>
+     <Text style={styles.mapNotice}>Mapa externo © OpenStreetMap contributors</Text>
      {sessions.length>0&&mappedSessions.length===0?<Message>Estas sessões ainda não têm coordenadas públicas no servidor. Podes consultá-las na vista Lista; não mostramos pins aproximados nem moradas privadas.</Message>:null}
      {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
    </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
