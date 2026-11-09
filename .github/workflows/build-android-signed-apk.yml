@@ -15,7 +15,9 @@ permissions:
 
 concurrency:
   group: jynlo-signed-apk-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep the current APK build alive while the next develop commit waits.
+  # Rapid code fixes must not cancel an otherwise healthy signed build.
+  cancel-in-progress: false
 
 jobs:
   build-internal-aab:
@@ -118,7 +120,8 @@ jobs:
           set -euo pipefail
           apk="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$apk"
-          unzip -Z1 "$apk" | grep -q '^assets/index.android.bundle$'
+          # grep -q can close the pipe early and trigger SIGPIPE under pipefail.
+          unzip -Z1 "$apk" | grep -Fx 'assets/index.android.bundle' >/dev/null
           apk_signer="$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
           test -n "$apk_signer"
           "$apk_signer" verify --verbose "$apk"
