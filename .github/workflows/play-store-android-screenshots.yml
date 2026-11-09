@@ -51,7 +51,235 @@ jobs:
           # Scope to Android application Gradle generated from this commit.
           # Replace only the release optimization settings, leaving source and
           # production workflows untouched.
-          content, count=re.subn(r'(?m)^(\\s*)minifyEnabled\\s+[^\\n]+$',r'\\1minifyEnabled false',content)
+          content, count=re.subn(r'(?m)^(\s*)minifyEnabled\s+[^\n]+,r'\1minifyEnabled false',content)
+          if count!=1:
+            raise SystemExit(f'Expected one minifyEnabled setting; found {count}')
+          content=re.sub(r'(?m)^(\s*)shrinkResources\s+[^\n]+,r'\1shrinkResources false',content)
+          p.write_text(content)
+          PY
+          (cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2)
+          test -s android/app/build/outputs/apk/release/app-release.apk
+      - name: Free disk space after APK build before emulator installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          echo "Disk before cleanup:"
+          df -h /
+          du -sh node_modules "$HOME/.gradle" android/app/build android/.gradle 2>/dev/null || true
+          # Only the compiled APK is needed by the emulator. Reclaim build
+          # dependencies and transient Gradle caches before installing Android SDK.
+          mkdir -p "$RUNNER_TEMP/jynlo-apk"
+          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk"
+          rm -rf node_modules android/.gradle android/build android/app/build "$HOME/.gradle/caches"
+          mkdir -p android/app/build/outputs/apk/release
+          cp "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk" "$apk"
+          test -s "$apk"
+          echo "Disk after cleanup:"
+          df -h /
+          free_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$free_kb" -lt 3500000 ]; then
+            echo "::error::At least 3.5 GB disk space is required to install Android emulator image"
+            exit 1
+          fi
+      - name: Boot emulator and capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb shell wm size 1080x1920
+            adb shell wm density 420
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
+            mkdir -p play-store-screenshots
+            adb shell am force-stop com.jynlo.app || true
+            adb shell monkey -p com.jynlo.app 1
+            sleep 20
+            adb shell input keyevent KEYCODE_BACK || true
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://welcome' -p com.jynlo.app
+            sleep 8
+            adb exec-out screencap -p > play-store-screenshots/01-welcome.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://login' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/02-login.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://legal?document=privacy' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/03-privacy.png
+            # Basic pixel and format checks; human review is still required.
+            python3 - <<'PY'
+            from pathlib import Path
+            import struct
+            for path in sorted(Path('play-store-screenshots').glob('*.png')):
+                data=path.read_bytes()
+                assert len(data)>15000 and data[:8]==b'\x89PNG\r\n\x1a\n', f'Invalid image {path}'
+                w,h=struct.unpack('>II',data[16:24])
+                assert (w,h)==(1080,1920), (path,w,h)
+                print(path,w,h,len(data))
+            assert len(list(Path('play-store-screenshots').glob('*.png')))==3
+            PY
+      - name: Upload real screenshots for manual visual approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-google-play-android-screenshots-review
+          path: play-store-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+,r'\\1minifyEnabled false',content)
+          if count!=1:
+            raise SystemExit(f'Expected one minifyEnabled setting; found {count}')
+          content=re.sub(r'(?m)^(\\s*)shrinkResources\\s+[^\\n]+$',r'\\1shrinkResources false',content)
+          p.write_text(content)
+          PY
+          (cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2)
+          test -s android/app/build/outputs/apk/release/app-release.apk
+      - name: Free disk space after APK build before emulator installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          echo "Disk before cleanup:"
+          df -h /
+          du -sh node_modules "$HOME/.gradle" android/app/build android/.gradle 2>/dev/null || true
+          # Only the compiled APK is needed by the emulator. Reclaim build
+          # dependencies and transient Gradle caches before installing Android SDK.
+          mkdir -p "$RUNNER_TEMP/jynlo-apk"
+          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk"
+          rm -rf node_modules android/.gradle android/build android/app/build "$HOME/.gradle/caches"
+          mkdir -p android/app/build/outputs/apk/release
+          cp "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk" "$apk"
+          test -s "$apk"
+          echo "Disk after cleanup:"
+          df -h /
+          free_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$free_kb" -lt 3500000 ]; then
+            echo "::error::At least 3.5 GB disk space is required to install Android emulator image"
+            exit 1
+          fi
+      - name: Boot emulator and capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb shell wm size 1080x1920
+            adb shell wm density 420
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
+            mkdir -p play-store-screenshots
+            adb shell am force-stop com.jynlo.app || true
+            adb shell monkey -p com.jynlo.app 1
+            sleep 20
+            adb shell input keyevent KEYCODE_BACK || true
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://welcome' -p com.jynlo.app
+            sleep 8
+            adb exec-out screencap -p > play-store-screenshots/01-welcome.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://login' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/02-login.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://legal?document=privacy' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/03-privacy.png
+            # Basic pixel and format checks; human review is still required.
+            python3 - <<'PY'
+            from pathlib import Path
+            import struct
+            for path in sorted(Path('play-store-screenshots').glob('*.png')):
+                data=path.read_bytes()
+                assert len(data)>15000 and data[:8]==b'\x89PNG\r\n\x1a\n', f'Invalid image {path}'
+                w,h=struct.unpack('>II',data[16:24])
+                assert (w,h)==(1080,1920), (path,w,h)
+                print(path,w,h,len(data))
+            assert len(list(Path('play-store-screenshots').glob('*.png')))==3
+            PY
+      - name: Upload real screenshots for manual visual approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-google-play-android-screenshots-review
+          path: play-store-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+,r'\\1shrinkResources false',content)
+          p.write_text(content)
+          PY
+          (cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2)
+          test -s android/app/build/outputs/apk/release/app-release.apk
+      - name: Free disk space after APK build before emulator installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          echo "Disk before cleanup:"
+          df -h /
+          du -sh node_modules "$HOME/.gradle" android/app/build android/.gradle 2>/dev/null || true
+          # Only the compiled APK is needed by the emulator. Reclaim build
+          # dependencies and transient Gradle caches before installing Android SDK.
+          mkdir -p "$RUNNER_TEMP/jynlo-apk"
+          cp "$apk" "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk"
+          rm -rf node_modules android/.gradle android/build android/app/build "$HOME/.gradle/caches"
+          mkdir -p android/app/build/outputs/apk/release
+          cp "$RUNNER_TEMP/jynlo-apk/jynlo-screenshots.apk" "$apk"
+          test -s "$apk"
+          echo "Disk after cleanup:"
+          df -h /
+          free_kb="$(df -Pk / | awk 'NR==2 {print $4}')"
+          if [ "$free_kb" -lt 3500000 ]; then
+            echo "::error::At least 3.5 GB disk space is required to install Android emulator image"
+            exit 1
+          fi
+      - name: Boot emulator and capture screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            adb shell wm size 1080x1920
+            adb shell wm density 420
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
+            mkdir -p play-store-screenshots
+            adb shell am force-stop com.jynlo.app || true
+            adb shell monkey -p com.jynlo.app 1
+            sleep 20
+            adb shell input keyevent KEYCODE_BACK || true
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://welcome' -p com.jynlo.app
+            sleep 8
+            adb exec-out screencap -p > play-store-screenshots/01-welcome.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://login' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/02-login.png
+            adb shell am start -W -a android.intent.action.VIEW -d 'jynlo://legal?document=privacy' -p com.jynlo.app
+            sleep 7
+            adb exec-out screencap -p > play-store-screenshots/03-privacy.png
+            # Basic pixel and format checks; human review is still required.
+            python3 - <<'PY'
+            from pathlib import Path
+            import struct
+            for path in sorted(Path('play-store-screenshots').glob('*.png')):
+                data=path.read_bytes()
+                assert len(data)>15000 and data[:8]==b'\x89PNG\r\n\x1a\n', f'Invalid image {path}'
+                w,h=struct.unpack('>II',data[16:24])
+                assert (w,h)==(1080,1920), (path,w,h)
+                print(path,w,h,len(data))
+            assert len(list(Path('play-store-screenshots').glob('*.png')))==3
+            PY
+      - name: Upload real screenshots for manual visual approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-google-play-android-screenshots-review
+          path: play-store-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+,r'\\1minifyEnabled false',content)
           if count!=1:
             raise SystemExit(f'Expected one minifyEnabled setting; found {count}')
           content=re.sub(r'(?m)^(\\s*)shrinkResources\\s+[^\\n]+$',r'\\1shrinkResources false',content)
