@@ -134,7 +134,8 @@ export default function DirectConversation(){
  }
  async function send(){
   if(sending||sendingNow.current||blocked||!auth.token||!draft.trim())return;
-  const submittedText=draft.trim();
+  const originalDraft=draft;
+  const submittedText=originalDraft.trim();
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   sendingNow.current=true;setSending(true);setError('');
@@ -142,7 +143,7 @@ export default function DirectConversation(){
    await sendDirectChat(peer,submittedText,auth.token);
    if(version!==generation.current||conversation.current!==identity)return;
    // Preserve anything typed while the previous message was being sent.
-   setDraft(current=>current===submittedText?'':current);
+   setDraft(current=>current===originalDraft?'':current);
    await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
