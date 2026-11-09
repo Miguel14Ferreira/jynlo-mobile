@@ -104,3 +104,18 @@ test('call screen checks server state and leaves the room when invitation expire
  ])assert.ok(screen.includes(marker),marker);
  assert.ok(!screen.includes('setConnectedToPeer(false);setConnectedToPeer(false)'));
 });
+
+test('the messages inbox shows authenticated, unexpired incoming call invitations',()=>{
+ const inbox=read('app/(tabs)/messages.tsx');
+ for(const marker of [
+  'pendingDirectCall(auth.token)',
+  'setIncomingCall(null)',
+  "call.status==='fulfilled'",
+  'Date.parse(call.value.expiresAt)>Date.now()',
+  'sameIdentity&&incomingCall',
+  "pathname:'/messages/call'",
+  'params:{peer:incomingCall.caller}',
+  'Abrir chamada para aceitar ou recusar'
+ ])assert.ok(inbox.includes(marker),marker);
+ assert.ok(inbox.includes("if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return"));
+});
