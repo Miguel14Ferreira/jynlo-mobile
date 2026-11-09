@@ -52,6 +52,24 @@ jobs:
           npm run check:release
       - name: Gerar Android nativo
         run: npx expo prebuild --platform android --no-install --clean
+      - name: Aplicar regras R8 específicas do JNI LiveKit para a APK interna
+        shell: bash
+        run: |
+          set -euo pipefail
+          rules="android/app/proguard-rules.pro"
+          test -f "$rules"
+          cat >> "$rules" <<'LIVEKIT_JNI_RULES'
+
+          # LiveKit WebRTC JNI bootstrap: class referenced by the native loader.
+          -keep class livekit.org.jni_zero.JniInit { *; }
+          -keep class livekit.org.jni_zero.JniZero { *; }
+          # This generated JNI shim is absent from the shipped Android dependency.
+          # Suppress only this exact missing-symbol diagnostic; test a real call
+          # before using this signed internal APK as a Play Store release.
+          -dontwarn livekit.org.jni_zero.JniZeroJni
+          LIVEKIT_JNI_RULES
+          grep -Fx -- '-dontwarn livekit.org.jni_zero.JniZeroJni' "$rules"
+          echo "Applied the specific LiveKit JNI R8 compatibility rules."
       - name: Carregar chave privada só para este runner
         env:
           JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
