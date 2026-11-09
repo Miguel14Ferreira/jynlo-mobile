@@ -1,6 +1,6 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useLocalSearchParams,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
@@ -24,6 +24,7 @@ export default function SessionScreen(){
   const {id:rawId}=useLocalSearchParams<{id:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
+  const detailRequestGeneration=useRef(0);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
@@ -44,31 +45,57 @@ export default function SessionScreen(){
   const owner=isOrganizer(detail,auth.username);
 
   const load=useCallback(async()=>{
-    if(!Number.isSafeInteger(id)||id<=0){setError('Identificador de sessão inválido.');setLoading(false);return;}
-    setError('');setRosterError('');setLoading(true);setDetail(null);setParticipants([]);
+    const version=++detailRequestGeneration.current;
+    if(!Number.isSafeInteger(id)||id<=0){
+      setError('Identificador de sessão inválido.');setLoading(false);return;
+    }
+    setError('');setRosterError('');setLoading(true);setDetail(null);setPreview(null);setParticipants([]);
     setTeamPreview(null);
     try {
       if(auth.token){
-        // The organizer may own a private/community-only session whose public
-        // preview returns 403. Never block an authorized detail behind it.
+        // Private and community sessions may not have an anonymous preview.
         const full=await sessionDetail(id,auth.token,auth.username||undefined);
+        if(version!==detailRequestGeneration.current)return;
         setDetail(full);
         setMeetingDraft(full.meetingPointInstructions||'');
         setExternalDraft(String(full.externalConfirmedParticipants??0));
-        try{setPreview(await sessionPreview(id));}
-        catch{setPreview(null);}
+        try {
+          const publicPreview=await sessionPreview(id);
+          if(version!==detailRequestGeneration.current)return;
+          setPreview(publicPreview);
+        }catch{
+          if(version!==detailRequestGeneration.current)return;
+          setPreview(null);
+        }
         if(canViewRoster(full,auth.username)){
-          try{setParticipants(await sessionParticipants(id,auth.token));}
-          catch{setParticipants([]);setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');}
+          try {
+            const roster=await sessionParticipants(id,auth.token);
+            if(version!==detailRequestGeneration.current)return;
+            setParticipants(roster);
+          }catch{
+            if(version!==detailRequestGeneration.current)return;
+            setParticipants([]);
+            setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');
+          }
         }
       }else{
-        // Guests only ever receive the explicitly public preview.
-        setPreview(await sessionPreview(id));
+        const publicPreview=await sessionPreview(id);
+        if(version!==detailRequestGeneration.current)return;
+        setPreview(publicPreview);
       }
-    }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');}
-    finally{setLoading(false);}
+    }catch(e){
+      if(version===detailRequestGeneration.current)
+        setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');
+    }finally{
+      if(version===detailRequestGeneration.current)setLoading(false);
+    }
   },[id,auth.token,auth.username]);
-  useEffect(()=>{void load();},[load]);
+  useFocusEffect(useCallback(()=>{
+    void load();
+    // An old response must never restore restricted session details after
+    // changing account, route, or leaving this screen.
+    return ()=>{detailRequestGeneration.current++;};
+  },[load]));
 
   const perform=async(operation:()=>Promise<unknown>,success:string|((result:unknown)=>string))=>{
     if(busy)return;
