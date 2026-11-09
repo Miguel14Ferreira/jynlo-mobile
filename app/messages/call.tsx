@@ -115,7 +115,7 @@ export default function DirectCallScreen(){
     // Ringing calls return 403 until the recipient accepts; don't call this a failure.
     if(e instanceof ApiError&&e.status===403)return;
     if(e instanceof ApiError&&[404,410].includes(e.status)){
-     sessionRef.current=null;setSession(null);setConnectedToPeer(false);setConnectedToPeer(false);
+     sessionRef.current=null;setSession(null);setConnectedToPeer(false);
      setError('A chamada terminou ou o convite expirou.');
     }
    }
