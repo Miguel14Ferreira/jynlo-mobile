@@ -99,8 +99,8 @@ export default function EditSession(){
      </Pressable>)}
     </ScrollView>
    </View>:null}
-   {field('Data (AAAA-MM-DD)','date',{placeholder:'2026-11-20'})}
-   {field('Hora (HH:mm)','hour',{placeholder:'19:30'})}
+   {field('Data (AAAA-MM-DD)','date',{placeholder:'2026-11-20',keyboardType:'number-pad'})}
+   {field('Hora (HH:mm)','hour',{placeholder:'19:30',keyboardType:'number-pad'})}
    {field('Cidade','city')}
    {field('Morada','address')}
    {field('Máximo de jogadores','maxParticipants',{keyboardType:'number-pad'})}
