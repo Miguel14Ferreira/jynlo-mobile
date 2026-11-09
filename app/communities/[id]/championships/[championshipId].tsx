@@ -3,7 +3,7 @@ import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
 import {useAuth} from '../../../../src/lib/auth';
-import {communityChampionships,championshipStandings,addChampionshipCompetition,setChampionshipWinnerPoints,type CommunityChampionship,type ChampionshipStandings} from '../../../../src/lib/championship-api';
+import {communityChampionships,championshipStandings,addChampionshipCompetition,setChampionshipWinnerPoints,setChampionshipPlacementPoints,type CommunityChampionship,type ChampionshipStandings} from '../../../../src/lib/championship-api';
 import {C} from '../../../../src/lib/theme';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentsForCommunity} from '../../../../src/lib/competition-api';
@@ -17,7 +17,7 @@ export default function ChampionshipDetail(){
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[standingsError,setStandingsError]=useState('');
  const [retry,setRetry]=useState(0);
  const [organizer,setOrganizer]=useState(false),[available,setAvailable]=useState<JynloTournament[]>([]);
- const [manageError,setManageError]=useState(''),[saving,setSaving]=useState(false),[pointsDraft,setPointsDraft]=useState<Record<number,string>>({});
+ const [manageError,setManageError]=useState(''),[saving,setSaving]=useState(false),[pointsDraft,setPointsDraft]=useState<Record<number,string>>({}),[placementDraft,setPlacementDraft]=useState<Record<number,string>>({});
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
@@ -78,6 +78,11 @@ export default function ChampionshipDetail(){
       if(!/^\\d+$/.test(raw)||!Number.isInteger(points)||points>10000){setManageError('Indica uma pontuação inteira entre 0 e 10000.');return;}
       void update(()=>setChampionshipWinnerPoints(communityId,competitionId,item.id,points,auth.token!));
      }}/>
+    </View>:null}
+    {organizer&&item.status==='DRAFT'?<View style={styles.scoring}>
+     <Text style={styles.sub}>Pontos por posição (2 a 20 lugares, por ordem decrescente)</Text>
+     <TextInput style={styles.input} keyboardType="numbers-and-punctuation" value={placementDraft[item.id]??item.pointsByPlace??''} onChangeText={value=>setPlacementDraft(current=>({...current,[item.id]:value}))} editable={!saving} maxLength={120} placeholder="Ex.: 25,18,15,12,10" placeholderTextColor={C.muted}/>
+     <Button secondary title="Guardar pontos por posição" disabled={saving} onPress={()=>{void update(()=>setChampionshipPlacementPoints(communityId,competitionId,item.id,placementDraft[item.id]??item.pointsByPlace??'',auth.token!));}}/>
     </View>:null}
     <Button secondary title="Ver torneio" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(communityId),id:String(item.id)}})}/>
    </View>)}
