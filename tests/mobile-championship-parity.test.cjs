@@ -58,8 +58,8 @@ test('placement scoring mirrors backend validation and is only editable for draf
 test('numeric score validation recognizes digits rather than literal backslash-d',()=>{
  const api=read('src/lib/championship-api.ts');
  const screen=read('app/communities/[id]/championships/[championshipId].tsx');
- assert.ok(api.includes(String.raw`/^\\d{1,5}$/`),'placement points must match 1–5 digits');
- assert.ok(screen.includes(String.raw`/^\\d+$/`),'winner score must match digits');
- assert.ok(!api.includes(String.raw`/^\\\\d{1,5}$/`),'do not double-escape digit classes');
- assert.ok(!screen.includes(String.raw`/^\\\\d+$/`),'do not double-escape digit classes');
+ assert.ok(api.includes(String.raw`/^\d{1,5}$/`),'placement points must match 1–5 digits');
+ assert.ok(screen.includes(String.raw`/^\d+$/`),'winner score must match digits');
+ assert.ok(!api.includes(String.raw`/^\\d{1,5}$/`),'do not double-escape digit classes');
+ assert.ok(!screen.includes(String.raw`/^\\d+$/`),'do not double-escape digit classes');
 });
