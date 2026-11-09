@@ -1,0 +1,73 @@
+name: Jynlo Android launch diagnostic (signed APK)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/android-launch-diagnostic.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  launch-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download exact signed APK from successful workflow run
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p launch-diagnostics/apk
+          gh run download 42616671635 -R Miguel14Ferreira/jynlo-mobile -n jynlo-mobile-signed-internal-apk -D launch-diagnostics/apk
+          apk="$(find launch-diagnostics/apk -type f -name '*.apk' | head -n1)"
+          test -n "$apk" && test -s "$apk"
+          echo "APK_PATH=$apk" >> "$GITHUB_ENV"
+          echo "Testing exact signed APK from run 42616671635, commit f6cbe312."
+      - name: Boot Android emulator and verify launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            mkdir -p launch-diagnostics
+            adb install -r "$APK_PATH"
+            adb logcat -c
+            adb shell am force-stop com.jynlo.app || true
+            adb shell monkey -p com.jynlo.app 1 | tee launch-diagnostics/launch.txt
+            sleep 20
+            adb logcat -d -v time > launch-diagnostics/logcat.txt
+            adb shell dumpsys activity activities > launch-diagnostics/activities.txt
+            adb exec-out screencap -p > launch-diagnostics/launch.png
+            test -s launch-diagnostics/launch.png
+            python3 - <<'PY'
+            from pathlib import Path
+            text = Path('launch-diagnostics/logcat.txt').read_text(errors='replace')
+            lines = text.splitlines()
+            crashes = [l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l or 'Process: com.jynlo.app' in l]
+            Path('launch-diagnostics/crash-summary.txt').write_text('\n'.join(crashes) if crashes else 'No Android fatal exception signature detected in launch window.\n')
+            for line in crashes[:20]:
+                print(line[:250])
+            if crashes:
+                raise SystemExit('Android fatal error detected during launch')
+            activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
+            if 'com.jynlo.app' not in activity:
+                raise SystemExit('Jynlo activity not foreground/resumed after 20 seconds')
+            print('Android launch smoke: no fatal error and Jynlo activity present.')
+            PY
+      - name: Upload Android launch diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-signed-apk-launch-diagnostics
+          path: launch-diagnostics/
+          if-no-files-found: warn
+          retention-days: 7
