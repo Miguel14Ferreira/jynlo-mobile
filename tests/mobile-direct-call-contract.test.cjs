@@ -34,3 +34,29 @@ test('direct call transport is not presented as a functional audio/video UI with
  assert.ok(!direct.includes('startDirectCall('));
  assert.ok(!direct.includes('acceptDirectCall('));
 });
+
+test('Expo release includes a native LiveKit engine and the required media plugins',()=>{
+ const p=JSON.parse(read('package.json'));
+ const app=JSON.parse(read('app.json')).expo;
+ for(const name of ['@livekit/react-native','@livekit/react-native-webrtc',
+  '@livekit/react-native-expo-plugin','@config-plugins/react-native-webrtc','livekit-client'])
+  assert.ok(p.dependencies[name],name);
+ assert.ok(app.plugins.includes('@config-plugins/react-native-webrtc'));
+ assert.ok(app.plugins.some(item=>Array.isArray(item)&&item[0]==='@livekit/react-native-expo-plugin'));
+});
+test('native call room uses server-issued credentials and manages microphone, camera and disconnect',()=>{
+ const screen=read('app/messages/call.tsx');
+ const route=read('app/_layout.tsx');
+ const direct=read('app/messages/[peer].tsx');
+ for(const item of ['registerGlobals()','AudioSession.startAudioSession()','AudioSession.stopAudioSession()',
+  '<LiveKitRoom','serverUrl={session.serverUrl}','token={session.token}',
+  "session.media==='video'","room.localParticipant.setMicrophoneEnabled",
+  "room.localParticipant.setCameraEnabled","onDisconnected={()=>{void hangup();}}",
+  "directCallAvailability(auth.token)","pendingDirectCall(auth.token)",
+  "startDirectCall(peer,media,auth.token)","acceptDirectCall(invitation.callId,auth.token)",
+  "declineDirectCall(invitation.callId,auth.token)","endDirectCall(activeSession.callId,auth.token)"])
+  assert.ok(screen.includes(item),item);
+ assert.ok(route.includes('name="messages/call"'));
+ assert.ok(direct.includes("pathname:'/messages/call'"));
+ assert.ok(!screen.includes('LIVEKIT_API_SECRET'));
+});
