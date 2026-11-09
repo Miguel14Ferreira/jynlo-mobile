@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../src/components/UI';
@@ -9,15 +9,26 @@ import type {MySessions,SessionSummary} from '../src/lib/types';
 export default function MySessionsScreen(){
  const auth=useAuth(),router=useRouter();const [data,setData]=useState<MySessions>({created:[],joined:[],waitlisted:[]});
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+ const generation=useRef(0);
  const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){
-    setData({created:[],joined:[],waitlisted:[]});setError('');setLoading(false);return;
+  const requestId=++generation.current;
+  // Do not retain another account's roster while loading or after sign-out.
+  setData({created:[],joined:[],waitlisted:[]});setError('');
+  if(!auth.token||!auth.username){setLoading(false);return;}
+  setLoading(true);
+  try{
+   const next=await mySessions(auth.token,auth.username);
+   if(requestId===generation.current)setData(next);
+  }catch(e){
+   if(requestId===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');
+  }finally{
+   if(requestId===generation.current)setLoading(false);
   }
-  setLoading(true);setError('');setData({created:[],joined:[],waitlisted:[]});
-  try{setData(await mySessions(auth.token,auth.username))}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.')}
-  finally{setLoading(false)}
- },[auth.token,auth.username]);useFocusEffect(useCallback(()=>{void load()},[load]));
+ },[auth.token,auth.username]);
+ useFocusEffect(useCallback(()=>{
+  void load();
+  return()=>{generation.current++;setData({created:[],joined:[],waitlisted:[]});};
+ },[load]));
  const open=(s:SessionSummary)=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}});
  const owned=new Set(data.created.map(s=>s.id));
  const sections:[string,SessionSummary[]][]=[['Criadas por mim',data.created],['Vou participar',data.joined.filter(s=>!owned.has(s.id))],['Lista de espera',data.waitlisted.filter(s=>!owned.has(s.id))]];
