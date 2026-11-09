@@ -1,0 +1,42 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {editSessionPayload,toDateTime}=require('../src/lib/session-details-edit-core.cjs');
+const source=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const future=new Date(Date.now()+86400000*10);
+const date=[future.getFullYear(),String(future.getMonth()+1).padStart(2,'0'),String(future.getDate()).padStart(2,'0')].join('-');
+const input=()=>({sport:'Padel',date,hour:'20:00',city:'Lisboa',address:'Rua do Desporto 12',
+ maxParticipants:'10',minParticipants:'6',priceAmount:'3,50',meetingPointInstructions:'Porta principal'});
+test('session detail edits match web backend PATCH fields',()=>{
+ const payload=editSessionPayload(input(),['Padel','Futebol']);
+ assert.equal(payload.priceAmount,3.5);
+ assert.equal(payload.maxParticipants,10);
+ assert.equal(payload.minParticipants,6);
+ assert.deepEqual(Object.keys(payload).sort(),
+  ['sport','gameDate','maxParticipants','minParticipants','priceAmount','city','address','meetingPointInstructions'].sort());
+});
+test('reject capacity below the minimum, invalid sports and bad dates',()=>{
+ assert.throws(()=>editSessionPayload({...input(),maxParticipants:'5'},['Padel']),/Mínimo/);
+ assert.throws(()=>editSessionPayload({...input(),sport:'Outra'},['Padel']),/modalidade/);
+ assert.throws(()=>toDateTime('2026-02-30','19:00'),/não existem/);
+ assert.throws(()=>editSessionPayload({...input(),hour:'25:00'},['Padel']),/data e hora/);
+});
+test('reject an expired session date, invalid price and control characters',()=>{
+ assert.throws(()=>editSessionPayload(input(),['Padel'],Date.now()+86400000*40),/futuras/);
+ assert.throws(()=>editSessionPayload({...input(),priceAmount:'-1'},['Padel']),/preço/);
+ assert.throws(()=>editSessionPayload({...input(),meetingPointInstructions:'linha\nseguinte'},['Padel']),/ponto de encontro/);
+});
+test('only the authenticated organizer can open the edit route',()=>{
+ const edit=source('app/sessions/[id]/edit.tsx');
+ const api=source('src/lib/session-details-edit-api.ts');
+ const detail=source('app/sessions/[id].tsx');
+ const layout=source('app/_layout.tsx');
+ assert.match(edit,/isOrganizer\(result,auth\.username\)/);
+ assert.match(edit,/saving\.current/);
+ assert.match(api,/method:'PATCH'/);
+ assert.match(api,/\/details/);
+ assert.match(detail,/pathname:'\/sessions\/\[id\]\/edit'/);
+ assert.match(layout,/name="sessions\/\[id\]\/edit"/);
+});
