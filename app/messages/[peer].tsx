@@ -22,6 +22,8 @@ export default function DirectConversation(){
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const conversationScroll=useRef<ScrollView|null>(null);
+ const nearBottom=useRef(true);
+ const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
@@ -195,7 +197,10 @@ export default function DirectConversation(){
  }
  return <SafeAreaView style={styles.screen} edges={['top','left','right']}>
   <ScrollView ref={conversationScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
-    onContentSizeChange={()=>conversationScroll.current?.scrollToEnd({animated:false})}>
+    onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
+      nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
+    scrollEventThrottle={100}
+    onContentSizeChange={()=>{if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
   <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
@@ -216,11 +221,6 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
-   if(conversation.current!==peer+'|'+auth.token)return;
-   await refresh(true,generation.current);
-  }}/>
-  {auth.token&&!blocked&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{void choosePhoto();}}/>:null}
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
    <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
@@ -249,6 +249,17 @@ export default function DirectConversation(){
   <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
   </ScrollView>
   <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.footer}>
+  {auth.token&&!blocked&&photoAvailable?<Pressable accessibilityRole="button"
+    accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
+    style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
+  {attachmentsOpen?<View style={styles.attachmentOptions}>
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
+   if(conversation.current!==peer+'|'+auth.token)return;
+   setAttachmentsOpen(false);await refresh(true,generation.current);
+  }}/>
+  {auth.token&&!blocked&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+
+  </View>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
@@ -265,7 +276,10 @@ export default function DirectConversation(){
 const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.background},
  history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12},
- footer:{paddingHorizontal:12,paddingVertical:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background},
+ footer:{paddingHorizontal:12,paddingVertical:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:8},
+ attachmentToggle:{alignSelf:'flex-start',paddingVertical:7,paddingHorizontal:10},
+ attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},
+ attachmentOptions:{gap:7,maxHeight:180},
  safety:{gap:10,padding:14,borderRadius:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  report:{gap:10},
  reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
