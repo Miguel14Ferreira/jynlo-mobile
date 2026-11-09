@@ -65,12 +65,12 @@ jobs:
           p = Path('android/app/build.gradle')
           source = p.read_text()
           import re
-          minify = re.findall(r'(?m)^(\\s*)minifyEnabled\\s+.*$', source)
-          shrink = re.findall(r'(?m)^(\\s*)shrinkResources\\s+.*$', source)
+          minify = re.findall(r'(?m)^(\s*)minifyEnabled\s+.*$', source)
+          shrink = re.findall(r'(?m)^(\s*)shrinkResources\s+.*$', source)
           if len(minify) != 1 or len(shrink) != 1:
               raise SystemExit('Unexpected generated Gradle release config; refusing to change signing or build settings')
-          source = re.sub(r'(?m)^(\\s*)minifyEnabled\\s+.*$', r'\\1minifyEnabled false', source)
-          source = re.sub(r'(?m)^(\\s*)shrinkResources\\s+.*$', r'\\1shrinkResources false', source)
+          source = re.sub(r'(?m)^(\s*)minifyEnabled\s+.*$', r'\1minifyEnabled false', source)
+          source = re.sub(r'(?m)^(\s*)shrinkResources\s+.*$', r'\1shrinkResources false', source)
           p.write_text(source)
           assert 'minifyEnabled false' in source and 'shrinkResources false' in source
           print('R8/shrinking disabled for this signed INTERNAL diagnostic APK only.')
