@@ -18,15 +18,15 @@ export default function SessionChat(){
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
- const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0);
+ const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0),pendingRefresh=useRef(false);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
-  if(refreshing.current===version)return;
+  if(refreshing.current===version){pendingRefresh.current=true;return;}
   refreshing.current=version;
   if(!auth.token||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setEntries([]);setLoading(false);}refreshing.current=null;return;}
   if(!silent)setLoading(true);
-  setError('');
+  if(!silent)setError('');
   try{
    const history=await sessionChatHistory(id,auth.token);
    if(version!==generation.current)return;
@@ -37,11 +37,18 @@ export default function SessionChat(){
    // A transient background refresh must not erase messages or disable composing.
    if(version===generation.current&&(!silent||(e instanceof ApiError&&[401,403,404,409,410].includes(e.status)))){setClosed(true);setEntries([]);
     setError(e instanceof Error?e.message:'Chat indisponível.');}
-  }finally{if(version===generation.current&&!silent)setLoading(false);if(refreshing.current===version)refreshing.current=null;}
+  }finally{
+   if(refreshing.current===version)refreshing.current=null;
+   if(version===generation.current){
+    if(!silent)setLoading(false);
+    if(pendingRefresh.current){pendingRefresh.current=false;void refresh(true,version);}
+   }
+  }
  },[auth.token,id]);
  useFocusEffect(useCallback(()=>{
   let active=true;
   const version=++generation.current;
+  pendingRefresh.current=false;
   setEntries([]);setClosed(false);setError('');setLoading(true);setDraft('');setReply(null);
   sendingNow.current=false;setSending(false);setUploading(false);
   setPhoto(null);setPhotoReady(false);
@@ -49,15 +56,17 @@ export default function SessionChat(){
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
   const timer=setInterval(()=>{if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);},15000);
-  return ()=>{active=false;clearInterval(timer);generation.current++;};
+  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;};
  },[refresh,auth.token,id]));
  async function send(){
   if(sendingNow.current||closed||!auth.token||!draft.trim())return;
-  const version=generation.current;
+  const version=generation.current,originalDraft=draft,originalReplyId=reply?.id;
   sendingNow.current=true;setSending(true);setError('');
-  try{await postSessionChat(id,draft,auth.token,reply?.id);
+  try{await postSessionChat(id,originalDraft,auth.token,originalReplyId);
    if(version!==generation.current)return;
-   setDraft('');setReply(null);await refresh(false,version);
+   setDraft(current=>current===originalDraft?'':current);
+   setReply(current=>current?.id===originalReplyId?null:current);
+   await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Falha no envio.')+
    ' Consulta o histórico antes de voltares a tentar.');}
   finally{if(version===generation.current){sendingNow.current=false;setSending(false);}}
