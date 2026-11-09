@@ -15,6 +15,6 @@ test('community sends and photo uploads ignore late responses after navigation',
 test('community chat prevents concurrent sends and preserves newly typed draft',()=>{
  assert.match(source,/if\(sendingNow\.current\|\|uploadingNow\.current/);
  assert.match(source,/sendingNow\.current=true;setSending\(true\)/);
- assert.match(source,/setDraft\(current=>current===message\?'':current\)/);
+ assert.match(source,/setDraft\(current=>current===originalDraft\?'':current\)/);
  assert.match(source,/if\(version!==generation\.current\)return;\s*if\(!selected\.canceled/);
 });
