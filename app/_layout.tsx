@@ -79,3 +79,6 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
   </Stack>
 </>;}
 export default function RootLayout(){return <AuthProvider><Navigation/></AuthProvider>;}
+
+// Expo Router renders a recoverable error screen instead of a blank page for route exceptions.
+export {ErrorBoundary} from 'expo-router';
