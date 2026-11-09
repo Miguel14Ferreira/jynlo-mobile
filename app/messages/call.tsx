@@ -58,6 +58,7 @@ export default function DirectCallScreen(){
  const [pending,setPending]=useState<DirectCallInvitation|null>(null);
  const [session,setSession]=useState<DirectCallSession|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [audioReady,setAudioReady]=useState(false);
  const generation=useRef(0),operation=useRef(false),sessionRef=useRef<DirectCallSession|null>(null),ending=useRef(false);
  useEffect(()=>{sessionRef.current=session;},[session]);
  const refresh=useCallback(async(version:number)=>{
@@ -75,12 +76,18 @@ export default function DirectCallScreen(){
   setLoading(true);setError('');setPending(null);setProviderStatus('');setAvailable(false);
   void refresh(version);
   const timer=setInterval(()=>{if(AppState.currentState==='active'&&!operation.current&&!sessionRef.current)void refresh(version);},10000);
-  return()=>{clearInterval(timer);generation.current++;};
+  return()=>{
+   clearInterval(timer);generation.current++;
+   const orphan=sessionRef.current;
+   if(orphan&&auth.token){sessionRef.current=null;void endDirectCall(orphan.callId,auth.token).catch(()=>{});}
+  };
  },[refresh]));
  useEffect(()=>{
-  if(!session)return;
+  if(!session){setAudioReady(false);return;}
   let active=true;
-  void AudioSession.startAudioSession().catch(e=>{if(active)setError(e instanceof Error?e.message:'Não foi possível iniciar o áudio.');});
+  setAudioReady(false);
+  void AudioSession.startAudioSession().then(()=>{if(active)setAudioReady(true);})
+   .catch(e=>{if(active)setError(e instanceof Error?e.message:'Não foi possível iniciar o áudio.');});
   return()=>{active=false;void AudioSession.stopAudioSession();};
  },[session?.callId]);
  async function create(media:DirectCallMedia){
@@ -121,7 +128,8 @@ export default function DirectCallScreen(){
   <Text style={styles.heading}>Chamada com {peer}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {session?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
+  {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>A preparar o áudio da chamada…</Text><Button title="Terminar chamada" danger onPress={()=>{void hangup();}}/></View>:null}
+  {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
    onError={e=>setError(e.message)}>
     <MediaControls media={session.media} onHangup={()=>{void hangup();}}/>
