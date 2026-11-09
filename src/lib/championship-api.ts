@@ -12,6 +12,20 @@ export interface CommunityChampionship {
  createdAt:string;competitions:ChampionshipCompetition[];winnerStandings:ChampionshipLeader[];
  closedAt:string|null;championEntryType:string|null;championParticipantId:number|null;championDisplayName:string|null;
 }
+export interface ChampionshipHonours {
+ communityId:number;
+ completedSeasons:number;
+ titles:{
+  championshipId:number;championshipName:string;seasonLabel:string;sport:string;
+  closedAt:string;entryType:'INDIVIDUAL'|'TEAM';participantId:number;championName:string;
+ }[];
+ individualHonours:{profileId:number;name:string;titles:number;championshipIds:number[]}[];
+}
+export async function championshipHonours(communityId:number,token:string):Promise<ChampionshipHonours>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar o palmarés.');
+ return request<ChampionshipHonours>(`${base(communityId)}/honours`,{token});
+}
+
 export interface ChampionshipStanding {
  entryType:string;participantId:number;name:string;points:number;victories:number;awardedCompetitions:number;
 }
