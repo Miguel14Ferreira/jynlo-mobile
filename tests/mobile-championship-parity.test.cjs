@@ -25,3 +25,13 @@ test('championships and tournaments have independent failure handling',()=>{
  assert.match(screen,/if\(championshipData\.status==='fulfilled'\)setChampionships\(championshipData\.value\);\s*else setChampionshipError\(/);
  assert.doesNotMatch(screen,/else throw data\.reason/);
 });
+
+test('championship creation is native, organizer gated and posts the validated backend payload',()=>{
+ const api=read('src/lib/championship-api.ts');
+ const create=read('app/communities/[id]/championships/create.tsx');
+ const listing=read('app/communities/[id]/competitions.tsx');
+ for(const item of ['createCommunityChampionship','method:\'POST\'','name,sport,seasonLabel'])assert.ok(api.includes(item),item);
+ for(const item of ['communityDetails','organizer','role===\'OWNER\'||role===\'ADMIN\'','createCommunityChampionship','sports.map','router.replace'])assert.ok(create.includes(item),item);
+ assert.ok(listing.includes('championships/create'));
+ assert.ok(!create.includes('Linking.openURL'));
+});
