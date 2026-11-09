@@ -35,7 +35,7 @@ export default function CommunityCompetitions(){
     const [data,championshipData]=await Promise.allSettled([tournamentsForCommunity(id,auth.token,auth.username),communityChampionships(id,auth.token)]);
     if(!active)return;
     if(data.status==='fulfilled')setTournaments(data.value);
-    else throw data.reason;
+    else setError(data.reason instanceof Error?data.reason.message:'Não foi possível carregar torneios.');
     if(championshipData.status==='fulfilled')setChampionships(championshipData.value);
     else setChampionshipError(championshipData.reason instanceof Error?championshipData.reason.message:'Não foi possível carregar campeonatos.');
    }catch(e){if(active)setError(e instanceof Error?e.message:'Não foi possível carregar as competições.');}
