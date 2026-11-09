@@ -7,6 +7,8 @@ on:
       - 'src/lib/mobile-push.ts'
       - 'src/lib/push-device-api.ts'
       - 'app/notifications.tsx'
+      - 'app/(tabs)/explore.tsx'
+      - 'tests/mobile-explore-map-list.test.cjs'
       - 'app/messages/**'
       - 'app/(tabs)/messages.tsx'
       - 'app/communities/**'
