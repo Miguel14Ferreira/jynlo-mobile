@@ -19,7 +19,7 @@ test('native session chat only appears for confirmed participants before kickoff
  assert.match(detail,/Date\.parse\(s\.gameDate\)>Date\.now\(\)/);
  assert.match(detail,/pathname:'\/sessions\/\[id\]\/chat'/);
  assert.match(screen,/sessionChatHistory\(id,auth\.token\)/);
- assert.match(screen,/postSessionChat\(id,draft,auth\.token,reply\?\.id\)/);
+ assert.match(screen,/postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
  assert.match(screen,/markSessionChatRead\(id,latest,auth\.token\)/);
  assert.match(screen,/Consulta o histórico antes de voltares a tentar/);
  assert.match(routes,/name="sessions\/\[id\]\/chat"/);
@@ -27,9 +27,9 @@ test('native session chat only appears for confirmed participants before kickoff
 
 test('session chat refreshes read-only while focused without overlapping a send',()=>{
  const screen=read('app/sessions/[id]/chat.tsx');
- assert.match(screen,/setInterval\(\(\)=>\{if\(!sendingNow\.current\)void refresh\(true\);\},15000\)/);
+ assert.match(screen,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\},15000\)/);
  assert.match(screen,/clearInterval\(timer\)/);
- assert.match(screen,/if\(refreshing\.current\)return/);
+ assert.match(screen,/if\(refreshing\.current===version\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(screen,/if\(!silent\)setLoading\(true\)/);
  assert.match(screen,/sendingNow\.current=true/);
  assert.match(screen,/sendingNow\.current=false/);
@@ -38,7 +38,7 @@ test('session chat refreshes read-only while focused without overlapping a send'
 test('session chat preserves messages on transient polling errors but closes revoked access',()=>{
  const screen=read('app/sessions/[id]/chat.tsx');
  assert.match(screen,/import \{ApiError\} from/);
- assert.match(screen,/if\(!silent\|\|\(e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)\)\)/);
+ assert.match(screen,/if\(version===generation\.current&&\(!silent\|\|\(e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)\)\)\)/);
  assert.match(screen,/setClosed\(true\);setEntries\(\[\]\)/);
 });
 
