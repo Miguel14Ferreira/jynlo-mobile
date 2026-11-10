@@ -33,6 +33,7 @@ export default function DirectConversation(){
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
  const generation=useRef(0),conversation=useRef('');
+ const blockCheckRequest=useRef(0);
  const pendingRefresh=useRef(false);
  const [blocked,setBlocked]=useState(false);
  const [blockStatusKnown,setBlockStatusKnown]=useState(false);
@@ -84,6 +85,7 @@ export default function DirectConversation(){
    setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
+  const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
   setPhoto(null);setPhotoAvailable(false);
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
@@ -93,7 +95,7 @@ export default function DirectConversation(){
   setShowReport(false);setReportReason('');setBlocked(false);setBlockStatusKnown(false);
   if(auth.token&&peer&&peer.toLowerCase()!==auth.username?.toLowerCase()&&!DEMO_MODE){
    void userBlockStatus(peer,auth.token).then(value=>{
-    if(active&&generation.current===version){setBlocked(value);setBlockStatusKnown(true);}
+    if(active&&generation.current===version&&blockCheckRequest.current===blockRequest){setBlocked(value);setBlockStatusKnown(true);}
    }).catch(()=>{ /* Keep calls disabled when the block status cannot be verified. */ });
   }
   // Poll only while focused; old responses cannot overwrite a new conversation.
@@ -109,7 +111,7 @@ export default function DirectConversation(){
   });
   return ()=>{
    active=false;clearInterval(timer);resume.remove();received.remove();
-   pendingRefresh.current=false;generation.current++;
+   pendingRefresh.current=false;generation.current++;blockCheckRequest.current++;
   };
  },[refresh,peer,auth.token]));
  async function updateBlock(){
@@ -265,8 +267,18 @@ export default function DirectConversation(){
     <Text style={styles.note}>Não foi possível confirmar ainda se esta conversa permite enviar mensagens.</Text>
     <Pressable accessibilityRole="button" onPress={()=>{
       if(!auth.token||!peer)return;
-      void userBlockStatus(peer,auth.token).then(value=>{setBlocked(value);setBlockStatusKnown(true);})
-        .catch(()=>setError('Não foi possível verificar o estado do contacto. Tenta novamente.'));
+      const version=generation.current,identity=peer+'|'+auth.token;
+      const requestId=++blockCheckRequest.current;
+      setBlockStatusKnown(false);
+      void userBlockStatus(peer,auth.token).then(value=>{
+        if(version!==generation.current||conversation.current!==identity||
+          blockCheckRequest.current!==requestId)return;
+        setBlocked(value);setBlockStatusKnown(true);
+      }).catch(()=>{
+        if(version===generation.current&&conversation.current===identity&&
+          blockCheckRequest.current===requestId)
+          setError('Não foi possível verificar o estado do contacto. Tenta novamente.');
+      });
     }}><Text style={styles.attachmentToggleText}>Verificar novamente</Text></Pressable>
   </View>:null}
   <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
