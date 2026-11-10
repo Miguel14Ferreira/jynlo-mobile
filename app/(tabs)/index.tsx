@@ -123,19 +123,6 @@ export default function JynloFeedHome(){
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
-  // The central + action reuses the same authenticated composers as the Feed.
-  // Consume the route intent once to avoid reopening it after dismissal.
-  useEffect(()=>{
-    if(compose!=='post'&&compose!=='story')return;
-    if(!auth.ready)return;
-    router.setParams({compose:undefined});
-    if(!auth.token||!auth.username){
-      router.push({pathname:'/login',params:{redirect:'/'}});
-      return;
-    }
-    if(compose==='post')setComposerOpen(true);
-    else setStoryComposer(true);
-  },[compose,auth.ready,auth.token,auth.username,router]);
   const load=useCallback(async()=>{
     const id=++reloadNumber.current;
     const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
@@ -165,6 +152,19 @@ export default function JynloFeedHome(){
     setLoading(false);
   },[auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{if(!auth.ready||(!auth.token&&!auth.browsingAsGuest))return;void load();return ()=>{reloadNumber.current++;};},[auth.ready,auth.token,auth.browsingAsGuest,load]));
+  // The central + action reuses the same authenticated composers as the Feed.
+  // Consume the route intent once to avoid reopening it after dismissal.
+  useEffect(()=>{
+    if(compose!=='post'&&compose!=='story')return;
+    if(!auth.ready)return;
+    router.setParams({compose:undefined});
+    if(!auth.token||!auth.username){
+      router.push({pathname:'/login',params:{redirect:'/'}});
+      return;
+    }
+    if(compose==='post')setComposerOpen(true);
+    else setStoryComposer(true);
+  },[compose,auth.ready,auth.token,auth.username,router]);
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void){
