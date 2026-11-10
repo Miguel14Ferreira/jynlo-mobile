@@ -84,6 +84,10 @@ export default function ProfileScreen(){
         <Text style={styles.favoriteHeading}>MODALIDADES FAVORITAS</Text>
         <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
       </View>:null}
+      {auth.username?<View style={styles.socialNav}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>Seguidores</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>A seguir</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
+      </View>:null}
       {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel="Editar o meu perfil desportivo" onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
         <Text style={styles.editProfileText}>Editar perfil</Text><Text style={styles.editProfileArrow}>↗</Text>
       </Pressable>:null}
@@ -133,6 +137,10 @@ const styles=StyleSheet.create({
  bio:{color:MobileTheme.colors.text,fontSize:14,lineHeight:21},
  location:{color:MobileTheme.colors.muted,fontSize:12},
  profileHint:{color:MobileTheme.colors.muted,fontSize:12,lineHeight:18},
+ socialNav:{flexDirection:'row',gap:10},
+ socialAction:{flex:1,minHeight:MobileTheme.touchTarget+15,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center',gap:4,padding:9},
+ socialActionTitle:{color:MobileTheme.colors.text,fontWeight:'900',fontSize:14},
+ socialActionHint:{color:MobileTheme.colors.accent,fontWeight:'700',fontSize:11},
  favoriteSection:{gap:10,borderTopWidth:1,borderTopColor:MobileTheme.colors.border,paddingTop:14},
  favoriteHeading:{color:MobileTheme.colors.muted,fontSize:10,letterSpacing:1,fontWeight:'900'},
  sportTags:{flexDirection:'row',flexWrap:'wrap',gap:8},
