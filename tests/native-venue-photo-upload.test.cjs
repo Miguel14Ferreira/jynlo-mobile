@@ -23,3 +23,14 @@ test('venue photo upload only happens after preview and explicit confirmation',(
  assert.match(screen,/auth\.token&&!DEMO_MODE/);
  assert.match(screen,/venuePhotos\(id\)/);
 });
+
+test('venue gallery native picker is loaded only when the user explicitly selects a photo',()=>{
+ const screen=read('app/venues/[id].tsx');
+ assert.match(screen,/import type \{ImagePickerAsset\} from 'expo-image-picker'/);
+ assert.doesNotMatch(screen,/import \* as ImagePicker from 'expo-image-picker'/);
+ const gallery=screen.slice(screen.indexOf('async function choosePhoto()'),screen.indexOf('async function submitPhoto()'));
+ assert.match(gallery,/if\(!auth\.token\|\|DEMO_MODE\|\|sendingPhoto\)return/);
+ assert.match(gallery,/await import\('expo-image-picker'\)/);
+ assert.match(gallery,/await ImagePicker\.launchImageLibraryAsync/);
+ assert.ok(gallery.indexOf("await import('expo-image-picker')")<gallery.indexOf('launchImageLibraryAsync'));
+});
