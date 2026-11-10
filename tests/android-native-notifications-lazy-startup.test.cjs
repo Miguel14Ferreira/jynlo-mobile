@@ -43,3 +43,15 @@ test('guest sessions never initialize native push before authentication',()=>{
  assert.ok(gate>=0&&nativeLoad>gate);
  assert.match(root,/if\(!auth\.ready\)return/);
 });
+
+test('deferred push callback uses a non-null native module snapshot for strict TypeScript',()=>{
+ const root=read('app/_layout.tsx');
+ const start=root.indexOf('function PushNavigation()');
+ const end=root.indexOf('function Navigation()');
+ const push=root.slice(start,end);
+ assert.match(push,/if\(!Notifications\)return;\s*[\s\S]*?const nativeNotifications=Notifications;/);
+ const callback=push.slice(push.indexOf('function open('),push.indexOf('let listener:'));
+ assert.match(callback,/nativeNotifications\.DEFAULT_ACTION_IDENTIFIER/);
+ assert.match(callback,/nativeNotifications\.clearLastNotificationResponse\(\)/);
+ assert.doesNotMatch(callback,/Notifications\.DEFAULT_ACTION_IDENTIFIER|Notifications\.clearLastNotificationResponse\(\)/);
+});
