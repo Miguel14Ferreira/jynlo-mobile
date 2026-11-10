@@ -53,5 +53,5 @@ test('deferred push callback uses a non-null native module snapshot for strict T
  const callback=push.slice(push.indexOf('function open('),push.indexOf('let listener:'));
  assert.match(callback,/nativeNotifications\.DEFAULT_ACTION_IDENTIFIER/);
  assert.match(callback,/nativeNotifications\.clearLastNotificationResponse\(\)/);
- assert.doesNotMatch(callback,/Notifications\.DEFAULT_ACTION_IDENTIFIER|Notifications\.clearLastNotificationResponse\(\)/);
+ assert.doesNotMatch(callback,/\bNotifications\.DEFAULT_ACTION_IDENTIFIER|\bNotifications\.clearLastNotificationResponse\(\)/);
 });
