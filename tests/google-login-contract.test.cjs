@@ -75,3 +75,16 @@ test('legal texts are accessible via native Jynlo screens',()=>{
  }
  assert.ok(register.includes("pathname:'/legal'"));
 });
+
+test('Google native sign-in is not imported during Expo Router startup',()=>{
+ const native=read('src/lib/google-credential.ts');
+ assert.doesNotMatch(native,/^import\s+\{GoogleSignin\}\s+from\s+'@react-native-google-signin\/google-signin'/m);
+ assert.match(native,/const \{GoogleSignin\}=await import\('@react-native-google-signin\/google-signin'\)/);
+ const serverConfig=native.indexOf("'/api/auth/google/config'");
+ const checkClient=native.indexOf('GOOGLE_WEB_CLIENT_ID.test(webClientId)');
+ const nativeImport=native.indexOf("await import('@react-native-google-signin/google-signin')");
+ const sdkConfigure=native.indexOf('GoogleSignin.configure(');
+ assert.ok(serverConfig>=0&&checkClient>serverConfig&&nativeImport>checkClient&&sdkConfigure>nativeImport);
+ assert.match(native,/GoogleSignin\.hasPlayServices/);
+ assert.match(native,/GoogleSignin\.signIn\(\)/);
+});
