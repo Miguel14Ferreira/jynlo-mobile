@@ -153,18 +153,26 @@ export default function SessionScreen(){
        {text:'Remover jogador',style:'destructive',onPress:()=>{
         if(removalInFlight.current||!auth.token)return;
         removalInFlight.current=true;
+        const actionVersion=detailRequestGeneration.current,actionContext=actionEpoch.current;
+        const actorToken=auth.token;
         setRemovingParticipantId(participant.id);setRosterError('');setRosterFeedback('');
-        void removeSessionParticipant(id,participant.id,auth.token).then(async()=>{
+        void removeSessionParticipant(id,participant.id,actorToken).then(async()=>{
+          if(actionVersion!==detailRequestGeneration.current||actionContext!==actionEpoch.current)return;
           await load();
-          setRosterFeedback('A remoção foi confirmada pelo servidor. A lista de participantes foi atualizada.');
+          if(actionContext===actionEpoch.current)
+            setRosterFeedback('A remoção foi confirmada pelo servidor. A lista de participantes foi atualizada.');
         }).catch(e=>{
+          if(actionContext!==actionEpoch.current)return;
           const message=e instanceof ApiError&&e.status===403?
             'O servidor não autorizou esta remoção.':
             e instanceof ApiError&&e.status===409?
             'A sessão já não permite remover participantes.':
             'Não foi possível confirmar a remoção. Atualiza a sessão e consulta a lista antes de tentares novamente.';
           setRosterError(message);
-        }).finally(()=>{removalInFlight.current=false;setRemovingParticipantId(null);});
+        }).finally(()=>{
+          removalInFlight.current=false;
+          if(actionContext===actionEpoch.current)setRemovingParticipantId(null);
+        });
        }}]);
   }
   function confirmAttendance(participant:SessionParticipant,status:'ATTENDED'|'NO_SHOW'){
@@ -181,16 +189,24 @@ export default function SessionScreen(){
        {text:present?'Confirmar presença':'Registar falta',style:present?'default':'destructive',onPress:()=>{
         if(attendanceInFlight.current||!auth.token)return;
         attendanceInFlight.current=true;
+        const actionVersion=detailRequestGeneration.current,actionContext=actionEpoch.current;
+        const actorToken=auth.token;
         setAttendanceParticipantId(participant.id);setRosterError('');setRosterFeedback('');
-        void recordSessionAttendance(id,participant.id,auth.token,status)
+        void recordSessionAttendance(id,participant.id,actorToken,status)
           .then(async()=>{
+            if(actionVersion!==detailRequestGeneration.current||actionContext!==actionEpoch.current)return;
             await load();
-            setRosterFeedback(present?'Presença registada pelo servidor.':'Falta registada pelo servidor.');
+            if(actionContext===actionEpoch.current)
+              setRosterFeedback(present?'Presença registada pelo servidor.':'Falta registada pelo servidor.');
           }).catch(e=>{
+            if(actionContext!==actionEpoch.current)return;
             setRosterError(e instanceof ApiError&&e.status===403?
               'O servidor não autorizou a marcação de presença.':
               'Não foi possível confirmar a marcação. Atualiza a lista antes de tentar novamente; o servidor só permite registar presenças após o intervalo previsto.');
-          }).finally(()=>{attendanceInFlight.current=false;setAttendanceParticipantId(null);});
+          }).finally(()=>{
+            attendanceInFlight.current=false;
+            if(actionContext===actionEpoch.current)setAttendanceParticipantId(null);
+          });
        }}]);
   }
   const sendInvite=()=>{const invitee=inviteUsername.trim();if(!invitee||!auth.token)return;
