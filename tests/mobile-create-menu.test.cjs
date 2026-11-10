@@ -25,6 +25,7 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(feed,/if\(compose==='post'\)setComposerOpen\(true\)/);
  assert.match(feed,/else setStoryComposer\(true\)/);
  assert.match(feed,/router\.setParams\(\{compose:undefined\}\)/);
+ assert.ok(feed.indexOf('useFocusEffect(useCallback(()=>{if(!auth.ready')<feed.indexOf('  // The central + action reuses'), 'initial identity reset precedes opening composer');
 });
 test('tournament is gated by owned or administrated communities, not membership alone',()=>{
  assert.match(tabs,/myCommunities\(auth\.token,auth\.username\)/);
