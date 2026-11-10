@@ -24,6 +24,12 @@ export async function socialFeed(token:string|null,username:string|null):Promise
       likeCount:p.likeCount+(selected?.size||0),commentCount:p.commentCount+(demoComments.get(p.postId||-1)?.length||0)};
   });
 }
+export async function socialPostById(postId:number,token:string|null):Promise<FeedItem>{
+ if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
+ if(!token)throw new Error('Inicia sessão para consultar a publicação.');
+ if(DEMO_MODE)throw new Error('A consulta de publicações exige a API real.');
+ return request<FeedItem>(`/api/feed/posts/${postId}`,{token});
+}
 export async function storyFeed(token:string|null):Promise<SocialStory[]>{
   if(DEMO_MODE)return [...demoStories];
   return request<SocialStory[]>('/api/stories',{token});
