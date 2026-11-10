@@ -2,6 +2,11 @@ name: Jynlo Android launch diagnostic (signed APK)
 
 on:
   workflow_dispatch:
+    inputs:
+      apk_run_id:
+        description: 'ID da execução do GitHub Actions que produziu a APK assinada a testar'
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
@@ -19,11 +24,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p launch-diagnostics/apk
-          gh run download 42616671635 -R Miguel14Ferreira/jynlo-mobile -n jynlo-mobile-signed-internal-apk -D launch-diagnostics/apk
+          run_id="${{ inputs.apk_run_id }}"
+          if [[ ! "$run_id" =~ ^[1-9][0-9]{0,17}$ ]]; then
+            echo '::error::O identificador do run da APK deve ser um número válido.'
+            exit 1
+          fi
+          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n jynlo-mobile-signed-internal-apk -D launch-diagnostics/apk
           apk="$(find launch-diagnostics/apk -type f -name '*.apk' | head -n1)"
           test -n "$apk" && test -s "$apk"
           echo "APK_PATH=$apk" >> "$GITHUB_ENV"
-          echo "Testing exact signed APK from run 42616671635, commit f6cbe312."
+          echo "Testing signed APK from run $run_id."
+          if [ -f launch-diagnostics/apk/android-build-info.json ]; then
+            cp launch-diagnostics/apk/android-build-info.json launch-diagnostics/apk-build-info.json
+          fi
+          echo "APK_SOURCE_RUN=$run_id" >> "$GITHUB_ENV"
       - name: Boot Android emulator and verify launch
         uses: reactivecircus/android-emulator-runner@v2
         with:
