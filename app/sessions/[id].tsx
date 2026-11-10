@@ -323,10 +323,14 @@ export default function SessionScreen(){
             if(request!==teamsOperation.current||epoch!==actionEpoch.current||
                version!==detailRequestGeneration.current)return;
             const refreshed=await load();
-            if(request===teamsOperation.current&&epoch===actionEpoch.current&&
-               refreshed&&isOrganizer(refreshed,auth.username)){
+            if(request!==teamsOperation.current||epoch!==actionEpoch.current)return;
+            if(refreshed&&isOrganizer(refreshed,auth.username)){
               setTeamPreview(result);
               setTeamsMessage('Equipas confirmadas pelo servidor.');
+            }else{
+              // The POST was acknowledged. A later refresh failure or changed
+              // permission must not be presented as a failed confirmation.
+              setTeamsMessage('O servidor confirmou as equipas, mas não foi possível validar a atualização da sessão. Atualiza o estado antes de fazer outra alteração.');
             }
           })
           .catch(()=>{
