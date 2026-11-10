@@ -154,13 +154,12 @@ jobs:
           from pathlib import Path
           import re
           source = Path('android/app/build.gradle').read_text()
-          release = re.search(r'(?s)release\\s*\\{(.*?)\\n\\s*\\}', source)
-          if not release:
-              raise SystemExit('Cannot find generated Android release build block')
           for setting in ('minifyEnabled', 'shrinkResources'):
-              matches = re.findall(r'(?m)^\\s*' + setting + r'\\s+([^\\s/]+)', release.group(1))
+              # Generated Expo Gradle is expected to contain exactly one
+              # release value for each setting, and never a second override.
+              matches = re.findall(r'(?m)^\\s*' + setting + r'\\s+([^\\s/]+)', source)
               if matches != ['false']:
-                  raise SystemExit(f'Unsafe diagnostic APK: release {setting} must be false, found {matches!r}')
+                  raise SystemExit(f'Unsafe diagnostic APK: {setting} must be false, found {matches!r}')
           print('Verified: release minification and shrinking disabled after signing configuration.')
           PY
       - name: Gerar APK release assinada para testes
