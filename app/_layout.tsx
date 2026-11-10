@@ -48,7 +48,12 @@ function PushNavigation(){
       // A notification module error must not crash the app's root navigator.
       // Notification taps are optional; the authenticated inbox remains reachable.
     }
-    return ()=>{active=false;listener?.remove();};
+    return ()=>{
+      active=false;
+      try{listener?.remove();}catch{
+        // An unavailable native module must never break navigator cleanup.
+      }
+    };
   },[auth.ready,auth.token,auth.username,router]);
   return null;
 }
