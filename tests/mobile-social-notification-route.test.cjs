@@ -58,3 +58,11 @@ test('post detail respects authors hidden liker list without disabling heart',()
  assert.match(post,/Gostos privados/);
  assert.match(post,/await likePost\(id,post\.likedByMe,auth\.token,auth\.username\)/);
 });
+
+test('older post write cannot clear the in-flight lock of a newly opened account',()=>{
+ const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
+ const release='finally{if(version===generation.current){writing.current=false;setBusy(false);}}';
+ assert.equal(post.split(release).length-1,2,'likes and comments must both be scoped to the current screen generation');
+ assert.ok(!post.includes('finally{writing.current=false;if(version===generation.current)setBusy(false);}'));
+ assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);\}/);
+});
