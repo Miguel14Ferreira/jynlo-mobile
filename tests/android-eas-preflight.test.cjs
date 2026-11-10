@@ -32,3 +32,17 @@ test('EAS diagnostic APK is gated by all code, native and bundle validations',()
   assert.ok(preflight.includes(check),check);
  assert.doesNotMatch(workflow,/type: submit|profile: production/);
 });
+
+test('EAS custom preflight and diagnostic build share the preview environment',()=>{
+ const standalone=read('mobile-preflight.yml');
+ const diagnostic=read('android-diagnostic.yml');
+ assert.match(standalone,/mobile_preflight:[\s\S]*?environment: preview/);
+ assert.match(diagnostic,/mobile_preflight:[\s\S]*?environment: preview/);
+ assert.match(diagnostic,/android_diagnostic:[\s\S]*?environment: preview/);
+ const preflight=diagnostic.slice(diagnostic.indexOf('  mobile_preflight:'),diagnostic.indexOf('  android_diagnostic:'));
+ const build=diagnostic.slice(diagnostic.indexOf('  android_diagnostic:'));
+ assert.ok(preflight.includes('environment: preview'));
+ assert.ok(build.includes('environment: preview'));
+ assert.doesNotMatch(standalone,/environment: production/);
+ assert.doesNotMatch(diagnostic,/environment: production/);
+});
