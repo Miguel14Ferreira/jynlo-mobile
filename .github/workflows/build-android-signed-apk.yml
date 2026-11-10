@@ -157,7 +157,7 @@ jobs:
           for setting in ('minifyEnabled', 'shrinkResources'):
               # Generated Expo Gradle is expected to contain exactly one
               # release value for each setting, and never a second override.
-              matches = re.findall(r'(?m)^\\s*' + setting + r'\\s+([^\\s/]+)', source)
+              matches = re.findall(r'(?m)^\s*' + setting + r'\s+([^\s/]+)', source)
               if matches != ['false']:
                   raise SystemExit(f'Unsafe diagnostic APK: {setting} must be false, found {matches!r}')
           print('Verified: release minification and shrinking disabled after signing configuration.')
