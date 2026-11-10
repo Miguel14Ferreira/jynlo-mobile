@@ -8,6 +8,7 @@ on:
 jobs:
   mobile_preflight:
     name: TypeScript, contratos, bundle e prebuild Android
+    environment: preview
     env:
       EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
       JYNLO_REQUIRE_REAL_API: '1'
