@@ -1,5 +1,5 @@
-import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
@@ -7,6 +7,8 @@ import {socialPostById,likePost,postComments,addPostComment,resolveJynloMedia} f
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 const T=MobileTheme.colors;
+const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
+
 export default function NotificationPost(){
  const {postId}=useLocalSearchParams<{postId:string}>();
  const id=typeof postId==='string'&&/^[1-9][0-9]*$/.test(postId)?Number(postId):NaN;
@@ -70,7 +72,7 @@ export default function NotificationPost(){
     </Pressable>
     <Text style={styles.body}>{post.content||''}</Text>
     {image?<Image source={{uri:image}} style={styles.image} resizeMode="contain"/>:null}
-    {post.videoUrl?<Text style={styles.note}>Esta publicação contém um vídeo. Podes visualizá-lo no Feed.</Text>:null}
+    {post.videoUrl&&resolveJynloMedia(post.videoUrl)?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={resolveJynloMedia(post.videoUrl)!}/></Suspense>:null}
     <View style={styles.actions}>
      <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?'Retirar gosto':'Gostar'} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{post.likedByMe?'♥':'♡'} Gostar</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel="Ver quem gostou" onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.likeCount} gostos</Text></Pressable>
