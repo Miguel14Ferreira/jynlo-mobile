@@ -12,8 +12,8 @@ import {
  type DirectCallSession,type DirectCallInvitation,type DirectCallMedia
 } from '../../src/lib/direct-call-api';
 
-// Must run before the native WebRTC media engine connects.
-registerGlobals();
+// Register native WebRTC globals only when a call connects, not while Expo Router registers routes.
+let liveKitGlobalsRegistered=false;
 
 const PEER=/^[a-zA-Z0-9_.@-]{1,128}$/;
 async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
@@ -100,7 +100,14 @@ export default function DirectCallScreen(){
   if(!session){setAudioReady(false);return;}
   let active=true;
   setAudioReady(false);
-  void AudioSession.startAudioSession().then(()=>{
+  const startAudio=async()=>{
+   if(!liveKitGlobalsRegistered){
+    registerGlobals();
+    liveKitGlobalsRegistered=true;
+   }
+   await AudioSession.startAudioSession();
+  };
+  void startAudio().then(()=>{
    if(!active){void AudioSession.stopAudioSession();return;}
    setAudioReady(true);
   }).catch(e=>{
