@@ -28,6 +28,18 @@ test('background roster refresh cannot invalidate in-progress team mutations',()
  const sync=code.slice(code.indexOf('const syncSession=useCallback('),code.indexOf('useFocusEffect(useCallback('));
  assert.match(sync,/attendanceInFlight\.current\|\|teamsInFlight\.current\|\|!auth\.token/);
  assert.match(sync,/attendanceInFlight\.current\|\|teamsInFlight\.current\)return/);
- assert.match(code,/teamsOperation\.current\+\+;teamsInFlight\.current=false/);
- assert.match(confirm,/if\(request===teamsOperation\.current\)\{\s*teamsInFlight\.current=false/);
+ const focus=code.slice(code.indexOf('useFocusEffect(useCallback('),code.indexOf('const perform=async('));
+ assert.match(focus,/setTeamsBusy\(teamsInFlight\.current\)/);
+ assert.match(focus,/teamsOperation\.current\+\+/);
+ assert.doesNotMatch(focus,/teamsInFlight\.current=false/);
+ assert.match(confirm,/\.finally\(\(\)=>\{[\s\S]*?teamsInFlight\.current=false;[\s\S]*?setTeamsBusy\(false\)/);
+ assert.match(preview,/finally\{[\s\S]*?teamsInFlight\.current=false;[\s\S]*?setTeamsBusy\(false\)/);
+});
+
+test('navigation does not unlock an unsettled confirmation request',()=>{
+ const focus=code.slice(code.indexOf('useFocusEffect(useCallback('),code.indexOf('const perform=async('));
+ assert.ok(focus.indexOf('teamsOperation.current++')>=0);
+ assert.doesNotMatch(focus,/teamsInFlight\.current\s*=\s*false/);
+ assert.match(confirm,/if\(teamsInFlight\.current\|\|version!==detailRequestGeneration\.current/);
+ assert.match(confirm,/\.finally\(\(\)=>\{[\s\S]*?teamsInFlight\.current=false/);
 });
