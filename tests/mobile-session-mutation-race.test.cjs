@@ -8,7 +8,7 @@ const screen=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'ut
 test('two rapid session actions cannot issue duplicate mutations',()=>{
  const perform=screen.slice(screen.indexOf('const perform=async('),screen.indexOf('const s=detail||preview'));
  assert.match(screen,/const operationInFlight=useRef\(false\)/);
- assert.match(perform,/if\(operationInFlight\.current\)return/);
+ assert.match(perform,/if\(operationInFlight\.current\|\|removalInFlight\.current\|\|attendanceInFlight\.current\|\|teamsInFlight\.current\)return/);
  assert.match(perform,/operationInFlight\.current=true/);
  assert.match(perform,/const result=await operation\(\)/);
  assert.match(perform,/operationInFlight\.current=false/);
