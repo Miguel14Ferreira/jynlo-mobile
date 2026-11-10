@@ -33,6 +33,11 @@ jobs:
           node-version: '22'
       - name: Install dependencies without lifecycle scripts
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Verify real API release configuration
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+          JYNLO_REQUIRE_REAL_API: '1'
+        run: npm run check:release
       - name: Check TypeScript
         run: npm run typecheck
       - name: Check syntax and regression contracts
