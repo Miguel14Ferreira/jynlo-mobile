@@ -65,7 +65,14 @@ export default function ProfileScreen(){
     <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
     <Button title="As minhas sessões" secondary onPress={()=>router.push('/my-sessions')}/>
     {!auth.username?<><Button title={DEMO_MODE?'Experimentar conta de demonstração':'Iniciar sessão'} onPress={()=>router.push('/login')}/><Button title="Voltar às boas-vindas" secondary onPress={()=>router.push('/welcome')}/></>:
-      <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(()=>router.replace('/welcome'),()=>router.replace('/welcome'));}}/>}
+      <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(
+        ()=>router.replace('/welcome'),
+        error=>{
+          router.replace('/welcome');
+          Alert.alert('Verifica a sessão',error instanceof Error?error.message:
+            'Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.');
+        }
+      );}}/>}
     {auth.username&&!DEMO_MODE?<><Eyebrow>GESTÃO DA CONTA</Eyebrow>
     <Button title="Editar dados do perfil" secondary onPress={()=>router.push('/edit-profile')}/>
     <Button title="Alterar palavra-passe" secondary onPress={()=>router.push('/change-password')}/>
