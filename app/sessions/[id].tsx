@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
@@ -27,6 +27,7 @@ export default function SessionScreen(){
   const detailRequestGeneration=useRef(0);
   const operationInFlight=useRef(false);
   const actionEpoch=useRef(0);
+  const backgroundSyncInFlight=useRef(false);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
@@ -92,13 +93,59 @@ export default function SessionScreen(){
       if(version===detailRequestGeneration.current)setLoading(false);
     }
   },[id,auth.token,auth.username]);
+  // Read-only synchronization: a participant on another device may join,
+  // cancel or move off the waitlist without this screen losing its drafts.
+  const syncSession=useCallback(async(version:number,epoch:number)=>{
+    if(backgroundSyncInFlight.current||operationInFlight.current||
+       removalInFlight.current||attendanceInFlight.current||!auth.token||
+       !Number.isSafeInteger(id)||id<=0)return;
+    if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
+    backgroundSyncInFlight.current=true;
+    try{
+      const updated=await sessionDetail(id,auth.token,auth.username||undefined);
+      if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current||
+         operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
+      // Resolve the roster before publishing the new snapshot. Unauthorized
+      // viewers never retain the previous player's private roster.
+      let roster:SessionParticipant[]=[];
+      if(canViewRoster(updated,auth.username)){
+        roster=await sessionParticipants(id,auth.token);
+        if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current||
+           operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
+      }
+      setDetail(updated);
+      setParticipants(roster);
+      setRosterError('');
+      setTeamPreview(null); // previously generated teams may be stale
+    }catch(e){
+      if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
+      if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
+        setDetail(null);setParticipants([]);setTeamPreview(null);
+        setError('O acesso a esta sessão mudou. Atualiza para confirmar as permissões.');
+      }
+      // Network failures preserve the last visible data and draft; the user
+      // can still request a full refresh manually.
+    }finally{backgroundSyncInFlight.current=false;}
+  },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
     setBusy(false);
     void load();
+    const epoch=actionEpoch.current;
+    const timer=setInterval(()=>{
+      if(AppState.currentState==='active')
+        void syncSession(detailRequestGeneration.current,epoch);
+    },15000);
+    const resume=AppState.addEventListener('change',state=>{
+      if(state==='active')
+        void syncSession(detailRequestGeneration.current,epoch);
+    });
     // An old response must never restore restricted session details after
     // changing account, route, or leaving this screen.
-    return ()=>{detailRequestGeneration.current++;actionEpoch.current++;};
-  },[load]));
+    return ()=>{
+      clearInterval(timer);resume.remove();
+      detailRequestGeneration.current++;actionEpoch.current++;
+    };
+  },[load,syncSession]));
 
   const perform=async(operation:()=>Promise<unknown>,success:string|((result:unknown)=>string))=>{
     // React state updates are asynchronous. A ref prevents two rapid taps
