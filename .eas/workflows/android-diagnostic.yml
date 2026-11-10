@@ -1,13 +1,33 @@
 name: Jynlo Android - diagnostico manual
 
-# Executed on Expo infrastructure. No GitHub Actions runner is used.
-# Deliberately no automatic push trigger to protect free build quota.
+# Manual only. The Android build starts ONLY after tests, TypeScript and
+# native prebuild all succeed. No GitHub Actions runner is required.
 on:
   workflow_dispatch:
 
 jobs:
+  mobile_preflight:
+    name: Validar codigo antes de gastar uma build Android
+    env:
+      EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Confirmar API real
+        run: npm run check:release
+      - name: Validar TypeScript
+        run: npm run typecheck
+      - name: Executar todos os testes
+        run: npm run test:all
+      - name: Validar bundle Android
+        run: npx expo export --platform android --output-dir /tmp/jynlo-android-diagnostic-bundle
+      - name: Validar geracao do projeto nativo
+        run: npx expo prebuild --platform android --no-install --clean
+
   android_diagnostic:
     name: Gerar APK interna de diagnostico (sem R8)
+    needs: [mobile_preflight]
     type: build
     params:
       platform: android
