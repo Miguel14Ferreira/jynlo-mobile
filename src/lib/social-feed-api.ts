@@ -67,6 +67,8 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),90000);
   try{
     const response=await fetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
+      // Match the JSON API client: authentication is bearer-only, never browser cookies.
+      credentials:'omit',
       headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
     if(!response.ok)throw new ApiError(response.status,response.status===413?'O ficheiro é demasiado grande.':'Não foi possível enviar o ficheiro.');
     return await response.json();
