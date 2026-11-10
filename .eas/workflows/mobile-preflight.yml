@@ -1,0 +1,37 @@
+name: Jynlo Mobile - preflight Android sem GitHub Actions
+
+# Manual only. Does not consume EAS workers on every develop push.
+# Run before any new diagnostic or signed APK.
+on:
+  workflow_dispatch:
+
+jobs:
+  mobile_preflight:
+    name: TypeScript, contratos, bundle e prebuild Android
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Identificar commit e versoes
+        run: |
+          git rev-parse HEAD
+          node --version
+          npm --version
+      - name: Confirmar configuracao de API real
+        run: npm run check:release
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+          JYNLO_REQUIRE_REAL_API: '1'
+      - name: TypeScript estrito
+        run: npm run typecheck
+      - name: Testes de sintaxe e contratos
+        run: npm run test:all
+      - name: Gerar bundle JavaScript Android
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+          JYNLO_REQUIRE_REAL_API: '1'
+        run: npx expo export --platform android --output-dir /tmp/jynlo-mobile-preflight-bundle
+      - name: Validar configuracao nativa Android e LiveKit
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+          JYNLO_REQUIRE_REAL_API: '1'
+        run: npx expo prebuild --platform android --no-install --clean
