@@ -26,3 +26,11 @@ test('push navigation remains gated behind restored authentication',()=>{
  assert.match(layout,/data\?\.kind!=='notification'/);
  assert.match(layout,/lastHandled\.current===identifier/);
 });
+
+test('malformed native push responses cannot dereference missing notification data',()=>{
+ const callback=layout.slice(layout.indexOf('function open(response:'),layout.indexOf('let listener:ReturnType'));
+ assert.match(callback,/response\.notification\?\.request\?\.content\?\.data/);
+ assert.match(callback,/response\.notification\?\.request\?\.identifier/);
+ assert.match(callback,/typeof identifier!=='string'\|\|!identifier/);
+ assert.match(callback,/data\?\.kind!=='notification'/);
+});
