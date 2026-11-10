@@ -92,6 +92,7 @@ export default function SessionScreen(){
         const publicPreview=await sessionPreview(id);
         if(version!==detailRequestGeneration.current)return null;
         setPreview(publicPreview);
+        return null;
       }
     }catch(e){
       if(version===detailRequestGeneration.current)
