@@ -17,12 +17,14 @@ function PushNavigation(){
       // Only consume it after authentication; the destination is resolved in our own inbox.
       if(!auth.token||!auth.username)return;
       if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
-      const data=response.notification.request.content.data;
+      // An incomplete native notification response must never throw inside
+      // the root navigation listener or route the user to untrusted content.
+      const data=response.notification?.request?.content?.data;
       // Never execute routes supplied by a notification. Resolve against own inbox.
       if(data?.kind!=='notification'||typeof data.id!=='number'||
         !Number.isSafeInteger(data.id)||data.id<=0)return;
-      const identifier=response.notification.request.identifier;
-      if(lastHandled.current===identifier)return;
+      const identifier=response.notification?.request?.identifier;
+      if(typeof identifier!=='string'||!identifier||lastHandled.current===identifier)return;
       // Consume only a validated, newly handled notification. Otherwise, an
       // unrelated action or malformed payload could erase a legitimate tap.
       lastHandled.current=identifier;
