@@ -183,7 +183,7 @@ export interface FeedItem {
   postId:number|null;authorUsername:string;authorDisplayName:string;
   authorProfilePicUrl:string|null;content:string|null;imageUrl:string|null;videoUrl?:string|null;
   createdAt:string;sessionId:number|null;sport:string|null;city:string|null;gameDate:string|null;
-  likeCount:number;likedByMe:boolean;commentCount:number;
+  likeCount:number;likedByMe:boolean;commentCount:number;hideLikers?:boolean;
 }
 /** Reduced mobile view; all fields are server sourced, never infer GPS/address. */
 export interface VenueSummary {
