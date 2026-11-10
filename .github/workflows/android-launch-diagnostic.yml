@@ -84,7 +84,10 @@ jobs:
                              if 'FATAL EXCEPTION' in line or 'Fatal signal' in line]
             crashes = []
             for i in fatal_indices:
-                context = lines[max(0, i-5):min(len(lines), i+60)]
+                # Keep each fatal incident isolated: another Android process
+                # may crash immediately afterwards on an emulator.
+                next_fatal = next((j for j in fatal_indices if j > i), len(lines))
+                context = lines[i:min(i+60, next_fatal)]
                 # A native libc fatal signal often identifies the process on
                 # the signal line itself, without a nearby Java Process header.
                 jynlo_native_signal = ('Fatal signal' in lines[i] and
