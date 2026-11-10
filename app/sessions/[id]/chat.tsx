@@ -90,12 +90,13 @@ export default function SessionChat(){
  }
  async function uploadPhoto(){
   if(!auth.token||!photo||!photoReady||closed||sendingNow.current||uploading)return;
-  const version=generation.current;
+  const version=generation.current,originalReplyId=reply?.id;
   sendingNow.current=true;setUploading(true);setError('');
   try{
-   await sendChatPhoto('session',id,auth.token,photo,reply?.id);
+   await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
    if(version!==generation.current)return;
-   setPhoto(null);setReply(null);await refresh(false,version);
+   setPhoto(null);setReply(current=>current?.id===originalReplyId?null:current);
+   await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
   finally{if(version===generation.current){sendingNow.current=false;setUploading(false);}}
  }
@@ -115,7 +116,11 @@ export default function SessionChat(){
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
   </Pressable>)}
-  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async()=>{setReply(null);await refresh();}}/>
+  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async()=>{
+   const originalReplyId=reply?.id;
+   setReply(current=>current?.id===originalReplyId?null:current);
+   await refresh();
+  }}/>
   {auth.token&&!closed&&photoReady?<Button title="Escolher fotografia" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <Image source={{uri:photo.uri}} style={styles.preview} resizeMode="contain"/>
