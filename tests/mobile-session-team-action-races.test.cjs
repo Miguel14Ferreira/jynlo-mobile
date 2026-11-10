@@ -9,7 +9,7 @@ const confirm=code.slice(code.indexOf('function persistBalancedTeams()'),code.in
 
 test('team preview uses synchronous lock and rejects results for obsolete session',()=>{
  assert.match(code,/const teamsInFlight=useRef\(false\),teamsOperation=useRef\(0\)/);
- assert.match(preview,/if\(!auth\.token\|\|!owner\|\|!detail\|\|teamsInFlight\.current\)return/);
+ assert.match(preview,/if\(!auth\.token\|\|!owner\|\|!detail\|\|teamsInFlight\.current\|\|operationInFlight\.current\|\|/);
  assert.match(preview,/teamsInFlight\.current=true/);
  assert.ok(preview.indexOf('teamsInFlight.current=true')<preview.indexOf('await suggestSessionTeams('));
  assert.match(preview,/request===teamsOperation\.current&&epoch===actionEpoch\.current&&/);
@@ -17,7 +17,7 @@ test('team preview uses synchronous lock and rejects results for obsolete sessio
 });
 test('confirmation popup validates the session again and blocks rapid double taps',()=>{
  assert.match(confirm,/const actorToken=auth\.token,selectedPreview=teamPreview/);
- assert.match(confirm,/if\(teamsInFlight\.current\|\|version!==detailRequestGeneration\.current\|\|/);
+ assert.match(confirm,/if\(teamsInFlight\.current\|\|operationInFlight\.current\|\|removalInFlight\.current\|\|/);
  assert.match(confirm,/epoch!==actionEpoch\.current\)return/);
  assert.match(confirm,/teamsInFlight\.current=true/);
  assert.match(confirm,/confirmSessionTeams\(id,actorToken,mode,selectedPreview\)/);
@@ -40,6 +40,6 @@ test('navigation does not unlock an unsettled confirmation request',()=>{
  const focus=code.slice(code.indexOf('useFocusEffect(useCallback('),code.indexOf('const perform=async('));
  assert.ok(focus.indexOf('teamsOperation.current++')>=0);
  assert.doesNotMatch(focus,/teamsInFlight\.current\s*=\s*false/);
- assert.match(confirm,/if\(teamsInFlight\.current\|\|version!==detailRequestGeneration\.current/);
+ assert.match(confirm,/if\(teamsInFlight\.current\|\|operationInFlight\.current\|\|removalInFlight\.current/)
  assert.match(confirm,/\.finally\(\(\)=>\{[\s\S]*?teamsInFlight\.current=false/);
 });
