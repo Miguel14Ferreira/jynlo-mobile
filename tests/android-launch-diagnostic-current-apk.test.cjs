@@ -153,3 +153,16 @@ test('native crash does not abort before severe JavaScript errors are recorded',
  assert.ok(jsExit>nativeExit,'JS failure must remain a failing outcome');
  assert.match(workflow,/if crashes:\s*\n\s*raise SystemExit\('Android fatal error detected during launch'\)/);
 });
+
+test('failed Android or JS launch still saves resumed Activity evidence',()=>{
+ const native=workflow.indexOf("Path('launch-diagnostics/crash-summary.txt').write_text(");
+ const js=workflow.indexOf("Path('launch-diagnostics/js-errors.txt').write_text(");
+ const resumed=workflow.indexOf("Path('launch-diagnostics/resumed-activity.txt').write_text(");
+ const nativeFail=workflow.indexOf("raise SystemExit('Android fatal error detected during launch')");
+ const jsFail=workflow.indexOf("raise SystemExit('Jynlo raised a severe React Native JS error after launch')");
+ const processFail=workflow.indexOf("raise SystemExit('Jynlo process exited or was never launched after 20 seconds')");
+ assert.ok(native>=0&&js>native&&resumed>js,'all evidence must be saved in order');
+ assert.ok(nativeFail>resumed&&jsFail>resumed&&processFail>resumed,
+   'resumed Activity evidence must survive every launch failure');
+ assert.match(workflow,/if not any\('com\.jynlo\.app\/' in line for line in resumed\):/);
+});
