@@ -138,6 +138,9 @@ export default function SessionScreen(){
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
     setBusy(false);
+    // Keep pending team writes locked across a blur/refocus; otherwise the
+    // same confirmation could be posted twice while its first POST is alive.
+    setTeamsBusy(teamsInFlight.current);
     void load();
     const epoch=actionEpoch.current;
     const timer=setInterval(()=>{
@@ -153,7 +156,9 @@ export default function SessionScreen(){
     return ()=>{
       clearInterval(timer);resume.remove();
       detailRequestGeneration.current++;actionEpoch.current++;
-      teamsOperation.current++;teamsInFlight.current=false;
+      // Invalidate callbacks, but let the original request release its lock
+      // in finally. A pending server write must never become repeatable here.
+      teamsOperation.current++;
     };
   },[load,syncSession]));
 
@@ -288,10 +293,10 @@ export default function SessionScreen(){
          version===detailRequestGeneration.current)
         setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');
     }finally{
-      if(request===teamsOperation.current){
-        teamsInFlight.current=false;
-        if(epoch===actionEpoch.current)setTeamsBusy(false);
-      }
+      // A focus change invalidates UI results, not the in-flight POST.
+      // No newer team operation can start until this request has settled.
+      teamsInFlight.current=false;
+      setTeamsBusy(false);
     }
   }
   function persistBalancedTeams(){
@@ -323,10 +328,10 @@ export default function SessionScreen(){
             setTeamsError('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.');
           })
           .finally(()=>{
-            if(request===teamsOperation.current){
-              teamsInFlight.current=false;
-              if(epoch===actionEpoch.current)setTeamsBusy(false);
-            }
+            // The existing request owns the lock until it settles, even
+            // if focus changed while the server was processing the POST.
+            teamsInFlight.current=false;
+            setTeamsBusy(false);
           });
       }}]);
   }
