@@ -29,7 +29,7 @@ test('direct call credentials remain scoped to authenticated endpoints and IDs a
 
 test('call UI enters through an authenticated private conversation and uses the native LiveKit screen',()=>{
  const direct=read('app/messages/[peer].tsx');
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  assert.ok(direct.includes("pathname:'/messages/call'"));
  assert.ok(direct.includes('!blocked'));
  assert.ok(screen.includes('<LiveKitRoom'));
@@ -46,7 +46,7 @@ test('Expo release includes a native LiveKit engine and the required media plugi
  assert.ok(app.plugins.some(item=>Array.isArray(item)&&item[0]==='@livekit/react-native-expo-plugin'));
 });
 test('native call room uses server-issued credentials and manages microphone, camera and disconnect',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  const route=read('app/_layout.tsx');
  const direct=read('app/messages/[peer].tsx');
  for(const item of ['registerGlobals()','AudioSession.startAudioSession()','AudioSession.stopAudioSession()',
@@ -63,7 +63,7 @@ test('native call room uses server-issued credentials and manages microphone, ca
 });
 
 test('native calls only connect after audio is ready and release server session on exit',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  for(const text of [
   'setAudioReady(false)',
   'void startAudio().then',
@@ -77,7 +77,7 @@ test('native calls only connect after audio is ready and release server session 
 });
 
 test('failed or late native audio initialization releases server calls and cannot leave a frozen spinner',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  for(const marker of [
   'if(!active){void AudioSession.stopAudioSession();return;}',
   'const failedSession=sessionRef.current',
@@ -90,7 +90,7 @@ test('failed or late native audio initialization releases server calls and canno
 });
 
 test('call screen checks server state and leaves the room when invitation expires or call ends',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  for(const marker of [
   'directCallMembers(callId,auth.token!)',
   'members.participants.length>=2',
@@ -122,7 +122,7 @@ test('the messages inbox shows authenticated, unexpired incoming call invitation
 });
 
 test('leaving a call clears local ownership and limits overlapping server status requests',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  for(const marker of [
   'const orphan=sessionRef.current;',
   'sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false)',
@@ -136,7 +136,7 @@ test('leaving a call clears local ownership and limits overlapping server status
 });
 
 test('LiveKit native failures close the media room rather than leaving a dead call onscreen',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  assert.ok(screen.includes("onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}"));
  assert.ok(screen.includes("onDisconnected={()=>{void hangup();}}"));
 });
@@ -151,7 +151,7 @@ test('call action is hidden until contact block status has been verified',()=>{
  ])assert.ok(chat.includes(marker),marker);
 });
 test('active LiveKit calls close if permission is revoked; ringing invitations remain pending',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  assert.ok(screen.includes('e.status===403&&!connectedToPeer'));
  assert.ok(screen.includes('[403,404,410].includes(e.status)'));
  assert.ok(screen.includes('sessionRef.current=null;setSession(null);setConnectedToPeer(false)'));
@@ -180,7 +180,7 @@ test('Android and iOS advertise call-media permissions before a LiveKit release'
 });
 
 test('Android requests the correct media permissions before initiating or accepting calls',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  for(const marker of [
   "if(Platform.OS!=='android')return",
   'PermissionsAndroid.PERMISSIONS.RECORD_AUDIO',
@@ -226,7 +226,7 @@ test('signed internal diagnostic APK disables R8 instead of concealing missing L
 });
 
 test('LiveKit native globals are registered only when a call needs audio',()=>{
- const screen=read('app/messages/call.tsx');
+ const screen=read('src/features/direct-call-screen.tsx');
  assert.doesNotMatch(screen,/^registerGlobals\(\);$/m);
  assert.match(screen,/let liveKitGlobalsRegistered=false/);
  const callAudio=screen.slice(screen.indexOf('const startAudio=async()=>'),screen.indexOf('void startAudio().then('));
@@ -237,4 +237,15 @@ test('LiveKit native globals are registered only when a call needs audio',()=>{
  assert.ok(callAudio.indexOf('registerGlobals()')<callAudio.indexOf('AudioSession.startAudioSession()'));
  assert.match(screen,/void startAudio\(\)\.then\(\(\)=>\{/);
  assert.match(screen,/\}\)\.catch\(e=>\{/);
+});
+
+test('Expo Router does not eagerly import LiveKit native modules while registering routes',()=>{
+ const route=read('app/messages/call.tsx');
+ assert.match(route,/lazy\(\(\)=>import\('\.\.\/\.\.\/src\/features\/direct-call-screen'\)\)/);
+ assert.match(route,/<Suspense fallback=/);
+ assert.doesNotMatch(route,/from ['"]@livekit\/react-native['"]/);
+ assert.doesNotMatch(route,/from ['"]livekit-client['"]/);
+ const native=read('src/features/direct-call-screen.tsx');
+ assert.match(native,/from '@livekit\/react-native'/);
+ assert.match(native,/export default function DirectCallScreen\(\)/);
 });
