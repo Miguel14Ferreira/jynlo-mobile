@@ -141,6 +141,28 @@ jobs:
           echo "Regista este SHA-1 no OAuth Android com o package com.jynlo.app para APKs instaladas fora da Play Store."
       - name: Aplicar assinatura de envio à release gerada
         run: node scripts/configure-play-signing.cjs android/app/build.gradle
+      # The user's 2026-11-10 device log confirms a pre-React-Native
+      # WorkManager/Room crash in the old R8-minified APK:
+      # androidx.work.impl.WorkDatabase.canonicalName.
+      # Check the FINAL Gradle file after signing injection, not just the
+      # earlier prebuild stage, to prevent shipping another broken diagnostic.
+      - name: Confirmar que a APK interna não usa R8 após aplicar assinatura
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          source = Path('android/app/build.gradle').read_text()
+          release = re.search(r'(?s)release\\s*\\{(.*?)\\n\\s*\\}', source)
+          if not release:
+              raise SystemExit('Cannot find generated Android release build block')
+          for setting in ('minifyEnabled', 'shrinkResources'):
+              matches = re.findall(r'(?m)^\\s*' + setting + r'\\s+([^\\s/]+)', release.group(1))
+              if matches != ['false']:
+                  raise SystemExit(f'Unsafe diagnostic APK: release {setting} must be false, found {matches!r}')
+          print('Verified: release minification and shrinking disabled after signing configuration.')
+          PY
       - name: Gerar APK release assinada para testes
         env:
           JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
