@@ -36,3 +36,20 @@ test('native video pauses while story viewer is held',()=>{
  assert.match(source,/if\(paused\)player\.pause\(\)/);
  assert.match(source,/else player\.play\(\)/);
 });
+
+test('story videos advance once at native playback completion, without looping',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8');
+ assert.match(source,/p\.loop=false/);
+ assert.match(source,/player\.addListener\('playToEnd'/);
+ assert.match(source,/if\(ended\.current\)return/);
+ assert.match(source,/subscription\.remove\(\)/);
+ assert.match(viewer,/onEnd=\{\(\)=>go\(1\)\}/);
+ assert.match(viewer,/key=\{story\.id\}/);
+});
+
+test('viewer closes on downward swipe without overriding ordinary taps',()=>{
+ assert.match(viewer,/onTouchStart=/);
+ assert.match(viewer,/onTouchEnd=/);
+ assert.match(viewer,/pageY-start>110\)onClose\(\)/);
+ assert.match(viewer,/onTouchCancel=/);
+});
