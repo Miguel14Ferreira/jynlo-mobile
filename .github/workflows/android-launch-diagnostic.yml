@@ -138,6 +138,12 @@ jobs:
             # to the current Jynlo PID (never unrelated emulator processes).
             import re
             app_pids = {part for part in (pid + ' ' + initial_pid).split() if part.isdigit()}
+            # Android's ActivityManager records the PID even when the app
+            # crashes before either pidof sample can capture the process.
+            for line in lines:
+                started = re.search(r'\bStart proc (\d+):com\.jynlo\.app(?:/|\s)', line)
+                if started:
+                    app_pids.add(started.group(1))
             js_errors = []
             for line in lines:
                 match = re.match(r'^\S+\s+\S+\s+(\d+)\s+\d+\s+E\s+ReactNativeJS\s*:\s*(.*)$', line)
