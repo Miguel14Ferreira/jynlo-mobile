@@ -17,3 +17,24 @@ export async function postLikers(postId:number,token:string|null):Promise<Social
  if(DEMO_MODE)return [];
  return request<SocialPerson[]>(`/api/feed/posts/${postId}/likers`,{token});
 }
+
+export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number};
+export type PublicSportsProfile=SocialPerson&{
+ bio?:string|null;location?:string|null;country?:string|null;
+ favoriteSports?:string|null;skillLevel?:string|null;joinDateDisplay?:string|null;
+};
+export async function publicSportsProfile(username:string,token:string|null):Promise<PublicSportsProfile>{
+ const user=usernamePath(username);
+ if(DEMO_MODE)throw new Error('O perfil público requer a API real.');
+ return request<PublicSportsProfile>(`/api/profile/${user}`,{token});
+}
+export async function followStatus(username:string,token:string|null):Promise<FollowStatus>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('Inicia sessão para consultar as relações sociais.');
+ return request<FollowStatus>(`/api/follows/${user}/status`,{token});
+}
+export async function changeFollow(username:string,follow:boolean,token:string|null):Promise<FollowStatus>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('Inicia sessão para seguir pessoas.');
+ return request<FollowStatus>(`/api/follows/${user}`,{token,method:follow?'POST':'DELETE'});
+}
