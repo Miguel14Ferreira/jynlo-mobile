@@ -36,8 +36,10 @@ jobs:
             exit 1
           fi
           gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n jynlo-mobile-signed-internal-apk -D launch-diagnostics/apk
-          apk="$(find launch-diagnostics/apk -type f -name '*.apk' | head -n1)"
-          test -n "$apk" && test -s "$apk"
+          # Install exactly the APK named in the build's SHA-256 manifest.
+          # Never pick an arbitrary extra .apk from the downloaded artifact.
+          apk="launch-diagnostics/apk/android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
           # Validate the source run and artifact before passing a binary to the emulator.
           gh run view "$run_id" -R "$GITHUB_REPOSITORY" --json headSha,headBranch,conclusion,name > launch-diagnostics/source-run.json
           python3 - <<'PY'
