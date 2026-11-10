@@ -1,9 +1,9 @@
-import React,{useCallback,useMemo,useRef,useState} from 'react';
+import React,{Suspense,lazy,useCallback,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useRouter} from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import {VideoView,useVideoPlayer} from 'expo-video';
+// Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -18,9 +18,11 @@ const startLetter=(s:string)=>s.replace(/^@/,'').charAt(0).toUpperCase()||'J';
 const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return 'Recentemente';const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return 'Agora';if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
 
+const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
 function MediaVideo({uri,story=false}:{uri:string;story?:boolean}){
-  const player=useVideoPlayer(uri,p=>{p.loop=story;if(story){p.muted=true;p.play();}});
-  return <VideoView player={player} style={story?styles.storyVideo:styles.postVideo} contentFit="cover" nativeControls={!story} />;
+ return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
+  <FeedVideo uri={uri} story={story}/>
+ </Suspense>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
   const src=mediaSource(image);
