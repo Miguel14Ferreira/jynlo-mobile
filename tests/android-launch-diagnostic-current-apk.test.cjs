@@ -33,7 +33,7 @@ test('launch diagnostic does not count normal process mentions as fatal, and cap
  assert.match(workflow,/if 'FATAL EXCEPTION' in line or 'Fatal signal' in line/);
  assert.match(workflow,/Process: com\.jynlo\.app,/);
  assert.match(workflow,/>>> com\.jynlo\.app <<</);
- assert.match(workflow,/crashes\.append\(lines\[i\]\)/);
+ assert.match(workflow,/crashes\.append\('\\n'\.join\(context\)\)/);
  assert.doesNotMatch(workflow,/or 'Process: com\.jynlo\.app'/);
 });
 
@@ -89,4 +89,11 @@ test('concurrent fatal incidents are isolated before assigning process identity'
  assert.match(workflow,/next_fatal = next\(\(j for j in fatal_indices if j > i\), len\(lines\)\)/);
  assert.match(workflow,/context = lines\[i:min\(i\+60, next_fatal\)\]/);
  assert.doesNotMatch(workflow,/context = lines\[max\(0, i-5\):/);
+});
+
+test('fatal incident summary preserves stack traces and separates concurrent crashes',()=>{
+ assert.match(workflow,/crashes\.append\('\\n'\.join\(context\)\)/);
+ assert.match(workflow,/--- next fatal incident ---/);
+ assert.match(workflow,/print\(incident\[:2500\]\)/);
+ assert.match(workflow,/context = lines\[i:min\(i\+60, next_fatal\)\]/);
 });
