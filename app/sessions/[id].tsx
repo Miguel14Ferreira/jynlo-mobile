@@ -113,7 +113,8 @@ export default function SessionScreen(){
       // Resolve the roster before publishing the new snapshot. Unauthorized
       // viewers never retain the previous player's private roster.
       let roster:SessionParticipant[]=[];
-      if(canViewRoster(updated,auth.username)){
+      const rosterAllowed=canViewRoster(updated,auth.username);
+      if(rosterAllowed){
         roster=await sessionParticipants(id,auth.token);
         if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current||
            operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
@@ -121,8 +122,9 @@ export default function SessionScreen(){
       setDetail(updated);
       setParticipants(roster);
       setRosterError('');
-      // Keep a user's team preview intact. The backend validates its roster
-      // again at confirmation and rejects outdated assignments.
+      // Keep an ordinary draft intact, but never retain a proposed team
+      // assignment after this account loses permission to view the roster.
+      if(!rosterAllowed)setTeamPreview(null);
     }catch(e){
       if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
       if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
