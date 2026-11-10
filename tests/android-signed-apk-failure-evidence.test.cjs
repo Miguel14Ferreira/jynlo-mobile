@@ -86,3 +86,14 @@ test('internal diagnostic APK rejects R8 reactivation after signing',()=>{
  assert.match(check,/Unsafe diagnostic APK/);
  assert.doesNotMatch(check,/continue-on-error/);
 });
+
+test('post-signing R8 check uses real Python whitespace escapes instead of literal backslash-s',()=>{
+ const guard=workflow.indexOf('name: Confirmar que a APK interna não usa R8 após aplicar assinatura');
+ const assemble=workflow.indexOf('name: Gerar APK release assinada para testes',guard);
+ assert.ok(guard>=0 && assemble>guard);
+ const check=workflow.slice(guard,assemble);
+ assert.ok(check.includes(String.raw`matches = re.findall(r'(?m)^\s*' + setting + r'\s+([^\s/]+)', source)`),
+  'Gradle check must match whitespace in minifyEnabled and shrinkResources lines');
+ assert.ok(!check.includes(String.raw`matches = re.findall(r'(?m)^\\s*'`),
+  'double-escaped Python raw regex would reject every correct Gradle build');
+});
