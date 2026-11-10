@@ -35,3 +35,11 @@ test('notifications and direct chat keep read-only fallbacks without eager push 
  assert.match(inbox,/setInterval\(\(\)=>\{void load\(true,version\)/);
  assert.match(direct,/setInterval\(\(\)=>\{/);
 });
+
+test('guest sessions never initialize native push before authentication',()=>{
+ const root=read('app/_layout.tsx');
+ const gate=root.indexOf('if(!auth.token||!auth.username)return;');
+ const nativeLoad=root.indexOf('const Notifications=getNativeNotifications()');
+ assert.ok(gate>=0&&nativeLoad>gate);
+ assert.match(root,/if\(!auth\.ready\)return/);
+});
