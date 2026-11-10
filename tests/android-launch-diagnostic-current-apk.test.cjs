@@ -19,7 +19,7 @@ test('launch diagnosis keeps its provenance and fatal Android failure artifacts'
  assert.match(workflow,/Testing signed APK from run \$run_id/);
  assert.match(workflow,/apk-build-info\.json/);
  assert.match(workflow,/adb install -r "\$APK_PATH"/);
- assert.match(workflow,/adb logcat -d -v time/);
+ assert.match(workflow,/adb logcat -d -v threadtime/);
  assert.match(workflow,/FATAL EXCEPTION/);
  assert.match(workflow,/name: jynlo-signed-apk-launch-diagnostics/);
  assert.match(workflow,/if: always\(\)/);
@@ -66,4 +66,15 @@ test('failed screenshot capture cannot hide crash logs and diagnostic summary',(
  assert.match(workflow,/if \[ ! -s launch-diagnostics\/launch\.png \]; then/);
  assert.doesNotMatch(workflow,/test -s launch-diagnostics\/launch\.png/);
  assert.match(workflow,/crash-summary\.txt/);
+});
+
+test('a Jynlo React Native JS error fails launch smoke despite a live Android process',()=>{
+ assert.match(workflow,/app_pids = set\(pid\.split\(\)\)/);
+ assert.match(workflow,/E\\s\+ReactNativeJS/);
+ assert.match(workflow,/match\.group\(1\) in app_pids/);
+ assert.match(workflow,/js_errors\.append\(line\)/);
+ assert.match(workflow,/launch-diagnostics\/js-errors\.txt/);
+ assert.match(workflow,/if js_errors:/);
+ assert.match(workflow,/Jynlo raised a severe React Native JS error after launch/);
+ assert.doesNotMatch(workflow,/retention-days: 7[\s\S]*?, line\)/);
 });
