@@ -37,7 +37,7 @@ export default function PublicSocialProfile(){
    if(request===version.current)setStatus(next);
   }catch{
    if(request===version.current)setError('Não foi possível confirmar a alteração. Verifica o estado antes de repetir.');
-  }finally{inFlight.current=false;if(request===version.current)setBusy(false);}
+  }finally{if(request===version.current){inFlight.current=false;setBusy(false);}}
  }
  if(!name)return <Page><Message tone="error">Utilizador inválido.</Message></Page>;
  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||name;
