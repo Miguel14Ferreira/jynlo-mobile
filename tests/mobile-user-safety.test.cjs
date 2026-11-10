@@ -27,7 +27,7 @@ test('direct chat exposes reporting and blocking without allowing blocked sends'
  assert.match(screen,/await blockUser\(peer,auth\.token\)/);
  assert.match(screen,/await unblockUser\(peer,auth\.token\)/);
  assert.match(screen,/userBlockStatus\(peer,auth\.token\)/);
- assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!auth\.token/);
- assert.match(screen,/enabled=\{!blocked&&photoAvailable/);
- assert.match(screen,/auth\.token&&!blocked\?<KeyboardAvoidingView/);
+ assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
+ assert.match(screen,/enabled=\{!blocked&&blockStatusKnown&&photoAvailable/);
+ assert.match(screen,/auth\.token&&!blocked&&blockStatusKnown\?<View style=\{styles\.composer\}>/);
 });
