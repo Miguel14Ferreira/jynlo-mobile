@@ -38,8 +38,10 @@ test('session chat refreshes read-only while focused without overlapping a send'
 test('session chat preserves messages on transient polling errors but closes revoked access',()=>{
  const screen=read('app/sessions/[id]/chat.tsx');
  assert.match(screen,/import \{ApiError\} from/);
- assert.match(screen,/if\(version===generation\.current&&\(!silent\|\|\(e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)\)\)\)/);
- assert.match(screen,/setClosed\(true\);setEntries\(\[\]\)/);
+ assert.match(screen,/const accessRevoked=e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)/);
+ assert.match(screen,/if\(accessRevoked\)\{/);
+ assert.match(screen,/setClosed\(true\);setEntries\(\[\]\);setDraft\(''\);setReply\(null\)/);
+ assert.match(screen,/\}else if\(!silent\)\{/);
 });
 
 test('session chat photo upload uses private scoped endpoint with confirmation',()=>{
