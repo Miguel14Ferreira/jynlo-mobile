@@ -66,7 +66,7 @@ test('native calls only connect after audio is ready and release server session 
  const screen=read('app/messages/call.tsx');
  for(const text of [
   'setAudioReady(false)',
-  'AudioSession.startAudioSession().then',
+  'void startAudio().then',
   'session&&audioReady?<LiveKitRoom',
   'session&&!audioReady?',
   "void endDirectCall(orphan.callId,auth.token).catch(()=>{})",
