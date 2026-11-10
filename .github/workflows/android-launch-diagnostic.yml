@@ -157,18 +157,20 @@ jobs:
             if js_errors:
                 for line in js_errors[:20]:
                     print(line[:350])
-            # Both crash reports exist before signalling an unsuccessful launch.
+            # Always preserve foreground Activity evidence, even if Android
+            # or React Native crashed before this final startup validation.
+            activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
+            resumed = [line for line in activity.splitlines()
+                       if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
+            Path('launch-diagnostics/resumed-activity.txt').write_text(
+                '\n'.join(resumed) + '\n')
+            # All three reports exist before declaring launch failure.
             if crashes:
                 raise SystemExit('Android fatal error detected during launch')
             if js_errors:
                 raise SystemExit('Jynlo raised a severe React Native JS error after launch')
             if not pid or not all(part.isdigit() for part in pid.split()):
                 raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
-            activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
-            resumed = [line for line in activity.splitlines()
-                       if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
-            Path('launch-diagnostics/resumed-activity.txt').write_text(
-                '\n'.join(resumed) + '\n')
             if not any('com.jynlo.app/' in line for line in resumed):
                 raise SystemExit('Jynlo activity is not resumed in the foreground after 20 seconds')
             print('Android launch smoke: live Jynlo process, resumed activity and no fatal error.')
