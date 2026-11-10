@@ -25,6 +25,7 @@ export default function SessionScreen(){
   const id=Number(rawId), router=useRouter(), auth=useAuth();
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
   const detailRequestGeneration=useRef(0);
+  const operationInFlight=useRef(false);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
@@ -98,11 +99,25 @@ export default function SessionScreen(){
   },[load]));
 
   const perform=async(operation:()=>Promise<unknown>,success:string|((result:unknown)=>string))=>{
-    if(busy)return;
+    // React state updates are asynchronous. A ref prevents two rapid taps
+    // from issuing duplicate POST/PATCH requests before the button disables.
+    if(operationInFlight.current)return;
+    operationInFlight.current=true;
+    const version=detailRequestGeneration.current;
     setBusy(true);setError('');setFeedback('');
-    try {const result=await operation();setFeedback(typeof success==='function'?success(result):success);await load();}
-    catch(e){setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado da sessão antes de repetir.');}
-    finally{setBusy(false);}
+    try {
+      const result=await operation();
+      // A response from the previous route/account must not update this screen.
+      if(version!==detailRequestGeneration.current)return;
+      setFeedback(typeof success==='function'?success(result):success);
+      await load();
+    }catch(e){
+      if(version===detailRequestGeneration.current)
+        setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado da sessão antes de repetir.');
+    }finally{
+      operationInFlight.current=false;
+      if(version===detailRequestGeneration.current)setBusy(false);
+    }
   };
   const s=detail||preview,spots=Math.max(0,(s?.maxParticipants??0)-(s?.participantCount??0));
   const minimum=minimumPlayersProgress(detail);
