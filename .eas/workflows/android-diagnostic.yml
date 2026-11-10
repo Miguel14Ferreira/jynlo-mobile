@@ -8,6 +8,7 @@ on:
 jobs:
   mobile_preflight:
     name: Validar codigo antes de gastar uma build Android
+    environment: preview
     env:
       EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
       JYNLO_REQUIRE_REAL_API: '1'
@@ -28,6 +29,7 @@ jobs:
   android_diagnostic:
     name: Gerar APK interna de diagnostico (sem R8)
     needs: [mobile_preflight]
+    environment: preview
     type: build
     params:
       platform: android
