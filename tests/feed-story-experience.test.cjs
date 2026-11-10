@@ -79,3 +79,18 @@ test('post composer previews the selected photo or video and retains an explicit
  assert.match(composer,/accessibilityLabel=\{composerMedia\?'Trocar fotografia ou vídeo'/);
  assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300\}/);
 });
+
+test('feed comments use a dismissible bottom sheet instead of expanding under the post',()=>{
+ const post=feed.split('function PostCard(')[1]?.split('const Header=')[0];
+ const sheet=feed.split('<Modal visible={expandedComments!==null}')[1]?.split('</Modal>')[0];
+ assert.ok(post&&sheet,'post and comments sheet exist');
+ assert.doesNotMatch(post,/styles\.commentBox/);
+ assert.match(post,/accessibilityLabel="Abrir comentários"/);
+ assert.match(sheet,/onRequestClose=\{closeComments\}/);
+ assert.match(sheet,/styles\.commentsBackdrop/);
+ assert.match(sheet,/comments\.map\(c=>/);
+ assert.match(sheet,/accessibilityLabel="Enviar comentário"/);
+ assert.match(sheet,/submitComment\(expandedComments\)/);
+ assert.match(feed,/function closeComments\(\)\{commentsRequest\.current\+\+/);
+ assert.match(feed,/if\(requestId===commentsRequest\.current\)\{setComments/);
+});
