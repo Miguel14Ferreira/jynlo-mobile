@@ -55,3 +55,15 @@ test('deferred push callback uses a non-null native module snapshot for strict T
  assert.match(callback,/nativeNotifications\.clearLastNotificationResponse\(\)/);
  assert.doesNotMatch(callback,/\bNotifications\.DEFAULT_ACTION_IDENTIFIER|\bNotifications\.clearLastNotificationResponse\(\)/);
 });
+
+test('optional native CommonJS loader exposes a strict TypeScript declaration',()=>{
+ const declaration=read('src/lib/optional-notifications.d.cts');
+ assert.match(declaration,/import type \* as Notifications from 'expo-notifications'/);
+ assert.match(declaration,/export function getNativeNotifications\(\): typeof Notifications \| null/);
+ const root=read('app/_layout.tsx');
+ const inbox=read('app/notifications.tsx');
+ const messages=read('app/(tabs)/messages.tsx');
+ for(const source of [root,inbox,messages]){
+  assert.match(source,/getNativeNotifications/);
+ }
+});
