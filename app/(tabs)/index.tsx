@@ -2,7 +2,7 @@ import React,{Suspense,lazy,useCallback,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useRouter} from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
+// Load the native media picker only when the user explicitly opens the gallery.
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
@@ -101,7 +101,8 @@ export default function JynloFeedHome(){
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void){
     if(!requireLogin())return;
-    try{const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86});
+    try{const ImagePicker=await import('expo-image-picker');
+      const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86});
       if(result.canceled||!result.assets.length)return;
       const asset=result.assets[0];if(!asset)return;const kind=asset.type==='video'?'video':'image';
       const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
