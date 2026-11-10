@@ -48,3 +48,13 @@ test('social post route uses server lookup, safe account-scoped state and explic
  assert.match(post,/post\.authorUsername/);
  assert.match(post,/await addPostComment\(id,original,auth\.token,auth\.username\)/);
 });
+
+test('post detail respects authors hidden liker list without disabling heart',()=>{
+ const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
+ const types=fs.readFileSync(path.join(__dirname,'../src/lib/types.ts'),'utf8');
+ assert.match(types,/hideLikers\?:boolean/);
+ assert.match(post,/post\.hideLikers&&post\.authorUsername\.toLowerCase\(\)!==auth\.username\?\.toLowerCase\(\)/);
+ assert.match(post,/disabled=\{Boolean\(post\.hideLikers/);
+ assert.match(post,/Gostos privados/);
+ assert.match(post,/await likePost\(id,post\.likedByMe,auth\.token,auth\.username\)/);
+});
