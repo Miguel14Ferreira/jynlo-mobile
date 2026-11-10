@@ -32,6 +32,8 @@ export default function DirectConversation(){
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
+ // A write stays locked to its conversation even when the route is reused.
+ const pendingWrites=useRef(new Map<string,'text'|'photo'>());
  const generation=useRef(0),conversation=useRef('');
  const blockCheckRequest=useRef(0);
  const pendingRefresh=useRef(false);
@@ -83,9 +85,14 @@ export default function DirectConversation(){
    conversation.current=identity;
    setMessages([]);setDraft('');setPhoto(null);setError('');setSyncWarning('');
    setAttachmentsOpen(false);setSafetyOpen(false);
-   setSending(false);setPhotoBusy(false);sendingNow.current=false;
+   const pending=pendingWrites.current.get(identity);
+   setSending(pending==='text');setPhotoBusy(pending==='photo');sendingNow.current=Boolean(pending);
   }
   const version=++generation.current;
+  // Refocusing the same chat must not unlock an unsettled message or photo.
+  const pending=pendingWrites.current.get(identity);
+  sendingNow.current=Boolean(pending);
+  setSending(pending==='text');setPhotoBusy(pending==='photo');
   // A previous block/report POST may still be running after navigation.
   setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
@@ -172,11 +179,12 @@ export default function DirectConversation(){
   }
  }
  async function send(){
-  if(sending||sendingNow.current||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
+  const identity=peer+'|'+auth.token;
+  if(sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
   const originalDraft=draft;
   const submittedText=originalDraft.trim();
-  const identity=peer+'|'+auth.token;
   const version=generation.current;
+  pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
    await sendDirectChat(peer,submittedText,auth.token);
@@ -189,7 +197,8 @@ export default function DirectConversation(){
     setError((e instanceof Error?e.message:'Não foi possível enviar.')+
      ' Consulta o histórico antes de repetires o envio.');
   }finally{
-   if(version===generation.current&&conversation.current===identity){
+   pendingWrites.current.delete(identity);
+   if(conversation.current===identity){
     sendingNow.current=false;setSending(false);
    }
   }
@@ -211,9 +220,10 @@ export default function DirectConversation(){
   }
  }
  async function uploadPhoto(){
-  if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current)return;
   const identity=peer+'|'+auth.token;
+  if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current;
+  pendingWrites.current.set(identity,'photo');
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
    await sendDirectPhoto(peer,auth.token,photo);
@@ -223,7 +233,8 @@ export default function DirectConversation(){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
   }finally{
-   if(version===generation.current&&conversation.current===identity){
+   pendingWrites.current.delete(identity);
+   if(conversation.current===identity){
     sendingNow.current=false;setPhotoBusy(false);
    }
   }
