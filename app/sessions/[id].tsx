@@ -28,6 +28,7 @@ export default function SessionScreen(){
   const operationInFlight=useRef(false);
   const actionEpoch=useRef(0);
   const backgroundSyncInFlight=useRef(false);
+  const foregroundLoadVersion=useRef<number|null>(null);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
@@ -49,7 +50,9 @@ export default function SessionScreen(){
 
   const load=useCallback(async()=>{
     const version=++detailRequestGeneration.current;
+    foregroundLoadVersion.current=version;
     if(!Number.isSafeInteger(id)||id<=0){
+      foregroundLoadVersion.current=null;
       setError('Identificador de sessão inválido.');setLoading(false);return;
     }
     setError('');setRosterError('');setLoading(true);setDetail(null);setPreview(null);setParticipants([]);
@@ -90,13 +93,15 @@ export default function SessionScreen(){
       if(version===detailRequestGeneration.current)
         setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');
     }finally{
+      if(foregroundLoadVersion.current===version)foregroundLoadVersion.current=null;
       if(version===detailRequestGeneration.current)setLoading(false);
     }
   },[id,auth.token,auth.username]);
   // Read-only synchronization: a participant on another device may join,
   // cancel or move off the waitlist without this screen losing its drafts.
   const syncSession=useCallback(async(version:number,epoch:number)=>{
-    if(backgroundSyncInFlight.current||operationInFlight.current||
+    if(backgroundSyncInFlight.current||foregroundLoadVersion.current!==null||
+       operationInFlight.current||
        removalInFlight.current||attendanceInFlight.current||!auth.token||
        !Number.isSafeInteger(id)||id<=0)return;
     if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
@@ -116,7 +121,8 @@ export default function SessionScreen(){
       setDetail(updated);
       setParticipants(roster);
       setRosterError('');
-      setTeamPreview(null); // previously generated teams may be stale
+      // Keep a user's team preview intact. The backend validates its roster
+      // again at confirmation and rejects outdated assignments.
     }catch(e){
       if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
       if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
