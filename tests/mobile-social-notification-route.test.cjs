@@ -66,3 +66,17 @@ test('older post write cannot clear the in-flight lock of a newly opened account
  assert.ok(!post.includes('finally{writing.current=false;if(version===generation.current)setBusy(false);}'));
  assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);\}/);
 });
+
+test('post owner can change liker visibility only after server confirmation',()=>{
+ const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ assert.match(api,/export async function setPostLikerPrivacy/);
+ assert.match(api,/\/api\/feed\/posts\/\$\{postId\}\/likers\/privacy/);
+ assert.match(api,/method:'PUT',body:\{hidden\}/);
+ assert.match(post,/post\.authorUsername\.toLowerCase\(\)!==auth\.username\.toLowerCase\(\)/);
+ assert.match(post,/setPostLikerPrivacy\(id,!Boolean\(post\.hideLikers\),auth\.token\)/);
+ assert.match(post,/hideLikers:confirmed/);
+ assert.match(post,/Ocultar quem gostou/);
+ assert.match(post,/Mostrar quem gostou/);
+ assert.match(post,/if\(version===generation\.current\)\{writing\.current=false;setBusy\(false\);\}/);
+});
