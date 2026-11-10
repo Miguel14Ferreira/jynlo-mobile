@@ -1,5 +1,5 @@
 import {Platform} from 'react-native';
-import * as Notifications from 'expo-notifications';
+// Load expo-notifications only when the user enables push or logs out.
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
@@ -42,6 +42,7 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  if(prior&&prior!==username.toLowerCase())
   throw Error('Este dispositivo ainda está associado a outra conta. Termina sessão nessa conta primeiro.');
  const easProjectId=projectId();
+ const Notifications=await import('expo-notifications');
  if(Platform.OS==='android'){
   await Notifications.setNotificationChannelAsync('jynlo-messages',{
    name:'Mensagens Jynlo',
@@ -71,6 +72,7 @@ export async function disableMobilePush(username:string,token:string):Promise<vo
 
 /** Clear notification-tray content and consumed navigation intent on account exit. */
 export async function clearNativePushPresentation():Promise<void>{
- Notifications.clearLastNotificationResponse();
+ const Notifications=await import('expo-notifications');
+ await Notifications.clearLastNotificationResponse();
  await Notifications.dismissAllNotificationsAsync();
 }
