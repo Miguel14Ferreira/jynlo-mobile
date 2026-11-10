@@ -85,7 +85,7 @@ jobs:
             resumed = [line for line in activity.splitlines()
                        if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
             Path('launch-diagnostics/resumed-activity.txt').write_text(
-                '\\n'.join(resumed) + '\\n')
+                '\n'.join(resumed) + '\n')
             if not any('com.jynlo.app/' in line for line in resumed):
                 raise SystemExit('Jynlo activity is not resumed in the foreground after 20 seconds')
             print('Android launch smoke: live Jynlo process, resumed activity and no fatal error.')
