@@ -53,3 +53,16 @@ test('viewer closes on downward swipe without overriding ordinary taps',()=>{
  assert.match(viewer,/pageY-start>110\)onClose\(\)/);
  assert.match(viewer,/onTouchCancel=/);
 });
+
+test('story caption overlay is shown in preview and playback using the existing caption contract',()=>{
+ const viewer=feed.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0];
+ const composer=feed.split('<Modal visible={storyComposer}')[1]?.split('</Modal>')[0];
+ assert.ok(viewer&&composer);
+ assert.match(viewer,/story\.caption\?\.trim\(\)/);
+ assert.match(viewer,/styles\.storyCaptionLayer/);
+ assert.match(composer,/storyCaption\.trim\(\)/);
+ assert.match(composer,/styles\.storyCaptionOverlay/);
+ assert.match(composer,/maxLength=\{180\}/);
+ assert.match(composer,/MediaVideo uri=\{storyMedia\.uri\} story paused/);
+ assert.doesNotMatch(composer,/burn|flatten|renderToFile/);
+});
