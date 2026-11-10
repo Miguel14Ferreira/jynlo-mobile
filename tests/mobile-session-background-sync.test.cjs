@@ -29,7 +29,10 @@ test('background synchronization skips mutations, overlapping calls and full for
 
 test('automatic refresh does not clear editor drafts or mark a player present without server confirmation',()=>{
  assert.doesNotMatch(sync,/setMeetingDraft\(|setExternalDraft\(|setPassword\(|setDraft\(|joinSession\(|leaveSession\(|answerSessionInvite\(/);
- assert.doesNotMatch(sync,/setTeamPreview\(null\)/);
+ // The normal success path must preserve a preview being edited; access
+ // revocation is intentionally allowed to clear it for privacy.
+ const successfulSync=sync.slice(sync.indexOf('try{'),sync.indexOf('}catch(e){'));
+ assert.doesNotMatch(successfulSync,/setTeamPreview\(null\)/);
  assert.match(sync,/if\(canViewRoster\(updated,auth\.username\)\)/);
  assert.match(sync,/let roster:SessionParticipant\[\]=\[\]/);
  assert.match(sync,/setParticipants\(roster\)/);
