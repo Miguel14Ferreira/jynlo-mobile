@@ -70,7 +70,16 @@ jobs:
             from pathlib import Path
             text = Path('launch-diagnostics/logcat.txt').read_text(errors='replace')
             lines = text.splitlines()
-            crashes = [l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l]
+            # Android may log crashes from Google services or the emulator itself.
+            # Associate fatal signatures with the Jynlo process before failing.
+            fatal_indices = [i for i, line in enumerate(lines)
+                             if 'FATAL EXCEPTION' in line or 'Fatal signal' in line]
+            crashes = []
+            for i in fatal_indices:
+                context = lines[max(0, i-5):min(len(lines), i+60)]
+                if any('Process: com.jynlo.app,' in line or
+                       '>>> com.jynlo.app <<<' in line for line in context):
+                    crashes.append(lines[i])
             Path('launch-diagnostics/crash-summary.txt').write_text('\n'.join(crashes) if crashes else 'No Android fatal exception signature detected in launch window.\n')
             for line in crashes[:20]:
                 print(line[:250])
