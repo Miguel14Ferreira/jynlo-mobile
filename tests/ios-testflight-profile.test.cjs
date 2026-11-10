@@ -1,0 +1,20 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const eas=JSON.parse(fs.readFileSync(path.join(root,'eas.json'),'utf8'));
+const app=JSON.parse(fs.readFileSync(path.join(root,'app.json'),'utf8')).expo;
+test('TestFlight is a store-signed iOS build, separate from Android diagnostics',()=>{
+ const ios=eas.build['ios-testflight'];
+ assert.equal(ios.distribution,'store');
+ assert.equal(ios.environment,'preview');
+ assert.equal(ios.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+ assert.equal(ios.env.JYNLO_REQUIRE_REAL_API,'1');
+ assert.ok(!('JYNLO_ANDROID_DIAGNOSTIC_NO_R8' in ios.env));
+ assert.equal(eas.build.diagnostic.android.buildType,'apk');
+ assert.equal(eas.build.diagnostic.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
+ assert.equal(app.ios.bundleIdentifier,'com.jynlo.app');
+ assert.ok(Object.prototype.hasOwnProperty.call(eas.submit,'ios-testflight'));
+});
