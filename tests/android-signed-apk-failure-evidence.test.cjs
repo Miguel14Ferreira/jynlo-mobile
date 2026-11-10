@@ -23,7 +23,7 @@ test('log capture does not turn tests, prebuild or Gradle failures into successf
   const line=lines.findIndex(value=>value.includes(marker+' 2>&1 | tee'));
   assert.ok(line>0,'missing captured build step '+marker);
   const previous=lines.slice(Math.max(0,line-5),line).join('\n');
-  assert.match(previous,/set -o pipefail/);
+  assert.match(previous,/set -(?:o|euo) pipefail/);
  }
  assert.doesNotMatch(workflow,/continue-on-error:\s*true/);
 });
@@ -55,4 +55,22 @@ test('internal signed APK cannot be generated from non-develop refs',()=>{
  assert.match(workflow,/workflow_dispatch:/);
  assert.match(workflow,/if: \$\{\{ github\.ref == 'refs\/heads\/develop' && inputs\.confirm == 'TESTAR_API_REAL' \}\}/);
  assert.doesNotMatch(workflow,/github\.event_name == 'push' \|\| inputs\.confirm/);
+});
+
+test('all signed-APK logging stages propagate their own failures through pipefail',()=>{
+ const lines=workflow.split('\n');
+ const markers=[
+  'npm install --no-audit --no-fund',
+  'npm run test:all',
+  'npm run typecheck',
+  'npm run check:release',
+  'npx expo prebuild --platform android --no-install --clean',
+  './gradlew :app:assembleRelease --no-daemon --max-workers=2'
+ ];
+ for(const marker of markers){
+  const index=lines.findIndex(line=>line.includes(marker+' 2>&1 | tee'));
+  assert.ok(index>=0,marker+' must have a logged pipeline');
+  const context=lines.slice(Math.max(0,index-5),index).join('\n');
+  assert.match(context,/set -(?:o|euo) pipefail/,marker+' must propagate pipeline failure');
+ }
 });
