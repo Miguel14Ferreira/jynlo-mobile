@@ -105,29 +105,12 @@ jobs:
             app_pids = set(pid.split())
             js_errors = []
             for line in lines:
-                match = re.match(r'^\\S+\\s+\\S+\\s+(\\d+)\\s+\\d+\\s+E\\s+ReactNativeJS\\s*:\\s*(.*)
-            resumed = [line for line in activity.splitlines()
-                       if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
-            Path('launch-diagnostics/resumed-activity.txt').write_text(
-                '\n'.join(resumed) + '\n')
-            if not any('com.jynlo.app/' in line for line in resumed):
-                raise SystemExit('Jynlo activity is not resumed in the foreground after 20 seconds')
-            print('Android launch smoke: live Jynlo process, resumed activity and no fatal error.')
-            PY
-      - name: Upload Android launch diagnostics even on failure
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jynlo-signed-apk-launch-diagnostics
-          path: launch-diagnostics/
-          if-no-files-found: warn
-          retention-days: 7
-, line)
+                match = re.match(r'^\S+\s+\S+\s+(\d+)\s+\d+\s+E\s+ReactNativeJS\s*:\s*(.*)$', line)
                 if match and match.group(1) in app_pids and re.search(
-                    r'(?:^|\\b)(?:Error:|TypeError:|ReferenceError:|Invariant Violation|Unhandled JS Exception)', match.group(2)):
+                    r'(?:^|\b)(?:Error:|TypeError:|ReferenceError:|Invariant Violation|Unhandled JS Exception)', match.group(2)):
                     js_errors.append(line)
             Path('launch-diagnostics/js-errors.txt').write_text(
-                '\\n'.join(js_errors) + ('\\n' if js_errors else 'No severe Jynlo ReactNativeJS errors detected.\\n'))
+                '\n'.join(js_errors) + ('\n' if js_errors else 'No severe Jynlo ReactNativeJS errors detected.\n'))
             if js_errors:
                 for line in js_errors[:20]:
                     print(line[:350])
