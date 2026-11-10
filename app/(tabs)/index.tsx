@@ -233,8 +233,8 @@ export default function JynloFeedHome(){
     const media=mediaSource(item.imageUrl),video=mediaSource(item.videoUrl);const likeBusy=busyPost===item.postId;
     return <View style={styles.postCard}>
       <View style={styles.postTop}><CircleAvatar name={item.authorDisplayName||item.authorUsername} image={item.authorProfilePicUrl} size={43}/>
-        <View style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
-          <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
+          <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></Pressable>
         <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable></View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {media?<Image source={{uri:media}} style={styles.postImage} resizeMode="cover"/>:null}
