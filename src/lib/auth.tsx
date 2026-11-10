@@ -146,15 +146,26 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     setBrowsingAsGuest(false);
     // Remove local credentials before potentially slow remote revocation.
     // Treat cleanup failures as non-fatal: the user is logged out in memory.
+    let localRemovalFailed=false;
     if(!DEMO_MODE){
-      await Promise.allSettled([
+      const removals=await Promise.allSettled([
         SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+      localRemovalFailed=removals.some(result=>result.status==='rejected');
     }
     try{await clearNativePushPresentation();}catch{/* Local cleanup must never block logout. */}
+    let serverRevokeFailed=false;
     if(!DEMO_MODE&&tokenToRevoke){
       // Remove push registration first, then revoke the old bearer token.
       if(nameToRevoke)try{await disableMobilePush(nameToRevoke,tokenToRevoke);}catch{/* Keep local registration marker for later recovery. */}
-      try{await logoutServer(tokenToRevoke);}catch{/* Local credentials are already cleared. */}
+      try{await logoutServer(tokenToRevoke);}catch{serverRevokeFailed=true;}
+    }
+    // Do not pretend the account was fully signed out when both persistence
+    // deletion and server revocation could have failed. The UI is signed out
+    // immediately, but the user needs to know that credentials may survive.
+    if(localRemovalFailed){
+      throw new Error(serverRevokeFailed?
+        'A sessão foi fechada neste ecrã, mas não foi possível apagar a credencial do telemóvel nem confirmar a revogação no servidor. Fecha a aplicação e tenta terminar sessão novamente após iniciares sessão.':
+        'A sessão foi fechada neste ecrã, mas não foi possível confirmar a remoção das credenciais guardadas. Verifica novamente a sessão antes de partilhares o dispositivo.');
     }
   },[token,username]);
   const value=useMemo(()=>({ready,username,token,challengeId,browsingAsGuest,browseAsGuest,login,
