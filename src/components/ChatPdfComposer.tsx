@@ -9,7 +9,7 @@ import {checkPdfAsset,sendChatPdf} from '../lib/chat-pdf-attachment';
 import type {PdfChatTarget} from '../lib/chat-pdf-attachment';
 
 type Props={target:PdfChatTarget;token:string|null;enabled:boolean;
- replyId?:number|null;onSent:()=>Promise<void>};
+ replyId?:number|null;onSent:(sentReplyId:number|null)=>Promise<void>}
 export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Props){
  const [selected,setSelected]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -63,12 +63,13 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   const asset=selectedRef.current;
   if(!asset||!enabled||!token||busyRef.current||blocked.current)return;
   const version=generation.current;
+  const sentReplyId=replyId??null;
   busyRef.current=true;uploadingRef.current=asset;setBusy(true);setError('');
   try{
-   await sendChatPdf(target,token,asset,replyId);
+   await sendChatPdf(target,token,asset,sentReplyId);
    if(!active.current||generation.current!==version)return;
    if(selectedRef.current===asset)reset();
-   try{await onSent();}
+   try{await onSent(sentReplyId);}
    catch{
     if(active.current&&generation.current===version)
      setError('PDF enviado. Atualiza a conversa para veres o anexo.');
