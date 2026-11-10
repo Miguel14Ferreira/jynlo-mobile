@@ -1,6 +1,6 @@
 import {Platform} from 'react-native';
 // Load expo-notifications only when the user enables push or logs out.
-import * as Crypto from 'expo-crypto';
+// expo-crypto is only needed if push opt-in creates a new installation ID.
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import {DEMO_MODE} from './api';
@@ -19,6 +19,7 @@ function projectId():string{
 async function installId():Promise<string>{
  const saved=await SecureStore.getItemAsync(INSTALL_ID_KEY);
  if(saved)return saved;
+ const Crypto=await import('expo-crypto');
  const id=Crypto.randomUUID();
  await SecureStore.setItemAsync(INSTALL_ID_KEY,id);
  return id;
