@@ -69,7 +69,7 @@ test('failed screenshot capture cannot hide crash logs and diagnostic summary',(
 });
 
 test('a Jynlo React Native JS error fails launch smoke despite a live Android process',()=>{
- assert.match(workflow,/app_pids = set\(pid\.split\(\)\)/);
+ assert.match(workflow,/app_pids = \{part for part in \(pid \+ ' ' \+ initial_pid\)\.split\(\) if part\.isdigit\(\)\}/);
  assert.match(workflow,/E\\s\+ReactNativeJS/);
  assert.match(workflow,/match\.group\(1\) in app_pids/);
  assert.match(workflow,/js_errors\.append\(line\)/);
@@ -109,4 +109,14 @@ test('emulator refuses stale or corrupted signed APK before installing',()=>{
  assert.match(download,/info\.get\('apiUrl'\) != 'https:\/\/desporto24-preview-api\.onrender\.com'/);
  assert.match(download,/sha256sum -c android-build-sha256\.txt/);
  assert.ok(download.indexOf('sha256sum -c')<workflow.indexOf('adb install -r'));
+});
+
+test('startup JS exceptions are collected even if the app exits before the final PID check',()=>{
+ assert.match(workflow,/adb shell pidof com\.jynlo\.app > launch-diagnostics\/initial-pid\.txt \|\| true/);
+ assert.match(workflow,/initial_pid = Path\('launch-diagnostics\/initial-pid\.txt'\)\.read_text\(\)\.strip\(\)/);
+ assert.match(workflow,/app_pids = \{part for part in \(pid \+ ' ' \+ initial_pid\)\.split\(\) if part\.isdigit\(\)\}/);
+ const jsCheck=workflow.indexOf("if js_errors:");
+ const deadProcessCheck=workflow.indexOf("if not pid or not all(part.isdigit() for part in pid.split()):");
+ assert.ok(jsCheck>=0 && deadProcessCheck>jsCheck,
+  'inspect fatal ReactNativeJS errors before reporting an exited Android process');
 });
