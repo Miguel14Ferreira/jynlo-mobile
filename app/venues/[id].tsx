@@ -1,6 +1,6 @@
 import React,{useCallback,useState} from 'react';
 import {Image,Linking,StyleSheet,Text,View} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import type {ImagePickerAsset} from 'expo-image-picker';
 import {useLocalSearchParams,useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {venueDetails,venuePhotos,venueRatingSummary,venueSportConditions} from '../../src/lib/parity-api';
@@ -40,7 +40,7 @@ export default function VenueDetailScreen(){
  const [rating,setRating]=useState<VenueRatingSummary|null>(null);
  const [loading,setLoading]=useState(true),[extraError,setExtraError]=useState(false);
  const [error,setError]=useState('');
- const [selectedPhoto,setSelectedPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [selectedPhoto,setSelectedPhoto]=useState<ImagePickerAsset|null>(null);
  const [sendingPhoto,setSendingPhoto]=useState(false),[photoMessage,setPhotoMessage]=useState('');
  useFocusEffect(useCallback(()=>{
   let active=true;setLoading(true);setError('');setVenue(null);setPhotos([]);
@@ -74,6 +74,8 @@ export default function VenueDetailScreen(){
   if(!auth.token||DEMO_MODE||sendingPhoto)return;
   setPhotoMessage('');
   try{
+   // Defer native gallery initialization until an authenticated user requests it.
+   const ImagePicker=await import('expo-image-picker');
    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,
     aspect:[4,3],quality:0.75,exif:false,base64:false});
    if(!result.canceled&&result.assets?.[0])setSelectedPhoto(result.assets[0]);
