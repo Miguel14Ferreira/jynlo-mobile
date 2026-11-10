@@ -108,8 +108,8 @@ test('push tap resolves only an ID returned by the authenticated notification AP
 
 test('native push responses are consumed once and cannot replay after logout',()=>{
  const layout=read('app/_layout.tsx');
- assert.match(layout,/Notifications\.clearLastNotificationResponse\(\)/);
- assert.match(layout,/response\.actionIdentifier!==Notifications\.DEFAULT_ACTION_IDENTIFIER/);
+ assert.match(layout,/nativeNotifications\.clearLastNotificationResponse\(\)/);
+ assert.match(layout,/response\.actionIdentifier!==nativeNotifications\.DEFAULT_ACTION_IDENTIFIER/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/let active=true/);
  assert.match(layout,/active=false;\s*try\{listener\?\.remove\(\);\}catch\{/);
