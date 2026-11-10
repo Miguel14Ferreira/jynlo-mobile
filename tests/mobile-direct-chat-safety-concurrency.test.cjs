@@ -11,7 +11,7 @@ const reporting=chat.slice(chat.indexOf('async function submitReport()'),chat.in
 test('blocking and reporting share a synchronous lock before network calls',()=>{
  assert.match(chat,/const safetyInFlight=useRef\(false\)/);
  for(const action of [blocking,reporting]){
-  assert.match(action,/safetyInFlight\.current\)return/);
+  assert.match(action,/if\(!auth\.token\|\|safetyInFlight\.current\|\|/);
   assert.match(action,/safetyInFlight\.current=true/);
   assert.ok(action.indexOf('safetyInFlight.current=true')<action.indexOf('await '));
   assert.match(action,/finally\{\s*safetyInFlight\.current=false;\s*setSafetyBusy\(false\)/);
