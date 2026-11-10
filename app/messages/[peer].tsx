@@ -8,7 +8,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
-import {DEMO_MODE} from '../../src/lib/api';
+import {ApiError,DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/chat-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
@@ -64,8 +64,19 @@ export default function DirectConversation(){
    if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
   }catch(e){
    if(version===generation.current){
-    if(silent)setSyncWarning('Não foi possível atualizar as mensagens. O histórico apresentado pode estar desatualizado.');
-    else setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+    const accessRevoked=e instanceof ApiError&&[401,403,404,410].includes(e.status);
+    if(accessRevoked){
+     // A confirmed server-side access change must hide cached private content.
+     // Ordinary network failures are not evidence of permission revocation.
+     setMessages([]);setDraft('');setPhoto(null);setPhotoAvailable(false);
+     setAttachmentsOpen(false);setSyncWarning('');
+     setBlocked(true);setBlockStatusKnown(false);
+     setError('Já não tens acesso a esta conversa. Volta à lista de mensagens para confirmar as permissões.');
+    }else if(silent){
+     setSyncWarning('Não foi possível atualizar as mensagens. O histórico apresentado pode estar desatualizado.');
+    }else{
+     setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+    }
    }
   }finally{
    if(refreshing.current===version)refreshing.current=null;
