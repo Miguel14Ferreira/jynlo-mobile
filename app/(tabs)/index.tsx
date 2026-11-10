@@ -36,19 +36,46 @@ function SectionHeader({eyebrow,title,action,onPress}:{eyebrow?:string;title:str
 
 function StoryViewer({group,onClose,onDeleted}:{group:StoriesGroup|null;onClose:()=>void;onDeleted:()=>void}){
   const [index,setIndex]=useState(0);
-  React.useEffect(()=>{setIndex(0);},[group?.key]);
-  if(!group)return null;
-  const story=group.stories[index];if(!story)return null;
+  const [paused,setPaused]=useState(false);
+  const longPress=useRef(false);
+  React.useEffect(()=>{setIndex(0);setPaused(false);longPress.current=false;},[group?.key]);
+  const story=group?.stories[index];
+  // Photos advance automatically; videos must not be cut off by a photo timer.
+  React.useEffect(()=>{
+    if(!story||story.video||paused)return;
+    const timer=setTimeout(()=>{
+      if(group&&index<group.stories.length-1)setIndex(i=>i+1);
+      else onClose();
+    },6000);
+    return ()=>clearTimeout(timer);
+  },[story?.id,story?.video,paused,index,group,onClose]);
+  if(!group||!story)return null;
   const uri=mediaSource(story.mediaUrl);
+  const navigate=(direction:-1|1)=>{
+    if(longPress.current){longPress.current=false;return;}
+    if(direction===-1)setIndex(i=>Math.max(0,i-1));
+    else if(index<group.stories.length-1)setIndex(i=>i+1);
+    else onClose();
+  };
+  const tapZone=(direction:-1|1)=>({
+    onPress:()=>navigate(direction),
+    onPressIn:()=>setPaused(true),
+    onPressOut:()=>setPaused(false),
+    onLongPress:()=>{longPress.current=true;setPaused(true);},
+    delayLongPress:250
+  });
   return <Modal visible transparent={false} animationType="fade" onRequestClose={onClose}>
     <SafeAreaView style={styles.storyOverlay}>
-      <View style={styles.storyProgress}>{group.stories.map((entry,i)=><Pressable key={entry.id} onPress={()=>setIndex(i)} style={[styles.progressPart,i<=index&&{backgroundColor:WHITE}]}/>)}</View>
-      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={group.avatar} size={34}/><Text style={styles.storyUser}>{group.name}</Text><Pressable onPress={onClose} style={styles.closeStory}><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo uri={uri} story/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}</View>
+      <View style={styles.storyProgress}>{group.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>setIndex(i)} style={[styles.progressPart,i<=index&&{backgroundColor:WHITE}]}/>)}</View>
+      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={group.avatar} size={34}/><Text style={styles.storyUser}>{group.name}</Text><Pressable onPress={onClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo uri={uri} story/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+        <View style={styles.storyTapZones} pointerEvents="box-none">
+          <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
+          <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
+        </View>
+      </View>
       {story.caption?<Text style={styles.storyCaption}>{story.caption}</Text>:null}
-      <View style={styles.storyBottom}><Pressable onPress={()=>setIndex(i=>Math.max(0,i-1))} style={styles.storyNav}><Text style={styles.storyNavText}>‹ Anterior</Text></Pressable>
-        <Text style={styles.storyCount}>{index+1} / {group.stories.length}</Text>
-        <Pressable onPress={()=>index<group.stories.length-1?setIndex(index+1):onClose()} style={styles.storyNav}><Text style={styles.storyNavText}>{index<group.stories.length-1?'Seguinte ›':'Fechar'}</Text></Pressable></View>
+      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {group.stories.length}</Text><Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text></View>
       {story.canDelete?<Text style={styles.storyOwnHint}>Story próprio · gestão avançada em desenvolvimento</Text>:null}
     </SafeAreaView>
   </Modal>;
@@ -220,6 +247,6 @@ const styles=StyleSheet.create({
   visitorSecondaryText:{color:TEAL,fontSize:12,fontWeight:'800'},
   composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:11},countText:{color:MUTED,fontSize:10},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},attachedMedia:{flexDirection:'row',justifyContent:'space-between',gap:5},attachedText:{color:MUTED,fontSize:11,flex:1},
   latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:11},feedCardWrap:{paddingHorizontal:12,marginBottom:10},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:BORDER,borderRadius:16,padding:15,gap:13},postTop:{flexDirection:'row',alignItems:'center',gap:11},postName:{color:WHITE,fontSize:14,fontWeight:'900'},postMeta:{color:MUTED,fontSize:10},postBody:{color:WHITE,fontSize:14,lineHeight:21},postImage:{width:'100%',height:205,borderRadius:9},postVideo:{width:'100%',height:235,borderRadius:9},postActions:{flexDirection:'row',borderTopColor:'#154653',borderTopWidth:1,paddingTop:10,gap:21},postAction:{flexDirection:'row',gap:6,alignItems:'center'},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:10,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentBox:{gap:10,borderTopColor:BORDER,borderTopWidth:1,paddingTop:12},comment:{gap:4,padding:11,backgroundColor:'#06232F',borderRadius:11},commentAuthor:{color:TEAL,fontSize:11,fontWeight:'800'},commentBody:{fontSize:12,color:WHITE},commentCompose:{flexDirection:'row',alignItems:'center',gap:8},commentInput:{flex:1,minHeight:39,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:40,height:40,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:11,color:MUTED,lineHeight:16},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
-  storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:11},storyOwnHint:{color:MUTED,fontSize:10,textAlign:'center',paddingBottom:5},
+  storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyTapZones:{...StyleSheet.absoluteFillObject,flexDirection:'row'},storyTapZone:{flex:1},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:11},storyOwnHint:{color:MUTED,fontSize:10,textAlign:'center',paddingBottom:5},
   storyComposerOverlay:{flex:1,backgroundColor:INDIGO,padding:18,gap:17},storyComposerHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},storyComposerTitle:{color:WHITE,fontSize:22,fontWeight:'900'},mediaPicker:{minHeight:115,borderRadius:15,borderWidth:1,borderColor:TEAL,backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:9,padding:12},storyPreview:{width:'100%',height:205},storyCaptionInput:{backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,color:WHITE,padding:13,borderRadius:12,minHeight:50}
 });
