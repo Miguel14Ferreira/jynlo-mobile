@@ -8,7 +8,7 @@ import {useAuth} from '../../src/lib/auth';
 import {communityInbox,directInbox} from '../../src/lib/chat-api';
 import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
-import {C} from '../../src/lib/theme';
+import {C,MobileTheme} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
 import {filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge} from '../../src/lib/inbox-filter.cjs';
 export default function MessagesScreen(){
@@ -102,18 +102,27 @@ export default function MessagesScreen(){
   };
  },[load,auth.username,auth.token]));
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
-  <Eyebrow>COMUNIDADE É CONVERSA</Eyebrow>
-  <Button secondary title="🔔 Notificações" onPress={()=>router.push("/notifications")}/>
-  <Text style={styles.title}>As tuas conversas</Text>
-  <Text style={styles.sub}>Fala com quem joga contigo, antes e depois das sessões.</Text>
+  <View style={styles.headerRow}>
+   <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
+    <Text style={styles.sub}>As tuas conversas e comunidades, num só lugar.</Text>
+   </View>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><Text style={styles.notificationIcon}>♢</Text><Text style={styles.notificationLabel}>Alertas</Text></Pressable>
+  </View>
   {auth.token?<View style={styles.searchBox}>
    <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar conversas…"
     placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
     accessibilityLabel="Pesquisar conversas pelo contacto ou mensagem"/>
-   <Pressable accessibilityRole="button" accessibilityState={{selected:unreadOnly}}
-    onPress={()=>setUnreadOnly(current=>!current)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
-    <Text style={styles.filterText}>{unreadOnly?'✓ Não lidas':'Não lidas'} · {unreadTotal}</Text>
-   </Pressable>
+   <View style={styles.filterRow}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar todas as conversas" accessibilityState={{selected:!unreadOnly}}
+      onPress={()=>setUnreadOnly(false)} style={[styles.filterChip,!unreadOnly&&styles.filterActive]}>
+      <Text style={[styles.filterText,!unreadOnly&&styles.filterTextActive]}>Todas</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar apenas conversas não lidas" accessibilityState={{selected:unreadOnly}}
+      onPress={()=>setUnreadOnly(true)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
+      <Text style={[styles.filterText,unreadOnly&&styles.filterTextActive]}>Não lidas · {unreadTotal}</Text>
+    </Pressable>
+    {!!search?<Pressable accessibilityRole="button" accessibilityLabel="Limpar pesquisa de conversas" onPress={()=>setSearch('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>Limpar ×</Text></Pressable>:null}
+   </View>
    <Text style={styles.tiny}>{displayed.length} de {sameIdentity?items.length:0} conversas</Text>
   </View>:null}
   {!auth.token?<Button title="Entrar para ver mensagens" onPress={()=>router.push('/login')}/>:null}
@@ -136,33 +145,58 @@ export default function MessagesScreen(){
   {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
   {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
+  {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>Conversas recentes</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
   {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
     accessibilityRole="button"
     accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
-    style={({pressed})=>[styles.tile,pressed&&{opacity:.7}]}>
-    <View style={styles.avatar}><Text style={{fontSize:23}}>{item.kind==='direct'?'👤':item.kind==='community'?'💬':'🏟️'}</Text></View>
-    <View style={{flex:1,gap:5}}><View style={styles.conversationTop}>
-       <Text style={styles.item} numberOfLines={1}>{item.kind==='direct'?item.id:item.kind==='community'?'Comunidade #'+item.id:'Sessão #'+item.id}</Text>
-       {!!item.latestAt&&<Text style={styles.tiny}>{formatInboxTime(item.latestAt)}</Text>}
+    style={({pressed})=>[styles.tile,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
+    <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
+      <Text style={styles.avatarSymbol}>{item.kind==='direct'?'◉':item.kind==='community'?'◎':'▣'}</Text>
+    </View>
+    <View style={styles.conversationBody}>
+      <View style={styles.conversationTop}>
+       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.kind==='community'?'Comunidade #'+item.id:'Sessão #'+item.id}</Text>
+       {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
-      <Text numberOfLines={2} style={styles.sub}>{item.latestText||'Abre para começar a conversa'}</Text>
-      {!!item.latestSender&&<Text style={styles.tiny}>Última mensagem: {item.latestSender}</Text>}
+      <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||'Abre para começar a conversa'}</Text>
+      {!!item.latestSender&&<Text numberOfLines={1} style={styles.tiny}>{item.latestSender}</Text>}
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
   <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real; as conversas privadas usam atualização periódica. Push com a app fechada ainda não está implementado.</Message>
  </Page>;
 }
+const T=MobileTheme.colors;
 const styles=StyleSheet.create({
- searchBox:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface},
- searchInput:{color:C.white,borderColor:C.border,borderWidth:1,borderRadius:10,paddingHorizontal:13,minHeight:46},
- filterChip:{alignSelf:'flex-start',paddingHorizontal:13,paddingVertical:9,borderRadius:99,borderColor:C.border,borderWidth:1},
- filterActive:{backgroundColor:C.surface2,borderColor:C.mint},filterText:{color:C.mint,fontWeight:'800'},title:{fontSize:31,fontWeight:'900',color:C.white},sub:{color:C.muted,fontSize:13,lineHeight:19},
+ headerRow:{flexDirection:'row',alignItems:'flex-start',gap:12},
+ headerCopy:{flex:1,gap:8},
+ notificationAction:{minWidth:MobileTheme.touchTarget,minHeight:MobileTheme.touchTarget,paddingHorizontal:9,paddingVertical:8,borderRadius:MobileTheme.radius.md,alignItems:'center',justifyContent:'center',backgroundColor:T.surface,borderWidth:1,borderColor:T.border,gap:3},
+ notificationIcon:{fontSize:21,color:T.accent},notificationLabel:{fontSize:10,fontWeight:'800',color:T.muted},
+ searchBox:{gap:11,padding:14,borderRadius:MobileTheme.radius.lg,backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
+ searchInput:{color:T.text,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.md,paddingHorizontal:13,minHeight:MobileTheme.touchTarget,backgroundColor:T.background},
+ filterRow:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},
+ filterChip:{minHeight:MobileTheme.touchTarget,justifyContent:'center',paddingHorizontal:15,paddingVertical:9,borderRadius:MobileTheme.radius.pill,borderColor:T.border,borderWidth:1},
+ filterActive:{backgroundColor:T.accent,borderColor:T.accent},
+ filterText:{color:T.muted,fontWeight:'800',fontSize:12},filterTextActive:{color:T.background},
+ clearSearch:{minHeight:MobileTheme.touchTarget,justifyContent:'center',paddingHorizontal:9},clearSearchText:{color:T.accent,fontWeight:'800',fontSize:12},
+ title:{fontSize:28,fontWeight:'900',color:T.text},sub:{color:T.muted,fontSize:13,lineHeight:19},
+ listHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+ listTitle:{fontSize:17,fontWeight:'900',color:T.text},listCount:{color:T.muted,fontSize:12},
  conversationTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- tile:{borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,padding:15,flexDirection:'row',alignItems:'center',gap:13},
- avatar:{width:52,height:52,borderRadius:15,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
- item:{flexShrink:1,fontWeight:'900',fontSize:16,color:C.white},tiny:{fontSize:11,color:C.muted},alert:{backgroundColor:'#27463D',borderColor:'#417060',borderWidth:1,borderRadius:14,padding:13,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
- alertText:{color:C.mint,fontWeight:'800',fontSize:13},unread:{fontWeight:'900',color:C.background,backgroundColor:C.mint,paddingHorizontal:9,paddingVertical:5,borderRadius:15},arrow:{color:C.mint,fontSize:25}});
+ tile:{borderRadius:MobileTheme.radius.lg,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,padding:13,flexDirection:'row',alignItems:'center',gap:12,minHeight:82},
+ unreadTile:{borderColor:T.accent,backgroundColor:T.raised},pressedTile:{opacity:.78},
+ avatar:{width:52,height:52,borderRadius:17,backgroundColor:T.raised,alignItems:'center',justifyContent:'center'},
+ communityAvatar:{backgroundColor:'#0C4650'},sessionAvatar:{backgroundColor:'#15453F'},
+ avatarSymbol:{fontSize:25,fontWeight:'800',color:T.accent},
+ conversationBody:{flex:1,gap:5},
+ item:{flexShrink:1,fontWeight:'800',fontSize:15,color:T.text},itemUnread:{fontWeight:'900'},
+ preview:{color:T.muted,fontSize:12,lineHeight:17},previewUnread:{color:T.text,fontWeight:'700'},
+ tiny:{fontSize:11,color:T.muted},unreadTime:{color:T.accent,fontWeight:'800'},
+ alert:{backgroundColor:'#27463D',borderColor:'#417060',borderWidth:1,borderRadius:MobileTheme.radius.md,padding:13,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ alertText:{color:T.accent,fontWeight:'800',fontSize:13},
+ unread:{fontWeight:'900',color:T.background,backgroundColor:T.accent,paddingHorizontal:9,paddingVertical:5,borderRadius:MobileTheme.radius.pill,overflow:'hidden'},
+ arrow:{color:T.accent,fontSize:25}
+});
