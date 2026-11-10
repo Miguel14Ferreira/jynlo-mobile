@@ -1,7 +1,6 @@
-import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Linking,Platform,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import Constants from 'expo-constants';
-import MapView,{Marker,UrlTile,PROVIDER_GOOGLE} from 'react-native-maps';
 import type {Region} from 'react-native-maps';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -12,6 +11,8 @@ import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 
+// Keep the native map module out of startup; load it only when the map view is opened.
+const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
 const PORTUGAL:Region={latitude:39.65,longitude:-8.0,latitudeDelta:6.0,longitudeDelta:4.5};
 // Never instantiate the Android native map without a Google Maps SDK key.
 const NATIVE_MAP_READY=Platform.OS!=='android'||Constants.expoConfig?.extra?.nativeGoogleMapsConfigured===true;
@@ -126,14 +127,11 @@ export default function DiscoverScreen(){
    {error?<Message tone="error">{error}</Message>:null}
    {!loading&&!error&&sessions.length===0?<Message>Não encontrámos sessões para estes filtros. Experimenta outra cidade ou modalidade.</Message>:null}
    {display==='map'?<View style={styles.mapPanel}>
-     {NATIVE_MAP_READY?<MapView style={styles.map} initialRegion={PORTUGAL}
-       provider={Platform.OS==='android'?PROVIDER_GOOGLE:undefined}
-       mapType="none" loadingEnabled accessibilityLabel="Mapa de sessões"
-       onRegionChangeComplete={region=>{viewport.current=region;}}>
-       <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false}/>
-       {mappedSessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
-         title={s.sport} description={s.city} onPress={()=>setSelectedPin(s.id)}/>)}
-     </MapView>:<Message>O mapa integrado requer configuração da Google Maps SDK nesta versão da aplicação. Para evitar encerramentos inesperados, podes abrir o mapa no navegador.</Message>}
+     {NATIVE_MAP_READY?<Suspense fallback={<Loader/>}>
+       <SessionNativeMap initialRegion={PORTUGAL} sessions={mappedSessions}
+         onRegionChange={region=>{viewport.current=region;}}
+         onSelectSession={setSelectedPin}/>
+     </Suspense>:<Message>O mapa integrado requer configuração da Google Maps SDK nesta versão da aplicação. Para evitar encerramentos inesperados, podes abrir o mapa no navegador.</Message>}
      {NATIVE_MAP_READY?<View style={styles.mapActions}>
        <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar sessões nesta área do mapa"
          style={styles.areaSearch} onPress={()=>{
