@@ -13,6 +13,8 @@ on:
       - 'app.config.js'
       - 'eas.json'
       - '.github/workflows/mobile-code-checks.yml'
+      - '.github/workflows/build-android-signed-apk.yml'
+      - '.github/workflows/android-launch-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
