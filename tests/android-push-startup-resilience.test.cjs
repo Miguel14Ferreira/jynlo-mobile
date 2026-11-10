@@ -10,7 +10,7 @@ test('Android native notification listener errors cannot interrupt root navigati
  assert.match(layout,/try\{\s*listener=Notifications\.addNotificationResponseReceivedListener\(open\)/);
  assert.match(layout,/open\(Notifications\.getLastNotificationResponse\(\)\)/);
  assert.match(layout,/\}catch\{[\s\S]*?notification module error/);
- assert.match(layout,/return \(\)=>\{active=false;listener\?\.remove\(\);\}/);
+ assert.match(layout,/return \(\)=>\{\s*active=false;\s*try\{listener\?\.remove\(\);\}catch\{/);
 });
 
 test('native notification cleanup failing cannot stop opening authenticated inbox',()=>{
@@ -33,4 +33,9 @@ test('malformed native push responses cannot dereference missing notification da
  assert.match(callback,/response\.notification\?\.request\?\.identifier/);
  assert.match(callback,/typeof identifier!=='string'\|\|!identifier/);
  assert.match(callback,/data\?\.kind!=='notification'/);
+});
+
+test('unavailable native listener removal cannot interrupt navigator teardown',()=>{
+ assert.match(layout,/try\{listener\?\.remove\(\);\}catch\{/);
+ assert.match(layout,/native module must never break navigator cleanup/);
 });
