@@ -210,14 +210,17 @@ test('signed APK bundle check consumes unzip output under pipefail',()=>{
  assert.ok(workflow.includes('apksigner'));
 });
 
-test('signed internal APK uses a narrowly scoped LiveKit R8 JNI workaround',()=>{
+test('signed internal diagnostic APK disables R8 instead of concealing missing LiveKit JNI classes',()=>{
  const workflow=read('.github/workflows/build-android-signed-apk.yml');
- assert.ok(workflow.includes('Aplicar regras R8 específicas do JNI LiveKit para a APK interna'));
- assert.ok(workflow.includes('-keep class livekit.org.jni_zero.JniInit { *; }'));
- assert.ok(workflow.includes('-keep class livekit.org.jni_zero.JniZero { *; }'));
- assert.ok(workflow.includes('-dontwarn livekit.org.jni_zero.JniZeroJni'));
- assert.ok(workflow.indexOf('npx expo prebuild --platform android --no-install --clean')<workflow.indexOf('-dontwarn livekit.org.jni_zero.JniZeroJni'));
- assert.ok(workflow.indexOf('-dontwarn livekit.org.jni_zero.JniZeroJni')<workflow.indexOf('./gradlew :app:assembleRelease'));
+ const prebuild='npx expo prebuild --platform android --no-install --clean';
+ const diagnostic='Desativar minificação R8 apenas para APK interna de diagnóstico';
+ const build='./gradlew :app:assembleRelease';
+ assert.ok(workflow.includes(diagnostic));
+ assert.ok(workflow.includes('minifyEnabled false'));
+ assert.ok(workflow.includes('shrinkResources false'));
+ assert.ok(workflow.includes("grep -qF -- '-dontwarn livekit.org.jni_zero.JniZeroJni'"));
+ assert.ok(workflow.indexOf(prebuild)<workflow.indexOf(diagnostic));
+ assert.ok(workflow.indexOf(diagnostic)<workflow.indexOf(build));
+ assert.ok(!workflow.includes('Aplicar regras R8 específicas do JNI LiveKit para a APK interna'));
  assert.ok(!workflow.includes('-dontwarn livekit.**'));
- assert.ok(!workflow.includes('minifyEnabled false'));
 });
