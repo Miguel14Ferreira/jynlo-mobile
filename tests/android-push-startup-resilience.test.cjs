@@ -15,7 +15,7 @@ test('Android native notification listener errors cannot interrupt root navigati
 
 test('native notification cleanup failing cannot stop opening authenticated inbox',()=>{
  const callback=layout.slice(layout.indexOf('function open(response:'),layout.indexOf('let listener:ReturnType'));
- assert.match(callback,/try\{Notifications\.clearLastNotificationResponse\(\);\}catch\{/);
+ assert.match(callback,/try\{nativeNotifications\.clearLastNotificationResponse\(\);\}catch\{/);
  assert.match(callback,/router\.push\(\{pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}\}\)/);
  assert.ok(callback.indexOf('clearLastNotificationResponse()')<callback.indexOf("router.push({pathname:'/notifications'"));
 });
