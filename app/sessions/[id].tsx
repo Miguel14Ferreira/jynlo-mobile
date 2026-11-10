@@ -200,14 +200,30 @@ export default function SessionScreen(){
     // Preserve the actual server outcome rather than assuming every join is confirmed.
     return result;
   },(result)=>{const state=(result as {state?:string})?.state;return state==='WAITLISTED'?'Entraste na lista de espera.':'Presença confirmada pelo servidor.';});};
-  const leave=()=>Alert.alert('Cancelar presença','Queres mesmo deixar esta sessão ou a lista de espera?',[
-    {text:'Voltar',style:'cancel'},
-    {text:'Confirmar',style:'destructive',onPress:()=>{if(auth.token)void perform(()=>leaveSession(id,auth.token!,auth.username||undefined),'A tua presença foi cancelada.');}}
-  ]);
-  const cancel=()=>Alert.alert('Cancelar sessão','Esta ação cancela a sessão para todos os jogadores. Confirmas?',[
-    {text:'Manter sessão',style:'cancel'},
-    {text:'Cancelar sessão',style:'destructive',onPress:()=>{if(auth.token)void perform(()=>cancelSession(id,auth.token!,auth.username||undefined),'Sessão cancelada.');}}
-  ]);
+  const leave=()=>{
+    if(!auth.token||!detail||!canLeave(detail))return;
+    const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
+    const actorToken=auth.token,actorUsername=auth.username;
+    Alert.alert('Cancelar presença','Queres mesmo deixar esta sessão ou a lista de espera?',[
+      {text:'Voltar',style:'cancel'},
+      {text:'Confirmar',style:'destructive',onPress:()=>{
+        if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
+        void perform(()=>leaveSession(id,actorToken,actorUsername||undefined),'A tua presença foi cancelada.');
+      }}
+    ]);
+  };
+  const cancel=()=>{
+    if(!auth.token||!detail||!owner)return;
+    const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
+    const actorToken=auth.token,actorUsername=auth.username;
+    Alert.alert('Cancelar sessão','Esta ação cancela a sessão para todos os jogadores. Confirmas?',[
+      {text:'Manter sessão',style:'cancel'},
+      {text:'Cancelar sessão',style:'destructive',onPress:()=>{
+        if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
+        void perform(()=>cancelSession(id,actorToken,actorUsername||undefined),'Sessão cancelada.');
+      }}
+    ]);
+  };
   function confirmRemoveParticipant(participant:SessionParticipant){
     if(!auth.token||DEMO_MODE||!owner||!detail||loading||busy||removalInFlight.current||
        attendanceInFlight.current||operationInFlight.current||teamsInFlight.current)return;
