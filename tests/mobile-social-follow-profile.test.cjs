@@ -36,3 +36,10 @@ test('users can open public profiles from social lists and feed',()=>{
  assert.match(screen,/kind:'followers'/);
  assert.match(screen,/kind:'following'/);
 });
+
+test('stale follow writes cannot release the lock for a different profile or login',()=>{
+ assert.match(screen,/finally\{if\(request===version\.current\)\{inFlight\.current=false;setBusy\(false\);\}\}/);
+ assert.doesNotMatch(screen,/finally\{inFlight\.current=false;if\(request===version\.current\)setBusy\(false\);\}/);
+ assert.match(screen,/const request=\+\+version\.current;/);
+ assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);\}/);
+});
