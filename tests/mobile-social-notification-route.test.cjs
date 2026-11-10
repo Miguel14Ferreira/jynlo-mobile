@@ -64,7 +64,7 @@ test('older post write cannot clear the in-flight lock of a newly opened account
  const release='finally{if(version===generation.current){writing.current=false;setBusy(false);}}';
  assert.equal(post.split(release).length-1,2,'likes and comments must guard current screen generation');
  const privacy=post.slice(post.indexOf('async function toggleLikerPrivacy()'),post.indexOf('async function comment()'));
- assert.match(privacy,/finally\\{\\s*if\\(version===generation\\.current\\)\\{writing\\.current=false;setBusy\\(false\\);\\}\\s*\\}/);
+ assert.ok(privacy.includes('finally{\\n   if(version===generation.current){writing.current=false;setBusy(false);}\\n  }'));
  assert.ok(!post.includes('finally{writing.current=false;if(version===generation.current)setBusy(false);}'));
  assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);\}/);
 });
