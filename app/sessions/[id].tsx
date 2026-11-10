@@ -49,12 +49,12 @@ export default function SessionScreen(){
   const [teamsMessage,setTeamsMessage]=useState('');
   const owner=isOrganizer(detail,auth.username);
 
-  const load=useCallback(async()=>{
+  const load=useCallback(async():Promise<SessionDetail|null>=>{
     const version=++detailRequestGeneration.current;
     foregroundLoadVersion.current=version;
     if(!Number.isSafeInteger(id)||id<=0){
       foregroundLoadVersion.current=null;
-      setError('Identificador de sessão inválido.');setLoading(false);return;
+      setError('Identificador de sessão inválido.');setLoading(false);return null;
     }
     setError('');setRosterError('');setLoading(true);setDetail(null);setPreview(null);setParticipants([]);
     setTeamPreview(null);
@@ -62,37 +62,41 @@ export default function SessionScreen(){
       if(auth.token){
         // Private and community sessions may not have an anonymous preview.
         const full=await sessionDetail(id,auth.token,auth.username||undefined);
-        if(version!==detailRequestGeneration.current)return;
+        if(version!==detailRequestGeneration.current)return null;
         setDetail(full);
         setMeetingDraft(full.meetingPointInstructions||'');
         setExternalDraft(String(full.externalConfirmedParticipants??0));
         try {
           const publicPreview=await sessionPreview(id);
-          if(version!==detailRequestGeneration.current)return;
+          if(version!==detailRequestGeneration.current)return null;
           setPreview(publicPreview);
         }catch{
-          if(version!==detailRequestGeneration.current)return;
+          if(version!==detailRequestGeneration.current)return null;
           setPreview(null);
         }
         if(canViewRoster(full,auth.username)){
           try {
             const roster=await sessionParticipants(id,auth.token);
-            if(version!==detailRequestGeneration.current)return;
+            if(version!==detailRequestGeneration.current)return null;
             setParticipants(roster);
           }catch{
-            if(version!==detailRequestGeneration.current)return;
+            if(version!==detailRequestGeneration.current)return null;
             setParticipants([]);
             setRosterError('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.');
           }
         }
+        // The caller may display sensitive confirmed assignments only after
+        // this authenticated refresh has verified organizer access.
+        return version===detailRequestGeneration.current&&isOrganizer(full,auth.username)?full:null;
       }else{
         const publicPreview=await sessionPreview(id);
-        if(version!==detailRequestGeneration.current)return;
+        if(version!==detailRequestGeneration.current)return null;
         setPreview(publicPreview);
       }
     }catch(e){
       if(version===detailRequestGeneration.current)
         setError(e instanceof Error?e.message:'Não foi possível carregar a sessão.');
+      return null;
     }finally{
       if(foregroundLoadVersion.current===version)foregroundLoadVersion.current=null;
       if(version===detailRequestGeneration.current)setLoading(false);
@@ -314,12 +318,15 @@ export default function SessionScreen(){
         const request=++teamsOperation.current;
         setTeamsBusy(true);setTeamsError('');setTeamsMessage('');
         void confirmSessionTeams(id,actorToken,mode,selectedPreview)
-          .then(async()=>{
+          .then(async result=>{
             if(request!==teamsOperation.current||epoch!==actionEpoch.current||
                version!==detailRequestGeneration.current)return;
-            await load();
-            if(request===teamsOperation.current&&epoch===actionEpoch.current)
+            const refreshed=await load();
+            if(request===teamsOperation.current&&epoch===actionEpoch.current&&
+               refreshed&&isOrganizer(refreshed,auth.username)){
+              setTeamPreview(result);
               setTeamsMessage('Equipas confirmadas pelo servidor.');
+            }
           })
           .catch(()=>{
             if(request!==teamsOperation.current||epoch!==actionEpoch.current||
