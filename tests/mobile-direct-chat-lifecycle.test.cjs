@@ -22,7 +22,7 @@ test('old direct-message send cannot erase draft or errors in the next conversat
  assert.match(screen,/await refresh\(false,version\)/);
  assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)/);
  assert.match(screen,/setSending\(false\);setPhotoBusy\(false\);sendingNow\.current=false/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
+ assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
 });
 
 test('old photo upload cannot clear another conversation attachment or status',()=>{
@@ -39,7 +39,7 @@ test('sending while a history poll is in flight queues a new refresh',()=>{
  assert.match(screen,/pendingRefresh\.current=true/);
  assert.match(screen,/if\(pendingRefresh\.current\)\{/);
  assert.match(screen,/pendingRefresh\.current=false;\s*void refresh\(true,version\)/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
+ assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
 });
 
 test('late gallery result cannot replace selected photo in another conversation',()=>{
@@ -50,8 +50,8 @@ test('late gallery result cannot replace selected photo in another conversation'
 });
 
 test('parallel send actions cannot race and new text is preserved',()=>{
- assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!auth\.token/);
- assert.match(screen,/if\(!auth\.token\|\|blocked\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
+ assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
+ assert.match(screen,/if\(!auth\.token\|\|blocked\|\|!blockStatusKnown\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
  assert.match(screen,/const submittedText=originalDraft\.trim\(\)/);
  assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
 });
@@ -63,7 +63,7 @@ test('open direct conversation reloads on foreground push and app resume',()=>{
  assert.match(screen,/state==='active'&&generation\.current===version/);
  assert.match(screen,/AppState\.currentState==='active'&&!sendingNow\.current/);
  assert.match(screen,/resume\.remove\(\);received\.remove\(\)/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+/);
+ assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
 });
 
 test('late PDF attachment completion cannot refresh a different direct chat',()=>{
