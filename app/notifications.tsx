@@ -165,6 +165,7 @@ export default function NotificationsScreen(){
    case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
    case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
    case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
+   case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
   }
  }
  useEffect(()=>{
@@ -187,7 +188,7 @@ export default function NotificationsScreen(){
  },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
-  <Text style={styles.note}>Convites e novidades das comunidades e sessões. A decisão é sempre confirmada pela API.</Text>
+  <Text style={styles.note}>Convites, novidades desportivas e atividade social. Os destinos são confirmados a partir da tua lista de notificações na API.</Text>
   {sameAccount?<View style={styles.pushPanel}>
    <Text style={styles.heading}>Notificações no telemóvel</Text>
    <Text style={styles.note}>Ativação opcional. Pedimos permissão apenas quando escolheres ativar; o envio de notificações ainda depende da configuração do servidor e das credenciais Android.</Text>
