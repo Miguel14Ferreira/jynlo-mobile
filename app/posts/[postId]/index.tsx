@@ -46,7 +46,7 @@ export default function NotificationPost(){
   const version=generation.current;
   try{await likePost(id,post.likedByMe,auth.token,auth.username);await refresh(version);}
   catch{if(version===generation.current)setError('Não foi possível confirmar o gosto. Atualiza antes de repetir.');}
-  finally{writing.current=false;if(version===generation.current)setBusy(false);}
+  finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  async function comment(){
   if(!post||!auth.token||!auth.username||!draft.trim()||writing.current||!valid)return;
@@ -56,7 +56,7 @@ export default function NotificationPost(){
    await addPostComment(id,original,auth.token,auth.username);
    if(version===generation.current){setDraft(current=>current===original?'':current);await refresh(version);}
   }catch{if(version===generation.current)setError('Envio não confirmado. Consulta os comentários antes de repetir.');}
-  finally{writing.current=false;if(version===generation.current)setBusy(false);}
+  finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  if(!valid)return <SafeAreaView style={styles.screen}><Text style={styles.error}>Publicação inválida.</Text></SafeAreaView>;
  const image=post?resolveJynloMedia(post.imageUrl):null;
