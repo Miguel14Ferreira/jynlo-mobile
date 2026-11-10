@@ -42,3 +42,7 @@ jobs:
         run: npm run typecheck
       - name: Check syntax and regression contracts
         run: npm run test:all
+      - name: Bundle Android JavaScript without native build
+        env:
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+        run: npx expo export --platform android --output-dir /tmp/jynlo-ci-android-bundle
