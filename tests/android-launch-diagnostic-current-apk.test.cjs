@@ -42,3 +42,13 @@ test('a successful signed APK build on develop automatically triggers its own la
  assert.match(workflow,/github\.event\.workflow_run\.id \|\| inputs\.apk_run_id/);
  assert.match(workflow,/Source run: https:\/\/github\.com\/\$GITHUB_REPOSITORY\/actions\/runs\/\$run_id/);
 });
+
+test('startup cannot succeed from a stale activity-history entry or an exited process',()=>{
+ assert.match(workflow,/adb shell pidof com\.jynlo\.app > launch-diagnostics\/pid\.txt \|\| true/);
+ assert.match(workflow,/if not pid or not all\(part\.isdigit\(\) for part in pid\.split\(\)\):/);
+ assert.match(workflow,/topResumedActivity=/);
+ assert.match(workflow,/mResumedActivity:/);
+ assert.match(workflow,/if not any\('com\.jynlo\.app\/' in line for line in resumed\):/);
+ assert.match(workflow,/resumed-activity\.txt/);
+ assert.doesNotMatch(workflow,/if 'com\.jynlo\.app' not in activity:/);
+});
