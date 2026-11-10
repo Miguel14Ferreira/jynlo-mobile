@@ -28,7 +28,7 @@ test('launch diagnosis keeps its provenance and fatal Android failure artifacts'
 
 
 test('launch diagnostic does not count normal process mentions as fatal, and captures Activity Manager launch failures',()=>{
- assert.match(workflow,/adb shell am start -W -a android\.intent\.action\.MAIN -c android\.intent\.category\.LAUNCHER -p com\.jynlo\.app > launch-diagnostics\/launch\.txt 2>&1 \|\| true/);
+ assert.match(workflow,/if adb shell am start -W -a android\.intent\.action\.MAIN -c android\.intent\.category\.LAUNCHER -p com\.jynlo\.app > launch-diagnostics\/launch\.txt 2>&1; then/);
  assert.doesNotMatch(workflow,/adb shell monkey -p com\.jynlo\.app/);
  assert.match(workflow,/fatal_indices = \[i for i, line in enumerate\(lines\)/);
  assert.match(workflow,/if 'FATAL EXCEPTION' in line or 'Fatal signal' in line/);
@@ -166,4 +166,18 @@ test('failed Android or JS launch still saves resumed Activity evidence',()=>{
  assert.ok(nativeFail>resumed&&jsFail>resumed&&processFail>resumed,
    'resumed Activity evidence must survive every launch failure');
  assert.match(workflow,/if not any\('com\.jynlo\.app\/' in line for line in resumed\):/);
+});
+
+test('emulator records launcher failures but still collects Android and React Native evidence',()=>{
+ const statusWrite=workflow.indexOf('echo "$?" > launch-diagnostics/launch-exit-code.txt');
+ const logcat=workflow.indexOf('adb logcat -d -v threadtime');
+ const native=workflow.indexOf("Path('launch-diagnostics/crash-summary.txt').write_text(");
+ const js=workflow.indexOf("Path('launch-diagnostics/js-errors.txt').write_text(");
+ const activity=workflow.indexOf("Path('launch-diagnostics/resumed-activity.txt').write_text(");
+ const failure=workflow.indexOf("if launch_status != '0':");
+ assert.ok(statusWrite>=0&&logcat>statusWrite&&native>logcat&&js>native&&activity>js&&failure>activity);
+ assert.match(workflow,/echo 0 > launch-diagnostics\/launch-exit-code\.txt/);
+ assert.match(workflow,/launch_status = Path\('launch-diagnostics\/launch-exit-code\.txt'\)\.read_text\(\)\.strip\(\)/);
+ assert.match(workflow,/raise SystemExit\('Android Activity Manager failed to start Jynlo/);
+ assert.doesNotMatch(workflow,/adb shell am start[^\n]*\|\| true/);
 });
