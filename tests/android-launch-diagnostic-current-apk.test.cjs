@@ -29,7 +29,11 @@ test('launch diagnosis keeps its provenance and fatal Android failure artifacts'
 
 test('launch diagnostic does not count normal process mentions as fatal, and captures monkey failures',()=>{
  assert.match(workflow,/adb shell monkey -p com\.jynlo\.app 1 > launch-diagnostics\/launch\.txt 2>&1 \|\| true/);
- assert.match(workflow,/crashes = \[l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l\]/);
+ assert.match(workflow,/fatal_indices = \[i for i, line in enumerate\(lines\)/);
+ assert.match(workflow,/if 'FATAL EXCEPTION' in line or 'Fatal signal' in line/);
+ assert.match(workflow,/Process: com\.jynlo\.app,/);
+ assert.match(workflow,/>>> com\.jynlo\.app <<</);
+ assert.match(workflow,/crashes\.append\(lines\[i\]\)/);
  assert.doesNotMatch(workflow,/or 'Process: com\.jynlo\.app'/);
 });
 
