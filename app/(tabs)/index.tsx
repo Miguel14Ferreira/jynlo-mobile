@@ -1,7 +1,7 @@
-import React,{Suspense,lazy,useCallback,useMemo,useRef,useState} from 'react';
+import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,Animated,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Redirect,useFocusEffect,useRouter} from 'expo-router';
+import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 // Load the native media picker only when the user explicitly opens the gallery.
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
@@ -109,6 +109,7 @@ function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;g
 }
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
+  const {compose}=useLocalSearchParams<{compose?:string}>();
   const [posts,setPosts]=useState<FeedItem[]>([]);
   const [stories,setStories]=useState<SocialStory[]>([]),[ownStories,setOwnStories]=useState<SocialStory[]>([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
@@ -122,6 +123,19 @@ export default function JynloFeedHome(){
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
+  // The central + action reuses the same authenticated composers as the Feed.
+  // Consume the route intent once to avoid reopening it after dismissal.
+  useEffect(()=>{
+    if(compose!=='post'&&compose!=='story')return;
+    if(!auth.ready)return;
+    router.setParams({compose:undefined});
+    if(!auth.token||!auth.username){
+      router.push({pathname:'/login',params:{redirect:'/'}});
+      return;
+    }
+    if(compose==='post')setComposerOpen(true);
+    else setStoryComposer(true);
+  },[compose,auth.ready,auth.token,auth.username,router]);
   const load=useCallback(async()=>{
     const id=++reloadNumber.current;
     const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
