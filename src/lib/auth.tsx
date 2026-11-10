@@ -59,10 +59,19 @@ export function AuthProvider({children}:{children:React.ReactNode}){
       void Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).catch(()=>{});
     };
     const expiresAt=accessTokenExpiresAt(token);
-    const delay=Math.max(0,Math.min(2147483647,(expiresAt??0)-Date.now()-15000));
-    const timer=setTimeout(expire,delay);
-    const sub=AppState.addEventListener('change',state=>{if(state==='active')expire();});
-    return()=>{clearTimeout(timer);sub.remove();};
+    // setTimeout cannot represent delays longer than ~24.8 days. Re-arm
+    // the timer until the JWT is actually near expiry.
+    let timer:ReturnType<typeof setTimeout>|null=null;
+    let active=true;
+    const schedule=()=>{
+      if(!active)return;
+      if(!isAccessTokenUsable(token)){expire();return;}
+      const remaining=(expiresAt??0)-Date.now()-15000;
+      timer=setTimeout(schedule,Math.max(1,Math.min(2147483647,remaining)));
+    };
+    schedule();
+    const sub=AppState.addEventListener('change',state=>{if(state==='active'){if(timer)clearTimeout(timer);schedule();}});
+    return()=>{active=false;if(timer)clearTimeout(timer);sub.remove();};
   },[token]);
   const save=useCallback(async(name:string,accessToken:string)=>{
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
