@@ -224,3 +224,17 @@ test('signed internal diagnostic APK disables R8 instead of concealing missing L
  assert.ok(!workflow.includes('Aplicar regras R8 específicas do JNI LiveKit para a APK interna'));
  assert.ok(!workflow.includes('-dontwarn livekit.**'));
 });
+
+test('LiveKit native globals are registered only when a call needs audio',()=>{
+ const screen=read('app/messages/call.tsx');
+ assert.doesNotMatch(screen,/^registerGlobals\(\);$/m);
+ assert.match(screen,/let liveKitGlobalsRegistered=false/);
+ const callAudio=screen.slice(screen.indexOf('const startAudio=async()=>'),screen.indexOf('void startAudio().then('));
+ assert.match(callAudio,/if\(!liveKitGlobalsRegistered\)/);
+ assert.match(callAudio,/registerGlobals\(\)/);
+ assert.match(callAudio,/liveKitGlobalsRegistered=true/);
+ assert.match(callAudio,/await AudioSession\.startAudioSession\(\)/);
+ assert.ok(callAudio.indexOf('registerGlobals()')<callAudio.indexOf('AudioSession.startAudioSession()'));
+ assert.match(screen,/void startAudio\(\)\.then\(\(\)=>\{/);
+ assert.match(screen,/\}\)\.catch\(e=>\{/);
+});
