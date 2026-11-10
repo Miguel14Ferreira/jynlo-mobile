@@ -34,9 +34,18 @@ export default function SessionChat(){
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
-   // A transient background refresh must not erase messages or disable composing.
-   if(version===generation.current&&(!silent||(e instanceof ApiError&&[401,403,404,409,410].includes(e.status)))){setClosed(true);setEntries([]);
-    setError(e instanceof Error?e.message:'Chat indisponível.');}
+   if(version!==generation.current)return;
+   const accessRevoked=e instanceof ApiError&&[401,403,404,409,410].includes(e.status);
+   if(accessRevoked){
+    // A confirmed permission change must immediately hide private messages.
+    setClosed(true);setEntries([]);setDraft('');setReply(null);
+    setPhoto(null);setPhotoReady(false);
+    setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
+   }else if(!silent){
+    // Network failures are not evidence of revoked access. Keep existing
+    // messages and composer so the player can retry after reconnecting.
+    setError(e instanceof Error?e.message:'Não foi possível atualizar o chat.');
+   }
   }finally{
    if(refreshing.current===version)refreshing.current=null;
    if(version===generation.current){
