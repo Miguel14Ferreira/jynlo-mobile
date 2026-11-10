@@ -32,17 +32,47 @@ jobs:
         with:
           node-version: '22'
       - name: Install dependencies without lifecycle scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
+        shell: bash
+        run: |
+          set -o pipefail
+          node --version
+          npm --version
+          npm install --ignore-scripts --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/jynlo-install.log"
       - name: Verify real API release configuration
         env:
           EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
           JYNLO_REQUIRE_REAL_API: '1'
-        run: npm run check:release
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check:release 2>&1 | tee "$RUNNER_TEMP/jynlo-release-check.log"
       - name: Check TypeScript
-        run: npm run typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee "$RUNNER_TEMP/jynlo-typescript.log"
       - name: Check syntax and regression contracts
-        run: npm run test:all
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:all 2>&1 | tee "$RUNNER_TEMP/jynlo-tests.log"
       - name: Bundle Android JavaScript without native build
         env:
           EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
-        run: npx expo export --platform android --output-dir /tmp/jynlo-ci-android-bundle
+        shell: bash
+        run: |
+          set -o pipefail
+          npx expo export --platform android --output-dir /tmp/jynlo-ci-android-bundle 2>&1 | tee "$RUNNER_TEMP/jynlo-android-bundle.log"
+      - name: Preserve failed check diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-code-checks-failure-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/jynlo-install.log
+            ${{ runner.temp }}/jynlo-release-check.log
+            ${{ runner.temp }}/jynlo-typescript.log
+            ${{ runner.temp }}/jynlo-tests.log
+            ${{ runner.temp }}/jynlo-android-bundle.log
+          if-no-files-found: warn
+          retention-days: 7
