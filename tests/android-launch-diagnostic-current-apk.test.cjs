@@ -9,7 +9,7 @@ test('Android launch diagnostic accepts a specific signed APK workflow run',()=>
  assert.match(workflow,/workflow_dispatch:\s*\n\s*inputs:/);
  assert.match(workflow,/apk_run_id:\s*\n\s*description:/);
  assert.match(workflow,/required: true/);
- assert.match(workflow,/run_id="\$\{\{ inputs\.apk_run_id \}\}"/);
+ assert.match(workflow,/run_id="\$\{\{ github\.event\.workflow_run\.id \|\| inputs\.apk_run_id \}\}"/);
  assert.match(workflow,/\[\[ ! "\$run_id" =~ \^\[1-9\]\[0-9\]\{0,17\}\$ \]\]/);
  assert.match(workflow,/gh run download "\$run_id" -R "\$GITHUB_REPOSITORY"/);
  assert.doesNotMatch(workflow,/gh run download [0-9]+ -R/);
@@ -31,4 +31,14 @@ test('launch diagnostic does not count normal process mentions as fatal, and cap
  assert.match(workflow,/adb shell monkey -p com\.jynlo\.app 1 > launch-diagnostics\/launch\.txt 2>&1 \|\| true/);
  assert.match(workflow,/crashes = \[l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l\]/);
  assert.doesNotMatch(workflow,/or 'Process: com\.jynlo\.app'/);
+});
+
+test('a successful signed APK build on develop automatically triggers its own launch check',()=>{
+ assert.match(workflow,/workflow_run:\s*\n\s*workflows: \['Jynlo Mobile - Android APK assinada \(testes internos\)'\]/);
+ assert.match(workflow,/types: \[completed\]/);
+ assert.match(workflow,/branches: \[develop\]/);
+ assert.match(workflow,/github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.match(workflow,/github\.event\.workflow_run\.head_repository\.full_name == github\.repository/);
+ assert.match(workflow,/github\.event\.workflow_run\.id \|\| inputs\.apk_run_id/);
+ assert.match(workflow,/Source run: https:\/\/github\.com\/\$GITHUB_REPOSITORY\/actions\/runs\/\$run_id/);
 });
