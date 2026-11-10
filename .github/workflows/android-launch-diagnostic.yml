@@ -79,7 +79,9 @@ jobs:
             adb install -r "$APK_PATH"
             adb logcat -c
             adb shell am force-stop com.jynlo.app || true
-            adb shell monkey -p com.jynlo.app 1 > launch-diagnostics/launch.txt 2>&1 || true
+            # Start the launcher Activity deterministically; monkey injects a
+            # pseudo-random event that can hide or alter the startup outcome.
+            adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p com.jynlo.app > launch-diagnostics/launch.txt 2>&1 || true
             cat launch-diagnostics/launch.txt
             # Preserve the launch PID even if React Native crashes shortly afterwards.
             adb shell pidof com.jynlo.app > launch-diagnostics/initial-pid.txt || true
