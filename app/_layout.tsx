@@ -26,12 +26,20 @@ function PushNavigation(){
       // Consume only a validated, newly handled notification. Otherwise, an
       // unrelated action or malformed payload could erase a legitimate tap.
       lastHandled.current=identifier;
-      Notifications.clearLastNotificationResponse();
+      try{Notifications.clearLastNotificationResponse();}catch{
+        // Native notification availability must not block opening the inbox.
+      }
       router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
     }
-    const listener=Notifications.addNotificationResponseReceivedListener(open);
-    open(Notifications.getLastNotificationResponse());
-    return ()=>{active=false;listener.remove();};
+    let listener:ReturnType<typeof Notifications.addNotificationResponseReceivedListener>|null=null;
+    try{
+      listener=Notifications.addNotificationResponseReceivedListener(open);
+      open(Notifications.getLastNotificationResponse());
+    }catch{
+      // A notification module error must not crash the app's root navigator.
+      // Notification taps are optional; the authenticated inbox remains reachable.
+    }
+    return ()=>{active=false;listener?.remove();};
   },[auth.ready,auth.token,auth.username,router]);
   return null;
 }
