@@ -66,3 +66,16 @@ test('story caption overlay is shown in preview and playback using the existing 
  assert.match(composer,/MediaVideo uri=\{storyMedia\.uri\} story paused/);
  assert.doesNotMatch(composer,/burn|flatten|renderToFile/);
 });
+
+test('post composer previews the selected photo or video and retains an explicit removal control',()=>{
+ const composer=feed.split('{auth.token?<View style={styles.composerCard}>')[1]?.split(':<View style={styles.visitorCard}>')[0];
+ assert.ok(composer,'authenticated post composer exists');
+ assert.match(composer,/composerMedia\.type==='image'/);
+ assert.match(composer,/Image source=\{\{uri:composerMedia\.uri\}\}/);
+ assert.match(composer,/MediaVideo key=\{composerMedia\.uri\} uri=\{composerMedia\.uri\}/);
+ assert.match(composer,/accessibilityLabel="Remover media da publicação"/);
+ assert.match(composer,/onPress=\{\(\)=>setComposerMedia\(null\)\}/);
+ assert.match(composer,/disabled=\{publishing\}/);
+ assert.match(composer,/accessibilityLabel=\{composerMedia\?'Trocar fotografia ou vídeo'/);
+ assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300\}/);
+});
