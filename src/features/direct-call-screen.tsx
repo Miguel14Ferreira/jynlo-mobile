@@ -84,11 +84,16 @@ export default function DirectCallScreen(){
  },[auth.token,peer]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
+  // A new screen generation must not inherit a pending action lock.
+  operation.current=false;setBusy(false);
   setLoading(true);setError('');setPending(null);setProviderStatus('');setAvailable(false);
   void refresh(version);
   const timer=setInterval(()=>{if(AppState.currentState==='active'&&!operation.current&&!sessionRef.current)void refresh(version);},10000);
   return()=>{
    clearInterval(timer);generation.current++;
+   // Discard any in-flight operation from this generation. Its later finally
+   // must not unlock actions started when the screen is reopened.
+   operation.current=false;
    const orphan=sessionRef.current;
    if(orphan){
     sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false);
@@ -158,7 +163,7 @@ export default function DirectCallScreen(){
    if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
    setPending(null);setConnectedToPeer(false);ending.current=false;sessionRef.current=result;setSession(result);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível iniciar a chamada.');}
-  finally{operation.current=false;if(version===generation.current)setBusy(false);}
+  finally{if(version===generation.current){operation.current=false;setBusy(false);}}
  }
  async function answer(accept:boolean){
   if(operation.current||!auth.token||!pending)return;
@@ -174,7 +179,7 @@ export default function DirectCallScreen(){
    }else await declineDirectCall(invitation.callId,auth.token);
    if(version===generation.current)setPending(null);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível responder à chamada.');}
-  finally{operation.current=false;if(version===generation.current)setBusy(false);}
+  finally{if(version===generation.current){operation.current=false;setBusy(false);}}
  }
  const hangup=useCallback(async()=>{
   if(ending.current||!sessionRef.current||!auth.token)return;
