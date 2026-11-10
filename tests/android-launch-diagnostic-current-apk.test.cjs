@@ -56,3 +56,14 @@ test('startup cannot succeed from a stale activity-history entry or an exited pr
  assert.match(workflow,/resumed-activity\.txt/);
  assert.doesNotMatch(workflow,/if 'com\.jynlo\.app' not in activity:/);
 });
+
+
+test('failed screenshot capture cannot hide crash logs and diagnostic summary',()=>{
+ const screenshot=workflow.indexOf('if ! adb exec-out screencap -p > launch-diagnostics/launch.png; then');
+ const analysis=workflow.indexOf("python3 - <<'PY'");
+ assert.ok(screenshot>=0 && analysis>screenshot);
+ assert.match(workflow,/screenshot-warning\.txt/);
+ assert.match(workflow,/if \[ ! -s launch-diagnostics\/launch\.png \]; then/);
+ assert.doesNotMatch(workflow,/test -s launch-diagnostics\/launch\.png/);
+ assert.match(workflow,/crash-summary\.txt/);
+});
