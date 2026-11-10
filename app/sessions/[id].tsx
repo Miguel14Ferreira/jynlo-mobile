@@ -170,7 +170,7 @@ export default function SessionScreen(){
   const perform=async(operation:()=>Promise<unknown>,success:string|((result:unknown)=>string))=>{
     // React state updates are asynchronous. A ref prevents two rapid taps
     // from issuing duplicate POST/PATCH requests before the button disables.
-    if(operationInFlight.current)return;
+    if(operationInFlight.current||removalInFlight.current||attendanceInFlight.current||teamsInFlight.current)return;
     operationInFlight.current=true;
     const version=detailRequestGeneration.current;
     const epoch=actionEpoch.current;
@@ -209,16 +209,20 @@ export default function SessionScreen(){
     {text:'Cancelar sessão',style:'destructive',onPress:()=>{if(auth.token)void perform(()=>cancelSession(id,auth.token!,auth.username||undefined),'Sessão cancelada.');}}
   ]);
   function confirmRemoveParticipant(participant:SessionParticipant){
-    if(!auth.token||DEMO_MODE||!owner||!detail||loading||busy||removalInFlight.current)return;
+    if(!auth.token||DEMO_MODE||!owner||!detail||loading||busy||removalInFlight.current||
+       attendanceInFlight.current||operationInFlight.current||teamsInFlight.current)return;
     if(!['OPEN','FULL'].includes(detail.status)||
        !Number.isSafeInteger(participant.id)||participant.id<=0||
        participant.username.toLowerCase()===auth.username?.toLowerCase()||
        participant.username.toLowerCase()===detail.creatorUsername?.toLowerCase())return;
+    const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     Alert.alert('Remover jogador da sessão?',
       'Remover '+participant.username+' desta sessão? A lista de espera pode ser atualizada e as equipas confirmadas podem ser anuladas.',
       [{text:'Manter jogador',style:'cancel'},
        {text:'Remover jogador',style:'destructive',onPress:()=>{
-        if(removalInFlight.current||!auth.token)return;
+        if(removalInFlight.current||attendanceInFlight.current||operationInFlight.current||
+           teamsInFlight.current||!auth.token||promptVersion!==detailRequestGeneration.current||
+           promptEpoch!==actionEpoch.current)return;
         removalInFlight.current=true;
         const actionVersion=detailRequestGeneration.current,actionContext=actionEpoch.current;
         const actorToken=auth.token;
@@ -244,17 +248,20 @@ export default function SessionScreen(){
   }
   function confirmAttendance(participant:SessionParticipant,status:'ATTENDED'|'NO_SHOW'){
     if(!auth.token||DEMO_MODE||!owner||!detail||busy||loading||
-       removalInFlight.current||attendanceInFlight.current)return;
+       removalInFlight.current||attendanceInFlight.current||operationInFlight.current||teamsInFlight.current)return;
     if(detail.status==='CANCELLED'||!detail.gameDate||
        !Number.isFinite(Date.parse(detail.gameDate))||Date.parse(detail.gameDate)>Date.now()||
        !Number.isSafeInteger(participant.id)||participant.id<=0)return;
     const present=status==='ATTENDED';
+    const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     Alert.alert(present?'Confirmar presença?':'Registar falta?',
       present?'Confirmas que '+participant.username+' compareceu à sessão?':
       'Confirmas que '+participant.username+' não compareceu? Esta marcação pode afetar o histórico de fiabilidade do jogador.',
       [{text:'Voltar',style:'cancel'},
        {text:present?'Confirmar presença':'Registar falta',style:present?'default':'destructive',onPress:()=>{
-        if(attendanceInFlight.current||!auth.token)return;
+        if(attendanceInFlight.current||removalInFlight.current||operationInFlight.current||
+           teamsInFlight.current||!auth.token||promptVersion!==detailRequestGeneration.current||
+           promptEpoch!==actionEpoch.current)return;
         attendanceInFlight.current=true;
         const actionVersion=detailRequestGeneration.current,actionContext=actionEpoch.current;
         const actorToken=auth.token;
@@ -283,7 +290,8 @@ export default function SessionScreen(){
     void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});
   };
   async function previewBalancedTeams(){
-    if(!auth.token||!owner||!detail||teamsInFlight.current)return;
+    if(!auth.token||!owner||!detail||teamsInFlight.current||operationInFlight.current||
+       removalInFlight.current||attendanceInFlight.current)return;
     teamsInFlight.current=true;
     const request=++teamsOperation.current,epoch=actionEpoch.current;
     const version=detailRequestGeneration.current,actorToken=auth.token;
@@ -305,7 +313,8 @@ export default function SessionScreen(){
     }
   }
   function persistBalancedTeams(){
-    if(!auth.token||!owner||!detail||!teamPreview||teamsInFlight.current)return;
+    if(!auth.token||!owner||!detail||!teamPreview||teamsInFlight.current||
+       operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
     const actorToken=auth.token,selectedPreview=teamPreview;
     const mode=!detail.teamBalanceSupported?'RANDOM':teamSource;
     const version=detailRequestGeneration.current,epoch=actionEpoch.current;
@@ -313,7 +322,8 @@ export default function SessionScreen(){
     Alert.alert('Confirmar equipas?',
       mode==='RANDOM'?'O servidor vai guardar exatamente as equipas sorteadas, se a lista de participantes não tiver mudado.':'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
       [{text:'Voltar',style:'cancel'},{text:'Confirmar equipas',onPress:()=>{
-        if(teamsInFlight.current||version!==detailRequestGeneration.current||
+        if(teamsInFlight.current||operationInFlight.current||removalInFlight.current||
+           attendanceInFlight.current||version!==detailRequestGeneration.current||
            epoch!==actionEpoch.current)return;
         teamsInFlight.current=true;
         const request=++teamsOperation.current;
