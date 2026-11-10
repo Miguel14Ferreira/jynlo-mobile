@@ -45,6 +45,13 @@ export async function likePost(postId:number,liked:boolean,token:string|null,use
   if(DEMO_MODE){const selected=demoLikes.get(postId)||new Set<string>();if(liked)selected.delete(username!);else selected.add(username!);demoLikes.set(postId,selected);return;}
   await request<unknown>(`/api/feed/posts/${postId}/likes`,{token,method:liked?'DELETE':'POST',...(!liked?{body:null}:{})});
 }
+export async function setPostLikerPrivacy(postId:number,hidden:boolean,token:string|null):Promise<boolean>{
+ if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
+ if(!token||DEMO_MODE)throw new Error('Inicia sessão para gerir a privacidade dos gostos.');
+ return request<boolean>(`/api/feed/posts/${postId}/likers/privacy`,{
+  token,method:'PUT',body:{hidden}
+ });
+}
 export async function postComments(postId:number,token:string|null):Promise<SocialComment[]>{
   if(DEMO_MODE)return [...(demoComments.get(postId)||[])];
   return request<SocialComment[]>(`/api/feed/posts/${postId}/comments`,{token});
