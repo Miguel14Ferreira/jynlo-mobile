@@ -38,6 +38,7 @@ export default function DirectConversation(){
  const [blocked,setBlocked]=useState(false);
  const [blockStatusKnown,setBlockStatusKnown]=useState(false);
  const [safetyBusy,setSafetyBusy]=useState(false);
+ const safetyInFlight=useRef(false);
  const [showReport,setShowReport]=useState(false);
  const [reportReason,setReportReason]=useState('');
  const refresh:(silent?:boolean,version?:number)=>Promise<void>=useCallback(async(silent=false,version=generation.current)=>{
@@ -85,6 +86,8 @@ export default function DirectConversation(){
    setSending(false);setPhotoBusy(false);sendingNow.current=false;
   }
   const version=++generation.current;
+  // A previous block/report POST may still be running after navigation.
+  setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
   setPhoto(null);setPhotoAvailable(false);
@@ -125,32 +128,45 @@ export default function DirectConversation(){
   };
  },[refresh,peer,auth.token]));
  async function updateBlock(){
-  if(!auth.token||safetyBusy||!peer)return;
-  const identity=peer+'|'+auth.token;
+  if(!auth.token||safetyInFlight.current||!peer||!blockStatusKnown)return;
+  safetyInFlight.current=true;
+  const identity=peer+'|'+auth.token,version=generation.current;
+  const actorToken=auth.token,wasBlocked=blocked;
   setSafetyBusy(true);setError('');
   try{
-   const value=blocked?await unblockUser(peer,auth.token):await blockUser(peer,auth.token);
-   if(conversation.current!==identity)return;
+   const value=wasBlocked?await unblockUser(peer,actorToken):await blockUser(peer,actorToken);
+   if(conversation.current!==identity||version!==generation.current)return;
    setBlocked(value);setBlockStatusKnown(true);
    Alert.alert(value?'Utilizador bloqueado':'Utilizador desbloqueado',
     value?'Deixaste de poder trocar mensagens com este utilizador.':'Podes voltar a comunicar com este utilizador.');
-   await refresh(true,generation.current);
+   await refresh(true,version);
   }catch(e){
-   if(conversation.current===identity)setError(e instanceof Error?e.message:'Não foi possível alterar o bloqueio. Confirma o estado antes de repetir.');
-  }finally{if(conversation.current===identity)setSafetyBusy(false);}
+   if(conversation.current===identity&&version===generation.current)
+    setError(e instanceof Error?e.message:'Não foi possível alterar o bloqueio. Confirma o estado antes de repetir.');
+  }finally{
+   safetyInFlight.current=false;
+   setSafetyBusy(false);
+  }
  }
  async function submitReport(){
-  if(!auth.token||safetyBusy||!reportReason.trim())return;
-  const identity=peer+'|'+auth.token;
+  if(!auth.token||safetyInFlight.current||!reportReason.trim())return;
+  safetyInFlight.current=true;
+  const identity=peer+'|'+auth.token,version=generation.current;
+  const actorToken=auth.token,submittedReason=reportReason.trim();
   setSafetyBusy(true);setError('');
   try{
-   await reportUser(peer,reportReason,auth.token);
-   if(conversation.current!==identity)return;
-   setShowReport(false);setReportReason('');
+   await reportUser(peer,submittedReason,actorToken);
+   if(conversation.current!==identity||version!==generation.current)return;
+   setShowReport(false);
+   setReportReason(current=>current===submittedReason?'':current);
    Alert.alert('Denúncia enviada','Obrigado. A equipa Jynlo poderá analisar a situação.');
   }catch(e){
-   if(conversation.current===identity)setError(e instanceof Error?e.message:'Não foi possível confirmar a denúncia. Verifica antes de repetires.');
-  }finally{if(conversation.current===identity)setSafetyBusy(false);}
+   if(conversation.current===identity&&version===generation.current)
+    setError(e instanceof Error?e.message:'Não foi possível confirmar a denúncia. Verifica antes de repetires.');
+  }finally{
+   safetyInFlight.current=false;
+   setSafetyBusy(false);
+  }
  }
  async function send(){
   if(sending||sendingNow.current||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
