@@ -75,7 +75,7 @@ export default function NotificationPost(){
     {post.videoUrl&&resolveJynloMedia(post.videoUrl)?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={resolveJynloMedia(post.videoUrl)!}/></Suspense>:null}
     <View style={styles.actions}>
      <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?'Retirar gosto':'Gostar'} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{post.likedByMe?'♥':'♡'} Gostar</Text></Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Ver quem gostou" onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.likeCount} gostos</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou"} disabled={Boolean(post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase())} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${post.likeCount} gostos`}</Text></Pressable>
      <Text style={styles.note}>{post.commentCount} comentários</Text>
     </View>
    </View>:null}
