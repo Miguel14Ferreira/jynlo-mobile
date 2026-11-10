@@ -96,10 +96,14 @@ jobs:
                     'Process: com.jynlo.app,' in line or
                     '>>> com.jynlo.app <<<' in line for line in context
                 ):
-                    crashes.append(lines[i])
-            Path('launch-diagnostics/crash-summary.txt').write_text('\n'.join(crashes) if crashes else 'No Android fatal exception signature detected in launch window.\n')
-            for line in crashes[:20]:
-                print(line[:250])
+                    # Retain the complete local crash context, not just the
+                    # fatal header; stack frames are essential to diagnose JNI.
+                    crashes.append('\n'.join(context))
+            Path('launch-diagnostics/crash-summary.txt').write_text(
+                '\n\n--- next fatal incident ---\n\n'.join(crashes) + '\n'
+                if crashes else 'No Android fatal exception signature detected in launch window.\n')
+            for incident in crashes[:5]:
+                print(incident[:2500])
             if crashes:
                 raise SystemExit('Android fatal error detected during launch')
             # A package mentioned in the activity history is NOT proof that
