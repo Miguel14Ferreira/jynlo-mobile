@@ -67,3 +67,15 @@ test('optional native CommonJS loader exposes a strict TypeScript declaration',(
   assert.match(source,/getNativeNotifications/);
  }
 });
+
+test('native crypto is loaded only when push opt-in needs a new installation ID',()=>{
+ const mobile=read('src/lib/mobile-push.ts');
+ assert.doesNotMatch(mobile,/^import \* as Crypto from 'expo-crypto'/m);
+ assert.match(mobile,/const Crypto=await import\('expo-crypto'\)/);
+ const installer=mobile.indexOf('async function installId()');
+ const saved=mobile.indexOf('if(saved)return saved;');
+ const load=mobile.indexOf("await import('expo-crypto')");
+ const create=mobile.indexOf('Crypto.randomUUID()');
+ assert.ok(installer>=0&&saved>installer&&load>saved&&create>load);
+ assert.match(mobile,/SecureStore\.setItemAsync\(INSTALL_ID_KEY,id\)/);
+});
