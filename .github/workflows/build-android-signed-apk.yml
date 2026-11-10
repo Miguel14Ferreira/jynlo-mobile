@@ -50,7 +50,7 @@ jobs:
       - name: Validar testes, TypeScript e API real
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           npm run test:all 2>&1 | tee android-build-diagnostics/tests.log
           npm run typecheck 2>&1 | tee android-build-diagnostics/typescript.log
           npm run check:release 2>&1 | tee android-build-diagnostics/release-check.log
