@@ -10,6 +10,7 @@ on:
       - 'scripts/**'
       - 'package.json'
       - 'app.json'
+      - 'app.config.js'
       - 'eas.json'
       - '.github/workflows/mobile-code-checks.yml'
   workflow_dispatch:
