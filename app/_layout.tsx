@@ -1,5 +1,6 @@
 import React,{useEffect,useRef} from 'react';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationTypes from 'expo-notifications';
+import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {Stack,useRouter} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
 import {AuthProvider,useAuth} from '../src/lib/auth';
@@ -10,8 +11,11 @@ function PushNavigation(){
     // A notification may launch the app before SecureStore restores the login.
     // Keep the native response until authentication is definitively resolved.
     if(!auth.ready)return;
+    // Loading the optional native module must not prevent root navigation.
+    const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
+    if(!Notifications)return;
     let active=true;
-    function open(response:Notifications.NotificationResponse|null){
+    function open(response:NotificationTypes.NotificationResponse|null){
       if(!active||!response)return;
       // Preserve a cold-start notification while SecureStore/login is still resolving.
       // Only consume it after authentication; the destination is resolved in our own inbox.
