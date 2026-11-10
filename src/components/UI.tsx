@@ -2,9 +2,10 @@ import React from 'react';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
-import {C} from '../lib/theme';
+import {C,MobileTheme} from '../lib/theme';
 import type {SessionSummary} from '../lib/types';
-import {vacancies,formatDate,money} from '../lib/format.cjs';
+import {formatDate,money} from '../lib/format.cjs';
+import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
 import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 
 export function Page({children,scroll=true}:{children:React.ReactNode;scroll?:boolean}){
@@ -43,22 +44,33 @@ export function Message({children,tone='normal'}:{children:React.ReactNode;tone?
 }
 export function Loader(){return <View style={{padding:48,alignItems:'center'}}><ActivityIndicator color={C.mint} size="large"/></View>;}
 export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()=>void}){
-  const available=vacancies(session);
-  return <Pressable onPress={onPress} style={({pressed})=>[styles.card,pressed&&{opacity:0.8}]}>
+  const status=sessionCardStatus(session);
+  const progress=participationProgress(session);
+  const hasCapacity=Number.isFinite(session.maxParticipants)&&session.maxParticipants>0;
+  const count=Number.isFinite(session.participantCount)?Math.max(0,session.participantCount):0;
+  const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString('pt-PT')} km`:null].filter(Boolean).join(' · ');
+  return <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão de ${session.sport} em ${session.city||'local a confirmar'}`}
+    onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
     <View style={styles.cardTop}>
       <View style={styles.sportBox}><Text style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
-      <View style={{flex:1}}><Text style={styles.cardTitle}>{session.sport}</Text><Text style={styles.cardCity}>⌖  {session.city}{session.distanceKm!==null?`  ·  ${session.distanceKm.toLocaleString('pt-PT')} km`:''}</Text></View>
-      <Text style={styles.arrow}>↗</Text>
+      <View style={styles.cardIdentity}>
+        <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
+        <Text style={styles.cardCity} numberOfLines={1}>⌖  {location||'Local a confirmar'}</Text>
+      </View>
+      <Text style={styles.arrow}>›</Text>
     </View>
-    <View style={styles.cardDivider}/>
     <View style={styles.metrics}>
-      <View><Text style={styles.metricKey}>QUANDO</Text><Text style={styles.metricValue}>{formatDate(session.gameDate)}</Text></View>
-      <View><Text style={styles.metricKey}>VALOR</Text><Text style={styles.metricValue}>{money(session.priceAmount)}</Text></View>
+      <View style={styles.metricCell}><Text style={styles.metricKey}>DATA E HORA</Text><Text style={styles.metricValue}>{formatDate(session.gameDate)}</Text></View>
+      <View style={styles.metricCell}><Text style={styles.metricKey}>PREÇO</Text><Text style={styles.metricValue}>{money(session.priceAmount)}</Text></View>
     </View>
-    <View style={styles.cardBottom}>
-      <Text style={{color:C.muted,fontSize:12}}>{session.participantCount}/{session.maxParticipants} jogadores</Text>
-      <Badge text={session.joinedByViewer?'Já vais!':session.waitlistedByViewer?'Lista de espera':session.status==='OPEN'?`${available} vagas`:'Indisponível'}/>
+    <View style={styles.participationHead}>
+      <Text style={styles.participationLabel}>{hasCapacity?`${count}/${session.maxParticipants} jogadores`:'Participantes por confirmar'}</Text>
+      <View style={[styles.statusPill,status.tone==='available'&&styles.statusAvailable,status.tone==='joined'&&styles.statusJoined]}>
+        <Text style={[styles.statusText,(status.tone==='available'||status.tone==='joined')&&styles.statusTextHighlight]}>{status.label}</Text>
+      </View>
     </View>
+    {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel="Ocupação da sessão"><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
+    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>Ver detalhes da sessão</Text><Text style={styles.sessionFooterArrow}>↗</Text></View>
   </Pressable>;
 }
 const styles=StyleSheet.create({
@@ -74,11 +86,28 @@ const styles=StyleSheet.create({
   badge:{borderRadius:8,paddingHorizontal:10,paddingVertical:7,backgroundColor:'#1B473E'},badgeText:{color:C.mint,fontSize:11,fontWeight:'800'},
   message:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface},
   messageText:{color:C.white,fontSize:13,lineHeight:20},
-  card:{backgroundColor:C.surface,borderRadius:22,padding:18,borderColor:C.border,borderWidth:1,gap:14},
+  card:{backgroundColor:MobileTheme.colors.surface,borderRadius:MobileTheme.radius.xl,padding:MobileTheme.spacing.lg,borderColor:MobileTheme.colors.border,borderWidth:1,gap:15},
+  cardPressed:{opacity:.8,transform:[{scale:.99}]},
   cardTop:{flexDirection:'row',alignItems:'center',gap:12},
-  sportBox:{height:52,width:52,borderRadius:16,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
-  sportIcon:{fontSize:25},cardTitle:{color:C.white,fontSize:20,fontWeight:'800'},cardCity:{color:C.muted,fontSize:12,marginTop:5},arrow:{color:C.mint,fontSize:23},
-  cardDivider:{height:1,backgroundColor:C.border},metrics:{flexDirection:'row',justifyContent:'space-between',gap:8},
-  metricKey:{color:C.muted,fontSize:10,letterSpacing:1.2,fontWeight:'700'},metricValue:{color:C.white,fontWeight:'700',fontSize:14,marginTop:5},
-  cardBottom:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  cardIdentity:{flex:1,gap:4},
+  sportBox:{height:55,width:55,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center'},
+  sportIcon:{fontSize:27},
+  cardTitle:{color:MobileTheme.colors.text,fontSize:19,fontWeight:'900'},
+  cardCity:{color:MobileTheme.colors.muted,fontSize:12},
+  arrow:{color:MobileTheme.colors.accent,fontSize:28},
+  metrics:{flexDirection:'row',gap:12},
+  metricCell:{flex:1,backgroundColor:MobileTheme.colors.raised,borderRadius:MobileTheme.radius.md,padding:12,gap:6},
+  metricKey:{color:MobileTheme.colors.muted,fontSize:10,letterSpacing:.6,fontWeight:'800'},
+  metricValue:{color:MobileTheme.colors.text,fontWeight:'800',fontSize:13},
+  participationHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+  participationLabel:{fontSize:12,color:MobileTheme.colors.muted,flexShrink:1},
+  statusPill:{borderRadius:MobileTheme.radius.pill,paddingHorizontal:11,paddingVertical:7,backgroundColor:MobileTheme.colors.raised},
+  statusAvailable:{backgroundColor:'#10483F'},statusJoined:{backgroundColor:'#10483F'},
+  statusText:{color:MobileTheme.colors.muted,fontSize:11,fontWeight:'800'},
+  statusTextHighlight:{color:MobileTheme.colors.accent},
+  capacityTrack:{width:'100%',height:5,backgroundColor:MobileTheme.colors.raised,borderRadius:MobileTheme.radius.pill,overflow:'hidden'},
+  capacityFill:{height:'100%',backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.pill},
+  sessionFooter:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:MobileTheme.colors.border,paddingTop:12},
+  sessionFooterText:{fontSize:12,color:MobileTheme.colors.accent,fontWeight:'800'},
+  sessionFooterArrow:{fontSize:17,color:MobileTheme.colors.accent},
 });
