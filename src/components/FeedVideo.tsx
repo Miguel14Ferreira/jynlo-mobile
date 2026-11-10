@@ -13,5 +13,5 @@ export default function FeedVideo({uri,story=false}:{uri:string;story?:boolean})
 }
 const styles=StyleSheet.create({
  storyVideo:{width:'100%',height:'100%'},
- postVideo:{width:'100%',height:235,borderRadius:9}
+ postVideo:{width:'100%',height:300,borderRadius:12}
 });
