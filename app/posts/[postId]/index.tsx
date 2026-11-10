@@ -3,7 +3,7 @@ import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,V
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
-import {socialPostById,likePost,postComments,addPostComment,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 const T=MobileTheme.colors;
@@ -48,6 +48,22 @@ export default function NotificationPost(){
   catch{if(version===generation.current)setError('Não foi possível confirmar o gosto. Atualiza antes de repetir.');}
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
+ async function toggleLikerPrivacy(){
+  if(!post||!auth.token||!auth.username||!valid||writing.current||
+   post.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
+  const version=generation.current;
+  writing.current=true;setBusy(true);setError('');
+  try{
+   const confirmed=await setPostLikerPrivacy(id,!Boolean(post.hideLikers),auth.token);
+   if(version===generation.current){
+    setPost(current=>current?.postId===id?{...current,hideLikers:confirmed}:current);
+   }
+  }catch{
+   if(version===generation.current)setError('Não foi possível guardar a privacidade dos gostos. Confirma o estado antes de repetir.');
+  }finally{
+   if(version===generation.current){writing.current=false;setBusy(false);}
+  }
+ }
  async function comment(){
   if(!post||!auth.token||!auth.username||!draft.trim()||writing.current||!valid)return;
   const original=draft;writing.current=true;setBusy(true);setError('');
@@ -78,6 +94,11 @@ export default function NotificationPost(){
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou"} disabled={Boolean(post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase())} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${post.likeCount} gostos`}</Text></Pressable>
      <Text style={styles.note}>{post.commentCount} comentários</Text>
     </View>
+    {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
+     <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?'Mostrar pessoas que gostaram':'Ocultar pessoas que gostaram'} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
+      <Text style={styles.link}>{post.hideLikers?'Mostrar quem gostou':'Ocultar quem gostou'}</Text>
+      <Text style={styles.note}>Só tu podes alterar esta preferência.</Text>
+     </Pressable>:null}
    </View>:null}
    {post?<Text style={styles.heading}>Comentários</Text>:null}
    {post&&commentsLoading?<ActivityIndicator color={T.accent}/>:null}
@@ -104,6 +125,7 @@ const styles=StyleSheet.create({
  action:{minHeight:MobileTheme.touchTarget,justifyContent:'center'},link:{color:T.accent,fontWeight:'800',fontSize:13},
  note:{color:T.muted,fontSize:12,lineHeight:18},heading:{color:T.text,fontSize:18,fontWeight:'900'},
  comment:{padding:12,gap:7,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.md},
+ privacy:{padding:12,minHeight:MobileTheme.touchTarget,borderWidth:1,borderColor:T.border,borderRadius:MobileTheme.radius.md,gap:5},
  editor:{flexDirection:'row',gap:10,alignItems:'flex-end'},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,padding:12,color:T.text,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.md},
  send:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,backgroundColor:T.accent,borderRadius:MobileTheme.radius.md,justifyContent:'center'},
  sendLabel:{color:T.background,fontWeight:'900'},disabled:{opacity:.5},error:{color:T.danger,fontSize:13,lineHeight:20}
