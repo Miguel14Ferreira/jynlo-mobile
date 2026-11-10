@@ -196,7 +196,11 @@ export default function JynloFeedHome(){
     try{const created=await addPostComment(postId,commentText,auth.token,auth.username);if(requestId===commentsRequest.current){setComments(prev=>[...prev,created]);setCommentText('');}await load();}
     catch(e){if(requestId===commentsRequest.current)Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');}finally{setBusyPost(null);}
   }
-  async function sharePost(item:FeedItem){await Share.share({message:[item.content||`${item.sport||'Desporto'} em ${item.city||'Jynlo'}`,'Descobre mais em https://d24sports.com'].join('\n')});}
+  async function sharePost(item:FeedItem){
+    const id=item.sessionId;
+    const link=Number.isSafeInteger(id)&&id!>0?`https://d24sports.com/sessions/${id}`:'https://d24sports.com';
+    await Share.share({message:[item.content||`${item.sport||'Desporto'} em ${item.city||'Jynlo'}`,link].join('\n')});
+  }
   function SessionPostAttachment({item}:{item:FeedItem}){
     const id=item.sessionId;
     if(!Number.isSafeInteger(id)||!id||id<=0)return null;
