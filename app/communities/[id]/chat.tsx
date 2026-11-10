@@ -11,7 +11,7 @@ import {communityDetails} from '../../../src/lib/community-api';
 import {observeCommunityChat} from '../../../src/lib/community-realtime';
 import {markCommunityRead} from '../../../src/lib/chat-api';
 import {mergeMessages} from '../../../src/lib/realtime-core.cjs';
-import {C} from '../../../src/lib/theme';
+import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
 import type {CommunityChatEntry} from '../../../src/lib/types';
 export default function CommunityChatScreen(){
@@ -128,8 +128,8 @@ export default function CommunityChatScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
- message:{padding:14,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:6},
- mine:{backgroundColor:'#19473E',borderColor:'#347D62'},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
+ message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
+ mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
- composer:{flexDirection:'row',alignItems:'flex-end',gap:9},input:{flex:1,minHeight:55,maxHeight:145,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,color:C.white,padding:14,borderRadius:15},
- send:{backgroundColor:C.mint,borderRadius:13,padding:14,minHeight:53,justifyContent:'center'},sendText:{color:C.background,fontWeight:'900'}});
+ composer:{flexDirection:'row',alignItems:'flex-end',gap:9},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:MobileTheme.colors.surface,borderColor:MobileTheme.colors.border,borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:MobileTheme.radius.lg},
+ send:{backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.md,paddingHorizontal:16,minHeight:MobileTheme.touchTarget,justifyContent:'center'},sendText:{color:C.background,fontWeight:'900'}});
