@@ -262,3 +262,13 @@ test('failed LiveKit lazy import is contained so chat navigation remains usable'
  assert.ok(route.indexOf('<Suspense fallback=')<route.indexOf('<DirectCallScreen/>'));
  assert.doesNotMatch(route,/^import .*from ['"]@livekit\/react-native['"]/m);
 });
+
+test('late native call actions cannot unlock a newer account or screen generation',()=>{
+ const screen=read('src/features/direct-call-screen.tsx');
+ const guarded='finally{if(version===generation.current){operation.current=false;setBusy(false);}}';
+ assert.equal(screen.split(guarded).length-1,2,'both start and accept must guard their action locks');
+ assert.ok(!screen.includes('finally{operation.current=false;if(version===generation.current)setBusy(false);}'));
+ assert.match(screen,/const version=\+\+generation\.current;\s*\/\/ A new screen generation must not inherit a pending action lock\.\s*operation\.current=false;setBusy\(false\)/);
+ assert.match(screen,/clearInterval\(timer\);generation\.current\+\+;[\s\S]{0,210}operation\.current=false;\s*const orphan=sessionRef\.current/);
+ assert.match(screen,/if\(version!==generation\.current\)\{void endDirectCall\(result\.callId,auth\.token\)\.catch\(\(\)=>\{\}\);return;\}/);
+});
