@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationTypes from 'expo-notifications';
+import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
@@ -85,15 +86,23 @@ export default function NotificationsScreen(){
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active'&&generation.current===version)void load(true,version);
   });
-  const received=Notifications.addNotificationReceivedListener(notification=>{
-   const payload=notification.request.content.data;
-   // The backend sends only this notification kind; never navigate on receipt.
-   if(payload?.kind!=='notification'||generation.current!==version)return;
-   if(!auth.token||!auth.username)return;
-   void load(true,version);
-  });
+  let received:ReturnType<typeof NotificationTypes.addNotificationReceivedListener>|null=null;
+  try{
+   const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
+   if(Notifications)received=Notifications.addNotificationReceivedListener(notification=>{
+    const payload=notification.request?.content?.data;
+    // The backend sends only this notification kind; never navigate on receipt.
+    if(payload?.kind!=='notification'||generation.current!==version)return;
+    if(!auth.token||!auth.username)return;
+    void load(true,version);
+   });
+  }catch{
+   // The inbox still refreshes on focus, resume and polling without native push.
+  }
   return ()=>{
-   clearInterval(timer);received.remove();resume.remove();pendingRefresh.current=false;
+   clearInterval(timer);
+   try{received?.remove();}catch{}
+   resume.remove();pendingRefresh.current=false;
    generation.current++;statusRequest.current++;
   };
  },[load,auth.username,auth.token]));
