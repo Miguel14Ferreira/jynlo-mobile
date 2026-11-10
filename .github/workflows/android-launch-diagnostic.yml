@@ -64,8 +64,15 @@ jobs:
             adb logcat -d -v time > launch-diagnostics/logcat.txt
             adb shell dumpsys activity activities > launch-diagnostics/activities.txt
             adb shell pidof com.jynlo.app > launch-diagnostics/pid.txt || true
-            adb exec-out screencap -p > launch-diagnostics/launch.png
-            test -s launch-diagnostics/launch.png
+            # A screenshot is useful evidence, but its failure must not hide
+            # a Java/native crash in logcat or prevent the crash summary.
+            if ! adb exec-out screencap -p > launch-diagnostics/launch.png; then
+              echo 'Android screenshot unavailable; continuing crash diagnosis.' | tee launch-diagnostics/screenshot-warning.txt
+            fi
+            if [ ! -s launch-diagnostics/launch.png ]; then
+              rm -f launch-diagnostics/launch.png
+              echo 'Android screenshot empty; continuing crash diagnosis.' | tee -a launch-diagnostics/screenshot-warning.txt
+            fi
             python3 - <<'PY'
             from pathlib import Path
             text = Path('launch-diagnostics/logcat.txt').read_text(errors='replace')
