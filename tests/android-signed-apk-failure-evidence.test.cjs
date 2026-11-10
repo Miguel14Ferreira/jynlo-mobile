@@ -74,3 +74,15 @@ test('all signed-APK logging stages propagate their own failures through pipefai
   assert.match(context,/set -(?:o|euo) pipefail/,marker+' must propagate pipeline failure');
  }
 });
+
+test('internal diagnostic APK rejects R8 reactivation after signing',()=>{
+ const signing=workflow.indexOf('name: Aplicar assinatura de envio à release gerada');
+ const guard=workflow.indexOf('name: Confirmar que a APK interna não usa R8 após aplicar assinatura');
+ const assemble=workflow.indexOf('name: Gerar APK release assinada para testes');
+ assert.ok(signing>=0 && guard>signing && assemble>guard);
+ const check=workflow.slice(guard,assemble);
+ assert.match(check,/for setting in \('minifyEnabled', 'shrinkResources'\):/);
+ assert.match(check,/matches != \['false'\]/);
+ assert.match(check,/Unsafe diagnostic APK/);
+ assert.doesNotMatch(check,/continue-on-error/);
+});
