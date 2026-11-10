@@ -1,5 +1,5 @@
 import {Platform} from 'react-native';
-import {GoogleSignin} from '@react-native-google-signin/google-signin';
+// Native Google Sign-In is loaded only after the user requests login and server OAuth config is valid.
 import {DEMO_MODE,request} from './api';
 
 const GOOGLE_WEB_CLIENT_ID=/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/;
@@ -16,6 +16,7 @@ export async function chooseGoogleIdentity():Promise<string|null>{
  const webClientId=typeof config?.clientId==='string'?config.clientId.trim():'';
  if(!GOOGLE_WEB_CLIENT_ID.test(webClientId))
   throw Error('O login Google ainda não está configurado no servidor Jynlo. Não é possível iniciar sessão.');
+ const {GoogleSignin}=await import('@react-native-google-signin/google-signin');
  GoogleSignin.configure({webClientId,offlineAccess:false});
  await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog:true});
  let result;
