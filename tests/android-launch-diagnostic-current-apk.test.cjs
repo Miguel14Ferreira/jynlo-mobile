@@ -84,3 +84,9 @@ test('native LiveKit-style fatal signals are attributed to Jynlo without Java Pr
  assert.match(workflow,/\(com\.jynlo\.app\)/);
  assert.match(workflow,/if jynlo_native_signal or any\(/);
 });
+
+test('concurrent fatal incidents are isolated before assigning process identity',()=>{
+ assert.match(workflow,/next_fatal = next\(\(j for j in fatal_indices if j > i\), len\(lines\)\)/);
+ assert.match(workflow,/context = lines\[i:min\(i\+60, next_fatal\)\]/);
+ assert.doesNotMatch(workflow,/context = lines\[max\(0, i-5\):/);
+});
