@@ -30,7 +30,9 @@ test('profile and Feed offer accessible, distinct actions',()=>{
  assert.match(profile,/accessibilityLabel="Ver os meus seguidores"/);
  assert.match(profile,/accessibilityLabel="Ver quem sigo"/);
  assert.match(profile,/pathname:'\/social\/\[username\]\/\[kind\]'/);
- assert.match(feed,/accessibilityLabel="Ver quem gostou desta publicação"/);
+ assert.match(feed,/Ver quem gostou desta publicação/);
+ assert.match(feed,/item\.hideLikers&&item\.authorUsername\.toLowerCase\(\)!==auth\.username\?\.toLowerCase\(\)/);
+ assert.match(feed,/Gostos privados/);
  assert.match(feed,/pathname:'\/posts\/\[postId\]\/likers'/);
  assert.match(feed,/toggleLike\(item\)/);
  assert.match(feed,/item\.likeCount\} gostos/);
