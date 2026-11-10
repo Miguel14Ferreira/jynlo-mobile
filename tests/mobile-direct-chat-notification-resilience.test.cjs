@@ -7,8 +7,10 @@ const chat=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'ut
 const focus=chat.slice(chat.indexOf('useFocusEffect(useCallback('),chat.indexOf('async function updateBlock()'));
 
 test('direct chat tolerates unavailable native notification registration',()=>{
- assert.match(focus,/let received:ReturnType<typeof Notifications\.addNotificationReceivedListener>\|null=null/);
- assert.match(focus,/try\{\s*received=Notifications\.addNotificationReceivedListener\(/);
+ assert.match(focus,/let received:ReturnType<typeof NotificationTypes\.addNotificationReceivedListener>\|null=null/);
+ assert.match(focus,/const Notifications=getNativeNotifications\(\)/);
+ assert.match(focus,/try\{\s*const Notifications=getNativeNotifications\(\)/);
+ assert.match(focus,/if\(Notifications\)received=Notifications\.addNotificationReceivedListener\(/);
  assert.match(focus,/\}catch\{\s*\/\/ The 15-second poll and app-resume refresh/);
  assert.match(focus,/if\(notification\.request\?\.content\?\.data\?\.kind!=='notification'/);
 });
