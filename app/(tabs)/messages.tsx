@@ -1,6 +1,7 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationTypes from 'expo-notifications';
+import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -81,13 +82,23 @@ export default function MessagesScreen(){
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active'&&generation.current===version)void load(true,version);
   });
-  const received=Notifications.addNotificationReceivedListener(notification=>{
-   if(notification.request.content.data?.kind!=='notification'||generation.current!==version)return;
-   if(auth.token&&auth.username)void load(true,version);
-  });
+  // Native push is optional: the inbox remains accessible without the bridge.
+  let received:ReturnType<typeof NotificationTypes.addNotificationReceivedListener>|null=null;
+  try{
+   const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
+   if(Notifications)received=Notifications.addNotificationReceivedListener(notification=>{
+    if(notification.request?.content?.data?.kind!=='notification'||generation.current!==version)return;
+    if(auth.token&&auth.username)void load(true,version);
+   });
+  }catch{
+   // Polling and the app-resume listener remain the fallback.
+  }
   return ()=>{
-   clearInterval(timer);resume.remove();received.remove();pendingRefresh.current=false;
-   generation.current++;
+   clearInterval(timer);resume.remove();
+   try{received?.remove();}catch{
+    // Native listener cleanup must not prevent leaving this tab.
+   }
+   pendingRefresh.current=false;generation.current++;
   };
  },[load,auth.username,auth.token]));
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
