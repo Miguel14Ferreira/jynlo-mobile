@@ -13,8 +13,10 @@ test('stories support left/right taps and hold-to-pause without timing out video
  assert.match(viewer,/tapZone\(1\)/);
  assert.match(viewer,/onLongPress:/);
  assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\)return/);
- assert.match(viewer,/setTimeout\(/);
- assert.match(viewer,/clearTimeout\(timer\)/);
+ assert.match(viewer,/Animated\.timing\(progress/);
+ assert.match(viewer,/animation\.stop\(\)/);
+ assert.match(viewer,/remaining\.current=Math\.max\(0,1-value\)/);
+ assert.match(viewer,/groups\.findIndex/);
  assert.match(viewer,/onPressIn:\(\)=>\{longPress\.current=false/);
 });
 
@@ -26,4 +28,11 @@ test('image-led posts show caption after engagement controls; session activities
  assert.ok(image>=0&&actions>image&&caption>actions,'post image, actions, then caption');
  assert.match(post,/item\.type!=='POST'&&item\.content/);
  assert.match(post,/accessibilityLabel="Partilhar publicação"/);
+});
+
+test('native video pauses while story viewer is held',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8');
+ assert.match(source,/paused=false/);
+ assert.match(source,/if\(paused\)player\.pause\(\)/);
+ assert.match(source,/else player\.play\(\)/);
 });
