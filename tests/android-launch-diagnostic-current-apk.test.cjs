@@ -16,7 +16,7 @@ test('Android launch diagnostic accepts a specific signed APK workflow run',()=>
 });
 
 test('launch diagnosis keeps its provenance and fatal Android failure artifacts',()=>{
- assert.match(workflow,/Testing signed APK from run \$run_id/);
+ assert.match(workflow,/Testing verified signed APK from run \$run_id/);
  assert.match(workflow,/apk-build-info\.json/);
  assert.match(workflow,/adb install -r "\$APK_PATH"/);
  assert.match(workflow,/adb logcat -d -v threadtime/);
@@ -96,4 +96,17 @@ test('fatal incident summary preserves stack traces and separates concurrent cra
  assert.match(workflow,/--- next fatal incident ---/);
  assert.match(workflow,/print\(incident\[:2500\]\)/);
  assert.match(workflow,/context = lines\[i:min\(i\+60, next_fatal\)\]/);
+});
+
+test('emulator refuses stale or corrupted signed APK before installing',()=>{
+ const download=workflow.slice(workflow.indexOf('      - name: Download exact signed APK'),workflow.indexOf('      - name: Boot Android emulator'));
+ assert.match(download,/gh run view "\$run_id" -R "\$GITHUB_REPOSITORY" --json headSha,headBranch,conclusion,name/);
+ assert.match(download,/run\.get\('conclusion'\) != 'success'/);
+ assert.match(download,/run\.get\('headBranch'\) != 'develop'/);
+ assert.match(download,/info\.get\('gitCommit'\) != run\.get\('headSha'\)/);
+ assert.match(download,/info\.get\('format'\) != 'apk'/);
+ assert.match(download,/info\.get\('packageName'\) != 'com\.jynlo\.app'/);
+ assert.match(download,/info\.get\('apiUrl'\) != 'https:\/\/desporto24-preview-api\.onrender\.com'/);
+ assert.match(download,/sha256sum -c android-build-sha256\.txt/);
+ assert.ok(download.indexOf('sha256sum -c')<workflow.indexOf('adb install -r'));
 });
