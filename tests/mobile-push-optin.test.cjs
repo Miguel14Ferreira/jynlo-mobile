@@ -112,7 +112,7 @@ test('native push responses are consumed once and cannot replay after logout',()
  assert.match(layout,/response\.actionIdentifier!==Notifications\.DEFAULT_ACTION_IDENTIFIER/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/let active=true/);
- assert.match(layout,/active=false;listener\.remove\(\)/);
+ assert.match(layout,/active=false;listener\?\.remove\(\)/);
  assert.match(layout,/lastHandled\.current===identifier/);
 });
 
