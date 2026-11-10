@@ -31,3 +31,11 @@ test('Android bundle validates imports with the real Jynlo backend, without Grad
            source.indexOf('npx expo export --platform android --output-dir'));
  assert.doesNotMatch(source,/npx eas build|\.\/gradlew|assembleRelease/);
 });
+
+test('APK signing and emulator workflow edits trigger the free code checks',()=>{
+ assert.match(source,/\s+- '\.github\/workflows\/build-android-signed-apk\.yml'/);
+ assert.match(source,/\s+- '\.github\/workflows\/android-launch-diagnostic\.yml'/);
+ assert.match(source,/\s+- '\.github\/workflows\/mobile-code-checks\.yml'/);
+ assert.match(source,/branches: \[develop\]/);
+ assert.doesNotMatch(source,/gradlew|assembleRelease|eas build/);
+});
