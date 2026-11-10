@@ -31,3 +31,11 @@ test('report submission snapshots input and preserves edits during upload',()=>{
  assert.match(reporting,/setReportReason\(current=>current===submittedReason\?'':current\)/);
  assert.doesNotMatch(reporting,/setReportReason\(''\)/);
 });
+
+test('a late initial block-status lookup cannot override a confirmed block toggle',()=>{
+ assert.match(focus,/const blockRequest=\+\+blockCheckRequest\.current/);
+ assert.match(focus,/blockCheckRequest\.current===blockRequest/);
+ assert.match(blocking,/\+\+blockCheckRequest\.current/);
+ assert.ok(blocking.indexOf('++blockCheckRequest.current')<blocking.indexOf('await unblockUser('));
+ assert.match(blocking,/setBlocked\(value\);setBlockStatusKnown\(true\)/);
+});
