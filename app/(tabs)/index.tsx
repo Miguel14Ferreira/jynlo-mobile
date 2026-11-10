@@ -198,7 +198,7 @@ export default function JynloFeedHome(){
   }
   async function sharePost(item:FeedItem){
     const id=item.sessionId;
-    const link=Number.isSafeInteger(id)&&id!>0?`https://d24sports.com/sessions/${id}`:'https://d24sports.com';
+    const link=Number.isSafeInteger(id)&&id!==null&&id>0?`https://d24sports.com/sessions/${id}`:'https://d24sports.com';
     await Share.share({message:[item.content||`${item.sport||'Desporto'} em ${item.city||'Jynlo'}`,link].join('\n')});
   }
   function SessionPostAttachment({item}:{item:FeedItem}){
