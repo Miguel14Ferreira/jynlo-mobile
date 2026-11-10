@@ -8,3 +8,13 @@ test('ficheiros têm limites independentes de foto e vídeo',()=>{assert.equal(v
 test('A minha semana exclui expiradas canceladas e sessões antigas',()=>{const future=new Date(now+86400000).toISOString();const old=new Date(now-86400000).toISOString();assert.equal(futureWeek({status:'OPEN',gameDate:future},now),true);assert.equal(upcoming({status:'CANCELLED',gameDate:future},now),false);assert.equal(upcoming({status:'OPEN',gameDate:old},now),false);});
 test('sessão criada não aparece repetida nas minhas sessões',()=>{assert.deepEqual(uniqueSessions([{id:1}],[{id:1},{id:2}]).map(x=>x.id),[1,2]);});
 test('media externo exige HTTPS e endereços relativos ficam no backend',()=>{assert.equal(mediaUrl('https://api.d24sports.com','/media/photo.png'),'https://api.d24sports.com/media/photo.png');assert.equal(mediaUrl('https://api.d24sports.com','http://notsecure.com/a'),null);});
+
+test('stories inválidas não bloqueiam o feed nem ficam visíveis indefinidamente',()=>{
+ const valid=s(31,'Rita');
+ const invalidExpiry={...s(32,'André'),expiresAt:'not-a-date'};
+ const invalidAuthor={...s(33,'Rita'),authorUsername:null};
+ const missingAuthor={...s(34,'Rita'),authorUsername:undefined};
+ const result=groupStories([invalidExpiry,invalidAuthor],[missingAuthor,valid],now);
+ assert.equal(result.length,1);
+ assert.deepEqual(result[0].stories.map(story=>story.id),[31]);
+});
