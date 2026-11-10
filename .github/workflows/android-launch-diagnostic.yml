@@ -79,6 +79,8 @@ jobs:
             adb shell am force-stop com.jynlo.app || true
             adb shell monkey -p com.jynlo.app 1 > launch-diagnostics/launch.txt 2>&1 || true
             cat launch-diagnostics/launch.txt
+            # Preserve the launch PID even if React Native crashes shortly afterwards.
+            adb shell pidof com.jynlo.app > launch-diagnostics/initial-pid.txt || true
             sleep 20
             # Threadtime includes PID, allowing JS errors to be attributed to Jynlo.
             adb logcat -d -v threadtime > launch-diagnostics/logcat.txt
@@ -128,13 +130,14 @@ jobs:
             # A package mentioned in the activity history is NOT proof that
             # it is still running. Check both the live PID and resumed Activity.
             pid = Path('launch-diagnostics/pid.txt').read_text().strip()
-            if not pid or not all(part.isdigit() for part in pid.split()):
-                raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
+            # Do not exit before parsing JS logs: the original process may
+            # have died, leaving its fatal exception in the logcat.
+            initial_pid = Path('launch-diagnostics/initial-pid.txt').read_text().strip()
             # React Native can display a fatal JS error while Android keeps
             # its Activity and process alive. Only flag severe lines belonging
             # to the current Jynlo PID (never unrelated emulator processes).
             import re
-            app_pids = set(pid.split())
+            app_pids = {part for part in (pid + ' ' + initial_pid).split() if part.isdigit()}
             js_errors = []
             for line in lines:
                 match = re.match(r'^\S+\s+\S+\s+(\d+)\s+\d+\s+E\s+ReactNativeJS\s*:\s*(.*)$', line)
@@ -147,6 +150,8 @@ jobs:
                 for line in js_errors[:20]:
                     print(line[:350])
                 raise SystemExit('Jynlo raised a severe React Native JS error after launch')
+            if not pid or not all(part.isdigit() for part in pid.split()):
+                raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
             activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
             resumed = [line for line in activity.splitlines()
                        if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
