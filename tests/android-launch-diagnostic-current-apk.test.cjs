@@ -141,3 +141,15 @@ test('emulator installs the exact signed APK covered by the checksum manifest',(
  assert.doesNotMatch(download,/find launch-diagnostics\/apk -type f -name '\*\.apk'/);
  assert.ok(download.indexOf('sha256sum -c')<download.indexOf('echo "APK_PATH='));
 });
+
+test('native crash does not abort before severe JavaScript errors are recorded',()=>{
+ const log=workflow.indexOf("Path('launch-diagnostics/logcat.txt')");
+ const nativeSummary=workflow.indexOf("Path('launch-diagnostics/crash-summary.txt').write_text(");
+ const jsSummary=workflow.indexOf("Path('launch-diagnostics/js-errors.txt').write_text(");
+ const nativeExit=workflow.indexOf("raise SystemExit('Android fatal error detected during launch')");
+ const jsExit=workflow.indexOf("raise SystemExit('Jynlo raised a severe React Native JS error after launch')");
+ assert.ok(log>=0&&nativeSummary>log&&jsSummary>nativeSummary);
+ assert.ok(nativeExit>jsSummary,'native failure must preserve JS diagnostics before exiting');
+ assert.ok(jsExit>nativeExit,'JS failure must remain a failing outcome');
+ assert.match(workflow,/if crashes:\s*\n\s*raise SystemExit\('Android fatal error detected during launch'\)/);
+});
