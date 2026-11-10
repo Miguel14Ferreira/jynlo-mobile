@@ -131,3 +131,13 @@ test('launch diagnostics recover app PID from ActivityManager when pidof misses 
  assert.ok(recover>=0&&recover<analyze,'recover crashed process before searching its JS errors');
  assert.match(workflow,/if not pid or not all\(part\.isdigit\(\) for part in pid\.split\(\)\):/);
 });
+
+test('emulator installs the exact signed APK covered by the checksum manifest',()=>{
+ const download=workflow.slice(workflow.indexOf('      - name: Download exact signed APK'),workflow.indexOf('      - name: Boot Android emulator'));
+ assert.match(download,/apk="launch-diagnostics\/apk\/android\/app\/build\/outputs\/apk\/release\/app-release\.apk"/);
+ assert.match(download,/test -s "\$apk"/);
+ assert.match(download,/\(cd launch-diagnostics\/apk && sha256sum -c android-build-sha256\.txt\)/);
+ assert.match(download,/echo "APK_PATH=\$apk" >> "\$GITHUB_ENV"/);
+ assert.doesNotMatch(download,/find launch-diagnostics\/apk -type f -name '\*\.apk'/);
+ assert.ok(download.indexOf('sha256sum -c')<download.indexOf('echo "APK_PATH='));
+});
