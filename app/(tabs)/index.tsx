@@ -90,7 +90,7 @@ export default function JynloFeedHome(){
     ]);
     if(id!==reloadNumber.current)return;
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
-    if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]).filter(item=>item.type==='POST'));
+    if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]));
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled')setOwnStories(value(2,[] as SocialStory[]));
     if(fetches[0].status==='rejected')setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
