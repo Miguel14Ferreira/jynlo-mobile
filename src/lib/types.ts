@@ -154,7 +154,7 @@ export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:strin
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {
  id:number;subject:string;message:string;createdAt:string;read:boolean;
- type:string|null;communityId?:number|null;sessionId:number|null;relatedUsername?:string|null;
+ type:string|null;communityId?:number|null;sessionId:number|null;postId?:number|null;relatedUsername?:string|null;
 }
 /** Matches and group standings exactly as supplied by the Jynlo team tournament backend. */
 export interface TournamentTeamMatch {
