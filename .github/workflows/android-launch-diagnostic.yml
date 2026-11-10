@@ -61,7 +61,8 @@ jobs:
             adb shell monkey -p com.jynlo.app 1 > launch-diagnostics/launch.txt 2>&1 || true
             cat launch-diagnostics/launch.txt
             sleep 20
-            adb logcat -d -v time > launch-diagnostics/logcat.txt
+            # Threadtime includes PID, allowing JS errors to be attributed to Jynlo.
+            adb logcat -d -v threadtime > launch-diagnostics/logcat.txt
             adb shell dumpsys activity activities > launch-diagnostics/activities.txt
             adb shell pidof com.jynlo.app > launch-diagnostics/pid.txt || true
             # A screenshot is useful evidence, but its failure must not hide
@@ -97,6 +98,40 @@ jobs:
             pid = Path('launch-diagnostics/pid.txt').read_text().strip()
             if not pid or not all(part.isdigit() for part in pid.split()):
                 raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
+            # React Native can display a fatal JS error while Android keeps
+            # its Activity and process alive. Only flag severe lines belonging
+            # to the current Jynlo PID (never unrelated emulator processes).
+            import re
+            app_pids = set(pid.split())
+            js_errors = []
+            for line in lines:
+                match = re.match(r'^\\S+\\s+\\S+\\s+(\\d+)\\s+\\d+\\s+E\\s+ReactNativeJS\\s*:\\s*(.*)
+            resumed = [line for line in activity.splitlines()
+                       if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
+            Path('launch-diagnostics/resumed-activity.txt').write_text(
+                '\n'.join(resumed) + '\n')
+            if not any('com.jynlo.app/' in line for line in resumed):
+                raise SystemExit('Jynlo activity is not resumed in the foreground after 20 seconds')
+            print('Android launch smoke: live Jynlo process, resumed activity and no fatal error.')
+            PY
+      - name: Upload Android launch diagnostics even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-signed-apk-launch-diagnostics
+          path: launch-diagnostics/
+          if-no-files-found: warn
+          retention-days: 7
+, line)
+                if match and match.group(1) in app_pids and re.search(
+                    r'(?:^|\\b)(?:Error:|TypeError:|ReferenceError:|Invariant Violation|Unhandled JS Exception)', match.group(2)):
+                    js_errors.append(line)
+            Path('launch-diagnostics/js-errors.txt').write_text(
+                '\\n'.join(js_errors) + ('\\n' if js_errors else 'No severe Jynlo ReactNativeJS errors detected.\\n'))
+            if js_errors:
+                for line in js_errors[:20]:
+                    print(line[:350])
+                raise SystemExit('Jynlo raised a severe React Native JS error after launch')
             activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
             resumed = [line for line in activity.splitlines()
                        if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
