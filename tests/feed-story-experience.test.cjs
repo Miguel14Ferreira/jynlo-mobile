@@ -109,3 +109,12 @@ test('social feed links only to a real session id and uses backend-provided meta
  assert.doesNotMatch(attachment,/confirmar presença|vagas disponíveis|communityId/);
  assert.match(post,/<SessionPostAttachment item=\{item\}\/>/);
 });
+
+test('sharing a session-related post includes its direct web link',()=>{
+ const share=feed.split('async function sharePost(')[1]?.split('function SessionPostAttachment(')[0];
+ assert.ok(share);
+ assert.match(share,/Number\.isSafeInteger\(id\)/);
+ assert.match(share,/id!==null&&id>0/);
+ assert.match(share,/https:\/\/d24sports\.com\/sessions\/\$\{id\}/);
+ assert.match(share,/await Share\.share/);
+});
