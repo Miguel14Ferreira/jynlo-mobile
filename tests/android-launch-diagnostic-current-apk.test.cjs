@@ -120,3 +120,12 @@ test('startup JS exceptions are collected even if the app exits before the final
  assert.ok(jsCheck>=0 && deadProcessCheck>jsCheck,
   'inspect fatal ReactNativeJS errors before reporting an exited Android process');
 });
+
+test('launch diagnostics recover app PID from ActivityManager when pidof misses a rapid crash',()=>{
+ assert.match(workflow,/started = re\.search\(r'\\bStart proc \(\\d\+\):com\\\.jynlo\\\.app/);
+ assert.match(workflow,/app_pids\.add\(started\.group\(1\)\)/);
+ const recover=workflow.indexOf('started = re.search(');
+ const analyze=workflow.indexOf('js_errors = []');
+ assert.ok(recover>=0&&recover<analyze,'recover crashed process before searching its JS errors');
+ assert.match(workflow,/if not pid or not all\(part\.isdigit\(\) for part in pid\.split\(\)\):/);
+});
