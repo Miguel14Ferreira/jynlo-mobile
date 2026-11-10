@@ -85,6 +85,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="tournaments/[communityId]/[id]/matches" options={{title:"Jogos individuais"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/participants" options={{title:"Participantes e inscrições"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/manage" options={{title:"Gerir torneio"}}/>
+    <Stack.Screen name="posts/[postId]/index" options={{title:"Publicação"}}/>
+    <Stack.Screen name="posts/[postId]/likers" options={{title:"Quem gostou"}}/>
     <Stack.Screen name="feed" options={{title:"Feed"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>
