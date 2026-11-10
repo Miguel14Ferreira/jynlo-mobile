@@ -85,8 +85,14 @@ jobs:
             crashes = []
             for i in fatal_indices:
                 context = lines[max(0, i-5):min(len(lines), i+60)]
-                if any('Process: com.jynlo.app,' in line or
-                       '>>> com.jynlo.app <<<' in line for line in context):
+                # A native libc fatal signal often identifies the process on
+                # the signal line itself, without a nearby Java Process header.
+                jynlo_native_signal = ('Fatal signal' in lines[i] and
+                                       '(com.jynlo.app)' in lines[i])
+                if jynlo_native_signal or any(
+                    'Process: com.jynlo.app,' in line or
+                    '>>> com.jynlo.app <<<' in line for line in context
+                ):
                     crashes.append(lines[i])
             Path('launch-diagnostics/crash-summary.txt').write_text('\n'.join(crashes) if crashes else 'No Android fatal exception signature detected in launch window.\n')
             for line in crashes[:20]:
