@@ -18,8 +18,13 @@ test('Android CI retains failure evidence for each validation stage',()=>{
 test('capturing logs cannot turn a failed Android validation into a green job',()=>{
  const commands=['npm install --ignore-scripts --no-audit --no-fund','npm run check:release','npm run typecheck','npm run test:all','npx expo export --platform android'];
  for(const command of commands){
-  const i=workflow.indexOf(command+' 2>&1 | tee');
-  assert.ok(i>=0,'missing captured command '+command);
+  // Expo export legitimately has --output-dir after --platform android.
+  // Inspect the complete command line rather than requiring tee immediately
+  // after the short command prefix.
+  const matchingLines=workflow.split('\n').filter(line=>line.includes(command));
+  assert.equal(matchingLines.length,1,'expected exactly one command: '+command);
+  assert.match(matchingLines[0],/ 2>&1 \| tee "\$RUNNER_TEMP\/jynlo-[a-z-]+\.log"$/);
+  const i=workflow.indexOf(matchingLines[0]);
   const previous=workflow.slice(Math.max(0,i-140),i);
   assert.match(previous,/set -o pipefail/);
  }
