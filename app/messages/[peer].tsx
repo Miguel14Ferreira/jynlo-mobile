@@ -105,12 +105,22 @@ export default function DirectConversation(){
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active'&&generation.current===version)void refresh(true,version);
   });
-  const received=Notifications.addNotificationReceivedListener(notification=>{
-   if(notification.request.content.data?.kind!=='notification'||generation.current!==version)return;
-   if(auth.token)void refresh(true,version);
-  });
+  // Native notification delivery is optional. A missing/unavailable module
+  // must not prevent opening a direct chat on Android.
+  let received:ReturnType<typeof Notifications.addNotificationReceivedListener>|null=null;
+  try{
+   received=Notifications.addNotificationReceivedListener(notification=>{
+    if(notification.request?.content?.data?.kind!=='notification'||generation.current!==version)return;
+    if(auth.token)void refresh(true,version);
+   });
+  }catch{
+   // The 15-second poll and app-resume refresh still keep this chat current.
+  }
   return ()=>{
-   active=false;clearInterval(timer);resume.remove();received.remove();
+   active=false;clearInterval(timer);resume.remove();
+   try{received?.remove();}catch{
+    // Optional native listener teardown must not block navigation.
+   }
    pendingRefresh.current=false;generation.current++;blockCheckRequest.current++;
   };
  },[refresh,peer,auth.token]));
