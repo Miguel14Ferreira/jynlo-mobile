@@ -17,13 +17,16 @@ function PushNavigation(){
     // Loading the optional native module must not prevent root navigation.
     const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
     if(!Notifications)return;
+    // Capture the narrowed native module for callbacks invoked later.
+    // TypeScript cannot retain nullable local narrowing inside callbacks.
+    const nativeNotifications=Notifications;
     let active=true;
     function open(response:NotificationTypes.NotificationResponse|null){
       if(!active||!response)return;
       // Preserve a cold-start notification while SecureStore/login is still resolving.
       // Only consume it after authentication; the destination is resolved in our own inbox.
       if(!auth.token||!auth.username)return;
-      if(response.actionIdentifier!==Notifications.DEFAULT_ACTION_IDENTIFIER)return;
+      if(response.actionIdentifier!==nativeNotifications.DEFAULT_ACTION_IDENTIFIER)return;
       // An incomplete native notification response must never throw inside
       // the root navigation listener or route the user to untrusted content.
       const data=response.notification?.request?.content?.data;
@@ -35,7 +38,7 @@ function PushNavigation(){
       // Consume only a validated, newly handled notification. Otherwise, an
       // unrelated action or malformed payload could erase a legitimate tap.
       lastHandled.current=identifier;
-      try{Notifications.clearLastNotificationResponse();}catch{
+      try{nativeNotifications.clearLastNotificationResponse();}catch{
         // Native notification availability must not block opening the inbox.
       }
       router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
