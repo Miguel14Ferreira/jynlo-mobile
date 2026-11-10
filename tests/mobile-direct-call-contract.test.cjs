@@ -249,3 +249,16 @@ test('Expo Router does not eagerly import LiveKit native modules while registeri
  assert.match(native,/from '@livekit\/react-native'/);
  assert.match(native,/export default function DirectCallScreen\(\)/);
 });
+
+test('failed LiveKit lazy import is contained so chat navigation remains usable',()=>{
+ const route=read('app/messages/call.tsx');
+ assert.match(route,/class CallLoadBoundary extends React\.Component/);
+ assert.match(route,/static getDerivedStateFromError\(\)\{return \{failed:true\};\}/);
+ assert.match(route,/if\(this\.state\.failed\)return/);
+ assert.match(route,/O módulo de chamadas não está disponível neste dispositivo/);
+ assert.match(route,/onBack=\{\(\)=>router\.back\(\)\}/);
+ assert.match(route,/accessibilityRole="button"/);
+ assert.ok(route.indexOf('<CallLoadBoundary')<route.indexOf('<Suspense fallback='));
+ assert.ok(route.indexOf('<Suspense fallback=')<route.indexOf('<DirectCallScreen/>'));
+ assert.doesNotMatch(route,/^import .*from ['"]@livekit\/react-native['"]/m);
+});
