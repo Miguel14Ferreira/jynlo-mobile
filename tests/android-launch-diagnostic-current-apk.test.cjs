@@ -60,7 +60,9 @@ test('startup cannot succeed from a stale activity-history entry or an exited pr
 
 test('failed screenshot capture cannot hide crash logs and diagnostic summary',()=>{
  const screenshot=workflow.indexOf('if ! adb exec-out screencap -p > launch-diagnostics/launch.png; then');
- const analysis=workflow.indexOf("python3 - <<'PY'");
+ const emulator=workflow.slice(workflow.indexOf('      - name: Boot Android emulator and verify launch'));
+ const analysis=workflow.indexOf("python3 - <<'PY'",screenshot);
+ assert.ok(emulator.includes("python3 - <<'PY'"));
  assert.ok(screenshot>=0 && analysis>screenshot);
  assert.match(workflow,/screenshot-warning\.txt/);
  assert.match(workflow,/if \[ ! -s launch-diagnostics\/launch\.png \]; then/);
