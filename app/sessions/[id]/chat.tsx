@@ -9,7 +9,7 @@ import {useAuth} from '../../../src/lib/auth';
 import {ApiError} from '../../../src/lib/api';
 import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../../src/lib/session-chat-api';
 import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
-import {C} from '../../../src/lib/theme';
+import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
 export default function SessionChat(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
@@ -162,11 +162,11 @@ export default function SessionChat(){
 }
 const styles=StyleSheet.create({
  title:{fontSize:26,fontWeight:'900',color:C.white},note:{fontSize:12,color:C.muted},
- message:{padding:14,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:5},
- mine:{backgroundColor:'#19473E'},sender:{fontSize:12,fontWeight:'800',color:C.mint},
+ message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
+ mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:12,fontWeight:'800',color:C.mint},
  quote:{color:C.muted,fontSize:12},body:{color:C.white,fontSize:15},time:{color:C.muted,fontSize:10,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  editor:{gap:9},composer:{flexDirection:'row',gap:8,alignItems:'center'},
- input:{flex:1,minHeight:55,maxHeight:130,backgroundColor:C.surface,color:C.white,
-  borderWidth:1,borderColor:C.border,borderRadius:14,padding:12}
+ input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:MobileTheme.colors.surface,color:MobileTheme.colors.text,
+  borderWidth:1,borderColor:MobileTheme.colors.border,borderRadius:MobileTheme.radius.lg,padding:12}
 });
