@@ -35,3 +35,18 @@ test('diagnostic signed APK refuses unsafe LiveKit JNI suppression and retains s
  assert.match(workflow,/apksigner/);
  assert.match(workflow,/name: jynlo-mobile-signed-internal-apk/);
 });
+
+test('signed APK validation aborts on the first failed regression, TypeScript or release check',()=>{
+ const start=workflow.indexOf('      - name: Validar testes, TypeScript e API real');
+ const end=workflow.indexOf('      - name: Gerar Android nativo',start);
+ assert.ok(start>=0&&end>start,'signed validation step must exist');
+ const validation=workflow.slice(start,end);
+ assert.match(validation,/set -euo pipefail/);
+ for(const command of [
+  'npm run test:all 2>&1 | tee android-build-diagnostics/tests.log',
+  'npm run typecheck 2>&1 | tee android-build-diagnostics/typescript.log',
+  'npm run check:release 2>&1 | tee android-build-diagnostics/release-check.log'
+ ])assert.ok(validation.includes(command),'missing or uncaptured validation: '+command);
+ assert.ok(validation.indexOf('npm run test:all')<validation.indexOf('npm run typecheck'));
+ assert.ok(validation.indexOf('npm run typecheck')<validation.indexOf('npm run check:release'));
+});
