@@ -38,12 +38,31 @@ jobs:
           gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n jynlo-mobile-signed-internal-apk -D launch-diagnostics/apk
           apk="$(find launch-diagnostics/apk -type f -name '*.apk' | head -n1)"
           test -n "$apk" && test -s "$apk"
+          # Validate the source run and artifact before passing a binary to the emulator.
+          gh run view "$run_id" -R "$GITHUB_REPOSITORY" --json headSha,headBranch,conclusion,name > launch-diagnostics/source-run.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          run = json.loads(Path('launch-diagnostics/source-run.json').read_text())
+          info_path = Path('launch-diagnostics/apk/android-build-info.json')
+          if not info_path.is_file():
+              raise SystemExit('Signed APK is missing its required build provenance.')
+          info = json.loads(info_path.read_text())
+          if run.get('conclusion') != 'success' or run.get('headBranch') != 'develop':
+              raise SystemExit('Source APK run is not a successful develop build.')
+          if run.get('name') != 'Jynlo Mobile - Android APK assinada (testes internos)':
+              raise SystemExit('APK run does not belong to the expected signing workflow.')
+          if info.get('gitCommit') != run.get('headSha') or info.get('format') != 'apk':
+              raise SystemExit('APK metadata does not match the GitHub source commit.')
+          if info.get('packageName') != 'com.jynlo.app' or info.get('apiUrl') != 'https://desporto24-preview-api.onrender.com':
+              raise SystemExit('APK has incorrect package name or API environment.')
+          PY
+          test -s launch-diagnostics/apk/android-build-sha256.txt
+          (cd launch-diagnostics/apk && sha256sum -c android-build-sha256.txt)
+          cp launch-diagnostics/apk/android-build-info.json launch-diagnostics/apk-build-info.json
           echo "APK_PATH=$apk" >> "$GITHUB_ENV"
-          echo "Testing signed APK from run $run_id."
+          echo "Testing verified signed APK from run $run_id."
           echo "Source run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$run_id"
-          if [ -f launch-diagnostics/apk/android-build-info.json ]; then
-            cp launch-diagnostics/apk/android-build-info.json launch-diagnostics/apk-build-info.json
-          fi
           echo "APK_SOURCE_RUN=$run_id" >> "$GITHUB_ENV"
       - name: Boot Android emulator and verify launch
         uses: reactivecircus/android-emulator-runner@v2
