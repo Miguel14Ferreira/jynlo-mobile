@@ -127,8 +127,8 @@ jobs:
                 if crashes else 'No Android fatal exception signature detected in launch window.\n')
             for incident in crashes[:5]:
                 print(incident[:2500])
-            if crashes:
-                raise SystemExit('Android fatal error detected during launch')
+            # Keep collecting JS evidence even if Android has already reported
+            # a native fatal exception; both failures can occur in one launch.
             # A package mentioned in the activity history is NOT proof that
             # it is still running. Check both the live PID and resumed Activity.
             pid = Path('launch-diagnostics/pid.txt').read_text().strip()
@@ -157,6 +157,10 @@ jobs:
             if js_errors:
                 for line in js_errors[:20]:
                     print(line[:350])
+            # Both crash reports exist before signalling an unsuccessful launch.
+            if crashes:
+                raise SystemExit('Android fatal error detected during launch')
+            if js_errors:
                 raise SystemExit('Jynlo raised a severe React Native JS error after launch')
             if not pid or not all(part.isdigit() for part in pid.split()):
                 raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
