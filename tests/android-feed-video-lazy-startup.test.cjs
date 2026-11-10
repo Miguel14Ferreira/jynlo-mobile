@@ -33,3 +33,15 @@ test('Expo native config changes trigger free code checks before an APK build',(
  assert.match(ci,/npm run test:all/);
  assert.match(ci,/expo export --platform android/);
 });
+
+test('feed does not import native photo picker before user opens media gallery',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.doesNotMatch(feed,/^import .*from 'expo-image-picker';/m);
+ assert.match(feed,/const ImagePicker=await import\('expo-image-picker'\)/);
+ const userAction=feed.indexOf('async function pickMedia(');
+ const pickerImport=feed.indexOf("await import('expo-image-picker')");
+ const launch=feed.indexOf("ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86})");
+ assert.ok(userAction>=0&&pickerImport>userAction&&launch>pickerImport);
+ assert.match(feed,/if\(result\.canceled\|\|!result\.assets\.length\)return/);
+ assert.match(feed,/catch\{Alert\.alert\('Não foi possível abrir a galeria'/);
+});
