@@ -22,3 +22,13 @@ test('no confirmed roster is restored following failed or anonymous refresh',()=
  assert.match(load,/\}catch\(e\)\{[\s\S]*?return null/);
  assert.match(confirm,/request===teamsOperation\.current&&epoch===actionEpoch\.current&&/);
 });
+
+test('successful team POST reports refresh uncertainty without claiming confirmation failed',()=>{
+ assert.match(confirm,/const refreshed=await load\(\)/);
+ assert.match(confirm,/if\(request!==teamsOperation\.current\|\|epoch!==actionEpoch\.current\)return/);
+ assert.match(confirm,/if\(refreshed&&isOrganizer\(refreshed,auth\.username\)\)\{/);
+ assert.match(confirm,/O servidor confirmou as equipas, mas não foi possível validar a atualização da sessão/);
+ const success=confirm.slice(confirm.indexOf('.then(async result=>'),confirm.indexOf('.catch(()=>'));
+ assert.doesNotMatch(success,/setTeamsError\(/);
+ assert.ok(success.indexOf('const refreshed=await load()')<success.indexOf('O servidor confirmou as equipas, mas'));
+});
