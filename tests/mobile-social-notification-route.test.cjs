@@ -1,0 +1,30 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {notificationDestination}=require('../src/lib/notification-route.cjs');
+const inbox=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+
+test('new follower opens only a validated related public profile',()=>{
+ assert.deepEqual(notificationDestination({type:'SOCIAL_NEW_FOLLOWER',relatedUsername:'jogador_1'}),{kind:'social-profile',peer:'jogador_1'});
+ assert.equal(notificationDestination({type:'SOCIAL_NEW_FOLLOWER',relatedUsername:'../../admin'}),null);
+ assert.equal(notificationDestination({type:'SOCIAL_NEW_FOLLOWER',relatedUsername:null}),null);
+});
+test('likes and comments never guess a missing postId from text or unrelated session',()=>{
+ for(const type of ['SOCIAL_POST_LIKED','SOCIAL_POST_COMMENTED']){
+  assert.deepEqual(notificationDestination({type,relatedUsername:'ana',sessionId:55,message:'Gostou de um post'}),{kind:'social-profile',peer:'ana'});
+  assert.equal(notificationDestination({type,relatedUsername:null,sessionId:55}),null);
+ }
+});
+test('preexisting session, community and message destinations remain unchanged',()=>{
+ assert.deepEqual(notificationDestination({type:'COMMUNITY_INVITE'}),{kind:'invites'});
+ assert.deepEqual(notificationDestination({type:'SESSION_CANCELLED',sessionId:12}),{kind:'session',id:'12'});
+ assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',relatedUsername:'ana'}),{kind:'direct-chat',peer:'ana'});
+});
+test('inbox resolves push IDs against own notification history and routes social identities',()=>{
+ assert.match(inbox,/const target=items\.find\(item=>String\(item\.id\)===notificationId\)/);
+ assert.match(inbox,/sameAccount/);
+ assert.match(inbox,/case 'social-profile':router\.push\(\{pathname:'\/social\/\[username\]'/);
+ assert.match(inbox,/markNotificationRead\(item\.id,auth\.token\)/);
+});
