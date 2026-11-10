@@ -26,6 +26,7 @@ export default function SessionScreen(){
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
   const detailRequestGeneration=useRef(0);
   const operationInFlight=useRef(false);
+  const actionEpoch=useRef(0);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
   const [participants,setParticipants]=useState<SessionParticipant[]>([]);
   const [rosterError,setRosterError]=useState('');
@@ -92,10 +93,11 @@ export default function SessionScreen(){
     }
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
+    setBusy(false);
     void load();
     // An old response must never restore restricted session details after
     // changing account, route, or leaving this screen.
-    return ()=>{detailRequestGeneration.current++;};
+    return ()=>{detailRequestGeneration.current++;actionEpoch.current++;};
   },[load]));
 
   const perform=async(operation:()=>Promise<unknown>,success:string|((result:unknown)=>string))=>{
@@ -104,6 +106,7 @@ export default function SessionScreen(){
     if(operationInFlight.current)return;
     operationInFlight.current=true;
     const version=detailRequestGeneration.current;
+    const epoch=actionEpoch.current;
     setBusy(true);setError('');setFeedback('');
     try {
       const result=await operation();
@@ -116,7 +119,7 @@ export default function SessionScreen(){
         setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado da sessão antes de repetir.');
     }finally{
       operationInFlight.current=false;
-      if(version===detailRequestGeneration.current)setBusy(false);
+      if(epoch===actionEpoch.current)setBusy(false);
     }
   };
   const s=detail||preview,spots=Math.max(0,(s?.maxParticipants??0)-(s?.participantCount??0));
