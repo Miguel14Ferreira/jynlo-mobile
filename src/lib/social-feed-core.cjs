@@ -13,8 +13,12 @@ function groupStories(mine,entries,at=Date.now()){
   const seen=new Set(),groups=new Map();
   for(const story of [...(mine||[]),...(entries||[])]){
     if(!story||!Number.isSafeInteger(story.id)||seen.has(story.id))continue;
+    // A malformed API entry must not crash the entire feed or remain visible
+    // forever because Date.parse returned NaN.
+    const expiry=Date.parse(story.expiresAt||'');
+    if(!Number.isFinite(expiry)||expiry<=at)continue;
+    if(story.communityId==null&&(typeof story.authorUsername!=='string'||!story.authorUsername.trim()))continue;
     seen.add(story.id);
-    if(!story.expiresAt||Date.parse(story.expiresAt)<=at)continue;
     const key=story.communityId!=null?`community:${story.communityId}`:`person:${story.authorUsername.toLowerCase()}`;
     if(!groups.has(key))groups.set(key,{key,name:story.communityId!=null?(story.communityName||story.displayName):`@${story.authorUsername.replace(/^@/,'')}`,avatar:story.communityPhotoUrl||story.avatarUrl,stories:[]});
     groups.get(key).stories.push(story);
