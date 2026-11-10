@@ -50,3 +50,19 @@ test('a partially persisted token and username are deleted before reporting a fa
  assert.ok(auth.includes('Não foi possível guardar a sessão em segurança'));
  assert.ok(auth.indexOf('setUsername(name);')>auth.indexOf('Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY)'));
 });
+
+test('Google native errors are classified across SDK initialization, Play Services and account picker',()=>{
+ const google=read('src/lib/google-credential.ts');
+ const start=google.indexOf("try{\n  const {GoogleSignin}=await import(");
+ const caught=google.indexOf('}catch(error){',start);
+ assert.ok(start>=0&&caught>start);
+ assert.ok(google.indexOf('GoogleSignin.hasPlayServices',start)<caught);
+ assert.ok(google.indexOf('result=await GoogleSignin.signIn()',start)<caught);
+ for(const marker of ["code==='SIGN_IN_CANCELLED'","code==='12501'","code==='IN_PROGRESS'",
+  "code==='12502'","code==='PLAY_SERVICES_NOT_AVAILABLE'","code==='DEVELOPER_ERROR'",
+  "message.includes('Native module')","message.includes('TurboModule')"]){
+  assert.ok(google.includes(marker),marker);
+ }
+ assert.ok(google.includes('return result.data.idToken'));
+ assert.ok(!google.includes('Linking.openURL'));
+});
