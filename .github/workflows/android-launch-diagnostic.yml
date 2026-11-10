@@ -1,6 +1,10 @@
 name: Jynlo Android launch diagnostic (signed APK)
 
 on:
+  workflow_run:
+    workflows: ['Jynlo Mobile - Android APK assinada (testes internos)']
+    types: [completed]
+    branches: [develop]
   workflow_dispatch:
     inputs:
       apk_run_id:
@@ -13,6 +17,8 @@ permissions:
 
 jobs:
   launch-smoke:
+    # A failed/cancelled build has no trustworthy signed APK to test.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -24,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p launch-diagnostics/apk
-          run_id="${{ inputs.apk_run_id }}"
+          run_id="${{ github.event.workflow_run.id || inputs.apk_run_id }}"
           if [[ ! "$run_id" =~ ^[1-9][0-9]{0,17}$ ]]; then
             echo '::error::O identificador do run da APK deve ser um número válido.'
             exit 1
@@ -34,6 +40,7 @@ jobs:
           test -n "$apk" && test -s "$apk"
           echo "APK_PATH=$apk" >> "$GITHUB_ENV"
           echo "Testing signed APK from run $run_id."
+          echo "Source run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$run_id"
           if [ -f launch-diagnostics/apk/android-build-info.json ]; then
             cp launch-diagnostics/apk/android-build-info.json launch-diagnostics/apk-build-info.json
           fi
