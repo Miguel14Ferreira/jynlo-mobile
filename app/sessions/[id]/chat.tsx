@@ -19,6 +19,8 @@ export default function SessionChat(){
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0),pendingRefresh=useRef(false);
+ // A request remains locked to its original session/account across refocus.
+ const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
@@ -57,19 +59,26 @@ export default function SessionChat(){
  useFocusEffect(useCallback(()=>{
   let active=true;
   const version=++generation.current;
+  const identity=id+'|'+auth.token;
+  activeChat.current=identity;
+  const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
   setEntries([]);setClosed(false);setError('');setLoading(true);setDraft('');setReply(null);
-  sendingNow.current=false;setSending(false);setUploading(false);
+  sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
   setPhoto(null);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
   const timer=setInterval(()=>{if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);},15000);
-  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;};
+  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;
+   if(activeChat.current===identity)activeChat.current='';
+  };
  },[refresh,auth.token,id]));
  async function send(){
-  if(sendingNow.current||closed||!auth.token||!draft.trim())return;
+  const identity=id+'|'+auth.token;
+  if(sendingNow.current||pendingWrites.current.has(identity)||closed||!auth.token||!draft.trim())return;
   const version=generation.current,originalDraft=draft,originalReplyId=reply?.id;
+  pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{await postSessionChat(id,originalDraft,auth.token,originalReplyId);
    if(version!==generation.current)return;
@@ -78,7 +87,10 @@ export default function SessionChat(){
    await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Falha no envio.')+
    ' Consulta o histórico antes de voltares a tentar.');}
-  finally{if(version===generation.current){sendingNow.current=false;setSending(false);}}
+  finally{
+   pendingWrites.current.delete(identity);
+   if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
+  }
  }
  async function choosePhoto(){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
@@ -89,8 +101,10 @@ export default function SessionChat(){
   }catch{if(version===generation.current)setError('Não foi possível abrir a galeria.');}
  }
  async function uploadPhoto(){
-  if(!auth.token||!photo||!photoReady||closed||sendingNow.current||uploading)return;
+  const identity=id+'|'+auth.token;
+  if(!auth.token||!photo||!photoReady||closed||sendingNow.current||pendingWrites.current.has(identity)||uploading)return;
   const version=generation.current,originalReplyId=reply?.id;
+  pendingWrites.current.set(identity,'photo');
   sendingNow.current=true;setUploading(true);setError('');
   try{
    await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
@@ -98,7 +112,10 @@ export default function SessionChat(){
    setPhoto(null);setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
-  finally{if(version===generation.current){sendingNow.current=false;setUploading(false);}}
+  finally{
+   pendingWrites.current.delete(identity);
+   if(activeChat.current===identity){sendingNow.current=false;setUploading(false);}
+  }
  }
  return <Page><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
