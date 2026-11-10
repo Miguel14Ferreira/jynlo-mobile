@@ -1,6 +1,6 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Image,StyleSheet,Text,View} from 'react-native';
-import {useFocusEffect} from 'expo-router';
+import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useFocusEffect,useRouter} from 'expo-router';
 import {Loader,Message,Page} from './UI';
 import {MobileTheme} from '../lib/theme';
 import {useAuth} from '../lib/auth';
@@ -10,7 +10,7 @@ import {followingPeople,postLikers,type PeopleListKind,type SocialPerson} from '
 type Props={kind:PeopleListKind;username:string}|{postId:number};
 const T=MobileTheme.colors;
 export default function SocialPeopleList(props:Props){
- const auth=useAuth();
+ const auth=useAuth(),router=useRouter();
  const [people,setPeople]=useState<SocialPerson[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -35,10 +35,10 @@ export default function SocialPeopleList(props:Props){
   {people.map(person=>{
    const uri=resolveJynloMedia(person.profilePicUrl);
    const name=person.nickname?.trim()||person.fullName?.trim()||person.username;
-   return <View key={person.username} style={styles.person}>
+   return <Pressable key={person.username} style={styles.person} accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${person.username}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:person.username}})}>
     <View style={styles.avatar}>{uri?<Image style={styles.photo} source={{uri}}/>:<Text style={styles.initial}>{person.username.charAt(0).toUpperCase()}</Text>}</View>
     <View style={styles.identity}><Text style={styles.name} numberOfLines={1}>{name}</Text><Text style={styles.handle} numberOfLines={1}>@{person.username}</Text></View>
-   </View>;
+   </Pressable>;
   })}
  </Page>;
 }
