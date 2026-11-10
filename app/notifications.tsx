@@ -25,6 +25,7 @@ export default function NotificationsScreen(){
  const pendingRefresh=useRef(false);
  const statusRequest=useRef(0);
  const pushOperation=useRef(0),inviteOperation=useRef(0);
+ const inviteDecisionInFlight=useRef<number|null>(null);
  // Gate private content during render, before the focus effect has time to
  // clear state left by a different signed-in account.
  const sameAccount=Boolean(auth.token&&auth.username&&account.current===auth.username+'|'+auth.token);
@@ -68,6 +69,7 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);
    // Invalidate in-flight mutations started by the previous account.
    pushOperation.current++;inviteOperation.current++;
+   inviteDecisionInFlight.current=null;
    setPushBusy(false);setBusyInvite(null);setNotice('');
   }
   const version=++generation.current;
@@ -115,9 +117,11 @@ export default function NotificationsScreen(){
   finally{if(pushOperation.current===operation)setPushBusy(false);}
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
-  if(!sameAccount||!auth.token||busyInvite!==null)return;
+  if(!sameAccount||!auth.token||inviteDecisionInFlight.current!==null)return;
   const initialIdentity=auth.username+'|'+auth.token;
   const operation=++inviteOperation.current;
+  // Synchronous lock: a second tap before React renders must not repeat the POST.
+  inviteDecisionInFlight.current=operation;
   setBusyInvite(invite.id);setError('');setNotice('');
   try{
    const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
@@ -129,7 +133,10 @@ export default function NotificationsScreen(){
     'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
   }catch(e){if(account.current===initialIdentity&&inviteOperation.current===operation)
    setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
-  finally{if(account.current===initialIdentity&&inviteOperation.current===operation)setBusyInvite(null);}
+  finally{
+   if(inviteDecisionInFlight.current===operation)inviteDecisionInFlight.current=null;
+   if(account.current===initialIdentity&&inviteOperation.current===operation)setBusyInvite(null);
+  }
  }
  async function open(item:JynloNotification){
   if(!sameAccount||!auth.token||!auth.username)return;
