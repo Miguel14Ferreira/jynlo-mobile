@@ -29,11 +29,13 @@ test('background synchronization skips mutations, overlapping calls and full for
 
 test('automatic refresh does not clear editor drafts or mark a player present without server confirmation',()=>{
  assert.doesNotMatch(sync,/setMeetingDraft\(|setExternalDraft\(|setPassword\(|setDraft\(|joinSession\(|leaveSession\(|answerSessionInvite\(/);
- // The normal success path must preserve a preview being edited; access
- // revocation is intentionally allowed to clear it for privacy.
+ // Normal synchronization must preserve the current preview. Losing roster
+ // access is the exception: cached player assignments must be discarded.
  const successfulSync=sync.slice(sync.indexOf('try{'),sync.indexOf('}catch(e){'));
- assert.doesNotMatch(successfulSync,/setTeamPreview\(null\)/);
- assert.match(sync,/if\(canViewRoster\(updated,auth\.username\)\)/);
+ assert.match(successfulSync,/const rosterAllowed=canViewRoster\(updated,auth\.username\)/);
+ assert.match(successfulSync,/if\(!rosterAllowed\)setTeamPreview\(null\)/);
+ assert.doesNotMatch(successfulSync,/\n\s*setTeamPreview\(null\)/);
+ assert.match(sync,/if\(rosterAllowed\)\{/);
  assert.match(sync,/let roster:SessionParticipant\[\]=\[\]/);
  assert.match(sync,/setParticipants\(roster\)/);
 });
