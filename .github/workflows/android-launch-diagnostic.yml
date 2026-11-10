@@ -51,7 +51,8 @@ jobs:
             adb install -r "$APK_PATH"
             adb logcat -c
             adb shell am force-stop com.jynlo.app || true
-            adb shell monkey -p com.jynlo.app 1 | tee launch-diagnostics/launch.txt
+            adb shell monkey -p com.jynlo.app 1 > launch-diagnostics/launch.txt 2>&1 || true
+            cat launch-diagnostics/launch.txt
             sleep 20
             adb logcat -d -v time > launch-diagnostics/logcat.txt
             adb shell dumpsys activity activities > launch-diagnostics/activities.txt
@@ -61,7 +62,7 @@ jobs:
             from pathlib import Path
             text = Path('launch-diagnostics/logcat.txt').read_text(errors='replace')
             lines = text.splitlines()
-            crashes = [l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l or 'Process: com.jynlo.app' in l]
+            crashes = [l for l in lines if 'FATAL EXCEPTION' in l or 'Fatal signal' in l]
             Path('launch-diagnostics/crash-summary.txt').write_text('\n'.join(crashes) if crashes else 'No Android fatal exception signature detected in launch window.\n')
             for line in crashes[:20]:
                 print(line[:250])
