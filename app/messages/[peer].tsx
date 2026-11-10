@@ -3,7 +3,8 @@ import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationTypes from 'expo-notifications';
+import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -128,9 +129,10 @@ export default function DirectConversation(){
   });
   // Native notification delivery is optional. A missing/unavailable module
   // must not prevent opening a direct chat on Android.
-  let received:ReturnType<typeof Notifications.addNotificationReceivedListener>|null=null;
+  let received:ReturnType<typeof NotificationTypes.addNotificationReceivedListener>|null=null;
   try{
-   received=Notifications.addNotificationReceivedListener(notification=>{
+   const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
+   if(Notifications)received=Notifications.addNotificationReceivedListener(notification=>{
     if(notification.request?.content?.data?.kind!=='notification'||generation.current!==version)return;
     if(auth.token)void refresh(true,version);
    });
