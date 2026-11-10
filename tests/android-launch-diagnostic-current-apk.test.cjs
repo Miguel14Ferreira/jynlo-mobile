@@ -78,3 +78,9 @@ test('a Jynlo React Native JS error fails launch smoke despite a live Android pr
  assert.match(workflow,/Jynlo raised a severe React Native JS error after launch/);
  assert.doesNotMatch(workflow,/retention-days: 7[\s\S]*?, line\)/);
 });
+
+test('native LiveKit-style fatal signals are attributed to Jynlo without Java Process headers',()=>{
+ assert.match(workflow,/jynlo_native_signal = \('Fatal signal' in lines\[i\] and/);
+ assert.match(workflow,/\(com\.jynlo\.app\)/);
+ assert.match(workflow,/if jynlo_native_signal or any\(/);
+});
