@@ -50,3 +50,9 @@ test('signed APK validation aborts on the first failed regression, TypeScript or
  assert.ok(validation.indexOf('npm run test:all')<validation.indexOf('npm run typecheck'));
  assert.ok(validation.indexOf('npm run typecheck')<validation.indexOf('npm run check:release'));
 });
+
+test('internal signed APK cannot be generated from non-develop refs',()=>{
+ assert.match(workflow,/workflow_dispatch:/);
+ assert.match(workflow,/if: \$\{\{ github\.ref == 'refs\/heads\/develop' && inputs\.confirm == 'TESTAR_API_REAL' \}\}/);
+ assert.doesNotMatch(workflow,/github\.event_name == 'push' \|\| inputs\.confirm/);
+});
