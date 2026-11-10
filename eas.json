@@ -52,6 +52,15 @@
         "buildType": "apk",
         "image": "latest"
       }
+    },
+    "ios-testflight": {
+      "distribution": "store",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_JYNLO_API_URL": "https://desporto24-preview-api.onrender.com",
+        "JYNLO_REQUIRE_REAL_API": "1"
+      },
+      "ios": {}
     }
   },
   "submit": {
@@ -60,6 +69,9 @@
         "track": "internal",
         "releaseStatus": "draft"
       }
+    },
+    "ios-testflight": {
+      "ios": {}
     }
   }
 }
