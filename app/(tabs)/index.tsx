@@ -19,9 +19,9 @@ const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))re
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
-function MediaVideo({uri,story=false,paused=false}:{uri:string;story?:boolean;paused?:boolean}){
+function MediaVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;onEnd?:()=>void}){
  return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
-  <FeedVideo uri={uri} story={story} paused={paused}/>
+  <FeedVideo uri={uri} story={story} paused={paused} onEnd={onEnd}/>
  </Suspense>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
@@ -39,6 +39,7 @@ function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;g
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
   const longPress=useRef(false);
+  const touchStartY=useRef<number|null>(null);
   const progress=useRef(new Animated.Value(0)).current;
   const remaining=useRef(1);
   React.useEffect(()=>{
@@ -82,12 +83,19 @@ function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;g
     delayLongPress:250
   });
   return <Modal visible transparent={false} animationType="fade" onRequestClose={onClose}>
-    <SafeAreaView style={styles.storyOverlay}>
+    <SafeAreaView style={styles.storyOverlay}
+      onTouchStart={event=>{touchStartY.current=event.nativeEvent.pageY;}}
+      onTouchEnd={event=>{
+        const start=touchStartY.current;
+        touchStartY.current=null;
+        if(start!==null&&event.nativeEvent.pageY-start>110)onClose();
+      }}
+      onTouchCancel={()=>{touchStartY.current=null;}}>
       <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{resetProgress();setIndex(i);}} style={styles.progressPart}>
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={onClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo uri={uri} story paused={paused}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         <View style={styles.storyTapZones} pointerEvents="box-none">
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
           <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
