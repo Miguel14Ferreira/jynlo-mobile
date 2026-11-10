@@ -132,6 +132,9 @@ export default function DirectConversation(){
   safetyInFlight.current=true;
   const identity=peer+'|'+auth.token,version=generation.current;
   const actorToken=auth.token,wasBlocked=blocked;
+  // Invalidate an older block-status lookup before the write begins.
+  // Its late response must never overwrite this confirmed change.
+  ++blockCheckRequest.current;
   setSafetyBusy(true);setError('');
   try{
    const value=wasBlocked?await unblockUser(peer,actorToken):await blockUser(peer,actorToken);
