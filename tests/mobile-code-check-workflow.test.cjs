@@ -19,13 +19,15 @@ test('develop checks reject demo mode before code validation',()=>{
  assert.match(source,/name: Verify real API release configuration/);
  assert.match(source,/EXPO_PUBLIC_JYNLO_API_URL: https:\/\/desporto24-preview-api\.onrender\.com/);
  assert.match(source,/JYNLO_REQUIRE_REAL_API: '1'/);
- assert.match(source,/run: npm run check:release/);
- assert.ok(source.indexOf('run: npm run check:release')<source.indexOf('run: npm run typecheck'));
+ assert.match(source,/npm run check:release 2>&1 \| tee/);
+ assert.ok(source.indexOf('npm run check:release 2>&1 | tee')<
+           source.indexOf('npm run typecheck 2>&1 | tee'));
 });
 
 test('Android bundle validates imports with the real Jynlo backend, without Gradle',()=>{
  assert.match(source,/name: Bundle Android JavaScript without native build/);
  assert.match(source,/EXPO_PUBLIC_JYNLO_API_URL: https:\/\/desporto24-preview-api\.onrender\.com/);
- assert.ok(source.indexOf('run: npm run test:all')<source.indexOf('run: npx expo export --platform android'));
+ assert.ok(source.indexOf('npm run test:all 2>&1 | tee')<
+           source.indexOf('npx expo export --platform android --output-dir'));
  assert.doesNotMatch(source,/npx eas build|\.\/gradlew|assembleRelease/);
 });
