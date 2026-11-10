@@ -1,13 +1,25 @@
-import React,{useEffect} from 'react';
+import React,{useEffect,useRef} from 'react';
 import {StyleSheet} from 'react-native';
 import {VideoView,useVideoPlayer} from 'expo-video';
 
 /** Loaded only for an actual feed/story video, never at tab startup. */
-export default function FeedVideo({uri,story=false,paused=false}:{uri:string;story?:boolean;paused?:boolean}){
+export default function FeedVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;onEnd?:()=>void}){
  const player=useVideoPlayer(uri,p=>{
-  p.loop=story;
+  // Stories must advance when playback finishes, not loop forever.
+  p.loop=false;
   if(story){p.muted=true;p.play();}
  });
+ const ended=useRef(false);
+ useEffect(()=>{ended.current=false;},[uri]);
+ useEffect(()=>{
+  if(!story||!onEnd)return;
+  const subscription=player.addListener('playToEnd',()=>{
+   if(ended.current)return;
+   ended.current=true;
+   onEnd();
+  });
+  return ()=>subscription.remove();
+ },[player,story,onEnd]);
  useEffect(()=>{if(story){if(paused)player.pause();else player.play();}},[paused,story,player]);
  return <VideoView player={player} style={story?styles.storyVideo:styles.postVideo}
   contentFit="cover" nativeControls={!story}/>;
