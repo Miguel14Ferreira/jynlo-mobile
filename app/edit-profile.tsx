@@ -1,6 +1,6 @@
 import React,{useCallback,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import type {ImagePickerAsset} from 'expo-image-picker';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
@@ -52,7 +52,7 @@ export default function EditProfileScreen(){
  const [values,setValues]=useState<Editable>({});
  const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[success,setSuccess]=useState(false);
- const [selectedPhoto,setSelectedPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [selectedPhoto,setSelectedPhoto]=useState<ImagePickerAsset|null>(null);
  const [photoBusy,setPhotoBusy]=useState(false),[photoSuccess,setPhotoSuccess]=useState(false);
  const [catalog,setCatalog]=useState<string[]>([]),[catalogReady,setCatalogReady]=useState(false);
  const [sportsSearch,setSportsSearch]=useState(''),[showSports,setShowSports]=useState(false);
@@ -77,6 +77,7 @@ export default function EditProfileScreen(){
   if(photoBusy||busy||!auth.token||DEMO_MODE)return;
   setError('');setPhotoSuccess(false);
   try{
+   const ImagePicker=await import('expo-image-picker');
    const result=await ImagePicker.launchImageLibraryAsync({
     mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.75,
     exif:false,base64:false
