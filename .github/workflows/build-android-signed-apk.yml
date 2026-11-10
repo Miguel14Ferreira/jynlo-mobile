@@ -42,14 +42,23 @@ jobs:
       - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Instalar dependências
-        run: npm install --no-audit --no-fund
-      - name: Validar testes, TypeScript e API real
+        shell: bash
         run: |
-          npm run test:all
-          npm run typecheck
-          npm run check:release
+          set -o pipefail
+          mkdir -p android-build-diagnostics
+          npm install --no-audit --no-fund 2>&1 | tee android-build-diagnostics/install.log
+      - name: Validar testes, TypeScript e API real
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:all 2>&1 | tee android-build-diagnostics/tests.log
+          npm run typecheck 2>&1 | tee android-build-diagnostics/typescript.log
+          npm run check:release 2>&1 | tee android-build-diagnostics/release-check.log
       - name: Gerar Android nativo
-        run: npx expo prebuild --platform android --no-install --clean
+        shell: bash
+        run: |
+          set -o pipefail
+          npx expo prebuild --platform android --no-install --clean 2>&1 | tee android-build-diagnostics/expo-prebuild.log
       # The internal APK is for real-device troubleshooting, not store release.
       # The previously signed R8-minified APK contains a reference to a missing
       # livekit.org.jni_zero.JniZeroJni class. Silencing it with -dontwarn can
@@ -137,7 +146,10 @@ jobs:
           JYNLO_PLAY_UPLOAD_STORE_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_STORE_PASSWORD }}
           JYNLO_PLAY_UPLOAD_KEY_PASSWORD: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_PASSWORD }}
           JYNLO_PLAY_UPLOAD_KEY_ALIAS: ${{ secrets.JYNLO_PLAY_UPLOAD_KEY_ALIAS }}
-        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleRelease --no-daemon --max-workers=2 2>&1 | tee ../android-build-diagnostics/gradle-assemble.log
         working-directory: android
       - name: Diagnóstico R8 e dependências LiveKit em caso de falha
         if: failure()
