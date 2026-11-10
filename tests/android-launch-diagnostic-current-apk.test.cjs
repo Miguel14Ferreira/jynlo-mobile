@@ -27,8 +27,9 @@ test('launch diagnosis keeps its provenance and fatal Android failure artifacts'
 });
 
 
-test('launch diagnostic does not count normal process mentions as fatal, and captures monkey failures',()=>{
- assert.match(workflow,/adb shell monkey -p com\.jynlo\.app 1 > launch-diagnostics\/launch\.txt 2>&1 \|\| true/);
+test('launch diagnostic does not count normal process mentions as fatal, and captures Activity Manager launch failures',()=>{
+ assert.match(workflow,/adb shell am start -W -a android\.intent\.action\.MAIN -c android\.intent\.category\.LAUNCHER -p com\.jynlo\.app > launch-diagnostics\/launch\.txt 2>&1 \|\| true/);
+ assert.doesNotMatch(workflow,/adb shell monkey -p com\.jynlo\.app/);
  assert.match(workflow,/fatal_indices = \[i for i, line in enumerate\(lines\)/);
  assert.match(workflow,/if 'FATAL EXCEPTION' in line or 'Fatal signal' in line/);
  assert.match(workflow,/Process: com\.jynlo\.app,/);
