@@ -45,6 +45,7 @@ export default function SessionScreen(){
   const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'|'RANDOM'>('FORM');
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
+  const teamsInFlight=useRef(false),teamsOperation=useRef(0);
   const [teamsMessage,setTeamsMessage]=useState('');
   const owner=isOrganizer(detail,auth.username);
 
@@ -102,14 +103,14 @@ export default function SessionScreen(){
   const syncSession=useCallback(async(version:number,epoch:number)=>{
     if(backgroundSyncInFlight.current||foregroundLoadVersion.current!==null||
        operationInFlight.current||
-       removalInFlight.current||attendanceInFlight.current||!auth.token||
+       removalInFlight.current||attendanceInFlight.current||teamsInFlight.current||!auth.token||
        !Number.isSafeInteger(id)||id<=0)return;
     if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
     backgroundSyncInFlight.current=true;
     try{
       const updated=await sessionDetail(id,auth.token,auth.username||undefined);
       if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current||
-         operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
+         operationInFlight.current||removalInFlight.current||attendanceInFlight.current||teamsInFlight.current)return;
       // Resolve the roster before publishing the new snapshot. Unauthorized
       // viewers never retain the previous player's private roster.
       let roster:SessionParticipant[]=[];
@@ -117,7 +118,7 @@ export default function SessionScreen(){
       if(rosterAllowed){
         roster=await sessionParticipants(id,auth.token);
         if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current||
-           operationInFlight.current||removalInFlight.current||attendanceInFlight.current)return;
+           operationInFlight.current||removalInFlight.current||attendanceInFlight.current||teamsInFlight.current)return;
       }
       setDetail(updated);
       setParticipants(roster);
@@ -152,6 +153,7 @@ export default function SessionScreen(){
     return ()=>{
       clearInterval(timer);resume.remove();
       detailRequestGeneration.current++;actionEpoch.current++;
+      teamsOperation.current++;teamsInFlight.current=false;
     };
   },[load,syncSession]));
 
@@ -271,24 +273,61 @@ export default function SessionScreen(){
     void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});
   };
   async function previewBalancedTeams(){
-    if(!auth.token||!owner||!detail||teamsBusy)return;
+    if(!auth.token||!owner||!detail||teamsInFlight.current)return;
+    teamsInFlight.current=true;
+    const request=++teamsOperation.current,epoch=actionEpoch.current;
+    const version=detailRequestGeneration.current,actorToken=auth.token;
+    const mode=!detail.teamBalanceSupported?'RANDOM':teamSource;
     setTeamsBusy(true);setTeamsError('');setTeamsMessage('');setTeamPreview(null);
-    try{setTeamPreview(await suggestSessionTeams(id,auth.token,!detail.teamBalanceSupported?'RANDOM':teamSource));}
-    catch(e){setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');}
-    finally{setTeamsBusy(false);}
+    try{
+      const suggestion=await suggestSessionTeams(id,actorToken,mode);
+      if(request===teamsOperation.current&&epoch===actionEpoch.current&&
+         version===detailRequestGeneration.current)setTeamPreview(suggestion);
+    }catch(e){
+      if(request===teamsOperation.current&&epoch===actionEpoch.current&&
+         version===detailRequestGeneration.current)
+        setTeamsError(e instanceof Error?e.message:'A sessão não permite gerar equipas neste momento.');
+    }finally{
+      if(request===teamsOperation.current){
+        teamsInFlight.current=false;
+        if(epoch===actionEpoch.current)setTeamsBusy(false);
+      }
+    }
   }
   function persistBalancedTeams(){
-    if(!auth.token||!owner||!detail||!teamPreview||teamsBusy)return;
-    // Confirming recalculates the current roster on the server, never trusts the client preview.
+    if(!auth.token||!owner||!detail||!teamPreview||teamsInFlight.current)return;
+    const actorToken=auth.token,selectedPreview=teamPreview;
+    const mode=!detail.teamBalanceSupported?'RANDOM':teamSource;
+    const version=detailRequestGeneration.current,epoch=actionEpoch.current;
+    // The server remains authoritative and rejects stale roster assignments.
     Alert.alert('Confirmar equipas?',
-      teamSource==='RANDOM'||!detail.teamBalanceSupported?'O servidor vai guardar exatamente as equipas sorteadas, se a lista de participantes não tiver mudado.':'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
+      mode==='RANDOM'?'O servidor vai guardar exatamente as equipas sorteadas, se a lista de participantes não tiver mudado.':'O servidor voltará a calcular as equipas com os participantes atuais antes de guardar.',
       [{text:'Voltar',style:'cancel'},{text:'Confirmar equipas',onPress:()=>{
-        if(teamsBusy)return;
+        if(teamsInFlight.current||version!==detailRequestGeneration.current||
+           epoch!==actionEpoch.current)return;
+        teamsInFlight.current=true;
+        const request=++teamsOperation.current;
         setTeamsBusy(true);setTeamsError('');setTeamsMessage('');
-        void confirmSessionTeams(id,auth.token!,!detail.teamBalanceSupported?'RANDOM':teamSource,teamPreview)
-          .then(result=>{setTeamPreview(result);setTeamsMessage('Equipas confirmadas pelo servidor.');return load();})
-          .catch(()=>{setTeamPreview(null);setTeamsError('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.');})
-          .finally(()=>setTeamsBusy(false));
+        void confirmSessionTeams(id,actorToken,mode,selectedPreview)
+          .then(async()=>{
+            if(request!==teamsOperation.current||epoch!==actionEpoch.current||
+               version!==detailRequestGeneration.current)return;
+            await load();
+            if(request===teamsOperation.current&&epoch===actionEpoch.current)
+              setTeamsMessage('Equipas confirmadas pelo servidor.');
+          })
+          .catch(()=>{
+            if(request!==teamsOperation.current||epoch!==actionEpoch.current||
+               version!==detailRequestGeneration.current)return;
+            setTeamPreview(null);
+            setTeamsError('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.');
+          })
+          .finally(()=>{
+            if(request===teamsOperation.current){
+              teamsInFlight.current=false;
+              if(epoch===actionEpoch.current)setTeamsBusy(false);
+            }
+          });
       }}]);
   }
   const renderTeam=(title:string,players:SessionTeamPlayer[],score:number)=>
