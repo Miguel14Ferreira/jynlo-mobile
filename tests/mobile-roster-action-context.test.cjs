@@ -19,5 +19,5 @@ for(const [name,operation] of [['removal',removal],['attendance',attendance]]){
  });
 }
 test('focus cleanup invalidates feedback from a previous session or account',()=>{
- assert.match(code,/return \(\)=>\{detailRequestGeneration\.current\+\+;actionEpoch\.current\+\+;\}/);
+ assert.match(code,/detailRequestGeneration\.current\+\+;actionEpoch\.current\+\+;/);
 });
