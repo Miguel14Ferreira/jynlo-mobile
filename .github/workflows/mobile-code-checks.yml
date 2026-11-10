@@ -1,0 +1,39 @@
+name: Jynlo Mobile - Code Checks
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'app/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'app.json'
+      - 'eas.json'
+      - '.github/workflows/mobile-code-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-code-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts-and-types:
+    name: TypeScript and regression contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without lifecycle scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Check syntax and regression contracts
+        run: npm run test:all
