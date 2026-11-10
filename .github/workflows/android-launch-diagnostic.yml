@@ -81,7 +81,11 @@ jobs:
             adb shell am force-stop com.jynlo.app || true
             # Start the launcher Activity deterministically; monkey injects a
             # pseudo-random event that can hide or alter the startup outcome.
-            adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p com.jynlo.app > launch-diagnostics/launch.txt 2>&1 || true
+            if adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p com.jynlo.app > launch-diagnostics/launch.txt 2>&1; then
+              echo 0 > launch-diagnostics/launch-exit-code.txt
+            else
+              echo "$?" > launch-diagnostics/launch-exit-code.txt
+            fi
             cat launch-diagnostics/launch.txt
             # Preserve the launch PID even if React Native crashes shortly afterwards.
             adb shell pidof com.jynlo.app > launch-diagnostics/initial-pid.txt || true
@@ -166,11 +170,15 @@ jobs:
                        if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
             Path('launch-diagnostics/resumed-activity.txt').write_text(
                 '\n'.join(resumed) + '\n')
+            # Preserve launch-command failure without skipping native/JS evidence.
+            launch_status = Path('launch-diagnostics/launch-exit-code.txt').read_text().strip()
             # All three reports exist before declaring launch failure.
             if crashes:
                 raise SystemExit('Android fatal error detected during launch')
             if js_errors:
                 raise SystemExit('Jynlo raised a severe React Native JS error after launch')
+            if launch_status != '0':
+                raise SystemExit('Android Activity Manager failed to start Jynlo (exit code ' + launch_status + ')')
             if not pid or not all(part.isdigit() for part in pid.split()):
                 raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
             if not any('com.jynlo.app/' in line for line in resumed):
