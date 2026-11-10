@@ -11,6 +11,9 @@ function PushNavigation(){
     // A notification may launch the app before SecureStore restores the login.
     // Keep the native response until authentication is definitively resolved.
     if(!auth.ready)return;
+    // Do not initialize native push for guests; retain cold-start responses
+    // until the authenticated navigation effect is installed.
+    if(!auth.token||!auth.username)return;
     // Loading the optional native module must not prevent root navigation.
     const Notifications=getNativeNotifications() as typeof NotificationTypes|null;
     if(!Notifications)return;
