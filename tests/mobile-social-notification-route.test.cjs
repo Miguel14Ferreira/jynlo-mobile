@@ -17,6 +17,15 @@ test('likes and comments never guess a missing postId from text or unrelated ses
   assert.equal(notificationDestination({type,relatedUsername:null,sessionId:55}),null);
  }
 });
+test('new social notifications target their exact positive post ID',()=>{
+ for(const type of ['SOCIAL_POST_LIKED','SOCIAL_POST_COMMENTED']){
+  assert.deepEqual(notificationDestination({type,postId:128,relatedUsername:'ana',sessionId:55}),{kind:'social-post',id:'128'});
+  assert.deepEqual(notificationDestination({type,postId:0,relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
+  assert.deepEqual(notificationDestination({type,postId:'128',relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
+  assert.equal(notificationDestination({type,postId:-4,relatedUsername:null}),null);
+ }
+ assert.deepEqual(notificationDestination({type:'SOCIAL_NEW_FOLLOWER',postId:128,relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
+});
 test('preexisting session, community and message destinations remain unchanged',()=>{
  assert.deepEqual(notificationDestination({type:'COMMUNITY_INVITE'}),{kind:'invites'});
  assert.deepEqual(notificationDestination({type:'SESSION_CANCELLED',sessionId:12}),{kind:'session',id:'12'});
@@ -27,4 +36,15 @@ test('inbox resolves push IDs against own notification history and routes social
  assert.match(inbox,/sameAccount/);
  assert.match(inbox,/case 'social-profile':router\.push\(\{pathname:'\/social\/\[username\]'/);
  assert.match(inbox,/markNotificationRead\(item\.id,auth\.token\)/);
+});
+
+test('social post route uses server lookup, safe account-scoped state and explicit sends',()=>{
+ const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ assert.match(inbox,/case 'social-post':router\.push/);
+ assert.match(api,/\/api\/feed\/posts\/\$\{postId\}/);
+ assert.match(post,/socialPostById\(id,auth\.token\)/);
+ assert.match(post,/generation\.current/);
+ assert.match(post,/post\.authorUsername/);
+ assert.match(post,/await addPostComment\(id,original,auth\.token,auth\.username\)/);
 });
