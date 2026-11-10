@@ -94,3 +94,18 @@ test('feed comments use a dismissible bottom sheet instead of expanding under th
  assert.match(feed,/function closeComments\(\)\{commentsRequest\.current\+\+/);
  assert.match(feed,/if\(requestId===commentsRequest\.current\)\{setComments/);
 });
+
+test('social feed links only to a real session id and uses backend-provided metadata',()=>{
+ const attachment=feed.split('function SessionPostAttachment(')[1]?.split('function PostCard(')[0];
+ const post=feed.split('function PostCard(')[1]?.split('const Header=')[0];
+ assert.ok(attachment&&post,'session attachment and post card exist');
+ assert.match(attachment,/Number\.isSafeInteger\(id\)/);
+ assert.match(attachment,/id<=0\)return null/);
+ assert.match(attachment,/item\.sport\?\.trim\(\)/);
+ assert.match(attachment,/item\.city\?\.trim\(\)/);
+ assert.match(attachment,/Number\.isFinite\(scheduled\)/);
+ assert.match(attachment,/pathname:'\/sessions\/\[id\]'/);
+ assert.match(attachment,/Ver detalhes da sessão/);
+ assert.doesNotMatch(attachment,/confirmar presença|vagas disponíveis|communityId/);
+ assert.match(post,/<SessionPostAttachment item=\{item\}\/>/);
+});
