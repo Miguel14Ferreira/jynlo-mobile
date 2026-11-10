@@ -6,6 +6,8 @@ function sessionCardStatus(session){
   if(session.joinedByViewer)return {label:'Já vais!',tone:'joined'};
   if(session.waitlistedByViewer)return {label:'Lista de espera',tone:'waiting'};
   if(session.status!=='OPEN')return {label:'Indisponível',tone:'unavailable'};
+  if(session.privateGame)return {label:'Sessão privada',tone:'unavailable'};
+  if(session.audience==='COMMUNITY_ONLY')return {label:'Só comunidade',tone:'unavailable'};
   const free=vacancies(session);
   if(free<=0)return {label:'Sem vagas',tone:'full'};
   return {label:free===1?'1 vaga':free+' vagas',tone:'available'};
