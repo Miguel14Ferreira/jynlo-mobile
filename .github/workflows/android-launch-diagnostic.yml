@@ -63,6 +63,7 @@ jobs:
             sleep 20
             adb logcat -d -v time > launch-diagnostics/logcat.txt
             adb shell dumpsys activity activities > launch-diagnostics/activities.txt
+            adb shell pidof com.jynlo.app > launch-diagnostics/pid.txt || true
             adb exec-out screencap -p > launch-diagnostics/launch.png
             test -s launch-diagnostics/launch.png
             python3 - <<'PY'
@@ -75,10 +76,19 @@ jobs:
                 print(line[:250])
             if crashes:
                 raise SystemExit('Android fatal error detected during launch')
+            # A package mentioned in the activity history is NOT proof that
+            # it is still running. Check both the live PID and resumed Activity.
+            pid = Path('launch-diagnostics/pid.txt').read_text().strip()
+            if not pid or not all(part.isdigit() for part in pid.split()):
+                raise SystemExit('Jynlo process exited or was never launched after 20 seconds')
             activity = Path('launch-diagnostics/activities.txt').read_text(errors='replace')
-            if 'com.jynlo.app' not in activity:
-                raise SystemExit('Jynlo activity not foreground/resumed after 20 seconds')
-            print('Android launch smoke: no fatal error and Jynlo activity present.')
+            resumed = [line for line in activity.splitlines()
+                       if 'topResumedActivity=' in line or 'mResumedActivity:' in line]
+            Path('launch-diagnostics/resumed-activity.txt').write_text(
+                '\\n'.join(resumed) + '\\n')
+            if not any('com.jynlo.app/' in line for line in resumed):
+                raise SystemExit('Jynlo activity is not resumed in the foreground after 20 seconds')
+            print('Android launch smoke: live Jynlo process, resumed activity and no fatal error.')
             PY
       - name: Upload Android launch diagnostics even on failure
         if: always()
