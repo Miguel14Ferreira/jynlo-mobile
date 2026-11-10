@@ -8,7 +8,7 @@ import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/com
 import {discoverSessions} from '../../src/lib/api';
 import {SPORTS} from '../../src/lib/sports';
 import {useAuth} from '../../src/lib/auth';
-import {C} from '../../src/lib/theme';
+import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
@@ -77,10 +77,12 @@ export default function DiscoverScreen(){
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
    </View>
    <View style={styles.shortcuts}>
-     <Pressable style={styles.shortcut} onPress={()=>router.push('/feed')} accessibilityRole="button"><Text style={styles.shortcutText}>📰 Feed</Text></Pressable>
-     <Pressable style={styles.shortcut} onPress={()=>router.push('/venues')} accessibilityRole="button"><Text style={styles.shortcutText}>📍 Recintos</Text></Pressable>
-     <Pressable style={styles.shortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button"><Text style={styles.shortcutText}>🤝 Comunidades</Text></Pressable>
-     <Pressable style={styles.shortcut} onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})} accessibilityRole="button"><Text style={styles.shortcutText}>＋ Criar sessão</Text></Pressable>
+     <Pressable style={styles.createShortcut} onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})} accessibilityRole="button" accessibilityLabel="Criar uma sessão desportiva">
+       <Text style={styles.createShortcutSymbol}>＋</Text>
+       <View style={{flex:1,gap:3}}><Text style={styles.createShortcutTitle}>Organizar um jogo</Text><Text style={styles.createShortcutSub}>Cria uma sessão e convida jogadores</Text></View>
+       <Text style={styles.createShortcutArrow}>›</Text>
+     </Pressable>
+     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos"><Text style={styles.venueShortcutText}>⌖  Explorar recintos</Text><Text style={styles.venueShortcutArrow}>↗</Text></Pressable>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="⌖  Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    <Text style={styles.filterLabel}>MODALIDADE · {SPORTS.length} DESPORTOS</Text>
@@ -108,10 +110,13 @@ export default function DiscoverScreen(){
        <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||'Todas'}</Text>
      </Pressable>)}
    </ScrollView>
-   <Pressable style={styles.filter} onPress={()=>setAvailableOnly(!availableOnly)}>
+   <Pressable accessibilityRole="checkbox" accessibilityState={{checked:availableOnly}} style={styles.filter} onPress={()=>setAvailableOnly(!availableOnly)}>
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
    </Pressable>
+   {(city.trim()||sport||!availableOnly||mapArea)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}}>
+     <Text style={styles.resetFiltersText}>Limpar filtros</Text><Text style={styles.resetFiltersIcon}>×</Text>
+   </Pressable>:null}
    <View style={styles.section}><Text style={styles.sectionTitle}>Encontrar jogos</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>
    <View style={styles.switcher}>
      <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões no mapa" accessibilityState={{selected:display==='map'}}
@@ -125,7 +130,7 @@ export default function DiscoverScreen(){
    </View>
    {loading&&sessions.length===0?<Loader/>:null}
    {error?<Message tone="error">{error}</Message>:null}
-   {!loading&&!error&&sessions.length===0?<Message>Não encontrámos sessões para estes filtros. Experimenta outra cidade ou modalidade.</Message>:null}
+   {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>Ainda não encontrámos jogos</Text><Text style={styles.emptyDetail}>Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>Ver todas as modalidades</Text></Pressable></View>:null}
    {display==='map'?<View style={styles.mapPanel}>
      {NATIVE_MAP_READY?<Suspense fallback={<Loader/>}>
        <SessionNativeMap initialRegion={PORTUGAL} sessions={mappedSessions}
@@ -166,15 +171,13 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
- page:{flex:1,backgroundColor:C.background},content:{padding:22,paddingBottom:42,gap:17},
+ page:{flex:1,backgroundColor:MobileTheme.colors.background},content:{paddingHorizontal:MobileTheme.spacing.lg,paddingTop:MobileTheme.spacing.lg,paddingBottom:42,gap:MobileTheme.spacing.lg},
  hero:{marginTop:7,gap:11},headline:{fontSize:31,lineHeight:39,color:C.white,fontWeight:'900',letterSpacing:-0.6},
  sub:{color:C.muted,lineHeight:21,fontSize:14},
  search:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,height:54,paddingHorizontal:17,color:C.white,fontSize:15},
  chips:{gap:10,paddingVertical:3},chip:{paddingHorizontal:17,paddingVertical:10,borderRadius:26,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  selected:{backgroundColor:C.mint,borderColor:C.mint},chipText:{fontSize:13,fontWeight:'800',color:C.white},
- shortcuts:{flexDirection:'row',flexWrap:'wrap',gap:8},
- shortcut:{flexGrow:1,flexBasis:'45%',alignItems:'center',paddingVertical:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:11},
- shortcutText:{fontSize:12,color:C.white,fontWeight:'800'},
+ shortcuts:{gap:10},createShortcut:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.lg,paddingHorizontal:16,minHeight:84},createShortcutSymbol:{fontSize:30,color:MobileTheme.colors.background,fontWeight:'700'},createShortcutTitle:{fontSize:16,fontWeight:'900',color:MobileTheme.colors.background},createShortcutSub:{fontSize:11,color:MobileTheme.colors.background,opacity:.82},createShortcutArrow:{fontSize:29,color:MobileTheme.colors.background},venueShortcut:{minHeight:MobileTheme.touchTarget,flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingHorizontal:15,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border},venueShortcutText:{color:MobileTheme.colors.text,fontSize:13,fontWeight:'800'},venueShortcutArrow:{color:MobileTheme.colors.accent,fontSize:19},
  filterLabel:{fontSize:10,fontWeight:'900',letterSpacing:1.1,color:C.mint,marginTop:4},
  sportSelector:{height:52,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:14,paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  sportSelectorText:{color:C.white,fontWeight:'800',fontSize:14},sportChevron:{fontSize:23,color:C.mint},
@@ -184,7 +187,7 @@ const styles=StyleSheet.create({
  emptySport:{color:C.muted,padding:12},
  pickerHint:{fontSize:11,color:C.muted,paddingVertical:8,paddingHorizontal:6},
  filter:{flexDirection:'row',alignItems:'center',gap:11},square:{width:21,height:21,borderWidth:1,borderColor:C.mint,borderRadius:6,alignItems:'center'},squareSelected:{backgroundColor:C.mint},
- section:{marginTop:6,flexDirection:'row',justifyContent:'space-between',alignItems:'baseline'},
+ resetFilters:{flexDirection:'row',alignSelf:'flex-start',gap:7,alignItems:'center',minHeight:MobileTheme.touchTarget,paddingHorizontal:13,borderWidth:1,borderColor:MobileTheme.colors.border,borderRadius:MobileTheme.radius.pill},resetFiltersText:{fontWeight:'800',fontSize:12,color:MobileTheme.colors.accent},resetFiltersIcon:{fontSize:18,color:MobileTheme.colors.accent},emptyPanel:{gap:12,padding:19,borderWidth:1,borderColor:MobileTheme.colors.border,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface},emptyTitle:{fontSize:17,fontWeight:'900',color:MobileTheme.colors.text},emptyDetail:{fontSize:13,lineHeight:20,color:MobileTheme.colors.muted},emptyReset:{alignSelf:'flex-start',backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.md,minHeight:MobileTheme.touchTarget,justifyContent:'center',paddingHorizontal:15},emptyResetText:{color:MobileTheme.colors.background,fontWeight:'900',fontSize:12},section:{marginTop:6,flexDirection:'row',justifyContent:'space-between',alignItems:'baseline'},
  sectionTitle:{color:C.white,fontWeight:'800',fontSize:21},total:{color:C.muted,fontSize:12},
  switcher:{flexDirection:'row',gap:4,padding:5,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  switchOption:{flex:1,alignItems:'center',paddingVertical:12,borderRadius:12},
