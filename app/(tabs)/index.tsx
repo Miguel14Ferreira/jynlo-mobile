@@ -59,7 +59,7 @@ function StoryViewer({group,onClose,onDeleted}:{group:StoriesGroup|null;onClose:
   };
   const tapZone=(direction:-1|1)=>({
     onPress:()=>navigate(direction),
-    onPressIn:()=>setPaused(true),
+    onPressIn:()=>{longPress.current=false;setPaused(true);},
     onPressOut:()=>setPaused(false),
     onLongPress:()=>{longPress.current=true;setPaused(true);},
     delayLongPress:250
