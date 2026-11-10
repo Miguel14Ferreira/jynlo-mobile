@@ -32,3 +32,13 @@ test('profile avatar reflects saved photo after returning to profile',()=>{
  assert.match(profile,/profilePicUrl/);
  assert.match(profile,/avatarImage/);
 });
+
+test('profile image picker native SDK does not load until photo selection',()=>{
+ const editor=read('app/edit-profile.tsx');
+ assert.match(editor,/import type \{ImagePickerAsset\} from 'expo-image-picker'/);
+ assert.doesNotMatch(editor,/^import \* as ImagePicker from 'expo-image-picker'/m);
+ const choice=editor.slice(editor.indexOf('async function choosePhoto()'),editor.indexOf('async function savePhoto()'));
+ assert.match(choice,/if\(photoBusy\|\|busy\|\|!auth\.token\|\|DEMO_MODE\)return/);
+ assert.match(choice,/const ImagePicker=await import\('expo-image-picker'\)/);
+ assert.ok(choice.indexOf("await import('expo-image-picker')")<choice.indexOf('launchImageLibraryAsync'));
+});
