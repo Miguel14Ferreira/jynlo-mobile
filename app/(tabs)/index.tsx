@@ -8,11 +8,11 @@ import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
-import {C} from '../../src/lib/theme';
+import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
-const INDIGO='#051824',PANEL='#082635',BORDER='#0B5264',TEAL='#22DFCB',MUTED='#A6C6CD',WHITE='#F6FCFE';
+const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
 const maxPostLength=1000;
 const startLetter=(s:string)=>s.replace(/^@/,'').charAt(0).toUpperCase()||'J';
 const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return 'Recentemente';const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return 'Agora';if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
