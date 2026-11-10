@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build-internal-aab:
     name: Gerar APK assinada para testes internos
-    if: ${{ github.event_name == 'push' || inputs.confirm == 'TESTAR_API_REAL' }}
+    if: ${{ github.ref == 'refs/heads/develop' && inputs.confirm == 'TESTAR_API_REAL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
