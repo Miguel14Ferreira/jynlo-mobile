@@ -123,7 +123,7 @@ export default function SessionChat(){
    if(activeChat.current===identity){sendingNow.current=false;setUploading(false);}
   }
  }
- return <Page><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
+ return <Page autoScrollToEnd><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
   <Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
