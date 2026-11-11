@@ -18,7 +18,7 @@ test('direct chat is safe above Android navigation bar and keyboard',()=>{
 test('text draft stays available while auxiliary block-status check is unresolved',()=>{
  const s=read('app/messages/[peer].tsx');
  assert.match(s,/\{auth\.token&&!blocked\?<View style=\{styles\.composer\}>/);
- assert.match(s,/disabled=\{sending\|\|!draft\.trim\(\)\}/);
+ assert.match(s,/disabled=\{sending\|\|photoBusy\|\|sendingNow\.current\|\|pendingWrites\.current\.has/);
  assert.match(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token/);
  assert.doesNotMatch(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
  assert.match(s,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
