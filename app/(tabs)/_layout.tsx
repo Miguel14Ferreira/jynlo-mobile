@@ -78,16 +78,13 @@ export default function TabsLayout(){
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('post')}>
         <Text style={styles.actionIcon}>▤</Text><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
        </Pressable>
-       <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('story')}>
-        <Text style={styles.actionIcon}>◉</Text><Text style={styles.actionTitle}>Story</Text><Text style={styles.actionHint}>Fotografia ou vídeo</Text>
+       <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('venue')}>
+        <Text style={styles.actionIcon}>⌖</Text><Text style={styles.actionTitle}>Sugerir recinto</Text><Text style={styles.actionHint}>Partilha um local</Text>
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <Text style={styles.actionIcon}>◎</Text><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
        </Pressable>
       </View>
-      <Pressable accessibilityRole="button" style={styles.secondaryAction} onPress={()=>action('venue')}>
-       <Text style={styles.secondaryIcon}>⌖</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Partilha um local para praticar</Text></View><Text style={styles.chevron}>›</Text>
-      </Pressable>
       {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>A verificar as tuas comunidades…</Text></View>:checkError?<Text style={styles.info}>Não foi possível confirmar as permissões para torneios. Abre novamente este menu para tentar.</Text>:eligible.length>0?
        <Pressable accessibilityRole="button" style={styles.secondaryAction} onPress={()=>action('tournament')}>
         <Text style={styles.secondaryIcon}>♜</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar torneio</Text><Text style={styles.secondaryHint}>Escolhe uma comunidade que administras</Text></View><Text style={styles.chevron}>›</Text>
