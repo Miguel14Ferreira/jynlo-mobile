@@ -15,13 +15,13 @@ function screens(folder,parts=[]){
  });
 }
 test('every root navigation destination has a human-readable title',()=>{
- const declarations=[...layout.matchAll(/<Stack\\.Screen name="([^"]+)" options=\\{\\{([^}]+)\\}\\}/g)];
+ const declarations=[...layout.matchAll(/<Stack\.Screen name="([^"]+)" options=\{\{([^}]+)\}\}/g)];
  const titles=new Map(declarations.map(([,route,options])=>[route,options]));
  for(const route of screens(app)){
   assert.ok(titles.has(route),`Missing Stack.Screen declaration for ${route}`);
   const options=titles.get(route);
-  assert.match(options,/title:\\s*['"\\x60][^'"\\x60]+['"\\x60]/,`Route ${route} needs a readable title`);
-  assert.doesNotMatch(options,/\\b(?:id|username|peer|postId|championshipId)\\b/,`Route ${route} must not expose a raw parameter as its title`);
+  assert.match(options,/title:\s*['"][^'"]+['"]/,`Route ${route} needs a readable title`);
+  assert.doesNotMatch(options,/\b(?:id|username|peer|postId|championshipId)\b/,`Route ${route} must not expose a raw parameter as its title`);
  }
 });
 
