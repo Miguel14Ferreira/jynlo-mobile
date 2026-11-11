@@ -10,6 +10,11 @@ function notificationDestination(item){
   if(validId(item.postId))return {kind:'social-post',id:String(item.postId)};
   return validPeer(item.relatedUsername)?{kind:'social-profile',peer:item.relatedUsername}:null;
  }
+ if(type==='SOCIAL_STORY_LIKED'||type==='SOCIAL_STORY_REPLIED'){
+  // A confirmed story ID links into its viewer; older alerts can open the actor's profile.
+  if(validId(item.storyId))return {kind:'social-story',id:String(item.storyId)};
+  return validPeer(item.relatedUsername)?{kind:'social-profile',peer:item.relatedUsername}:null;
+ }
  if(type==='SOCIAL_NEW_FOLLOWER'){
   return validPeer(item.relatedUsername)?{kind:'social-profile',peer:item.relatedUsername}:null;
  }
