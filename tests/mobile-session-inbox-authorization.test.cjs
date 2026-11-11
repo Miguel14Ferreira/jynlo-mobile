@@ -15,6 +15,8 @@ test('session inbox only uses authenticated created or joined sessions',()=>{
  assert.match(api,/\['CANCELLED','COMPLETED'\]\.includes\(session\.status\)/);
  assert.match(api,/conversations:ids\.slice\(i,i\+100\)\.map\(id=>\(\{kind:'session',id\}\)\)/);
  assert.match(api,/item\?\.kind!=='session'\|\|typeof item\.id!=='string'\|\|!allowed\.has\(item\.id\)/);
+ assert.match(api,/The backend explicitly omits closed\/revoked chats/);
+ assert.doesNotMatch(api,/if\(!returned\.has\(id\)\)visible\.push\(\{kind:'session'/);
 });
 
 test('messages tab handles session inbox failure independently of other chats',()=>{
