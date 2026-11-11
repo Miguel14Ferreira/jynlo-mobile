@@ -1,0 +1,24 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+
+test('photo preflight rejects oversized, missing-size, and unsupported formats before POST confirmation',()=>{
+ const source=read('src/lib/chat-photo-validation.ts');
+ assert.match(source,/MAX_CHAT_PHOTO_BYTES=5\*1024\*1024/);
+ assert.match(source,/Number\.isSafeInteger\(asset\.fileSize\)/);
+ assert.match(source,/SUPPORTED_CHAT_PHOTO_MIMES\.has\(asset\.mimeType\|\|''\)/);
+ assert.match(source,/JPG, PNG, WebP ou GIF/);
+});
+
+for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+ test(file+' refuses invalid photo immediately after picker selection',()=>{
+  const screen=read(file);
+  assert.match(screen,/import \{validateChatPhoto\} from /);
+  assert.match(screen,/validateChatPhoto\((?:selected|chosen)\.assets\[0\]\);setPhoto\((?:selected|chosen)\.assets\[0\]\)/);
+  assert.match(screen,/setError\(e instanceof Error\?e\.message:'Não foi possível abrir a galeria\.'\)/);
+  assert.match(screen,/send(?:DirectPhoto|ChatPhoto)\(/);
+ });
+}
