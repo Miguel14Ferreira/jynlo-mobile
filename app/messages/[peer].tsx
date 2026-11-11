@@ -10,7 +10,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI'
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE} from '../../src/lib/api';
-import {directChatHistory,markDirectRead,sendDirectChat} from '../../src/lib/chat-api';
+import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply} from '../../src/lib/chat-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
@@ -27,6 +27,7 @@ export default function DirectConversation(){
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [safetyOpen,setSafetyOpen]=useState(false);
  const [draft,setDraft]=useState('');
+ const [replyTarget,setReplyTarget]=useState<{id:number;sender:string;text:string}|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
@@ -69,7 +70,7 @@ export default function DirectConversation(){
     if(accessRevoked){
      // A confirmed server-side access change must hide cached private content.
      // Ordinary network failures are not evidence of permission revocation.
-     setMessages([]);setDraft('');setPhoto(null);setPhotoAvailable(false);
+     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setPhotoAvailable(false);
      setAttachmentsOpen(false);setSyncWarning('');
      setBlocked(true);setBlockStatusKnown(false);
      setError('Já não tens acesso a esta conversa. Volta à lista de mensagens para confirmar as permissões.');
@@ -95,7 +96,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setPhoto(null);setError('');setSyncWarning('');
+   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setError('');setSyncWarning('');
    setAttachmentsOpen(false);setSafetyOpen(false);
    const pending=pendingWrites.current.get(identity);
    setSending(pending==='text');setPhotoBusy(pending==='photo');sendingNow.current=Boolean(pending);
@@ -195,15 +196,18 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!auth.token||!draft.trim())return;
   const originalDraft=draft;
+  const originalReply=replyTarget;
   const submittedText=originalDraft.trim();
   const version=generation.current;
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
-   await sendDirectChat(peer,submittedText,auth.token);
+   if(originalReply)await sendDirectChatReply(peer,submittedText,auth.token,originalReply.id);
+   else await sendDirectChat(peer,submittedText,auth.token);
    if(version!==generation.current||conversation.current!==identity)return;
    // Preserve anything typed while the previous message was being sent.
    setDraft(current=>current===originalDraft?'':current);
+   if(originalReply)setReplyTarget(current=>current?.id===originalReply.id?null:current);
    await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
@@ -303,6 +307,7 @@ export default function DirectConversation(){
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
     <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
    {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize} autoPreview={recentPhotoIds.has(m.id)}/>:null}
+   {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><Text style={styles.replyActionText}>↩ Responder</Text></Pressable>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
@@ -346,6 +351,7 @@ export default function DirectConversation(){
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
 
   </View>
+  {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>A responder a {replyTarget.sender}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><Text style={styles.replyActionText}>✕</Text></Pressable></View>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
@@ -377,7 +383,7 @@ const styles=StyleSheet.create({
  note:{fontSize:12,color:C.muted,lineHeight:19},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},
- sender:{fontSize:11,color:C.mint,fontWeight:'800'},
+ sender:{fontSize:11,color:C.mint,fontWeight:'800'},replyAction:{alignSelf:'flex-end',paddingHorizontal:9,paddingVertical:6,minHeight:32,justifyContent:'center'},replyActionText:{fontSize:11,fontWeight:'800',color:C.mint},replyPreview:{flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,paddingVertical:9,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:C.surface,borderRadius:10},replyPreviewTitle:{fontSize:12,fontWeight:'800',color:C.mint},replyPreviewText:{fontSize:12,color:C.white},replyCancel:{minWidth:38,minHeight:38,justifyContent:'center',alignItems:'center'},
  quote:{fontSize:12,color:C.muted,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8},
  body:{fontSize:15,color:C.white,lineHeight:21},
  gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
