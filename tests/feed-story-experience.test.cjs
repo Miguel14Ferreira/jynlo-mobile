@@ -12,7 +12,7 @@ test('stories support left/right taps and hold-to-pause without timing out video
  assert.match(viewer,/tapZone\(-1\)/);
  assert.match(viewer,/tapZone\(1\)/);
  assert.match(viewer,/onLongPress:/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\)return/);
  assert.match(viewer,/Animated\.timing\(progress/);
  assert.match(viewer,/animation\.stop\(\)/);
  assert.match(viewer,/remaining\.current=Math\.max\(0,1-value\)/);
