@@ -21,3 +21,10 @@ test('background refresh is silent and coalesces concurrent history requests',()
  assert.match(source,/if\(!silent\)setLoading\(false\)/);
  assert.match(source,/if\(queuedRefresh\.current\)\{queuedRefresh\.current=false;void refresh\(version,true\);\}/);
 });
+
+test('community websocket reconnect reconciles missed history without user refresh',()=>{
+ assert.match(source,/const wasConnected=connectionStatus\.current==='online'/);
+ assert.match(source,/if\(status==='online'&&!wasConnected\)void refresh\(version,true\)/);
+ assert.match(source,/setMessages\(old=>mergeMessages\(old,chat\)\)/);
+ assert.match(source,/setRefreshWarning\(''\)/);
+});
