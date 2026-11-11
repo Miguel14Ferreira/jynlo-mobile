@@ -82,3 +82,16 @@ test('post owner can change liker visibility only after server confirmation',()=
  assert.match(post,/Mostrar quem gostou/);
  assert.match(post,/if\(version===generation\.current\)\{writing\.current=false;setBusy\(false\);\}/);
 });
+
+test('story likes and private replies navigate to the exact live story',()=>{
+ for(const type of ['SOCIAL_STORY_LIKED','SOCIAL_STORY_REPLIED']){
+  assert.deepEqual(notificationDestination({type,storyId:42,relatedUsername:'ana'}),{kind:'social-story',id:'42'});
+  assert.deepEqual(notificationDestination({type,storyId:0,relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
+  assert.equal(notificationDestination({type,storyId:-1,relatedUsername:null}),null);
+ }
+ assert.match(inbox,/case 'social-story':router\.push/);
+ const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+ assert.match(feed,/storyById\(Number\(storyId\),originalToken\)/);
+ assert.match(feed,/Story indisponível/);
+});
+
