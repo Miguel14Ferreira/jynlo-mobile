@@ -252,8 +252,8 @@ export default function DirectConversation(){
    }
   }
  }
- return <SafeAreaView style={styles.screen} edges={['top','left','right']}>
-  <ScrollView ref={conversationScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
+ return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
+  <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
       nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
     scrollEventThrottle={100}
@@ -302,9 +302,9 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  <Button secondary title="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading}/>
+  <Pressable accessibilityRole="button" accessibilityLabel="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading} style={styles.refreshLink}><Text style={styles.refreshText}>Atualizar conversa</Text></Pressable>
   </ScrollView>
-  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.footer}>
+  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
    <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
@@ -342,12 +342,12 @@ export default function DirectConversation(){
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
 
   </View>
-  {auth.token&&!blocked&&blockStatusKnown?<View style={styles.composer}>
+  {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={sending||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={sending||!blockStatusKnown||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
@@ -357,8 +357,9 @@ export default function DirectConversation(){
 }
 const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.background},
- history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12},
- footer:{paddingHorizontal:12,paddingVertical:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:8},
+ historyScroll:{flex:1},history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12,flexGrow:1},
+ footer:{flexShrink:0,paddingHorizontal:12,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:8},
+ refreshLink:{alignSelf:'center',padding:10,minHeight:44,justifyContent:'center'},refreshText:{color:C.muted,fontSize:12,fontWeight:'700'},
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:7,paddingHorizontal:10},
  attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},
  attachmentOptions:{gap:7,maxHeight:180},
