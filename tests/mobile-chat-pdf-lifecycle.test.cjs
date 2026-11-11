@@ -15,7 +15,7 @@ test('PDF picker cannot attach an old file after changing chat or account',()=>{
 });
 
 test('PDF send completion cannot mutate the next chat or clear its PDF',()=>{
- assert.match(source,/await sendChatPdf\(target,token,asset,replyId\)/);
+ assert.match(source,/await sendChatPdf\(target,token,asset,sentReplyId\)/);
  assert.match(source,/if\(!active\.current\|\|generation\.current!==version\)return/);
  assert.match(source,/if\(selectedRef\.current===asset\)reset\(\)/);
  assert.match(source,/if\(active\.current&&generation\.current===version\)\s*setError\('PDF enviado/);
