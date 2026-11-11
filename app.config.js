@@ -14,6 +14,9 @@ module.exports = ({config}) => {
   const mapsKey = (process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY || '').trim();
   if(mapsKey && !/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
     throw new Error('A chave da Google Maps Android não tem o formato esperado.');
+  // Set GOOGLE_SERVICES_JSON as an EAS file environment variable holding the
+  // Android Firebase google-services.json. Do not commit service account keys.
+  const firebaseConfigFile = (process.env.GOOGLE_SERVICES_JSON || '').trim();
   const plugins = [
     ...(config.plugins || []),
     ...(mapsKey ? [['react-native-maps', {androidGoogleMapsApiKey: mapsKey}]] : []),
@@ -27,9 +30,10 @@ module.exports = ({config}) => {
     owner: 'tmf14s-team',
     slug: 'jynlo',
     plugins,
+    android: {...(config.android || {}),...(firebaseConfigFile ? {googleServicesFile:firebaseConfigFile} : {})},
     // The native map UI must never mount in binaries without a configured SDK.
     ...(projectId
-      ? {extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey),
+      ? {extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey), nativePushConfigured: Boolean(firebaseConfigFile),
           eas: {...(config.extra?.eas || {}), projectId}}}
       : {}),
   };
