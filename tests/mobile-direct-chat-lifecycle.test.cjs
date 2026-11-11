@@ -50,7 +50,8 @@ test('late gallery result cannot replace selected photo in another conversation'
 });
 
 test('parallel send actions cannot race and new text is preserved',()=>{
- assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
+ assert.match(screen,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token/);
+ assert.doesNotMatch(screen,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
  assert.match(screen,/if\(!auth\.token\|\|blocked\|\|!blockStatusKnown\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
  assert.match(screen,/const submittedText=originalDraft\.trim\(\)/);
  assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
