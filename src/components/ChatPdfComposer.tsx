@@ -72,7 +72,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
    try{await onSent(sentReplyId);}
    catch{
     if(active.current&&generation.current===version)
-     setError('PDF enviado. Atualiza a conversa para veres o anexo.');
+     setError('PDF enviado. O anexo aparece quando a conversa voltar a sincronizar automaticamente.');
    }
   }catch(e){
    // The POST may have completed even if its result was lost. Never retry this file automatically.
