@@ -1,9 +1,9 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
-import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 const T=MobileTheme.colors;
@@ -64,6 +64,26 @@ export default function NotificationPost(){
    if(version===generation.current){writing.current=false;setBusy(false);}
   }
  }
+ function confirmDelete(){
+  if(!post||!auth.token||!auth.username||!valid||writing.current||
+     post.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
+  const token=auth.token,version=generation.current;
+  Alert.alert('Eliminar publicação?', 'A publicação desaparece do perfil e do feed. Esta ação é definitiva.', [
+   {text:'Cancelar',style:'cancel'},
+   {text:'Eliminar',style:'destructive',onPress:()=>{
+    if(version!==generation.current||writing.current)return;
+    writing.current=true;setBusy(true);setError('');
+    void deletePost(id,token).then(()=>{
+     if(version===generation.current)router.back();
+    }).catch(e=>{
+     if(version===generation.current)
+      setError(e instanceof Error?e.message:'Eliminação não confirmada. Verifica a publicação antes de repetir.');
+    }).finally(()=>{
+     if(version===generation.current){writing.current=false;setBusy(false);}
+    });
+   }}
+  ]);
+ }
  async function comment(){
   if(!post||!auth.token||!auth.username||!draft.trim()||writing.current||!valid)return;
   const original=draft;writing.current=true;setBusy(true);setError('');
@@ -98,6 +118,11 @@ export default function NotificationPost(){
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?'Mostrar pessoas que gostaram':'Ocultar pessoas que gostaram'} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
       <Text style={styles.link}>{post.hideLikers?'Mostrar quem gostou':'Ocultar quem gostou'}</Text>
       <Text style={styles.note}>Só tu podes alterar esta preferência.</Text>
+     </Pressable>:null}
+    {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
+     <Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha publicação" disabled={busy} onPress={confirmDelete} style={styles.privacy}>
+      <Text style={[styles.link,{color:T.danger}]}>Eliminar publicação</Text>
+      <Text style={styles.note}>Esta ação é definitiva.</Text>
      </Pressable>:null}
    </View>:null}
    {post?<Text style={styles.heading}>Comentários</Text>:null}
