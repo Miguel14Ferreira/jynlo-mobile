@@ -9,7 +9,7 @@ import {C} from '../lib/theme';
 
 type Scope='direct'|'community'|'session';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
- name:string;mime:string|null|undefined;size:number|null|undefined};
+ name:string;mime:string|null|undefined;size:number|null|undefined;autoPreview?:boolean};
 const isVoice=(mime:string|null|undefined)=>typeof mime==='string'&&mime.startsWith('audio/');
 const formats:Record<string,string>={
  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif',
@@ -32,8 +32,9 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number):string{
 }
 
 /** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
-export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size}:Props){
+export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,autoPreview=false}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [expanded,setExpanded]=useState(false);
  const player=useAudioPlayer(null);
  const playback=useAudioPlayerStatus(player);
  const cached=useRef<File|null>(null),active=useRef(false),pending=useRef(false),generation=useRef(0);
@@ -49,10 +50,10 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
   active.current=true;
-  pending.current=false;setBusy(false);setError('');setUri(null);
+  pending.current=false;setBusy(false);setError('');setUri(null);setExpanded(false);
   return ()=>{
    if(generation.current===version)generation.current++;
-   active.current=false;setUri(null);
+   active.current=false;setUri(null);setExpanded(false);
    // Do not remove a PDF handed to Android while its external viewer is opening.
    if(!pdfPreview.current)cleanup();
   };
@@ -71,7 +72,8 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   });
   return ()=>{subscription.remove();if(!pdfPreview.current)cleanup();};
  },[cleanup,player]);
- async function open(){
+ async function open(auto=false){
+  if(uri&&!isVoice(mime)){if(!auto)setExpanded(true);return;}
   if(isVoice(mime)&&uri){
    try{
     if(playback.playing)player.pause();
@@ -129,6 +131,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
      player.play();
     }
     setUri(cached.current.uri);
+    if(!auto&&!isVoice(mime))setExpanded(true);
    }
   }catch(e){
    if(generation.current===version){
@@ -142,8 +145,13 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    if(generation.current===version){pending.current=false;if(active.current)setBusy(false);}
   }
  }
+ React.useEffect(()=>{
+  if(!autoPreview||!token||!mime?.startsWith('image/')||!size||size>5*1024*1024)return;
+  const timeout=setTimeout(()=>{if(active.current&&!pending.current)void open(true);},180);
+  return ()=>clearTimeout(timeout);
+ },[autoPreview,scope,conversationId,messageId,token,mime,size]);
  function close(){
-  setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
+  setExpanded(false);setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
  }
  if(!formats[mime||''])return <Text style={styles.note}>Anexo privado: {name} (formato ainda sem visualizador)</Text>;
  return <View style={styles.container}>
@@ -152,10 +160,11 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
      (uri?(playback.playing?'❚❚ Pausar voz':'▶ Reproduzir voz'):'▶ Ouvir mensagem de voz'):
      mime==='application/pdf'?'Abrir PDF · '+name:'Ver fotografia · '+name}</Text>
   </Pressable>
+  {mime?.startsWith('image/')&&uri?<Pressable accessibilityRole="button" accessibilityLabel="Ampliar fotografia recebida" onPress={()=>setExpanded(true)}><Image source={{uri}} resizeMode="cover" style={styles.inlineImage}/></Pressable>:null}
   {isVoice(mime)&&uri?<Text style={styles.note}>{Math.floor(playback.currentTime)}s / {Math.floor(playback.duration||0)}s</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
   {mime==='application/pdf'&&uri?<Pressable accessibilityRole="button" onPress={close} style={styles.button}><Text style={styles.action}>Limpar PDF temporário</Text></Pressable>:null}
-  <Modal visible={!!uri&&!isVoice(mime)&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
+  <Modal visible={expanded&&!!uri&&!isVoice(mime)&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
    <View style={styles.overlay}>
     {uri?<Image source={{uri}} resizeMode="contain" style={styles.image}/>:null}
     <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
@@ -166,7 +175,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  </View>;
 }
 const styles=StyleSheet.create({
- container:{gap:5},note:{color:C.muted,fontSize:12},
+ container:{gap:5},inlineImage:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},note:{color:C.muted,fontSize:12},
  button:{padding:11,borderWidth:1,borderColor:C.border,borderRadius:12},
  action:{color:C.mint,fontWeight:'700'},error:{color:'#FF9898',fontSize:12},
  overlay:{flex:1,backgroundColor:'#080B0DEE',justifyContent:'center',padding:14,gap:16},
