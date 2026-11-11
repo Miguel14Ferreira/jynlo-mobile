@@ -88,6 +88,9 @@ export default function ChampionshipTeamsScreen(){
         {text:'Associar',onPress:()=>{void update(()=>linkChampionshipTeam(communityId,championshipId,entry.id,picked,auth.token!));}}
        ]);
       }}/>
+      {!saving&&data.teams.length===0?<Text style={styles.hint}>Cria primeiro uma equipa da época para poderes fazer esta associação.</Text>:
+       !saving&&picked===entry.championshipTeamId?<Text style={styles.hint}>Esta equipa já está associada. Seleciona outra para alterar.</Text>:
+       !saving&&conflictingTeamIds.has(picked)?<Text style={styles.hint}>Esta equipa já está utilizada nesta prova. Escolhe outra equipa disponível.</Text>:null}
      </View>:null}
     </View>;
    })}
