@@ -6,7 +6,7 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
@@ -153,7 +153,9 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
 }
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
-  const {compose}=useLocalSearchParams<{compose?:string}>();
+  const {compose,storyId}=useLocalSearchParams<{compose?:string;storyId?:string}>();
+  const activeStoryAccount=useRef<string|null>(auth.token);
+  activeStoryAccount.current=auth.token;
   const [posts,setPosts]=useState<FeedItem[]>([]);
   const [stories,setStories]=useState<SocialStory[]>([]),[ownStories,setOwnStories]=useState<SocialStory[]>([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
@@ -209,6 +211,21 @@ export default function JynloFeedHome(){
     if(compose==='post')setComposerOpen(true);
     else setStoryComposer(true);
   },[compose,auth.ready,auth.token,auth.username,router]);
+  useEffect(()=>{
+    if(typeof storyId!=='string'||!auth.ready||!auth.token)return;
+    // Consume the deep link exactly once; no automatic retries for expired Stories.
+    router.setParams({storyId:undefined});
+    if(!/^[1-9][0-9]{0,15}$/.test(storyId))return;
+    const originalToken=auth.token;
+    void storyById(Number(storyId),originalToken).then(story=>{
+      if(activeStoryAccount.current!==originalToken)return;
+      setStoryViewer({key:'notification-story-'+story.id,name:story.displayName,
+        avatar:story.avatarUrl,stories:[story]});
+    }).catch(()=>{
+      if(activeStoryAccount.current===originalToken)
+        Alert.alert('Story indisponível','Esta Story pode ter expirado ou já não estar acessível.');
+    });
+  },[storyId,auth.ready,auth.token,router]);
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery'){
@@ -314,7 +331,7 @@ export default function JynloFeedHome(){
     <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
-    <StoryViewer group={storyViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));}}/>
+    <StoryViewer group={storyViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
     <Modal visible={expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <View style={styles.commentsModal}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
