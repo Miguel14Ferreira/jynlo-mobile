@@ -74,7 +74,10 @@ export default function CommunityChatScreen(){
    if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active&&version===generation.current)setCanSendPhoto(ok);}).catch(()=>{});
    void refresh(version);
    if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return ()=>{active=false;generation.current++;if(activeChat.current===identity)activeChat.current='';};
-   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current){connectionStatus.current=status;setConnection(status);}}, 
+   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current){const wasConnected=connectionStatus.current==='online';connectionStatus.current=status;setConnection(status);
+    // Reconcile missed messages and clear an offline warning only after a successful server read.
+    if(status==='online'&&!wasConnected)void refresh(version,true);
+   }}, 
     onMessage:(msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
       setMessages(old=>mergeMessages(old,[msg]));
       if(msg.username!==auth.username)void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
