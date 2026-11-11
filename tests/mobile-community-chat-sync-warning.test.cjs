@@ -7,7 +7,9 @@ const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/chat.t
 test('community chat does not discard messages after a failed refresh',()=>{
  assert.match(source,/setRefreshWarning\('Não foi possível sincronizar o chat/);
  assert.doesNotMatch(source,/catch\(e\)\{if\(version===generation\.current\)\{setError\([^\n]+setMessages\(\[\]\)/);
- assert.match(source,/setMessages\(old=>mergeMessages\(old,chat\)\);setName\(community\.name\);setRefreshWarning\(''\)/);
+ assert.match(source,/setMessages\(old=>mergeMessages\(old,chat\)\)/);
+ assert.match(source,/if\(detailsResult\.status==='fulfilled'\)setName\(detailsResult\.value\.name\)/);
+ assert.match(source,/setRefreshWarning\(''\)/);
  assert.match(source,/if\(!silent\)setError\(/);
 });
 test('community chat does not advertise empty history after a loading error',()=>{
