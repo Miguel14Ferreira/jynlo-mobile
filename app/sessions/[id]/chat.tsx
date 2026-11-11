@@ -153,7 +153,7 @@ export default function SessionChat(){
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel="Mensagem da sessão" placeholder="Escreve uma mensagem"
       placeholderTextColor={C.muted} style={styles.input}/>
-     <Button title={sending?'A enviar…':'Enviar'} disabled={sending||!draft.trim()} onPress={()=>{void send();}}/>
+     <Button title={sending?'A enviar…':'Enviar'} disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}/>
     </View>
   </KeyboardAvoidingView>:null}
   <Button title="Atualizar conversa" secondary disabled={loading||sending} onPress={()=>{void refresh();}}/>
