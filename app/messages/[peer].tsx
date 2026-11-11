@@ -31,6 +31,7 @@ export default function DirectConversation(){
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
+ const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
@@ -62,6 +63,8 @@ export default function DirectConversation(){
    const results=await directChatHistory(peer,auth.token);
    if(version!==generation.current)return;
    setMessages(results);setSyncWarning('');
+   const previousHistoryError=historyError.current;historyError.current=null;
+   if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
    if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
   }catch(e){
@@ -73,12 +76,14 @@ export default function DirectConversation(){
      setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setPhotoAvailable(false);
      setAttachmentsOpen(false);setSyncWarning('');
      setBlocked(true);setBlockStatusKnown(false);
+     historyError.current=null;
      setError('Já não tens acesso a esta conversa. Volta à lista de mensagens para confirmar as permissões.');
     }else if(silent){
      setSyncWarning('Não foi possível atualizar as mensagens. O histórico apresentado pode estar desatualizado.');
     }else{
      setSyncWarning('Não foi possível sincronizar a conversa. Tenta novamente quando tiveres ligação.');
-     setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
+     const message=e instanceof Error?e.message:'Não foi possível abrir a conversa.';
+     historyError.current=message;setError(message);
     }
    }
   }finally{
@@ -97,7 +102,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setError('');setSyncWarning('');
+   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    const pending=pendingWrites.current.get(identity);
    setSending(pending==='text');setPhotoBusy(pending==='photo');sendingNow.current=Boolean(pending);
