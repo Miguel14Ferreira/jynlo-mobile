@@ -93,6 +93,16 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="venues/create" options={{title:"Sugerir recinto"}}/>
     <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
     <Stack.Screen name="venues/[id]/suggest-edit" options={{title:"Sugerir correção"}}/>
+    <Stack.Screen name="sessions/create" options={{title:'Criar sessão'}}/>
+    <Stack.Screen name="social/[username]/index" options={{title:'Perfil'}}/>
+    <Stack.Screen name="social/[username]/[kind]" options={{title:'Seguidores e seguindo'}}/>
+    <Stack.Screen name="communities/[id]/competitions" options={{title:'Competições da comunidade'}}/>
+    <Stack.Screen name="communities/[id]/championships/create" options={{title:'Criar campeonato'}}/>
+    <Stack.Screen name="communities/[id]/championships/[championshipId]" options={{title:'Campeonato'}}/>
+    <Stack.Screen name="communities/[id]/championships/teams" options={{title:'Equipas do campeonato'}}/>
+    <Stack.Screen name="communities/[id]/championships/honours" options={{title:'Palmarés do campeonato'}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/events" options={{title:'Eventos do torneio'}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:'Estafetas do torneio'}}/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
     <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
