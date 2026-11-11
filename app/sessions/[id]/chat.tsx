@@ -18,6 +18,7 @@ export default function SessionChat(){
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
+ const [syncWarning,setSyncWarning]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0),pendingRefresh=useRef(false);
  // A request remains locked to its original session/account across refocus.
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
@@ -32,7 +33,7 @@ export default function SessionChat(){
   try{
    const history=await sessionChatHistory(id,auth.token);
    if(version!==generation.current)return;
-   setEntries(history);setClosed(false);
+   setEntries(history);setClosed(false);setSyncWarning('');
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
@@ -40,13 +41,13 @@ export default function SessionChat(){
    const accessRevoked=e instanceof ApiError&&[401,403,404,409,410].includes(e.status);
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
-    setClosed(true);setEntries([]);setDraft('');setReply(null);
+    setClosed(true);setEntries([]);setDraft('');setReply(null);setSyncWarning('');
     setPhoto(null);setPhotoReady(false);
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
-   }else if(!silent){
-    // Network failures are not evidence of revoked access. Keep existing
-    // messages and composer so the player can retry after reconnecting.
-    setError(e instanceof Error?e.message:'Não foi possível atualizar o chat.');
+   }else{
+    // Network failures are not evidence of revoked access; the existing chat remains visible.
+    setSyncWarning('Sem sincronização neste momento. As mensagens podem estar desatualizadas.');
+    if(!silent)setError(e instanceof Error?e.message:'Não foi possível atualizar o chat.');
    }
   }finally{
    if(refreshing.current===version)refreshing.current=null;
@@ -63,7 +64,7 @@ export default function SessionChat(){
   activeChat.current=identity;
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
-  setEntries([]);setClosed(false);setError('');setLoading(true);setDraft('');setReply(null);
+  setEntries([]);setClosed(false);setError('');setSyncWarning('');setLoading(true);setDraft('');setReply(null);
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
   setPhoto(null);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
@@ -122,6 +123,7 @@ export default function SessionChat(){
   <Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
+  {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
   {entries.map(m=><Pressable key={m.id} disabled={!!m.deletedAt||closed} onPress={()=>setReply(m)}
     accessibilityRole="button" accessibilityLabel={'Responder a '+m.senderUsername}
@@ -156,7 +158,7 @@ export default function SessionChat(){
      <Button title={sending?'A enviar…':'Enviar'} disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}/>
     </View>
   </KeyboardAvoidingView>:null}
-  <Button title="Atualizar conversa" secondary disabled={loading||sending} onPress={()=>{void refresh();}}/>
+  {syncWarning&&!closed?<Button title="↻ Tentar novamente" secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
   <Button title="Voltar à sessão" secondary onPress={()=>router.back()}/>
  </Page>;
 }
