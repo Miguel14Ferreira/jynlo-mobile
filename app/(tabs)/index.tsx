@@ -6,7 +6,7 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
@@ -34,21 +34,23 @@ function SectionHeader({eyebrow,title,action,onPress}:{eyebrow?:string;title:str
   return <View style={styles.sectionHead}><View style={{flex:1,gap:3}}>{eyebrow?<Text style={styles.eyebrow}>{eyebrow}</Text>:null}<Text style={styles.sectionTitle}>{title}</Text></View>{action&&onPress?<Pressable onPress={onPress} style={styles.ghostButton} accessibilityRole="button"><Text style={styles.ghostButtonText}>{action}</Text></Pressable>:null}</View>;
 }
 
-function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;groups:StoriesGroup[];onClose:()=>void;onDeleted:()=>void}){
+function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{group:StoriesGroup|null;groups:StoriesGroup[];onClose:()=>void;onDeleted:()=>void;onUpdated:(story:SocialStory)=>void;token:string|null;username:string|null}){
   const [currentKey,setCurrentKey]=useState<string|null>(null);
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
+  const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false);
+  const submittingStory=useRef(false);
   const longPress=useRef(false);
   const touchStartY=useRef<number|null>(null);
   const progress=useRef(new Animated.Value(0)).current;
   const remaining=useRef(1);
   React.useEffect(()=>{
-    setCurrentKey(group?.key||null);setIndex(0);setPaused(false);
+    setCurrentKey(group?.key||null);setIndex(0);setPaused(false);setReplyText('');
     remaining.current=1;progress.setValue(0);longPress.current=false;
   },[group?.key,progress]);
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
-  const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);};
+  const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);setReplyText('');};
   const go=(direction:-1|1)=>{
     if(!activeGroup)return;
     if(direction===-1&&index>0){resetProgress();setIndex(i=>i-1);return;}
@@ -75,6 +77,32 @@ function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;g
   },[story?.id,story?.video,paused,index,currentKey,groups,activeGroup?.key,onClose,progress]);
   if(!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
+  const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
+  async function toggleLike(){
+    if(!story||!token||!username||submittingStory.current)return;
+    submittingStory.current=true;setStoryBusy(true);setPaused(true);
+    try{const updated=await toggleStoryLike(story.id,Boolean(story.likedByMe),token,username);onUpdated(updated);}
+    catch(e){Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
+    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+  }
+  async function sendReply(){
+    const message=replyText.trim();
+    if(!story||!token||!username||ownStory||!message||submittingStory.current)return;
+    submittingStory.current=true;setStoryBusy(true);setPaused(true);
+    try{
+      await replyToStory(story.id,message,token,username);
+      setReplyText(current=>current===message?'':current);
+      Alert.alert('Resposta enviada','O autor recebeu a tua resposta numa notificação privada.');
+    }catch(e){Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
+    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+  }
+  async function shareStory(){
+    if(!story||submittingStory.current)return;
+    setPaused(true);
+    try{await Share.share({message:[`Story de ${story.displayName} na Jynlo`,story.caption?.trim(),uri?.startsWith('https://')?uri:null].filter(Boolean).join('\n')});}
+    catch(e){Alert.alert('Partilhar Story',e instanceof Error?e.message:'Não foi possível partilhar.');}
+    finally{setPaused(false);}
+  }
   const tapZone=(direction:-1|1)=>({
     onPress:()=>{if(!longPress.current)go(direction);},
     onPressIn:()=>{longPress.current=false;setPaused(true);progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});},
@@ -103,6 +131,21 @@ function StoryViewer({group,groups,onClose,onDeleted}:{group:StoriesGroup|null;g
         </View>
       </View>
       <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text><Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text></View>
+      <View style={styles.storyEngagement}>
+        <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?'Retirar gosto da Story':'Gostar da Story'} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
+          <Text style={[styles.storyEngagementText,story.likedByMe&&{color:'#FF778C'}]}>{story.likedByMe?'♥':'♡'} {story.likeCount||0}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={styles.storyEngagementAction}><Text style={styles.storyEngagementText}>↗ Partilhar</Text></Pressable>
+      </View>
+      {!ownStory?<View style={styles.storyReplyRow}>
+        <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>setPaused(true)} onBlur={()=>setPaused(false)}
+          placeholder="Responder em privado à Story…" placeholderTextColor={MUTED} maxLength={500}
+          accessibilityLabel="Resposta privada ao autor da Story" style={styles.storyReplyInput}/>
+        <Pressable accessibilityRole="button" accessibilityLabel="Enviar resposta privada à Story" disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
+          <Text style={styles.storyReplySendText}>{storyBusy?'…':'Enviar'}</Text>
+        </Pressable>
+      </View>:null}
+      {!ownStory?<Text style={styles.storyReplyHint}>A resposta vai apenas para o autor, através de uma notificação.</Text>:null}
       {story.canDelete?<Text style={styles.storyOwnHint}>Story próprio · gestão avançada em desenvolvimento</Text>:null}
     </SafeAreaView>
   </Modal>;
@@ -270,7 +313,7 @@ export default function JynloFeedHome(){
     <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
-    <StoryViewer group={storyViewer} groups={storyGroups} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()}/>
+    <StoryViewer group={storyViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));}}/>
     <Modal visible={expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <View style={styles.commentsModal}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
@@ -353,6 +396,6 @@ const styles=StyleSheet.create({
   visitorSecondaryText:{color:TEAL,fontSize:12,fontWeight:'800'},
   composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:11},countText:{color:MUTED,fontSize:10},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{borderWidth:1,borderColor:BORDER,borderRadius:14,overflow:'hidden',backgroundColor:'#020A10'},postMediaPreviewImage:{width:'100%',height:300},postMediaPreviewFooter:{flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:12,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:11,flex:1},
   latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:11},feedCardWrap:{paddingHorizontal:12,marginBottom:10},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:BORDER,borderRadius:16,padding:15,gap:13},postTop:{flexDirection:'row',alignItems:'center',gap:11},postName:{color:WHITE,fontSize:14,fontWeight:'900'},postMeta:{color:MUTED,fontSize:10},postBody:{color:WHITE,fontSize:14,lineHeight:21},postImage:{width:'100%',height:300,borderRadius:12},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',borderTopColor:'#154653',borderTopWidth:1,paddingTop:10,rowGap:8,columnGap:13},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:11,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:36},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:10,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentAuthor:{color:TEAL,fontSize:11,fontWeight:'800'},commentBody:{fontSize:12,color:WHITE},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:39,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:40,height:40,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:11,color:MUTED,lineHeight:16},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
-  storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3,overflow:'hidden'},storyProgressFill:{height:'100%',width:'100%',backgroundColor:WHITE},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyTapZones:{...StyleSheet.absoluteFillObject,flexDirection:'row'},storyTapZone:{flex:1},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyCaptionLayer:{position:'absolute',bottom:24,left:15,right:15,alignItems:'center',justifyContent:'center'},storyCaptionOverlay:{color:WHITE,fontSize:20,fontWeight:'900',textAlign:'center',backgroundColor:'rgba(0,0,0,0.64)',paddingHorizontal:14,paddingVertical:9,borderRadius:13,overflow:'hidden'},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:11},storyOwnHint:{color:MUTED,fontSize:10,textAlign:'center',paddingBottom:5},
+  storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyEngagement:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:6},storyEngagementAction:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderColor:BORDER,borderWidth:1,borderRadius:18},storyEngagementText:{color:WHITE,fontSize:15,fontWeight:'800'},storyReplyRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},storyReplyInput:{flex:1,color:WHITE,borderColor:BORDER,borderWidth:1,borderRadius:23,minHeight:46,paddingHorizontal:15,backgroundColor:PANEL},storyReplySend:{minHeight:46,paddingHorizontal:13,backgroundColor:TEAL,borderRadius:23,justifyContent:'center'},storyReplySendText:{color:INDIGO,fontWeight:'800'},storyReplyHint:{fontSize:11,color:MUTED,paddingBottom:8},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3,overflow:'hidden'},storyProgressFill:{height:'100%',width:'100%',backgroundColor:WHITE},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyTapZones:{...StyleSheet.absoluteFillObject,flexDirection:'row'},storyTapZone:{flex:1},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyCaptionLayer:{position:'absolute',bottom:24,left:15,right:15,alignItems:'center',justifyContent:'center'},storyCaptionOverlay:{color:WHITE,fontSize:20,fontWeight:'900',textAlign:'center',backgroundColor:'rgba(0,0,0,0.64)',paddingHorizontal:14,paddingVertical:9,borderRadius:13,overflow:'hidden'},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:11},storyOwnHint:{color:MUTED,fontSize:10,textAlign:'center',paddingBottom:5},
   modalClose:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},modalCloseText:{fontSize:22,color:WHITE,fontWeight:'800'},mediaComposeBody:{gap:14,paddingBottom:24},mediaChooseRow:{flexDirection:'row',gap:12},mediaChooseButton:{flex:1,minHeight:94,borderRadius:15,borderWidth:1,borderColor:'#146875',backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:7,padding:12},mediaChooseIcon:{fontSize:25,color:TEAL},mediaChooseText:{fontSize:14,fontWeight:'800',color:WHITE},mediaEmptyState:{minHeight:155,borderRadius:16,borderWidth:1,borderColor:BORDER,backgroundColor:'#072B39',justifyContent:'center',alignItems:'center',gap:9,padding:20},mediaEmptyTitle:{fontSize:15,fontWeight:'800',color:WHITE,textAlign:'center'},storyComposerOverlay:{flex:1,backgroundColor:INDIGO,padding:18,gap:17},storyComposerHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},storyComposerTitle:{color:WHITE,fontSize:22,fontWeight:'900'},mediaPicker:{minHeight:115,borderRadius:15,borderWidth:1,borderColor:TEAL,backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:9,padding:12},storyPreview:{width:'100%',height:320,backgroundColor:'#020A10',borderRadius:16,overflow:'hidden',justifyContent:'center'},storyPreviewMedia:{width:'100%',height:'100%'},storyCaptionInput:{backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,color:WHITE,padding:13,borderRadius:12,minHeight:50}
 });
