@@ -193,7 +193,7 @@ export default function DirectConversation(){
  }
  async function send(){
   const identity=peer+'|'+auth.token;
-  if(sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
+  if(sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!auth.token||!draft.trim())return;
   const originalDraft=draft;
   const submittedText=originalDraft.trim();
   const version=generation.current;
@@ -317,7 +317,7 @@ export default function DirectConversation(){
     style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
   {blocked?<Text style={styles.note}>Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.</Text>:null}
   {!blockStatusKnown&&auth.token&&!DEMO_MODE?<View style={{gap:7}}>
-    <Text style={styles.note}>Não foi possível confirmar ainda se esta conversa permite enviar mensagens.</Text>
+    <Text style={styles.note}>Não foi possível confirmar as opções de bloqueio. O envio continua protegido pelas permissões do servidor.</Text>
     <Pressable accessibilityRole="button" onPress={()=>{
       if(!auth.token||!peer)return;
       const version=generation.current,identity=peer+'|'+auth.token;
@@ -347,7 +347,7 @@ export default function DirectConversation(){
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={sending||!blockStatusKnown||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={sending||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
