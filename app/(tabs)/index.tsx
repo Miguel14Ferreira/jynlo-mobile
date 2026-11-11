@@ -38,7 +38,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [currentKey,setCurrentKey]=useState<string|null>(null);
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
-  const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false);
+  const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false);
   const submittingStory=useRef(false);
   const longPress=useRef(false);
   const touchStartY=useRef<number|null>(null);
@@ -50,6 +50,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   },[group?.key,progress]);
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
+  React.useEffect(()=>{setReplyText('');setReplyFocused(false);},[story?.id]);
   const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);setReplyText('');};
   const go=(direction:-1|1)=>{
     if(!activeGroup)return;
@@ -63,7 +64,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   // Drive both the visible progress bar and photo advancement from one animation.
   // Pausing resumes from the remaining duration rather than restarting 6 seconds.
   React.useEffect(()=>{
-    if(!story||story.video||paused)return;
+    if(!story||story.video||paused||replyFocused||storyBusy)return;
     const animation=Animated.timing(progress,{toValue:1,duration:Math.max(50,6000*remaining.current),useNativeDriver:false});
     animation.start(({finished})=>{
       if(finished){
@@ -74,7 +75,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       }
     });
     return ()=>{animation.stop();};
-  },[story?.id,story?.video,paused,index,currentKey,groups,activeGroup?.key,onClose,progress]);
+  },[story?.id,story?.video,paused,replyFocused,storyBusy,index,currentKey,groups,activeGroup?.key,onClose,progress]);
   if(!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
@@ -123,7 +124,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={onClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>:null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
@@ -138,7 +139,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={styles.storyEngagementAction}><Text style={styles.storyEngagementText}>↗ Partilhar</Text></Pressable>
       </View>
       {!ownStory?<View style={styles.storyReplyRow}>
-        <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>setPaused(true)} onBlur={()=>setPaused(false)}
+        <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>setReplyFocused(true)} onBlur={()=>setReplyFocused(false)}
           placeholder="Responder em privado à Story…" placeholderTextColor={MUTED} maxLength={500}
           accessibilityLabel="Resposta privada ao autor da Story" style={styles.storyReplyInput}/>
         <Pressable accessibilityRole="button" accessibilityLabel="Enviar resposta privada à Story" disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
