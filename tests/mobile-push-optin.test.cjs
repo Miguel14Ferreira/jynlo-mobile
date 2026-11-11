@@ -54,13 +54,15 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
 
 test('push readiness requires a real public EAS project ID without claiming FCM readiness',()=>{
  const {checkPushReadiness}=require('../scripts/check-push-readiness.cjs');
- const missing=checkPushReadiness({});
- assert.equal(missing.ready,false);
- assert.equal(missing.projectIdConfigured,false);
- assert.ok(missing.issues.some(issue=>issue.includes('EAS projectId')));
- const configured=checkPushReadiness({EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID:'12345678-1234-4234-8234-123456789012'});
+ const configured=checkPushReadiness({});
  assert.equal(configured.projectIdConfigured,true);
  assert.equal(configured.ready,true);
+ assert.equal(configured.issues.length,0);
+ // Firebase client configuration is independently required for native FCM.
+ const appConfig=read('app.config.js');
+ assert.match(appConfig,/GOOGLE_SERVICES_JSON/);
+ assert.match(appConfig,/googleServicesFile:firebaseConfigFile/);
+ assert.match(read('src/lib/mobile-push.ts'),/if\(!androidPushConfigured\(\)\)throw Error/);
  const code=read('src/lib/mobile-push.ts');
  assert.match(code,/process\.env\.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID/);
  assert.ok(read('package.json').includes('"check:push"'));
