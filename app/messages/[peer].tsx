@@ -77,6 +77,7 @@ export default function DirectConversation(){
     }else if(silent){
      setSyncWarning('Não foi possível atualizar as mensagens. O histórico apresentado pode estar desatualizado.');
     }else{
+     setSyncWarning('Não foi possível sincronizar a conversa. Tenta novamente quando tiveres ligação.');
      setError(e instanceof Error?e.message:'Não foi possível abrir a conversa.');
     }
    }
