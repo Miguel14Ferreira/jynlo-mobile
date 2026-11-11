@@ -166,7 +166,7 @@ export default function MessagesScreen(){
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
-  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real; as conversas privadas usam atualização periódica. Push com a app fechada ainda não está implementado.</Message>
+  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real, com sincronização de reserva quando está offline; as conversas privadas usam atualização periódica. Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas.</Message>
  </Page>;
 }
 const T=MobileTheme.colors;
