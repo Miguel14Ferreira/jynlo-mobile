@@ -1,7 +1,9 @@
 'use strict';
 const fs=require('node:fs');
 const path=require('node:path');
-const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8')).expo;
+const staticConfig=JSON.parse(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8')).expo;
+// Resolve the Expo config used by actual EAS builds (the projectId lives in app.config.js).
+const config=require('../app.config.js')({config:staticConfig});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function checkPushReadiness(environment=process.env){
