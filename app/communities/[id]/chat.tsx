@@ -158,7 +158,7 @@ export default function CommunityChatScreen(){
    if(activeChat.current===identity){uploadingNow.current=false;setUploading(false);}
   }
  }
- return <Page>
+ return <Page autoScrollToEnd>
    <DemoBanner/><Eyebrow>CHAT DA COMUNIDADE</Eyebrow><Text style={styles.title}>{name}</Text>
    <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
