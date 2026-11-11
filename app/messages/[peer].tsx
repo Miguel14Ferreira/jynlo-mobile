@@ -357,7 +357,7 @@ export default function DirectConversation(){
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={sending||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
