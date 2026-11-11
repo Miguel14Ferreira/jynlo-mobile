@@ -48,7 +48,15 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
   });
   summaries.push(...batch);
  }
- return summaries;
+ // Only render summaries for communities confirmed by the membership list.
+ // A malformed or overbroad summaries response must not introduce other chats.
+ const allowed=new Set(uniqueGroups.map(group=>String(group.id)));
+ const returned=new Set<string>();
+ return summaries.filter(summary=>{
+  if(summary?.kind!=='community'||typeof summary.id!=='string'||!allowed.has(summary.id)||returned.has(summary.id))return false;
+  returned.add(summary.id);
+  return true;
+ });
 }
 
 /** Server-verified read cursor. Only acknowledge messages actually displayed. */
