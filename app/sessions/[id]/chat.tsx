@@ -18,6 +18,7 @@ export default function SessionChat(){
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
+ const historyError=useRef<string|null>(null);
  const [syncWarning,setSyncWarning]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false),generation=useRef(0),pendingRefresh=useRef(false);
  // A request remains locked to its original session/account across refocus.
@@ -34,6 +35,8 @@ export default function SessionChat(){
    const history=await sessionChatHistory(id,auth.token);
    if(version!==generation.current)return;
    setEntries(history);setClosed(false);setSyncWarning('');
+   const previousHistoryError=historyError.current;historyError.current=null;
+   if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
   }catch(e){
@@ -43,11 +46,13 @@ export default function SessionChat(){
     // A confirmed permission change must immediately hide private messages.
     setClosed(true);setEntries([]);setDraft('');setReply(null);setSyncWarning('');
     setPhoto(null);setPhotoReady(false);
+    historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
    }else{
     // Network failures are not evidence of revoked access; the existing chat remains visible.
     setSyncWarning('Sem sincronização neste momento. As mensagens podem estar desatualizadas.');
-    if(!silent)setError(e instanceof Error?e.message:'Não foi possível atualizar o chat.');
+    if(!silent){const message=e instanceof Error?e.message:'Não foi possível atualizar o chat.';
+     historyError.current=message;setError(message);}
    }
   }finally{
    if(refreshing.current===version)refreshing.current=null;
@@ -64,7 +69,7 @@ export default function SessionChat(){
   activeChat.current=identity;
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
-  setEntries([]);setClosed(false);setError('');setSyncWarning('');setLoading(true);setDraft('');setReply(null);
+  setEntries([]);setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);setDraft('');setReply(null);
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
   setPhoto(null);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
