@@ -48,6 +48,16 @@ export async function myStories(token:string|null,username:string|null):Promise<
   if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
   return request<SocialStory[]>('/api/stories/mine',{token});
 }
+export async function storyById(storyId:number,token:string|null):Promise<SocialStory>{
+ if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story indisponível.');
+ if(DEMO_MODE){
+  const story=demoStories.find(item=>item.id===storyId);
+  if(!story)throw Error('Story indisponível.');
+  return story;
+ }
+ return request<SocialStory>(`/api/stories/${storyId}`,{token});
+}
+
 export async function toggleStoryLike(storyId:number,liked:boolean,token:string|null,username:string|null):Promise<SocialStory>{
  requireViewer(token,username);
  if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
