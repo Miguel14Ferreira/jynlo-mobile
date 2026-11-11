@@ -136,3 +136,8 @@ test('sharing a session-related post includes its direct web link',()=>{
  assert.match(share,/https:\/\/d24sports\.com\/sessions\/\$\{id\}/);
  assert.match(share,/await Share\.share/);
 });
+
+test('posting without typed caption still satisfies current media API contract',()=>{
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ assert.match(api,/return sendMedia\('\/api\/feed\/posts',\{content:content\.trim\(\)\|\|'Partilhei um momento desportivo\.'\}/);
+});
