@@ -92,7 +92,7 @@ export async function publishPost(content:string,file:MobileMedia|null,token:str
   requireViewer(token,username);
   if(!file)return createTextPost(content,token,username);
   if(DEMO_MODE){const item=await createTextPost(content.trim()||'Partilhei um momento desportivo.',token,username);if(file.type==='image')item.imageUrl=file.uri;else item.videoUrl=file.uri;return item;}
-  return sendMedia('/api/feed/posts',{content:content.trim()},file,token!);
+  return sendMedia('/api/feed/posts',{content:content.trim()||'Partilhei um momento desportivo.'},file,token!);
 }
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize,true);if(error)throw new Error(error);
