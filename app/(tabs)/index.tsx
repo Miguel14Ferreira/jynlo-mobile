@@ -98,7 +98,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
   }
   function confirmDeleteStory(){
-    if(!story||!ownStory||!token||submittingStory.current)return;
+    if(!story||!story.canDelete||!token||submittingStory.current)return;
     const storyId=story.id,actorToken=token;
     setPaused(true);
     Alert.alert('Eliminar Story?', 'Esta Story será removida antes das 24 horas. A ação é definitiva.', [
