@@ -256,6 +256,7 @@ export default function DirectConversation(){
  // authenticated and subject to the secure 5 MB cache limit.
  const recentPhotoIds=new Set(messages.filter(m=>!m.deletedAt&&m.attachmentMimeType?.startsWith('image/')).slice(-3).map(m=>m.id));
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
+  <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
       nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
@@ -307,7 +308,7 @@ export default function DirectConversation(){
   </View>)}
   <Pressable accessibilityRole="button" accessibilityLabel="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading} style={styles.refreshLink}><Text style={styles.refreshText}>Atualizar conversa</Text></Pressable>
   </ScrollView>
-  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} style={styles.footer}>
+  <View style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
    <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
    <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
@@ -355,11 +356,12 @@ export default function DirectConversation(){
    </Pressable>
   </View>:null}
 
+  </View>
   </KeyboardAvoidingView>
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
- screen:{flex:1,backgroundColor:C.background},
+ screen:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},
  historyScroll:{flex:1},history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12,flexGrow:1},
  footer:{flexShrink:0,paddingHorizontal:12,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:8},
  refreshLink:{alignSelf:'center',padding:10,minHeight:44,justifyContent:'center'},refreshText:{color:C.muted,fontSize:12,fontWeight:'700'},
