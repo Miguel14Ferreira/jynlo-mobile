@@ -48,6 +48,28 @@ export async function myStories(token:string|null,username:string|null):Promise<
   if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
   return request<SocialStory[]>('/api/stories/mine',{token});
 }
+export async function deleteStory(storyId:number,token:string|null):Promise<void>{
+ if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story inválida.');
+ if(DEMO_MODE){
+  const index=demoStories.findIndex(item=>item.id===storyId);
+  if(index<0)throw Error('Story indisponível.');
+  demoStories.splice(index,1);
+  return;
+ }
+ await request<void>(`/api/stories/${storyId}`,{token,method:'DELETE'});
+}
+
+export async function deletePost(postId:number,token:string|null):Promise<void>{
+ if(!Number.isSafeInteger(postId)||postId<=0||!token)throw Error('Publicação inválida.');
+ if(DEMO_MODE){
+  const index=demoPosts.findIndex(item=>item.postId===postId);
+  if(index<0)throw Error('Publicação indisponível.');
+  demoPosts.splice(index,1);
+  return;
+ }
+ await request<void>(`/api/feed/posts/${postId}`,{token,method:'DELETE'});
+}
+
 export async function storyById(storyId:number,token:string|null):Promise<SocialStory>{
  if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story indisponível.');
  if(DEMO_MODE){
