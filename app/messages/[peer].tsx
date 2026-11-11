@@ -12,6 +12,7 @@ import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply} from '../../src/lib/chat-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
+import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
@@ -236,10 +237,10 @@ export default function DirectConversation(){
     mediaTypes:['images'],quality:0.8,exif:false,base64:false
    });
    if(version!==generation.current||conversation.current!==identity)return;
-   if(!selected.canceled&&selected.assets?.[0])setPhoto(selected.assets[0]);
-  }catch{
+   if(!selected.canceled&&selected.assets?.[0]){validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);}
+  }catch(e){
    if(version===generation.current&&conversation.current===identity)
-    setError('Não foi possível abrir a galeria.');
+    setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
   }
  }
  async function uploadPhoto(){
