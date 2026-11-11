@@ -355,9 +355,12 @@ export default function CreateSessionScreen(){
    </>:null}
   </View>
   {selectedCommunity?<View style={styles.panel}>
-   <Text style={styles.heading}>Jogo de época</Text>
-   <Text style={styles.note}>Associa esta sessão à época ativa da comunidade. Se não existir, o servidor cria a época por defeito. Os resultados e as classificações dependem da modalidade.</Text>
-   <View style={styles.inline}>
+   <View style={styles.seasonHead}>
+    <Text style={styles.heading}>Jogo de época</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>Alert.alert('O que é um jogo de época?','Se escolheres «Contar para a época», esta sessão fica associada à época ativa da comunidade e os seus resultados podem contribuir para a classificação, conforme a modalidade e as regras da comunidade.\n\nSe escolheres «Não contar para a época», a sessão continua a existir normalmente, sem influenciar a classificação.\n\nSe as classificações estiverem desativadas, a ativação exige autorização explícita.')} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>Saber mais  ⓘ</Text></Pressable>
+   </View>
+   <Text style={styles.note}>Decide se esta sessão contribui para a época e classificações da comunidade.</Text>
+   <View style={styles.playerChoices}>
     <Button title="Não contar para a época" secondary={form.seasonGame===true} disabled={busy}
      onPress={()=>setForm(prev=>({...prev,seasonGame:false,confirmActivateRankings:false}))}/>
     <Button title="Contar para a época" secondary={form.seasonGame!==true} disabled={busy}
