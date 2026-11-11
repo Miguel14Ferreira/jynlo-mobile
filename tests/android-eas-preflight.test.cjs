@@ -46,3 +46,13 @@ test('EAS custom preflight and diagnostic build share the preview environment',(
  assert.doesNotMatch(standalone,/environment: production/);
  assert.doesNotMatch(diagnostic,/environment: production/);
 });
+
+test('direct diagnostic EAS builds use the same preview environment as the workflow',()=>{
+ const eas=require('../eas.json');
+ const diagnostic=eas.build.diagnostic;
+ assert.equal(diagnostic.environment,'preview');
+ assert.equal(diagnostic.distribution,'internal');
+ assert.equal(diagnostic.android.buildType,'apk');
+ assert.equal(diagnostic.env.JYNLO_REQUIRE_REAL_API,'1');
+ assert.equal(diagnostic.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+});
