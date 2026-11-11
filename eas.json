@@ -51,7 +51,8 @@
       "android": {
         "buildType": "apk",
         "image": "latest"
-      }
+      },
+      "environment": "preview"
     },
     "ios-testflight": {
       "distribution": "store",
