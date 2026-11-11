@@ -1,0 +1,20 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/chat.tsx'),'utf8');
+
+test('confirmed access revocation hides community history and composer',()=>{
+ assert.match(source,/e instanceof ApiError&&\[401,403,404,410\]\.includes\(e\.status\)/);
+ assert.match(source,/revokedRef\.current=true;setAccessRevoked\(true\);setMessages\(\[\]\);setDraft\(''\);setPhoto\(null\);setCanSendPhoto\(false\)/);
+ assert.match(source,/auth\.token&&!accessRevoked\?<KeyboardAvoidingView/);
+ assert.match(source,/enabled=\{!accessRevoked&&canSendPhoto/);
+ assert.match(source,/if\(!active\|\|version!==generation\.current\|\|revokedRef\.current\)return/);
+});
+
+test('network errors preserve historical community messages and can recover',()=>{
+ assert.match(source,/setRefreshWarning\('Não foi possível sincronizar o chat/);
+ assert.match(source,/revokedRef\.current=false;setAccessRevoked\(false\)/);
+ assert.match(source,/setMessages\(old=>mergeMessages\(old,chat\)\)/);
+});
