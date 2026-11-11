@@ -164,7 +164,7 @@ export default function CommunityChatScreen(){
        {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
      </Pressable>
    </KeyboardAvoidingView>:null}
-   <Button secondary title="Atualizar mensagens" disabled={loading} onPress={()=>{void refresh();}} />
+   {refreshWarning&&!accessRevoked?<Button secondary title="↻ Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
