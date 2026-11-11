@@ -252,6 +252,9 @@ export default function DirectConversation(){
    }
   }
  }
+ // Only preview the most recent images automatically; all attachments remain
+ // authenticated and subject to the secure 5 MB cache limit.
+ const recentPhotoIds=new Set(messages.filter(m=>!m.deletedAt&&m.attachmentMimeType?.startsWith('image/')).slice(-3).map(m=>m.id));
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
@@ -298,7 +301,7 @@ export default function DirectConversation(){
       accessibilityLabel="GIF enviado na conversa"/>:
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
     <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
-   {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize}/>:null}
+   {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize} autoPreview={recentPhotoIds.has(m.id)}/>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
