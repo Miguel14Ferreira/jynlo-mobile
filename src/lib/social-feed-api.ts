@@ -25,11 +25,12 @@ export async function socialFeed(token:string|null,username:string|null):Promise
       likeCount:p.likeCount+(selected?.size||0),commentCount:p.commentCount+(demoComments.get(p.postId||-1)?.length||0)};
   });
 }
-export async function profilePosts(username:string,token:string|null):Promise<FeedItem[]>{
+export async function profilePosts(username:string,token:string|null,page=0):Promise<FeedItem[]>{
+ if(!Number.isSafeInteger(page)||page<0||page>1000)throw Error('Página inválida.');
  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(username))throw Error('Perfil inválido.');
  if(!token)throw Error('Inicia sessão para consultar as publicações.');
- if(DEMO_MODE)return demoPosts.filter(item=>item.authorUsername.toLowerCase()===username.toLowerCase());
- return request<FeedItem[]>('/api/feed/users/'+encodeURIComponent(username)+'/posts',{token});
+ if(DEMO_MODE)return demoPosts.filter(item=>item.authorUsername.toLowerCase()===username.toLowerCase()).slice(page*20,(page+1)*20);
+ return request<FeedItem[]>('/api/feed/users/'+encodeURIComponent(username)+'/posts?page='+page,{token});
 }
 
 export async function socialPostById(postId:number,token:string|null):Promise<FeedItem>{
