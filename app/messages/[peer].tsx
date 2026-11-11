@@ -311,7 +311,7 @@ export default function DirectConversation(){
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  <Pressable accessibilityRole="button" accessibilityLabel="Atualizar conversa" onPress={()=>{void refresh();}} disabled={sending||loading} style={styles.refreshLink}><Text style={styles.refreshText}>Atualizar conversa</Text></Pressable>
+  {syncWarning?<Pressable accessibilityRole="button" accessibilityLabel="Tentar sincronizar novamente" onPress={()=>{void refresh();}} disabled={sending||loading||photoBusy} style={styles.refreshLink}><Text style={styles.refreshText}>↻ Tentar novamente</Text></Pressable>:null}
   </ScrollView>
   <View style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
