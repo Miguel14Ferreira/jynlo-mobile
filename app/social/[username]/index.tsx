@@ -4,6 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import ProfilePosts from '../../../src/components/ProfilePosts';
 import {changeFollow,followStatus,publicSportsProfile,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
 import {MobileTheme} from '../../../src/lib/theme';
@@ -67,6 +68,7 @@ export default function PublicSocialProfile(){
     <Text style={[styles.followText,status.followedByMe&&styles.unfollowText]}>{busy?'A confirmar…':status.followedByMe?'A seguir ✓':'Seguir +'}</Text>
    </Pressable>:!own?<Text style={styles.sub}>Não foi possível confirmar a relação de seguimento.</Text>:null}
   </View>:null}
+  {profile?<ProfilePosts username={name} token={auth.token}/>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
