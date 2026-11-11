@@ -10,7 +10,7 @@ import {myNotifications,markNotificationRead} from '../src/lib/notifications-api
 import {C} from '../src/lib/theme';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
-import {disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
+import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter(),isFocused=useIsFocused();
@@ -193,7 +193,7 @@ export default function NotificationsScreen(){
   {sameAccount?<View style={styles.pushPanel}>
    <Text style={styles.heading}>Notificações no telemóvel</Text>
    <Text style={styles.note}>Ativação opcional. Pedimos permissão apenas quando escolheres ativar; o envio de notificações ainda depende da configuração do servidor e das credenciais Android.</Text>
-   <Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>
+   {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
