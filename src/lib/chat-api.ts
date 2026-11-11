@@ -83,16 +83,14 @@ export async function sessionInbox(token:string,username:string):Promise<JynloIn
   });
   summaries.push(...batch);
  }
+ // The backend explicitly omits closed/revoked chats. Never synthesize
+ // sessions absent from its authorized response, even if /sessions/mine listed them.
  const returned=new Set<string>();
  const visible=summaries.filter(item=>{
   if(item?.kind!=='session'||typeof item.id!=='string'||!allowed.has(item.id)||returned.has(item.id))return false;
   returned.add(item.id);
   return true;
  });
- for(const id of ids){
-  if(!returned.has(id))visible.push({kind:'session',id,latestMessageId:null,
-   latestText:null,latestSender:null,latestAt:null,unreadCount:0});
- }
  return visible.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 
