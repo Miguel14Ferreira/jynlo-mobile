@@ -50,3 +50,36 @@ npx eas-cli build --profile push-test --platform android
 Este comando só deve ser executado depois de associar o projeto EAS correto e configurar FCM v1. **Criar o perfil não executa a build.** O backend Render atualmente tem deploy automático desligado e pode ainda não ter os endpoints de registo de dispositivos: validar antes de testar a ativação na app.
 
 O workflow `mobile-push-validation.yml` verifica também a geração do bundle Android (`expo export --platform android`) sem construir um APK nem enviar notificações. O resultado final do CI e a configuração EAS real ainda precisam de verificação.
+
+
+## Bloqueio real de 11-11-2026: FirebaseApp não inicializada
+
+Uma APK Android sem `google-services.json` integrado pode abrir normalmente e
+mostrar notificações internas da API, mas ao pedir o token push a biblioteca
+Firebase apresenta `Default FirebaseApp is not initialized`.
+
+**Não se resolve com a chave da Google Maps nem com o projectId Expo.**
+
+Para desbloquear a próxima APK Android:
+
+1. Na consola Firebase, utilizar um projeto Firebase que pertença à Jynlo e
+   registar uma aplicação Android com o **package exato `com.jynlo.app`**.
+2. Descarregar o `google-services.json` dessa aplicação Android.
+3. Em **Expo → Jynlo → Environment variables → Preview**, criar uma variável
+   **tipo File**, com o nome `GOOGLE_SERVICES_JSON`, e carregar esse ficheiro.
+   O `app.config.js` associa o caminho dessa variável a
+   `android.googleServicesFile`. Não usar o conteúdo JSON como texto normal.
+4. Em **Expo → Jynlo → Credentials → Android → `com.jynlo.app` → FCM V1**,
+   associar a conta de serviço FCM V1 do **mesmo projeto Firebase**. Essa
+   credencial é privada: não a colocar no repositório nem em `EXPO_PUBLIC_*`.
+5. Gerar uma **nova APK `diagnostic`** no ambiente Preview. A versão
+   previamente instalada não recebe estas configurações retroativamente.
+6. Confirmar a permissão Android e o registo do token; depois verificar no
+   backend o envio, tickets e recibos da entrega, sem mostrar tokens em logs.
+
+O ecrã de notificações mobile deixa de oferecer ativação push quando a APK
+não inclui o ficheiro Firebase e continua a permitir ler a caixa de entrada
+obtida da API. Uma configuração nativa presente **não prova por si só** que o
+envio remoto está operacional: requer testes end-to-end.
+
+Referência: https://docs.expo.dev/push-notifications/fcm-credentials/
