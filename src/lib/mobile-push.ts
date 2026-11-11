@@ -35,10 +35,15 @@ export async function pushRegistrationStatus(username:string,token:string):Promi
  if(!actual)await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
  return actual;
 }
+/** A standalone APK must contain Firebase client configuration before requesting an FCM token. */
+export function androidPushConfigured():boolean{
+ return Platform.OS!=='android'||Constants.expoConfig?.extra?.nativePushConfigured===true;
+}
 /** Explicit opt-in only. No permission prompt occurs at launch or login. */
 export async function enableMobilePush(username:string,token:string):Promise<void>{
  if(DEMO_MODE||!username||!token)throw Error('Inicia sessão para ativar notificações.');
  if(Platform.OS!=='android'&&Platform.OS!=='ios')throw Error('Notificações só disponíveis em Android e iOS.');
+ if(!androidPushConfigured())throw Error('As notificações Android ainda precisam da configuração Firebase. A lista de notificações da Jynlo continua disponível nesta página.');
  const prior=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
  if(prior&&prior!==username.toLowerCase())
   throw Error('Este dispositivo ainda está associado a outra conta. Termina sessão nessa conta primeiro.');
