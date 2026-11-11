@@ -133,6 +133,17 @@ export async function sendDirectChat(peer:string,text:string,token:string):Promi
   token,method:'POST',body:{text:body}
  });
 }
+/** Reply within an authorized conversation; the backend checks the quoted message. */
+export async function sendDirectChatReply(peer:string,text:string,token:string,replyToMessageId:number):Promise<DirectChatEntry>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para responder.');
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error('Conversa inválida.');
+ if(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0)throw Error('Mensagem original inválida.');
+ const body=text.trim();
+ if(!body||body.length>2000)throw Error('Escreve uma mensagem até 2000 caracteres.');
+ return request<DirectChatEntry>('/api/chat/me/'+encodeURIComponent(peer),{
+  token,method:'POST',body:{text:body,replyToMessageId}
+ });
+}
 export async function markDirectRead(peer:string,lastSeenMessageId:number,token:string):Promise<void>{
  if(!token||DEMO_MODE||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))return;
