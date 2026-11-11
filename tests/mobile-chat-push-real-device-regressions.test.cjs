@@ -49,3 +49,16 @@ test('push activation cannot claim Firebase readiness without client config',()=
  assert.match(screen,/androidPushConfigured\(\)\?<Button/);
  assert.match(screen,/falta configurar o Firebase Android nesta APK/);
 });
+
+test('private chat replies use server-verified quoted messages without cross-thread leaks',()=>{
+ const api=read('src/lib/chat-api.ts');
+ const chat=read('app/messages/[peer].tsx');
+ assert.match(api,/export async function sendDirectChatReply\(/);
+ assert.match(api,/Number\.isSafeInteger\(replyToMessageId\)/);
+ assert.match(api,/body:\{text:body,replyToMessageId\}/);
+ assert.match(chat,/if\(originalReply\)await sendDirectChatReply\(peer,submittedText,auth\.token,originalReply\.id\)/);
+ assert.match(chat,/setReplyTarget\(current=>current\?\.id===originalReply\.id\?null:current\)/);
+ assert.match(chat,/accessibilityLabel="Cancelar resposta"/);
+ assert.match(chat,/accessibilityLabel=\{`Responder à mensagem de/);
+ assert.match(chat,/setReplyTarget\(null\);setPhoto\(null\);setError\(''\)/);
+});
