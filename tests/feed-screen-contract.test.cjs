@@ -48,14 +48,14 @@ test('Feed apresenta stories e criação de publicações num ecrã próprio',()
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
 });
 
-test('story creation stays exclusively in the central plus action',()=>{
+test('only the story rail provides a Story creation entry',()=>{
  const feed=read('app/(tabs)/index.tsx');
  const tabs=read('app/(tabs)/_layout.tsx');
- assert.match(tabs,/action\('story'\)/);
  assert.match(feed,/<SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"\/>/);
- assert.doesNotMatch(feed,/accessibilityLabel="Criar a minha story"/);
+ assert.match(feed,/accessibilityLabel="Criar a minha story"/);
  assert.doesNotMatch(feed,/\+ Criar Story/);
- assert.match(feed,/Podes criar um Story no botão \+ da navegação/);
+ assert.doesNotMatch(tabs,/onPress=\{\(\)=>action\('story'\)\}/);
+ assert.match(tabs,/onPress=\{\(\)=>action\('venue'\)\}/);
 });
 
 test('Feed mobile presents server session attendance and creation events alongside posts',()=>{
