@@ -1,6 +1,7 @@
 import {DEMO_MODE,request} from './api';
 import {notifyDemoCommunityMessage} from './community-realtime';
 import {communityDetails,myCommunities} from './community-api';
+import {mySessions} from './parity-api';
 import type {CommunityChatEntry,JynloInboxSummary} from './types';
 import {safeId} from './community-core.cjs';
 const threads=new Map<number,CommunityChatEntry[]>();let nextId=950000;
@@ -57,6 +58,42 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
   returned.add(summary.id);
   return true;
  });
+}
+
+/** Build the session inbox only from sessions the logged-in account created or joined.
+ * Waitlisted users do not have chat access. The API still checks membership.
+ */
+export async function sessionInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
+ if(!token||!username)throw Error('Inicia sessão para consultar as conversas de sessões.');
+ const mine=await mySessions(token,username);
+ const allowed=new Map<string,number>();
+ for(const session of [...mine.created,...mine.joined]){
+  if(!Number.isSafeInteger(session.id)||session.id<=0)continue;
+  if(['CANCELLED','COMPLETED'].includes(session.status))continue;
+  allowed.set(String(session.id),session.id);
+ }
+ const ids=[...allowed.keys()];
+ if(ids.length===0)return [];
+ if(DEMO_MODE)return ids.map(id=>({kind:'session' as const,id,latestMessageId:null,
+  latestText:null,latestSender:null,latestAt:null,unreadCount:0}));
+ const summaries:JynloInboxSummary[]=[];
+ for(let i=0;i<ids.length;i+=100){
+  const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
+   token,method:'POST',body:{conversations:ids.slice(i,i+100).map(id=>({kind:'session',id}))}
+  });
+  summaries.push(...batch);
+ }
+ const returned=new Set<string>();
+ const visible=summaries.filter(item=>{
+  if(item?.kind!=='session'||typeof item.id!=='string'||!allowed.has(item.id)||returned.has(item.id))return false;
+  returned.add(item.id);
+  return true;
+ });
+ for(const id of ids){
+  if(!returned.has(id))visible.push({kind:'session',id,latestMessageId:null,
+   latestText:null,latestSender:null,latestAt:null,unreadCount:0});
+ }
+ return visible.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 
 /** Server-verified read cursor. Only acknowledge messages actually displayed. */
