@@ -67,6 +67,21 @@ test('story caption overlay is shown in preview and playback using the existing 
  assert.doesNotMatch(composer,/burn|flatten|renderToFile/);
 });
 
+test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
+ const composer=feed.split('<Modal visible={storyComposer}')[1]?.split('</Modal>')[0];
+ assert.ok(composer);
+ assert.match(composer,/pickMedia\(setStoryMedia,'camera'\)/);
+ assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
+ assert.match(composer,/<ScrollView keyboardShouldPersistTaps="handled"/);
+ assert.match(composer,/disabled=\{!storyMedia\|\|storyPublishing\}/);
+ assert.match(composer,/accessibilityLabel="Fechar criação de Story"/);
+});
+
+test('feed engagement actions wrap rather than overlapping on small screens',()=>{
+ assert.match(feed,/postActions:\{flexDirection:'row',flexWrap:'wrap'/);
+ assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:36/);
+});
+
 test('post creation opens a dedicated media-first screen with camera and gallery',()=>{
  const composer=feed.split('<Modal visible={composerOpen}')[1]?.split('</Modal>')[0];
  assert.ok(composer,'full-screen authenticated post composer exists');
