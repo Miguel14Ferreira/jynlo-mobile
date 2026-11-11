@@ -23,6 +23,7 @@ export default function CommunityChatScreen(){
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
+ const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
@@ -40,16 +41,20 @@ export default function CommunityChatScreen(){
     if(version!==generation.current)return;
     revokedRef.current=false;setAccessRevoked(false);
     setMessages(old=>mergeMessages(old,chat));setName(community.name);setRefreshWarning('');
+    const previousHistoryError=historyError.current;historyError.current=null;
+    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
     if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
      revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setCanSendPhoto(false);
+     historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
      setRefreshWarning('Não foi possível sincronizar o chat. As mensagens apresentadas podem estar desatualizadas.');
-     if(!silent)setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');
+     if(!silent){const message=e instanceof Error?e.message:'Não foi possível abrir o chat.';
+      historyError.current=message;setError(message);}
     }
   }}
   finally{
@@ -63,7 +68,7 @@ export default function CommunityChatScreen(){
  useFocusEffect(useCallback(()=>{
    let active=true;
    const version=++generation.current;
-   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');setLoading(true);setAccessRevoked(false);revokedRef.current=false;
+   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
    setDraft('');setPhoto(null);setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
