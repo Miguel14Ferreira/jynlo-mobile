@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useRef} from 'react';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
@@ -8,9 +8,19 @@ import {formatDate,money} from '../lib/format.cjs';
 import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
 import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 
-export function Page({children,scroll=true}:{children:React.ReactNode;scroll?:boolean}){
+export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
+  const scrollRef=useRef<ScrollView|null>(null);
+  const nearBottom=useRef(true);
   return <SafeAreaView style={styles.page} edges={['top','left','right']}>
-    {scroll ? <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+    {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+      onScroll={autoScrollToEnd?event=>{
+        const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
+        nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+      }:undefined}
+      scrollEventThrottle={100}
+      onContentSizeChange={autoScrollToEnd?()=>{if(nearBottom.current)scrollRef.current?.scrollToEnd({animated:false});}:undefined}>
+        {children}
+      </ScrollView>
       : <View style={styles.content}>{children}</View>}
   </SafeAreaView>;
 }
