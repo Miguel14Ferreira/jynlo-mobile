@@ -209,7 +209,7 @@ export interface SocialStory {
   id:number; authorUsername:string; displayName:string; avatarUrl:string|null;
   communityId:number|null;communityName:string|null;communityPhotoUrl:string|null;
   caption:string|null;mediaUrl:string;video:boolean;createdAt:string;expiresAt:string;
-  canDelete:boolean;
+  canDelete:boolean;likeCount?:number;likedByMe?:boolean;
 }
 export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;}
 export interface FeedUserSuggestion {username:string;displayName:string;photoUrl:string|null;sport?:string|null;city?:string|null;}
