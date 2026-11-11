@@ -37,10 +37,23 @@ export default function CommunityChatScreen(){
   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setMessages([]);setLoading(false);}return;}
   refreshing.current=version;
   if(!silent){setLoading(true);setError('');}
-  try{const [chat,community]=await Promise.all([communityMessages(id,auth.token,auth.username),communityDetails(id,auth.token,auth.username)]);
+  try{
+    const [chatResult,detailsResult]=await Promise.allSettled([
+      communityMessages(id,auth.token,auth.username),
+      communityDetails(id,auth.token,auth.username)
+    ]);
     if(version!==generation.current)return;
+    // A revoked membership on either endpoint wins over a successful response
+    // from the other one: never keep a private history after a confirmed 403.
+    if(detailsResult.status==='rejected'&&detailsResult.reason instanceof ApiError&&
+      [401,403,404,410].includes(detailsResult.reason.status))throw detailsResult.reason;
+    if(chatResult.status==='rejected')throw chatResult.reason;
+    const chat=chatResult.value;
     revokedRef.current=false;setAccessRevoked(false);
-    setMessages(old=>mergeMessages(old,chat));setName(community.name);setRefreshWarning('');
+    // A temporary failure loading the community label must not block chat history.
+    setMessages(old=>mergeMessages(old,chat));
+    if(detailsResult.status==='fulfilled')setName(detailsResult.value.name);
+    setRefreshWarning('');
     const previousHistoryError=historyError.current;historyError.current=null;
     if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
