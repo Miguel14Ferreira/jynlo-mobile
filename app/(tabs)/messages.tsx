@@ -5,7 +5,7 @@ import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {communityInbox,directInbox} from '../../src/lib/chat-api';
+import {communityInbox,directInbox,sessionInbox} from '../../src/lib/chat-api';
 import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C,MobileTheme} from '../../src/lib/theme';
@@ -34,15 +34,16 @@ export default function MessagesScreen(){
   busyVersion.current=version;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
-   const [groups,privateChats,requests,call]=await Promise.allSettled([
-    communityInbox(auth.token,auth.username),directInbox(auth.token),
+   const [groups,privateChats,sessionChats,requests,call]=await Promise.allSettled([
+    communityInbox(auth.token,auth.username),directInbox(auth.token),sessionInbox(auth.token,auth.username),
     myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token)
    ]);
    if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
    setItems(previous=>[
     ...(privateChats.status==='fulfilled'?privateChats.value:previous.filter(i=>i.kind==='direct')),
-    ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community'))
+    ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community')),
+    ...(sessionChats.status==='fulfilled'?sessionChats.value:previous.filter(i=>i.kind==='session'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
    if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
@@ -50,6 +51,7 @@ export default function MessagesScreen(){
    const failedSources=[
     ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
     ...(groups.status==='rejected'?['comunidades']:[]),
+    ...(sessionChats.status==='rejected'?['sessões']:[]),
     ...(requests.status==='rejected'?['convites']:[])
    ];
    const partial=failedSources.length>0;
@@ -104,7 +106,7 @@ export default function MessagesScreen(){
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <View style={styles.headerRow}>
    <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
-    <Text style={styles.sub}>As tuas conversas e comunidades, num só lugar.</Text>
+    <Text style={styles.sub}>Conversas privadas, comunidades e sessões, num só lugar.</Text>
    </View>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><Text style={styles.notificationIcon}>♢</Text><Text style={styles.notificationLabel}>Alertas</Text></Pressable>
   </View>
@@ -166,7 +168,7 @@ export default function MessagesScreen(){
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
   </Pressable>)}
-  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real, com sincronização de reserva quando está offline; as conversas privadas usam atualização periódica. Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas.</Message>
+  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real, com sincronização de reserva quando está offline; os chats privados e de sessão usam atualização periódica. Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas.</Message>
  </Page>;
 }
 const T=MobileTheme.colors;
