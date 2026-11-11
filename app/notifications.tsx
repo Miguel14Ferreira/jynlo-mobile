@@ -192,7 +192,7 @@ export default function NotificationsScreen(){
   <Text style={styles.note}>Convites, novidades desportivas e atividade social. Os destinos são confirmados a partir da tua lista de notificações na API.</Text>
   {sameAccount?<View style={styles.pushPanel}>
    <Text style={styles.heading}>Notificações no telemóvel</Text>
-   <Text style={styles.note}>Ativação opcional. Pedimos permissão apenas quando escolheres ativar; o envio de notificações ainda depende da configuração do servidor e das credenciais Android.</Text>
+   <Text style={styles.note}>{androidPushConfigured()?pushEnabled?'Este dispositivo está registado para notificações push. A entrega depende da ligação e do serviço de envio.':'Podes ativar os avisos neste dispositivo. A entrega depende também das credenciais e do serviço de envio.':'As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.'}</Text>
    {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
@@ -221,7 +221,7 @@ export default function NotificationsScreen(){
    </Pressable>)}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
-  <Message>Notificações atualizadas automaticamente de 20 em 20 segundos enquanto este ecrã está aberto. O envio push com a app fechada ainda não está disponível.</Message>
+  <Message>Esta lista é atualizada automaticamente de 20 em 20 segundos enquanto o ecrã está aberto. {androidPushConfigured()?pushEnabled?'Os avisos push estão ativados neste dispositivo, sujeitos à entrega pelo serviço de notificações.':'Para receber avisos com a aplicação fechada, ativa as notificações neste dispositivo.':'Os avisos com a aplicação fechada exigem uma nova APK com Firebase configurado.'}</Message>
  </Page>;
 }
 const styles=StyleSheet.create({
