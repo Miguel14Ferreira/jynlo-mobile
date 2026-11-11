@@ -10,6 +10,6 @@ test('background direct chat failures disclose stale history without clearing me
  assert.match(source,/setMessages\(results\);setSyncWarning\(''\)/);
 });
 test('changing identity clears warnings and stale messages',()=>{
- assert.match(source,/setMessages\(\[\]\);setDraft\(''\);setPhoto\(null\);setError\(''\);setSyncWarning\(''\)/);
+ assert.match(source,/setMessages\(\[\]\);setDraft\(''\);setReplyTarget\(null\);setPhoto\(null\);setError\(''\);setSyncWarning\(''\)/);
  assert.match(source,/if\(version!==generation\.current\)return/);
 });
