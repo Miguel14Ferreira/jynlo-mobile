@@ -14,6 +14,7 @@ import {markCommunityRead} from '../../../src/lib/chat-api';
 import {mergeMessages} from '../../../src/lib/realtime-core.cjs';
 import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
+import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
 import type {CommunityChatEntry} from '../../../src/lib/types';
 export default function CommunityChatScreen(){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
@@ -136,9 +137,9 @@ export default function CommunityChatScreen(){
   try{
    const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false});
    if(version!==generation.current)return;
-   if(!selected.canceled&&selected.assets?.[0])setPhoto(selected.assets[0]);
-  }catch{
-   if(version===generation.current)setError('Não foi possível abrir a galeria.');
+   if(!selected.canceled&&selected.assets?.[0]){validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);}
+  }catch(e){
+   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
   }
  }
  async function uploadPhoto(){
