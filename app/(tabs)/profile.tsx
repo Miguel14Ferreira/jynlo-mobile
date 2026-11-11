@@ -6,6 +6,7 @@ import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {parseFavoriteSports} from '../../src/lib/favorite-sports.cjs';
+import ProfilePosts from '../../src/components/ProfilePosts';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -92,6 +93,7 @@ export default function ProfileScreen(){
         <Text style={styles.editProfileText}>Editar perfil</Text><Text style={styles.editProfileArrow}>↗</Text>
       </Pressable>:null}
     </View>
+    {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
     <Eyebrow>EXPLORAR A JYNLO</Eyebrow>
     <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
     <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
