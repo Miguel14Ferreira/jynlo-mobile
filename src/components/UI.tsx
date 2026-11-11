@@ -38,7 +38,7 @@ export function Eyebrow({children}:{children:React.ReactNode}){
   return <Text style={styles.eyebrow}>{children}</Text>;
 }
 export function Button({title,onPress,disabled=false,secondary=false,danger=false}:{title:string;onPress:()=>void;disabled?:boolean;secondary?:boolean;danger?:boolean}){
-  return <Pressable onPress={onPress} disabled={disabled} style={({pressed})=>[
+  return <Pressable accessibilityRole="button" accessibilityState={{disabled}} onPress={onPress} disabled={disabled} style={({pressed})=>[
     styles.button,secondary&&styles.buttonSecondary,danger&&styles.buttonDanger,
     (pressed||disabled)&&{opacity:0.65}] }>
     <Text style={[styles.buttonText,secondary&&styles.buttonTextSecondary]}>{title}</Text>
