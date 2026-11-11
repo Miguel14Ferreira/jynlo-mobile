@@ -25,6 +25,13 @@ export async function socialFeed(token:string|null,username:string|null):Promise
       likeCount:p.likeCount+(selected?.size||0),commentCount:p.commentCount+(demoComments.get(p.postId||-1)?.length||0)};
   });
 }
+export async function profilePosts(username:string,token:string|null):Promise<FeedItem[]>{
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(username))throw Error('Perfil inválido.');
+ if(!token)throw Error('Inicia sessão para consultar as publicações.');
+ if(DEMO_MODE)return demoPosts.filter(item=>item.authorUsername.toLowerCase()===username.toLowerCase());
+ return request<FeedItem[]>('/api/feed/users/'+encodeURIComponent(username)+'/posts',{token});
+}
+
 export async function socialPostById(postId:number,token:string|null):Promise<FeedItem>{
  if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
  if(!token)throw new Error('Inicia sessão para consultar a publicação.');
