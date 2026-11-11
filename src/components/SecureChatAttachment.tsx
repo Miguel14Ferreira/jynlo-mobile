@@ -155,11 +155,11 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  }
  if(!formats[mime||''])return <Text style={styles.note}>Anexo privado: {name} (formato ainda sem visualizador)</Text>;
  return <View style={styles.container}>
-  <Pressable accessibilityRole="button" disabled={busy||!token} onPress={()=>{void open();}} style={styles.button}>
+  {!(mime?.startsWith('image/')&&uri)?<Pressable accessibilityRole="button" disabled={busy||!token} onPress={()=>{void open();}} style={styles.button}>
    <Text style={styles.action}>{busy?'A abrir anexo…':isVoice(mime)?
      (uri?(playback.playing?'❚❚ Pausar voz':'▶ Reproduzir voz'):'▶ Ouvir mensagem de voz'):
      mime==='application/pdf'?'Abrir PDF · '+name:'Ver fotografia · '+name}</Text>
-  </Pressable>
+  </Pressable>:null}
   {mime?.startsWith('image/')&&uri?<Pressable accessibilityRole="button" accessibilityLabel="Ampliar fotografia recebida" onPress={()=>setExpanded(true)}><Image source={{uri}} resizeMode="cover" style={styles.inlineImage}/></Pressable>:null}
   {isVoice(mime)&&uri?<Text style={styles.note}>{Math.floor(playback.currentTime)}s / {Math.floor(playback.duration||0)}s</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
