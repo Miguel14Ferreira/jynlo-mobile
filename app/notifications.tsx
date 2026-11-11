@@ -167,6 +167,7 @@ export default function NotificationsScreen(){
    case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
    case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
    case 'social-post':router.push({pathname:'/posts/[postId]',params:{postId:destination.id!}});break;
+   case 'social-story':router.push({pathname:'/',params:{storyId:destination.id!}});break;
   }
  }
  useEffect(()=>{
