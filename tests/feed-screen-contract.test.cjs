@@ -7,9 +7,9 @@ test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',(
   assert.ok(fs.existsSync(path.join(root,'app/(tabs)/explore.tsx')));
   assert.ok(fs.existsSync(path.join(root,'app/people.tsx')));
 });
-test('Feed mobile centra-se em stories e publicações com compositor compacto',()=>{
+test('Feed mobile centra-se em stories e publicações sem caixa de texto no início',()=>{
   const feed=read('app/(tabs)/index.tsx');
-  for(const fragment of ['Stories','Publicações','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker','composerOpen','Partilhar um momento…'])assert.ok(feed.includes(fragment),fragment);
+  for(const fragment of ['Stories','Publicações','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker','composerOpen','Nova publicação'])assert.ok(feed.includes(fragment),fragment);
   for(const removed of ['A minha semana desportiva','Jogos com vagas','Pessoas para conhecer','discoverSessions','mySessions','myCommunities'])assert.ok(!feed.includes(removed),removed);
   assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)setPosts\(value\(0,\[\] as FeedItem\[\]\)\)/);
   assert.doesNotMatch(feed,/setPosts\([^\n]*\.filter\(item=>item\.type==='POST'\)/);
@@ -25,7 +25,7 @@ test('Feed de visitante não pede feed privado e apresenta entrada simples',()=>
   const feed=read('app/(tabs)/index.tsx');
   assert.match(feed,/auth\.token&&auth\.username\?socialFeed/);
   assert.match(feed,/auth\.token\?storyFeed/);
-  assert.match(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
+  assert.doesNotMatch(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
   assert.match(feed,/Iniciar sessão/);
   assert.doesNotMatch(feed,/auth\.token\?discoverPeople/);
 });
@@ -38,10 +38,11 @@ test('Feed mobile usa hero compacto sem recorte de imagem e separadores respeita
  assert.match(tabs,/Math\.max\(insets\.bottom,8\)/);
 });
 
-test('Feed apresenta stories sem painel pesado e compositor recolhido por defeito',()=>{
+test('Feed apresenta stories e criação de publicações num ecrã próprio',()=>{
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/const \[composerOpen,setComposerOpen\]=useState\(false\)/);
- assert.match(feed,/\{composerOpen\?<><TextInput/);
+ assert.match(feed,/<Modal visible=\{composerOpen\}/);
+ assert.doesNotMatch(feed,/\{composerOpen\?<><TextInput/);
  assert.match(feed,/storiesCard:\{paddingVertical:10,gap:8\}/);
  assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:10\}/);
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
