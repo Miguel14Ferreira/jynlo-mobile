@@ -1,7 +1,7 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -26,9 +26,13 @@ export default function CommunityChatScreen(){
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('offline');
- const refresh=useCallback(async(version=generation.current)=>{
+ const connectionStatus=useRef<'connecting'|'online'|'offline'>('offline');
+ const refreshing=useRef<number|null>(null),queuedRefresh=useRef(false);
+ const refresh=useCallback(async(version=generation.current,silent=false)=>{
+  if(refreshing.current===version){queuedRefresh.current=true;return;}
   if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0){if(version===generation.current){setMessages([]);setLoading(false);}return;}
-  setLoading(true);setError('');
+  refreshing.current=version;
+  if(!silent){setLoading(true);setError('');}
   try{const [chat,community]=await Promise.all([communityMessages(id,auth.token,auth.username),communityDetails(id,auth.token,auth.username)]);
     if(version!==generation.current)return;
     setMessages(old=>mergeMessages(old,chat));setName(community.name);setRefreshWarning('');
@@ -36,15 +40,21 @@ export default function CommunityChatScreen(){
     if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
   }catch(e){if(version===generation.current){
     setRefreshWarning('Não foi possível sincronizar o chat. As mensagens apresentadas podem estar desatualizadas.');
-    setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');
+    if(!silent)setError(e instanceof Error?e.message:'Não foi possível abrir o chat.');
   }}
-  finally{if(version===generation.current)setLoading(false);}
+  finally{
+   if(refreshing.current===version)refreshing.current=null;
+   if(version===generation.current){
+    if(!silent)setLoading(false);
+    if(queuedRefresh.current){queuedRefresh.current=false;void refresh(version,true);}
+   }
+  }
  },[id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');setLoading(true);
-   setDraft('');setPhoto(null);setConnection('offline');
+   setDraft('');setPhoto(null);setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -54,12 +64,20 @@ export default function CommunityChatScreen(){
    if(auth.token)void chatPhotoAvailable('community',id,auth.token).then(ok=>{if(active&&version===generation.current)setCanSendPhoto(ok);}).catch(()=>{});
    void refresh(version);
    if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return ()=>{active=false;generation.current++;if(activeChat.current===identity)activeChat.current='';};
-   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current)setConnection(status);},
+   const disconnect=observeCommunityChat({id,token:auth.token,username:auth.username,onStatus:(status)=>{if(active&&version===generation.current){connectionStatus.current=status;setConnection(status);}}, 
     onMessage:(msg)=>{if(!active||version!==generation.current)return;
       setMessages(old=>mergeMessages(old,[msg]));
       if(msg.username!==auth.username)void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
    });
-   return ()=>{active=false;generation.current++;if(activeChat.current===identity)activeChat.current='';disconnect();};
+   // A disconnected WebSocket must not leave the conversation frozen until a manual refresh.
+   const timer=setInterval(()=>{
+    if(active&&generation.current===version&&connectionStatus.current!=='online'&&AppState.currentState==='active')
+     void refresh(version,true);
+   },15000);
+   const resume=AppState.addEventListener('change',state=>{
+    if(state==='active'&&active&&generation.current===version)void refresh(version,true);
+   });
+   return ()=>{active=false;clearInterval(timer);resume.remove();queuedRefresh.current=false;generation.current++;if(activeChat.current===identity)activeChat.current='';disconnect();};
  },[refresh,id,auth.token,auth.username]));
  async function send(){
   const identity=id+'|'+auth.token;
@@ -111,7 +129,7 @@ export default function CommunityChatScreen(){
  }
  return <Page>
    <DemoBanner/><Eyebrow>CHAT DA COMUNIDADE</Eyebrow><Text style={styles.title}>{name}</Text>
-   <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ Offline'}</Text>
+   <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
@@ -136,7 +154,7 @@ export default function CommunityChatScreen(){
        {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
      </Pressable>
    </KeyboardAvoidingView>:null}
-   <Button secondary title="Atualizar mensagens" onPress={()=>{void refresh();}} />
+   <Button secondary title="Atualizar mensagens" disabled={loading} onPress={()=>{void refresh();}} />
   </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
