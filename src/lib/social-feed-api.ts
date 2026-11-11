@@ -9,6 +9,7 @@ const demoPosts:FeedItem[]=[];
 const demoStories:SocialStory[]=[];
 const demoComments=new Map<number,SocialComment[]>();
 const demoLikes=new Map<number,Set<string>>();
+const demoStoryLikes=new Map<number,Set<string>>();
 const nowIso=()=>new Date().toISOString();
 const tomorrow=()=>new Date(Date.now()+24*60*60*1000).toISOString();
 const requireViewer=(token:string|null,username:string|null)=>{
@@ -31,13 +32,33 @@ export async function socialPostById(postId:number,token:string|null):Promise<Fe
  return request<FeedItem>(`/api/feed/posts/${postId}`,{token});
 }
 export async function storyFeed(token:string|null):Promise<SocialStory[]>{
-  if(DEMO_MODE)return [...demoStories];
+  if(DEMO_MODE)return demoStories.map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:false}));
   return request<SocialStory[]>('/api/stories',{token});
 }
 export async function myStories(token:string|null,username:string|null):Promise<SocialStory[]>{
   requireViewer(token,username);
-  if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username);
+  if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
   return request<SocialStory[]>('/api/stories/mine',{token});
+}
+export async function toggleStoryLike(storyId:number,liked:boolean,token:string|null,username:string|null):Promise<SocialStory>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
+ if(DEMO_MODE){
+  const story=demoStories.find(s=>s.id===storyId);if(!story)throw Error('Story indisponível.');
+  const likes=demoStoryLikes.get(storyId)||new Set<string>();
+  if(liked)likes.delete(username!);else likes.add(username!);
+  demoStoryLikes.set(storyId,likes);
+  return {...story,likedByMe:likes.has(username!),likeCount:likes.size};
+ }
+ return request<SocialStory>(`/api/stories/${storyId}/likes`,{token,method:liked?'DELETE':'POST'});
+}
+export async function replyToStory(storyId:number,content:string,token:string|null,username:string|null):Promise<void>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
+ const message=content.trim();
+ if(!message||message.length>500)throw Error('Escreve uma resposta até 500 caracteres.');
+ if(DEMO_MODE)return;
+ await request<void>(`/api/stories/${storyId}/replies`,{token,method:'POST',body:{content:message}});
 }
 export async function likePost(postId:number,liked:boolean,token:string|null,username:string|null):Promise<void>{
   requireViewer(token,username);
