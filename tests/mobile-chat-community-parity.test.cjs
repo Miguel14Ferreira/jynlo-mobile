@@ -49,7 +49,8 @@ test('member community links to session creation with authenticated preselection
 test('private conversation polls while focused and never retries sends automatically',()=>{
  const screen=read('app/messages/[peer].tsx');
  assert.match(screen,/setInterval\(\(\)=>\{\s*if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\s*\},15000\)/);
- assert.match(screen,/clearInterval\(timer\);resume\.remove\(\);received\.remove\(\)/);
+ assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
+ assert.match(screen,/received\?\.remove\(\)/);
  assert.match(screen,/if\(refreshing\.current===version\)/);
  assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
  assert.match(screen,/sendingNow\.current=true/);
@@ -69,7 +70,7 @@ test('messages inbox refreshes while focused, keeps unread counts, and isolates 
  assert.match(screen,/previous\.filter\(i=>i\.kind==='direct'\)/);
  assert.match(screen,/previous\.filter\(i=>i\.kind==='community'\)/);
  assert.match(screen,/item\.unreadCount/);
- assert.match(screen,/Push com a app fechada ainda não está implementado/);
+ assert.match(screen,/avisos push, quando disponíveis nesta APK/);
 });
 
 test('private photo attachment uses authenticated private API and requires explicit confirmation',()=>{
@@ -114,7 +115,7 @@ test('session chat discards stale responses after navigation and never auto-retr
   'generation=useRef(0)', 'const version=++generation.current',
   'version!==generation.current', 'generation.current++',
   "AppState.currentState==='active'", "void refresh(true,version)",
-  'refreshing.current===version', 'if(version===generation.current){sendingNow.current=false',
+  'refreshing.current===version', 'if(activeChat.current===identity){sendingNow.current=false',
   "Consulta o histórico antes de voltares a tentar."
  ])assert.ok(screen.includes(marker),marker);
  assert.ok(screen.includes("postSessionChat(id,originalDraft,auth.token,originalReplyId)"));
