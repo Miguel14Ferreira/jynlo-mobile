@@ -8,3 +8,7 @@ dist/
 *.log
 .DS_Store
 gha-creds-*.json
+google-services.json
+*.jks
+*.keystore
+credentials.json
