@@ -107,12 +107,12 @@ export default function SessionChat(){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
   const version=generation.current;
   try{
-   const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+   const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version===generation.current&&!chosen.canceled&&chosen.assets?.[0]){
-    chosen.assets.forEach(validateChatPhoto);
+    chosen.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
     const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
     if(issue)throw Error(issue);
-    validateChatPhoto(chosen.assets[0]);setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
+    if(chosen.assets[0].type==='image')validateChatPhoto(chosen.assets[0]);setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
    }
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');}
  }
@@ -123,7 +123,7 @@ export default function SessionChat(){
   pendingWrites.current.set(identity,'photo');
   sendingNow.current=true;setUploading(true);setError('');
   try{
-   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'session',id},auth.token,[photo,...extraPhotos],originalReplyId);
+   if(extraPhotos.length||photo.type==='video')await sendChatPhotoAlbum({scope:'session',id},auth.token,[photo,...extraPhotos],originalReplyId);
    else await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
    if(version!==generation.current)return;
    setPhoto(null);setExtraPhotos([]);setReply(current=>current?.id===originalReplyId?null:current);
@@ -157,20 +157,20 @@ export default function SessionChat(){
    setReply(current=>current?.id===(sentReplyId??undefined)?null:current);
    await refresh();
   }}/>
-  {auth.token&&!closed&&photoReady?<Button title="Escolher fotografia" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
+  {auth.token&&!closed&&photoReady?<Button title="Escolher fotografias ou vídeos" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
-    {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={uploading} onPress={()=>{
+    {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
      const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
      setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
     }} style={{gap:4}}>
-     <Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>
+     {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
      <Text style={styles.note}>✕ Remover</Text>
     </Pressable>)}
    </View>
-   <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por ficheiro. Confirma antes de enviar.</Text>
-   <Button title={uploading?'A enviar…':'Confirmar envio da fotografia'} disabled={uploading||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button title="Cancelar fotografia" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+   <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+   <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending} onPress={()=>{void uploadPhoto();}}/>
+   <Button title="Cancelar anexos" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<View style={styles.editor}><Text style={styles.note}>A responder a {reply.senderUsername}</Text>
