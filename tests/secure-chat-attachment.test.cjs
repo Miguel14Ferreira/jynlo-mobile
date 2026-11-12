@@ -25,18 +25,20 @@ test('preview only fetches on user action and removes private local files',()=>{
  assert.match(screen,/if\(!pdfPreview\.current\)cleanup\(\)/);
  assert.match(screen,/onRequestClose=\{close\}/);
  assert.match(screen,/const bytes=await response\.bytes\(\)/);
- assert.match(screen,/bytes\.length>5\*1024\*1024/);
+ assert.match(screen,/bytes\.length>maxBytes/);
  assert.match(screen,/type!==mime/);
+ assert.match(screen,/maxAttachmentSize\(mime\)/);
+ assert.match(screen,/index\?\'\/\'\+index:\'\'/);
  assert.match(screen,/!active\.current\|\|controller\.signal\.aborted/);
 });
 test('all chat kinds only expose attachments from non-deleted messages',()=>{
  for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
   const screen=read(file);
   assert.match(screen,/SecureChatAttachment/);
-  assert.match(screen,/m\.attachmentName&&!m\.deletedAt/);
+  assert.match(screen,/!m\.deletedAt\?chatAttachmentList\(m\)\.map/);
   assert.match(screen,/token=\{auth\.token\}/);
-  assert.match(screen,/mime=\{m\.attachmentMimeType\}/);
-  assert.match(screen,/size=\{m\.attachmentSize\}/);
+  assert.match(screen,/mime=\{attachment\.mime\}/);
+  assert.match(screen,/size=\{attachment\.size\}/);
  }
  const pkg=JSON.parse(read('package.json'));
  assert.equal(pkg.dependencies['expo-file-system'],'~58.0.11');
@@ -52,7 +54,7 @@ test('PDF attachments use authenticated byte download and platform native previe
  assert.match(screen,/AppState\.addEventListener\('change'/);
  assert.match(screen,/state==='active'&&wasBackgrounded\.current&&pdfPreview\.current/);
  assert.match(screen,/Limpar PDF temporário/);
- assert.match(screen,/bytes\.length>5\*1024\*1024/);
+ assert.match(screen,/bytes\.length>maxBytes/);
  assert.doesNotMatch(screen,/Sharing\.shareAsync/);
  assert.doesNotMatch(screen,/Linking\.openURL/);
 });
