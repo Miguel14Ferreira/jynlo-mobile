@@ -35,10 +35,10 @@ test('story sharing uses native share sheet without fabricated permanent URL',()
 test('reply draft belongs to current story and videos pause while composing',()=>{
  assert.match(viewer,/React\.useEffect\(\(\)=>\{setReplyText\(''\);setReplyFocused\(false\);\},\[story\?\.id\]\)/);
  assert.match(viewer,/paused\|\|replyFocused\|\|storyBusy/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\|\|!appActive\)return/);
 });
 
 test('story reply disables navigation while focused or in flight',()=>{
- assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\)return/);
+ assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\|\|!appActive\)return/);
  assert.match(viewer,/A tua resposta ficou guardada em privado/);
 });
