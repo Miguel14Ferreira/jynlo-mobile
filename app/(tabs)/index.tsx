@@ -213,7 +213,7 @@ export default function JynloFeedHome(){
     setLoading(true);setError('');
     const fetches=await Promise.allSettled([
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
-      auth.token?storyFeed(auth.token):Promise.resolve([]),
+      auth.token?storyFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?myStories(auth.token,auth.username):Promise.resolve([])
     ]);
     if(id!==reloadNumber.current)return;
