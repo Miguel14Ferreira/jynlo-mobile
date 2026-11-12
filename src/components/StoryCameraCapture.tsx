@@ -11,7 +11,7 @@ type Props={
 };
 export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const camera=useRef<CameraView|null>(null);
- const startY=useRef<number|null>(null);
+ const gestureStart=useRef<{x:number;y:number}|null>(null);
  const [permission,requestPermission]=useCameraPermissions();
  const [facing,setFacing]=useState<'back'|'front'>('back');
  const [busy,setBusy]=useState(false);
@@ -29,10 +29,12 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível tirar a fotografia.');}
   finally{setBusy(false);}
  }
- const swipeStart=(pageY:number)=>{startY.current=pageY;};
- const swipeEnd=(pageY:number)=>{
-  if(startY.current!==null&&startY.current-pageY>75&&!busy)onPickGallery();
-  startY.current=null;
+ const beginGalleryGesture=(x:number,y:number)=>{gestureStart.current={x,y};};
+ const finishGalleryGesture=(x:number,y:number)=>{
+  const start=gestureStart.current;
+  gestureStart.current=null;
+  // Require a deliberate upward swipe, not a diagonal camera gesture or tap.
+  if(start&&!busy&&start.y-y>75&&Math.abs(start.x-x)<110)onPickGallery();
  };
  if(!permission)return <View style={styles.placeholder}><ActivityIndicator color={C.mint}/></View>;
  if(!permission.granted)return <View style={styles.permission}>
@@ -41,11 +43,16 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   <Pressable accessibilityRole="button" style={styles.primary} onPress={()=>void requestPermission()}><Text style={styles.primaryText}>Permitir câmara</Text></Pressable>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={onPickGallery}><Text style={styles.secondaryText}>Abrir galeria</Text></Pressable>
  </View>;
- return <View style={styles.cameraContainer}
-  onTouchStart={e=>swipeStart(e.nativeEvent.pageY)}
-  onTouchEnd={e=>swipeEnd(e.nativeEvent.pageY)}>
+ return <View style={styles.cameraContainer}>
   <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode="picture"/>
-  <View style={styles.topOverlay} pointerEvents="none"><Text style={styles.topHint}>Desliza para cima para abrir a galeria ↑</Text></View>
+  <View style={styles.cameraGestureArea}
+    accessible accessibilityLabel="Pré-visualização da câmara. Desliza para cima para abrir a galeria."
+    onStartShouldSetResponder={()=>true}
+    onResponderGrant={e=>beginGalleryGesture(e.nativeEvent.pageX,e.nativeEvent.pageY)}
+    onResponderRelease={e=>finishGalleryGesture(e.nativeEvent.pageX,e.nativeEvent.pageY)}
+    onResponderTerminate={()=>{gestureStart.current=null;}}>
+    <View style={styles.topOverlay} pointerEvents="none"><Text style={styles.topHint}>Desliza para cima para abrir a galeria ↑</Text></View>
+  </View>
   <View style={styles.controls}>
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos"
       disabled={busy} onPress={onPickGallery} style={styles.galleryButton}><Text style={styles.galleryIcon}>▦</Text><Text style={styles.controlText}>Galeria</Text></Pressable>
@@ -60,6 +67,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
 }
 const styles=StyleSheet.create({
  cameraContainer:{width:'100%',height:440,borderRadius:20,overflow:'hidden',backgroundColor:'#091c22',justifyContent:'space-between'},
+ cameraGestureArea:{flex:1,justifyContent:'flex-start'},
  placeholder:{height:350,justifyContent:'center'},
  permission:{height:350,padding:22,borderRadius:18,backgroundColor:C.surface,gap:15,justifyContent:'center'},
  title:{fontSize:19,fontWeight:'900',color:C.white},
