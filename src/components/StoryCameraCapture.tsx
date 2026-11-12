@@ -22,9 +22,10 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  useEffect(()=>()=>{alive.current=false;if(recordingRef.current)camera.current?.stopRecording();},[]);
  const [facing,setFacing]=useState<'back'|'front'>('back');
  const [busy,setBusy]=useState(false);
+ const [cameraReady,setCameraReady]=useState(false);
  const [error,setError]=useState('');
  async function capture(){
-  if(busy||recordingRef.current||mode!=='picture'||!permission?.granted||!camera.current)return;
+  if(busy||recordingRef.current||!cameraReady||mode!=='picture'||!permission?.granted||!camera.current)return;
   setBusy(true);setError('');
   try{
    const photo=await camera.current.takePictureAsync({quality:0.7,exif:false,skipProcessing:false});
@@ -41,7 +42,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    camera.current?.stopRecording();
    return;
   }
-  if(busy||!permission?.granted||!camera.current||mode!=='video')return;
+  if(busy||!cameraReady||!permission?.granted||!camera.current||mode!=='video')return;
   if(!micPermission?.granted){
    try{
     const granted=await requestMicPermission();
@@ -86,7 +87,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={onPickGallery}><Text style={styles.secondaryText}>Abrir galeria</Text></Pressable>
  </View>;
  return <View style={[styles.cameraContainer,{height:Math.min(620,Math.max(370,viewportHeight-260))}]}>
-  <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode={mode} videoQuality="720p"/>
+  <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode={mode} videoQuality="720p" onCameraReady={()=>setCameraReady(true)} onMountError={event=>setError(event.message)}/>
   <View style={styles.cameraGestureArea}
     accessible accessibilityLabel="Pré-visualização da câmara. Desliza para cima para abrir a galeria."
     onStartShouldSetResponder={()=>true}
@@ -96,19 +97,19 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
     <View style={styles.topOverlay} pointerEvents="none"><Text style={styles.topHint}>Desliza para cima para abrir a galeria ↑</Text></View>
   </View>
   <View style={styles.modeRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Modo fotografia" disabled={busy} onPress={()=>setMode('picture')} style={[styles.modeButton,mode==='picture'&&styles.modeActive]}><Text style={styles.modeText}>Fotografia</Text></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Modo vídeo" disabled={busy} onPress={()=>setMode('video')} style={[styles.modeButton,mode==='video'&&styles.modeActive]}><Text style={styles.modeText}>Vídeo</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Modo fotografia" disabled={busy} onPress={()=>{setCameraReady(false);setMode('picture');}} style={[styles.modeButton,mode==='picture'&&styles.modeActive]}><Text style={styles.modeText}>Fotografia</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Modo vídeo" disabled={busy} onPress={()=>{setCameraReady(false);setMode('video');}} style={[styles.modeButton,mode==='video'&&styles.modeActive]}><Text style={styles.modeText}>Vídeo</Text></Pressable>
   </View>
   <View style={styles.controls}>
     <View style={styles.galleryButton} accessible={false}><Text style={styles.controlText}>↑ Galeria</Text></View>
     <Pressable accessibilityRole="button"
       accessibilityLabel={mode==='video'?(recording?'Terminar gravação':'Começar gravação'):'Tirar fotografia'}
-      disabled={busy&&!recording} onPress={()=>void (mode==='video'?toggleRecording():capture())}
+      disabled={(busy&&!recording)||(!cameraReady&&!recording)} onPress={()=>void (mode==='video'?toggleRecording():capture())}
       style={[styles.captureOuter,recording&&styles.recordOuter]}>
       <View style={[styles.captureInner,mode==='video'&&styles.videoCaptureInner,recording&&styles.stopCaptureInner]}/>
     </Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Trocar câmara frontal ou traseira"
-      disabled={busy||recording} onPress={()=>setFacing(v=>v==='back'?'front':'back')} style={styles.galleryButton}><Text style={styles.galleryIcon}>⟳</Text><Text style={styles.controlText}>Rodar</Text></Pressable>
+      disabled={busy||recording} onPress={()=>{setCameraReady(false);setFacing(v=>v==='back'?'front':'back');}} style={styles.galleryButton}><Text style={styles.galleryIcon}>⟳</Text><Text style={styles.controlText}>Rodar</Text></Pressable>
   </View>
   {recording?<View style={styles.recordStatus}><Text style={styles.recordText}>● A gravar · máximo 30 segundos</Text></View>:
   busy?<View style={styles.busy}><ActivityIndicator color="#fff"/><Text style={styles.controlText}>A preparar ficheiro…</Text></View>:null}
