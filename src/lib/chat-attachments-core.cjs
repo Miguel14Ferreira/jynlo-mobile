@@ -21,7 +21,7 @@ function validateChatAlbum(files,{allowUnknownSize=false}={}){
 }
 // Trust the actual local file over picker metadata, which may be stale.
 function measuredPhotoSize(actualSize,pickerSize){
- if(Number.isSafeInteger(actualSize)&&actualSize>0)return actualSize;
+ if(Number.isSafeInteger(actualSize)&&actualSize>=0)return actualSize;
  if(Number.isSafeInteger(pickerSize)&&pickerSize>0)return pickerSize;
  return 0;
 }
