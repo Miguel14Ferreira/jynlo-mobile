@@ -228,7 +228,7 @@ export async function publishPost(content:string,file:MobileMedia|null,token:str
   return sendMedia('/api/feed/posts',{content:content.trim()||'Partilhei um momento desportivo.'},file,token!);
 }
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null):Promise<SocialStory>{
-  requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize,true);if(error)throw new Error(error);
+  requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
   if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true};demoStories.unshift(item);return item;}
