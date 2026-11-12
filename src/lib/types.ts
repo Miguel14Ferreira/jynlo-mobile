@@ -182,6 +182,7 @@ export interface FeedItem {
   type:'POST'|'SESSION_CREATED'|'SESSION_ATTENDED';
   postId:number|null;authorUsername:string;authorDisplayName:string;
   authorProfilePicUrl:string|null;content:string|null;imageUrl:string|null;videoUrl?:string|null;
+  extraMedia?:Array<{url:string;mimeType:string}>;
   createdAt:string;sessionId:number|null;sport:string|null;city:string|null;gameDate:string|null;
   likeCount:number;likedByMe:boolean;commentCount:number;hideLikers?:boolean;
 }
