@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
@@ -84,6 +84,14 @@ export default function NotificationPost(){
    }}
   ]);
  }
+ async function sharePost(){
+  if(!post||!valid)return;
+  const media=resolveJynloMedia(post.imageUrl||post.videoUrl);
+  const contents=[post.content?.trim()||'Publicação desportiva na Jynlo',
+   'Por @'+post.authorUsername,media?.startsWith('https://')?media:null].filter(Boolean).join('\n');
+  try{await Share.share({message:contents});}
+  catch(e){Alert.alert('Partilhar publicação',e instanceof Error?e.message:'Não foi possível partilhar.');}
+ }
  async function comment(){
   if(!post||!auth.token||!auth.username||!draft.trim()||writing.current||!valid)return;
   const original=draft;writing.current=true;setBusy(true);setError('');
@@ -113,6 +121,7 @@ export default function NotificationPost(){
      <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?'Retirar gosto':'Gostar'} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{post.likedByMe?'♥':'♡'} Gostar</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou"} disabled={Boolean(post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase())} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${post.likeCount} gostos`}</Text></Pressable>
      <Text style={styles.note}>{post.commentCount} comentários</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" onPress={()=>{void sharePost();}} style={styles.action}><Text style={styles.link}>↗ Partilhar</Text></Pressable>
     </View>
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?'Mostrar pessoas que gostaram':'Ocultar pessoas que gostaram'} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
