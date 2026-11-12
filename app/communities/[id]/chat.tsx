@@ -136,11 +136,13 @@ export default function CommunityChatScreen(){
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
   }
  }
- async function choosePhoto(){
+ async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token))return;
   const version=generation.current;
   try{
-   const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+   const selected=source==='camera'?
+    await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version!==generation.current)return;
    if(!selected.canceled&&selected.assets?.[0]){
     selected.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
@@ -185,6 +187,7 @@ export default function CommunityChatScreen(){
    </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} onSent={async()=>{await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
      {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
