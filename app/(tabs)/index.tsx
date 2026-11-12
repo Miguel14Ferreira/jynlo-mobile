@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 // Load the native media picker only when the user explicitly opens the gallery.
@@ -189,6 +189,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
 }
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
+  const {width:screenWidth}=useWindowDimensions();
   const {compose,storyId}=useLocalSearchParams<{compose?:string;storyId?:string}>();
   const activeStoryAccount=useRef<string|null>(auth.token);
   activeStoryAccount.current=auth.token;
@@ -380,13 +381,13 @@ export default function JynloFeedHome(){
           try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
         }
         const validation=validateMedia(mime,size||1,!album&&setter===setStoryMedia);
-        if(validation||!size){Alert.alert('Ficheiro não aceite',!size?'Não foi possível confirmar o tamanho do ficheiro.':validation!);return;}
+        if(validation){Alert.alert('Ficheiro não aceite',validation);return;}
         prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
       }
       if(album){
         const next=mergeAlbum(composerMedia,prepared);
         if(next.length>MAX_ALBUM_ITEMS){Alert.alert('Álbum completo','Podes escolher até 6 fotografias ou vídeos.');return;}
-        const error=albumError(next);
+        const error=albumError(next,true);
         if(error){Alert.alert('Álbum não aceite',error);return;}
         setComposerMedia(next);
       }else if(prepared[0])setter(prepared[0]);
@@ -475,7 +476,7 @@ export default function JynloFeedHome(){
         {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><Text style={{color:MUTED,fontSize:24}}>⋯</Text></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {album.length?<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
-        {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:340,position:'relative'}}>
+        {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:Math.max(240,screenWidth-24),position:'relative'}}>
           {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<Image source={{uri}} style={styles.postImage} resizeMode="cover"/>):null}
           {album.length>1?<View style={styles.albumCounter}><Text style={styles.albumCounterText}>{i+1}/{album.length}</Text></View>:null}
         </View>;})}
