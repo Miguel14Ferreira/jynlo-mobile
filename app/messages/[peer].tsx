@@ -306,15 +306,15 @@ export default function DirectConversation(){
    }}
   ]);
  }
- async function choosePhoto(){
+ async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setError('');
   try{
-   const selected=await ImagePicker.launchImageLibraryAsync({
-    mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4
-   });
+   const selected=source==='camera'?
+    await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version!==generation.current||conversation.current!==identity)return;
    if(!selected.canceled&&selected.assets?.[0]){
     selected.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
@@ -476,7 +476,8 @@ export default function DirectConversation(){
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeoss ou vídeos" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeos" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Abrir câmara" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
   {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 
   </View>
