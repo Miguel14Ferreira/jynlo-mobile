@@ -20,7 +20,8 @@ export default function TabsLayout(){
  const [eligible,setEligible]=useState<CommunityGroup[]>([]);
  const [checking,setChecking]=useState(false);
  const [checkError,setCheckError]=useState(false);
- const close=useCallback(()=>setOpen(false),[]);
+ const [chooseChampionship,setChooseChampionship]=useState(false);
+ const close=useCallback(()=>{setOpen(false);setChooseChampionship(false);},[]);
  useEffect(()=>{
   if(!open||!auth.token||!auth.username){setEligible([]);setChecking(false);return;}
   let active=true;setChecking(true);setCheckError(false);setEligible([]);
@@ -30,6 +31,19 @@ export default function TabsLayout(){
    .finally(()=>{if(active)setChecking(false);});
   return()=>{active=false;};
  },[open,auth.token,auth.username]);
+ const openChampionshipPicker=()=>{
+  if(checking||checkError||eligible.length===0||!auth.token||!auth.username)return;
+  if(eligible.length===1){
+   const community=eligible[0];
+   close();
+   router.push({pathname:'/communities/[id]/championships/create',params:{id:String(community.id)}});
+  }else setChooseChampionship(true);
+ };
+ const selectChampionshipCommunity=(id:number)=>{
+  if(!auth.token||!auth.username||!eligible.some(group=>group.id===id))return;
+  close();
+  router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}});
+ };
  const action=(destination:'session'|'post'|'story'|'community'|'tournament'|'venue')=>{
   close();
   if(!auth.token||!auth.username){
@@ -90,7 +104,17 @@ export default function TabsLayout(){
         <Text style={styles.secondaryIcon}>♜</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar torneio</Text><Text style={styles.secondaryHint}>Escolhe uma comunidade que administras</Text></View><Text style={styles.chevron}>›</Text>
        </Pressable>:<Text style={styles.info}>Para criar torneios, precisas de administrar uma comunidade. Podes criar uma acima.</Text>
        :<Text style={styles.info}>Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.</Text>}
-      <Text style={styles.info}>Campeonatos exigem uma comunidade e gestão própria. A criação ficará disponível aqui quando o respetivo fluxo Mobile estiver integrado.</Text>
+      {auth.token&&auth.username&&!checking&&!checkError&&eligible.length>0?<>
+       <Pressable accessibilityRole="button" accessibilityLabel="Criar campeonato" style={styles.secondaryAction} onPress={openChampionshipPicker}>
+        <Text style={styles.secondaryIcon}>🏆</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar campeonato</Text><Text style={styles.secondaryHint}>Várias provas numa época · comunidade que administras</Text></View><Text style={styles.chevron}>›</Text>
+       </Pressable>
+       {chooseChampionship?<View style={styles.communityPicker}>
+        <Text style={styles.pickerTitle}>Escolhe a comunidade</Text>
+        {eligible.map(group=><Pressable key={group.id} accessibilityRole="button" accessibilityLabel={'Criar campeonato na comunidade '+group.name} style={styles.communityChoice} onPress={()=>selectChampionshipCommunity(group.id)}>
+          <Text style={styles.communityChoiceText} numberOfLines={1}>{group.name}</Text><Text style={styles.chevron}>›</Text>
+        </Pressable>)}
+       </View>:null}
+      </>:null}
      </ScrollView>
     </View>
    </View>
@@ -121,6 +145,10 @@ const styles=StyleSheet.create({
  secondaryAction:{minHeight:65,padding:12,borderRadius:15,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center',gap:12},
  secondaryIcon:{fontSize:26,color:colors.accent,width:31,textAlign:'center'},
  secondaryTitle:{fontSize:14,color:colors.text,fontWeight:'900'},secondaryHint:{fontSize:11,color:colors.muted,marginTop:3},
+ communityPicker:{gap:8,padding:12,borderWidth:1,borderColor:colors.border,backgroundColor:colors.raised,borderRadius:15},
+ pickerTitle:{fontSize:13,fontWeight:'900',color:colors.text},
+ communityChoice:{padding:12,minHeight:MobileTheme.touchTarget,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderBottomWidth:1,borderColor:colors.border},
+ communityChoiceText:{flex:1,fontSize:13,fontWeight:'800',color:colors.text},
  chevron:{fontSize:26,color:colors.accent},checking:{flexDirection:'row',alignItems:'center',gap:10,padding:10},
  info:{color:colors.muted,fontSize:11,lineHeight:17,paddingHorizontal:5},
 });
