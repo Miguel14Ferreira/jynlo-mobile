@@ -22,7 +22,7 @@ test('story replies go privately to author as notifications not public comments'
  assert.match(api,/body:\{content:message\}/);
  assert.match(viewer,/!ownStory\?<View style=\{styles\.storyReplyRow\}>/);
  assert.match(viewer,/maxLength=\{500\}/);
- assert.match(viewer,/A resposta vai apenas para o autor/);
+ assert.match(viewer,/Resposta privada, guardada para o autor/);
  assert.doesNotMatch(viewer,/addPostComment\(story/);
 });
 
