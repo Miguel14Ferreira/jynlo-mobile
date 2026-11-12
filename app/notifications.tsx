@@ -224,7 +224,7 @@ export default function NotificationsScreen(){
    </Pressable>)}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
-  <Message>Esta lista é atualizada automaticamente de 20 em 20 segundos enquanto o ecrã está aberto. {androidPushConfigured()?pushEnabled?'Os avisos push estão ativados neste dispositivo, sujeitos à entrega pelo serviço de notificações.':'Para receber avisos com a aplicação fechada, ativa as notificações neste dispositivo.':'Os avisos com a aplicação fechada exigem uma nova APK com Firebase configurado.'}</Message>
+
  </Page>;
 }
 const styles=StyleSheet.create({
