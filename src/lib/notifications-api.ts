@@ -12,3 +12,16 @@ export async function markNotificationRead(id:number,token:string):Promise<void>
  if(DEMO_MODE)return;
  await request<void>(`/api/notifications/${id}/read`,{token,method:'PUT',body:null});
 }
+
+/** Delete only the authenticated account's notification; server verifies ownership. */
+export async function deleteMyNotification(id:number,token:string):Promise<void>{
+ if(!token||!Number.isSafeInteger(id)||id<=0)throw Error('Notificação inválida.');
+ if(DEMO_MODE)return;
+ await request<void>(`/api/notifications/${id}`,{token,method:'DELETE'});
+}
+/** Irreversible bulk operation; caller must confirm with the user first. */
+export async function deleteAllMyNotifications(token:string):Promise<void>{
+ if(!token)throw Error('Inicia sessão para gerir as notificações.');
+ if(DEMO_MODE)return;
+ await request<void>('/api/notifications/me',{token,method:'DELETE'});
+}
