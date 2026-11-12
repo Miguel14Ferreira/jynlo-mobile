@@ -15,6 +15,8 @@ import {markCommunityRead} from '../../../src/lib/chat-api';
 import {mergeMessages} from '../../../src/lib/realtime-core.cjs';
 import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
+import {sendChatPhotoAlbum} from '../../../src/lib/chat-photo-album';
+import {validateChatAlbum} from '../../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
 import type {CommunityChatEntry} from '../../../src/lib/types';
 export default function CommunityChatScreen(){
@@ -27,6 +29,7 @@ export default function CommunityChatScreen(){
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [accessRevoked,setAccessRevoked]=useState(false);
@@ -63,7 +66,7 @@ export default function CommunityChatScreen(){
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
-     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setCanSendPhoto(false);
+     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setExtraPhotos([]);setCanSendPhoto(false);
      historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
@@ -84,7 +87,7 @@ export default function CommunityChatScreen(){
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
-   setDraft('');setPhoto(null);setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
+   setDraft('');setPhoto(null);setExtraPhotos([]);setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -136,9 +139,14 @@ export default function CommunityChatScreen(){
   if(!auth.token||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token))return;
   const version=generation.current;
   try{
-   const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false});
+   const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version!==generation.current)return;
-   if(!selected.canceled&&selected.assets?.[0]){validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);}
+   if(!selected.canceled&&selected.assets?.[0]){
+    selected.assets.forEach(validateChatPhoto);
+    const issue=validateChatAlbum(selected.assets,{allowUnknownSize:true});
+    if(issue)throw Error(issue);
+    validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
+   }
   }catch(e){
    if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
   }
@@ -150,9 +158,10 @@ export default function CommunityChatScreen(){
   pendingWrites.current.set(identity,'photo');
   uploadingNow.current=true;setUploading(true);setError('');
   try{
-   await sendChatPhoto('community',id,token,selectedPhoto);
+   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos]);
+   else await sendChatPhoto('community',id,token,selectedPhoto);
    if(version!==generation.current)return;
-   setPhoto(null);await refresh(version);
+   setPhoto(null);setExtraPhotos([]);await refresh(version);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
   }finally{
@@ -175,10 +184,18 @@ export default function CommunityChatScreen(){
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} onSent={async()=>{await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografia" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
-     <Image source={{uri:photo.uri}} style={styles.preview} resizeMode="contain"/>
-     <Text style={styles.note}>Confirma antes de enviar. Limite 5 MB.</Text>
+     <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
+     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={uploading} onPress={()=>{
+      const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
+      setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
+     }} style={{gap:4}}>
+      <Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>
+      <Text style={styles.note}>✕ Remover</Text>
+     </Pressable>)}
+    </View>
+     <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por ficheiro. Confirma antes de enviar.</Text>
      <Button title={uploading?'A enviar…':'Confirmar envio da fotografia'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
-     <Button secondary title="Cancelar fotografia" disabled={uploading} onPress={()=>setPhoto(null)}/>
+     <Button secondary title="Cancelar fotografia" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
    </View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
