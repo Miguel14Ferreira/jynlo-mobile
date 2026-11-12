@@ -50,7 +50,7 @@ test('story videos advance once at native playback completion, without looping',
 test('viewer closes on downward swipe without overriding ordinary taps',()=>{
  assert.match(viewer,/onTouchStart=/);
  assert.match(viewer,/onTouchEnd=/);
- assert.match(viewer,/pageY-start>110\)onClose\(\)/);
+ assert.match(viewer,/pageY-start>110&&!replyFocused\)safeClose\(\)/);
  assert.match(viewer,/onTouchCancel=/);
 });
 
