@@ -148,6 +148,7 @@ export interface CommunityChatEntry {
   id:number;communityId:number;kind:'CHAT'|'POST';username:string;body:string;createdAt:string;
   editedAt?:string|null;deletedAt?:string|null;replyToMessageId?:number|null;
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
+ attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
 export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
 
