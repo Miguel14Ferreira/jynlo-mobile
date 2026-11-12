@@ -312,14 +312,14 @@ export default function DirectConversation(){
   setError('');
   try{
    const selected=await ImagePicker.launchImageLibraryAsync({
-    mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4
+    mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4
    });
    if(version!==generation.current||conversation.current!==identity)return;
    if(!selected.canceled&&selected.assets?.[0]){
-    selected.assets.forEach(validateChatPhoto);
+    selected.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
     const issue=validateChatAlbum(selected.assets,{allowUnknownSize:true});
     if(issue)throw Error(issue);
-    validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
+    if(selected.assets[0].type==='image')validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
    }
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
@@ -333,7 +333,7 @@ export default function DirectConversation(){
   pendingWrites.current.set(identity,'photo');
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
-   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId);
+   if(extraPhotos.length||photo.type==='video')await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId);
     else await sendDirectPhoto(peer,auth.token,photo,originalReplyId);
    if(version!==generation.current||conversation.current!==identity)return;
    setPhoto(null);setExtraPhotos([]);setReplyTarget(current=>current?.id===originalReplyId?null:current);await refresh(false,version);
@@ -422,17 +422,17 @@ export default function DirectConversation(){
   <View style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={photoBusy} onPress={()=>{
+     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={photoBusy} onPress={()=>{
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{width:85,gap:3}}>
-      <Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>
+      {file.type==='video'?<View style={{width:85,height:85,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>}
       <Text style={styles.note}>✕ Remover</Text>
      </Pressable>)}
     </View>
-   <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por fotografia. Confirma antes de enviar.</Text>
-   <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+   <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+   <Button title={photoBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
+   <Button secondary title="Cancelar anexos" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
   </View>:null}
 
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
@@ -473,7 +473,7 @@ export default function DirectConversation(){
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeoss ou vídeos" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
   {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 
   </View>
