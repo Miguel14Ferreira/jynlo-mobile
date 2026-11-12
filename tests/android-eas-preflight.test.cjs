@@ -56,3 +56,16 @@ test('direct diagnostic EAS builds use the same preview environment as the workf
  assert.equal(diagnostic.env.JYNLO_REQUIRE_REAL_API,'1');
  assert.equal(diagnostic.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
 });
+
+test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup crash',()=>{
+ const eas=require('../eas.json');
+ const preview=eas.build.preview;
+ const diagnostic=eas.build.diagnostic;
+ const production=eas.build.production;
+ assert.equal(preview.android.buildType,'apk');
+ assert.equal(preview.environment,'preview');
+ assert.equal(preview.env.JYNLO_REQUIRE_REAL_API,'1');
+ assert.equal(preview.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
+ assert.equal(diagnostic.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
+ assert.equal(production.env?.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,undefined);
+});
