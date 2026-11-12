@@ -62,7 +62,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
     throw Error('O servidor não aceitou o álbum. Verifica o histórico antes de repetir.');
    }
    const reply=await response.json() as {id?:number;attachments?:Array<{index:number}>};
-   if(!Number.isSafeInteger(reply?.id)||reply.id!<=0||
+   if(typeof reply?.id!=='number'||!Number.isSafeInteger(reply.id)||reply.id<=0||
       !Array.isArray(reply.attachments)||reply.attachments.length!==photos.length)
     throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');
   }catch(error){
