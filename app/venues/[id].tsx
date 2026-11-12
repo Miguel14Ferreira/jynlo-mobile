@@ -144,7 +144,7 @@ export default function VenueDetailScreen(){
    {photos.length?photos.filter(photo=>safeHttps(photo.photoUrl)).map(photo=>
     <Image key={photo.id} source={{uri:photo.photoUrl}} style={styles.photo} resizeMode="cover"/>):
     <Text style={styles.meta}>Ainda não existem fotografias disponíveis.</Text>}
-   <Message>As fotografias dos recintos são verificadas pela equipa Jynlo. O envio direto está temporariamente indisponível até existir aprovação de contribuições.</Message>
+   <Message>O envio de novas fotografias está temporariamente suspenso até existir um processo de aprovação das contribuições.</Message>
    <Eyebrow>CONDIÇÕES POR MODALIDADE</Eyebrow>
    {conditions.length?conditions.map(condition=><View key={condition.id} style={styles.condition}>
     <Text style={styles.conditionTitle}>{condition.sport}</Text>
