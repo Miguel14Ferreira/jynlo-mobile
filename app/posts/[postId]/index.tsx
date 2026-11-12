@@ -6,6 +6,7 @@ import {useAuth} from '../../../src/lib/auth';
 import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
+import {postMediaItems} from '../../../src/lib/post-album.cjs';
 const T=MobileTheme.colors;
 const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
 
@@ -103,7 +104,7 @@ export default function NotificationPost(){
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  if(!valid)return <SafeAreaView style={styles.screen}><Text style={styles.error}>Publicação inválida.</Text></SafeAreaView>;
- const image=post?resolveJynloMedia(post.imageUrl):null;
+ const album=post?postMediaItems(post):[];
  return <SafeAreaView style={styles.screen} edges={['bottom','left','right']}>
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
    {loading?<ActivityIndicator color={T.accent}/>:null}
@@ -115,8 +116,16 @@ export default function NotificationPost(){
      <Text style={styles.handle}>@{post.authorUsername}</Text>
     </Pressable>
     <Text style={styles.body}>{post.content||''}</Text>
-    {image?<Image source={{uri:image}} style={styles.image} resizeMode="contain"/>:null}
-    {post.videoUrl&&resolveJynloMedia(post.videoUrl)?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={resolveJynloMedia(post.videoUrl)!}/></Suspense>:null}
+    {album.length?<View style={{gap:8}}>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} contentContainerStyle={{gap:8}}>
+        {album.map((media,index)=>{const uri=resolveJynloMedia(media.url);return uri?<View key={index} style={{width:290,gap:5}}>
+          {media.type==='video'?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={uri}/></Suspense>:
+            <Image source={{uri}} style={styles.image} resizeMode="contain"/>}
+          {album.length>1?<Text style={styles.note}>{index+1} / {album.length}</Text>:null}
+        </View>:null;})}
+      </ScrollView>
+      {album.length>1?<Text style={styles.note}>Desliza para ver todas as fotografias e vídeos.</Text>:null}
+    </View>:null}
     <View style={styles.actions}>
      <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?'Retirar gosto':'Gostar'} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{post.likedByMe?'♥':'♡'} Gostar</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou"} disabled={Boolean(post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase())} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${post.likeCount} gostos`}</Text></Pressable>
