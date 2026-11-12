@@ -366,7 +366,7 @@ export default function JynloFeedHome(){
       return;
     }finally{postInFlight.current=false;setPublishing(false);}
     // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
-    if(auth.token===actor&&auth.username===username){
+    if(feedIdentity.current===`${username}:${actor}`){
       setComposerText('');setComposerMedia(null);setComposerOpen(false);
       void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
     }
@@ -381,7 +381,7 @@ export default function JynloFeedHome(){
       Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
       return;
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
-    if(auth.token===actor&&auth.username===username){
+    if(feedIdentity.current===`${username}:${actor}`){
       setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
       void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
     }
