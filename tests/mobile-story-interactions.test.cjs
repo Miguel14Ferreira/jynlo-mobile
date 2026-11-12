@@ -37,3 +37,8 @@ test('reply draft belongs to current story and videos pause while composing',()=
  assert.match(viewer,/paused\|\|replyFocused\|\|storyBusy/);
  assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\)return/);
 });
+
+test('story reply disables navigation while focused or in flight',()=>{
+ assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\)return/);
+ assert.match(viewer,/A tua resposta ficou guardada em privado/);
+});
