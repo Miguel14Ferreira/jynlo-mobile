@@ -61,6 +61,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     });
     return ()=>subscription.remove();
   },[progress]);
+  const safeClose=()=>{if(!submittingStory.current)onClose();};
   const pauseProgress=()=>{
     progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
     setPaused(true);
@@ -73,7 +74,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     const groupIndex=groups.findIndex(entry=>entry.key===activeGroup.key);
     const nextGroup=groups[groupIndex+direction];
     if(nextGroup){resetProgress();setCurrentKey(nextGroup.key);setIndex(direction===1?0:nextGroup.stories.length-1);return;}
-    if(direction===1)onClose();
+    if(direction===1)safeClose();
   };
   // Drive both the visible progress bar and photo advancement from one animation.
   // Pausing resumes from the remaining duration rather than restarting 6 seconds.
@@ -85,7 +86,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         const groupIndex=groups.findIndex(entry=>entry.key===activeGroup?.key);
         if(activeGroup&&index<activeGroup.stories.length-1){remaining.current=1;progress.setValue(0);setIndex(i=>i+1);}
         else if(groupIndex>=0&&groupIndex<groups.length-1){remaining.current=1;progress.setValue(0);setCurrentKey(groups[groupIndex+1].key);setIndex(0);}
-        else onClose();
+        else safeClose();
       }
     });
     return ()=>{animation.stop();};
@@ -141,19 +142,19 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     onLongPress:()=>{longPress.current=true;setPaused(true);},
     delayLongPress:250
   });
-  return <Modal visible transparent={false} animationType="fade" onRequestClose={onClose}>
+  return <Modal visible transparent={false} animationType="fade" onRequestClose={safeClose}>
     <SafeAreaView style={styles.storyOverlay}
       onTouchStart={event=>{touchStartY.current=event.nativeEvent.pageY;}}
       onTouchEnd={event=>{
         const start=touchStartY.current;
         touchStartY.current=null;
-        if(start!==null&&event.nativeEvent.pageY-start>110)onClose();
+        if(start!==null&&event.nativeEvent.pageY-start>110&&!replyFocused)safeClose();
       }}
       onTouchCancel={()=>{touchStartY.current=null;}}>
       <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{if(submittingStory.current||replyFocused||!appActive)return;resetProgress();setIndex(i);}} style={styles.progressPart}>
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
-      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={onClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
+      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>:null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
