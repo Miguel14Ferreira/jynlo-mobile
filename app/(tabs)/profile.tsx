@@ -7,6 +7,7 @@ import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {parseFavoriteSports} from '../../src/lib/favorite-sports.cjs';
 import ProfilePosts from '../../src/components/ProfilePosts';
+import {followStatus,type FollowStatus} from '../../src/lib/social-relations-api';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -18,11 +19,13 @@ export default function ProfileScreen(){
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
   const [profileLoading,setProfileLoading]=useState(false);
   const [profileError,setProfileError]=useState(false);
+  const [socialCounts,setSocialCounts]=useState<FollowStatus|null>(null);
   useFocusEffect(useCallback(()=>{
     // Clear private profile details on account change and screen transitions.
-    setProfile(null);setProfileError(false);
+    setProfile(null);setProfileError(false);setSocialCounts(null);
     if(!auth.token||DEMO_MODE){setProfileLoading(false);return;}
     let active=true;setProfileLoading(true);
+    if(auth.username)void followStatus(auth.username,auth.token).then(counts=>{if(active)setSocialCounts(counts);}).catch(()=>{});
     void request<ProfilePresentation>('/api/profile/me/mobile',{token:auth.token})
       .then(result=>{if(active)setProfile(result);})
       .catch(()=>{if(active)setProfileError(true);})
@@ -86,8 +89,8 @@ export default function ProfileScreen(){
         <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
       </View>:null}
       {auth.username?<View style={styles.socialNav}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>Seguidores</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>A seguir</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>Seguidores</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>A seguir</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
       </View>:null}
       {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel="Editar o meu perfil desportivo" onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
         <Text style={styles.editProfileText}>Editar perfil</Text><Text style={styles.editProfileArrow}>↗</Text>
@@ -122,7 +125,7 @@ export default function ProfileScreen(){
     <Button title="Política de Privacidade" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
     <Button title="Termos de Utilização" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
     <Button title="Como pedir a eliminação da conta" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'delete'}})}/>
-    <Message>{auth.username?'Para entrares com outra conta, termina a sessão e autentica-te novamente. Não existe troca instantânea entre contas.':'Estás a explorar como visitante. Para participar, inicia sessão.'}</Message>
+    {!auth.username?<Message>Inicia sessão para participares nas atividades desportivas.</Message>:null}
     {DEMO_MODE?<Message>Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.</Message>:null}
   </Page>;
 }
