@@ -42,11 +42,11 @@ test('all three screens select videos and use the protected batch endpoint',()=>
 test('prepared video uses local measured file size and cleans copied content URIs',()=>{
  const s=read('src/lib/chat-photo-source.ts');
  assert.match(s,/prepareChatMedia/);
- assert.match(s,/asset.type==='video'\?20\*1024\*1024:5\*1024\*1024/);
+ assert.match(s,/verifiedLocalChatMediaSize\(actual,asset.type\)/);
  assert.match(s,/source\.copy|original\.copy/);
  assert.doesNotMatch(s,/measuredPhotoSize\(actual,asset.fileSize\)/);
- assert.match(s,/!Number.isSafeInteger\(actual\)\|\|actual<=0/);
- assert.match(s,/const size=actual/);
+ assert.doesNotMatch(s,/measuredPhotoSize\(actual,asset.fileSize\)/);
+ assert.match(s,/const size=verifiedLocalChatMediaSize\(actual,asset.type\)/);
  assert.match(s,/temporary\?\.exists\)temporary\.delete\(\)/);
 });
 
