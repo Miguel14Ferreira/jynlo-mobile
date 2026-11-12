@@ -56,7 +56,7 @@ test('viewer closes on downward swipe without overriding ordinary taps',()=>{
 
 test('story caption overlay is shown in preview and playback using the existing caption contract',()=>{
  const viewer=feed.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0];
- const composer=feed.split('<Modal visible={storyComposer}')[1]?.split('</Modal>')[0];
+ const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(viewer&&composer);
  assert.match(viewer,/story\.caption\?\.trim\(\)/);
  assert.match(viewer,/styles\.storyCaptionLayer/);
@@ -68,7 +68,7 @@ test('story caption overlay is shown in preview and playback using the existing 
 });
 
 test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
- const composer=feed.split('<Modal visible={storyComposer}')[1]?.split('</Modal>')[0];
+ const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(composer);
  assert.match(composer,/pickMedia\(setStoryMedia,'camera'\)/);
  assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
@@ -83,7 +83,7 @@ test('feed engagement actions wrap rather than overlapping on small screens',()=
 });
 
 test('post creation opens a dedicated media-first screen with camera and gallery',()=>{
- const composer=feed.split('<Modal visible={composerOpen}')[1]?.split('</Modal>')[0];
+ const composer=feed.split('<Modal visible={identityMatches&&composerOpen}')[1]?.split('</Modal>')[0];
  assert.ok(composer,'full-screen authenticated post composer exists');
  assert.match(composer,/launchCameraAsync|pickMedia\(setComposerMedia,'camera'\)/);
  assert.match(composer,/pickMedia\(setComposerMedia,'gallery'\)/);
@@ -100,7 +100,7 @@ test('post creation opens a dedicated media-first screen with camera and gallery
 
 test('feed comments use a dismissible bottom sheet instead of expanding under the post',()=>{
  const post=feed.split('function PostCard(')[1]?.split('const Header=')[0];
- const sheet=feed.split('<Modal visible={expandedComments!==null}')[1]?.split('</Modal>')[0];
+ const sheet=feed.split('<Modal visible={identityMatches&&expandedComments!==null}')[1]?.split('</Modal>')[0];
  assert.ok(post&&sheet,'post and comments sheet exist');
  assert.doesNotMatch(post,/styles\.commentBox/);
  assert.match(post,/accessibilityLabel="Abrir comentários"/);
