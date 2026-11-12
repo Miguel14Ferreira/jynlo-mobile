@@ -23,7 +23,7 @@ test('notifications refresh safely while focused without clearing on partial err
  assert.match(screen,/inFlight\.current===version/);
  assert.match(screen,/identity!==account\.current/);
  assert.match(screen,/setItems\(\[\]\);setInvites\(\[\]\)/);
- assert.match(screen,/if\(notifs\.status==='fulfilled'\)/);
+ assert.match(screen,/if\(notifs\.status==='fulfilled'&&notificationRevision\.current===initialNotificationRevision&&!notificationLock\.current\)/);
  assert.match(screen,/if\(invitations\.status==='fulfilled'\)/);
  assert.match(screen,/notificationDestination\(item\)/);
  assert.match(screen,/pathname:'\/messages\/\[peer\]'/);
