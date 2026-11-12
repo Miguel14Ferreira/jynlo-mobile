@@ -21,6 +21,17 @@ function validateChatAlbum(files,{allowUnknownSize=false}={}){
  }
  return total>MAX_TOTAL_BYTES?'O conjunto não pode exceder 40 MB.':null;
 }
+/** Single authoritative native-file check used before every private media upload. */
+function verifiedLocalChatMediaSize(size,type){
+ if(type!=='image'&&type!=='video')throw Error('Tipo de anexo inválido.');
+ if(!Number.isSafeInteger(size)||size<=0)
+  throw Error(type==='video'?
+   'Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.':
+   'Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.');
+ if(size>(type==='video'?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES))
+  throw Error(type==='video'?'O vídeo deve ter até 20 MB.':'A fotografia deve ter até 5 MB.');
+ return size;
+}
 // Trust the actual local file over picker metadata, which may be stale.
 function measuredPhotoSize(actualSize,pickerSize){
  if(Number.isSafeInteger(actualSize)&&actualSize>=0)return actualSize;
@@ -56,4 +67,4 @@ function recentPreviewMessageIds(messages,maxMessages=2){
   chatAttachmentList(message).some(file=>typeof file.mime==='string'&&file.mime.startsWith('image/')));
  return eligible.slice(-maxMessages).map(message=>message.id);
 }
-module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,chatAttachmentList,recentPreviewMessageIds};
+module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,verifiedLocalChatMediaSize,chatAttachmentList,recentPreviewMessageIds};
