@@ -23,7 +23,7 @@ export async function directPhotoAvailable(peer:string,token:string):Promise<boo
 }
 
 /** A private attachment requires an explicit user action, never retry uncertain POSTs. */
-export async function sendDirectPhoto(peer:string,token:string,asset:ImagePickerAsset):Promise<DirectChatEntry>{
+export async function sendDirectPhoto(peer:string,token:string,asset:ImagePickerAsset,replyToMessageId?:number|null):Promise<DirectChatEntry>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para partilhares fotografias.');
  if(!asset.uri||asset.type!=='image')throw Error('Seleciona uma fotografia válida.');
  if(asset.fileSize!=null&&asset.fileSize>MAX_BYTES)
@@ -31,9 +31,12 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
  const mime=asset.mimeType||'';
  if(!MIMES.includes(mime))throw Error('Escolhe uma fotografia JPG, PNG, WebP ou GIF.');
  const extension=mime==='image/png'?'png':mime==='image/webp'?'webp':mime==='image/gif'?'gif':'jpg';
+ if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))
+  throw Error('Mensagem citada inválida.');
  const prepared=await prepareChatPhoto(asset,extension);
  const form=new FormData();
  form.append('file',{uri:prepared.uri,name:'jynlo-chat.'+extension,type:mime} as unknown as Blob);
+ if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
