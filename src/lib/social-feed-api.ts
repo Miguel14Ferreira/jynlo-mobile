@@ -92,6 +92,16 @@ export async function toggleStoryLike(storyId:number,liked:boolean,token:string|
  }
  return request<SocialStory>(`/api/stories/${storyId}/likes`,{token,method:liked?'DELETE':'POST'});
 }
+export type PrivateStoryReply={id:number;storyId:number;senderUsername:string;content:string;createdAt:string};
+
+/** Returns only private replies addressed to the authenticated account. */
+export async function myStoryReplies(token:string|null,page=0):Promise<PrivateStoryReply[]>{
+ if(!token)throw Error('Inicia sessão para consultar as respostas.');
+ if(!Number.isSafeInteger(page)||page<0||page>1000)throw Error('Página inválida.');
+ if(DEMO_MODE)return [];
+ return request<PrivateStoryReply[]>('/api/stories/me/replies?page='+page,{token});
+}
+
 export async function replyToStory(storyId:number,content:string,token:string|null,username:string|null):Promise<void>{
  requireViewer(token,username);
  if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
