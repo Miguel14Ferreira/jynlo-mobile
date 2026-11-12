@@ -93,6 +93,6 @@ test('story likes target live stories but replies open durable private history',
  assert.match(inbox,/case 'social-story':router\.push/);
  assert.match(inbox,/case 'story-replies':router\.push\('\/stories\/replies'\)/);
  const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
- assert.match(feed,/storyById\(Number\(storyId\),originalToken\)/);
+ assert.match(feed,/storyById\(Number\(storyId\),originalToken,auth\.username\)/);
  assert.match(feed,/Story indisponível/);
 });
