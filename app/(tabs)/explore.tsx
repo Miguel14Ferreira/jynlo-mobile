@@ -34,7 +34,8 @@ export default function DiscoverScreen(){
    const pin=mappedSessions[0];
    const latitude=pin?.latitude??PORTUGAL.latitude;
    const longitude=pin?.longitude??PORTUGAL.longitude;
-   const url=`https://www.openstreetmap.org/#map=10/${latitude}/${longitude}`;
+   // Launch the official Google Maps web viewer instead of relying on OSM volunteer tile servers.
+   const url=`https://www.google.com/maps/@${latitude},${longitude},10z`;
    try{await Linking.openURL(url);}catch{setError('Não foi possível abrir o mapa no navegador. Consulta as sessões na lista.');}
  };
  const [mapArea,setMapArea]=useState<{latitude:number;longitude:number;radiusKm:number}|null>(null);
@@ -155,8 +156,8 @@ export default function DiscoverScreen(){
        </Pressable>:null}
      </View>:null}
      {mapArea?<Text style={styles.mapNotice}>Pesquisa num raio aproximado de {mapArea.radiusKm} km</Text>:null}
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir OpenStreetMap no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
-       <Text style={styles.areaSearchText}>⌖ Abrir OpenStreetMap</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir mapa no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
+       <Text style={styles.areaSearchText}>⌖ Abrir Google Maps</Text>
      </Pressable>
      {!NATIVE_MAP_READY?mappedSessions.map(s=><SessionCard key={s.id} session={s}
        onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>):null}
