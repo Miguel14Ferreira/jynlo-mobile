@@ -346,7 +346,9 @@ export default function JynloFeedHome(){
       if(result.canceled||!result.assets.length)return;
       const asset=result.assets[0];if(!asset)return;const kind=asset.type==='video'?'video':'image';
       const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
-      const size=asset.fileSize||0;const validation=validateMedia(mime,size,setter===setStoryMedia);
+      const size=asset.fileSize||0;
+      // Some Android gallery providers omit fileSize: validate type now and compute size from the file before upload.
+      const validation=validateMedia(mime,size||1,setter===setStoryMedia);
       if(validation){Alert.alert('Ficheiro não aceite',size===0?'Não foi possível obter o tamanho do ficheiro.':validation);return;}
       setter({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
     }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
