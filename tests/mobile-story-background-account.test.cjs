@@ -30,3 +30,13 @@ test('account switch immediately prevents old viewer and old groups rendering',(
  assert.match(source,/<StoryViewer group=\{visibleStoryViewer\} groups=\{visibleStoryGroups\}/);
  assert.match(viewer,/if\(!group\|\|!activeGroup\|\|!story\)return null/);
 });
+
+test('account changes gate public feed cards, Story rail and private composers during render',()=>{
+ assert.match(source,/const visiblePosts=identityMatches\?posts:\[\]/);
+ assert.match(source,/<FlatList data=\{visiblePosts\}/);
+ assert.match(source,/\{visibleStoryGroups\.length\?<ScrollView/);
+ assert.match(source,/\{visibleStoryGroups\.map\(group=>/);
+ assert.match(source,/<Modal visible=\{identityMatches&&expandedComments!==null\}/);
+ assert.match(source,/<Modal visible=\{identityMatches&&storyComposer\}/);
+ assert.match(source,/<Modal visible=\{identityMatches&&composerOpen\}/);
+});
