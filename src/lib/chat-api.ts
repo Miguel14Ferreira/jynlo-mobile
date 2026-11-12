@@ -30,7 +30,7 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
  const groups=await myCommunities(token,username);
  if(DEMO_MODE)return groups.map(c=>{
   const last=threads.get(c.id)?.at(-1);
-  return{kind:'community' as const,id:String(c.id),latestMessageId:last?.id??null,latestText:last?.body??null,
+  return{kind:'community' as const,id:String(c.id),title:c.name?.trim()||'Comunidade',latestMessageId:last?.id??null,latestText:last?.body??null,
    latestSender:last?.username??null,latestAt:last?.createdAt??null,unreadCount:(threads.get(c.id)||[]).filter(m=>m.username!==username&&m.id>(demoRead.get(username+':'+c.id)||0)).length};
  });
  if(groups.length===0)return [];
@@ -51,13 +51,13 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
  }
  // Only render summaries for communities confirmed by the membership list.
  // A malformed or overbroad summaries response must not introduce other chats.
- const allowed=new Set(uniqueGroups.map(group=>String(group.id)));
+ const allowed=new Map(uniqueGroups.map(group=>[String(group.id),group.name?.trim()||'Comunidade']));
  const returned=new Set<string>();
  return summaries.filter(summary=>{
   if(summary?.kind!=='community'||typeof summary.id!=='string'||!allowed.has(summary.id)||returned.has(summary.id))return false;
   returned.add(summary.id);
   return true;
- });
+ }).map(summary=>({...summary,title:allowed.get(summary.id)||'Comunidade'}));
 }
 
 /** Build the session inbox only from sessions the logged-in account created or joined.
@@ -66,15 +66,17 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
 export async function sessionInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para consultar as conversas de sessões.');
  const mine=await mySessions(token,username);
- const allowed=new Map<string,number>();
+ const allowed=new Map<string,string>();
  for(const session of [...mine.created,...mine.joined]){
   if(!Number.isSafeInteger(session.id)||session.id<=0)continue;
   if(['CANCELLED','COMPLETED'].includes(session.status))continue;
-  allowed.set(String(session.id),session.id);
+  const sport=typeof session.sport==='string'?session.sport.trim():'';
+  const city=typeof session.city==='string'?session.city.trim():'';
+  allowed.set(String(session.id),[sport,city].filter(Boolean).join(' · ')||'Sessão desportiva');
  }
  const ids=[...allowed.keys()];
  if(ids.length===0)return [];
- if(DEMO_MODE)return ids.map(id=>({kind:'session' as const,id,latestMessageId:null,
+ if(DEMO_MODE)return ids.map(id=>({kind:'session' as const,id,title:allowed.get(id)||'Sessão desportiva',latestMessageId:null,
   latestText:null,latestSender:null,latestAt:null,unreadCount:0}));
  const summaries:JynloInboxSummary[]=[];
  for(let i=0;i<ids.length;i+=100){
@@ -91,7 +93,8 @@ export async function sessionInbox(token:string,username:string):Promise<JynloIn
   returned.add(item.id);
   return true;
  });
- return visible.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
+ return visible.map(item=>({...item,title:allowed.get(item.id)||'Sessão desportiva'}))
+  .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 
 /** Server-verified read cursor. Only acknowledge messages actually displayed. */
