@@ -19,6 +19,12 @@ function validateChatAlbum(files,{allowUnknownSize=false}={}){
  }
  return total>MAX_TOTAL_BYTES?'O conjunto não pode exceder 40 MB.':null;
 }
+// Trust the actual local file over picker metadata, which may be stale.
+function measuredPhotoSize(actualSize,pickerSize){
+ if(Number.isSafeInteger(actualSize)&&actualSize>0)return actualSize;
+ if(Number.isSafeInteger(pickerSize)&&pickerSize>0)return pickerSize;
+ return 0;
+}
 function attachmentLimit(mime){
  if(typeof mime!=='string')return 5*1024*1024;
  if(mime.startsWith('video/'))return 20*1024*1024;
@@ -40,4 +46,4 @@ function chatAttachmentList(message){
  return [{index:0,name:message.attachmentName,mime:message.attachmentMimeType||null,
   size:message.attachmentSize??null}];
 }
-module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,chatAttachmentList};
+module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,chatAttachmentList};
