@@ -29,6 +29,7 @@ export default function SessionChat(){
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
+ const [attachmentCaption,setAttachmentCaption]=useState('');
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){pendingRefresh.current=true;return;}
@@ -50,7 +51,7 @@ export default function SessionChat(){
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
     setClosed(true);setEntries([]);setDraft('');setReply(null);setSyncWarning('');
-    setPhoto(null);setExtraPhotos([]);setPhotoReady(false);
+    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoReady(false);
     historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
    }else{
@@ -120,13 +121,14 @@ export default function SessionChat(){
   const identity=id+'|'+auth.token;
   if(!auth.token||!photo||!photoReady||closed||sendingNow.current||pendingWrites.current.has(identity)||uploading)return;
   const version=generation.current,originalReplyId=reply?.id;
+  const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
   sendingNow.current=true;setUploading(true);setError('');
   try{
-   if(extraPhotos.length||photo.type==='video')await sendChatPhotoAlbum({scope:'session',id},auth.token,[photo,...extraPhotos],originalReplyId);
+   if(extraPhotos.length||photo.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'session',id},auth.token,[photo,...extraPhotos],originalReplyId,captionToSend);
    else await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
    if(version!==generation.current)return;
-   setPhoto(null);setExtraPhotos([]);setReply(current=>current?.id===originalReplyId?null:current);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
   finally{
@@ -169,8 +171,9 @@ export default function SessionChat(){
     </Pressable>)}
    </View>
    <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+   <TextInput accessibilityLabel="Legenda dos anexos" multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder="Legenda para as fotografias ou vídeos (opcional)" placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
    <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button title="Cancelar anexos" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+   <Button title="Cancelar anexos" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<View style={styles.editor}><Text style={styles.note}>A responder a {reply.senderUsername}</Text>
