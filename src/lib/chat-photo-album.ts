@@ -20,13 +20,14 @@ function albumEndpoint(target:AlbumChatTarget):string{
 
 /** Send 1–4 private photos or videos as one authorized, atomic message. */
 export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,photos:ImagePickerAsset[],
- replyToMessageId?:number|null):Promise<void>{
+ replyToMessageId?:number|null,caption?:string):Promise<void>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para enviar ficheiros.');
  const path=albumEndpoint(target);
  if(!Array.isArray(photos)||photos.length<1||photos.length>MAX_FILES)
   throw Error('Escolhe entre 1 e 4 fotografias ou vídeos.');
  const validation=validateChatAlbum(photos,{allowUnknownSize:true});
  if(validation)throw Error(validation);
+ if(typeof caption==='string'&&caption.length>2000)throw Error('A legenda não pode exceder 2000 caracteres.');
  if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))
   throw Error('Resposta inválida.');
  const mimeExtensions:Record<string,string>={
@@ -47,6 +48,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
    if(total>MAX_TOTAL_BYTES)throw Error('Os anexos excedem 40 MB no total.');
    form.append('files',{uri:attachment.uri,name:'jynlo-chat-'+(index+1)+'.'+extension,type:photo.mimeType} as unknown as Blob);
   }
+  if(caption?.trim())form.append('caption',caption.trim());
   if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),120000);
