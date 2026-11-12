@@ -21,8 +21,14 @@ export async function sendCommunityMessage(id:number,body:string,token:string,us
  await member(id,token,username);const text=body.trim();
  if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))throw Error('Mensagem citada inválida.');
  if(!text||text.length>4000)throw Error('Escreve uma mensagem até 4000 caracteres.');
- if(DEMO_MODE){const msg:CommunityChatEntry={id:++nextId,communityId:id,kind:'CHAT',username,body:text,createdAt:new Date().toISOString(),replyToMessageId:replyToMessageId??null};
-  threads.set(safeId(id),[...(threads.get(safeId(id))||[]),msg]);notifyDemoCommunityMessage(msg);return msg;}
+ if(DEMO_MODE){
+  const history=threads.get(safeId(id))||[];
+  const quoted=replyToMessageId!=null?history.find(entry=>entry.id===replyToMessageId&&!entry.deletedAt):null;
+  if(replyToMessageId!=null&&!quoted)throw Error('A mensagem citada já não está disponível nesta comunidade.');
+  const msg:CommunityChatEntry={id:++nextId,communityId:id,kind:'CHAT',username,body:text,
+   createdAt:new Date().toISOString(),replyToMessageId:quoted?.id??null,
+   replyToSender:quoted?.username??null,replyToText:quoted?.body??null};
+  threads.set(safeId(id),[...history,msg]);notifyDemoCommunityMessage(msg);return msg;}
  // Never repeat this POST after a timeout without verifying history.
  return request<CommunityChatEntry>(base(id),{token,method:'POST',body:{body:text,...(replyToMessageId!=null?{replyToMessageId}:{})}});
 }
