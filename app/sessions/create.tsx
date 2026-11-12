@@ -208,7 +208,10 @@ export default function CreateSessionScreen(){
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
   if(key==='city'||key==='address'){
     clearVenueSearch();
-    if(form.latitude!=null||form.longitude!=null)clearMappedLocation();
+    if(form.latitude!=null||form.longitude!=null){
+      setForm(prev=>({...prev,locationConfirmed:false}));
+      setLocationMessage('Morada editada. O ponto GPS original mantém-se; confirma novamente o ponto no mapa.');
+    }
   }
   const next=typeof value==='string'?
    (key==='day'||key==='registrationDay'?formatLocalDateInput(value):
@@ -451,7 +454,7 @@ export default function CreateSessionScreen(){
     </View>:null}
     {locationMode==='link'?<View style={styles.locationModePanel}>
       <Text style={styles.note}>Cola o link do pin partilhado no Google Maps.</Text>
-      <TextInput value={mapsLink} onChangeText={setMapsLink} editable={!locationLoading&&!busy}
+      <TextInput value={mapsLink} onChangeText={v=>{setMapsLink(v);clearMappedLocation();}} editable={!locationLoading&&!busy}
        style={styles.input} autoCapitalize="none" keyboardType="url"
        placeholder="https://maps.app.goo.gl/…" placeholderTextColor={C.muted}
        accessibilityLabel="Ligação do Google Maps"/>
