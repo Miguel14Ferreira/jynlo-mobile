@@ -5,6 +5,7 @@ import {profilePosts,resolveJynloMedia} from '../lib/social-feed-api';
 import type {FeedItem} from '../lib/types';
 import {C,MobileTheme} from '../lib/theme';
 import {Button,Loader,Message} from './UI';
+import {postMediaItems} from '../lib/post-album.cjs';
 
 /** Public profile gallery. Posts remain until the author removes them; Stories are separate. */
 export default function ProfilePosts({username,token}:{username:string;token:string|null}){
@@ -49,9 +50,14 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     accessibilityLabel={'Ver publicação de '+item.authorUsername}
     onPress={()=>item.postId&&router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}
     style={styles.post}>
-    {item.imageUrl?<Image source={{uri:resolveJynloMedia(item.imageUrl)||undefined}} style={styles.image} resizeMode="cover"/>:
-     item.videoUrl?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
-     <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
+    {(()=>{const album=postMediaItems(item),first=album[0],preview=first?resolveJynloMedia(first.url):null;
+      return <View>
+       {preview&&first.type==='image'?<Image source={{uri:preview}} style={styles.image} resizeMode="cover"/>:
+        first?.type==='video'?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
+        <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
+       {album.length>1?<View style={styles.albumMark}><Text style={styles.albumMarkText}>▤ {album.length}</Text></View>:null}
+      </View>;
+    })()}
     <View style={styles.meta}><Text style={styles.metaText}>♡ {item.likeCount}  ·  ◯ {item.commentCount}</Text></View>
    </Pressable>)}
   </View>
@@ -63,6 +69,8 @@ export default function ProfilePosts({username,token}:{username:string;token:str
 }
 const T=MobileTheme.colors;
 const styles=StyleSheet.create({
+ albumMark:{position:'absolute',top:7,right:7,paddingHorizontal:7,paddingVertical:3,backgroundColor:'rgba(0,0,0,.76)',borderRadius:9},
+ albumMarkText:{fontSize:11,fontWeight:'800',color:'#fff'},
  section:{gap:13},title:{fontSize:19,fontWeight:'900',color:C.white},description:{color:T.muted,fontSize:12,lineHeight:18},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:9},post:{width:'48%',borderRadius:14,overflow:'hidden',backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
  image:{width:'100%',height:145},placeholder:{height:145,backgroundColor:T.raised,justifyContent:'center',alignItems:'center',padding:10,gap:6},
