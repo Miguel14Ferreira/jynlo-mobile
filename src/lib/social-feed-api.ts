@@ -162,42 +162,59 @@ export async function createTextPost(content:string,token:string|null,username:s
   return request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body}});
 }
 async function sendMedia(path:string,fields:Record<string,string>,file:MobileMedia,token:string):Promise<any>{
-  const fault=validateMedia(file.mimeType,file.fileSize,path.includes('/stories'));
-  if(fault)throw new Error(fault);
-  if(DEMO_MODE)throw new Error('A função de envio só está disponível na demonstração local específica.');
-  const form=new FormData();
-  for(const [key,val] of Object.entries(fields))form.append(key,val);
-  form.append(file.type==='video'?'video':path.includes('/stories')?'image':'image',{
-    uri:file.uri,type:file.mimeType,name:file.fileName
-  } as any);
-  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),90000);
-  try{
-    const response=await fetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
-      // Match the JSON API client: authentication is bearer-only, never browser cookies.
-      credentials:'omit',
-      headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
-    if(!response.ok){
-      // Do not disguise server rejection as a network problem.
-      const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
-        response.status===403?'Não tens autorização para publicar este conteúdo.':
-        response.status===413?'O ficheiro excede o tamanho permitido pelo servidor.':
-        response.status===415?'O servidor não aceita este formato de fotografia ou vídeo.':
-        response.status===429?'Foram feitos demasiados envios. Tenta novamente mais tarde.':
-        response.status>=500?'O servidor Jynlo não conseguiu guardar o ficheiro. Não repitas sem verificar se foi publicado.':
-        'O servidor rejeitou o ficheiro. Confirma o formato e o tamanho.';
-      throw new ApiError(response.status,detail+' (HTTP '+response.status+')');
-    }
-    // Treat an empty successful response as unknown, not an immediate retry.
-    const raw=await response.text();
-    if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza a página antes de repetir.');
-    try{return JSON.parse(raw);}catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
-  }catch(e){
-    if(e instanceof ApiError)throw e;
-    if(e instanceof Error&&/^(O servidor respondeu|O servidor respondeu ao envio)/.test(e.message))throw e;
-    if(controller.signal.aborted)throw new Error('O envio excedeu 90 segundos. Verifica se foi publicado antes de repetir.');
-    throw new Error('Falha de ligação durante o envio. Verifica se foi publicado antes de repetires.');
-  }
-  finally{clearTimeout(timeout);}
+ if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
+ // Gallery pickers can return Android content:// references. React Native uploads
+ // are more reliable from an app-owned file:// cache copy.
+ let temporary:import('expo-file-system').File|null=null;
+ let uri=file.uri;
+ let actualSize=file.fileSize;
+ try{
+   const {File,Paths}=await import('expo-file-system');
+   const source=new File(file.uri);
+   if(uri.startsWith('content:')){
+     const ext=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
+       file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
+     temporary=new File(Paths.cache,'jynlo-upload-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext);
+     await source.copy(temporary);
+     uri=temporary.uri;
+   }
+   if(!actualSize&&source.exists)actualSize=source.size;
+   if(temporary)actualSize=temporary.size;
+   const fault=validateMedia(file.mimeType,actualSize,path.includes('/stories'));
+   if(fault)throw new Error(fault);
+   const form=new FormData();
+   for(const [key,val] of Object.entries(fields))form.append(key,val);
+   form.append(file.type==='video'?'video':'image',{
+     uri,type:file.mimeType,name:file.fileName||'jynlo-media'
+   } as any);
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),90000);
+   try{
+     const response=await fetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
+       credentials:'omit',
+       headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
+     if(!response.ok){
+       const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
+         response.status===403?'Não tens autorização para publicar este conteúdo.':
+         response.status===413?'O ficheiro excede o tamanho permitido pelo servidor.':
+         response.status===415?'O servidor não aceita este formato de fotografia ou vídeo.':
+         response.status===429?'Foram feitos demasiados envios. Tenta novamente mais tarde.':
+         response.status>=500?'O servidor Jynlo não conseguiu guardar o ficheiro. Não repitas sem verificar se foi publicado.':
+         'O servidor rejeitou o ficheiro. Confirma o formato e o tamanho.';
+       throw new ApiError(response.status,detail+' (HTTP '+response.status+')');
+     }
+     const raw=await response.text();
+     if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza a página antes de repetir.');
+     try{return JSON.parse(raw);}catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
+   }catch(e){
+     if(e instanceof ApiError)throw e;
+     if(e instanceof Error&&e.message.startsWith('O servidor respondeu'))throw e;
+     if(controller.signal.aborted)throw new Error('O envio excedeu 90 segundos. Verifica se foi publicado antes de repetir.');
+     throw new Error('Falha de ligação durante o envio. Verifica se foi publicado antes de repetires.');
+   }finally{clearTimeout(timeout);}
+ }finally{
+   if(temporary){try{if(temporary.exists)temporary.delete();}catch{}}
+ }
 }
 export async function publishPost(content:string,file:MobileMedia|null,token:string|null,username:string|null):Promise<FeedItem>{
   requireViewer(token,username);
