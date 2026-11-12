@@ -5,6 +5,9 @@
  * Response.json() would throw despite the operation having completed.
  * Never auto-retry a mutation after an invalid server response.
  */
+class InvalidSuccessfulResponseError extends Error {
+  constructor(){super('Resposta inválida da Jynlo. Se alteraste dados, confirma o resultado antes de tentares novamente.');this.name='InvalidSuccessfulResponseError';}
+}
 async function readSuccessfulResponse(response) {
   if (response.status === 204 || response.status === 205) return undefined;
   const text = await response.text();
@@ -12,7 +15,7 @@ async function readSuccessfulResponse(response) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error('Resposta inválida da Jynlo. Se alteraste dados, confirma o resultado antes de tentares novamente.');
+    throw new InvalidSuccessfulResponseError();
   }
 }
-module.exports={readSuccessfulResponse};
+module.exports={readSuccessfulResponse,InvalidSuccessfulResponseError};
