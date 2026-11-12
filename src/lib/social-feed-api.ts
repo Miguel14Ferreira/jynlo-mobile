@@ -161,38 +161,34 @@ export async function createTextPost(content:string,token:string|null,username:s
   if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0};demoPosts.unshift(item);return item;}
   return request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body}});
 }
-async function sendMedia(path:string,fields:Record<string,string>,file:MobileMedia,token:string):Promise<any>{
+async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string):Promise<any>{
  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
- // Gallery pickers can return Android content:// references. React Native uploads
- // are more reliable from an app-owned file:// cache copy.
- let temporary:import('expo-file-system').File|null=null;
- let uri=file.uri;
- let actualSize=file.fileSize;
+ const {albumError}=require('./post-album.cjs') as typeof import('./post-album.cjs');
+ const validation=albumError(files);
+ if(validation)throw new Error(validation);
+ const temporary:import('expo-file-system').File[]=[];
  try{
    const {File,Paths}=await import('expo-file-system');
-   const source=new File(file.uri);
-   if(uri.startsWith('content:')){
-     const ext=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
-       file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
-     temporary=new File(Paths.cache,'jynlo-upload-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext);
-     await source.copy(temporary);
-     uri=temporary.uri;
-   }
-   if(!actualSize&&source.exists)actualSize=source.size;
-   if(temporary)actualSize=temporary.size;
-   const fault=validateMedia(file.mimeType,actualSize,path.includes('/stories'));
-   if(fault)throw new Error(fault);
    const form=new FormData();
    for(const [key,val] of Object.entries(fields))form.append(key,val);
-   const extension=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
-     file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
-   // Android pickers can label a converted JPEG using the original .heic filename.
-   // Match the upload extension to the actual MIME type, never the gallery filename.
-   const uploadName='jynlo-media.'+extension;
-   // The backend relies on a real multipart image/video part with a filename extension.
-   form.append(file.type==='video'?'video':'image',{
-     uri,type:file.mimeType,name:uploadName
-   } as any);
+   for(const file of files){
+     let uri=file.uri;
+     let size=file.fileSize;
+     const extension=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
+       file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
+     const source=new File(file.uri);
+     if(uri.startsWith('content:')){
+       const copy=new File(Paths.cache,'jynlo-album-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+extension);
+       await source.copy(copy);temporary.push(copy);uri=copy.uri;size=copy.size;
+     }else if(source.exists)size=source.size;
+     const fault=validateMedia(file.mimeType,size,path.includes('/stories'));
+     if(fault)throw Error(fault);
+     // Back-end accepts the legacy image/video part for one asset, or repeated
+     // "files" parts for albums. Do not mix these two request formats.
+     form.append(files.length>1?'files':file.type==='video'?'video':'image',{
+       uri,type:file.mimeType,name:'jynlo-media.'+extension
+     } as any);
+   }
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),90000);
    try{
@@ -202,15 +198,15 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
      if(!response.ok){
        const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
          response.status===403?'Não tens autorização para publicar este conteúdo.':
-         response.status===413?'O ficheiro excede o tamanho permitido pelo servidor.':
-         response.status===415?'O servidor não aceita este formato de fotografia ou vídeo.':
+         response.status===413?'Os ficheiros excedem o tamanho permitido pelo servidor.':
+         response.status===415?'O servidor não aceita um dos formatos escolhidos.':
          response.status===429?'Foram feitos demasiados envios. Tenta novamente mais tarde.':
-         response.status>=500?'O servidor Jynlo não conseguiu guardar o ficheiro. Não repitas sem verificar se foi publicado.':
-         'O servidor rejeitou o ficheiro. Confirma o formato e o tamanho.';
+         response.status>=500?'O servidor Jynlo não conseguiu confirmar o envio. Verifica se foi publicado antes de repetir.':
+         'O servidor rejeitou um dos ficheiros. Confirma o formato e o tamanho.';
        throw new ApiError(response.status,detail+' (HTTP '+response.status+')');
      }
      const raw=await response.text();
-     if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza a página antes de repetir.');
+     if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza antes de repetir.');
      let confirmed:{id?:unknown;postId?:unknown};
      try{confirmed=JSON.parse(raw) as {id?:unknown;postId?:unknown};}
      catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
@@ -225,21 +221,28 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
      throw new Error('Falha de ligação durante o envio. Verifica se foi publicado antes de repetires.');
    }finally{clearTimeout(timeout);}
  }finally{
-   if(temporary){try{if(temporary.exists)temporary.delete();}catch{}}
+   for(const file of temporary){try{if(file.exists)file.delete();}catch{}}
  }
 }
-export async function publishPost(content:string,file:MobileMedia|null,token:string|null,username:string|null):Promise<FeedItem>{
+export async function publishPost(content:string,files:MobileMedia[]|null,token:string|null,username:string|null):Promise<FeedItem>{
   requireViewer(token,username);
-  if(!file)return createTextPost(content,token,username);
-  if(DEMO_MODE){const item=await createTextPost(content.trim()||'Partilhei um momento desportivo.',token,username);if(file.type==='image')item.imageUrl=file.uri;else item.videoUrl=file.uri;return item;}
-  return sendMedia('/api/feed/posts',{content:content.trim()||'Partilhei um momento desportivo.'},file,token!);
+  if(!files?.length)return createTextPost(content,token,username);
+  const caption=content.trim()||'Partilhei um momento desportivo.';
+  if(DEMO_MODE){
+    const item=await createTextPost(caption,token,username);
+    const [first,...extra]=files;
+    if(first.type==='image')item.imageUrl=first.uri;else item.videoUrl=first.uri;
+    item.extraMedia=extra.map(file=>({url:file.uri,mimeType:file.mimeType}));
+    return item;
+  }
+  return sendMedia('/api/feed/posts',{content:caption},files,token!);
 }
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
   if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true};demoStories.unshift(item);return item;}
-  return sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{})},file,token!);
+  return sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{})},[file],token!);
 }
 export async function discoverPeople(token:string|null):Promise<FeedUserSuggestion[]>{
   if(DEMO_MODE)return [{username:'rita_demo',displayName:'Rita',photoUrl:null,sport:'Voleibol',city:'Odivelas'},
