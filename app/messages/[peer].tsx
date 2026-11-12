@@ -45,6 +45,7 @@ export default function DirectConversation(){
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
+ const [attachmentCaption,setAttachmentCaption]=useState('');
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const [photoAvailabilityError,setPhotoAvailabilityError]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
@@ -86,7 +87,7 @@ export default function DirectConversation(){
     if(accessRevoked){
      // A confirmed server-side access change must hide cached private content.
      // Ordinary network failures are not evidence of permission revocation.
-     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setPhotoAvailable(false);
+     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoAvailable(false);
      setAttachmentsOpen(false);setSyncWarning('');
      setBlocked(true);setBlockStatusKnown(false);
      historyError.current=null;
@@ -115,7 +116,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setError('');setSyncWarning('');historyError.current=null;
+   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
    const pending=pendingWrites.current.get(identity);
@@ -130,7 +131,7 @@ export default function DirectConversation(){
   setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
-  setPhoto(null);setExtraPhotos([]);setPhotoAvailable(false);setPhotoAvailabilityError('');
+  setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoAvailable(false);setPhotoAvailabilityError('');
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
    if(active&&generation.current===version){setPhotoAvailable(available);setPhotoAvailabilityError(available?'':'O envio de fotografias não está disponível neste momento.');}
   }).catch(()=>{if(active&&generation.current===version){setPhotoAvailable(false);setPhotoAvailabilityError('Não foi possível verificar os anexos de fotografias.');}});
@@ -330,13 +331,14 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current,originalReplyId=replyTarget?.id;
+  const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
-   if(extraPhotos.length||photo.type==='video')await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId);
+   if(extraPhotos.length||photo.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId,captionToSend);
     else await sendDirectPhoto(peer,auth.token,photo,originalReplyId);
    if(version!==generation.current||conversation.current!==identity)return;
-   setPhoto(null);setExtraPhotos([]);setReplyTarget(current=>current?.id===originalReplyId?null:current);await refresh(false,version);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReplyTarget(current=>current?.id===originalReplyId?null:current);await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
@@ -431,8 +433,9 @@ export default function DirectConversation(){
      </Pressable>)}
     </View>
    <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+   <TextInput accessibilityLabel="Legenda dos anexos" multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!photoBusy} placeholder="Legenda para as fotografias ou vídeos (opcional)" placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
    <Button title={photoBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button secondary title="Cancelar anexos" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+   <Button secondary title="Cancelar anexos" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
   </View>:null}
 
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
