@@ -176,9 +176,27 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
       // Match the JSON API client: authentication is bearer-only, never browser cookies.
       credentials:'omit',
       headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
-    if(!response.ok)throw new ApiError(response.status,response.status===413?'O ficheiro é demasiado grande.':'Não foi possível enviar o ficheiro.');
-    return await response.json();
-  }catch(e){if(e instanceof ApiError)throw e;throw new Error('Não foi possível enviar o ficheiro. Confirma a ligação antes de tentares novamente.');}
+    if(!response.ok){
+      // Do not disguise server rejection as a network problem.
+      const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
+        response.status===403?'Não tens autorização para publicar este conteúdo.':
+        response.status===413?'O ficheiro excede o tamanho permitido pelo servidor.':
+        response.status===415?'O servidor não aceita este formato de fotografia ou vídeo.':
+        response.status===429?'Foram feitos demasiados envios. Tenta novamente mais tarde.':
+        response.status>=500?'O servidor Jynlo não conseguiu guardar o ficheiro. Não repitas sem verificar se foi publicado.':
+        'O servidor rejeitou o ficheiro. Confirma o formato e o tamanho.';
+      throw new ApiError(response.status,detail+' (HTTP '+response.status+')');
+    }
+    // Treat an empty successful response as unknown, not an immediate retry.
+    const raw=await response.text();
+    if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza a página antes de repetir.');
+    try{return JSON.parse(raw);}catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
+  }catch(e){
+    if(e instanceof ApiError)throw e;
+    if(e instanceof Error&&/^(O servidor respondeu|O servidor respondeu ao envio)/.test(e.message))throw e;
+    if(controller.signal.aborted)throw new Error('O envio excedeu 90 segundos. Verifica se foi publicado antes de repetir.');
+    throw new Error('Falha de ligação durante o envio. Verifica se foi publicado antes de repetires.');
+  }
   finally{clearTimeout(timeout);}
 }
 export async function publishPost(content:string,file:MobileMedia|null,token:string|null,username:string|null):Promise<FeedItem>{
