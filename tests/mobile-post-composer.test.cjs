@@ -21,3 +21,16 @@ test('story upload validates story media rules and post picker validates post li
  const api=read('src/lib/social-feed-api.ts');
  assert.match(api,/validateMedia\(file\.mimeType,actualSize,path\.includes\('\/stories'\)\)/);
 });
+
+
+test('media sends are single-flight, success closes composer even when subsequent feed refresh fails',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/postInFlight\.current=true;setPublishing\(true\)/);
+ assert.match(home,/storyInFlight\.current=true;setStoryPublishing\(true\)/);
+ assert.match(home,/if\(!requireLogin\(\)\|\|postInFlight\.current\|\|\(!composerMedia&&!composerText\.trim\(\)\)\)return/);
+ assert.match(home,/if\(!requireLogin\(\)\|\|storyInFlight\.current\|\|!storyMedia\)return/);
+ assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Publicação enviada/);
+ assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Story enviada/);
+ assert.match(home,/feedIdentity\.current===\`\$\{username\}:\$\{actor\}\`/);
+ assert.doesNotMatch(home,/await publishPost\([^;]+;setComposerText\(''\);setComposerMedia/);
+});
