@@ -93,7 +93,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     try{
       await replyToStory(story.id,message,token,username);
       setReplyText(current=>current.trim()===message?'':current);
-      Alert.alert('Resposta enviada','O autor recebeu a tua resposta numa notificação privada.');
+      Alert.alert('Resposta enviada','A tua resposta ficou guardada em privado. O autor recebe um aviso se tiver as notificações ativadas.');
     }catch(e){Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
     finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
   }
