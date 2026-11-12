@@ -47,3 +47,14 @@ test('prepared video uses local measured file size and cleans copied content URI
  assert.match(s,/measuredPhotoSize\(actual,asset.fileSize\)/);
  assert.match(s,/temporary\?\.exists\)temporary\.delete\(\)/);
 });
+
+test('successful batch with unreadable JSON preserves uncertain delivery warning',()=>{
+ const uploader=read('src/lib/chat-photo-album.ts');
+ const success=uploader.indexOf('const response=await fetch(API_BASE+path');
+ const parse=uploader.indexOf('reply=await response.json()');
+ const warning=uploader.indexOf("throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');",parse);
+ const transport=uploader.indexOf("throw Error('Falha de ligação. Consulta o histórico antes de repetir.');");
+ assert.ok(success>=0&&parse>success&&warning>parse&&transport>warning);
+ assert.match(uploader,/try\{\s*reply=await response\.json\(\) as typeof reply;\s*\}catch\{\s*throw Error\('O envio não foi confirmado\. Consulta o histórico antes de repetir\.'\);/);
+ assert.match(uploader,/\^\(A sessão\|Já não tens\|O álbum\|O armazenamento\|O servidor\|O envio\)/);
+});
