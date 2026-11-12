@@ -1,21 +1,23 @@
 'use strict';
-const MAX_FILES=4,MAX_TOTAL_BYTES=40*1024*1024,MAX_PHOTO_BYTES=5*1024*1024;
-const MIME=new Set(['image/jpeg','image/png','image/webp','image/gif']);
+const MAX_FILES=4,MAX_TOTAL_BYTES=40*1024*1024,MAX_PHOTO_BYTES=5*1024*1024,MAX_VIDEO_BYTES=20*1024*1024;
+const MIME=new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm']);
 function validateChatAlbum(files,{allowUnknownSize=false}={}){
  if(!Array.isArray(files)||files.length===0||files.length>MAX_FILES)
-  return 'Escolhe entre 1 e 4 fotografias.';
+  return 'Escolhe entre 1 e 4 fotografias ou vídeos.';
  let total=0;
  for(const item of files){
-  if(!item||item.type!=='image'||typeof item.uri!=='string'||!item.uri)
-   return 'Seleciona fotografias válidas.';
-  if(!MIME.has(item.mimeType||''))
-   return 'Formato não suportado. Escolhe JPG, PNG, WebP ou GIF.';
+  if(!item||(item.type!=='image'&&item.type!=='video')||typeof item.uri!=='string'||!item.uri)
+   return 'Seleciona fotografias ou vídeos válidos.';
+  const mime=item.mimeType||'';
+  if(!MIME.has(mime)||((item.type==='video')!==mime.startsWith('video/')))
+   return 'Formato não suportado. Usa JPG, PNG, WebP, GIF, MP4 ou WebM.';
+  const max=mime.startsWith('video/')?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES;
   if(item.fileSize!=null){
-   if(!Number.isSafeInteger(item.fileSize)||item.fileSize<0||item.fileSize>MAX_PHOTO_BYTES)
-    return 'Cada fotografia pode ter até 5 MB.';
-   if(item.fileSize===0&&!allowUnknownSize)return 'Não foi possível confirmar o tamanho de uma fotografia.';
+   if(!Number.isSafeInteger(item.fileSize)||item.fileSize<0||item.fileSize>max)
+    return 'O ficheiro excede o limite permitido ('+(max/1024/1024)+' MB).';
+   if(item.fileSize===0&&!allowUnknownSize)return 'Não foi possível confirmar o tamanho de um ficheiro.';
    total+=item.fileSize;
-  }else if(!allowUnknownSize)return 'Não foi possível confirmar o tamanho de uma fotografia.';
+  }else if(!allowUnknownSize)return 'Não foi possível confirmar o tamanho de um ficheiro.';
  }
  return total>MAX_TOTAL_BYTES?'O conjunto não pode exceder 40 MB.':null;
 }
