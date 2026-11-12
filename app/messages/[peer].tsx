@@ -496,7 +496,7 @@ export default function DirectConversation(){
     </View>
    <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
    <TextInput accessibilityLabel="Legenda dos anexos" multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!photoBusy} placeholder="Legenda para as fotografias ou vídeos (opcional)" placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
-   <Button title={photoBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
+   <Button title={photoBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={mutationBusy||photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
    <Button secondary title="Cancelar anexos" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
   </View>:null}
 
@@ -539,8 +539,8 @@ export default function DirectConversation(){
    setReplyTarget(current=>current?.id===(sentReplyId??undefined)?null:current);
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeos" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Abrir câmara" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeos" disabled={mutationBusy||photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Abrir câmara" disabled={mutationBusy||photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
   {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 
   </View>
@@ -555,7 +555,7 @@ export default function DirectConversation(){
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
