@@ -260,7 +260,7 @@ export default function DirectConversation(){
  function editable(m:DirectChatEntry){
   const created=Date.parse(m.date||'');
   return ownMessage(m)&&Boolean(m.text?.trim())&&!m.attachmentName&&!m.attachments?.length&&
-   !m.text.startsWith('[JYNLO:GIPHY:1]')&&Number.isFinite(created)&&
+   m.text?.startsWith('[JYNLO:GIPHY:1]')!==true&&Number.isFinite(created)&&
    created<=Date.now()&&Date.now()-created<=15*60*1000;
  }
  function messageOptions(m:DirectChatEntry){
