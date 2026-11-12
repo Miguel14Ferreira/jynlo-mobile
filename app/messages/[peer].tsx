@@ -472,8 +472,9 @@ export default function DirectConversation(){
       if(generation.current===version&&conversation.current===identity)setPhotoAvailabilityError('Não foi possível confirmar a disponibilidade das fotografias.');
     });
   }}/>:null}
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} onSent={async()=>{
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} replyId={replyTarget?.id} onSent={async(sentReplyId)=>{
    if(conversation.current!==peer+'|'+auth.token)return;
+   setReplyTarget(current=>current?.id===(sentReplyId??undefined)?null:current);
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeos" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
