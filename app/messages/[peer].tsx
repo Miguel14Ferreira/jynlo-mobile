@@ -11,7 +11,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI'
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE} from '../../src/lib/api';
-import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply} from '../../src/lib/chat-api';
+import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply,editDirectChatMessage,deleteDirectChatMessage} from '../../src/lib/chat-api';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import {sendChatPhotoAlbum} from '../../src/lib/chat-photo-album';
@@ -39,6 +39,8 @@ export default function DirectConversation(){
  const pendingMuteWrites=useRef(new Set<string>());
  const [draft,setDraft]=useState('');
  const [replyTarget,setReplyTarget]=useState<{id:number;sender:string;text:string}|null>(null);
+ const [editing,setEditing]=useState<DirectChatEntry|null>(null),[editText,setEditText]=useState('');
+ const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
@@ -87,7 +89,7 @@ export default function DirectConversation(){
     if(accessRevoked){
      // A confirmed server-side access change must hide cached private content.
      // Ordinary network failures are not evidence of permission revocation.
-     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoAvailable(false);
+     setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoAvailable(false);
      setAttachmentsOpen(false);setSyncWarning('');
      setBlocked(true);setBlockStatusKnown(false);
      historyError.current=null;
@@ -116,7 +118,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
+   setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
    const pending=pendingWrites.current.get(identity);
@@ -252,9 +254,66 @@ export default function DirectConversation(){
    setSafetyBusy(false);
   }
  }
+ function ownMessage(m:DirectChatEntry){
+  return Boolean(auth.username&&m.username1.toLowerCase()===auth.username.toLowerCase()&&!m.deletedAt);
+ }
+ function editable(m:DirectChatEntry){
+  const created=Date.parse(m.date||'');
+  return ownMessage(m)&&Boolean(m.text?.trim())&&!m.attachmentName&&!m.attachments?.length&&
+   !m.text.startsWith('[JYNLO:GIPHY:1]')&&Number.isFinite(created)&&
+   created<=Date.now()&&Date.now()-created<=15*60*1000;
+ }
+ function messageOptions(m:DirectChatEntry){
+  if(!ownMessage(m)||blocked||mutationLock.current||sendingNow.current||photoBusy)return;
+  const items:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
+  if(editable(m))items.push({text:'Editar mensagem',onPress:()=>{
+    setEditing(m);setEditText(m.text||'');setReplyTarget(null);
+  }});
+  items.push({text:'Apagar para todos',style:'destructive',onPress:()=>Alert.alert(
+   'Apagar mensagem para todos?','O conteúdo ficará identificado como removido na conversa.',
+   [{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>void deleteMessage(m)}])});
+  items.push({text:'Cancelar',style:'cancel'});
+  Alert.alert('A minha mensagem','Seleciona uma ação.',items);
+ }
+ async function saveEdit(){
+  if(!editing||!editable(editing)||!auth.token||blocked||mutationLock.current||sendingNow.current||photoBusy)return;
+  const original=editing,text=editText.trim(),version=generation.current,identity=peer+'|'+auth.token;
+  if(!text||text.length>2000||text.startsWith('[JYNLO:GIPHY:1]')){
+   setError('A mensagem editada deve ter entre 1 e 2000 caracteres.');return;
+  }
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const result=await editDirectChatMessage(peer,original.id,text,auth.token);
+   if(version!==generation.current||conversation.current!==identity)return;
+   setMessages(old=>old.map(m=>m.id===result.id?result:m));
+   setEditing(current=>current?.id===original.id?null:current);
+   setEditText(current=>current===editText?'':current);
+   await refresh(true,version);
+  }catch(e){
+   if(version===generation.current&&conversation.current===identity)
+    setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;setMutationBusy(false);}
+ }
+ async function deleteMessage(m:DirectChatEntry){
+  if(!ownMessage(m)||!auth.token||blocked||mutationLock.current||sendingNow.current||photoBusy)return;
+  const version=generation.current,identity=peer+'|'+auth.token;
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const result=await deleteDirectChatMessage(peer,m.id,auth.token);
+   if(version!==generation.current||conversation.current!==identity)return;
+   setMessages(old=>old.map(item=>item.id===result.id?result:
+    item.replyToMessageId===result.id?{...item,replyToText:'Mensagem removida'}:item));
+   setEditing(current=>current?.id===m.id?null:current);
+   setReplyTarget(current=>current?.id===m.id?null:current);
+   await refresh(true,version);
+  }catch(e){
+   if(version===generation.current&&conversation.current===identity)
+    setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;setMutationBusy(false);}
+ }
  async function send(){
   const identity=peer+'|'+auth.token;
-  if(sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!auth.token||!draft.trim())return;
+  if(mutationLock.current||sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!auth.token||!draft.trim())return;
   const originalDraft=draft;
   const originalReply=replyTarget;
   const submittedText=originalDraft.trim();
@@ -307,7 +366,7 @@ export default function DirectConversation(){
   ]);
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
-  if(!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
+  if(mutationLock.current||!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
   const version=generation.current;
   setError('');
@@ -329,7 +388,7 @@ export default function DirectConversation(){
  }
  async function uploadPhoto(){
   const identity=peer+'|'+auth.token;
-  if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current||pendingWrites.current.has(identity))return;
+  if(mutationLock.current||!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current,originalReplyId=replyTarget?.id;
   const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
@@ -415,7 +474,10 @@ export default function DirectConversation(){
     const url=m.text?.match(/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/)?.[0];
     if(url)void Linking.openURL(url).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'));
    }} style={styles.replyAction}><Text style={styles.replyActionText}>⌖ Abrir localização no mapa</Text></Pressable>:null}
-   {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><Text style={styles.replyActionText}>↩ Responder</Text></Pressable>:null}
+   <View style={{flexDirection:'row',justifyContent:'flex-end',gap:8}}>
+    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><Text style={styles.replyActionText}>↩ Responder</Text></Pressable>:null}
+    {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><Text style={styles.replyActionText}>•••</Text></Pressable>:null}
+   </View>
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
@@ -482,6 +544,11 @@ export default function DirectConversation(){
   {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 
   </View>
+  {editing&&!blocked?<View style={styles.editPanel}>
+   <Text style={styles.replyPreviewTitle}>Editar mensagem · até 15 minutos após o envio</Text>
+   <TextInput multiline maxLength={2000} accessibilityLabel="Editar mensagem" editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Editar texto…" placeholderTextColor={C.muted} style={styles.editInput}/>
+   <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar edição" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
+  </View>:null}
   {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>A responder a {replyTarget.sender}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><Text style={styles.replyActionText}>✕</Text></Pressable></View>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
@@ -498,6 +565,7 @@ export default function DirectConversation(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ editPanel:{gap:9,padding:12,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:145,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:12},
  muteRow:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
  muteTitle:{color:C.white,fontSize:13,fontWeight:'800'},
  muteButton:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,borderRadius:12,borderWidth:1,borderColor:C.mint,alignItems:'center',justifyContent:'center'},
