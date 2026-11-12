@@ -21,6 +21,7 @@ const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))re
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
+const StoryCameraCapture=lazy(()=>import('../../src/components/StoryCameraCapture'));
 function MediaVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;onEnd?:()=>void}){
  return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
   <FeedVideo uri={uri} story={story} paused={paused} onEnd={onEnd}/>
@@ -492,14 +493,14 @@ export default function JynloFeedHome(){
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
         <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={()=>setStoryComposer(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
-          <View style={styles.mediaChooseRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia para Story" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'camera')} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo para Story" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
-          </View>
+          {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
+            <StoryCameraCapture onCaptured={setStoryMedia} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
+          </Suspense>:null}
           {storyMedia?<View style={styles.storyPreview}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
             {storyCaption.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{storyCaption.trim()}</Text></View>:null}
-          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>Mostra o teu momento</Text><Text style={styles.storiesIntro}>Escolhe uma fotografia ou vídeo para o teu Story.</Text></View>}
+          </View>:null}
+          {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Trocar pela galeria</Text></Pressable>:null}
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover fotografia ou vídeo</Text></Pressable>:null}
           <Text style={styles.storiesIntro}>Texto sobre o Story (visível também como legenda na web)</Text>
           <TextInput value={storyCaption} onChangeText={setStoryCaption} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
