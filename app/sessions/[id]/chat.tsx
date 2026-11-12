@@ -12,6 +12,8 @@ import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../../s
 import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
 import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
+import {sendChatPhotoAlbum} from '../../../src/lib/chat-photo-album';
+import {validateChatAlbum} from '../../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
 export default function SessionChat(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
@@ -26,6 +28,7 @@ export default function SessionChat(){
  // A request remains locked to its original session/account across refocus.
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){pendingRefresh.current=true;return;}
@@ -47,7 +50,7 @@ export default function SessionChat(){
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
     setClosed(true);setEntries([]);setDraft('');setReply(null);setSyncWarning('');
-    setPhoto(null);setPhotoReady(false);
+    setPhoto(null);setExtraPhotos([]);setPhotoReady(false);
     historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
    }else{
@@ -73,7 +76,7 @@ export default function SessionChat(){
   pendingRefresh.current=false;
   setEntries([]);setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);setDraft('');setReply(null);
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
-  setPhoto(null);setPhotoReady(false);
+  setPhoto(null);setExtraPhotos([]);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
@@ -104,8 +107,13 @@ export default function SessionChat(){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
   const version=generation.current;
   try{
-   const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false});
-   if(version===generation.current&&!chosen.canceled&&chosen.assets?.[0]){validateChatPhoto(chosen.assets[0]);setPhoto(chosen.assets[0]);}
+   const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+   if(version===generation.current&&!chosen.canceled&&chosen.assets?.[0]){
+    chosen.assets.forEach(validateChatPhoto);
+    const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
+    if(issue)throw Error(issue);
+    validateChatPhoto(chosen.assets[0]);setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
+   }
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');}
  }
  async function uploadPhoto(){
@@ -115,9 +123,10 @@ export default function SessionChat(){
   pendingWrites.current.set(identity,'photo');
   sendingNow.current=true;setUploading(true);setError('');
   try{
-   await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
+   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'session',id},auth.token,[photo,...extraPhotos],originalReplyId);
+   else await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
    if(version!==generation.current)return;
-   setPhoto(null);setReply(current=>current?.id===originalReplyId?null:current);
+   setPhoto(null);setExtraPhotos([]);setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
   }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
   finally{
@@ -150,10 +159,18 @@ export default function SessionChat(){
   }}/>
   {auth.token&&!closed&&photoReady?<Button title="Escolher fotografia" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
-   <Image source={{uri:photo.uri}} style={styles.preview} resizeMode="contain"/>
-   <Text style={styles.note}>Confirma antes de enviar. Limite 5 MB.</Text>
+   <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
+    {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={uploading} onPress={()=>{
+     const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
+     setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
+    }} style={{gap:4}}>
+     <Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>
+     <Text style={styles.note}>✕ Remover</Text>
+    </Pressable>)}
+   </View>
+   <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por ficheiro. Confirma antes de enviar.</Text>
    <Button title={uploading?'A enviar…':'Confirmar envio da fotografia'} disabled={uploading||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button title="Cancelar fotografia" secondary disabled={uploading} onPress={()=>setPhoto(null)}/>
+   <Button title="Cancelar fotografia" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<View style={styles.editor}><Text style={styles.note}>A responder a {reply.senderUsername}</Text>
