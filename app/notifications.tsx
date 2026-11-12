@@ -1,12 +1,12 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
-import {myNotifications,markNotificationRead} from '../src/lib/notifications-api';
+import {myNotifications,markNotificationRead,deleteMyNotification,deleteAllMyNotifications} from '../src/lib/notifications-api';
 import {C} from '../src/lib/theme';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
@@ -20,6 +20,8 @@ export default function NotificationsScreen(){
  const [loading,setLoading]=useState(true),[historyReady,setHistoryReady]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
+ const [unreadOnly,setUnreadOnly]=useState(false),[notificationBusy,setNotificationBusy]=useState(false);
+ const notificationLock=useRef(false),notificationRevision=useRef(0);
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
@@ -31,6 +33,8 @@ export default function NotificationsScreen(){
  // clear state left by a different signed-in account.
  const sameAccount=Boolean(auth.token&&auth.username&&account.current===auth.username+'|'+auth.token);
  const visibleItems=sameAccount?items:[];
+ const unreadCount=visibleItems.filter(item=>!item.read).length;
+ const filteredItems=unreadOnly?visibleItems.filter(item=>!item.read):visibleItems;
  const visibleInvites=sameAccount?invites:[];
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version){pendingRefresh.current=true;return;}
@@ -69,7 +73,8 @@ export default function NotificationsScreen(){
   if(identity!==account.current){
    account.current=identity;setItems([]);setInvites([]);
    // Invalidate in-flight mutations started by the previous account.
-   pushOperation.current++;inviteOperation.current++;
+   pushOperation.current++;inviteOperation.current++;notificationRevision.current++;
+   notificationLock.current=false;setNotificationBusy(false);setUnreadOnly(false);
    inviteDecisionInFlight.current=null;
    setPushBusy(false);setBusyInvite(null);setNotice('');
   }
@@ -147,6 +152,64 @@ export default function NotificationsScreen(){
    if(account.current===initialIdentity&&inviteOperation.current===operation)setBusyInvite(null);
   }
  }
+ async function markAllRead(){
+  if(!sameAccount||!auth.token||!auth.username||notificationLock.current||!historyReady)return;
+  const identity=auth.username+'|'+auth.token,revision=++notificationRevision.current;
+  const unread=items.filter(item=>!item.read&&Number.isSafeInteger(item.id)&&item.id>0);
+  if(!unread.length)return;
+  notificationLock.current=true;setNotificationBusy(true);setError('');setNotice('');
+  let confirmed=0;
+  try{
+   // No bulk-read backend endpoint: write sequentially and only acknowledge server-confirmed IDs.
+   for(const item of unread){
+    if(account.current!==identity||notificationRevision.current!==revision)break;
+    await markNotificationRead(item.id,auth.token);
+    if(account.current!==identity||notificationRevision.current!==revision)break;
+    confirmed++;
+    setItems(old=>old.map(n=>n.id===item.id?{...n,read:true}:n));
+   }
+   if(account.current===identity&&notificationRevision.current===revision)
+    setNotice(confirmed===unread.length?'Notificações marcadas como lidas.':
+     'Algumas notificações foram atualizadas. Confirma as restantes.');
+  }catch{
+   if(account.current===identity&&notificationRevision.current===revision)
+    setError('Algumas notificações podem ter sido marcadas como lidas. Atualiza antes de repetir.');
+  }finally{
+   if(notificationRevision.current===revision){notificationLock.current=false;setNotificationBusy(false);}
+  }
+ }
+ async function removeOne(item:JynloNotification){
+  if(!sameAccount||!auth.token||!auth.username||notificationLock.current)return;
+  const identity=auth.username+'|'+auth.token,revision=++notificationRevision.current;
+  notificationLock.current=true;setNotificationBusy(true);setError('');setNotice('');
+  try{
+   await deleteMyNotification(item.id,auth.token);
+   if(account.current===identity&&notificationRevision.current===revision){
+    setItems(old=>old.filter(n=>n.id!==item.id));setNotice('Notificação eliminada.');
+   }
+  }catch{
+   if(account.current===identity&&notificationRevision.current===revision)
+    setError('Não foi possível confirmar a eliminação. Atualiza antes de repetir.');
+  }finally{
+   if(notificationRevision.current===revision){notificationLock.current=false;setNotificationBusy(false);}
+  }
+ }
+ async function removeAll(){
+  if(!sameAccount||!auth.token||!auth.username||notificationLock.current)return;
+  const identity=auth.username+'|'+auth.token,revision=++notificationRevision.current;
+  notificationLock.current=true;setNotificationBusy(true);setError('');setNotice('');
+  try{
+   await deleteAllMyNotifications(auth.token);
+   if(account.current===identity&&notificationRevision.current===revision){
+    setItems([]);setNotice('Notificações eliminadas.');
+   }
+  }catch{
+   if(account.current===identity&&notificationRevision.current===revision)
+    setError('Não foi possível confirmar a eliminação. Atualiza antes de repetir.');
+  }finally{
+   if(notificationRevision.current===revision){notificationLock.current=false;setNotificationBusy(false);}
+  }
+ }
  async function open(item:JynloNotification){
   if(!sameAccount||!auth.token||!auth.username)return;
   const initialIdentity=auth.username+'|'+auth.token;
@@ -216,18 +279,32 @@ export default function NotificationsScreen(){
      <View style={{flex:1}}><Button title="Recusar" secondary disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}}/></View>
     </View>
    </View>)}
-   <Text style={styles.heading}>Outras notificações · {visibleItems.length}</Text>
-   {visibleItems.length===0?<Text style={styles.note}>Sem outras notificações.</Text>:visibleItems.map(n=><Pressable key={n.id} onPress={()=>{void open(n);}} style={[styles.tile,!n.read&&styles.new]}>
-    <View style={{flex:1,gap:6}}><Text style={styles.subject}>{n.subject||'Jynlo'}</Text><Text style={styles.body}>{n.message}</Text>
-     <Text style={styles.note}>{new Date(n.createdAt).toLocaleString('pt-PT')}</Text></View>
-    {!n.read?<Text style={styles.badge}>●</Text>:null}
-   </Pressable>)}
+   <Text style={styles.heading}>Notificações · {visibleItems.length}</Text>
+   <View style={styles.filterBar}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar todas as notificações" accessibilityState={{selected:!unreadOnly}} onPress={()=>setUnreadOnly(false)} style={[styles.filterButton,!unreadOnly&&styles.filterSelected]}><Text style={styles.filterLabel}>Todas · {visibleItems.length}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar apenas notificações não lidas" accessibilityState={{selected:unreadOnly}} onPress={()=>setUnreadOnly(true)} style={[styles.filterButton,unreadOnly&&styles.filterSelected]}><Text style={styles.filterLabel}>Não lidas · {unreadCount}</Text></Pressable>
+   </View>
+   {visibleItems.length>0?<View style={styles.filterBar}>
+    {unreadCount>0?<View style={{flex:1}}><Button secondary title={notificationBusy?'A atualizar…':'Marcar todas como lidas'} disabled={notificationBusy} onPress={()=>{void markAllRead();}}/></View>:null}
+    <View style={{flex:1}}><Button secondary title="Limpar notificações" disabled={notificationBusy} onPress={()=>Alert.alert('Eliminar todas as notificações?','Esta ação elimina definitivamente todas as tuas notificações. Os convites pendentes são apresentados separadamente.',[{text:'Cancelar',style:'cancel'},{text:'Eliminar',style:'destructive',onPress:()=>void removeAll()}])}/></View>
+   </View>:null}
+   {filteredItems.length===0?<Text style={styles.note}>{unreadOnly?'Não tens notificações por ler.':'Sem outras notificações.'}</Text>:filteredItems.map(n=><View key={n.id} style={[styles.tile,!n.read&&styles.new]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={'Abrir notificação: '+(n.subject||'Jynlo')} disabled={notificationBusy} onPress={()=>{void open(n);}} style={{flex:1,gap:6}}>
+     <Text style={styles.subject}>{n.subject||'Jynlo'}</Text><Text style={styles.body}>{n.message}</Text>
+     <Text style={styles.note}>{Number.isFinite(Date.parse(n.createdAt))?new Date(n.createdAt).toLocaleString('pt-PT'):''}</Text>
+    </Pressable>
+    <View style={{alignItems:'center',justifyContent:'space-between'}}>
+     {!n.read?<Text style={styles.badge}>●</Text>:<Text style={styles.note}>Lida</Text>}
+     <Pressable accessibilityRole="button" accessibilityLabel={'Eliminar notificação: '+(n.subject||'Jynlo')} disabled={notificationBusy} onPress={()=>Alert.alert('Eliminar esta notificação?','A notificação será removida da tua lista.',[{text:'Cancelar',style:'cancel'},{text:'Eliminar',style:'destructive',onPress:()=>void removeOne(n)}])} style={styles.deleteButton}><Text style={styles.deleteText}>Eliminar</Text></Pressable>
+    </View>
+   </View>)}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
 
  </Page>;
 }
 const styles=StyleSheet.create({
+ filterBar:{flexDirection:'row',gap:9,alignItems:'center',flexWrap:'wrap'},filterButton:{borderWidth:1,borderColor:C.border,borderRadius:12,paddingHorizontal:12,paddingVertical:10,minHeight:44,justifyContent:'center'},filterSelected:{borderColor:C.mint,backgroundColor:C.surface},filterLabel:{color:C.white,fontWeight:'700',fontSize:12},deleteButton:{minHeight:44,justifyContent:'center',paddingHorizontal:7},deleteText:{color:'#FF9898',fontSize:12,fontWeight:'800'},
  pushPanel:{padding:14,borderRadius:16,backgroundColor:C.surface,gap:10},
  title:{fontSize:31,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'800',color:C.white,marginTop:8},
  note:{fontSize:12,color:C.muted,lineHeight:19},tile:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,flexDirection:'row',gap:9},
