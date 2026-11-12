@@ -357,7 +357,7 @@ export default function CreateSessionScreen(){
   {selectedCommunity?<View style={styles.panel}>
    <View style={styles.seasonHead}>
     <Text style={styles.heading}>Jogo de época</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>Alert.alert('O que é um jogo de época?','Se escolheres «Contar para a época», esta sessão fica associada à época ativa da comunidade e os seus resultados podem contribuir para a classificação, conforme a modalidade e as regras da comunidade.\n\nSe escolheres «Não contar para a época», a sessão continua a existir normalmente, sem influenciar a classificação.\n\nSe as classificações estiverem desativadas, a ativação exige autorização explícita.')} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>Saber mais  ⓘ</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>Alert.alert('O que é um jogo de época?','Se escolheres «Contar para a época», esta sessão fica associada à época ativa da comunidade e os seus resultados podem contribuir para a classificação, conforme a modalidade e as regras da comunidade.\n\nSe escolheres «Não contar para a época», a sessão continua a existir normalmente, sem influenciar a classificação.\n\nSe as classificações estiverem desativadas, a ativação exige autorização explícita.')} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>ⓘ Saber mais sobre o jogo de época</Text></Pressable>
    </View>
    <Text style={styles.note}>Decide se esta sessão contribui para a época e classificações da comunidade.</Text>
    <View style={styles.playerChoices}>
@@ -514,6 +514,8 @@ export default function CreateSessionScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ seasonHelp:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingVertical:8,paddingHorizontal:12,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.mint},
+ seasonHelpText:{color:C.mint,fontWeight:'800',fontSize:13},
  title:{color:C.white,fontSize:28,fontWeight:'900'},note:{color:C.muted,fontSize:12,lineHeight:19},
  panel:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:18,padding:16,gap:11},
  heading:{color:C.white,fontWeight:'900',fontSize:19},
