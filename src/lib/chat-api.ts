@@ -114,6 +114,7 @@ export interface DirectChatEntry {
  replyToMessageId?:number|null;replyToSender?:string|null;replyToText?:string|null;
  editedAt?:string|null;deletedAt?:string|null;
  attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
+ attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
 export async function directConversationPeers(token:string):Promise<string[]>{
  if(!token||DEMO_MODE)return [];
