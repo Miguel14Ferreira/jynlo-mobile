@@ -144,7 +144,7 @@ export default function SessionChat(){
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
-  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
+  }finally{mutationLock.current=false;setMutationBusy(false);}
  }
  async function deleteMessage(message:SessionChatEntry){
   if(!ownMessage(message)||!auth.token||mutationLock.current||sendingNow.current||uploading)return;
@@ -161,7 +161,7 @@ export default function SessionChat(){
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
-  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
+  }finally{mutationLock.current=false;setMutationBusy(false);}
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
