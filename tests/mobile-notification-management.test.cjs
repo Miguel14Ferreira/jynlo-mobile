@@ -42,3 +42,16 @@ test('account switching and stale polling cannot resurrect deleted private notif
  assert.match(screen,/setItems\(old=>old.map\(n=>n.id===item.id\?\{\.\.\.n,read:true\}:n\)\)/);
  assert.match(screen,/notificationLock.current=true;setNotificationBusy\(true\)/);
 });
+
+test('messages tab obtains an authenticated unread alert badge without leaking previous accounts',()=>{
+ const api=read('src/lib/notifications-api.ts');
+ const tab=read('app/(tabs)/messages.tsx');
+ assert.match(api,/myUnreadNotificationCount\(token:string\)/);
+ assert.match(api,/\/api\/notifications\/me\/unread-count/);
+ assert.match(api,/Number.isSafeInteger\(value\)/);
+ assert.match(tab,/myUnreadNotificationCount\(auth.token\)/);
+ assert.match(tab,/if\(unreadNotifications.status==='fulfilled'\)setNotificationUnread\(unreadNotifications.value\)/);
+ assert.match(tab,/setNotificationUnread\(0\)/);
+ assert.match(tab,/sameIdentity&&notificationUnread>0/);
+ assert.match(tab,/notificationUnread>99\?'99\+'/);
+});
