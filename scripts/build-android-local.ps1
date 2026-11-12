@@ -79,7 +79,10 @@ try {
   $gradle = Join-Path $root 'android\gradlew.bat'
   if (-not (Test-Path $gradle)) { throw 'Gradle wrapper nao foi gerado.' }
   # A release APK incorpora o JS e nao requer servidor Metro.
-  Run 'Compilar release Android sem R8' $gradle @(':app:assembleRelease','--no-daemon')
+  Push-Location (Join-Path $root 'android')
+  try {
+    Run 'Compilar release Android sem R8' $gradle @(':app:assembleRelease','--no-daemon')
+  } finally { Pop-Location }
   $apk = Join-Path $root 'android\app\build\outputs\apk\release\app-release.apk'
   if (-not (Test-Path $apk)) { throw "APK nao encontrada em $apk" }
 
