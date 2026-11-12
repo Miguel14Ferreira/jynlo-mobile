@@ -226,6 +226,27 @@ export async function sendDirectChatReply(peer:string,text:string,token:string,r
   token,method:'POST',body:{text:body,replyToMessageId}
  });
 }
+/** Edit only your own recent text messages; backend rechecks author and 15-minute policy. */
+export async function editDirectChatMessage(peer:string,messageId:number,text:string,token:string):Promise<DirectChatEntry>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para editar mensagens.');
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer)||!Number.isSafeInteger(messageId)||messageId<=0)
+  throw Error('Mensagem inválida.');
+ const body=text.trim();
+ if(!body||body.length>2000||body.startsWith('[JYNLO:GIPHY:1]'))
+  throw Error('A mensagem editada deve ter entre 1 e 2000 caracteres.');
+ return request<DirectChatEntry>('/api/chat/me/'+encodeURIComponent(peer)+'/messages/'+messageId,{
+  token,method:'PUT',body:{text:body}
+ });
+}
+/** Authorized soft delete; other participants see a redacted message. */
+export async function deleteDirectChatMessage(peer:string,messageId:number,token:string):Promise<DirectChatEntry>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para apagar mensagens.');
+ if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer)||!Number.isSafeInteger(messageId)||messageId<=0)
+  throw Error('Mensagem inválida.');
+ return request<DirectChatEntry>('/api/chat/me/'+encodeURIComponent(peer)+'/messages/'+messageId,{
+  token,method:'DELETE'
+ });
+}
 export async function markDirectRead(peer:string,lastSeenMessageId:number,token:string):Promise<void>{
  if(!token||DEMO_MODE||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))return;
