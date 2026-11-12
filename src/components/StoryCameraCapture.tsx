@@ -44,7 +44,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  return <View style={styles.cameraContainer}
   onTouchStart={e=>swipeStart(e.nativeEvent.pageY)}
   onTouchEnd={e=>swipeEnd(e.nativeEvent.pageY)}>
-  <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode="picture" active={!busy}/>
+  <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode="picture"/>
   <View style={styles.topOverlay} pointerEvents="none"><Text style={styles.topHint}>Desliza para cima para abrir a galeria ↑</Text></View>
   <View style={styles.controls}>
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos"
