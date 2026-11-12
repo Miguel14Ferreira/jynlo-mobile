@@ -16,7 +16,7 @@ export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):
    source.copy(temporary);
    uri=temporary.uri;
   }
-  const actualSize=temporary?(temporary.exists?temporary.size:0):(source.exists?source.size:0);
+  const actualSize=temporary?(temporary.exists?temporary.size:-1):(source.exists?source.size:-1);
   const size=measuredPhotoSize(actualSize,asset.fileSize);
   if(!Number.isFinite(size)||size<=0||size>5*1024*1024)
    throw Error('A fotografia tem de ter até 5 MB e um tamanho válido.');
