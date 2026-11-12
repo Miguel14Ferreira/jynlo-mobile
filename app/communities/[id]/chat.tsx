@@ -26,6 +26,7 @@ export default function CommunityChatScreen(){
  // Keep in-flight writes locked across navigation; leaving the screen does not cancel the server request.
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
+ const [reply,setReply]=useState<CommunityChatEntry|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
@@ -67,7 +68,7 @@ export default function CommunityChatScreen(){
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
-     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
+     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
      historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
@@ -88,7 +89,7 @@ export default function CommunityChatScreen(){
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
-   setDraft('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
+   setDraft('');setReply(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -120,14 +121,15 @@ export default function CommunityChatScreen(){
   const identity=id+'|'+auth.token;
   if(sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity)||revokedRef.current||!auth.token||!auth.username||!draft.trim())return;
   const version=generation.current,token=auth.token,username=auth.username;
-  const originalDraft=draft;
+  const originalDraft=draft,originalReplyId=reply?.id;
   const message=originalDraft.trim();
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
-   await sendCommunityMessage(id,message,token,username);
+   await sendCommunityMessage(id,message,token,username,originalReplyId);
    if(version!==generation.current)return;
    setDraft(current=>current===originalDraft?'':current);
+   setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(version);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
@@ -157,15 +159,15 @@ export default function CommunityChatScreen(){
  async function uploadPhoto(){
   const identity=id+'|'+auth.token;
   if(!auth.token||!photo||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(identity))return;
-  const version=generation.current,token=auth.token,selectedPhoto=photo;
+  const version=generation.current,token=auth.token,selectedPhoto=photo,originalReplyId=reply?.id;
   const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
   uploadingNow.current=true;setUploading(true);setError('');
   try{
-   if(extraPhotos.length||selectedPhoto.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos],null,captionToSend);
-   else await sendChatPhoto('community',id,token,selectedPhoto);
+   if(extraPhotos.length||selectedPhoto.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos],originalReplyId,captionToSend);
+   else await sendChatPhoto('community',id,token,selectedPhoto,originalReplyId);
    if(version!==generation.current)return;
-   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);await refresh(version);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);await refresh(version);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
   }finally{
@@ -180,12 +182,14 @@ export default function CommunityChatScreen(){
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
-   {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
-     <Text style={styles.sender}>{m.username}</Text><Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
+   {messages.map(m=><Pressable key={m.id} disabled={!!m.deletedAt||accessRevoked} accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={[styles.message,m.username===auth.username&&styles.mine]}>
+     <Text style={styles.sender}>{m.username}</Text>
+     {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
+     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size}/>):null}
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
-   </View>)}
-   <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} onSent={async()=>{await refresh();}}/>
+   </Pressable>)}
+   <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
@@ -203,6 +207,7 @@ export default function CommunityChatScreen(){
      <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
      <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
    </View>:null}
+   {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><Text style={styles.quoteCancel}>✕</Text></Pressable></View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
        maxLength={4000} accessibilityLabel="Mensagem para a comunidade"/>
@@ -213,7 +218,7 @@ export default function CommunityChatScreen(){
    {refreshWarning&&!accessRevoked?<Button secondary title="↻ Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
+const styles=StyleSheet.create({quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
