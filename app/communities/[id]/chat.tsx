@@ -2,13 +2,13 @@ import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {ApiError} from '../../../src/lib/api';
-import {communityMessages,sendCommunityMessage} from '../../../src/lib/chat-api';
+import {communityMessages,sendCommunityMessage,editCommunityChatMessage,deleteCommunityChatMessageForEveryone} from '../../../src/lib/chat-api';
 import {communityDetails} from '../../../src/lib/community-api';
 import {observeCommunityChat} from '../../../src/lib/community-realtime';
 import {markCommunityRead} from '../../../src/lib/chat-api';
@@ -27,6 +27,8 @@ export default function CommunityChatScreen(){
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
  const [reply,setReply]=useState<CommunityChatEntry|null>(null);
+ const [editing,setEditing]=useState<CommunityChatEntry|null>(null),[editText,setEditText]=useState('');
+ const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
@@ -68,7 +70,7 @@ export default function CommunityChatScreen(){
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
-     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
+     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
      historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
@@ -89,7 +91,7 @@ export default function CommunityChatScreen(){
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
-   setDraft('');setReply(null);setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
+   setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -119,7 +121,7 @@ export default function CommunityChatScreen(){
  },[refresh,id,auth.token,auth.username]));
  async function send(){
   const identity=id+'|'+auth.token;
-  if(sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity)||revokedRef.current||!auth.token||!auth.username||!draft.trim())return;
+  if(mutationLock.current||sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity)||revokedRef.current||!auth.token||!auth.username||!draft.trim())return;
   const version=generation.current,token=auth.token,username=auth.username;
   const originalDraft=draft,originalReplyId=reply?.id;
   const message=originalDraft.trim();
@@ -137,6 +139,67 @@ export default function CommunityChatScreen(){
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
   }
+ }
+ function ownMessage(message:CommunityChatEntry){
+  return Boolean(auth.username&&message.username.toLowerCase()===auth.username.toLowerCase()&&!message.deletedAt);
+ }
+ function editable(message:CommunityChatEntry){
+  const created=Date.parse(message.createdAt);
+  return ownMessage(message)&&Boolean(message.body?.trim())&&!message.attachmentName&&
+   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&
+   Number.isFinite(created)&&created<=Date.now()&&Date.now()-created<=15*60*1000;
+ }
+ function messageOptions(message:CommunityChatEntry){
+  if(!ownMessage(message)||mutationLock.current||sendingNow.current||uploadingNow.current)return;
+  const actions:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
+  if(editable(message))actions.push({text:'Editar mensagem',onPress:()=>{
+    setEditing(message);setEditText(message.body||'');setReply(null);
+  }});
+  actions.push({text:'Apagar para todos',style:'destructive',onPress:()=>{
+    Alert.alert('Apagar mensagem para todos?',
+      'O conteúdo será removido da conversa. A mensagem ficará identificada como removida.',
+      [{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>void deleteMessage(message)}]);
+  }});
+  actions.push({text:'Cancelar',style:'cancel'});
+  Alert.alert('A minha mensagem','Seleciona uma ação.',actions);
+ }
+ async function saveEdit(){
+  if(!editing||!editable(editing)||!auth.token||!auth.username||mutationLock.current||
+   sendingNow.current||uploadingNow.current)return;
+  const text=editText.trim(),version=generation.current,identity=id+'|'+auth.token,original=editing;
+  if(!text||text.length>2000||text.startsWith('[JYNLO:GIPHY:1]')){
+   setError('A edição deve conter entre 1 e 2000 caracteres.');return;
+  }
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const updated=await editCommunityChatMessage(id,original.id,text,auth.token,auth.username);
+   if(version!==generation.current||activeChat.current!==identity)return;
+   setMessages(old=>old.map(item=>item.id===updated.id?updated:item));
+   setEditing(current=>current?.id===original.id?null:current);
+   setEditText(current=>current===editText?'':current);
+   await refresh(version,true);
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
+ }
+ async function deleteMessage(message:CommunityChatEntry){
+  if(!ownMessage(message)||!auth.token||!auth.username||mutationLock.current||
+   sendingNow.current||uploadingNow.current)return;
+  const version=generation.current,identity=id+'|'+auth.token;
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const updated=await deleteCommunityChatMessageForEveryone(id,message.id,auth.token,auth.username);
+   if(version!==generation.current||activeChat.current!==identity)return;
+   setMessages(old=>old.map(item=>item.id===updated.id?updated:
+    item.replyToMessageId===updated.id?{...item,replyToText:'Mensagem removida'}:item));
+   setEditing(current=>current?.id===message.id?null:current);
+   setReply(current=>current?.id===message.id?null:current);
+   await refresh(version,true);
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token))return;
@@ -158,7 +221,7 @@ export default function CommunityChatScreen(){
  }
  async function uploadPhoto(){
   const identity=id+'|'+auth.token;
-  if(!auth.token||!photo||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(identity))return;
+  if(mutationLock.current||!auth.token||!photo||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current,token=auth.token,selectedPhoto=photo,originalReplyId=reply?.id;
   const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
@@ -185,12 +248,15 @@ export default function CommunityChatScreen(){
    {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
        <Text style={styles.sender}>{m.username}</Text>
-       {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>↩ Responder</Text></Pressable>:null}
+       <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
+        {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>↩ Responder</Text></Pressable>:null}
+        {ownMessage(m)&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>•••</Text></Pressable>:null}
+       </View>
      </View>
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
      <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size}/>):null}
-     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
+     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
@@ -210,6 +276,11 @@ export default function CommunityChatScreen(){
      <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
      <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
    </View>:null}
+   {editing&&!accessRevoked?<View style={styles.editPanel}>
+     <Text style={styles.quoteTitle}>Editar a minha mensagem · até 15 minutos após o envio</Text>
+     <TextInput accessibilityLabel="Editar mensagem" multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Mensagem…" placeholderTextColor={C.muted} style={styles.editInput}/>
+     <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
+   </View>:null}
    {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><Text style={styles.quoteCancel}>✕</Text></Pressable></View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
@@ -221,7 +292,7 @@ export default function CommunityChatScreen(){
    {refreshWarning&&!accessRevoked?<Button secondary title="↻ Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </Page>;
 }
-const styles=StyleSheet.create({replyAction:{minHeight:38,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
+const styles=StyleSheet.create({editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},editInput:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:12,color:C.white,minHeight:52,maxHeight:150},replyAction:{minHeight:38,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
