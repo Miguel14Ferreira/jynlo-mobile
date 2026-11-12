@@ -217,7 +217,6 @@ export default function MessagesScreen(){
       <Text style={styles.muteText}>{isConversationMuted(mutes,item.kind,item.id)?'Silenciada':'Avisos'}</Text>
     </Pressable>:null}
   </View>)}
-  <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real, com sincronização de reserva quando está offline; os chats privados e de sessão usam atualização periódica. Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas.</Message>
  </Page>;
 }
 const T=MobileTheme.colors;
