@@ -2,13 +2,13 @@ import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
-import {AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {ApiError} from '../../../src/lib/api';
-import {sessionChatHistory,postSessionChat,markSessionChatRead} from '../../../src/lib/session-chat-api';
+import {sessionChatHistory,postSessionChat,markSessionChatRead,editSessionChatMessage,deleteSessionChatMessage} from '../../../src/lib/session-chat-api';
 import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
 import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
@@ -20,6 +20,8 @@ export default function SessionChat(){
  const auth=useAuth(),router=useRouter();
  const [entries,setEntries]=useState<SessionChatEntry[]>([]);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
+ const [editing,setEditing]=useState<SessionChatEntry|null>(null),[editText,setEditText]=useState('');
+ const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
  const [closed,setClosed]=useState(false),[error,setError]=useState('');
  const historyError=useRef<string|null>(null);
@@ -50,7 +52,7 @@ export default function SessionChat(){
    const accessRevoked=e instanceof ApiError&&[401,403,404,409,410].includes(e.status);
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
-    setClosed(true);setEntries([]);setDraft('');setReply(null);setSyncWarning('');
+    setClosed(true);setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');setSyncWarning('');
     setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoReady(false);
     historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
@@ -75,7 +77,7 @@ export default function SessionChat(){
   activeChat.current=identity;
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
-  setEntries([]);setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);setDraft('');setReply(null);
+  setEntries([]);setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);setDraft('');setReply(null);setEditing(null);setEditText('');
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
   setPhoto(null);setExtraPhotos([]);setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
@@ -88,7 +90,7 @@ export default function SessionChat(){
  },[refresh,auth.token,id]));
  async function send(){
   const identity=id+'|'+auth.token;
-  if(sendingNow.current||pendingWrites.current.has(identity)||closed||!auth.token||!draft.trim())return;
+  if(mutationLock.current||sendingNow.current||pendingWrites.current.has(identity)||closed||!auth.token||!draft.trim())return;
   const version=generation.current,originalDraft=draft,originalReplyId=reply?.id;
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
@@ -103,6 +105,63 @@ export default function SessionChat(){
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
   }
+ }
+ function ownMessage(message:SessionChatEntry){
+  return Boolean(auth.username&&!message.senderGuest&&
+    message.senderUsername.toLowerCase()===auth.username.toLowerCase()&&!message.deletedAt);
+ }
+ function editable(message:SessionChatEntry){
+  const created=Date.parse(message.createdAt);
+  return ownMessage(message)&&Boolean(message.body?.trim())&&!message.attachmentName&&
+   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&
+   Number.isFinite(created)&&created<=Date.now()&&Date.now()-created<=15*60*1000;
+ }
+ function messageOptions(message:SessionChatEntry){
+  if(!ownMessage(message)||mutationLock.current||sendingNow.current||uploading)return;
+  const items:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
+  if(editable(message))items.push({text:'Editar mensagem',onPress:()=>{
+    setEditing(message);setEditText(message.body);setReply(null);
+  }});
+  items.push({text:'Apagar para todos',style:'destructive',onPress:()=>Alert.alert(
+    'Apagar mensagem para todos?','O conteúdo ficará identificado como removido na conversa.',
+    [{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>void deleteMessage(message)}])});
+  items.push({text:'Cancelar',style:'cancel'});
+  Alert.alert('A minha mensagem','Seleciona uma ação.',items);
+ }
+ async function saveEdit(){
+  if(!editing||!editable(editing)||!auth.token||mutationLock.current||sendingNow.current||uploading)return;
+  const text=editText.trim(),original=editing,version=generation.current,identity=id+'|'+auth.token;
+  if(!text||text.length>2000||text.startsWith('[JYNLO:GIPHY:1]')){
+   setError('A mensagem editada deve ter entre 1 e 2000 caracteres.');return;
+  }
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const result=await editSessionChatMessage(id,original.id,text,auth.token);
+   if(version!==generation.current||activeChat.current!==identity)return;
+   setEntries(old=>old.map(item=>item.id===result.id?result:item));
+   setEditing(current=>current?.id===original.id?null:current);setEditText('');
+   await refresh(true,version);
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
+ }
+ async function deleteMessage(message:SessionChatEntry){
+  if(!ownMessage(message)||!auth.token||mutationLock.current||sendingNow.current||uploading)return;
+  const version=generation.current,identity=id+'|'+auth.token;
+  mutationLock.current=true;setMutationBusy(true);setError('');
+  try{
+   const result=await deleteSessionChatMessage(id,message.id,auth.token);
+   if(version!==generation.current||activeChat.current!==identity)return;
+   setEntries(old=>old.map(item=>item.id===result.id?result:
+    item.replyToMessageId===result.id?{...item,replyToText:'Mensagem removida'}:item));
+   setEditing(current=>current?.id===message.id?null:current);
+   setReply(current=>current?.id===message.id?null:current);
+   await refresh(true,version);
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+  }finally{mutationLock.current=false;if(version===generation.current)setMutationBusy(false);}
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
@@ -121,7 +180,7 @@ export default function SessionChat(){
  }
  async function uploadPhoto(){
   const identity=id+'|'+auth.token;
-  if(!auth.token||!photo||!photoReady||closed||sendingNow.current||pendingWrites.current.has(identity)||uploading)return;
+  if(mutationLock.current||!auth.token||!photo||!photoReady||closed||sendingNow.current||pendingWrites.current.has(identity)||uploading)return;
   const version=generation.current,originalReplyId=reply?.id;
   const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
@@ -145,16 +204,20 @@ export default function SessionChat(){
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
-  {entries.map(m=><Pressable key={m.id} disabled={!!m.deletedAt||closed} onPress={()=>setReply(m)}
-    accessibilityRole="button" accessibilityLabel={'Responder a '+m.senderUsername}
-    style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
-    <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
+  {entries.map(m=><View key={m.id} style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
+    <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
+     <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
+     <View style={{flexDirection:'row',gap:5}}>
+      {!m.deletedAt&&!closed?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.senderUsername} style={styles.messageAction} onPress={()=>setReply(m)}><Text style={styles.actionText}>↩</Text></Pressable>:null}
+      {ownMessage(m)&&!closed?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} style={styles.messageAction} onPress={()=>messageOptions(m)}><Text style={styles.actionText}>•••</Text></Pressable>:null}
+     </View>
+    </View>
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size}/>):null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
-     new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
-  </Pressable>)}
+     new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
+  </View>)}
   <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
    // the user may have made while the file was being uploaded.
@@ -178,6 +241,11 @@ export default function SessionChat(){
    <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending} onPress={()=>{void uploadPhoto();}}/>
    <Button title="Cancelar anexos" secondary disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
   </View>:null}
+  {editing&&!closed?<View style={styles.editPanel}>
+   <Text style={styles.actionText}>Editar mensagem · até 15 minutos após o envio</Text>
+   <TextInput accessibilityLabel="Editar mensagem" multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Editar texto…" placeholderTextColor={C.muted} style={styles.editInput}/>
+   <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar edição" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
+  </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<View style={styles.editor}><Text style={styles.note}>A responder a {reply.senderUsername}</Text>
      <Button title="Cancelar resposta" secondary onPress={()=>setReply(null)}/></View>:null}
@@ -193,6 +261,7 @@ export default function SessionChat(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ editPanel:{padding:12,gap:9,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:150,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:10},messageAction:{minHeight:38,minWidth:35,alignItems:'center',justifyContent:'center'},actionText:{fontSize:12,color:C.mint,fontWeight:'800'},
  title:{fontSize:26,fontWeight:'900',color:C.white},note:{fontSize:12,color:C.muted},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:12,fontWeight:'800',color:C.mint},
