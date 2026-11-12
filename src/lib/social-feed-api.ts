@@ -73,12 +73,13 @@ export async function deletePost(postId:number,token:string|null):Promise<void>{
  await request<void>(`/api/feed/posts/${postId}`,{token,method:'DELETE'});
 }
 
-export async function storyById(storyId:number,token:string|null):Promise<SocialStory>{
+export async function storyById(storyId:number,token:string|null,username:string|null=null):Promise<SocialStory>{
  if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story indisponível.');
  if(DEMO_MODE){
   const story=demoStories.find(item=>item.id===storyId);
   if(!story||Date.parse(story.expiresAt)<=Date.now())throw Error('Story indisponível.');
-  return {...story,likeCount:demoStoryLikes.get(storyId)?.size||0};
+  return {...story,likeCount:demoStoryLikes.get(storyId)?.size||0,
+   likedByMe:Boolean(username&&demoStoryLikes.get(storyId)?.has(username))};
  }
  return request<SocialStory>(`/api/stories/${storyId}`,{token});
 }
