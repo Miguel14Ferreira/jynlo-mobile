@@ -6,7 +6,9 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
+import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
@@ -200,6 +202,10 @@ export default function JynloFeedHome(){
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
+  const hiddenKeysRef=useRef<string[]>([]);
+  const [hiddenKeys,setHiddenKeys]=useState<string[]>([]);
+  const [recentlyHidden,setRecentlyHidden]=useState<string|null>(null);
+  const [hiddenReady,setHiddenReady]=useState(false);
   const load=useCallback(async()=>{
     const id=++reloadNumber.current;
     const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
@@ -210,6 +216,7 @@ export default function JynloFeedHome(){
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
       setPosts([]);setStories([]);setOwnStories([]);
+      hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       setComposerOpen(false);setComposerMedia(null);setComposerText('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
@@ -218,13 +225,18 @@ export default function JynloFeedHome(){
     const fetches=await Promise.allSettled([
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?storyFeed(auth.token,auth.username):Promise.resolve([]),
-      auth.token?myStories(auth.token,auth.username):Promise.resolve([])
+      auth.token?myStories(auth.token,auth.username):Promise.resolve([]),
+      identityChanged&&auth.token&&auth.username?readHiddenFeedEntries(auth.username):Promise.resolve(hiddenKeysRef.current)
     ]);
     if(id!==reloadNumber.current)return;
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
     if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]));
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled')setOwnStories(value(2,[] as SocialStory[]));
+    if(identityChanged){
+      const stored=value(3,[] as string[]);
+      hiddenKeysRef.current=stored;setHiddenKeys(stored);setHiddenReady(true);
+    }
     if(fetches[0].status==='rejected')
       setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
     else if(fetches[1].status==='rejected'||fetches[2].status==='rejected')
@@ -267,7 +279,64 @@ export default function JynloFeedHome(){
   const visibleStoryViewer=identityMatches?storyViewer:null;
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
   const visibleStoryGroups=identityMatches?storyGroups:[];
-  const visiblePosts=identityMatches?posts:[];
+  const visiblePosts=identityMatches&&hiddenReady?posts.filter(item=>{
+    const key=feedEntryKey(item);return !key||!hiddenKeys.includes(key);
+  }):[];
+  function persistVisibility(keys:string[],identity:string,username:string){
+    hiddenKeysRef.current=keys;setHiddenKeys(keys);
+    void writeHiddenFeedEntries(username,keys).catch(()=>{
+      if(feedIdentity.current===identity)
+        setError('A preferência foi aplicada neste ecrã, mas não foi possível guardá-la no telemóvel.');
+    });
+  }
+  function hideFromFeed(item:FeedItem){
+    if(!auth.token||!auth.username||!identityMatches||!hiddenReady)return;
+    const key=feedEntryKey(item);if(!key)return;
+    const keys=hideEntry(hiddenKeysRef.current,key);
+    setRecentlyHidden(key);
+    persistVisibility(keys,currentFeedIdentity,auth.username);
+  }
+  function undoHide(){
+    if(!recentlyHidden||!auth.token||!auth.username||!identityMatches)return;
+    persistVisibility(showEntry(hiddenKeysRef.current,recentlyHidden),currentFeedIdentity,auth.username);
+    setRecentlyHidden(null);
+  }
+  function openPostMenu(item:FeedItem){
+    if(!auth.token||!auth.username||!identityMatches)return;
+    const own=item.authorUsername.toLowerCase()===auth.username.toLowerCase();
+    const actions:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[
+      {text:'Ocultar do meu feed',onPress:()=>hideFromFeed(item)},
+    ];
+    if(own&&item.type==='SESSION_ATTENDED'&&item.sessionId){
+      actions.push({text:'Ocultar esta atividade para todos',style:'destructive',onPress:()=>{
+        if(busyPost!==null||!auth.token||!item.sessionId)return;
+        const identity=currentFeedIdentity;
+        setBusyPost(-item.sessionId);
+        void hideAttendanceActivity(item.sessionId,auth.token).then(()=>{
+          if(feedIdentity.current===identity){setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===item.sessionId&&x.authorUsername===item.authorUsername)));}
+        }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
+         .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
+      }});
+    }
+    if(own&&item.type==='POST'&&item.postId){
+      actions.push({text:'Eliminar a minha publicação',style:'destructive',onPress:()=>{
+        Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
+          {text:'Cancelar',style:'cancel'},
+          {text:'Eliminar',style:'destructive',onPress:()=>{
+            if(!auth.token||!item.postId||busyPost!==null)return;
+            const identity=currentFeedIdentity;
+            setBusyPost(item.postId);
+            void deletePost(item.postId,auth.token).then(()=>{
+              if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>x.postId!==item.postId));
+            }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
+             .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
+          }}
+        ]);
+      }});
+    }
+    actions.push({text:'Cancelar',style:'cancel'});
+    Alert.alert('Opções de publicação','Escolhe o que pretendes fazer.',actions);
+  }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery'){
     if(!requireLogin())return;
@@ -337,7 +406,8 @@ export default function JynloFeedHome(){
       <View style={styles.postTop}><CircleAvatar name={item.authorDisplayName||item.authorUsername} image={item.authorProfilePicUrl} size={43}/>
         <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
           <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></Pressable>
-        <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable></View>
+        <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable>
+        {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><Text style={{color:MUTED,fontSize:24}}>⋯</Text></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {media?<Image source={{uri:media}} style={styles.postImage} resizeMode="cover"/>:null}
       {video?<MediaVideo uri={video}/>:null}
@@ -362,6 +432,10 @@ export default function JynloFeedHome(){
     </View>
     {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>:null}
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
+    {identityMatches&&recentlyHidden?<View style={styles.hiddenNotice}>
+      <Text style={styles.hiddenNoticeText}>Publicação ocultada só neste dispositivo.</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Desfazer ocultação" onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>Desfazer</Text></Pressable>
+    </View>:null}
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
     {(loading||!identityMatches)&&visiblePosts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
     {!loading&&!error&&identityMatches&&auth.token&&visiblePosts.length===0?<Text style={styles.mutedText}>Ainda não há publicações. Partilha o teu primeiro momento!</Text>:null}
@@ -437,6 +511,8 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+  hiddenNotice:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
+  hiddenNoticeText:{flex:1,color:WHITE,fontSize:12},hiddenUndo:{minHeight:42,justifyContent:'center',paddingHorizontal:8},
   screenPad:{paddingHorizontal:12,gap:9},navHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:11,paddingBottom:3},brand:{flexDirection:'row',alignItems:'center',gap:9},brandLogo:{width:32,height:32,borderRadius:9},brandName:{color:WHITE,fontSize:19,fontWeight:'900',letterSpacing:2.2},headerRight:{flexDirection:'row',alignItems:'center',gap:9},headerCircle:{borderRadius:22,width:37,height:37,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BORDER,backgroundColor:PANEL},headerIcon:{color:WHITE,fontSize:24},pulse:{position:'absolute',width:6,height:6,right:7,top:5,borderRadius:3,backgroundColor:TEAL},headerUser:{flexDirection:'row',alignItems:'center',gap:6,borderRadius:22,paddingRight:10,paddingLeft:3,paddingVertical:3,borderWidth:1,borderColor:'#14616D',backgroundColor:'#072B35',maxWidth:128},headerName:{color:WHITE,fontSize:11,fontWeight:'800',maxWidth:65},
   avatar:{justifyContent:'center',alignItems:'center',backgroundColor:'#10536A',borderWidth:1,borderColor:'#28849B',overflow:'hidden'},avatarLetter:{color:WHITE,fontWeight:'900'},
   demoRibbon:{marginTop:1,borderWidth:1,borderColor:'#165660',backgroundColor:'#082B31',borderRadius:9,paddingVertical:5,paddingHorizontal:9,alignSelf:'flex-start'},demoRibbonText:{fontSize:9,fontWeight:'800',letterSpacing:.9,color:'#72D5CC'},
