@@ -83,13 +83,18 @@ export default function CreateSessionScreen(){
   setForm(prev=>({...prev,venueId:null,latitude:null,longitude:null,locationConfirmed:false}));
  }
  async function useMappedPoint(point:SessionCoordinates,requestId:number){
-  const loc=await describeSessionCoordinates(point);
+  // A reverse-geocoding outage must never silently discard the real GPS pin.
+  let address:{city:string;address:string}|null=null;
+  try{address=await describeSessionCoordinates(point);}catch{}
   if(locationRequest.current!==requestId)return;
   setVenueChosen(null);clearVenueSearch();
   setLocationAccuracy(point.accuracyMeters);
-  setForm(prev=>({...prev,venueId:null,city:loc.city,address:loc.address,
-    latitude:loc.latitude,longitude:loc.longitude,locationConfirmed:false}));
-  setLocationMessage('Morada aproximada. Confirma o ponto no mapa antes de continuar.');
+  setForm(prev=>({...prev,venueId:null,
+    city:address?.city||prev.city,address:address?.address||prev.address,
+    latitude:point.latitude,longitude:point.longitude,locationConfirmed:false}));
+  setLocationMessage(address?
+    'Morada aproximada. Confirma o ponto no mapa antes de continuar.':
+    'O ponto GPS foi obtido, mas não foi possível identificar a morada. Preenche a localidade e a morada manualmente; o ponto mantém-se inalterado.');
  }
  async function useCurrentLocation(){
   if(busy||locationLoading)return;
