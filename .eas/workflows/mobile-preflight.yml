@@ -3,7 +3,7 @@ name: Jynlo Mobile - preflight Android sem GitHub Actions
 # Manual only: no workers consumed on develop pushes.
 # EAS cloud workers run on the linked private GitHub repository.
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   mobile_preflight:
