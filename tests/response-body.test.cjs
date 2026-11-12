@@ -22,3 +22,15 @@ test('respostas JSON continuam a funcionar em chamadas normais',async()=>{
 test('respostas inválidas avisam para não repetir mutações',async()=>{
   await assert.rejects(()=>readSuccessfulResponse({status:200,text:async()=>'<html>proxy error</html>'}),/confirma o resultado antes de tentares novamente/);
 });
+
+test('resposta HTTP bem-sucedida mas inválida mantém erro próprio até à camada de API',async()=>{
+  const {InvalidSuccessfulResponseError}=require('../src/lib/response-body.cjs');
+  const fs=require('node:fs'),path=require('node:path');
+  const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+  await assert.rejects(
+    ()=>readSuccessfulResponse({status:200,text:async()=>'<html>invalid</html>'}),
+    error=>error instanceof InvalidSuccessfulResponseError && /confirma o resultado/.test(error.message)
+  );
+  assert.match(api,/error instanceof ApiError \|\| error instanceof InvalidSuccessfulResponseError/);
+  assert.match(api,/if\(controller\.signal\.aborted\)/);
+});
