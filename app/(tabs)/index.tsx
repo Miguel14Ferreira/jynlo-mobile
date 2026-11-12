@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Animated,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 // Load the native media picker only when the user explicitly opens the gallery.
@@ -38,6 +38,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [currentKey,setCurrentKey]=useState<string|null>(null);
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
+  const [appActive,setAppActive]=useState(AppState.currentState==='active');
   const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false);
   const submittingStory=useRef(false);
   const longPress=useRef(false);
@@ -51,9 +52,13 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
   React.useEffect(()=>{setReplyText('');setReplyFocused(false);},[story?.id]);
+  React.useEffect(()=>{
+    const subscription=AppState.addEventListener('change',state=>setAppActive(state==='active'));
+    return ()=>subscription.remove();
+  },[]);
   const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);setReplyText('');};
   const go=(direction:-1|1)=>{
-    if(!activeGroup||submittingStory.current||replyFocused)return;
+    if(!activeGroup||submittingStory.current||replyFocused||!appActive)return;
     if(direction===-1&&index>0){resetProgress();setIndex(i=>i-1);return;}
     if(direction===1&&index<activeGroup.stories.length-1){resetProgress();setIndex(i=>i+1);return;}
     const groupIndex=groups.findIndex(entry=>entry.key===activeGroup.key);
@@ -64,7 +69,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   // Drive both the visible progress bar and photo advancement from one animation.
   // Pausing resumes from the remaining duration rather than restarting 6 seconds.
   React.useEffect(()=>{
-    if(!story||story.video||paused||replyFocused||storyBusy)return;
+    if(!story||story.video||paused||replyFocused||storyBusy||!appActive)return;
     const animation=Animated.timing(progress,{toValue:1,duration:Math.max(50,6000*remaining.current),useNativeDriver:false});
     animation.start(({finished})=>{
       if(finished){
@@ -75,7 +80,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       }
     });
     return ()=>{animation.stop();};
-  },[story?.id,story?.video,paused,replyFocused,storyBusy,index,currentKey,groups,activeGroup?.key,onClose,progress]);
+  },[story?.id,story?.video,paused,replyFocused,storyBusy,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
   if(!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
@@ -135,11 +140,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         if(start!==null&&event.nativeEvent.pageY-start>110)onClose();
       }}
       onTouchCancel={()=>{touchStartY.current=null;}}>
-      <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{resetProgress();setIndex(i);}} style={styles.progressPart}>
+      <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{if(submittingStory.current||replyFocused||!appActive)return;resetProgress();setIndex(i);}} style={styles.progressPart}>
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={onClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>:null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
@@ -241,6 +246,10 @@ export default function JynloFeedHome(){
         Alert.alert('Story indisponível','Esta Story pode ter expirado ou já não estar acessível.');
     });
   },[storyId,auth.ready,auth.token,router]);
+  const currentFeedIdentity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
+  // A newly signed-in account must never see the previous account's Story modal
+  // during the render before useFocusEffect clears old asynchronous state.
+  const visibleStoryViewer=feedIdentity.current===currentFeedIdentity?storyViewer:null;
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery'){
@@ -346,7 +355,7 @@ export default function JynloFeedHome(){
     <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
-    <StoryViewer group={storyViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
+    <StoryViewer group={visibleStoryViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
     <Modal visible={expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <View style={styles.commentsModal}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
