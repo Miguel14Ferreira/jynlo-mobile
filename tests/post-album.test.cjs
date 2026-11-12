@@ -15,6 +15,7 @@ test('reject duplicate, excessive, unsupported and oversized media',()=>{
  assert.match(albumError([photo('huge',6*1024*1024)]),/5 MB/);
  assert.match(albumError([video('huge',21*1024*1024)]),/20 MB/);
  assert.match(albumError([photo('a',0)]),/tamanho/);
+ assert.equal(albumError([photo('a',0)],true),null);
  assert.match(albumError([photo('x',1000),{...photo('y'),mimeType:'image/heic'}]),/Formato/);
  assert.equal(mergeAlbum([photo('a')],[photo('a'),photo('b')]).length,2);
 });
