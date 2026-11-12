@@ -164,13 +164,14 @@ export async function createTextPost(content:string,token:string|null,username:s
 async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string):Promise<any>{
  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
  const {albumError}=require('./post-album.cjs') as typeof import('./post-album.cjs');
- const validation=albumError(files);
+ const validation=albumError(files,true);
  if(validation)throw new Error(validation);
  const temporary:import('expo-file-system').File[]=[];
  try{
    const {File,Paths}=await import('expo-file-system');
    const form=new FormData();
    for(const [key,val] of Object.entries(fields))form.append(key,val);
+   let totalBytes=0;
    for(const file of files){
      let uri=file.uri;
      let size=file.fileSize;
@@ -183,6 +184,8 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      }else if(source.exists)size=source.size;
      const fault=validateMedia(file.mimeType,size,path.includes('/stories'));
      if(fault)throw Error(fault);
+     totalBytes+=size;
+     if(totalBytes>60*1024*1024)throw Error('O álbum não pode exceder 60 MB no total.');
      // Back-end accepts the legacy image/video part for one asset, or repeated
      // "files" parts for albums. Do not mix these two request formats.
      form.append(files.length>1?'files':file.type==='video'?'video':'image',{
