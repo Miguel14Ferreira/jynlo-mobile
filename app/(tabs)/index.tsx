@@ -41,6 +41,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [appActive,setAppActive]=useState(AppState.currentState==='active');
   const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false);
   const submittingStory=useRef(false);
+  const activeAccount=useRef(token);
+  activeAccount.current=token;
   const longPress=useRef(false);
   const touchStartY=useRef<number|null>(null);
   const progress=useRef(new Animated.Value(0)).current;
@@ -94,8 +96,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   async function toggleLike(){
     if(!story||!token||!username||submittingStory.current)return;
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
-    try{const updated=await toggleStoryLike(story.id,Boolean(story.likedByMe),token,username);onUpdated(updated);}
-    catch(e){Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
+    try{const updated=await toggleStoryLike(story.id,Boolean(story.likedByMe),token,username);if(activeAccount.current===token)onUpdated(updated);}
+    catch(e){if(activeAccount.current===token)Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
     finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
   }
   async function sendReply(){
@@ -104,9 +106,10 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
     try{
       await replyToStory(story.id,message,token,username);
+      if(activeAccount.current!==token)return;
       setReplyText(current=>current.trim()===message?'':current);
       Alert.alert('Resposta enviada','A tua resposta ficou guardada em privado. O autor recebe um aviso se tiver as notificações ativadas.');
-    }catch(e){Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
+    }catch(e){if(activeAccount.current===token)Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
     finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
   }
   function confirmDeleteStory(){
@@ -118,8 +121,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       {text:'Eliminar',style:'destructive',onPress:()=>{
         if(submittingStory.current)return;
         submittingStory.current=true;setStoryBusy(true);
-        void deleteStory(storyId,actorToken).then(()=>{onClose();onDeleted();})
-          .catch(e=>Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a eliminação.'))
+        void deleteStory(storyId,actorToken).then(()=>{if(activeAccount.current===actorToken){onClose();onDeleted();}})
+          .catch(e=>{if(activeAccount.current===actorToken)Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a eliminação.');})
           .finally(()=>{submittingStory.current=false;setStoryBusy(false);setPaused(false);});
       }}
     ]);
@@ -173,7 +176,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           <Text style={styles.storyReplySendText}>{storyBusy?'…':'Enviar'}</Text>
         </Pressable>
       </View>:null}
-      {!ownStory?<Text style={styles.storyReplyHint}>A resposta vai apenas para o autor, através de uma notificação.</Text>:null}
+      {!ownStory?<Text style={styles.storyReplyHint}>Resposta privada, guardada para o autor. A notificação é opcional.</Text>:null}
       {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha Story" disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>Eliminar Story</Text></Pressable>:null}
     </SafeAreaView>
   </Modal>;
