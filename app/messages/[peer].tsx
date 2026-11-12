@@ -1,5 +1,6 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
+import {chatAttachmentList} from '../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -398,7 +399,7 @@ export default function DirectConversation(){
       accessibilityLabel="GIF enviado na conversa"/>:
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
     <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
-   {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize} autoPreview={recentPhotoIds.has(m.id)}/>:null}
+   {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.index===0}/>):null}
    {!m.deletedAt&&m.text&&/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/.test(m.text)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps" onPress={()=>{
     const url=m.text?.match(/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/)?.[0];
     if(url)void Linking.openURL(url).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'));
