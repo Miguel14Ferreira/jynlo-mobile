@@ -14,6 +14,8 @@ import {ApiError,DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply} from '../../src/lib/chat-api';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
+import {sendChatPhotoAlbum} from '../../src/lib/chat-photo-album';
+import {validateChatAlbum} from '../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
@@ -42,6 +44,7 @@ export default function DirectConversation(){
  const [syncWarning,setSyncWarning]=useState('');
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
+ const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const [photoAvailabilityError,setPhotoAvailabilityError]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
@@ -83,7 +86,7 @@ export default function DirectConversation(){
     if(accessRevoked){
      // A confirmed server-side access change must hide cached private content.
      // Ordinary network failures are not evidence of permission revocation.
-     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setPhotoAvailable(false);
+     setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setPhotoAvailable(false);
      setAttachmentsOpen(false);setSyncWarning('');
      setBlocked(true);setBlockStatusKnown(false);
      historyError.current=null;
@@ -112,7 +115,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
-   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setError('');setSyncWarning('');historyError.current=null;
+   setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setExtraPhotos([]);setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
    const pending=pendingWrites.current.get(identity);
@@ -127,7 +130,7 @@ export default function DirectConversation(){
   setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
-  setPhoto(null);setPhotoAvailable(false);setPhotoAvailabilityError('');
+  setPhoto(null);setExtraPhotos([]);setPhotoAvailable(false);setPhotoAvailabilityError('');
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
    if(active&&generation.current===version){setPhotoAvailable(available);setPhotoAvailabilityError(available?'':'O envio de fotografias não está disponível neste momento.');}
   }).catch(()=>{if(active&&generation.current===version){setPhotoAvailable(false);setPhotoAvailabilityError('Não foi possível verificar os anexos de fotografias.');}});
@@ -309,10 +312,15 @@ export default function DirectConversation(){
   setError('');
   try{
    const selected=await ImagePicker.launchImageLibraryAsync({
-    mediaTypes:['images'],quality:0.8,exif:false,base64:false
+    mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4
    });
    if(version!==generation.current||conversation.current!==identity)return;
-   if(!selected.canceled&&selected.assets?.[0]){validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);}
+   if(!selected.canceled&&selected.assets?.[0]){
+    selected.assets.forEach(validateChatPhoto);
+    const issue=validateChatAlbum(selected.assets,{allowUnknownSize:true});
+    if(issue)throw Error(issue);
+    validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
+   }
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
@@ -325,9 +333,10 @@ export default function DirectConversation(){
   pendingWrites.current.set(identity,'photo');
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
-   await sendDirectPhoto(peer,auth.token,photo);
+   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos]);
+    else await sendDirectPhoto(peer,auth.token,photo);
    if(version!==generation.current||conversation.current!==identity)return;
-   setPhoto(null);await refresh(false,version);
+   setPhoto(null);setExtraPhotos([]);await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
@@ -412,10 +421,18 @@ export default function DirectConversation(){
   </ScrollView>
   <View style={styles.footer}>
   {photo?<View style={styles.photoContainer}>
-   <Image source={{uri:photo.uri}} style={styles.photoPreview} resizeMode="contain"/>
-   <Text style={styles.note}>A fotografia só é enviada depois de confirmares (máximo 5 MB).</Text>
+   <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={photoBusy} onPress={()=>{
+      const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
+      setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
+     }} style={{width:85,gap:3}}>
+      <Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>
+      <Text style={styles.note}>✕ Remover</Text>
+     </Pressable>)}
+    </View>
+   <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por fotografia. Confirma antes de enviar.</Text>
    <Button title={photoBusy?'A enviar fotografia…':'Confirmar envio da fotografia'} disabled={photoBusy||sending} onPress={()=>{void uploadPhoto();}}/>
-   <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
+   <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
   </View>:null}
 
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
