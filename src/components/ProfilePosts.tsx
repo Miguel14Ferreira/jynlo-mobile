@@ -11,37 +11,41 @@ export default function ProfilePosts({username,token}:{username:string;token:str
  const router=useRouter();
  const [items,setItems]=useState<FeedItem[]>([]);
  const [loading,setLoading]=useState(false),[error,setError]=useState(''),[hasMore,setHasMore]=useState(false);
- const generation=useRef(0),nextPage=useRef(0),busy=useRef(false);
+ const generation=useRef(0),nextPage=useRef(0),busy=useRef(false),loadedIdentity=useRef('');
+ const identity=username+'|'+(token||'');
+ const sameProfile=loadedIdentity.current===identity;
+ const visibleItems=sameProfile?items:[];
  const load=useCallback(async(version:number)=>{
-  if(busy.current||!token||!username)return;
+  if(busy.current||!token||!username||loadedIdentity.current!==identity)return;
   const page=nextPage.current;
   busy.current=true;setLoading(true);setError('');
   try{
    const records=await profilePosts(username,token,page);
-   if(version!==generation.current)return;
+   if(version!==generation.current||loadedIdentity.current!==identity)return;
    setItems(current=>page===0?records:[...current,...records.filter(item=>!current.some(existing=>existing.postId===item.postId))]);
    nextPage.current=page+1;
    setHasMore(records.length===20);
   }catch(e){
-   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as publicações.');
+   if(version===generation.current&&loadedIdentity.current===identity)
+    setError(e instanceof Error?e.message:'Não foi possível carregar as publicações.');
   }finally{
    // Old responses may settle after navigation. Never unlock another request generation.
    if(version===generation.current){busy.current=false;setLoading(false);}
   }
- },[username,token]);
+ },[username,token,identity]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  busy.current=false;nextPage.current=0;
+  busy.current=false;nextPage.current=0;loadedIdentity.current=identity;
   setItems([]);setError('');setHasMore(false);setLoading(false);
   void load(version);
   return()=>{generation.current++;};
- },[load]));
+ },[load,identity]));
  if(!token)return null;
  return <View style={styles.section}>
   <Text style={styles.title}>Publicações</Text>
   <Text style={styles.description}>Momentos partilhados no perfil, disponíveis até serem apagados pelo autor.</Text>
   <View style={styles.grid}>
-   {items.map(item=><Pressable key={item.postId} accessibilityRole="button"
+   {visibleItems.map(item=><Pressable key={item.postId} accessibilityRole="button"
     accessibilityLabel={'Ver publicação de '+item.authorUsername}
     onPress={()=>item.postId&&router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}
     style={styles.post}>
@@ -51,10 +55,10 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     <View style={styles.meta}><Text style={styles.metaText}>♡ {item.likeCount}  ·  ◯ {item.commentCount}</Text></View>
    </Pressable>)}
   </View>
-  {!loading&&!error&&items.length===0?<Text style={styles.empty}>Ainda não existem publicações neste perfil.</Text>:null}
-  {!!error?<Message tone="error">{error}</Message>:null}
-  {loading?<Loader/>:null}
-  {!loading&&(hasMore||!!error)?<Button secondary title={error?'Tentar novamente':'Ver mais publicações'} onPress={()=>void load(generation.current)}/>:null}
+  {sameProfile&&!loading&&!error&&visibleItems.length===0?<Text style={styles.empty}>Ainda não existem publicações neste perfil.</Text>:null}
+  {sameProfile&&!!error?<Message tone="error">{error}</Message>:null}
+  {sameProfile&&loading?<Loader/>:null}
+  {sameProfile&&!loading&&(hasMore||!!error)?<Button secondary title={error?'Tentar novamente':'Ver mais publicações'} onPress={()=>void load(generation.current)}/>:null}
  </View>;
 }
 const T=MobileTheme.colors;
