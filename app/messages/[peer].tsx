@@ -329,14 +329,14 @@ export default function DirectConversation(){
  async function uploadPhoto(){
   const identity=peer+'|'+auth.token;
   if(!auth.token||blocked||!blockStatusKnown||!photo||!photoAvailable||photoBusy||sending||sendingNow.current||pendingWrites.current.has(identity))return;
-  const version=generation.current;
+  const version=generation.current,originalReplyId=replyTarget?.id;
   pendingWrites.current.set(identity,'photo');
   setPhotoBusy(true);sendingNow.current=true;setError('');
   try{
-   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos]);
-    else await sendDirectPhoto(peer,auth.token,photo);
+   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId);
+    else await sendDirectPhoto(peer,auth.token,photo,originalReplyId);
    if(version!==generation.current||conversation.current!==identity)return;
-   setPhoto(null);setExtraPhotos([]);await refresh(false,version);
+   setPhoto(null);setExtraPhotos([]);setReplyTarget(current=>current?.id===originalReplyId?null:current);await refresh(false,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
