@@ -34,3 +34,13 @@ test('media sends are single-flight, success closes composer even when subsequen
  assert.match(home,/feedIdentity\.current===\`\$\{username\}:\$\{actor\}\`/);
  assert.doesNotMatch(home,/await publishPost\([^;]+;setComposerText\(''\);setComposerMedia/);
 });
+
+
+test('multipart success is accepted only with an authoritative ID from the matching backend contract',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(api,/path\.includes\('\/stories'\)\?confirmed\?\.id:confirmed\?\.postId/);
+ assert.match(api,/Number\.isSafeInteger\(identifier\)/);
+ assert.match(api,/identifier<=0/);
+ assert.match(api,/O servidor respondeu, mas não confirmou o identificador/);
+ assert.match(api,/const uploadName='jynlo-media\.'\+extension/);
+});
