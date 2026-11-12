@@ -11,6 +11,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE} from '../../src/lib/api';
 import {directChatHistory,markDirectRead,sendDirectChat,sendDirectChatReply} from '../../src/lib/chat-api';
+import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
 import {directPhotoAvailable,sendDirectPhoto} from '../../src/lib/direct-photo-attachment';
 import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
@@ -27,6 +28,11 @@ export default function DirectConversation(){
  const nearBottom=useRef(true);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [safetyOpen,setSafetyOpen]=useState(false);
+ const [muteKnown,setMuteKnown]=useState(false);
+ const [muted,setMuted]=useState(false);
+ const [muteBusy,setMuteBusy]=useState(false);
+ const [muteError,setMuteError]=useState('');
+ const pendingMuteWrites=useRef(new Set<string>());
  const [draft,setDraft]=useState('');
  const [replyTarget,setReplyTarget]=useState<{id:number;sender:string;text:string}|null>(null);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
@@ -105,6 +111,7 @@ export default function DirectConversation(){
    conversation.current=identity;
    setMessages([]);setDraft('');setReplyTarget(null);setPhoto(null);setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
+   setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
    const pending=pendingWrites.current.get(identity);
    setSending(pending==='text');setPhotoBusy(pending==='photo');sendingNow.current=Boolean(pending);
   }
@@ -122,6 +129,19 @@ export default function DirectConversation(){
    if(active&&generation.current===version)setPhotoAvailable(available);
   }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
   void refresh(false,version);
+  if(auth.token&&!DEMO_MODE&&/^[a-zA-Z0-9._-]{1,128}$/.test(peer)&&
+     peer.toLowerCase()!==auth.username?.toLowerCase()){
+   const muteIdentity=identity;
+   void listConversationMutes(auth.token).then(mutes=>{
+     if(active&&generation.current===version&&conversation.current===muteIdentity&&
+        !pendingMuteWrites.current.has(muteIdentity)){
+       setMuted(isConversationMuted(mutes,'direct',peer));setMuteKnown(true);setMuteError('');
+     }
+   }).catch(()=>{
+     if(active&&generation.current===version&&conversation.current===muteIdentity)
+       setMuteError('Não foi possível consultar os avisos desta conversa.');
+   });
+  }
   setShowReport(false);setReportReason('');setBlocked(false);setBlockStatusKnown(false);
   if(auth.token&&peer&&peer.toLowerCase()!==auth.username?.toLowerCase()&&!DEMO_MODE){
    void userBlockStatus(peer,auth.token).then(value=>{
@@ -155,6 +175,32 @@ export default function DirectConversation(){
    pendingRefresh.current=false;generation.current++;blockCheckRequest.current++;
   };
  },[refresh,peer,auth.token]));
+ function toggleMute(){
+  const token=auth.token,identity=peer+'|'+token;
+  if(!token||!muteKnown||muteBusy||pendingMuteWrites.current.has(identity))return;
+  const version=generation.current,next=!muted;
+  const title=next?'Silenciar avisos?':'Ativar avisos?';
+  Alert.alert(title,
+    'As mensagens e os indicadores de não lidas continuam a funcionar normalmente.',[
+    {text:'Cancelar',style:'cancel'},
+    {text:next?'Silenciar':'Ativar',onPress:()=>{
+      if(conversation.current!==identity||pendingMuteWrites.current.has(identity))return;
+      pendingMuteWrites.current.add(identity);setMuteBusy(true);setMuteError('');
+      void setConversationMuted('direct',peer,next,token).then(async()=>{
+        const confirmed=await listConversationMutes(token);
+        if(generation.current===version&&conversation.current===identity){
+          setMuted(isConversationMuted(confirmed,'direct',peer));setMuteKnown(true);
+        }
+      }).catch(()=>{
+        if(generation.current===version&&conversation.current===identity)
+          setMuteError('Não foi possível confirmar esta alteração. Tenta novamente.');
+      }).finally(()=>{
+        pendingMuteWrites.current.delete(identity);
+        if(generation.current===version&&conversation.current===identity)setMuteBusy(false);
+      });
+    }}
+   ]);
+ }
  async function updateBlock(){
   if(!auth.token||safetyInFlight.current||!peer||!blockStatusKnown)return;
   safetyInFlight.current=true;
@@ -281,6 +327,17 @@ export default function DirectConversation(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
+  {muteError?<Message tone="error">{muteError}</Message>:null}
+  {muteKnown&&auth.token&&!DEMO_MODE?<View style={styles.muteRow}>
+    <View style={{flex:1,gap:3}}>
+      <Text style={styles.muteTitle}>{muted?'Avisos silenciados':'Avisos ativos'}</Text>
+      <Text style={styles.note}>Esta preferência é sincronizada com a tua conta na Web e na Mobile.</Text>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos desta conversa':'Silenciar avisos desta conversa'}
+     disabled={muteBusy} onPress={toggleMute} style={styles.muteButton}>
+      <Text style={styles.muteButtonText}>{muteBusy?'A guardar…':muted?'Ativar':'Silenciar'}</Text>
+    </Pressable>
+   </View>:null}
   {auth.token&&!DEMO_MODE&&peer.toLowerCase()!==auth.username?.toLowerCase()?<View style={styles.safety}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded:safetyOpen}} onPress={()=>setSafetyOpen(open=>!open)}>
     <Text style={styles.safetyToggle}>{safetyOpen?'Ocultar opções de segurança':'Segurança da conversa ▾'}</Text>
@@ -374,6 +431,10 @@ export default function DirectConversation(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ muteRow:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
+ muteTitle:{color:C.white,fontSize:13,fontWeight:'800'},
+ muteButton:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,borderRadius:12,borderWidth:1,borderColor:C.mint,alignItems:'center',justifyContent:'center'},
+ muteButtonText:{color:C.mint,fontSize:12,fontWeight:'800'},
  screen:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},
  historyScroll:{flex:1},history:{paddingHorizontal:16,paddingTop:12,paddingBottom:22,gap:12,flexGrow:1},
  footer:{flexShrink:0,paddingHorizontal:12,paddingTop:10,paddingBottom:12,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:8},
