@@ -53,9 +53,16 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const story=activeGroup?.stories[index];
   React.useEffect(()=>{setReplyText('');setReplyFocused(false);},[story?.id]);
   React.useEffect(()=>{
-    const subscription=AppState.addEventListener('change',state=>setAppActive(state==='active'));
+    const subscription=AppState.addEventListener('change',state=>{
+      if(state!=='active')progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
+      setAppActive(state==='active');
+    });
     return ()=>subscription.remove();
-  },[]);
+  },[progress]);
+  const pauseProgress=()=>{
+    progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
+    setPaused(true);
+  };
   const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);setReplyText('');};
   const go=(direction:-1|1)=>{
     if(!activeGroup||submittingStory.current||replyFocused||!appActive)return;
@@ -81,12 +88,12 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     });
     return ()=>{animation.stop();};
   },[story?.id,story?.video,paused,replyFocused,storyBusy,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
-  if(!activeGroup||!story)return null;
+  if(!group||!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
   async function toggleLike(){
     if(!story||!token||!username||submittingStory.current)return;
-    submittingStory.current=true;setStoryBusy(true);setPaused(true);
+    submittingStory.current=true;setStoryBusy(true);pauseProgress();
     try{const updated=await toggleStoryLike(story.id,Boolean(story.likedByMe),token,username);onUpdated(updated);}
     catch(e){Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
     finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
@@ -94,7 +101,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   async function sendReply(){
     const message=replyText.trim();
     if(!story||!token||!username||ownStory||!message||submittingStory.current)return;
-    submittingStory.current=true;setStoryBusy(true);setPaused(true);
+    submittingStory.current=true;setStoryBusy(true);pauseProgress();
     try{
       await replyToStory(story.id,message,token,username);
       setReplyText(current=>current.trim()===message?'':current);
@@ -105,7 +112,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   function confirmDeleteStory(){
     if(!story||!story.canDelete||!token||submittingStory.current)return;
     const storyId=story.id,actorToken=token;
-    setPaused(true);
+    pauseProgress();
     Alert.alert('Eliminar Story?', 'Esta Story será removida antes das 24 horas. A ação é definitiva.', [
       {text:'Cancelar',style:'cancel',onPress:()=>setPaused(false)},
       {text:'Eliminar',style:'destructive',onPress:()=>{
@@ -119,7 +126,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   }
   async function shareStory(){
     if(!story||submittingStory.current)return;
-    setPaused(true);
+    pauseProgress();
     try{await Share.share({message:[`Story de ${story.displayName} na Jynlo`,story.caption?.trim(),uri?.startsWith('https://')?uri:null].filter(Boolean).join('\n')});}
     catch(e){Alert.alert('Partilhar Story',e instanceof Error?e.message:'Não foi possível partilhar.');}
     finally{setPaused(false);}
@@ -159,7 +166,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={styles.storyEngagementAction}><Text style={styles.storyEngagementText}>↗ Partilhar</Text></Pressable>
       </View>
       {!ownStory?<View style={styles.storyReplyRow}>
-        <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>setReplyFocused(true)} onBlur={()=>setReplyFocused(false)}
+        <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>{progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});setReplyFocused(true);}} onBlur={()=>setReplyFocused(false)}
           placeholder="Responder em privado à Story…" placeholderTextColor={MUTED} maxLength={500}
           accessibilityLabel="Resposta privada ao autor da Story" style={styles.storyReplyInput}/>
         <Pressable accessibilityRole="button" accessibilityLabel="Enviar resposta privada à Story" disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
@@ -249,8 +256,10 @@ export default function JynloFeedHome(){
   const currentFeedIdentity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
   // A newly signed-in account must never see the previous account's Story modal
   // during the render before useFocusEffect clears old asynchronous state.
-  const visibleStoryViewer=feedIdentity.current===currentFeedIdentity?storyViewer:null;
+  const identityMatches=feedIdentity.current===currentFeedIdentity;
+  const visibleStoryViewer=identityMatches?storyViewer:null;
   const storyGroups=useMemo(()=>groupStories(ownStories,stories) as StoriesGroup[],[ownStories,stories]);
+  const visibleStoryGroups=identityMatches?storyGroups:[];
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery'){
     if(!requireLogin())return;
@@ -355,7 +364,7 @@ export default function JynloFeedHome(){
     <FlatList data={posts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&posts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
-    <StoryViewer group={visibleStoryViewer} groups={storyGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
+    <StoryViewer group={visibleStoryViewer} groups={visibleStoryGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
     <Modal visible={expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <View style={styles.commentsModal}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
