@@ -104,11 +104,13 @@ export default function SessionChat(){
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
   }
  }
- async function choosePhoto(){
+ async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!photoReady||closed||sending||uploading)return;
   const version=generation.current;
   try{
-   const chosen=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+   const chosen=source==='camera'?
+    await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version===generation.current&&!chosen.canceled&&chosen.assets?.[0]){
     chosen.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
     const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
@@ -160,6 +162,7 @@ export default function SessionChat(){
    await refresh();
   }}/>
   {auth.token&&!closed&&photoReady?<Button title="Escolher fotografias ou vídeos" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
+  {auth.token&&!closed&&photoReady?<Button title="Abrir câmara" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto('camera');}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
