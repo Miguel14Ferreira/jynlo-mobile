@@ -48,7 +48,11 @@ export async function prepareChatMedia(asset:ImagePickerAsset,extension:string):
    uri=temporary.uri;
   }
   const actual=temporary?(temporary.exists?temporary.size:-1):(original.exists?original.size:-1);
-  const size=measuredPhotoSize(actual,asset.fileSize);
+  // Videos are up to 20 MB; refuse to trust a stale picker-reported size
+  // when the native file cannot be measured. Never upload an unchecked video.
+  if(asset.type==='video'&&(!Number.isSafeInteger(actual)||actual<=0))
+   throw Error('Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.');
+  const size=asset.type==='video'?actual:measuredPhotoSize(actual,asset.fileSize);
   if(!Number.isSafeInteger(size)||size<=0||size>max)
    throw Error(asset.type==='video'?'O vídeo deve ter até 20 MB.':'A fotografia deve ter até 5 MB.');
   return {uri,size,cleanup:()=>{try{if(temporary?.exists)temporary.delete();}catch{}}};
