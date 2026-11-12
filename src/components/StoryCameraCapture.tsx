@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {CameraView,useCameraPermissions,useMicrophonePermissions} from 'expo-camera';
 import {File} from 'expo-file-system';
 import type {MobileMedia} from '../lib/types';
@@ -11,6 +11,7 @@ type Props={
 };
 export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const camera=useRef<CameraView|null>(null);
+ const {height:viewportHeight}=useWindowDimensions();
  const gestureStart=useRef<{x:number;y:number}|null>(null);
  const [permission,requestPermission]=useCameraPermissions();
  const [micPermission,requestMicPermission]=useMicrophonePermissions();
@@ -84,7 +85,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   <Pressable accessibilityRole="button" style={styles.primary} onPress={()=>void requestPermission()}><Text style={styles.primaryText}>Permitir câmara</Text></Pressable>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={onPickGallery}><Text style={styles.secondaryText}>Abrir galeria</Text></Pressable>
  </View>;
- return <View style={styles.cameraContainer}>
+ return <View style={[styles.cameraContainer,{height:Math.min(620,Math.max(370,viewportHeight-260))}]}>
   <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode={mode} videoQuality="720p"/>
   <View style={styles.cameraGestureArea}
     accessible accessibilityLabel="Pré-visualização da câmara. Desliza para cima para abrir a galeria."
@@ -99,8 +100,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
     <Pressable accessibilityRole="button" accessibilityLabel="Modo vídeo" disabled={busy} onPress={()=>setMode('video')} style={[styles.modeButton,mode==='video'&&styles.modeActive]}><Text style={styles.modeText}>Vídeo</Text></Pressable>
   </View>
   <View style={styles.controls}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos"
-      disabled={busy||recording} onPress={onPickGallery} style={styles.galleryButton}><Text style={styles.galleryIcon}>▦</Text><Text style={styles.controlText}>Galeria</Text></Pressable>
+    <View style={styles.galleryButton} accessible={false}><Text style={styles.controlText}>↑ Galeria</Text></View>
     <Pressable accessibilityRole="button"
       accessibilityLabel={mode==='video'?(recording?'Terminar gravação':'Começar gravação'):'Tirar fotografia'}
       disabled={busy&&!recording} onPress={()=>void (mode==='video'?toggleRecording():capture())}
