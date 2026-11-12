@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
-const {MAX_FILES,validateChatAlbum,chatAttachmentList}=require('../src/lib/chat-attachments-core.cjs');
+const {MAX_FILES,validateChatAlbum,measuredPhotoSize,chatAttachmentList}=require('../src/lib/chat-attachments-core.cjs');
 const photo=(uri,size=1200,mimeType='image/jpeg')=>({type:'image',uri,fileSize:size,mimeType});
 test('private album respects backend maximum and rejects unsafe media',()=>{
  assert.equal(MAX_FILES,4);
@@ -55,4 +55,15 @@ test('private previews allow indexed download and limit videos and audio indepen
  assert.match(player,/12\*1024\*1024/);
  assert.match(player,/ChatVideo uri=\{uri\}/);
  assert.match(player,/Authorization:'Bearer '\+token/);
+});
+
+test('actual on-disk photo size takes priority over stale Android picker metadata',()=>{
+ assert.equal(measuredPhotoSize(6*1024*1024,1000),6*1024*1024);
+ assert.equal(measuredPhotoSize(0,1000),0);
+ assert.equal(measuredPhotoSize(-1,1000),1000);
+ assert.equal(measuredPhotoSize(-1,undefined),0);
+ const source=read('src/lib/chat-photo-source.ts');
+ assert.match(source,/measuredPhotoSize\(actualSize,asset\.fileSize\)/);
+ assert.match(source,/size>5\*1024\*1024/);
+ assert.match(source,/source\.exists\?source\.size:-1/);
 });
