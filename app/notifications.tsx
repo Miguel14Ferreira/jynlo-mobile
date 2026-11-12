@@ -42,13 +42,15 @@ export default function NotificationsScreen(){
    setHistoryReady(false);setLoading(false);setItems([]);setInvites([]);return;
   }
   inFlight.current=version;
+  const initialNotificationRevision=notificationRevision.current;
   if(!silent){setLoading(true);setError('');}
   try{
    const [notifs,invitations]=await Promise.allSettled([
     myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
    ]);
    if(version!==generation.current||account.current!==auth.username+'|'+auth.token)return;
-   if(notifs.status==='fulfilled'){
+   // An older GET must never undo a newly confirmed delete or read mutation.
+   if(notifs.status==='fulfilled'&&notificationRevision.current===initialNotificationRevision&&!notificationLock.current){
     setItems(notifs.value.sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)));
     setHistoryReady(true);
    }
