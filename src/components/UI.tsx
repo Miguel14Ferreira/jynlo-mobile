@@ -84,7 +84,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   </Pressable>;
 }
 const styles=StyleSheet.create({
-  page:{flex:1,backgroundColor:C.background},content:{paddingHorizontal:22,paddingTop:20,paddingBottom:40,gap:18},
+  page:{flex:1,backgroundColor:C.background},content:{paddingHorizontal:22,paddingTop:20,paddingBottom:88,gap:18},
   brandRow:{flexDirection:'row',alignItems:'center',gap:12,marginBottom:8},logo:{width:45,height:45,borderRadius:13},
   brandTitle:{fontSize:26,fontWeight:'900',letterSpacing:3,color:C.white},brandSubtitle:{color:C.muted,fontSize:11,letterSpacing:1.3},
   demoBanner:{padding:13,borderRadius:14,backgroundColor:'#15362F',borderWidth:1,borderColor:'#306B59',gap:4},
