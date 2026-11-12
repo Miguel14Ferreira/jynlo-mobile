@@ -4,6 +4,7 @@ export interface SessionChatEntry {
  id:number;sessionId:number;senderUsername:string;body:string;createdAt:string;
  replyToMessageId:number|null;replyToSender:string|null;replyToText:string|null;
  attachmentName:string|null;attachmentMimeType:string|null;attachmentSize:number|null;
+ attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
  editedAt:string|null;deletedAt:string|null;senderGuest:boolean;
 }
 function validSessionId(id:number):number{
