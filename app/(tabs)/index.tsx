@@ -247,7 +247,7 @@ export default function JynloFeedHome(){
     router.setParams({storyId:undefined});
     if(!/^[1-9][0-9]{0,15}$/.test(storyId))return;
     const originalToken=auth.token;
-    void storyById(Number(storyId),originalToken).then(story=>{
+    void storyById(Number(storyId),originalToken,auth.username).then(story=>{
       if(activeStoryAccount.current!==originalToken)return;
       setStoryViewer({key:'notification-story-'+story.id,name:story.displayName,
         avatar:story.avatarUrl,stories:[story]});
