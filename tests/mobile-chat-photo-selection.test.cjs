@@ -10,7 +10,7 @@ test('photo preflight rejects oversized and unsupported formats, deferring missi
  assert.match(source,/MAX_CHAT_PHOTO_BYTES=5\*1024\*1024/);
  assert.match(source,/Number\.isSafeInteger\(asset\.fileSize\)/);
  assert.match(source,/asset\.fileSize!=null/);
- assert.match(read('src/lib/chat-photo-source.ts'),/size>5\*1024\*1024/);
+ assert.match(read('src/lib/chat-photo-source.ts'),/verifiedLocalChatMediaSize\(actualSize,'image'\)/);
  assert.match(source,/SUPPORTED_CHAT_PHOTO_MIMES\.has\(asset\.mimeType\|\|''\)/);
  assert.match(source,/JPG, PNG, WebP ou GIF/);
 });
