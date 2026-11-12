@@ -17,6 +17,7 @@ test('Story camera records with Expo CameraView limits and stops on teardown',()
  assert.match(camera,/onPickGallery/);
  assert.match(camera,/onCameraReady/);
  assert.match(camera,/cameraReady/);
+ assert.match(camera,/alive\.current=true;return/);
  assert.match(camera,/O iPhone gravou em MOV/);
 });
 test('Story uploads retain the legacy one-file contract while posts use albums',()=>{
