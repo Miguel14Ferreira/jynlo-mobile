@@ -15,8 +15,9 @@ function conversationKey(kind:MutableConversationKind,id:string):string{
  return String(Number(id));
 }
 export function isConversationMuted(mutes:ReadonlyArray<MutedConversation>,kind:MutableConversationKind,id:string):boolean{
- const key=conversationKey(kind,id);
- return mutes.some(item=>item.kind===kind&&item.id.toLowerCase()===key);
+ let key:string;
+ try{key=conversationKey(kind,id);}catch{return false;}
+ return mutes.some(item=>item.kind===kind&&typeof item.id==='string'&&item.id.toLowerCase()===key);
 }
 /** Server-owned account setting shared across Web and Android. */
 export async function listConversationMutes(token:string):Promise<MutedConversation[]>{
