@@ -1,5 +1,4 @@
 import type {ImagePickerAsset} from 'expo-image-picker';
-import {measuredPhotoSize} from './chat-attachments-core.cjs';
 
 /** Android document picker results may be content:// URIs, not attachable by native fetch. */
 export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):Promise<{
@@ -17,9 +16,12 @@ export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):
    uri=temporary.uri;
   }
   const actualSize=temporary?(temporary.exists?temporary.size:-1):(source.exists?source.size:-1);
-  const size=measuredPhotoSize(actualSize,asset.fileSize);
-  if(!Number.isFinite(size)||size<=0||size>5*1024*1024)
-   throw Error('A fotografia tem de ter até 5 MB e um tamanho válido.');
+  // Picker metadata may be stale or forged; never upload an unmeasured private file.
+  if(!Number.isSafeInteger(actualSize)||actualSize<=0)
+   throw Error('Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.');
+  const size=actualSize;
+  if(size>5*1024*1024)
+   throw Error('A fotografia tem de ter até 5 MB.');
   return {uri,size,cleanup:()=>{if(temporary){try{if(temporary.exists)temporary.delete();}catch{}}}};
  }catch(e){
   if(temporary){try{if(temporary.exists)temporary.delete();}catch{}}
@@ -48,12 +50,14 @@ export async function prepareChatMedia(asset:ImagePickerAsset,extension:string):
    uri=temporary.uri;
   }
   const actual=temporary?(temporary.exists?temporary.size:-1):(original.exists?original.size:-1);
-  // Videos are up to 20 MB; refuse to trust a stale picker-reported size
-  // when the native file cannot be measured. Never upload an unchecked video.
-  if(asset.type==='video'&&(!Number.isSafeInteger(actual)||actual<=0))
-   throw Error('Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.');
-  const size=asset.type==='video'?actual:measuredPhotoSize(actual,asset.fileSize);
-  if(!Number.isSafeInteger(size)||size<=0||size>max)
+  // Every private upload requires a verified size from the actual native file.
+  // Gallery metadata is advisory only, including for photos and copied content:// URIs.
+  if(!Number.isSafeInteger(actual)||actual<=0)
+   throw Error(asset.type==='video'?
+    'Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.':
+    'Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.');
+  const size=actual;
+  if(size>max)
    throw Error(asset.type==='video'?'O vídeo deve ter até 20 MB.':'A fotografia deve ter até 5 MB.');
   return {uri,size,cleanup:()=>{try{if(temporary?.exists)temporary.delete();}catch{}}};
  }catch(error){try{if(temporary?.exists)temporary.delete();}catch{}throw error;}
