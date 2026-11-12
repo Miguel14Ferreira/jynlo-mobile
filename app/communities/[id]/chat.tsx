@@ -182,13 +182,16 @@ export default function CommunityChatScreen(){
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
-   {messages.map(m=><Pressable key={m.id} disabled={!!m.deletedAt||accessRevoked} accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={[styles.message,m.username===auth.username&&styles.mine]}>
-     <Text style={styles.sender}>{m.username}</Text>
+   {messages.map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
+     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
+       <Text style={styles.sender}>{m.username}</Text>
+       {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>↩ Responder</Text></Pressable>:null}
+     </View>
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
      <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size}/>):null}
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
-   </Pressable>)}
+   </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
@@ -218,7 +221,7 @@ export default function CommunityChatScreen(){
    {refreshWarning&&!accessRevoked?<Button secondary title="↻ Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </Page>;
 }
-const styles=StyleSheet.create({quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
+const styles=StyleSheet.create({replyAction:{minHeight:38,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
