@@ -224,7 +224,10 @@ export default function JynloFeedHome(){
     if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]));
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled')setOwnStories(value(2,[] as SocialStory[]));
-    if(fetches[0].status==='rejected')setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
+    if(fetches[0].status==='rejected')
+      setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
+    else if(fetches[1].status==='rejected'||fetches[2].status==='rejected')
+      setError('Não foi possível atualizar as Stories. As Stories apresentadas podem estar desatualizadas. Tenta novamente.');
     setLoading(false);
   },[auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{if(!auth.ready||(!auth.token&&!auth.browsingAsGuest))return;void load();return ()=>{reloadNumber.current++;};},[auth.ready,auth.token,auth.browsingAsGuest,load]));
