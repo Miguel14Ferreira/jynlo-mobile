@@ -1,6 +1,7 @@
 import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import type {DirectChatEntry} from './chat-api';
+import {prepareChatPhoto} from './chat-photo-source';
 
 const MAX_BYTES=5*1024*1024;
 const PEER=/^[a-zA-Z0-9_.@-]{1,128}$/;
@@ -25,13 +26,14 @@ export async function directPhotoAvailable(peer:string,token:string):Promise<boo
 export async function sendDirectPhoto(peer:string,token:string,asset:ImagePickerAsset):Promise<DirectChatEntry>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para partilhares fotografias.');
  if(!asset.uri||asset.type!=='image')throw Error('Seleciona uma fotografia válida.');
- if(asset.fileSize==null||asset.fileSize<=0||asset.fileSize>MAX_BYTES)
-  throw Error('A fotografia tem de ter um tamanho conhecido até 5 MB.');
+ if(asset.fileSize!=null&&asset.fileSize>MAX_BYTES)
+  throw Error('A fotografia tem de ter até 5 MB.');
  const mime=asset.mimeType||'';
  if(!MIMES.includes(mime))throw Error('Escolhe uma fotografia JPG, PNG, WebP ou GIF.');
  const extension=mime==='image/png'?'png':mime==='image/webp'?'webp':mime==='image/gif'?'gif':'jpg';
+ const prepared=await prepareChatPhoto(asset,extension);
  const form=new FormData();
- form.append('file',{uri:asset.uri,name:'jynlo-chat.'+extension,type:mime} as unknown as Blob);
+ form.append('file',{uri:prepared.uri,name:'jynlo-chat.'+extension,type:mime} as unknown as Blob);
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
@@ -55,5 +57,5 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
   if(error instanceof Error&&/^(A sessão|Não tens autorização|Fotografia|O armazenamento|O servidor|O envio)/.test(error.message))
    throw error;
   throw Error('Não foi possível confirmar o envio. Consulta o histórico antes de repetir.');
- }finally{clearTimeout(timer);}
+ }finally{clearTimeout(timer);prepared.cleanup();}
 }
