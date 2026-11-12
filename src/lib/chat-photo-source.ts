@@ -1,4 +1,5 @@
 import type {ImagePickerAsset} from 'expo-image-picker';
+import {measuredPhotoSize} from './chat-attachments-core.cjs';
 
 /** Android document picker results may be content:// URIs, not attachable by native fetch. */
 export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):Promise<{
@@ -15,7 +16,8 @@ export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):
    source.copy(temporary);
    uri=temporary.uri;
   }
-  const size=temporary?.size||asset.fileSize||(source.exists?source.size:0);
+  const actualSize=temporary?(temporary.exists?temporary.size:0):(source.exists?source.size:0);
+  const size=measuredPhotoSize(actualSize,asset.fileSize);
   if(!Number.isFinite(size)||size<=0||size>5*1024*1024)
    throw Error('A fotografia tem de ter até 5 MB e um tamanho válido.');
   return {uri,size,cleanup:()=>{if(temporary){try{if(temporary.exists)temporary.delete();}catch{}}}};
