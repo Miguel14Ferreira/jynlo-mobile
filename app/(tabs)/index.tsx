@@ -346,12 +346,12 @@ export default function JynloFeedHome(){
       if(result.canceled||!result.assets.length)return;
       const asset=result.assets[0];if(!asset)return;const kind=asset.type==='video'?'video':'image';
       const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
-      const size=asset.fileSize||0;const validation=validateMedia(mime,size,true);
+      const size=asset.fileSize||0;const validation=validateMedia(mime,size,setter===setStoryMedia);
       if(validation){Alert.alert('Ficheiro não aceite',size===0?'Não foi possível obter o tamanho do ficheiro.':validation);return;}
       setter({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
     }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
   }
-  async function submitPost(){if(!requireLogin()||publishing||!composerMedia)return;
+  async function submitPost(){if(!requireLogin()||publishing||(!composerMedia&&!composerText.trim()))return;
     setPublishing(true);try{await publishPost(composerText,composerMedia,auth.token,auth.username);setComposerText('');setComposerMedia(null);setComposerOpen(false);await load();}
     catch(e){Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível publicar.');}finally{setPublishing(false);}
   }
@@ -472,7 +472,7 @@ export default function JynloFeedHome(){
 
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={()=>!publishing&&setComposerOpen(false)}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
-        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha uma fotografia ou vídeo com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={()=>setComposerOpen(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={()=>setComposerOpen(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(setComposerMedia,'camera')} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
@@ -481,11 +481,11 @@ export default function JynloFeedHome(){
           {composerMedia?<View style={styles.postMediaPreview}>
             {composerMedia.type==='image'?<Image source={{uri:composerMedia.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={composerMedia.uri} uri={composerMedia.uri}/>}
             <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{composerMedia.type==='image'?'Fotografia':'Vídeo'} · {composerMedia.fileName}</Text><Pressable accessibilityRole="button" accessibilityLabel="Remover media da publicação" disabled={publishing} onPress={()=>setComposerMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable></View>
-          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escolhe a câmara ou uma fotografia da galeria para começares.</Text></View>}
-          <TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="Escreve uma legenda (opcional)…" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
+          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta uma fotografia ou vídeo.</Text></View>}
+          <TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
         </ScrollView>
-        <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={!composerMedia||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},(!composerMedia||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
       </SafeAreaView>
     </Modal>
 
