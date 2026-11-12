@@ -62,6 +62,13 @@ export async function deleteStory(storyId:number,token:string|null):Promise<void
  await request<void>(`/api/stories/${storyId}`,{token,method:'DELETE'});
 }
 
+/** Only the attendee may hide their own attendance activity (server-verified). */
+export async function hideAttendanceActivity(sessionId:number,token:string|null):Promise<void>{
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0||!token)throw Error('Atividade inválida.');
+ if(DEMO_MODE)return;
+ await request<void>(`/api/feed/attendance/${sessionId}/hide`,{token,method:'PUT'});
+}
+
 export async function deletePost(postId:number,token:string|null):Promise<void>{
  if(!Number.isSafeInteger(postId)||postId<=0||!token)throw Error('Publicação inválida.');
  if(DEMO_MODE){
