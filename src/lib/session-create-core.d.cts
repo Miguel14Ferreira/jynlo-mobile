@@ -1,5 +1,6 @@
 export interface CreateSessionForm {
  sport:string;day:string;time:string;city:string;address:string;
+ latitude?:number|null;longitude?:number|null;locationConfirmed?:boolean;
  maxParticipants:string;price:string;privateGame:boolean;password:string;meetingPointInstructions:string;
  externalConfirmedParticipants?:string;minParticipants?:string;registrationOpeningMode?:'IMMEDIATE'|'MANUAL'|'SCHEDULED';communityId?:number|null;
  registrationDay?:string;registrationTime?:string;
@@ -11,7 +12,7 @@ export interface CreateSessionForm {
 export interface CreateSessionPayload{
  sport:string;gameDate:string;city:string;address:string;maxParticipants:number;
  priceAmount:number;privateGame:boolean;password:string|null;
- latitude:null;longitude:null;communityId:number|null;venueId:number|null;recurrence:'NONE'|'WEEKLY'|'BIWEEKLY';
+ latitude:number|null;longitude:number|null;communityId:number|null;venueId:number|null;recurrence:'NONE'|'WEEKLY'|'BIWEEKLY';
  recurrenceOccurrences:number|null;externalConfirmedParticipants:number;registrationOpeningMode:'IMMEDIATE'|'MANUAL'|'SCHEDULED';
  registrationOpensAt:string|null;additionalWeeklyGameDates:string[];recurrenceTimeZone:string|null;playFormat:null;
  communityShareIds:number[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
