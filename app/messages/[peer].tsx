@@ -1,7 +1,7 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
@@ -27,6 +27,7 @@ export default function DirectConversation(){
  const conversationScroll=useRef<ScrollView|null>(null);
  const nearBottom=useRef(true);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
+ const [locationBusy,setLocationBusy]=useState(false);
  const [safetyOpen,setSafetyOpen]=useState(false);
  const [muteKnown,setMuteKnown]=useState(false);
  const [muted,setMuted]=useState(false);
@@ -273,6 +274,32 @@ export default function DirectConversation(){
    }
   }
  }
+ async function prepareLocation(){
+  const identity=peer+'|'+auth.token;
+  if(!auth.token||!blockStatusKnown||blocked||locationBusy||sendingNow.current)return;
+  const version=generation.current;
+  Alert.alert('Partilhar localização atual?','A Jynlo só consultará a localização nesta ação. Será colocada numa mensagem que podes rever antes de enviar ao contacto.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Continuar',onPress:()=>{
+    setLocationBusy(true);setError('');
+    void (async()=>{
+      const Location=await import('expo-location');
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw new Error('Não autorizaste o acesso à localização. Podes continuar a enviar mensagens normalmente.');
+      const point=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
+      if(!Number.isFinite(point.coords.latitude)||!Number.isFinite(point.coords.longitude))throw new Error('Não foi possível determinar a localização.');
+      const url='https://www.google.com/maps?q='+point.coords.latitude.toFixed(5)+','+point.coords.longitude.toFixed(5);
+      if(generation.current===version&&conversation.current===identity){
+        setDraft(previous=>[previous.trim(),url].filter(Boolean).join('\n'));
+        setAttachmentsOpen(false);
+        Alert.alert('Localização pronta','O link foi colocado na mensagem. Confirma o destinatário e toca em Enviar quando quiseres partilhar.');
+      }
+    })().catch(e=>{
+      if(generation.current===version&&conversation.current===identity)setError(e instanceof Error?e.message:'Não foi possível obter a localização.');
+    }).finally(()=>{if(generation.current===version&&conversation.current===identity)setLocationBusy(false);});
+   }}
+  ]);
+ }
  async function choosePhoto(){
   if(!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
@@ -371,6 +398,10 @@ export default function DirectConversation(){
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
     <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
    {m.attachmentName&&!m.deletedAt?<SecureChatAttachment scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={m.attachmentName} mime={m.attachmentMimeType} size={m.attachmentSize} autoPreview={recentPhotoIds.has(m.id)}/>:null}
+   {!m.deletedAt&&m.text&&/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/.test(m.text)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps" onPress={()=>{
+    const url=m.text?.match(/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/)?.[0];
+    if(url)void Linking.openURL(url).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'));
+   }} style={styles.replyAction}><Text style={styles.replyActionText}>⌖ Abrir localização no mapa</Text></Pressable>:null}
    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><Text style={styles.replyActionText}>↩ Responder</Text></Pressable>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
@@ -413,6 +444,7 @@ export default function DirectConversation(){
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografia para enviar" disabled={photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 
   </View>
   {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>A responder a {replyTarget.sender}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><Text style={styles.replyActionText}>✕</Text></Pressable></View>:null}
