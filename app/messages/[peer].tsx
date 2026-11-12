@@ -416,7 +416,7 @@ export default function DirectConversation(){
    <Button secondary title="Cancelar fotografia" disabled={photoBusy} onPress={()=>setPhoto(null)}/>
   </View>:null}
 
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Pressable accessibilityRole="button"
+  {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
     style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
   {blocked?<Text style={styles.note}>Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.</Text>:null}
@@ -439,7 +439,7 @@ export default function DirectConversation(){
     }}><Text style={styles.attachmentToggleText}>Verificar novamente</Text></Pressable>
   </View>:null}
   <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&photoAvailable&&!sending&&!photoBusy} onSent={async()=>{
+  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
