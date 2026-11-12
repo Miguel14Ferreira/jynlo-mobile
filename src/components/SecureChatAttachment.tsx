@@ -1,4 +1,4 @@
-import React,{useCallback,useRef,useState} from 'react';
+import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
 import {AppState,Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {File,Paths} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
@@ -11,9 +11,12 @@ type Scope='direct'|'community'|'session';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
  name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean};
 const isVoice=(mime:string|null|undefined)=>typeof mime==='string'&&mime.startsWith('audio/');
+const isVideo=(mime:string|null|undefined)=>mime==='video/mp4'||mime==='video/webm';
+const ChatVideo=lazy(()=>import('./FeedVideo'));
+const maxAttachmentSize=(mime:string|null|undefined)=>isVideo(mime)?20*1024*1024:isVoice(mime)?12*1024*1024:5*1024*1024;
 const formats:Record<string,string>={
  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif',
- 'application/pdf':'pdf',
+ 'application/pdf':'pdf','video/mp4':'mp4','video/webm':'webm',
  'audio/webm':'webm','audio/ogg':'ogg','audio/mpeg':'mp3',
  'audio/mp4':'m4a','audio/x-m4a':'m4a','audio/aac':'aac'
 };
@@ -87,7 +90,8 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    return;
   }
   if(pending.current||pdfPreview.current||!token||DEMO_MODE||!formats[mime||''])return;
-  if(!Number.isFinite(size)||!size||size<=0||size>5*1024*1024){
+  const maxBytes=maxAttachmentSize(mime);
+  if(!Number.isFinite(size)||!size||size<=0||size>maxBytes){
    setError('Tamanho do anexo inválido.');return;
   }
   const version=generation.current;
@@ -105,9 +109,9 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    const type=(response.headers.get('content-type')||'').split(';')[0]?.trim().toLowerCase()||'';
    if(type!==mime)throw Error('O formato recebido não corresponde ao anexo.');
    const declared=Number(response.headers.get('content-length'));
-   if(declared>5*1024*1024)throw Error('O anexo ultrapassa 5 MB.');
+   if(declared>maxBytes)throw Error('O anexo ultrapassa o limite permitido.');
    const bytes=await response.bytes();
-   if(!bytes.length||bytes.length>5*1024*1024)throw Error('O tamanho do anexo é inválido.');
+   if(!bytes.length||bytes.length>maxBytes)throw Error('O tamanho do anexo é inválido.');
    if(!active.current||generation.current!==version||controller.signal.aborted)return;
    file=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+formats[mime!]);
    await file.write(bytes);
@@ -159,13 +163,17 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   {!(mime?.startsWith('image/')&&uri)?<Pressable accessibilityRole="button" disabled={busy||!token} onPress={()=>{void open();}} style={styles.button}>
    <Text style={styles.action}>{busy?'A abrir anexo…':isVoice(mime)?
      (uri?(playback.playing?'❚❚ Pausar voz':'▶ Reproduzir voz'):'▶ Ouvir mensagem de voz'):
-     mime==='application/pdf'?'Abrir PDF · '+name:'Ver fotografia · '+name}</Text>
+     mime==='application/pdf'?'Abrir PDF · '+name:isVideo(mime)?'Ver vídeo · '+name:'Ver fotografia · '+name}</Text>
   </Pressable>:null}
   {mime?.startsWith('image/')&&uri?<Pressable accessibilityRole="button" accessibilityLabel="Ampliar fotografia recebida" onPress={()=>setExpanded(true)}><Image source={{uri}} resizeMode="cover" style={styles.inlineImage}/></Pressable>:null}
+  {isVideo(mime)&&uri&&expanded?<View style={{gap:8}}>
+   <Suspense fallback={<Text style={styles.note}>A preparar reprodução…</Text>}><ChatVideo uri={uri}/></Suspense>
+   <Pressable accessibilityRole="button" onPress={()=>setExpanded(false)} style={styles.button}><Text style={styles.action}>Fechar vídeo</Text></Pressable>
+  </View>:null}
   {isVoice(mime)&&uri?<Text style={styles.note}>{Math.floor(playback.currentTime)}s / {Math.floor(playback.duration||0)}s</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
   {mime==='application/pdf'&&uri?<Pressable accessibilityRole="button" onPress={close} style={styles.button}><Text style={styles.action}>Limpar PDF temporário</Text></Pressable>:null}
-  <Modal visible={expanded&&!!uri&&!isVoice(mime)&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
+  <Modal visible={expanded&&!!uri&&!isVoice(mime)&&!isVideo(mime)&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
    <View style={styles.overlay}>
     {uri?<Image source={{uri}} resizeMode="contain" style={styles.image}/>:null}
     <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
