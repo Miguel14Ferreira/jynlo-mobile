@@ -15,7 +15,7 @@ test('mobile feed allows real text-only posts without requiring camera or galler
 });
 test('story upload validates story media rules and post picker validates post limits',()=>{
  const home=read('app/(tabs)/index.tsx');
- assert.match(home,/validateMedia\(mime,size,setter===setStoryMedia\)/);
+ assert.match(home,/validateMedia\(mime,size\|\|1,setter===setStoryMedia\)/);
  assert.match(home,/pickMedia\(setComposerMedia,'gallery'\)/);
  assert.match(home,/pickMedia\(setStoryMedia,'gallery'\)/);
  const api=read('src/lib/social-feed-api.ts');
