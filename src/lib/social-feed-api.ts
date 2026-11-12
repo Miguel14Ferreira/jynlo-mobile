@@ -184,8 +184,13 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
    if(fault)throw new Error(fault);
    const form=new FormData();
    for(const [key,val] of Object.entries(fields))form.append(key,val);
+   const extension=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
+     file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
+   const originalName=typeof file.fileName==='string'?file.fileName.trim():'';
+   const uploadName=originalName&&/\.[a-z0-9]{2,5}$/i.test(originalName)?originalName:'jynlo-media.'+extension;
+   // The backend relies on a real multipart image/video part with a filename extension.
    form.append(file.type==='video'?'video':'image',{
-     uri,type:file.mimeType,name:file.fileName||'jynlo-media'
+     uri,type:file.mimeType,name:uploadName
    } as any);
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),90000);
