@@ -19,7 +19,7 @@ test('session chat UI exposes own-message edit policy and confirmed removal',()=
  assert.match(screen,/Date.now\(\)-created<=15\*60\*1000/);
  assert.match(screen,/!message.attachmentName/);
  assert.match(screen,/!message.attachments\?\.length/);
- assert.match(screen,/Alert.alert\('Apagar mensagem para todos\?'/);
+ assert.match(screen,/Alert.alert\(\s*'Apagar mensagem para todos\?'/);
  assert.match(screen,/accessibilityLabel="Opções da minha mensagem"/);
  assert.match(screen,/accessibilityLabel="Editar mensagem"/);
  assert.match(screen,/m.editedAt\?' · editada'/);
