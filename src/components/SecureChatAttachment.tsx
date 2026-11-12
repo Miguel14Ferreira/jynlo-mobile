@@ -9,7 +9,7 @@ import {C} from '../lib/theme';
 
 type Scope='direct'|'community'|'session';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
- name:string;mime:string|null|undefined;size:number|null|undefined;autoPreview?:boolean};
+ name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean};
 const isVoice=(mime:string|null|undefined)=>typeof mime==='string'&&mime.startsWith('audio/');
 const formats:Record<string,string>={
  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif',
@@ -17,22 +17,23 @@ const formats:Record<string,string>={
  'audio/webm':'webm','audio/ogg':'ogg','audio/mpeg':'mp3',
  'audio/mp4':'m4a','audio/x-m4a':'m4a','audio/aac':'aac'
 };
-function attachmentPath(scope:Scope,id:string|number,messageId:number):string{
+function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0):string{
+ if(!Number.isSafeInteger(index)||index<0||index>3)throw Error('Índice de anexo inválido.');
  if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Anexo inválido.');
  if(scope==='direct'){
   const peer=String(id);
   if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error('Conversa inválida.');
-  return '/api/chat/me/'+encodeURIComponent(peer)+'/attachments/'+messageId;
+  return '/api/chat/me/'+encodeURIComponent(peer)+'/attachments/'+messageId+(index?'/'+index:'');
  }
  const numeric=Number(id);
  if(!Number.isSafeInteger(numeric)||numeric<=0||String(numeric)!==String(id))
   throw Error('Conversa inválida.');
  return '/api/'+(scope==='community'?'communities':'sessions')+'/'+numeric+
-  '/messages/attachments/'+messageId;
+  '/messages/attachments/'+messageId+(index?'/'+index:'');
 }
 
 /** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
-export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,autoPreview=false}:Props){
+export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,index=0,autoPreview=false}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [expanded,setExpanded]=useState(false);
  const player=useAudioPlayer(null);
@@ -57,7 +58,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    // Do not remove a PDF handed to Android while its external viewer is opening.
    if(!pdfPreview.current)cleanup();
   };
- },[cleanup,scope,conversationId,messageId,token]));
+ },[cleanup,scope,conversationId,messageId,index,token]));
  React.useEffect(()=>{
   const subscription=AppState.addEventListener('change',state=>{
    if(state==='background'||state==='inactive'){
@@ -95,7 +96,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   const timeout=setTimeout(()=>controller.abort(),20000);
   let file:File|null=null;
   try{
-   const path=attachmentPath(scope,conversationId,messageId);
+   const path=attachmentPath(scope,conversationId,messageId,index);
    const response=await expoFetch(API_BASE+path,{
     headers:{Authorization:'Bearer '+token,Accept:mime!},credentials:'omit',redirect:'error',
     signal:controller.signal
@@ -149,7 +150,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   if(!autoPreview||!token||!mime?.startsWith('image/')||!size||size>5*1024*1024)return;
   const timeout=setTimeout(()=>{if(active.current&&!pending.current)void open(true);},180);
   return ()=>clearTimeout(timeout);
- },[autoPreview,scope,conversationId,messageId,token,mime,size]);
+ },[autoPreview,scope,conversationId,messageId,index,token,mime,size]);
  function close(){
   setExpanded(false);setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
  }
