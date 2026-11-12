@@ -6,6 +6,7 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
+import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
@@ -190,6 +191,7 @@ export default function JynloFeedHome(){
   const {compose,storyId}=useLocalSearchParams<{compose?:string;storyId?:string}>();
   const activeStoryAccount=useRef<string|null>(auth.token);
   activeStoryAccount.current=auth.token;
+  const [unreadNotifications,setUnreadNotifications]=useState(0);
   const [posts,setPosts]=useState<FeedItem[]>([]);
   const [stories,setStories]=useState<SocialStory[]>([]),[ownStories,setOwnStories]=useState<SocialStory[]>([]);
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
@@ -275,6 +277,28 @@ export default function JynloFeedHome(){
         Alert.alert('Story indisponível','Esta Story pode ter expirado ou já não estar acessível.');
     });
   },[storyId,auth.ready,auth.token,router]);
+  // Only render a notification indicator after a successful server-backed count.
+  // Clear it on account change, and avoid leaking a previous user's unread state.
+  useFocusEffect(useCallback(()=>{
+    let active=true;
+    setUnreadNotifications(0);
+    if(!auth.token||!auth.username)return ()=>{active=false;};
+    const token=auth.token,username=auth.username;
+    const refresh=async()=>{
+      try{
+        const notifications=await myNotifications(token,username);
+        if(active)setUnreadNotifications(notifications.filter(item=>!item.read).length);
+      }catch{
+        // Unknown is not equivalent to unread; never invent a red badge.
+        if(active)setUnreadNotifications(0);
+      }
+    };
+    void refresh();
+    const subscription=AppState.addEventListener('change',state=>{
+      if(state==='active')void refresh();
+    });
+    return ()=>{active=false;subscription.remove();};
+  },[auth.token,auth.username]));
   const currentFeedIdentity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
   // A newly signed-in account must never see the previous account's Story modal
   // during the render before useFocusEffect clears old asynchronous state.
@@ -449,7 +473,7 @@ export default function JynloFeedHome(){
   }
   const Header=()=> <View style={styles.screenPad}>
     <View style={styles.navHeader}><View style={styles.brand}><Image source={require('../../assets/jynlo-icon.png')} style={styles.brandLogo}/><Text style={styles.brandName}>JYNLO</Text></View><View style={styles.headerRight}>
-      <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><Text style={styles.headerIcon}>♧</Text><View style={styles.pulse}/></Pressable>
+      <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><Text style={styles.headerIcon}>♧</Text>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
     <View style={styles.storiesCard}>
