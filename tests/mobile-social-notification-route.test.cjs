@@ -83,15 +83,16 @@ test('post owner can change liker visibility only after server confirmation',()=
  assert.match(post,/if\(version===generation\.current\)\{writing\.current=false;setBusy\(false\);\}/);
 });
 
-test('story likes and private replies navigate to the exact live story',()=>{
- for(const type of ['SOCIAL_STORY_LIKED','SOCIAL_STORY_REPLIED']){
-  assert.deepEqual(notificationDestination({type,storyId:42,relatedUsername:'ana'}),{kind:'social-story',id:'42'});
-  assert.deepEqual(notificationDestination({type,storyId:0,relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
-  assert.equal(notificationDestination({type,storyId:-1,relatedUsername:null}),null);
+test('story likes target live stories but replies open durable private history',()=>{
+ assert.deepEqual(notificationDestination({type:'SOCIAL_STORY_LIKED',storyId:42,relatedUsername:'ana'}),{kind:'social-story',id:'42'});
+ assert.deepEqual(notificationDestination({type:'SOCIAL_STORY_LIKED',storyId:0,relatedUsername:'ana'}),{kind:'social-profile',peer:'ana'});
+ assert.equal(notificationDestination({type:'SOCIAL_STORY_LIKED',storyId:-1,relatedUsername:null}),null);
+ for(const storyId of [42,0,null]){
+  assert.deepEqual(notificationDestination({type:'SOCIAL_STORY_REPLIED',storyId,relatedUsername:'ana'}),{kind:'story-replies'});
  }
  assert.match(inbox,/case 'social-story':router\.push/);
+ assert.match(inbox,/case 'story-replies':router\.push\('\/stories\/replies'\)/);
  const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
  assert.match(feed,/storyById\(Number\(storyId\),originalToken\)/);
  assert.match(feed,/Story indisponível/);
 });
-
