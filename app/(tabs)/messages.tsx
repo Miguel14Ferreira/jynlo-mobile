@@ -1,11 +1,12 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
-import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {communityInbox,directInbox,sessionInbox} from '../../src/lib/chat-api';
+import {listConversationMutes,setConversationMuted,isConversationMuted,type MutedConversation} from '../../src/lib/conversation-mutes-api';
 import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C,MobileTheme} from '../../src/lib/theme';
@@ -17,6 +18,11 @@ export default function MessagesScreen(){
  const [chatWarning,setChatWarning]=useState('');
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [incomingCall,setIncomingCall]=useState<DirectCallInvitation|null>(null);
+ const [mutes,setMutes]=useState<MutedConversation[]>([]);
+ const [muteKnown,setMuteKnown]=useState(false);
+ const [muteError,setMuteError]=useState('');
+ const [mutingKey,setMutingKey]=useState<string|null>(null);
+ const muteWrites=useRef(new Set<string>());
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
@@ -34,9 +40,9 @@ export default function MessagesScreen(){
   busyVersion.current=version;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
-   const [groups,privateChats,sessionChats,requests,call]=await Promise.allSettled([
+   const [groups,privateChats,sessionChats,requests,call,muted]=await Promise.allSettled([
     communityInbox(auth.token,auth.username),directInbox(auth.token),sessionInbox(auth.token,auth.username),
-    myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token)
+    myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token),listConversationMutes(auth.token)
    ]);
    if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
@@ -46,6 +52,10 @@ export default function MessagesScreen(){
     ...(sessionChats.status==='fulfilled'?sessionChats.value:previous.filter(i=>i.kind==='session'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
+   if(muted.status==='fulfilled'){
+    // Do not overwrite freshly changed preferences with a stale poll response.
+    if(muteWrites.current.size===0){setMutes(muted.value);setMuteKnown(true);setMuteError('');}
+   }else if(!muteKnown){setMuteError('Não foi possível consultar as preferências de avisos.');}
    if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
    else setIncomingCall(null); // Never present an unverified stale invitation as active.
    const failedSources=[
@@ -75,6 +85,7 @@ export default function MessagesScreen(){
   if(identity.current!==currentIdentity){
    identity.current=currentIdentity;setItems([]);setInvites([]);setIncomingCall(null);
    setLastSyncedAt(null);setChatWarning('');setError('');
+   setMutes([]);setMuteKnown(false);setMuteError('');setMutingKey(null);
    setSearch('');setUnreadOnly(false);
   }
   const version=++generation.current;
@@ -103,6 +114,31 @@ export default function MessagesScreen(){
    pendingRefresh.current=false;generation.current++;
   };
  },[load,auth.username,auth.token]));
+ function toggleConversationMute(item:JynloInboxSummary){
+  if(!auth.token||!auth.username||!sameIdentity||!muteKnown)return;
+  const key=item.kind+':'+item.id.toLowerCase();
+  if(muteWrites.current.has(key))return;
+  const muted=isConversationMuted(mutes,item.kind,item.id);
+  const actor=auth.username+'|'+auth.token;
+  const token=auth.token;
+  Alert.alert(muted?'Ativar avisos?':'Silenciar conversa?',
+   muted?'Vais voltar a receber notificações desta conversa.':'As mensagens continuarão a chegar e a contar como não lidas. Apenas os avisos desta conversa serão silenciados.',[
+    {text:'Cancelar',style:'cancel'},
+    {text:muted?'Ativar avisos':'Silenciar',onPress:()=>{
+      if(identity.current!==actor||muteWrites.current.has(key))return;
+      muteWrites.current.add(key);setMutingKey(key);setMuteError('');
+      void setConversationMuted(item.kind,item.id,!muted,token).then(async()=>{
+        const confirmed=await listConversationMutes(token);
+        if(identity.current===actor){setMutes(confirmed);setMuteKnown(true);}
+      }).catch(()=>{
+        if(identity.current===actor)setMuteError('Não foi possível confirmar a alteração. Volta a atualizar antes de repetir.');
+      }).finally(()=>{
+        muteWrites.current.delete(key);
+        if(identity.current===actor)setMutingKey(null);
+      });
+    }}
+   ]);
+ }
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <View style={styles.headerRow}>
    <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
@@ -143,18 +179,20 @@ export default function MessagesScreen(){
   {auth.token?<Button secondary title="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
+  {muteError?<Message tone="error">{muteError}</Message>:null}
   {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
   {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
   {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>Conversas recentes</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
-  {displayed.map(item=><Pressable key={`${item.kind}-${item.id}`}
+  {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
+   <Pressable
     accessibilityRole="button"
     accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
-    style={({pressed})=>[styles.tile,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
+    style={({pressed})=>[styles.tile,styles.tileContent,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
     <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
       <Text style={styles.avatarSymbol}>{item.kind==='direct'?'◉':item.kind==='community'?'◎':'▣'}</Text>
     </View>
@@ -167,12 +205,24 @@ export default function MessagesScreen(){
       {!!item.latestSender&&<Text numberOfLines={1} style={styles.tiny}>{item.latestSender}</Text>}
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
-  </Pressable>)}
+   </Pressable>
+   {muteKnown?<Pressable accessibilityRole="button"
+      accessibilityLabel={isConversationMuted(mutes,item.kind,item.id)?'Ativar avisos da conversa':'Silenciar avisos da conversa'}
+      disabled={mutingKey!==null} onPress={()=>toggleConversationMute(item)}
+      style={styles.muteAction}>
+      <Text style={styles.muteIcon}>{isConversationMuted(mutes,item.kind,item.id)?'🔕':'♧'}</Text>
+      <Text style={styles.muteText}>{isConversationMuted(mutes,item.kind,item.id)?'Silenciada':'Avisos'}</Text>
+    </Pressable>:null}
+  </View>)}
   <Message>Conversas e contadores de não lidas atualizados automaticamente enquanto esta página está aberta. O chat da comunidade usa ligação em tempo real, com sincronização de reserva quando está offline; os chats privados e de sessão usam atualização periódica. Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas.</Message>
  </Page>;
 }
 const T=MobileTheme.colors;
 const styles=StyleSheet.create({
+ conversationRow:{flexDirection:'row',alignItems:'stretch',gap:6},
+ tileContent:{flex:1,minWidth:0},
+ muteAction:{minWidth:72,maxWidth:82,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.lg,alignItems:'center',justifyContent:'center',padding:7,gap:3},
+ muteIcon:{fontSize:19,color:T.accent},muteText:{fontSize:10,fontWeight:'800',color:T.muted},
  headerRow:{flexDirection:'row',alignItems:'flex-start',gap:12},
  headerCopy:{flex:1,gap:8},
  notificationAction:{minWidth:MobileTheme.touchTarget,minHeight:MobileTheme.touchTarget,paddingHorizontal:9,paddingVertical:8,borderRadius:MobileTheme.radius.md,alignItems:'center',justifyContent:'center',backgroundColor:T.surface,borderWidth:1,borderColor:T.border,gap:3},
