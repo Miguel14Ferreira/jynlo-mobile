@@ -19,13 +19,19 @@ function validateChatAlbum(files,{allowUnknownSize=false}={}){
  }
  return total>MAX_TOTAL_BYTES?'O conjunto não pode exceder 40 MB.':null;
 }
+function attachmentLimit(mime){
+ if(typeof mime!=='string')return 5*1024*1024;
+ if(mime.startsWith('video/'))return 20*1024*1024;
+ if(mime.startsWith('audio/'))return 12*1024*1024;
+ return MAX_PHOTO_BYTES;
+}
 function chatAttachmentList(message){
  if(!message||message.deletedAt)return [];
  const extras=Array.isArray(message.attachments)?message.attachments:[];
  if(extras.length){
   return extras.filter(file=>file&&Number.isSafeInteger(file.index)&&file.index>=0&&file.index<MAX_FILES&&
     typeof file.filename==='string'&&file.filename&&typeof file.mimeType==='string'&&file.mimeType&&
-    Number.isSafeInteger(file.size)&&file.size>0&&file.size<=MAX_PHOTO_BYTES)
+    Number.isSafeInteger(file.size)&&file.size>0&&file.size<=attachmentLimit(file.mimeType))
    .filter((file,i,list)=>list.findIndex(other=>other.index===file.index)===i)
    .sort((a,b)=>a.index-b.index)
    .map(file=>({index:file.index,name:file.filename,mime:file.mimeType,size:file.size}));
