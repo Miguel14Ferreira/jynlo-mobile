@@ -42,6 +42,7 @@ export default function DirectConversation(){
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
+ const [photoAvailabilityError,setPhotoAvailabilityError]=useState('');
  const refreshing=useRef<number|null>(null),sendingNow=useRef(false);
  // A write stays locked to its conversation even when the route is reused.
  const pendingWrites=useRef(new Map<string,'text'|'photo'>());
@@ -125,10 +126,10 @@ export default function DirectConversation(){
   setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
-  setPhoto(null);setPhotoAvailable(false);
+  setPhoto(null);setPhotoAvailable(false);setPhotoAvailabilityError('');
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
-   if(active&&generation.current===version)setPhotoAvailable(available);
-  }).catch(()=>{if(active&&generation.current===version)setPhotoAvailable(false);});
+   if(active&&generation.current===version){setPhotoAvailable(available);setPhotoAvailabilityError(available?'':'O envio de fotografias não está disponível neste momento.');}
+  }).catch(()=>{if(active&&generation.current===version){setPhotoAvailable(false);setPhotoAvailabilityError('Não foi possível verificar os anexos de fotografias.');}});
   void refresh(false,version);
   if(auth.token&&!DEMO_MODE&&/^[a-zA-Z0-9._-]{1,128}$/.test(peer)&&
      peer.toLowerCase()!==auth.username?.toLowerCase()){
@@ -439,6 +440,17 @@ export default function DirectConversation(){
     }}><Text style={styles.attachmentToggleText}>Verificar novamente</Text></Pressable>
   </View>:null}
   <View style={[styles.attachmentOptions,!attachmentsOpen&&styles.hidden]}>
+  {photoAvailabilityError?<Text style={styles.note}>{photoAvailabilityError} Podes continuar a enviar PDF ou partilhar localização.</Text>:null}
+  {photoAvailabilityError&&auth.token?<Button secondary title="Verificar fotografias novamente" disabled={photoBusy||sending} onPress={()=>{
+    if(!auth.token)return;
+    const identity=peer+'|'+auth.token,version=generation.current;
+    setPhotoAvailabilityError('');
+    void directPhotoAvailable(peer,auth.token).then(available=>{
+      if(generation.current===version&&conversation.current===identity){setPhotoAvailable(available);setPhotoAvailabilityError(available?'':'O envio de fotografias não está disponível neste momento.');}
+    }).catch(()=>{
+      if(generation.current===version&&conversation.current===identity)setPhotoAvailabilityError('Não foi possível confirmar a disponibilidade das fotografias.');
+    });
+  }}/>:null}
   <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} onSent={async()=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    setAttachmentsOpen(false);await refresh(true,generation.current);
