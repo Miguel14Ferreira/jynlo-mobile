@@ -25,3 +25,12 @@ export async function deleteAllMyNotifications(token:string):Promise<void>{
  if(DEMO_MODE)return;
  await request<void>('/api/notifications/me',{token,method:'DELETE'});
 }
+
+/** Unread count belongs to the authenticated account, never to a username in the URL. */
+export async function myUnreadNotificationCount(token:string):Promise<number>{
+ if(!token)return 0;
+ if(DEMO_MODE)return 0;
+ const value=await request<number>('/api/notifications/me/unread-count',{token});
+ if(!Number.isSafeInteger(value)||value<0)throw Error('Contador de notificações inválido.');
+ return value;
+}
