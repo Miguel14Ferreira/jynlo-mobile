@@ -2,6 +2,7 @@ import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import type {CommunityChatEntry} from './types';
 import type {SessionChatEntry} from './session-chat-api';
+import {prepareChatPhoto} from './chat-photo-source';
 
 type ChatKind='community'|'session';
 function photoUrl(kind:ChatKind,id:number):string{
@@ -22,13 +23,14 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  if(DEMO_MODE||!token)throw Error('Inicia sessão para enviar uma fotografia.');
  const url=photoUrl(kind,id);
  if(asset.type!=='image'||!asset.uri)throw Error('Fotografia inválida.');
- if(!asset.fileSize||asset.fileSize>5*1024*1024)throw Error('Fotografia com mais de 5 MB ou tamanho desconhecido.');
+ if(asset.fileSize!=null&&asset.fileSize>5*1024*1024)throw Error('Fotografia com mais de 5 MB.');
  const formats:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
  const extension=formats[asset.mimeType||''];
  if(!extension)throw Error('Formato de fotografia não suportado.');
  if(replyId!=null&&(!Number.isSafeInteger(replyId)||replyId<=0))throw Error('Resposta inválida.');
+ const prepared=await prepareChatPhoto(asset,extension);
  const form=new FormData();
- form.append('file',{uri:asset.uri,name:'jynlo-chat.'+extension,type:asset.mimeType} as unknown as Blob);
+ form.append('file',{uri:prepared.uri,name:'jynlo-chat.'+extension,type:asset.mimeType} as unknown as Blob);
  if(replyId!=null)form.append('replyToMessageId',String(replyId));
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
@@ -41,5 +43,5 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  }catch(e){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Confirma o histórico antes de repetir.');
   throw e instanceof Error?e:Error('Falha no envio. Confirma o histórico antes de repetir.');
- }finally{clearTimeout(timer);}
+ }finally{clearTimeout(timer);prepared.cleanup();}
 }
