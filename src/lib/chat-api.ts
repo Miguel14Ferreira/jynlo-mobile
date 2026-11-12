@@ -17,13 +17,14 @@ export async function communityMessages(id:number,token:string,username:string):
  if(DEMO_MODE)return [...(threads.get(safeId(id))||[])];
  return request<CommunityChatEntry[]>(base(id),{token});
 }
-export async function sendCommunityMessage(id:number,body:string,token:string,username:string):Promise<CommunityChatEntry>{
+export async function sendCommunityMessage(id:number,body:string,token:string,username:string,replyToMessageId?:number|null):Promise<CommunityChatEntry>{
  await member(id,token,username);const text=body.trim();
+ if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))throw Error('Mensagem citada inválida.');
  if(!text||text.length>4000)throw Error('Escreve uma mensagem até 4000 caracteres.');
- if(DEMO_MODE){const msg:CommunityChatEntry={id:++nextId,communityId:id,kind:'CHAT',username,body:text,createdAt:new Date().toISOString()};
+ if(DEMO_MODE){const msg:CommunityChatEntry={id:++nextId,communityId:id,kind:'CHAT',username,body:text,createdAt:new Date().toISOString(),replyToMessageId:replyToMessageId??null};
   threads.set(safeId(id),[...(threads.get(safeId(id))||[]),msg]);notifyDemoCommunityMessage(msg);return msg;}
  // Never repeat this POST after a timeout without verifying history.
- return request<CommunityChatEntry>(base(id),{token,method:'POST',body:{body:text}});
+ return request<CommunityChatEntry>(base(id),{token,method:'POST',body:{body:text,...(replyToMessageId!=null?{replyToMessageId}:{})}});
 }
 export async function communityInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
