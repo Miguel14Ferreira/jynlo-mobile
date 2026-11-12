@@ -24,7 +24,7 @@ test('contratos do Feed correspondem à API Jynlo e não têm troca rápida de c
 test('Feed de visitante não pede feed privado e apresenta entrada simples',()=>{
   const feed=read('app/(tabs)/index.tsx');
   assert.match(feed,/auth\.token&&auth\.username\?socialFeed/);
-  assert.match(feed,/auth\.token\?storyFeed/);
+  assert.match(feed,/auth\.token\?storyFeed\(auth\.token,auth\.username\)/);
   assert.doesNotMatch(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
   assert.match(feed,/Iniciar sessão/);
   assert.doesNotMatch(feed,/auth\.token\?discoverPeople/);
