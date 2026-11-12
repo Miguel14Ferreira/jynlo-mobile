@@ -139,13 +139,13 @@ export default function CommunityChatScreen(){
   if(!auth.token||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token))return;
   const version=generation.current;
   try{
-   const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+   const selected=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
    if(version!==generation.current)return;
    if(!selected.canceled&&selected.assets?.[0]){
-    selected.assets.forEach(validateChatPhoto);
+    selected.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
     const issue=validateChatAlbum(selected.assets,{allowUnknownSize:true});
     if(issue)throw Error(issue);
-    validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
+    if(selected.assets[0].type==='image')validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
    }
   }catch(e){
    if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
@@ -158,7 +158,7 @@ export default function CommunityChatScreen(){
   pendingWrites.current.set(identity,'photo');
   uploadingNow.current=true;setUploading(true);setError('');
   try{
-   if(extraPhotos.length)await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos]);
+   if(extraPhotos.length||selectedPhoto.type==='video')await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos]);
    else await sendChatPhoto('community',id,token,selectedPhoto);
    if(version!==generation.current)return;
    setPhoto(null);setExtraPhotos([]);await refresh(version);
@@ -182,20 +182,20 @@ export default function CommunityChatScreen(){
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
    </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} onSent={async()=>{await refresh();}}/>
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografia" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
-     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover fotografia '+(index+1)} disabled={uploading} onPress={()=>{
+     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{gap:4}}>
-      <Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>
+      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
       <Text style={styles.note}>✕ Remover</Text>
      </Pressable>)}
     </View>
-     <Text style={styles.note}>{1+extraPhotos.length}/4 fotografias · máximo 5 MB por ficheiro. Confirma antes de enviar.</Text>
-     <Button title={uploading?'A enviar…':'Confirmar envio da fotografia'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
-     <Button secondary title="Cancelar fotografia" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+     <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+     <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
+     <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
    </View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
