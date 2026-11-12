@@ -53,7 +53,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   React.useEffect(()=>{setReplyText('');setReplyFocused(false);},[story?.id]);
   const resetProgress=()=>{remaining.current=1;progress.stopAnimation();progress.setValue(0);setReplyText('');};
   const go=(direction:-1|1)=>{
-    if(!activeGroup)return;
+    if(!activeGroup||submittingStory.current||replyFocused)return;
     if(direction===-1&&index>0){resetProgress();setIndex(i=>i-1);return;}
     if(direction===1&&index<activeGroup.stories.length-1){resetProgress();setIndex(i=>i+1);return;}
     const groupIndex=groups.findIndex(entry=>entry.key===activeGroup.key);
