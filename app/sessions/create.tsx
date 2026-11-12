@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
@@ -12,11 +12,13 @@ import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
 import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
 import {venues} from '../../src/lib/parity-api';
+import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview} from '../../src/lib/session-location-api';
+import type {SessionCoordinates} from '../../src/lib/session-location-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 
 function emptySessionForm():CreateSessionForm{
- return {sport:'',day:'',time:'',city:'',address:'',
+ return {sport:'',day:'',time:'',city:'',address:'',latitude:null,longitude:null,locationConfirmed:false,
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]};
 }
 
@@ -63,6 +65,52 @@ export default function CreateSessionScreen(){
  const [venueSearched,setVenueSearched]=useState(false);
  const venueSearchVersion=useRef(0);
  const [venueError,setVenueError]=useState('');
+ const [locationMode,setLocationMode]=useState<'saved'|'link'|'gps'>('saved');
+ const [mapsLink,setMapsLink]=useState('');
+ const [locationLoading,setLocationLoading]=useState(false);
+ const [locationMessage,setLocationMessage]=useState('');
+ const locationRequest=useRef(0);
+ const [locationAccuracy,setLocationAccuracy]=useState<number|null>(null);
+ function clearMappedLocation(){
+  locationRequest.current++;
+  setLocationAccuracy(null);setLocationMessage('');
+  setForm(prev=>({...prev,latitude:null,longitude:null,locationConfirmed:false}));
+ }
+ function selectLocationMode(mode:'saved'|'link'|'gps'){
+  if(busy||locationLoading)return;
+  setLocationMode(mode);setMapsLink('');setVenueChosen(null);clearVenueSearch();
+  locationRequest.current++;setLocationAccuracy(null);setLocationMessage('');
+  setForm(prev=>({...prev,venueId:null,latitude:null,longitude:null,locationConfirmed:false}));
+ }
+ async function useMappedPoint(point:SessionCoordinates,requestId:number){
+  const loc=await describeSessionCoordinates(point);
+  if(locationRequest.current!==requestId)return;
+  setVenueChosen(null);clearVenueSearch();
+  setLocationAccuracy(point.accuracyMeters);
+  setForm(prev=>({...prev,venueId:null,city:loc.city,address:loc.address,
+    latitude:loc.latitude,longitude:loc.longitude,locationConfirmed:false}));
+  setLocationMessage('Morada aproximada. Confirma o ponto no mapa antes de continuar.');
+ }
+ async function useCurrentLocation(){
+  if(busy||locationLoading)return;
+  const requestId=++locationRequest.current;
+  setLocationLoading(true);setLocationMessage('');
+  try{await useMappedPoint(await getCurrentSessionCoordinates(),requestId);}
+  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível obter a localização.');}
+  finally{if(locationRequest.current===requestId)setLocationLoading(false);}
+ }
+ async function useMapsLink(){
+  if(busy||locationLoading)return;
+  const requestId=++locationRequest.current;
+  setLocationLoading(true);setLocationMessage('');
+  try{await useMappedPoint(await resolveSessionMapLink(mapsLink),requestId);}
+  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível resolver a ligação.');}
+  finally{if(locationRequest.current===requestId)setLocationLoading(false);}
+ }
+ function previewMappedPoint(){
+  if(form.latitude==null||form.longitude==null)return;
+  void Linking.openURL(googleMapsPreview(form.latitude,form.longitude)).catch(()=>setLocationMessage('Não foi possível abrir o Google Maps. Confirma o ponto antes de continuar.'));
+ }
  function clearVenueSearch(){
   venueSearchVersion.current+=1;
   setVenueMatches([]);
@@ -92,12 +140,12 @@ export default function CreateSessionScreen(){
   }
  }
  function useVenue(v:VenueSummary){
-  clearVenueSearch();
+  clearMappedLocation();clearVenueSearch();
   setVenueChosen(v);
   setForm(previous=>chooseVenueLocation(previous,v));
  }
  function removeVenue(){
-  clearVenueSearch();
+  clearMappedLocation();clearVenueSearch();
   setVenueChosen(null);setForm(previous=>detachVenueLocation(previous));
  }
  function venueSupportsSport(v:VenueSummary,sport:string){
@@ -145,6 +193,7 @@ export default function CreateSessionScreen(){
    setExtraDay('');setExtraTime('');
    setVenueQuery('');setVenueCityQuery('');
    setVenueChosen(null);clearVenueSearch();
+   locationRequest.current++;setLocationMode('saved');setMapsLink('');setLocationAccuracy(null);setLocationMessage('');setLocationLoading(false);
    createOperation.current++;setBusy(locked.current);setError('');
   }
   setBusy(locked.current);
@@ -157,7 +206,10 @@ export default function CreateSessionScreen(){
  },[loadCommunities,auth.username,auth.token,requestedCommunityId]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
-  if(key==='city')clearVenueSearch();
+  if(key==='city'||key==='address'){
+    clearVenueSearch();
+    if(form.latitude!=null||form.longitude!=null)clearMappedLocation();
+  }
   const next=typeof value==='string'?
    (key==='day'||key==='registrationDay'?formatLocalDateInput(value):
     key==='time'||key==='registrationTime'?formatLocalTimeInput(value):value):value;
