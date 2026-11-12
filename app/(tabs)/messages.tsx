@@ -191,7 +191,7 @@ export default function MessagesScreen(){
   {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
    <Pressable
     accessibilityRole="button"
-    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
+    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.title||item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
@@ -201,7 +201,7 @@ export default function MessagesScreen(){
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
-       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.kind==='community'?'Comunidade #'+item.id:'Sessão #'+item.id}</Text>
+       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?'Comunidade':'Sessão desportiva')}</Text>
        {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
       <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||'Abre para começar a conversa'}</Text>
