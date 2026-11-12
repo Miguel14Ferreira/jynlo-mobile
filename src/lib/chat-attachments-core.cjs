@@ -48,4 +48,12 @@ function chatAttachmentList(message){
  return [{index:0,name:message.attachmentName,mime:message.attachmentMimeType||null,
   size:message.attachmentSize??null}];
 }
-module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,chatAttachmentList};
+// Prefetch a bounded number of recent image albums. The attachments are still
+// downloaded with per-account Authorization and deleted when chat loses focus.
+function recentPreviewMessageIds(messages,maxMessages=2){
+ if(!Array.isArray(messages)||!Number.isSafeInteger(maxMessages)||maxMessages<1||maxMessages>4)return [];
+ const eligible=messages.filter(message=>message&&Number.isSafeInteger(message.id)&&message.id>0&&!message.deletedAt&&
+  chatAttachmentList(message).some(file=>typeof file.mime==='string'&&file.mime.startsWith('image/')));
+ return eligible.slice(-maxMessages).map(message=>message.id);
+}
+module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,chatAttachmentList,recentPreviewMessageIds};
