@@ -62,7 +62,14 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
     if(response.status===503)throw Error('O armazenamento privado está indisponível.');
     throw Error('O servidor não aceitou o álbum. Verifica o histórico antes de repetir.');
    }
-   const reply=await response.json() as {id?:number;attachments?:Array<{index:number}>};
+   // A 2xx response can already have created the message even if its JSON
+   // body is truncated. Never describe this as a connection failure.
+   let reply:{id?:number;attachments?:Array<{index:number}>};
+   try{
+    reply=await response.json() as typeof reply;
+   }catch{
+    throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');
+   }
    if(typeof reply?.id!=='number'||!Number.isSafeInteger(reply.id)||reply.id<=0||
       !Array.isArray(reply.attachments)||reply.attachments.length!==photos.length)
     throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');
