@@ -21,7 +21,7 @@ export default function PrivateStoryReplies(){
   busy.current=true;setLoading(true);setError('');
   const requestedPage=page.current;
   try{
-   const results=await myStoryReplies(auth.token,requestedPage);
+   const results=await myStoryReplies(auth.token,requestedPage,auth.username);
    if(version!==generation.current||identity!==currentAccount.current)return;
    setItems(previous=>requestedPage===0?results:[...previous,...results.filter(reply=>!previous.some(old=>old.id===reply.id))]);
    page.current=requestedPage+1;
