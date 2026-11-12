@@ -3,7 +3,7 @@ name: Jynlo Android - diagnostico manual
 # Manual only. The Android build starts ONLY after tests, TypeScript and
 # native prebuild all succeed. No GitHub Actions runner is required.
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 jobs:
   mobile_preflight:
