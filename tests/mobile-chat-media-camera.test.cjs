@@ -1,0 +1,20 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..');
+function source(file){return fs.readFileSync(path.join(root,file),'utf8');}
+for(const screen of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+ test(screen+' can launch camera and gallery without bypassing media validation',()=>{
+  const code=source(screen);
+  assert.match(code,/async function choosePhoto\(source:'gallery'\|'camera'='gallery'\)/);
+  assert.match(code,/source==='camera'\?/);
+  assert.match(code,/launchCameraAsync\(\{mediaTypes:\['images','videos'\]/);
+  assert.match(code,/videoMaxDuration:30/);
+  assert.match(code,/launchImageLibraryAsync\(\{mediaTypes:\['images','videos'\]/);
+  assert.match(code,/allowsMultipleSelection:true,selectionLimit:4/);
+  assert.match(code,/validateChatAlbum\(/);
+  assert.match(code,/title="Abrir câmara"/);
+  assert.match(code,/void choosePhoto\('camera'\)/);
+  assert.match(code,/accessibilityLabel="Legenda dos anexos"/);
+ });
+}
