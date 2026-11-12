@@ -198,6 +198,7 @@ export default function NotificationsScreen(){
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
+  {sameAccount?<Button secondary title="Respostas privadas às minhas Stories" onPress={()=>router.push('/stories/replies')}/>:null}
   {loading?<Loader/>:null}
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}
   {sameAccount&&notice?<Message>{notice}</Message>:null}
