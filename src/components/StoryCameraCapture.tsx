@@ -19,7 +19,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const [recording,setRecording]=useState(false);
  const recordingRef=useRef(false);
  const alive=useRef(true);
- useEffect(()=>()=>{alive.current=false;if(recordingRef.current)camera.current?.stopRecording();},[]);
+ useEffect(()=>{alive.current=true;return ()=>{alive.current=false;if(recordingRef.current)camera.current?.stopRecording();};},[]);
  const [facing,setFacing]=useState<'back'|'front'>('back');
  const [busy,setBusy]=useState(false);
  const [cameraReady,setCameraReady]=useState(false);
