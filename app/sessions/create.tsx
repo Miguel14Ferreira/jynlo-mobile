@@ -257,6 +257,7 @@ export default function CreateSessionScreen(){
    try{
     parseSessionDate(form.day,form.time);
     if(!form.city.trim()||!form.address.trim())throw new Error('Indica a localidade e a morada.');
+    if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error('Confirma o ponto no mapa antes de continuar.');
     if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
      throw new Error('O recinto selecionado já não é compatível com a modalidade.');
    }catch(e){setError(e instanceof Error?e.message:'Verifica a data e o local.');return;}
@@ -287,6 +288,7 @@ export default function CreateSessionScreen(){
     throw Error('O estado das classificações da comunidade mudou. Seleciona novamente a comunidade.');
    if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
     throw Error('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.');
+   if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error('Confirma a localização escolhida antes de criar.');
    payload=createSessionPayload(form,SPORTS);setError('');
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
@@ -430,6 +432,48 @@ export default function CreateSessionScreen(){
   {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
    {field('Data','day','AAAA-MM-DD','numeric')}{field('Hora local','time','HH:mm (24h)','numeric')}
    <Text style={styles.note}>Escreve a data com oito dígitos e a hora com quatro (ex.: 20261208 e 1930). Os separadores são acrescentados automaticamente.</Text>
+   <View style={styles.locationOptions}>
+    <Text style={styles.heading}>Usar um recinto conhecido</Text>
+    <Text style={styles.note}>Escolhe um recinto da Jynlo, partilha um link Google Maps ou confirma a localização onde estás.</Text>
+    <View style={styles.locationModes}>
+      {([{id:'saved',title:'Recinto guardado'},{id:'link',title:'Ligação Google Maps'},{id:'gps',title:'Estou no recinto'}] as const).map(mode=>
+       <Pressable key={mode.id} accessibilityRole="button"
+        accessibilityState={{selected:locationMode===mode.id}}
+        disabled={busy||locationLoading} onPress={()=>selectLocationMode(mode.id)}
+        style={[styles.locationModeButton,locationMode===mode.id&&styles.locationModeActive]}>
+        <Text style={styles.locationModeText}>{mode.title}</Text>
+       </Pressable>)}
+    </View>
+    {locationMode==='gps'?<View style={styles.locationModePanel}>
+      <Text style={styles.note}>Já estás no campo? Autoriza o GPS apenas ao tocar no botão. Depois confirma o ponto no Google Maps.</Text>
+      <Button title={locationLoading?'A obter localização…':'Usar localização atual'}
+       secondary disabled={busy||locationLoading} onPress={()=>{void useCurrentLocation();}}/>
+    </View>:null}
+    {locationMode==='link'?<View style={styles.locationModePanel}>
+      <Text style={styles.note}>Cola o link do pin partilhado no Google Maps.</Text>
+      <TextInput value={mapsLink} onChangeText={setMapsLink} editable={!locationLoading&&!busy}
+       style={styles.input} autoCapitalize="none" keyboardType="url"
+       placeholder="https://maps.app.goo.gl/…" placeholderTextColor={C.muted}
+       accessibilityLabel="Ligação do Google Maps"/>
+      <Button title={locationLoading?'A localizar…':'Usar ponto do Google Maps'}
+       secondary disabled={busy||locationLoading||!mapsLink.trim()} onPress={()=>{void useMapsLink();}}/>
+    </View>:null}
+    {locationMessage?<Message>{locationMessage}</Message>:null}
+    {locationMode!=='saved'&&form.latitude!=null&&form.longitude!=null?<View style={styles.locationModePanel}>
+      <Text style={styles.optionText}>Ponto GPS identificado</Text>
+      <Text style={styles.note}>Localidade: {form.city} · Morada aproximada: {form.address}</Text>
+      {locationAccuracy!=null?<Text style={styles.note}>Precisão estimada: ±{Math.round(locationAccuracy)} m.</Text>:null}
+      {locationAccuracy!=null&&locationAccuracy>100?<Message>O GPS tem precisão reduzida. Confirma cuidadosamente o local antes de publicar.</Message>:null}
+      <Button secondary title="Confirmar ponto no Google Maps" disabled={busy} onPress={previewMappedPoint}/>
+      <Pressable accessibilityRole="checkbox" accessibilityState={{checked:form.locationConfirmed===true}}
+       onPress={()=>setForm(prev=>({...prev,locationConfirmed:!prev.locationConfirmed}))}
+       style={styles.locationConfirm}>
+        <Text style={styles.optionText}>{form.locationConfirmed?'☑':'☐'} Confirmei que o ponto corresponde ao recinto correto</Text>
+      </Pressable>
+      <Button secondary title="Remover ponto GPS" disabled={busy} onPress={clearMappedLocation}/>
+    </View>:null}
+   </View>
+   {locationMode==='saved'?<>
    {venueChosen?<View style={styles.option}>
     <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
     <Text style={styles.note}>{venueChosen.address||'Morada por indicar'} · {venueChosen.city||'Localidade por indicar'}</Text>
@@ -454,7 +498,8 @@ export default function CreateSessionScreen(){
     <Text style={styles.note}>Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.</Text>:null}
    {venueHasMore?<Button secondary title={venueLoading?'A carregar…':'Mostrar mais recintos'}
     disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
-   {venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
+   </>:null}
+   {locationMode==='saved'&&venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
     <Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
     {venueChosen?<Message>Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.</Message>:null}
     {field('Localidade','city','Ex.: Lisboa')}
@@ -566,6 +611,14 @@ export default function CreateSessionScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ locationOptions:{gap:12,padding:12,borderRadius:15,backgroundColor:C.surface2,borderColor:C.border,borderWidth:1},
+ locationModes:{gap:8},
+ locationModeButton:{minHeight:48,paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,justifyContent:'center',alignItems:'center'},
+ locationModeActive:{borderColor:C.mint,backgroundColor:'#10483F'},
+ locationModeText:{color:C.white,fontSize:13,fontWeight:'800'},
+ locationModePanel:{gap:10,padding:12,borderRadius:12,borderColor:C.border,borderWidth:1},
+ locationConfirm:{minHeight:56,justifyContent:'center',padding:10,backgroundColor:'#10483F',borderRadius:10},
+
  seasonHead:{gap:10,alignItems:'flex-start'},
  seasonHelp:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingVertical:8,paddingHorizontal:12,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.mint},
  seasonHelpText:{color:C.mint,fontWeight:'800',fontSize:13},
