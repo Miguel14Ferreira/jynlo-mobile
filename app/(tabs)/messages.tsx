@@ -8,6 +8,7 @@ import {useAuth} from '../../src/lib/auth';
 import {communityInbox,directInbox,sessionInbox} from '../../src/lib/chat-api';
 import {listConversationMutes,setConversationMuted,isConversationMuted,type MutedConversation} from '../../src/lib/conversation-mutes-api';
 import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
+import {myUnreadNotificationCount} from '../../src/lib/notifications-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {CommunityInvite,JynloInboxSummary} from '../../src/lib/types';
@@ -16,6 +17,7 @@ export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
  const [chatWarning,setChatWarning]=useState('');
+ const [notificationUnread,setNotificationUnread]=useState(0);
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
  const [incomingCall,setIncomingCall]=useState<DirectCallInvitation|null>(null);
  const [mutes,setMutes]=useState<MutedConversation[]>([]);
@@ -36,15 +38,16 @@ export default function MessagesScreen(){
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(busyVersion.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
-   setItems([]);setInvites([]);setIncomingCall(null);setLastSyncedAt(null);setLoading(false);return;
+   setItems([]);setInvites([]);setIncomingCall(null);setNotificationUnread(0);setLastSyncedAt(null);setLoading(false);return;
   }
   busyVersion.current=version;
   const initialMuteRevision=muteRevision.current;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
-   const [groups,privateChats,sessionChats,requests,call,muted]=await Promise.allSettled([
+   const [groups,privateChats,sessionChats,requests,call,muted,unreadNotifications]=await Promise.allSettled([
     communityInbox(auth.token,auth.username),directInbox(auth.token),sessionInbox(auth.token,auth.username),
-    myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token),listConversationMutes(auth.token)
+    myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token),listConversationMutes(auth.token),
+    myUnreadNotificationCount(auth.token)
    ]);
    if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
@@ -54,6 +57,7 @@ export default function MessagesScreen(){
     ...(sessionChats.status==='fulfilled'?sessionChats.value:previous.filter(i=>i.kind==='session'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
+   if(unreadNotifications.status==='fulfilled')setNotificationUnread(unreadNotifications.value);
    if(muted.status==='fulfilled'){
     // Do not overwrite freshly changed preferences with a stale poll response.
     if(muteWrites.current.size===0&&muteRevision.current===initialMuteRevision){setMutes(muted.value);setMuteKnown(true);setMuteError('');}
@@ -85,7 +89,7 @@ export default function MessagesScreen(){
  useFocusEffect(useCallback(()=>{
   const currentIdentity=auth.username+'|'+auth.token;
   if(identity.current!==currentIdentity){
-   identity.current=currentIdentity;setItems([]);setInvites([]);setIncomingCall(null);
+   identity.current=currentIdentity;setItems([]);setInvites([]);setIncomingCall(null);setNotificationUnread(0);
    setLastSyncedAt(null);setChatWarning('');setError('');
    muteRevision.current++;
    setMutes([]);setMuteKnown(false);setMuteError('');setMutingKey(null);
@@ -147,7 +151,7 @@ export default function MessagesScreen(){
    <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
     <Text style={styles.sub}>Conversas privadas, comunidades e sessões, num só lugar.</Text>
    </View>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><Text style={styles.notificationIcon}>♢</Text><Text style={styles.notificationLabel}>Alertas</Text></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><Text style={styles.notificationIcon}>♢</Text><Text style={styles.notificationLabel}>Alertas{sameIdentity&&notificationUnread>0?' · '+(notificationUnread>99?'99+':notificationUnread):''}</Text></Pressable>
   </View>
   {auth.token?<View style={styles.searchBox}>
    <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar conversas…"
