@@ -32,6 +32,42 @@ export async function sendCommunityMessage(id:number,body:string,token:string,us
  // Never repeat this POST after a timeout without verifying history.
  return request<CommunityChatEntry>(base(id),{token,method:'POST',body:{body:text,...(replyToMessageId!=null?{replyToMessageId}:{})}});
 }
+/** Mutations are authorized server-side. Never infer that a failed POST/PUT succeeded. */
+export async function editCommunityChatMessage(id:number,messageId:number,text:string,token:string,username:string):Promise<CommunityChatEntry>{
+ await member(id,token,username);
+ if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Mensagem inválida.');
+ const body=text.trim();
+ if(!body||body.length>2000||body.startsWith('[JYNLO:GIPHY:1]'))throw Error('A mensagem editada deve ter entre 1 e 2000 caracteres.');
+ if(DEMO_MODE){
+  const history=threads.get(safeId(id))||[],existing=history.find(item=>item.id===messageId);
+  if(!existing||existing.username.toLowerCase()!==username.toLowerCase()||existing.deletedAt||
+      existing.attachmentName||!Number.isFinite(Date.parse(existing.createdAt))||
+      Date.now()-Date.parse(existing.createdAt)>15*60*1000)
+   throw Error('Esta mensagem já não pode ser editada.');
+  const updated={...existing,body,editedAt:new Date().toISOString()};
+  threads.set(safeId(id),history.map(item=>item.id===messageId?updated:item));
+  notifyDemoCommunityMessage(updated);return updated;
+ }
+ return request<CommunityChatEntry>(base(id)+'/'+messageId,{
+  token,method:'PUT',body:{text:body}
+ });
+}
+export async function deleteCommunityChatMessageForEveryone(id:number,messageId:number,token:string,username:string):Promise<CommunityChatEntry>{
+ await member(id,token,username);
+ if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Mensagem inválida.');
+ if(DEMO_MODE){
+  const history=threads.get(safeId(id))||[],existing=history.find(item=>item.id===messageId);
+  if(!existing||existing.username.toLowerCase()!==username.toLowerCase()||existing.deletedAt)
+   throw Error('Não é possível eliminar esta mensagem.');
+  const updated={...existing,body:'',deletedAt:new Date().toISOString()};
+  threads.set(safeId(id),history.map(item=>item.id===messageId?updated:
+   item.replyToMessageId===messageId?{...item,replyToText:'Mensagem removida'}:item));
+  notifyDemoCommunityMessage(updated);return updated;
+ }
+ return request<CommunityChatEntry>(base(id)+'/'+messageId+'/for-everyone',{
+  token,method:'DELETE'
+ });
+}
 export async function communityInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
  const groups=await myCommunities(token,username);
