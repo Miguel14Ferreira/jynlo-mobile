@@ -1,20 +1,9 @@
 name: Jynlo Mobile - Code Checks
 
+# GitHub-hosted Actions quota is exhausted. Local Windows checks now run
+# through scripts/validate-local.ps1. Keep this workflow manual-only so ordinary
+# develop commits do not create doomed jobs or use Actions minutes.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - 'app/**'
-      - 'src/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'app.json'
-      - 'app.config.js'
-      - 'eas.json'
-      - '.github/workflows/mobile-code-checks.yml'
-      - '.github/workflows/build-android-signed-apk.yml'
-      - '.github/workflows/android-launch-diagnostic.yml'
   workflow_dispatch:
 
 permissions:
