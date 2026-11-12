@@ -44,9 +44,9 @@ test('prepared video uses local measured file size and cleans copied content URI
  assert.match(s,/prepareChatMedia/);
  assert.match(s,/asset.type==='video'\?20\*1024\*1024:5\*1024\*1024/);
  assert.match(s,/source\.copy|original\.copy/);
- assert.match(s,/measuredPhotoSize\(actual,asset.fileSize\)/);
- assert.match(s,/asset.type==='video'&&\(!Number.isSafeInteger\(actual\)\|\|actual<=0\)/);
- assert.match(s,/asset.type==='video'\?actual:measuredPhotoSize\(actual,asset.fileSize\)/);
+ assert.doesNotMatch(s,/measuredPhotoSize\(actual,asset.fileSize\)/);
+ assert.match(s,/!Number.isSafeInteger\(actual\)\|\|actual<=0/);
+ assert.match(s,/const size=actual/);
  assert.match(s,/temporary\?\.exists\)temporary\.delete\(\)/);
 });
 
