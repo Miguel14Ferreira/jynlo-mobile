@@ -16,6 +16,7 @@ test('only authenticated recipient sees previously stored Story replies',()=>{
  const screen=read('app/stories/replies.tsx');
  assert.match(screen,/sameAccount=Boolean\(auth\.token&&auth\.username&&identity===currentAccount\.current\)/);
  assert.match(screen,/sameAccount\?items\.map\(reply=>/);
+ assert.match(screen,/myStoryReplies\(auth\.token,requestedPage,auth\.username\)/);
  assert.match(screen,/generation\.current/);
  assert.match(screen,/page\.current=requestedPage\+1/);
  assert.match(screen,/setHasMore\(results\.length===20\)/);
