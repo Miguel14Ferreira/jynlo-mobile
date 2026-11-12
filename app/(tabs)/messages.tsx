@@ -23,6 +23,7 @@ export default function MessagesScreen(){
  const [muteError,setMuteError]=useState('');
  const [mutingKey,setMutingKey]=useState<string|null>(null);
  const muteWrites=useRef(new Set<string>());
+ const muteRevision=useRef(0);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
@@ -38,6 +39,7 @@ export default function MessagesScreen(){
    setItems([]);setInvites([]);setIncomingCall(null);setLastSyncedAt(null);setLoading(false);return;
   }
   busyVersion.current=version;
+  const initialMuteRevision=muteRevision.current;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
    const [groups,privateChats,sessionChats,requests,call,muted]=await Promise.allSettled([
@@ -54,7 +56,7 @@ export default function MessagesScreen(){
    if(requests.status==='fulfilled')setInvites(requests.value);
    if(muted.status==='fulfilled'){
     // Do not overwrite freshly changed preferences with a stale poll response.
-    if(muteWrites.current.size===0){setMutes(muted.value);setMuteKnown(true);setMuteError('');}
+    if(muteWrites.current.size===0&&muteRevision.current===initialMuteRevision){setMutes(muted.value);setMuteKnown(true);setMuteError('');}
    }else if(!muteKnown){setMuteError('Não foi possível consultar as preferências de avisos.');}
    if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
    else setIncomingCall(null); // Never present an unverified stale invitation as active.
@@ -85,6 +87,7 @@ export default function MessagesScreen(){
   if(identity.current!==currentIdentity){
    identity.current=currentIdentity;setItems([]);setInvites([]);setIncomingCall(null);
    setLastSyncedAt(null);setChatWarning('');setError('');
+   muteRevision.current++;
    setMutes([]);setMuteKnown(false);setMuteError('');setMutingKey(null);
    setSearch('');setUnreadOnly(false);
   }
@@ -126,10 +129,10 @@ export default function MessagesScreen(){
     {text:'Cancelar',style:'cancel'},
     {text:muted?'Ativar avisos':'Silenciar',onPress:()=>{
       if(identity.current!==actor||muteWrites.current.has(key))return;
-      muteWrites.current.add(key);setMutingKey(key);setMuteError('');
+      muteWrites.current.add(key);muteRevision.current++;setMutingKey(key);setMuteError('');
       void setConversationMuted(item.kind,item.id,!muted,token).then(async()=>{
         const confirmed=await listConversationMutes(token);
-        if(identity.current===actor){setMutes(confirmed);setMuteKnown(true);}
+        if(identity.current===actor){muteRevision.current++;setMutes(confirmed);setMuteKnown(true);}
       }).catch(()=>{
         if(identity.current===actor)setMuteError('Não foi possível confirmar a alteração. Volta a atualizar antes de repetir.');
       }).finally(()=>{
