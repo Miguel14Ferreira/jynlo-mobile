@@ -199,6 +199,8 @@ export default function JynloFeedHome(){
   const [composerOpen,setComposerOpen]=useState(false);
   const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia|null>(null);
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
+  // State updates are async: refs prevent duplicate POSTs during rapid taps.
+  const postInFlight=useRef(false),storyInFlight=useRef(false);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
@@ -353,13 +355,36 @@ export default function JynloFeedHome(){
       setter({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
     }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
   }
-  async function submitPost(){if(!requireLogin()||publishing||(!composerMedia&&!composerText.trim()))return;
-    setPublishing(true);try{await publishPost(composerText,composerMedia,auth.token,auth.username);setComposerText('');setComposerMedia(null);setComposerOpen(false);await load();}
-    catch(e){Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível publicar.');}finally{setPublishing(false);}
+  async function submitPost(){
+    if(!requireLogin()||postInFlight.current||(!composerMedia&&!composerText.trim()))return;
+    const actor=auth.token,username=auth.username,body=composerText,media=composerMedia;
+    postInFlight.current=true;setPublishing(true);
+    try{
+      await publishPost(body,media,actor,username);
+    }catch(e){
+      Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
+      return;
+    }finally{postInFlight.current=false;setPublishing(false);}
+    // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
+    if(auth.token===actor&&auth.username===username){
+      setComposerText('');setComposerMedia(null);setComposerOpen(false);
+      void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
+    }
   }
-  async function submitStory(){if(!requireLogin()||storyPublishing||!storyMedia)return;
-    setStoryPublishing(true);try{await publishStory(storyCaption,storyMedia,auth.token,auth.username);setStoryCaption('');setStoryMedia(null);setStoryComposer(false);await load();}
-    catch(e){Alert.alert('Story',e instanceof Error?e.message:'Não foi possível publicar.');}finally{setStoryPublishing(false);}
+  async function submitStory(){
+    if(!requireLogin()||storyInFlight.current||!storyMedia)return;
+    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia;
+    storyInFlight.current=true;setStoryPublishing(true);
+    try{
+      await publishStory(body,media,actor,username);
+    }catch(e){
+      Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
+      return;
+    }finally{storyInFlight.current=false;setStoryPublishing(false);}
+    if(auth.token===actor&&auth.username===username){
+      setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
+      void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
+    }
   }
   async function toggleLike(item:FeedItem){if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null)return;
     setBusyPost(item.postId);try{await likePost(item.postId,item.likedByMe,auth.token,auth.username);await load();}
