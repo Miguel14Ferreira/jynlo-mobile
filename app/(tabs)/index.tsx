@@ -11,6 +11,7 @@ import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publ
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
+import {albumError,mergeAlbum,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
 
@@ -199,7 +200,7 @@ export default function JynloFeedHome(){
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
   const [composerOpen,setComposerOpen]=useState(false);
-  const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia|null>(null);
+  const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false);
@@ -223,7 +224,7 @@ export default function JynloFeedHome(){
       setPosts([]);setStories([]);setOwnStories([]);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
-      setComposerOpen(false);setComposerMedia(null);setComposerText('');
+      setComposerOpen(false);setComposerMedia([]);setComposerText('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
     }
     setLoading(true);setError('');
@@ -365,23 +366,35 @@ export default function JynloFeedHome(){
     Alert.alert('Opções de publicação','Escolhe o que pretendes fazer.',actions);
   }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
-  async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery'){
+  async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery',album=false){
     if(!requireLogin())return;
     try{const ImagePicker=await import('expo-image-picker');
-      const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86});
+      const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:MAX_ALBUM_ITEMS}: {})});
       if(result.canceled||!result.assets.length)return;
-      const asset=result.assets[0];if(!asset)return;const kind=asset.type==='video'?'video':'image';
-      const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
-      const size=asset.fileSize||0;
-      // Some Android gallery providers omit fileSize: validate type now and compute size from the file before upload.
-      const validation=validateMedia(mime,size||1,setter===setStoryMedia);
-      if(validation){Alert.alert('Ficheiro não aceite',size===0?'Não foi possível obter o tamanho do ficheiro.':validation);return;}
-      setter({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
+      const prepared:MobileMedia[]=[];
+      for(const asset of result.assets){
+        const kind=asset.type==='video'?'video':'image';
+        const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
+        let size=asset.fileSize||0;
+        if(!size){
+          try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
+        }
+        const validation=validateMedia(mime,size||1,!album&&setter===setStoryMedia);
+        if(validation||!size){Alert.alert('Ficheiro não aceite',!size?'Não foi possível confirmar o tamanho do ficheiro.':validation!);return;}
+        prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
+      }
+      if(album){
+        const next=mergeAlbum(composerMedia,prepared);
+        if(next.length>MAX_ALBUM_ITEMS){Alert.alert('Álbum completo','Podes escolher até 6 fotografias ou vídeos.');return;}
+        const error=albumError(next);
+        if(error){Alert.alert('Álbum não aceite',error);return;}
+        setComposerMedia(next);
+      }else if(prepared[0])setter(prepared[0]);
     }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
   }
   async function submitPost(){
-    if(!requireLogin()||postInFlight.current||(!composerMedia&&!composerText.trim()))return;
-    const actor=auth.token,username=auth.username,body=composerText,media=composerMedia;
+    if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
+    const actor=auth.token,username=auth.username,body=composerText,media=[...composerMedia];
     postInFlight.current=true;setPublishing(true);
     try{
       await publishPost(body,media,actor,username);
@@ -391,7 +404,7 @@ export default function JynloFeedHome(){
     }finally{postInFlight.current=false;setPublishing(false);}
     // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
     if(feedIdentity.current===`${username}:${actor}`){
-      setComposerText('');setComposerMedia(null);setComposerOpen(false);
+      setComposerText('');setComposerMedia([]);setComposerOpen(false);
       void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
     }
   }
@@ -453,7 +466,7 @@ export default function JynloFeedHome(){
     </Pressable>;
   }
   function PostCard({item}:{item:FeedItem}){
-    const media=mediaSource(item.imageUrl),video=mediaSource(item.videoUrl);const likeBusy=busyPost===item.postId;
+    const album=postMediaItems(item);const likeBusy=busyPost===item.postId;
     return <View style={styles.postCard}>
       <View style={styles.postTop}><CircleAvatar name={item.authorDisplayName||item.authorUsername} image={item.authorProfilePicUrl} size={43}/>
         <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
@@ -461,8 +474,12 @@ export default function JynloFeedHome(){
         <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable>
         {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><Text style={{color:MUTED,fontSize:24}}>⋯</Text></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
-      {media?<Image source={{uri:media}} style={styles.postImage} resizeMode="cover"/>:null}
-      {video?<MediaVideo uri={video}/>:null}
+      {album.length?<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
+        {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:340,position:'relative'}}>
+          {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<Image source={{uri}} style={styles.postImage} resizeMode="cover"/>):null}
+          {album.length>1?<View style={styles.albumCounter}><Text style={styles.albumCounterText}>{i+1}/{album.length}</Text></View>:null}
+        </View>;})}
+      </ScrollView>:null}
       {item.type==='POST'?<><View style={styles.postActions}>
         <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postAction} accessibilityRole="button" accessibilityLabel={item.likedByMe?'Retirar gosto':'Gostar'}><Text style={[styles.actionIcon,item.likedByMe&&{color:'#FF7797'}]}>{item.likedByMe?'♥':'♡'}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou desta publicação"} disabled={Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())||!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(item.postId)}})} style={styles.postAction}><Text style={styles.actionCount}>{item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${item.likeCount} gostos`}</Text></Pressable>
         <Pressable onPress={()=>{void openComments(item);}} style={styles.postAction} accessibilityRole="button" accessibilityLabel="Abrir comentários"><Text style={styles.actionIcon}>♧</Text><Text style={styles.actionCount}>{item.commentCount}</Text></Pressable>
@@ -526,17 +543,24 @@ export default function JynloFeedHome(){
         <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={()=>setComposerOpen(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(setComposerMedia,'camera')} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(setComposerMedia,'gallery')} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
           </View>
-          {composerMedia?<View style={styles.postMediaPreview}>
-            {composerMedia.type==='image'?<Image source={{uri:composerMedia.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={composerMedia.uri} uri={composerMedia.uri}/>}
-            <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{composerMedia.type==='image'?'Fotografia':'Vídeo'} · {composerMedia.fileName}</Text><Pressable accessibilityRole="button" accessibilityLabel="Remover media da publicação" disabled={publishing} onPress={()=>setComposerMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable></View>
-          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta uma fotografia ou vídeo.</Text></View>}
+          {composerMedia.length?<View style={styles.postMediaPreview}>
+            <Text style={styles.storiesIntro}>{composerMedia.length}/6 ficheiros · Desliza para pré-visualizar</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{gap:10,paddingVertical:8}}>
+              {composerMedia.map((media,i)=><View key={media.uri} style={{width:230,gap:5}}>
+                {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="cover" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
+                <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{i+1}. {media.fileName}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>setComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
+                </View>
+              </View>)}
+            </ScrollView>
+          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.</Text></View>}
           <TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
         </ScrollView>
-        <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
       </SafeAreaView>
     </Modal>
 
@@ -563,6 +587,8 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+  albumCounter:{position:'absolute',right:10,top:10,paddingHorizontal:9,paddingVertical:4,borderRadius:12,backgroundColor:'rgba(0,0,0,.72)'},
+  albumCounterText:{color:'#fff',fontWeight:'800',fontSize:12},
   hiddenNotice:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
   hiddenNoticeText:{flex:1,color:WHITE,fontSize:12},hiddenUndo:{minHeight:42,justifyContent:'center',paddingHorizontal:8},
   screenPad:{paddingHorizontal:12,gap:9},navHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:11,paddingBottom:3},brand:{flexDirection:'row',alignItems:'center',gap:9},brandLogo:{width:32,height:32,borderRadius:9},brandName:{color:WHITE,fontSize:19,fontWeight:'900',letterSpacing:2.2},headerRight:{flexDirection:'row',alignItems:'center',gap:9},headerCircle:{borderRadius:22,width:37,height:37,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BORDER,backgroundColor:PANEL},headerIcon:{color:WHITE,fontSize:24},pulse:{position:'absolute',width:6,height:6,right:7,top:5,borderRadius:3,backgroundColor:TEAL},headerUser:{flexDirection:'row',alignItems:'center',gap:6,borderRadius:22,paddingRight:10,paddingLeft:3,paddingVertical:3,borderWidth:1,borderColor:'#14616D',backgroundColor:'#072B35',maxWidth:128},headerName:{color:WHITE,fontSize:11,fontWeight:'800',maxWidth:65},
