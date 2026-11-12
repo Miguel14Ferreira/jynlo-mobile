@@ -41,7 +41,7 @@ test('Feed mobile usa hero compacto sem recorte de imagem e separadores respeita
 test('Feed apresenta stories e criação de publicações num ecrã próprio',()=>{
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/const \[composerOpen,setComposerOpen\]=useState\(false\)/);
- assert.match(feed,/<Modal visible=\{composerOpen\}/);
+ assert.match(feed,/<Modal visible=\{identityMatches&&composerOpen\}/);
  assert.doesNotMatch(feed,/\{composerOpen\?<><TextInput/);
  assert.match(feed,/storiesCard:\{paddingVertical:10,gap:8\}/);
  assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:10\}/);
