@@ -1,0 +1,37 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+test('community API uses real edit and delete-for-everyone routes, never deleting without authorization',()=>{
+ const api=read('src/lib/chat-api.ts');
+ assert.match(api,/export async function editCommunityChatMessage\(/);
+ assert.match(api,/export async function deleteCommunityChatMessageForEveryone\(/);
+ assert.match(api,/base\(id\)\+'\/'\+messageId[\s\S]*?method:'PUT',body:\{text:body\}/);
+ assert.match(api,/base\(id\)\+'\/'\+messageId\+'\/for-everyone'/);
+ assert.match(api,/method:'DELETE'/);
+ assert.match(api,/await member\(id,token,username\)/);
+ assert.match(api,/existing\.username\.toLowerCase\(\)!==username\.toLowerCase\(\)/);
+});
+test('community chat exposes edit for own recent plain messages and delete with confirmation',()=>{
+ const screen=read('app/communities/[id]/chat.tsx');
+ assert.match(screen,/function ownMessage\(/);
+ assert.match(screen,/message\.username\.toLowerCase\(\)===auth\.username\.toLowerCase\(\)/);
+ assert.match(screen,/function editable\(/);
+ assert.match(screen,/!message\.attachmentName/);
+ assert.match(screen,/!message\.attachments\?\.length/);
+ assert.match(screen,/Date\.now\(\)-created<=15\*60\*1000/);
+ assert.match(screen,/Alert\.alert\('Apagar mensagem para todos\?'/);
+ assert.match(screen,/accessibilityLabel="Opções da minha mensagem"/);
+ assert.match(screen,/accessibilityLabel="Editar mensagem"/);
+ assert.match(screen,/m\.editedAt\?' · editada'/);
+ assert.match(screen,/m\.deletedAt\?'Mensagem removida'/);
+});
+test('mutations lock concurrent writes and leave uncertain failures visible',()=>{
+ const screen=read('app/communities/[id]/chat.tsx');
+ assert.match(screen,/mutationLock\.current=true;setMutationBusy\(true\)/);
+ assert.match(screen,/if\(mutationLock\.current\|\|sendingNow\.current\|\|uploadingNow\.current/);
+ assert.match(screen,/activeChat\.current!==identity/);
+ assert.match(screen,/Consulta o histórico antes de repetir/);
+ assert.match(screen,/setReply\(current=>current\?\.id===message\.id\?null:current\)/);
+ assert.match(screen,/await refresh\(version,true\)/);
+});
