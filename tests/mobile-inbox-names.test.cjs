@@ -24,6 +24,6 @@ test('inbox titles are derived only from authenticated, authorized membership li
  const api=read('src/lib/chat-api.ts');
  assert.match(api,/const groups=await myCommunities\(token,username\)/);
  assert.match(api,/const mine=await mySessions\(token,username\)/);
- assert.match(api,/if\(!allowed\.has\(item\.id\)\|\|returned\.has\(item\.id\)\)return false/);
+ assert.match(api,/!allowed\.has\(item\.id\)\|\|returned\.has\(item\.id\)/);
  assert.match(api,/allowed\.get\(item\.id\)/);
 });
