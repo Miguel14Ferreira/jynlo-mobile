@@ -11,7 +11,7 @@ import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollView|null>(null);
   const nearBottom=useRef(true);
-  return <SafeAreaView style={styles.page} edges={['top','left','right']}>
+  return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
     {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
       onScroll={autoScrollToEnd?event=>{
         const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
