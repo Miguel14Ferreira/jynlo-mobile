@@ -9,3 +9,17 @@ export declare function chatAttachmentList(message:{
  attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
  attachments?:PrivateAttachmentMeta[]|null;deletedAt?:string|null;
 }):PrivateAttachment[];
+
+/** Native file measurement is mandatory for every private media upload. */
+export declare function verifiedLocalChatMediaSize(actualSize:number,type:'image'|'video'):number;
+/** Backwards-compatible helper for non-private photo metadata calculations. */
+export declare function measuredPhotoSize(actualSize:number,pickerSize?:number):number;
+/** Return IDs of the most recent image-bearing chat messages, bounded for auto preview. */
+export declare function recentPreviewMessageIds(
+ messages:Array<{
+  id:number;deletedAt?:string|null;
+  attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
+  attachments?:PrivateAttachmentMeta[]|null;
+ }>,
+ maxMessages?:number
+):number[];
