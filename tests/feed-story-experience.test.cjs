@@ -70,7 +70,11 @@ test('story caption overlay is shown in preview and playback using the existing 
 test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
  const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(composer);
- assert.match(composer,/pickMedia\(setStoryMedia,'camera'\)/);
+ assert.match(composer,/StoryCameraCapture onCaptured=\{setStoryMedia\}/);
+ const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
+ assert.match(camera,/<CameraView/);
+ assert.match(camera,/startY\.current-pageY>75/);
+ assert.match(camera,/takePictureAsync/);
  assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
  assert.match(composer,/<ScrollView keyboardShouldPersistTaps="handled"/);
  assert.match(composer,/disabled=\{!storyMedia\|\|storyPublishing\}/);
