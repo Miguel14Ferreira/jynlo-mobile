@@ -1,6 +1,6 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
-import {chatAttachmentList} from '../../../src/lib/chat-attachments-core.cjs';
+import {chatAttachmentList,recentPreviewMessageIds} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -197,6 +197,7 @@ export default function SessionChat(){
    if(activeChat.current===identity){sendingNow.current=false;setUploading(false);}
   }
  }
+ const recentPhotoIds=new Set(recentPreviewMessageIds(entries));
  return <Page autoScrollToEnd><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow>
   <Text style={styles.title}>Conversa do jogo</Text>
   <Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>
@@ -214,7 +215,7 @@ export default function SessionChat(){
     </View>
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
-    {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size}/>):null}
+    {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
