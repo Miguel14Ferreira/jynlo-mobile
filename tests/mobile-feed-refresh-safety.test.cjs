@@ -13,5 +13,8 @@ test('feed preserves prior posts and stories if a refresh fails',()=>{
 test('feed clears cached social content on account changes',()=>{
  assert.match(source,/const feedIdentity=useRef\(''\)/);
  assert.match(source,/const identityChanged=feedIdentity\.current!==identity/);
- assert.match(source,/if\(identityChanged\)\{feedIdentity\.current=identity;setPosts\(\[\]\);setStories\(\[\]\);setOwnStories\(\[\]\);\}/);
+ assert.match(source,/if\(identityChanged\)\{\s*feedIdentity\.current=identity/);
+ assert.match(source,/setPosts\(\[\]\);setStories\(\[\]\);setOwnStories\(\[\]\)/);
+ assert.match(source,/setStoryViewer\(null\);setStoryComposer\(false\)/);
+ assert.match(source,/const visiblePosts=identityMatches\?posts:\[\]/);
 });
