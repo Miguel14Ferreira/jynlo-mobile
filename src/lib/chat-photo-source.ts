@@ -26,3 +26,31 @@ export async function prepareChatPhoto(asset:ImagePickerAsset,extension:string):
   throw e;
  }
 }
+
+/** Prepare a private image or video for one atomic chat batch upload. */
+export async function prepareChatMedia(asset:ImagePickerAsset,extension:string):Promise<{
+ uri:string;size:number;cleanup:()=>void
+}>{
+ const mime=asset.mimeType||'';
+ const max=asset.type==='video'?20*1024*1024:5*1024*1024;
+ if(!asset.uri||(asset.type!=='image'&&asset.type!=='video')||
+    (asset.type==='video'?!['video/mp4','video/webm'].includes(mime):
+      !['image/jpeg','image/png','image/webp','image/gif'].includes(mime)))
+  throw Error('O ficheiro selecionado não é suportado pela Jynlo.');
+ const {File,Paths}=await import('expo-file-system');
+ let temporary:InstanceType<typeof File>|null=null;
+ try{
+  const original=new File(asset.uri);
+  let uri=asset.uri;
+  if(!uri.startsWith('file://')){
+   temporary=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+extension);
+   original.copy(temporary);
+   uri=temporary.uri;
+  }
+  const actual=temporary?(temporary.exists?temporary.size:-1):(original.exists?original.size:-1);
+  const size=measuredPhotoSize(actual,asset.fileSize);
+  if(!Number.isSafeInteger(size)||size<=0||size>max)
+   throw Error(asset.type==='video'?'O vídeo deve ter até 20 MB.':'A fotografia deve ter até 5 MB.');
+  return {uri,size,cleanup:()=>{try{if(temporary?.exists)temporary.delete();}catch{}}};
+ }catch(error){try{if(temporary?.exists)temporary.delete();}catch{}throw error;}
+}
