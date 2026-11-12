@@ -100,6 +100,15 @@ function describeSessionConfirmation(payload,context={}){
 function createSessionPayload(input,allowedSports,now=Date.now()){
  const sport=String(input.sport||'').trim();
  if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
+ const locationLatitude=input.latitude==null?null:Number(input.latitude);
+ const locationLongitude=input.longitude==null?null:Number(input.longitude);
+ const hasLatitude=locationLatitude!==null,hasLongitude=locationLongitude!==null;
+ if(hasLatitude!==hasLongitude)throw Error('O ponto no mapa deve ter latitude e longitude.');
+ if(hasLatitude&&(!Number.isFinite(locationLatitude)||Math.abs(locationLatitude)>90||
+                  !Number.isFinite(locationLongitude)||Math.abs(locationLongitude)>180))
+   throw Error('O ponto GPS da sessão é inválido.');
+ if(hasLatitude&&input.locationConfirmed!==true)
+   throw Error('Confirma o ponto no mapa antes de criares a sessão.');
  const venueId=input.venueId==null?null:Number(input.venueId);
  if(venueId!==null&&(!Number.isSafeInteger(venueId)||venueId<=0))throw Error('Recinto inválido.');
  const city=String(input.city||'').trim();
@@ -173,7 +182,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error('O ponto de encontro deve ter uma única linha até 240 caracteres.');
  return {
   sport,gameDate,city,address,maxParticipants,
-  priceAmount,privateGame,password:privateGame?password:null,latitude:null,longitude:null,
+  priceAmount,privateGame,password:privateGame?password:null,latitude:locationLatitude,longitude:locationLongitude,
   communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:shareIds.slice(),
