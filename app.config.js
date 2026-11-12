@@ -20,10 +20,21 @@ module.exports = ({config}) => {
   const plugins = [
     ...(config.plugins || []),
     ...(mapsKey ? [['react-native-maps', {androidGoogleMapsApiKey: mapsKey}]] : []),
-    ...(diagnostic ? [['expo-build-properties', {android:{
-      enableMinifyInReleaseBuilds: false,
-      enableShrinkResourcesInReleaseBuilds: false,
-    }}]] : []),
+    // LiveKit WebRTC references an optional generated JNI bridge that is absent
+    // from the bundled Android artifact. R8 treats that optional reference as a
+    // missing-class error unless we explicitly suppress this single class.
+    // Keep the JNI bootstrap names used at runtime by WebRTC native code.
+    ['expo-build-properties', {android:{
+      extraProguardRules: [
+        '-dontwarn livekit.org.jni_zero.JniZeroJni',
+        '-keep class livekit.org.jni_zero.JniInit { *; }',
+        '-keep class livekit.org.jni_zero.** { *; }',
+      ].join('\n'),
+      ...(diagnostic ? {
+        enableMinifyInReleaseBuilds: false,
+        enableShrinkResourcesInReleaseBuilds: false,
+      } : {}),
+    }}],
   ];
   return {
     ...config,
