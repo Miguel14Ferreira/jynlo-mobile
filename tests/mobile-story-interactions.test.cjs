@@ -42,3 +42,10 @@ test('story reply disables navigation while focused or in flight',()=>{
  assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\|\|!appActive\)return/);
  assert.match(viewer,/A tua resposta ficou guardada em privado/);
 });
+
+test('story viewer close controls do not abandon in-flight private messages or deletes',()=>{
+ assert.match(viewer,/const safeClose=\(\)=>\{if\(!submittingStory\.current\)onClose\(\);\}/);
+ assert.match(viewer,/onRequestClose=\{safeClose\}/);
+ assert.match(viewer,/onPress=\{safeClose\} style=\{styles\.closeStory\}/);
+ assert.match(viewer,/pageY-start>110&&!replyFocused\)safeClose\(\)/);
+});
