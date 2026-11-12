@@ -63,7 +63,9 @@ test('actual on-disk photo size takes priority over stale Android picker metadat
  assert.equal(measuredPhotoSize(-1,1000),1000);
  assert.equal(measuredPhotoSize(-1,undefined),0);
  const source=read('src/lib/chat-photo-source.ts');
- assert.match(source,/measuredPhotoSize\(actualSize,asset\.fileSize\)/);
+ assert.doesNotMatch(source,/measuredPhotoSize\(actualSize,asset\.fileSize\)/);
+ assert.match(source,/!Number.isSafeInteger\(actualSize\)\|\|actualSize<=0/);
+ assert.match(source,/const size=actualSize/);
  assert.match(source,/size>5\*1024\*1024/);
  assert.match(source,/source\.exists\?source\.size:-1/);
 });
