@@ -1,6 +1,6 @@
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {API_BASE,DEMO_MODE} from './api';
-import {prepareChatPhoto} from './chat-photo-source';
+import {prepareChatMedia} from './chat-photo-source';
 import {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES} from './chat-attachments-core.cjs';
 
 export type AlbumChatTarget={scope:'direct'|'community'|'session';id:string|number};
@@ -18,29 +18,30 @@ function albumEndpoint(target:AlbumChatTarget):string{
  return '/api/'+(target.scope==='community'?'communities':'sessions')+'/'+id+'/messages/attachments/batch';
 }
 
-/** Send 2–4 private photos as one atomic message; every file stays behind authorization. */
+/** Send 1–4 private photos or videos as one authorized, atomic message. */
 export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,photos:ImagePickerAsset[],
  replyToMessageId?:number|null):Promise<void>{
- if(DEMO_MODE||!token)throw Error('Inicia sessão para enviar fotografias.');
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para enviar ficheiros.');
  const path=albumEndpoint(target);
- if(!Array.isArray(photos)||photos.length<2||photos.length>MAX_FILES)
-  throw Error('Escolhe entre 2 e 4 fotografias para um álbum.');
+ if(!Array.isArray(photos)||photos.length<1||photos.length>MAX_FILES)
+  throw Error('Escolhe entre 1 e 4 fotografias ou vídeos.');
  const validation=validateChatAlbum(photos,{allowUnknownSize:true});
  if(validation)throw Error(validation);
  if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))
   throw Error('Resposta inválida.');
  const mimeExtensions:Record<string,string>={
-  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'
+  'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif',
+  'video/mp4':'mp4','video/webm':'webm'
  };
- const prepared:Array<Awaited<ReturnType<typeof prepareChatPhoto>>>=[];
+ const prepared:Array<Awaited<ReturnType<typeof prepareChatMedia>>>=[];
  try{
   const form=new FormData();
   let total=0;
   for(let index=0;index<photos.length;index++){
    const photo=photos[index]!;
    const extension=mimeExtensions[photo.mimeType||''];
-   if(!extension)throw Error('Formato de fotografia não suportado.');
-   const attachment=await prepareChatPhoto(photo,extension);
+   if(!extension)throw Error('Formato de fotografia ou vídeo não suportado.');
+   const attachment=await prepareChatMedia(photo,extension);
    prepared.push(attachment);
    total+=attachment.size;
    if(total>MAX_TOTAL_BYTES)throw Error('Os anexos excedem 40 MB no total.');
@@ -48,7 +49,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
   }
   if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),90000);
+  const timeout=setTimeout(()=>controller.abort(),120000);
   try{
    const response=await fetch(API_BASE+path,{
     method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
