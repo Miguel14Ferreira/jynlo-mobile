@@ -10,6 +10,8 @@ const demoStories:SocialStory[]=[];
 const demoComments=new Map<number,SocialComment[]>();
 const demoLikes=new Map<number,Set<string>>();
 const demoStoryLikes=new Map<number,Set<string>>();
+const demoStoryReplies:Array<PrivateStoryReply&{recipientUsername:string}>=[];
+let nextDemoStoryReplyId=980001;
 const nowIso=()=>new Date().toISOString();
 const tomorrow=()=>new Date(Date.now()+24*60*60*1000).toISOString();
 const requireViewer=(token:string|null,username:string|null)=>{
@@ -39,13 +41,13 @@ export async function socialPostById(postId:number,token:string|null):Promise<Fe
  if(DEMO_MODE)throw new Error('A consulta de publicações exige a API real.');
  return request<FeedItem>(`/api/feed/posts/${postId}`,{token});
 }
-export async function storyFeed(token:string|null):Promise<SocialStory[]>{
-  if(DEMO_MODE)return demoStories.map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:false}));
+export async function storyFeed(token:string|null,username:string|null=null):Promise<SocialStory[]>{
+  if(DEMO_MODE)return demoStories.filter(story=>Date.parse(story.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:Boolean(username&&demoStoryLikes.get(story.id)?.has(username))}));
   return request<SocialStory[]>('/api/stories',{token});
 }
 export async function myStories(token:string|null,username:string|null):Promise<SocialStory[]>{
   requireViewer(token,username);
-  if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
+  if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username&&Date.parse(x.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
   return request<SocialStory[]>('/api/stories/mine',{token});
 }
 export async function deleteStory(storyId:number,token:string|null):Promise<void>{
@@ -54,6 +56,7 @@ export async function deleteStory(storyId:number,token:string|null):Promise<void
   const index=demoStories.findIndex(item=>item.id===storyId);
   if(index<0)throw Error('Story indisponível.');
   demoStories.splice(index,1);
+  demoStoryLikes.delete(storyId);
   return;
  }
  await request<void>(`/api/stories/${storyId}`,{token,method:'DELETE'});
@@ -74,8 +77,8 @@ export async function storyById(storyId:number,token:string|null):Promise<Social
  if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story indisponível.');
  if(DEMO_MODE){
   const story=demoStories.find(item=>item.id===storyId);
-  if(!story)throw Error('Story indisponível.');
-  return story;
+  if(!story||Date.parse(story.expiresAt)<=Date.now())throw Error('Story indisponível.');
+  return {...story,likeCount:demoStoryLikes.get(storyId)?.size||0};
  }
  return request<SocialStory>(`/api/stories/${storyId}`,{token});
 }
@@ -84,7 +87,7 @@ export async function toggleStoryLike(storyId:number,liked:boolean,token:string|
  requireViewer(token,username);
  if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
  if(DEMO_MODE){
-  const story=demoStories.find(s=>s.id===storyId);if(!story)throw Error('Story indisponível.');
+  const story=demoStories.find(s=>s.id===storyId);if(!story||Date.parse(story.expiresAt)<=Date.now())throw Error('Story indisponível.');
   const likes=demoStoryLikes.get(storyId)||new Set<string>();
   if(liked)likes.delete(username!);else likes.add(username!);
   demoStoryLikes.set(storyId,likes);
@@ -95,10 +98,14 @@ export async function toggleStoryLike(storyId:number,liked:boolean,token:string|
 export type PrivateStoryReply={id:number;storyId:number;senderUsername:string;content:string;createdAt:string};
 
 /** Returns only private replies addressed to the authenticated account. */
-export async function myStoryReplies(token:string|null,page=0):Promise<PrivateStoryReply[]>{
+export async function myStoryReplies(token:string|null,page=0,username:string|null=null):Promise<PrivateStoryReply[]>{
  if(!token)throw Error('Inicia sessão para consultar as respostas.');
  if(!Number.isSafeInteger(page)||page<0||page>1000)throw Error('Página inválida.');
- if(DEMO_MODE)return [];
+ if(DEMO_MODE){
+  if(!username)throw Error('Inicia sessão para consultar as respostas.');
+  return demoStoryReplies.filter(reply=>reply.recipientUsername.toLowerCase()===username.toLowerCase())
+    .slice(page*20,(page+1)*20).map(({recipientUsername:_,...reply})=>reply);
+ }
  return request<PrivateStoryReply[]>('/api/stories/me/replies?page='+page,{token});
 }
 
@@ -107,7 +114,14 @@ export async function replyToStory(storyId:number,content:string,token:string|nu
  if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
  const message=content.trim();
  if(!message||message.length>500)throw Error('Escreve uma resposta até 500 caracteres.');
- if(DEMO_MODE)return;
+ if(DEMO_MODE){
+  const story=demoStories.find(item=>item.id===storyId);
+  if(!story||Date.parse(story.expiresAt)<=Date.now())throw Error('Story indisponível.');
+  if(story.authorUsername.toLowerCase()===username!.toLowerCase())throw Error('Não podes responder à tua própria Story.');
+  demoStoryReplies.unshift({id:nextDemoStoryReplyId++,storyId,senderUsername:username!,
+    recipientUsername:story.authorUsername,content:message,createdAt:nowIso()});
+  return;
+ }
  await request<void>(`/api/stories/${storyId}/replies`,{token,method:'POST',body:{content:message}});
 }
 export async function likePost(postId:number,liked:boolean,token:string|null,username:string|null):Promise<void>{
