@@ -149,7 +149,7 @@ export interface CommunityChatEntry {
   editedAt?:string|null;deletedAt?:string|null;replyToMessageId?:number|null;
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
 }
-export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
+export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
 
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {
