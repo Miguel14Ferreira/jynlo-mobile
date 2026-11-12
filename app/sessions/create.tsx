@@ -514,6 +514,7 @@ export default function CreateSessionScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ seasonHead:{gap:10,alignItems:'flex-start'},
  seasonHelp:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingVertical:8,paddingHorizontal:12,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.mint},
  seasonHelpText:{color:C.mint,fontWeight:'800',fontSize:13},
  title:{color:C.white,fontSize:28,fontWeight:'900'},note:{color:C.muted,fontSize:12,lineHeight:19},
@@ -526,7 +527,7 @@ const styles=StyleSheet.create({
  playerChoice:{borderWidth:1,borderColor:C.border,borderRadius:13,padding:14,gap:5,backgroundColor:C.surface2},
  playerChoiceSelected:{borderColor:C.mint},
  playerChoiceTitle:{fontWeight:'900',color:C.white,fontSize:14},
- option:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10},
+ option:{gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:12},
  chosen:{borderColor:C.mint,backgroundColor:C.surface2},optionText:{color:C.white,fontSize:14,fontWeight:'700'},
  steps:{flexDirection:'row',flexWrap:'wrap',gap:7},
  stepChip:{paddingVertical:10,paddingHorizontal:11,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
