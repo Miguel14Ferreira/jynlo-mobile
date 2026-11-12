@@ -41,7 +41,8 @@
     "livekit-client": "2.23.0",
     "react-native-maps": "1.29.11",
     "expo-build-properties": "~58.0.12",
-    "expo-audio": "~58.0.11"
+    "expo-audio": "~58.0.11",
+    "expo-camera": "~58.0.14"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
