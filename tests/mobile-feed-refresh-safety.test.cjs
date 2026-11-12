@@ -18,3 +18,11 @@ test('feed clears cached social content on account changes',()=>{
  assert.match(source,/setStoryViewer\(null\);setStoryComposer\(false\)/);
  assert.match(source,/const visiblePosts=identityMatches\?posts:\[\]/);
 });
+
+test('partial Story API failures retain cached Stories but warn users explicitly',()=>{
+ assert.match(source,/if\(fetches\[1\]\.status==='fulfilled'\)setStories/);
+ assert.match(source,/if\(fetches\[2\]\.status==='fulfilled'\)setOwnStories/);
+ assert.match(source,/else if\(fetches\[1\]\.status==='rejected'\|\|fetches\[2\]\.status==='rejected'\)/);
+ assert.match(source,/Não foi possível atualizar as Stories/);
+ assert.match(source,/As Stories apresentadas podem estar desatualizadas/);
+});
