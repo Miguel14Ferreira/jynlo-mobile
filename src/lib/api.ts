@@ -127,7 +127,7 @@ export async function openSessionRegistration(id:number,token:string):Promise<Se
 /** Organizer-only changes. Never retry PATCH after an uncertain network failure. */
 export async function updateSessionMeetingPoint(id:number,token:string,instructions:string):Promise<SessionDetail>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir o ponto de encontro.');
- if(instructions.length>240||/[\\r\\n\\x00-\\x1f\\x7f]/.test(instructions))
+ if(instructions.length>240||/[\r\n\x00-\x1f\x7f]/.test(instructions))
   throw Error('As instruções devem ter uma única linha até 240 caracteres.');
  return request<SessionDetail>(`/api/sessions/${id}/meeting-point`,{
   token,method:'PATCH',body:{meetingPointInstructions:instructions.trim()||null}
