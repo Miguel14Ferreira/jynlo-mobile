@@ -1,0 +1,44 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+
+test('authenticated notifications API supports owner-scoped deletion, without unsafe retries',()=>{
+ const api=read('src/lib/notifications-api.ts');
+ assert.match(api,/export async function deleteMyNotification\(id:number,token:string\)/);
+ assert.match(api,/Number.isSafeInteger\(id\)/);
+ assert.match(api,/request<void>\(`\/api\/notifications\/\$\{id\}`,\{token,method:'DELETE'\}\)/);
+ assert.match(api,/export async function deleteAllMyNotifications\(token:string\)/);
+ assert.match(api,/request<void>\('\/api\/notifications\/me',\{token,method:'DELETE'\}\)/);
+});
+
+test('notifications UI offers unread filter, read-all and confirmed destructive actions',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/\[unreadOnly,setUnreadOnly\]=useState\(false\)/);
+ assert.match(screen,/const unreadCount=visibleItems.filter\(item=>!item.read\).length/);
+ assert.match(screen,/const filteredItems=unreadOnly\?visibleItems.filter\(item=>!item.read\):visibleItems/);
+ assert.match(screen,/accessibilityLabel="Mostrar apenas notificações não lidas"/);
+ assert.match(screen,/Marcar todas como lidas/);
+ assert.match(screen,/async function markAllRead\(\)/);
+ assert.match(screen,/async function removeOne\(item:JynloNotification\)/);
+ assert.match(screen,/async function removeAll\(\)/);
+ assert.match(screen,/Alert.alert\('Eliminar todas as notificações\?'/);
+ assert.match(screen,/Alert.alert\('Eliminar esta notificação\?'/);
+ assert.match(screen,/deleteMyNotification\(item.id,auth.token\)/);
+ assert.match(screen,/deleteAllMyNotifications\(auth.token\)/);
+});
+
+test('account switching and stale polling cannot resurrect deleted private notifications',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/notificationRevision.current\+\+;/);
+ assert.match(screen,/notificationLock.current=false;setNotificationBusy\(false\)/);
+ assert.match(screen,/const initialNotificationRevision=notificationRevision.current/);
+ assert.match(screen,/notificationRevision.current===initialNotificationRevision&&!notificationLock.current/);
+ assert.match(screen,/account.current===identity&&notificationRevision.current===revision/);
+ assert.match(screen,/setItems\(old=>old.filter\(n=>n.id!==item.id\)\)/);
+ assert.match(screen,/setItems\(\[\]\);setNotice\('Notificações eliminadas.'\)/);
+ assert.match(screen,/await markNotificationRead\(item.id,auth.token\)/);
+ assert.match(screen,/setItems\(old=>old.map\(n=>n.id===item.id\?\{\.\.\.n,read:true\}:n\)\)/);
+ assert.match(screen,/notificationLock.current=true;setNotificationBusy\(true\)/);
+});
