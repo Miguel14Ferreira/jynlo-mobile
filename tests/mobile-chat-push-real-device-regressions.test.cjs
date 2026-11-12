@@ -18,7 +18,7 @@ test('direct chat is safe above Android navigation bar and keyboard',()=>{
 test('text draft stays available while auxiliary block-status check is unresolved',()=>{
  const s=read('app/messages/[peer].tsx');
  assert.match(s,/\{auth\.token&&!blocked\?<View style=\{styles\.composer\}>/);
- assert.match(s,/disabled=\{sending\|\|photoBusy\|\|sendingNow\.current\|\|pendingWrites\.current\.has/);
+ assert.match(s,/disabled=\{mutationBusy\|\|sending\|\|photoBusy\|\|sendingNow\.current\|\|pendingWrites\.current\.has/);
  assert.match(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token/);
  assert.doesNotMatch(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
  assert.match(s,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
@@ -28,7 +28,7 @@ test('recent private images load as authenticated inline thumbnails with cache c
  const chat=read('app/messages/[peer].tsx');
  const attachment=read('src/components/SecureChatAttachment.tsx');
  assert.match(chat,/filter\(m=>!m\.deletedAt&&m\.attachmentMimeType\?\.startsWith\('image\/'\)\)\.slice\(-3\)/);
- assert.match(chat,/autoPreview=\{recentPhotoIds\.has\(m\.id\)\}/);
+ assert.match(chat,/autoPreview=\{recentPhotoIds\.has\(m\.id\)&&attachment\.index===0\}/);
  assert.match(attachment,/autoPreview=false/);
  assert.match(attachment,/if\(!autoPreview\|\|!token\|\|!mime\?\.startsWith\('image\/'\)/);
  assert.match(attachment,/Authorization:'Bearer '\+token/);
@@ -60,5 +60,5 @@ test('private chat replies use server-verified quoted messages without cross-thr
  assert.match(chat,/setReplyTarget\(current=>current\?\.id===originalReply\.id\?null:current\)/);
  assert.match(chat,/accessibilityLabel="Cancelar resposta"/);
  assert.match(chat,/accessibilityLabel=\{`Responder à mensagem de/);
- assert.match(chat,/setReplyTarget\(null\);setPhoto\(null\);setError\(''\)/);
+ assert.match(chat,/setReplyTarget\(null\);setEditing\(null\);setEditText\(''\);setPhoto\(null\);setExtraPhotos\(\[\]\);setAttachmentCaption\(''\);setError\(''\)/);
 });
