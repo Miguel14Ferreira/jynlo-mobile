@@ -211,7 +211,13 @@ async function sendMedia(path:string,fields:Record<string,string>,file:MobileMed
      }
      const raw=await response.text();
      if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza a página antes de repetir.');
-     try{return JSON.parse(raw);}catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
+     let confirmed:{id?:unknown;postId?:unknown};
+     try{confirmed=JSON.parse(raw) as {id?:unknown;postId?:unknown};}
+     catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
+     const identifier=path.includes('/stories')?confirmed?.id:confirmed?.postId;
+     if(typeof identifier!=='number'||!Number.isSafeInteger(identifier)||identifier<=0)
+       throw new Error('O servidor respondeu, mas não confirmou o identificador. Consulta o perfil antes de repetir.');
+     return confirmed;
    }catch(e){
      if(e instanceof ApiError)throw e;
      if(e instanceof Error&&e.message.startsWith('O servidor respondeu'))throw e;
