@@ -1,6 +1,6 @@
 import React from 'react';
 import {Platform,StyleSheet} from 'react-native';
-import MapView,{Marker,UrlTile,PROVIDER_GOOGLE} from 'react-native-maps';
+import MapView,{Marker,PROVIDER_GOOGLE} from 'react-native-maps';
 import type {Region} from 'react-native-maps';
 import type {SessionSummary} from '../lib/types';
 
@@ -14,9 +14,8 @@ type Props={
 export default function SessionNativeMap({initialRegion,sessions,onRegionChange,onSelectSession}:Props){
  return <MapView style={styles.map} initialRegion={initialRegion}
   provider={Platform.OS==='android'?PROVIDER_GOOGLE:undefined}
-  mapType="none" loadingEnabled accessibilityLabel="Mapa de sessões"
+  mapType="standard" loadingEnabled accessibilityLabel="Mapa de sessões"
   onRegionChangeComplete={onRegionChange}>
-  <UrlTile urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maximumZ={19} flipY={false}/>
   {sessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
    title={s.sport} description={s.city} onPress={()=>onSelectSession(s.id)}/>)}
  </MapView>;
