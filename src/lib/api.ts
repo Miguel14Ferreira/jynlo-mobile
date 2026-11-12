@@ -1,5 +1,5 @@
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
-import {readSuccessfulResponse} from './response-body.cjs';
+import {readSuccessfulResponse,InvalidSuccessfulResponseError} from './response-body.cjs';
 import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite, SessionTeamSuggestion } from './types';
 
 /** Without an explicit environment override, the app is an isolated demo.
@@ -39,7 +39,7 @@ export async function request<T>(path:string, {token,method='GET',body}:{token?:
     // Never misreport a completed mutation as a network failure just because JSON is absent.
     return (await readSuccessfulResponse(response)) as T;
   }catch(error){
-    if(error instanceof ApiError) throw error;
+    if(error instanceof ApiError || error instanceof InvalidSuccessfulResponseError) throw error;
     if(controller.signal.aborted) throw new Error('A ligação demorou demasiado. Verifica o estado da sessão antes de repetir.');
     throw new Error('Falha de ligação à Jynlo. Verifica a rede e tenta novamente.');
   }finally{clearTimeout(timeout);}
