@@ -27,8 +27,8 @@ test('text draft stays available while auxiliary block-status check is unresolve
 test('recent private images load as authenticated inline thumbnails with cache cleanup',()=>{
  const chat=read('app/messages/[peer].tsx');
  const attachment=read('src/components/SecureChatAttachment.tsx');
- assert.match(chat,/filter\(m=>!m\.deletedAt&&m\.attachmentMimeType\?\.startsWith\('image\/'\)\)\.slice\(-3\)/);
- assert.match(chat,/autoPreview=\{recentPhotoIds\.has\(m\.id\)&&attachment\.index===0\}/);
+ assert.match(chat,/recentPreviewMessageIds\(messages\)/);
+ assert.match(chat,/autoPreview=\{recentPhotoIds\.has\(m\.id\)&&attachment\.mime\?\.startsWith\('image\/'\)===true\}/);
  assert.match(attachment,/autoPreview=false/);
  assert.match(attachment,/if\(!autoPreview\|\|!token\|\|!mime\?\.startsWith\('image\/'\)/);
  assert.match(attachment,/Authorization:'Bearer '\+token/);
