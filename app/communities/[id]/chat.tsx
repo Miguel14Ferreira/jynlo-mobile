@@ -30,6 +30,7 @@ export default function CommunityChatScreen(){
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
+ const [attachmentCaption,setAttachmentCaption]=useState('');
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [accessRevoked,setAccessRevoked]=useState(false);
@@ -66,7 +67,7 @@ export default function CommunityChatScreen(){
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
-     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setExtraPhotos([]);setCanSendPhoto(false);
+     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
      historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
@@ -87,7 +88,7 @@ export default function CommunityChatScreen(){
    let active=true;
    const version=++generation.current;
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
-   setDraft('');setPhoto(null);setExtraPhotos([]);setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
+   setDraft('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -155,13 +156,14 @@ export default function CommunityChatScreen(){
   const identity=id+'|'+auth.token;
   if(!auth.token||!photo||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current,token=auth.token,selectedPhoto=photo;
+  const captionToSend=attachmentCaption;
   pendingWrites.current.set(identity,'photo');
   uploadingNow.current=true;setUploading(true);setError('');
   try{
-   if(extraPhotos.length||selectedPhoto.type==='video')await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos]);
+   if(extraPhotos.length||selectedPhoto.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos],null,captionToSend);
    else await sendChatPhoto('community',id,token,selectedPhoto);
    if(version!==generation.current)return;
-   setPhoto(null);setExtraPhotos([]);await refresh(version);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);await refresh(version);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
   }finally{
@@ -194,8 +196,9 @@ export default function CommunityChatScreen(){
      </Pressable>)}
     </View>
      <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
+   <TextInput accessibilityLabel="Legenda dos anexos" multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder="Legenda para as fotografias ou vídeos (opcional)" placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
      <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
-     <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);}}/>
+     <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
    </View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
