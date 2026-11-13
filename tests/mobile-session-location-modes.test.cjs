@@ -11,8 +11,8 @@ test('mobile session creation offers three location modes matching Web',()=>{
  assert.match(screen,/title:'Ligação Google Maps'/);
  assert.match(screen,/title:'Estou no recinto'/);
  assert.match(screen,/getCurrentSessionCoordinates\(\)/);
- assert.match(screen,/resolveSessionMapLink\(mapsLink\)/);
- assert.match(screen,/describeSessionCoordinates\(point\)/);
+ assert.match(screen,/resolveSessionMapLink\(mapsLink,auth\.token\|\|''\)/);
+ assert.match(screen,/describeSessionCoordinates\(point,auth\.token\|\|''\)/);
  assert.match(screen,/Confirmei que o ponto corresponde ao recinto correto/);
  assert.match(screen,/locationMode!=='saved'&&/);
  assert.match(screen,/form\.locationConfirmed!==true/);
@@ -36,4 +36,12 @@ test('GPS opt-in does not request background permission or infer coordinates fro
  assert.match(api,/\/api\/venues\/reverse-location/);
  assert.doesNotMatch(api,/requestBackgroundPermissionsAsync|watchPositionAsync/);
  assert.match(api,/validCoordinates\(result\.latitude,result\.longitude\)/);
+});
+
+test('authenticated mobile location services forward the access token',()=>{
+ const api=load('src/lib/session-location-api.ts');
+ assert.match(api,/resolveSessionMapLink\(url:string,token:string\)/);
+ assert.match(api,/describeSessionCoordinates\(point:SessionCoordinates,token:string\)/);
+ assert.match(api,/request<ResolvedLink>\([^\n]+\{token,method:'POST'/);
+ assert.match(api,/request<ReverseLocation>\([^\n]+\{token\}\)/);
 });
