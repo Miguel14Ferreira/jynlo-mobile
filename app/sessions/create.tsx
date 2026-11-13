@@ -43,12 +43,12 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
   <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
    <Pressable accessibilityRole="button" accessibilityLabel="Mês anterior" disabled={disabled}
     onPress={()=>setMonth(new Date(year,index-1,1))} style={{padding:10}}>
-    <Text style={{color:C.text,fontSize:19}}>‹</Text>
+    <Text style={{color:C.white,fontSize:19}}>‹</Text>
    </Pressable>
-   <Text style={{color:C.text,fontWeight:'700',textTransform:'capitalize'}}>{label}</Text>
+   <Text style={{color:C.white,fontWeight:'700',textTransform:'capitalize'}}>{label}</Text>
    <Pressable accessibilityRole="button" accessibilityLabel="Mês seguinte" disabled={disabled}
     onPress={()=>setMonth(new Date(year,index+1,1))} style={{padding:10}}>
-    <Text style={{color:C.text,fontSize:19}}>›</Text>
+    <Text style={{color:C.white,fontSize:19}}>›</Text>
    </Pressable>
   </View>
   <View style={{flexDirection:'row'}}>
@@ -64,8 +64,8 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
        accessibilityState={{selected,disabled:disabled||past}}
        disabled={disabled||past} onPress={()=>onSelect(key)}
        style={{height:38,alignItems:'center',justifyContent:'center',borderRadius:9,
-        backgroundColor:selected?C.primary:'transparent',opacity:past?0.35:1}}>
-       <Text style={{color:selected?'#fff':C.text,fontWeight:selected?'700':'400'}}>{day}</Text>
+        backgroundColor:selected?C.green:'transparent',opacity:past?0.35:1}}>
+       <Text style={{color:selected?'#fff':C.white,fontWeight:selected?'700':'400'}}>{day}</Text>
       </Pressable>:<View style={{height:38}}/>}
     </View>;
    })}
