@@ -3,7 +3,7 @@ import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
@@ -32,6 +32,7 @@ export default function SessionChat(){
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
  const [attachmentCaption,setAttachmentCaption]=useState('');
+ const pickerInFlight=useRef(false),focusedIdentity=useRef('');
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){pendingRefresh.current=true;return;}
@@ -74,12 +75,20 @@ export default function SessionChat(){
   let active=true;
   const version=++generation.current;
   const identity=id+'|'+auth.token;
+  const changedAccountOrSession=focusedIdentity.current!==identity;
+  focusedIdentity.current=identity;
   activeChat.current=identity;
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
-  setEntries([]);setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);setDraft('');setReply(null);setEditing(null);setEditText('');
+  if(changedAccountOrSession){
+   // Preserve unsent text, replies and selected media on ordinary refocus.
+   // Clear everything only when the session or authenticated account changed.
+   setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
+  }
+  setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
-  setPhoto(null);setExtraPhotos([]);setPhotoReady(false);
+  setPhotoReady(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
@@ -164,19 +173,25 @@ export default function SessionChat(){
   }finally{mutationLock.current=false;setMutationBusy(false);}
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
-  if(!auth.token||!photoReady||closed||sending||uploading)return;
-  const version=generation.current;
+  if(!auth.token||!photoReady||closed||sendingNow.current||uploading||pickerInFlight.current||mutationLock.current)return;
+  const version=generation.current,identity=id+'|'+auth.token,token=auth.token;
+  pickerInFlight.current=true;
   try{
+   // Never load the native picker on chat startup: open it only on user action.
+   const ImagePicker=await import('expo-image-picker');
    const chosen=source==='camera'?
     await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
     await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
-   if(version===generation.current&&!chosen.canceled&&chosen.assets?.[0]){
-    chosen.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
-    const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
-    if(issue)throw Error(issue);
-    if(chosen.assets[0].type==='image')validateChatPhoto(chosen.assets[0]);setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
-   }
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');}
+   if(version!==generation.current||activeChat.current!==identity||auth.token!==token||chosen.canceled||!chosen.assets?.length)return;
+   for(const asset of chosen.assets){if(asset.type==='image')validateChatPhoto(asset);}
+   const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
+   if(issue)throw Error(issue);
+   if(version!==generation.current||activeChat.current!==identity||closed)return;
+   setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');
+  }finally{pickerInFlight.current=false;}
  }
  async function uploadPhoto(){
   const identity=id+'|'+auth.token;

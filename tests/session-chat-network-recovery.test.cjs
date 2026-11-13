@@ -34,3 +34,11 @@ test('temporary manual refresh error shows feedback but retains composer and his
  assert.match(temporary,/setError\(/);
  assert.doesNotMatch(temporary,/setClosed\(|setEntries\(|setPhoto\(|setDraft\(/);
 });
+
+test('ordinary session refocus does not discard an unsent chat draft or selected photos',()=>{
+ const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('async function send()'));
+ assert.match(focused,/const changedAccountOrSession=focusedIdentity\.current!==identity/);
+ const reset=focused.slice(focused.indexOf('if(changedAccountOrSession){'),focused.indexOf('setClosed(false)'));
+ for(const field of ["setDraft('')","setPhoto(null)","setExtraPhotos([])","setAttachmentCaption('')"])assert.ok(reset.includes(field),field);
+ assert.doesNotMatch(focused.slice(focused.indexOf('setClosed(false)'),focused.indexOf('void refresh(false,version)'),/setDraft\(''\)|setPhoto\(null\)/);
+});

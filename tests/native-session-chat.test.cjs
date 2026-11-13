@@ -60,3 +60,12 @@ test('session chat photo upload uses private scoped endpoint with confirmation',
  assert.match(screen,/photoReady/);
  assert.match(screen,/!closed/);
 });
+
+test('session photo picker loads only on request and ignores results from previous session',()=>{
+ const screen=read('app/sessions/[id]/chat.tsx');
+ assert.doesNotMatch(screen,/^import \* as ImagePicker from 'expo-image-picker'/m);
+ assert.match(screen,/const ImagePicker=await import\('expo-image-picker'\)/);
+ assert.match(screen,/pickerInFlight\.current=true/);
+ assert.match(screen,/activeChat\.current!==identity\|\|auth\.token!==token/);
+ assert.match(screen,/finally\{pickerInFlight\.current=false;\}/);
+});

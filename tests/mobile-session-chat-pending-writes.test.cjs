@@ -15,6 +15,8 @@ test('session chat keeps a write lock by session and account across refocus',()=
  assert.match(focused,/sendingNow\.current=Boolean\(pending\)/);
  assert.match(focused,/setSending\(pending==='text'\);setUploading\(pending==='photo'\)/);
  assert.doesNotMatch(focused,/sendingNow\.current=false/);
+ assert.match(focused,/const changedAccountOrSession=focusedIdentity\.current!==identity/);
+ assert.match(focused,/if\(changedAccountOrSession\)\{/);
 });
 test('text and photo writes acquire lock before server POST',()=>{
  assert.match(send,/pendingWrites\.current\.has\(identity\)/);
