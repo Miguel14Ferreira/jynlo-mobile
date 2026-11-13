@@ -543,7 +543,7 @@ export default function DirectConversation(){
    setReplyTarget(current=>current?.id===(sentReplyId??undefined)?null:current);
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Escolher fotografias ou vídeos" disabled={mutationBusy||photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={mutationBusy||photoBusy||sending||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
   {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Abrir câmara" disabled={mutationBusy||photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
   {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
 

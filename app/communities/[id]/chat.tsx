@@ -267,7 +267,7 @@ export default function CommunityChatScreen(){
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>)}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Escolher fotografias ou vídeos" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto();}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>

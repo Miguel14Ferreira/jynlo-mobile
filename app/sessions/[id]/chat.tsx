@@ -246,7 +246,7 @@ export default function SessionChat(){
    setReply(current=>current?.id===(sentReplyId??undefined)?null:current);
    await refresh();
   }}/>
-  {auth.token&&!closed&&photoReady?<Button title="Escolher fotografias ou vídeos" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto();}}/>:null}
+  {auth.token&&!closed&&photoReady?<Button title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} secondary disabled={sending||uploading||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
   {auth.token&&!closed&&photoReady?<Button title="Abrir câmara" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto('camera');}}/>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
