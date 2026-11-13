@@ -19,7 +19,11 @@ const requireViewer=(token:string|null,username:string|null)=>{
 };
 export function resolveJynloMedia(path:string|null|undefined){return mediaUrl(API_BASE,path);}
 export async function socialFeed(token:string|null,username:string|null):Promise<FeedItem[]>{
-  if(!DEMO_MODE)return demoFeedSeed(token,username);
+  // Real feed comes directly from the authenticated backend; seed data is demo-only.
+  if(!DEMO_MODE){
+    if(!token||!username)throw Error('Inicia sessão para veres o teu feed.');
+    return request<FeedItem[]>('/api/feed',{token});
+  }
   const defaults=await demoFeedSeed(token,username);
   return [...demoPosts,...defaults].map(p=>{
     const selected=demoLikes.get(p.postId||-1);
@@ -174,17 +178,24 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    let totalBytes=0;
    for(const file of files){
      let uri=file.uri;
-     let size=file.fileSize;
      const extension=file.mimeType==='image/png'?'png':file.mimeType==='image/webp'?'webp':
        file.mimeType==='video/webm'?'webm':file.type==='video'?'mp4':'jpg';
      const source=new File(file.uri);
-     if(uri.startsWith('content:')){
+     if(!uri.startsWith('file://')){
        const copy=new File(Paths.cache,'jynlo-album-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+extension);
-       await source.copy(copy);temporary.push(copy);uri=copy.uri;size=copy.size;
-     }else if(source.exists)size=source.size;
-     const fault=validateMedia(file.mimeType,size,path.includes('/stories'));
+       temporary.push(copy);
+       source.copy(copy);
+       uri=copy.uri;
+     }
+     // Picker metadata can be stale (especially Android content://). Before a
+     // private media upload, verify the actual local file exists and its real size.
+     const localFile=new File(uri);
+     const actualSize=localFile.exists?localFile.size:-1;
+     if(!Number.isSafeInteger(actualSize)||actualSize<=0)
+       throw Error('Não foi possível ler o ficheiro selecionado. Escolhe-o novamente na galeria.');
+     const fault=validateMedia(file.mimeType,actualSize,path.includes('/stories'));
      if(fault)throw Error(fault);
-     totalBytes+=size;
+     totalBytes+=actualSize;
      if(totalBytes>60*1024*1024)throw Error('O álbum não pode exceder 60 MB no total.');
      // Back-end accepts the legacy image/video part for one asset, or repeated
      // "files" parts for albums. Do not mix these two request formats.
