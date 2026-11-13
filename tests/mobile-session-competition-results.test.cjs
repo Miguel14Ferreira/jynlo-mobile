@@ -167,7 +167,7 @@ test('legacy winner-only match reporting skips stats negotiation and keeps real 
  const payload=buildSessionCompetitionResult('B',roster);
  assert.ok(payload.players.every(p=>!Object.hasOwn(p,'goals')&&!Object.hasOwn(p,'assists')));
  assert.match(ui,/if\(payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)\|\|payload.scoreA!==undefined\)\{/);
- assert.match(api,/return request<\{id:number;entries\?:Array<\{username:string;goals:number;assists:number\}>\}>\(/);
+ assert.match(api,/return request<\{id:number;entries\?:Array<\{username:string;goals:number;assists:number\}>;teamScore\?:\{sideA:number;sideB:number\}\|null\}>\(/);
  assert.match(ui,/if\(!Number.isSafeInteger\(reply\?\.id\)\|\|reply.id<=0\)/);
 });
 
@@ -179,7 +179,7 @@ test('result editor negotiates football fields at load and preserves legacy winn
  assert.match(view,/setPlayerStatsSupported\(false\)/);
  assert.match(view,/football&&playerStatsSupported\?roster.filter\(player=>player.selected\)/);
  assert.match(view,/O backend ainda não confirmou suporte ao marcador oficial/);
- assert.match(view,/Podes registar apenas o vencedor ou empate/);
+ assert.match(view,/Podes registar vitória ou empate/);
  assert.match(view,/return recordCompetitionSessionResult\(communityId,sessionId,token,payload\)/);
 });
 
