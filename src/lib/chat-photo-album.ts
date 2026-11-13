@@ -1,7 +1,7 @@
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {API_BASE,DEMO_MODE} from './api';
 import {prepareChatMedia} from './chat-photo-source';
-import {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES} from './chat-attachments-core.cjs';
+import {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES,confirmedChatAlbumReply} from './chat-attachments-core.cjs';
 
 export type AlbumChatTarget={scope:'direct'|'community'|'session';id:string|number};
 
@@ -66,14 +66,13 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
    }
    // A 2xx response can already have created the message even if its JSON
    // body is truncated. Never describe this as a connection failure.
-   let reply:{id?:number;attachments?:Array<{index:number}>};
+   let reply:{id?:number;attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>};
    try{
     reply=await response.json() as typeof reply;
    }catch{
     throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');
    }
-   if(typeof reply?.id!=='number'||!Number.isSafeInteger(reply.id)||reply.id<=0||
-      !Array.isArray(reply.attachments)||reply.attachments.length!==photos.length)
+   if(!confirmedChatAlbumReply(reply,photos.map(photo=>photo.mimeType||'')))
     throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');
   }catch(error){
    if(controller.signal.aborted)
