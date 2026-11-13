@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -340,7 +340,21 @@ export default function SessionScreen(){
     },'Convite enviado. A outra pessoa tem de o aceitar.');};
   const share=()=>{
     if(DEMO_MODE){setFeedback('Não é possível partilhar uma sessão fictícia da demonstração.');return;}
-    void Share.share({message:`🏟️ ${s?.sport||'Sessão desportiva'} na Jynlo\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}Vê os detalhes desta sessão: https://d24sports.com/sessions/${id}\nPodes abrir a ligação no browser, mesmo sem teres a aplicação instalada.`,url:`https://d24sports.com/sessions/${id}`}).catch(()=>setFeedback('Não foi possível abrir a partilha. Tenta novamente.'));
+    const send=(url:string)=>Share.share({
+      message:`🏟️ ${s?.sport||'Sessão desportiva'} na Jynlo\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}Consulta a sessão e confirma a presença: ${url}`,
+      url
+    }).catch(()=>setFeedback('Não foi possível abrir a partilha. Tenta novamente.'));
+    const publicUrl=`https://d24sports.com/sessions/${id}`;
+    if(!owner||!auth.token||!detail){void send(publicUrl);return;}
+    Alert.alert('Criar novo convite para convidados?',
+      'Esta ligação permite pedir presença sem conta Jynlo. Por segurança, criar um novo convite invalida as ligações de convite anteriores para esta sessão. As presenças já confirmadas mantêm-se.',
+      [{text:'Cancelar',style:'cancel'},{text:'Criar e partilhar',onPress:()=>{
+        if(operationInFlight.current)return;
+        operationInFlight.current=true;setBusy(true);setError('');
+        void issueSessionGuestLink(id,auth.token!).then(url=>send(url)).catch(e=>{
+          setError(e instanceof Error?e.message:'Não foi possível criar um convite válido.');
+        }).finally(()=>{operationInFlight.current=false;setBusy(false);});
+      }}]);
   };
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsInFlight.current||operationInFlight.current||
