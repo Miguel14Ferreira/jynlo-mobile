@@ -26,7 +26,7 @@ test('malformed data, invalid time and duplicate identifiers are filtered withou
 });
 test('screen renders upcoming grouped lists and optionally opens past sessions with accurate labels',()=>{
  const source=read('app/my-sessions.tsx');
- assert.match(source,/organizeMySessions\(data\)/);
+ assert.match(source,/organizeMySessions\(loadedIdentity===identity\?data:null\)/);
  assert.match(source,/sections.upcoming.filter\(section=>section.items.length>0\)/);
  assert.match(source,/sections.history.filter\(section=>section.items.length>0\)/);
  assert.match(source,/accessibilityState=\{\{expanded:showHistory\}\}/);
