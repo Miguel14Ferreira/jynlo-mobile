@@ -734,9 +734,16 @@ export default function JynloFeedHome(){
     <Modal visible={identityMatches&&!!postMenuItem} transparent animationType="fade" onRequestClose={()=>setPostMenuItem(null)}>
       <View style={styles.commentsModal}>
         <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" style={styles.commentsBackdrop} onPress={()=>setPostMenuItem(null)}/>
-        <View style={[styles.commentsSheet,{height:'auto',maxHeight:'80%',paddingBottom:26,gap:12}]}>
+        <SafeAreaView edges={['bottom']} style={styles.postMenuSafeArea}>
+         <View style={styles.postMenuContainer}>
           <View style={styles.commentsHandle}/>
-          <Text style={styles.commentsTitle}>Opções da publicação</Text>
+          <View style={styles.postMenuHeading}>
+           <Text style={styles.commentsTitle}>Opções da publicação</Text>
+           <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" onPress={()=>setPostMenuItem(null)} style={styles.postMenuClose}>
+            <Text style={styles.commentsClose}>✕</Text>
+           </Pressable>
+          </View>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.postMenuContents}>
           {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed" style={styles.postMenuAction} onPress={()=>{
             const post=postMenuItem;setPostMenuItem(null);hideFromFeed(post);
           }}><Text style={styles.postMenuText}>Ocultar do meu feed</Text></Pressable>:null}
@@ -755,7 +762,9 @@ export default function JynloFeedHome(){
           <Pressable accessibilityRole="button" accessibilityLabel="Cancelar opções da publicação" style={styles.postMenuAction} onPress={()=>setPostMenuItem(null)}>
             <Text style={styles.postMenuText}>Cancelar</Text>
           </Pressable>
-        </View>
+          </ScrollView>
+         </View>
+        </SafeAreaView>
       </View>
     </Modal>
     <PostEditSheet post={identityMatches?editingPost:null} token={auth.token} username={auth.username}
@@ -856,6 +865,11 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+  postMenuSafeArea:{width:'100%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER},
+  postMenuContainer:{maxHeight:'78%',minHeight:160,paddingTop:12,paddingHorizontal:16,paddingBottom:12},
+  postMenuContents:{paddingBottom:16,gap:12},
+  postMenuHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8},
+  postMenuClose:{width:48,height:48,alignItems:'center',justifyContent:'center'},
   postMenuAction:{padding:14,minHeight:48,justifyContent:'center',borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
   postMenuText:{fontSize:14,fontWeight:'800',color:WHITE},
   albumCounter:{position:'absolute',right:10,top:10,paddingHorizontal:9,paddingVertical:4,borderRadius:12,backgroundColor:'rgba(0,0,0,.72)'},

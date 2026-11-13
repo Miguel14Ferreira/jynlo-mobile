@@ -1,158 +1,91 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
-import {CameraView,useCameraPermissions,useMicrophonePermissions} from 'expo-camera';
-import {File} from 'expo-file-system';
+import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {MobileMedia} from '../lib/types';
+import {pickerMediaMime} from '../lib/picker-media-format.cjs';
+import {validateMedia} from '../lib/social-feed-core.cjs';
 import {C} from '../lib/theme';
-import {isUnsupportedMediaContainer} from '../lib/picker-media-format.cjs';
 
-type Props={
- onCaptured:(file:MobileMedia)=>void;
- onPickGallery:()=>void;
-};
+type Props={onCaptured:(media:MobileMedia)=>void;onPickGallery:()=>void};
+/**
+ * Open the device's own camera UI rather than mounting a black CameraView
+ * inside a tall Story modal. Keep a small retry/galeria choice on cancel.
+ */
 export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
- const camera=useRef<CameraView|null>(null);
- const {height:viewportHeight}=useWindowDimensions();
- const gestureStart=useRef<{x:number;y:number}|null>(null);
- const [permission,requestPermission]=useCameraPermissions();
- const [micPermission,requestMicPermission]=useMicrophonePermissions();
- const [mode,setMode]=useState<'picture'|'video'>('picture');
- const [recording,setRecording]=useState(false);
- const recordingRef=useRef(false);
- const permissionRequestInFlight=useRef(false);
- const captureInFlight=useRef(false);
- const alive=useRef(true);
- useEffect(()=>{alive.current=true;return ()=>{alive.current=false;if(recordingRef.current){try{camera.current?.stopRecording();}catch{/* Native camera teardown is best effort. */}}};},[]);
- const [facing,setFacing]=useState<'back'|'front'>('back');
- const [busy,setBusy]=useState(false);
- const [cameraReady,setCameraReady]=useState(false);
- const [error,setError]=useState('');
- async function capture(){
-  if(busy||captureInFlight.current||recordingRef.current||!cameraReady||mode!=='picture'||!permission?.granted||!camera.current||!alive.current)return;
-  captureInFlight.current=true;setBusy(true);setError('');
+ const alive=useRef(true),busyRef=useRef(false),autoOpened=useRef(false);
+ const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const capture=async()=>{
+  if(!alive.current||busyRef.current)return;
+  busyRef.current=true;setBusy(true);setError('');
   try{
-   const photo=await camera.current.takePictureAsync({quality:0.7,exif:false,skipProcessing:false});
+   const ImagePicker=await import('expo-image-picker');
+   const permission=await ImagePicker.requestCameraPermissionsAsync();
    if(!alive.current)return;
-   if(!photo?.uri)throw Error('A câmara não devolveu uma fotografia.');
-   const file=new File(photo.uri);
-   const size=file.size;
-   if(!file.exists||!size||size>5*1024*1024)throw Error('A fotografia não pôde ser preparada (máximo 5 MB).');
-   if(alive.current)onCaptured({uri:photo.uri,type:'image',mimeType:'image/jpeg',fileName:'jynlo-story-'+Date.now()+'.jpg',fileSize:size});
-  }catch(e){if(alive.current)setError(e instanceof Error?e.message:'Não foi possível tirar a fotografia.');}
-  finally{captureInFlight.current=false;if(alive.current)setBusy(false);}
- }
- async function toggleRecording(){
-  if(recordingRef.current){
-   try{camera.current?.stopRecording();}catch{if(alive.current)setError('Não foi possível terminar a gravação.');}
-   return;
-  }
-  if(busy||permissionRequestInFlight.current||!alive.current||!cameraReady||!permission?.granted||!camera.current||mode!=='video')return;
-  if(!micPermission?.granted){
-   permissionRequestInFlight.current=true;
-   try{
-    const granted=await requestMicPermission();
-    if(!alive.current)return;
-    if(!granted.granted){setError('Autoriza o microfone para gravar vídeo com som, ou utiliza a galeria.');return;}
-   }catch{if(alive.current)setError('Não foi possível obter a permissão do microfone.');return;}
-   finally{permissionRequestInFlight.current=false;}
-  }
-  // Permissions can resolve after the user closed the Story or switched modes.
-  if(!alive.current||!camera.current||!cameraReady||mode!=='video'||recordingRef.current)return;
-  recordingRef.current=true;setRecording(true);setBusy(true);setError('');
-  try{
-   // The server accepts MP4 up to 20 MB. The native recorder stops at either limit.
-   const result=await camera.current.recordAsync({maxDuration:30,maxFileSize:20*1024*1024});
+   if(!permission.granted){
+    setError('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe um ficheiro da galeria.');
+    return;
+   }
+   // The native camera chooses photo/video without a custom preview overlay.
+   const result=await ImagePicker.launchCameraAsync({
+    mediaTypes:['images','videos'],quality:.85,videoMaxDuration:30,
+    exif:false,base64:false
+   });
+   if(!alive.current||result.canceled||!result.assets?.length)return;
+   const asset=result.assets[0],kind=asset.type==='video'?'video':'image';
+   const mime=pickerMediaMime(asset);
+   if(!mime){setError('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.');return;}
+   let size=asset.fileSize||0;
+   if(!size){
+    const {File}=await import('expo-file-system');
+    const file=new File(asset.uri);
+    if(file.exists)size=file.size;
+   }
    if(!alive.current)return;
-   if(!result?.uri)throw Error('Não foi possível guardar o vídeo gravado.');
-   // The API only accepts MP4/WEBM. iOS may produce MOV, which must never be
-   // mislabelled as MP4 (renaming a file does not convert its container).
-   if(isUnsupportedMediaContainer(result.uri))
-    throw Error('O iPhone gravou em MOV, que ainda não é aceite pelo servidor. Escolhe um MP4 na galeria.');
-   const video=new File(result.uri);
-   const size=video.size;
-   if(!video.exists||!size||size>20*1024*1024)
-    throw Error('O vídeo excede 20 MB ou não pôde ser guardado.');
-   if(alive.current)onCaptured({uri:result.uri,type:'video',mimeType:'video/mp4',
-     fileName:'jynlo-story-'+Date.now()+'.mp4',fileSize:size});
+   const problem=validateMedia(mime,size,true);
+   if(problem){setError(problem);return;}
+   const extension=mime==='image/png'?'png':mime==='image/webp'?'webp':
+     kind==='video'?(mime==='video/webm'?'webm':'mp4'):'jpg';
+   onCaptured({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||'jynlo-story-'+Date.now()+'.'+extension,fileSize:size});
   }catch(e){
-   if(alive.current)setError(e instanceof Error?e.message:'Falha ao gravar vídeo.');
+   if(alive.current)setError(e instanceof Error?e.message:'Não foi possível abrir a câmara do telemóvel.');
   }finally{
-   recordingRef.current=false;
-   if(alive.current){setRecording(false);setBusy(false);}
+   busyRef.current=false;
+   if(alive.current)setBusy(false);
   }
- }
- const beginGalleryGesture=(x:number,y:number)=>{gestureStart.current={x,y};};
- const finishGalleryGesture=(x:number,y:number)=>{
-  const start=gestureStart.current;
-  gestureStart.current=null;
-  // Require a deliberate upward swipe, not a diagonal camera gesture or tap.
-  if(start&&!busy&&!recordingRef.current&&start.y-y>75&&Math.abs(start.x-x)<110)onPickGallery();
  };
- if(!permission)return <View style={styles.placeholder}><ActivityIndicator color={C.mint}/></View>;
- if(!permission.granted)return <View style={styles.permission}>
-  <Text style={styles.title}>A tua próxima Story começa aqui</Text>
-  <Text style={styles.subtitle}>Autoriza a câmara para tirar fotografias e gravar vídeos sem sair da Jynlo. A galeria continua disponível sem esta permissão.</Text>
-  <Pressable accessibilityRole="button" style={styles.primary} onPress={()=>void requestPermission()}><Text style={styles.primaryText}>Permitir câmara</Text></Pressable>
-  <Pressable accessibilityRole="button" style={styles.secondary} onPress={onPickGallery}><Text style={styles.secondaryText}>Abrir galeria</Text></Pressable>
- </View>;
- return <View style={[styles.cameraContainer,{height:Math.min(620,Math.max(370,viewportHeight-260))}]}>
-  <CameraView ref={camera} style={StyleSheet.absoluteFillObject} facing={facing} mode={mode} videoQuality="720p" onCameraReady={()=>setCameraReady(true)} onMountError={event=>setError(event.message)}/>
-  <View style={styles.cameraGestureArea}
-    accessible accessibilityLabel="Pré-visualização da câmara. Desliza para cima para abrir a galeria."
-    onStartShouldSetResponder={()=>true}
-    onResponderGrant={e=>beginGalleryGesture(e.nativeEvent.pageX,e.nativeEvent.pageY)}
-    onResponderRelease={e=>finishGalleryGesture(e.nativeEvent.pageX,e.nativeEvent.pageY)}
-    onResponderTerminate={()=>{gestureStart.current=null;}}>
-    <View style={styles.topOverlay} pointerEvents="none"><Text style={styles.topHint}>Desliza para cima para abrir a galeria ↑</Text></View>
+ useEffect(()=>{
+  alive.current=true;
+  // Allow the Story modal's opening transition to complete before Android
+  // presents the operating system camera activity.
+  const timer=setTimeout(()=>{
+   if(alive.current&&!autoOpened.current){autoOpened.current=true;void capture();}
+  },450);
+  return()=>{alive.current=false;clearTimeout(timer);};
+ },[]);
+ return <View style={styles.panel}>
+  <Text style={styles.heading}>Fotografia ou vídeo</Text>
+  <Text style={styles.description}>Usa a câmara do teu telemóvel para capturar um momento ou escolhe da galeria.</Text>
+  {busy?<View style={styles.loading}><ActivityIndicator color={C.mint}/><Text style={styles.description}>A abrir a câmara…</Text></View>:null}
+  {error?<Text style={styles.error}>{error}</Text>:null}
+  <View style={styles.actions}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara do dispositivo"
+    disabled={busy} style={[styles.action,styles.primary,busy&&styles.disabled]} onPress={()=>{void capture();}}>
+    <Text style={styles.primaryText}>Abrir câmara</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos"
+    disabled={busy} style={[styles.action,styles.secondary,busy&&styles.disabled]} onPress={onPickGallery}>
+    <Text style={styles.secondaryText}>Escolher da galeria</Text>
+   </Pressable>
   </View>
-  <View style={styles.modeRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Modo fotografia" disabled={busy} onPress={()=>{setCameraReady(false);setMode('picture');}} style={[styles.modeButton,mode==='picture'&&styles.modeActive]}><Text style={styles.modeText}>Fotografia</Text></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Modo vídeo" disabled={busy} onPress={()=>{setCameraReady(false);setMode('video');}} style={[styles.modeButton,mode==='video'&&styles.modeActive]}><Text style={styles.modeText}>Vídeo</Text></Pressable>
-  </View>
-  <View style={styles.controls}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos" accessibilityHint="Também podes deslizar para cima na câmara" disabled={busy||recording} onPress={onPickGallery} style={styles.galleryButton}><Text style={styles.controlText}>↑ Galeria</Text></Pressable>
-    <Pressable accessibilityRole="button"
-      accessibilityLabel={mode==='video'?(recording?'Terminar gravação':'Começar gravação'):'Tirar fotografia'}
-      disabled={(busy&&!recording)||(!cameraReady&&!recording)} onPress={()=>void (mode==='video'?toggleRecording():capture())}
-      style={[styles.captureOuter,recording&&styles.recordOuter]}>
-      <View style={[styles.captureInner,mode==='video'&&styles.videoCaptureInner,recording&&styles.stopCaptureInner]}/>
-    </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Trocar câmara frontal ou traseira"
-      disabled={busy||recording} onPress={()=>{setCameraReady(false);setFacing(v=>v==='back'?'front':'back');}} style={styles.galleryButton}><Text style={styles.galleryIcon}>⟳</Text><Text style={styles.controlText}>Rodar</Text></Pressable>
-  </View>
-  {recording?<View style={styles.recordStatus}><Text style={styles.recordText}>● A gravar · máximo 30 segundos</Text></View>:
-  busy?<View style={styles.busy}><ActivityIndicator color="#fff"/><Text style={styles.controlText}>A preparar ficheiro…</Text></View>:null}
-  {error?<View style={styles.error}><Text style={styles.errorText}>{error}</Text></View>:null}
  </View>;
 }
 const styles=StyleSheet.create({
- cameraContainer:{width:'100%',height:440,borderRadius:20,overflow:'hidden',backgroundColor:'#091c22',justifyContent:'space-between'},
- cameraGestureArea:{flex:1,justifyContent:'flex-start'},
- placeholder:{height:350,justifyContent:'center'},
- permission:{height:350,padding:22,borderRadius:18,backgroundColor:C.surface,gap:15,justifyContent:'center'},
- title:{fontSize:19,fontWeight:'900',color:C.white},
- subtitle:{fontSize:13,lineHeight:20,color:C.muted},
- primary:{minHeight:52,backgroundColor:C.mint,alignItems:'center',justifyContent:'center',borderRadius:15},
- primaryText:{color:C.background,fontWeight:'900'},
- secondary:{minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:15,borderWidth:1,borderColor:C.border},
- secondaryText:{color:C.white,fontWeight:'800'},
- topOverlay:{alignItems:'center',padding:15,backgroundColor:'rgba(0,0,0,0.40)'},
- topHint:{color:'#fff',fontSize:12,fontWeight:'800'},
- modeRow:{flexDirection:'row',justifyContent:'center',backgroundColor:'rgba(0,0,0,.45)',gap:12,paddingVertical:7},
- modeButton:{paddingHorizontal:17,paddingVertical:8,borderRadius:20},
- modeActive:{backgroundColor:'rgba(255,255,255,.25)'},
- modeText:{color:'#fff',fontSize:12,fontWeight:'800'},
- recordOuter:{borderColor:'#ff4b5d'},
- videoCaptureInner:{backgroundColor:'#ff4b5d'},
- stopCaptureInner:{width:30,height:30,borderRadius:7},
- recordStatus:{position:'absolute',top:54,alignSelf:'center',backgroundColor:'rgba(0,0,0,.8)',borderRadius:12,padding:10},
- recordText:{color:'#ff7b89',fontWeight:'900',fontSize:12},
- controls:{flexDirection:'row',alignItems:'center',justifyContent:'space-evenly',backgroundColor:'rgba(0,0,0,0.45)',paddingVertical:20},
- galleryButton:{alignItems:'center',justifyContent:'center',gap:4,minHeight:60,minWidth:76},
- galleryIcon:{fontSize:27,color:'#fff'},controlText:{fontSize:11,color:'#fff',fontWeight:'800'},
- captureOuter:{width:75,height:75,borderRadius:38,borderWidth:4,borderColor:'#fff',alignItems:'center',justifyContent:'center'},
- captureInner:{width:60,height:60,borderRadius:30,backgroundColor:'#fff'},
- busy:{position:'absolute',top:130,left:0,right:0,alignItems:'center',gap:10},
- error:{position:'absolute',top:60,left:12,right:12,padding:11,borderRadius:9,backgroundColor:'rgba(40,5,5,0.9)'},
- errorText:{color:'#fff',fontSize:12,fontWeight:'700'}
+ panel:{minHeight:175,padding:18,gap:12,backgroundColor:C.surface,borderRadius:18,borderWidth:1,borderColor:C.border},
+ heading:{fontSize:18,fontWeight:'900',color:C.white},
+ description:{fontSize:13,lineHeight:20,color:C.muted},
+ actions:{flexDirection:'row',gap:9,flexWrap:'wrap'},
+ action:{minHeight:48,borderRadius:13,paddingHorizontal:14,justifyContent:'center',alignItems:'center',flexGrow:1},
+ primary:{backgroundColor:C.mint},secondary:{borderWidth:1,borderColor:C.border},
+ primaryText:{color:C.background,fontWeight:'900'},secondaryText:{color:C.white,fontWeight:'800'},
+ loading:{flexDirection:'row',alignItems:'center',gap:9},
+ error:{fontSize:12,color:'#FF9F9F'},disabled:{opacity:.5}
 });
