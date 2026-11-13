@@ -54,6 +54,19 @@ export function SessionOfficialResultCard({sessionId,token}:{sessionId:number;to
    <Text style={styles.caption}>{result.scoreA===null||result.scoreB===null?
     'Jornada registada; o marcador oficial não foi indicado.':
     'Marcador confirmado na jornada da comunidade.'}</Text>
+   {Array.isArray(result.contributions)&&result.contributions.length>0?<View style={styles.contributions}>
+    <Text style={styles.contributionHeader}>MARCADORES E ASSISTÊNCIAS</Text>
+    {result.contributions.filter(player=>player&&typeof player.username==='string'&&
+       Number.isInteger(player.goals)&&Number.isInteger(player.assists)&&
+       (player.goals>0||player.assists>0)).map((player,index)=>
+      <View key={player.username+'-'+index} style={styles.contributionRow}>
+       <Text style={styles.player}>{player.username} · Equipa {player.team||'?'}</Text>
+       <Text style={styles.stats}>{[
+        player.goals>0?player.goals+' golos':null,
+        player.assists>0?player.assists+' assistências':null
+       ].filter(Boolean).join(' · ')}</Text>
+      </View>)}
+   </View>:null}
   </>:null}
   {!result&&!loading&&!error?<Text style={styles.caption}>O resultado ainda não foi registado na classificação.</Text>:null}
   {error?<Button title="Voltar a consultar o resultado" secondary onPress={()=>{void load();}}/>:null}
@@ -67,5 +80,6 @@ const styles=StyleSheet.create({
  team:{color:C.muted,fontSize:12,fontWeight:'800'},
  score:{color:C.white,fontSize:36,fontWeight:'900'},
  separator:{color:C.white,fontSize:24,fontWeight:'800'},
- caption:{color:C.muted,fontSize:12,lineHeight:19,textAlign:'center'}
+ caption:{color:C.muted,fontSize:12,lineHeight:19,textAlign:'center'},
+ contributions:{gap:9,paddingTop:12,borderTopWidth:1,borderTopColor:C.border},contributionHeader:{color:C.mint,fontSize:11,fontWeight:'900'},contributionRow:{flexDirection:'row',gap:8,alignItems:'center',justifyContent:'space-between',minHeight:36},player:{color:C.white,fontSize:12,fontWeight:'700',flex:1},stats:{color:C.muted,fontSize:11,fontWeight:'700'}
 });
