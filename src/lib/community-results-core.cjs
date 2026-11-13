@@ -12,7 +12,9 @@ function communityResults(overview,seasonId=null){
  return {rounds:recent,standings:ranked,seasons,selection:seasonId};
 }
 function officialRoundScore(round){
- if(!round||round.sport!=='Futebol'||round.eventType!=='FOOTBALL_FINAL')return null;
+ // Scores are stored by the backend per discipline. Display confirmed
+ // team totals generically, without reinterpreting them as football goals.
+ if(!round||typeof round.eventType!=='string'||!round.eventType)return null;
  const a=round.teamScore?.sideA,b=round.teamScore?.sideB;
  if(!Number.isSafeInteger(a)||!Number.isSafeInteger(b)||a<0||b<0)return null;
  return {a,b,label:a+'–'+b};
