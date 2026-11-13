@@ -27,7 +27,7 @@ test('guest RSVP recovers from an uncertain previous confirmation without bookin
  const view=read('src/components/GuestSessionRSVP.tsx');
  assert.match(view,/setStatusUnknown\(true\)/);
  assert.match(view,/setRefreshId\(n=>n\+1\)/);
- assert.match(view,/pending\.current\|\|loading\|\|statusUnknown\|\|receipt/);
+ assert.match(view,/pending\.current\|\|loading\|\|statusUnknown\|\|uncertainSubmission\.current\|\|receipt/);
  assert.match(view,/!loading&&!error&&!statusUnknown/);
 });
 test('confirmed server cancellation clears the UI before local secure storage cleanup',()=>{
@@ -44,4 +44,13 @@ test('guest invitation stays usable from the browser even after a native app-lin
  assert.match(details,/title="Continuar no browser"/);
  assert.match(details,/Linking\.openURL\(url\)/);
  assert.match(details,/https:\/\/d24sports\.com\/sessions\/\$\{id\}\?guest=\$\{encodeURIComponent\(guestToken\)\}/);
+});
+
+test('uncertain network response cannot create another guest RSVP on refresh',()=>{
+ const view=read('src/components/GuestSessionRSVP.tsx');
+ assert.match(view,/const pending=useRef\(false\),uncertainSubmission=useRef\(false\)/);
+ assert.match(view,/uncertainSubmission\.current=true;setStatusUnknown\(true\)/);
+ assert.match(view,/setStatusUnknown\(uncertainSubmission\.current\)/);
+ assert.match(view,/!loading&&!uncertainSubmission\.current&&/);
+ assert.match(view,/Não repitas a inscrição/);
 });
