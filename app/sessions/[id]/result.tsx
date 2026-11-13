@@ -5,7 +5,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/compon
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
 import {competitionSessionRoster,recordedCompetitionSessionIds,recordCompetitionSessionResult} from '../../../src/lib/session-competition-api';
-import {buildSessionCompetitionResult,editableCompetitionRoster} from '../../../src/lib/session-competition-result.cjs';
+import {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics} from '../../../src/lib/session-competition-result.cjs';
 import type {CompetitionOutcome,CompetitionRosterEntry,CompetitionTeam} from '../../../src/lib/session-competition-result.cjs';
 
 export default function SessionCompetitionResultScreen(){
@@ -72,7 +72,9 @@ export default function SessionCompetitionResultScreen(){
      if(version!==generation.current||actor!==identityRef.current)return;
      if(!Number.isSafeInteger(reply?.id)||reply.id<=0)
       throw Error('O servidor não confirmou a jornada. Verifica as classificações antes de repetir.');
-     setRecorded(true);setRoster([]);setSuccess('Jornada registada. O resultado já pode contar para a classificação.');
+     setRecorded(true);setRoster([]);
+     if(confirmedPlayerStatistics(payload,reply))setSuccess('Jornada registada. O resultado e as estatísticas confirmadas já contam para a classificação.');
+     else setSuccess('A jornada foi criada, mas não foi possível confirmar os golos e assistências guardados. Consulta a classificação antes de voltares a registar dados.');
     }).catch(e=>{
      if(version===generation.current&&actor===identityRef.current)
       setError((e instanceof Error?e.message:'Não foi possível confirmar o registo.')+
