@@ -9,7 +9,7 @@ const source=feed.slice(feed.indexOf('const identityChanged='),feed.indexOf('set
 test('account changes dismiss open stories and draft media, not just feed lists',()=>{
  assert.match(source,/if\(identityChanged\)\{/);
  for(const name of ['setStoryViewer(null)','setStoryComposer(false)','setStoryMedia(null)','setStoryCaption(\'\')',
-  'setComposerOpen(false)','setComposerMedia(null)','setComposerText(\'\')',
+  'setComposerOpen(false)','setComposerMedia([])','setComposerText(\'\')',
   'setExpandedComments(null)','setComments([])','setCommentText(\'\')']){
   assert.ok(source.includes(name),name);
  }
