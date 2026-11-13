@@ -23,3 +23,6 @@ export declare function recentPreviewMessageIds(
  }>,
  maxMessages?:number
 ):number[];
+
+/** Confirm that all uploaded album files are represented by the server. */
+export declare function confirmedChatAlbumReply(reply:{id?:number;attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>}|null,requestedMimes:string[]):boolean;
