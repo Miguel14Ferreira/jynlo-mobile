@@ -38,7 +38,7 @@ test('result API uses only existing server endpoints and server-side community a
  assert.match(api,/sessions\/competition-results/);
  assert.match(api,/method:'POST',body:payload/);
  assert.match(api,/if\(!token\|\|DEMO_MODE\)/);
- assert.doesNotMatch(api,/goals|assists|score:/);
+ assert.match(api,/entries\?:Array<\{username:string;goals:number;assists:number\}>/);
 });
 test('post-game editor never posts before explicit user approval and keeps session/account isolation',()=>{
  const s=read('app/sessions/[id]/result.tsx');
@@ -47,7 +47,8 @@ test('post-game editor never posts before explicit user approval and keeps sessi
  assert.match(s,/if\(writing.current\|\|version!==generation.current\|\|actor!==identityRef.current\)return/);
  assert.match(s,/Promise.all\(\[/);
  assert.match(s,/recordedIds.includes\(sessionId\)/);
- assert.match(s,/setRecorded\(true\);setRoster\(\[\]\);setSuccess/);
+ assert.match(s,/setRecorded\(true\);setRoster\(\[\]\)/);
+ assert.match(s,/confirmedPlayerStatistics\(payload,reply\)/);
  assert.match(s,/if\(version!==generation.current\|\|actor!==identityRef.current\)return/);
  assert.match(s,/if\(!Number.isSafeInteger\(reply\?\.id\)\|\|reply.id<=0\)/);
  assert.match(s,/confirmedIdentity&&!recorded&&!loading/);
