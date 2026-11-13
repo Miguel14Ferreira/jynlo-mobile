@@ -192,7 +192,12 @@ export default function CommunityDetailScreen(){
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
         {sessionsError?<Button secondary title="Tentar carregar sessões novamente" disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
         {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
-        {sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
+        {sessions.map(s=><View key={s.id} style={styles.communitySessionRow}>
+          <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
+          {owner&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
+           <Button secondary title="Registar resultado do jogo"
+            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id)}})}/>:null}
+        </View>)}
       </View>:null}
     </>:null}
   </Page>;
@@ -206,6 +211,7 @@ const styles=StyleSheet.create({
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   heading:{flex:1,color:C.white,fontSize:27,fontWeight:'900'},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
   section:{padding:18,borderRadius:20,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:14},
+  communitySessionRow:{gap:9},
   sectionTitle:{color:C.white,fontSize:20,fontWeight:'900'},member:{flexDirection:'row',gap:12,alignItems:'center'},
   avatar:{width:42,height:42,borderRadius:15,alignItems:'center',justifyContent:'center',backgroundColor:C.surface2},
   avatarText:{fontSize:18,color:C.mint,fontWeight:'800'},memberName:{fontSize:15,color:C.white,fontWeight:'800'},
