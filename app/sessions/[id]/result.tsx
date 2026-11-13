@@ -20,6 +20,7 @@ export default function SessionCompetitionResultScreen(){
  const [outcome,setOutcome]=useState<CompetitionOutcome|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [recorded,setRecorded]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ const [playerStatsSupported,setPlayerStatsSupported]=useState(false);
  const generation=useRef(0),writing=useRef(false);
  const identity=(auth.username||'')+'|'+(auth.token||'')+'|'+sessionId+'|'+communityId+'|'+sport;
  const identityRef=useRef(identity);
@@ -28,18 +29,20 @@ export default function SessionCompetitionResultScreen(){
  const confirmedIdentity=loadedIdentity===identity;
  const load=useCallback(async()=>{
   const version=++generation.current,actor=identity;
-  setRoster([]);setOutcome(null);setRecorded(false);setError('');setSuccess('');setLoadedIdentity('');
+  setRoster([]);setOutcome(null);setRecorded(false);setPlayerStatsSupported(false);setError('');setSuccess('');setLoadedIdentity('');
   if(!valid||!auth.token||!auth.username){setLoading(false);return;}
   setLoading(true);
   try{
-   const [players,recordedIds]=await Promise.all([
+   const [players,recordedIds,capabilities]=await Promise.all([
     competitionSessionRoster(communityId,sessionId,auth.token),
-    recordedCompetitionSessionIds(communityId,auth.token)
+    recordedCompetitionSessionIds(communityId,auth.token),
+    football?competitionSessionCapabilities(communityId,sessionId,auth.token).catch(()=>null):Promise.resolve(null)
    ]);
    if(version!==generation.current||actor!==identityRef.current)return;
    if(!Array.isArray(recordedIds))throw Error('O servidor não confirmou os resultados anteriores.');
    const already=recordedIds.includes(sessionId);
    setRecorded(already);
+   setPlayerStatsSupported(football&&capabilities?.version===1&&capabilities.footballGoalsAssists===true);
    if(!already)setRoster(editableCompetitionRoster(players));
    setLoadedIdentity(actor);
   }catch(e){
@@ -105,7 +108,7 @@ export default function SessionCompetitionResultScreen(){
   <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
   <Text style={styles.title}>Resultado da sessão</Text>
   <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
-  <Message>{football?'Podes registar golos e assistências por jogador. Campos opcionais; os valores não são calculados automaticamente. O marcador coletivo ainda não é guardado.':'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
+  <Message>{football?(playerStatsSupported?'Podes registar golos e assistências por jogador. Campos opcionais; os valores não são calculados automaticamente. O marcador coletivo ainda não é guardado.':'O backend ainda não confirmou suporte a golos e assistências. Podes registar apenas o vencedor ou empate, sem perder a jornada.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!busy&&auth.token?<Button secondary title="Verificar novamente" onPress={()=>{void load();}}/>:null}
@@ -142,8 +145,8 @@ export default function SessionCompetitionResultScreen(){
       <Text style={styles.teamText}>{team}</Text>
      </Pressable>)}
     </View>)}
-    {football?<Text style={styles.hint}>Indica apenas as estatísticas que conheces. Deixa em branco quando não souberes; zero significa que confirmaste 0.</Text>:null}
-    {football?roster.filter(player=>player.selected).map(player=><View key={'stats-'+player.id} style={styles.statsRow}>
+    {football&&playerStatsSupported?<Text style={styles.hint}>Indica apenas as estatísticas que conheces. Deixa em branco quando não souberes; zero significa que confirmaste 0.</Text>:null}
+    {football&&playerStatsSupported?roster.filter(player=>player.selected).map(player=><View key={'stats-'+player.id} style={styles.statsRow}>
       <Text style={styles.statsName} numberOfLines={1}>{player.username} · Equipa {player.team||'?'}</Text>
       <View style={styles.statFields}>
         <View style={styles.statField}><Text style={styles.statLabel}>Golos</Text>
