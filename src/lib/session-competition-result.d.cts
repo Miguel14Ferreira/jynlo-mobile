@@ -6,3 +6,4 @@ export type CompetitionResultPayload={outcome:CompetitionOutcome;players:Array<{
 export declare function editableCompetitionRoster(roster:SessionParticipant[]):CompetitionRosterEntry[];
 export declare function buildSessionCompetitionResult(outcome:CompetitionOutcome|null,players:CompetitionRosterEntry[],sport?:string|null):CompetitionResultPayload;
 export declare function optionalStat(value:string|number|null|undefined,label:string):number|null;
+export declare function confirmedPlayerStatistics(payload:CompetitionResultPayload,round:{entries?:Array<{username:string;goals:number;assists:number}>|null}|null):boolean;
