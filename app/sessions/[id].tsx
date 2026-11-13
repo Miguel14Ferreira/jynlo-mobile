@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,AppState,Image,Linking,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
