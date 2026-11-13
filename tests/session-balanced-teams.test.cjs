@@ -13,7 +13,7 @@ test('organizer can preview and persist server random teams without classificati
  const screen=read('app/sessions/[id].tsx');
  for(const term of ['detail.communityId?','title="Equipas aleatórias"',
  "suggestSessionTeams(id,actorToken,mode)",
- "confirmSessionTeams(id,auth.token!,!detail.teamBalanceSupported?'RANDOM':teamSource,teamPreview)",
+ "confirmSessionTeams(id,actorToken,mode,selectedPreview)",
  'title="Sortear novamente"','Confirmar distribuição de equipas','p.teamCode'])
   assert.ok(screen.includes(term),term);
 });
