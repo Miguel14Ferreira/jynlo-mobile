@@ -71,3 +71,14 @@ test('late PDF attachment completion cannot refresh a different direct chat',()=
  assert.match(screen,/if\(conversation\.current!==peer\+'\|'\+auth\.token\)return/);
  assert.match(screen,/await refresh\(true,generation\.current\)/);
 });
+
+test('direct chat preserves selected photo album and caption on same-conversation refocus',()=>{
+ const start=screen.indexOf('useFocusEffect(useCallback(');
+ const end=screen.indexOf('function toggleMute()',start);
+ const focused=screen.slice(start,end);
+ assert.match(focused,/if\(conversation\.current!==identity\)\{/);
+ assert.match(focused,/setPhoto\(null\);setExtraPhotos\(\[\]\);setAttachmentCaption\(''\)/);
+ const secondary=focused.slice(focused.indexOf('pendingRefresh.current=false;'));
+ assert.doesNotMatch(secondary,/setPhoto\(null\);setExtraPhotos\(\[\]\)/);
+ assert.match(screen,/conversation\.current!==identity\|\|blocked\|\|!blockStatusKnown\|\|!photoAvailable/);
+});

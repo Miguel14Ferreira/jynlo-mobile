@@ -134,7 +134,8 @@ export default function DirectConversation(){
   setSafetyBusy(safetyInFlight.current);
   const blockRequest=++blockCheckRequest.current;
   pendingRefresh.current=false;
-  setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoAvailable(false);setPhotoAvailabilityError('');
+  // Refresh permission and availability, but keep unsent files on a normal refocus.
+  setPhotoAvailable(false);setPhotoAvailabilityError('');
   if(auth.token)void directPhotoAvailable(peer,auth.token).then(available=>{
    if(active&&generation.current===version){setPhotoAvailable(available);setPhotoAvailabilityError(available?'':'O envio de fotografias não está disponível neste momento.');}
   }).catch(()=>{if(active&&generation.current===version){setPhotoAvailable(false);setPhotoAvailabilityError('Não foi possível verificar os anexos de fotografias.');}});
@@ -383,7 +384,7 @@ export default function DirectConversation(){
    for(const asset of selected.assets){if(asset.type==='image')validateChatPhoto(asset);}
    const result=appendChatMediaSelection(current,selected.assets);
    if(result.error)throw Error(result.error);
-   if(version!==generation.current||conversation.current!==identity)return;
+   if(version!==generation.current||conversation.current!==identity||blocked||!blockStatusKnown||!photoAvailable)return;
    setPhoto(result.items[0]||null);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&conversation.current===identity)

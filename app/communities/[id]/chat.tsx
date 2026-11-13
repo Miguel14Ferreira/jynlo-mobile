@@ -35,6 +35,7 @@ export default function CommunityChatScreen(){
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
  const pickerInFlight=useRef(false);
  const [attachmentCaption,setAttachmentCaption]=useState('');
+ const focusedIdentity=useRef('');
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [accessRevoked,setAccessRevoked]=useState(false);
@@ -91,9 +92,16 @@ export default function CommunityChatScreen(){
  useFocusEffect(useCallback(()=>{
    let active=true;
    const version=++generation.current;
-   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
-   setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    const identity=id+'|'+auth.token;
+   const changedAccountOrCommunity=focusedIdentity.current!==identity;
+   focusedIdentity.current=identity;
+   if(changedAccountOrCommunity){
+    // Keep local drafts when refocusing the same community, but never cross accounts.
+    setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');
+    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
+   }
+   setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
+   setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
    sendingNow.current=Boolean(pending);uploadingNow.current=pending==='photo';
@@ -219,7 +227,7 @@ export default function CommunityChatScreen(){
    for(const asset of selected.assets){if(asset.type==='image')validateChatPhoto(asset);}
    const result=appendChatMediaSelection(current,selected.assets);
    if(result.error)throw Error(result.error);
-   if(version!==generation.current||activeChat.current!==identity)return;
+   if(version!==generation.current||activeChat.current!==identity||revokedRef.current||!canSendPhoto)return;
    setPhoto(result.items[0]||null);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)

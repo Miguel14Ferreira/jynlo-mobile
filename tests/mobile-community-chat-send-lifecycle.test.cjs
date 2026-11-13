@@ -29,3 +29,12 @@ test('community chat keeps writes locked when navigating away and back',()=>{
  assert.match(source,/pendingWrites\.current\.has\(identity\)/);
  assert.doesNotMatch(source,/sendingNow\.current=false;uploadingNow\.current=false;setSending\(false\);setUploading\(false\)/);
 });
+
+test('community refocus preserves unsent text, reply and media within the same account',()=>{
+ const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
+ assert.match(focus,/const changedAccountOrCommunity=focusedIdentity\.current!==identity/);
+ const changed=focus.slice(focus.indexOf('if(changedAccountOrCommunity){'),focus.indexOf("setName('Comunidade')"));
+ for(const reset of ["setDraft('')","setReply(null)","setPhoto(null)","setExtraPhotos([])","setAttachmentCaption('')"])assert.ok(changed.includes(reset),reset);
+ assert.doesNotMatch(focus.slice(focus.indexOf("setName('Comunidade')"),focus.indexOf('const pending=')),/setDraft\(''\)|setPhoto\(null\)/);
+ assert.match(source,/activeChat\.current!==identity\|\|revokedRef\.current\|\|!canSendPhoto/);
+});
