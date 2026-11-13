@@ -12,10 +12,11 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
  const [players,setPlayers]=useState<Player[]>([]),[receipt,setReceipt]=useState<GuestReceipt|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [refreshId,setRefreshId]=useState(0),[statusUnknown,setStatusUnknown]=useState(false);
- const pending=useRef(false);
+ const pending=useRef(false),uncertainSubmission=useRef(false);
+ useEffect(()=>{uncertainSubmission.current=false;},[sessionId,guestToken]);
  const key='jynlo-guest-rsvp-'+sessionId;
  useEffect(()=>{
-  let alive=true;setLoading(true);setError('');setStatusUnknown(false);setReceipt(null);setPlayers([]);
+  let alive=true;setLoading(true);setError('');setStatusUnknown(uncertainSubmission.current);setReceipt(null);setPlayers([]);
   if(!validSecret(guestToken)){setError('Pede uma ligação de convite válida ao organizador.');setLoading(false);return;}
   void (async()=>{
    try{
@@ -33,7 +34,7 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
   return()=>{alive=false;};
  },[sessionId,guestToken,key,refreshId]);
  async function confirm(){
-  if(pending.current||loading||statusUnknown||receipt||(!playerId&&!name.trim()))return;
+  if(pending.current||loading||statusUnknown||uncertainSubmission.current||receipt||(!playerId&&!name.trim()))return;
   pending.current=true;setBusy(true);setError('');
   try{
    const result=await request<GuestReceipt>('/api/sessions/'+sessionId+'/guest-requests',{
@@ -42,13 +43,13 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
     throw Error('A inscrição não foi confirmada. Consulta os participantes antes de repetires.');
    try{await SecureStore.setItemAsync(key,result.receipt);}
    catch{setError('Presença confirmada, mas não foi possível guardar o comprovativo neste dispositivo. Não desinstales a aplicação antes de confirmares o estado com o organizador.');}
-   setReceipt(result);onConfirmed();
+   uncertainSubmission.current=false;setReceipt(result);onConfirmed();
   }catch(e){
    const detail=e instanceof Error?e.message:'Não foi possível confirmar a presença.';
    // A POST can succeed on the server even if Android loses the response.
    // A second POST would either overbook or return a misleading duplicate error.
    if(/ligação|tempo|servidor respondeu|confirmar|rede|timeout/i.test(detail)){
-    setStatusUnknown(true);
+    uncertainSubmission.current=true;setStatusUnknown(true);
     setError('Não foi possível saber se a presença ficou confirmada. Não repitas a inscrição: consulta o organizador ou verifica o estado da sessão no browser.');
    }else setError(detail);
   }
@@ -63,7 +64,7 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
     try{
      const result=await request<GuestReceipt>('/api/sessions/'+sessionId+'/guest-requests/cancel-self',{method:'POST',body:{receipt:receipt.receipt}});
      if(result.status!=='CANCELLED')throw Error('Cancelamento não confirmado pelo servidor.');
-     setReceipt(null);onConfirmed();
+     uncertainSubmission.current=false;setReceipt(null);onConfirmed();
      try{await SecureStore.deleteItemAsync(key);}
      catch{setError('Presença cancelada no servidor. Não foi possível limpar o comprovativo local; a inscrição já não está ativa.');}
     }catch(e){setError(e instanceof Error?e.message:'Não foi possível cancelar.');}
@@ -75,7 +76,8 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
   <Text style={styles.heading}>Confirmar presença sem conta</Text>
   {loading?<Text style={styles.hint}>A verificar o convite…</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
-  {!loading&&(statusUnknown||error&&!receipt)?<Pressable accessibilityRole="button" accessibilityLabel="Voltar a verificar o convite" disabled={busy} style={styles.secondary} onPress={()=>setRefreshId(n=>n+1)}><Text style={styles.buttonText}>Verificar novamente</Text></Pressable>:null}
+  {!loading&&!uncertainSubmission.current&&(statusUnknown||error&&!receipt)?<Pressable accessibilityRole="button" accessibilityLabel="Voltar a verificar o convite" disabled={busy} style={styles.secondary} onPress={()=>setRefreshId(n=>n+1)}><Text style={styles.buttonText}>Verificar novamente</Text></Pressable>:null}
+  {uncertainSubmission.current?<Text style={styles.hint}>Se o servidor recebeu a inscrição, o organizador conseguirá verificar a tua presença. Evita repetir o pedido.</Text>:null}
   {receipt?<><Text style={styles.ok}>{receipt.status==='APPROVED'||receipt.status==='LINKED'?'✓ Presença confirmada':'Pedido registado'}</Text>
    <Text style={styles.hint}>{receipt.playerName||'Convidado'}</Text>
    {receipt.meetingPointInstructions?<Text style={styles.hint}>Ponto de encontro: {receipt.meetingPointInstructions}</Text>:null}
