@@ -23,9 +23,31 @@ test('store builds require a real HTTPS API',()=>{
 });
 test('production and Play internal accept a public HTTPS endpoint',()=>{
   for(const profile of ['production','play-internal']){
-    const result=run('https://desporto24-preview-api.onrender.com',profile);
+    const result=run('https://api.jynlo.com',profile);
     assert.equal(result.status,0,result.stderr);
     assert.match(result.stdout,/OK \(api\)/);
+  }
+});
+test('store builds refuse preview and staging backends',()=>{
+  for(const profile of ['production','play-internal']){
+    for(const url of ['https://desporto24-preview-api.onrender.com','https://api-preview.example.org','https://staging-api.example.org']){
+      const result=run(url,profile);
+      assert.notEqual(result.status,0,`${profile}: ${url}`);
+      assert.match(result.stderr,/BUILD BLOQUEADO/);
+    }
+  }
+  assert.equal(run('https://desporto24-preview-api.onrender.com','preview').status,0,'internal preview must still work');
+});
+test('store build refuses diagnostic R8 override',()=>{
+  const staticConfig=require('../app.json').expo;
+  const configPath=require.resolve('../app.config.js');
+  for(const profile of ['production','play-internal']){
+    const result=spawnSync(process.execPath,['-e',`require(${JSON.stringify(configPath)})({config:${JSON.stringify(staticConfig)}})`],{
+      encoding:'utf8',
+      env:{...process.env,EAS_BUILD_PROFILE:profile,JYNLO_ANDROID_DIAGNOSTIC_NO_R8:'1'}
+    });
+    assert.notEqual(result.status,0,profile);
+    assert.match(result.stderr,/BUILD BLOQUEADO/);
   }
 });
 test('local demo mode is allowed only without release flags',()=>{
