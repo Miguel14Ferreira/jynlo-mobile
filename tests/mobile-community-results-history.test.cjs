@@ -51,6 +51,6 @@ test('screen fetches backend competition overview with login, season switching a
  assert.match(ui,/setSeasonId\(season.id\)/);
  assert.match(ui,/Resultados e classificações|Histórico da comunidade/);
  assert.match(ui,/Ver todas as jornadas/);
- assert.match(ui,/Marcador oficial/);
+ assert.match(ui,/marcador oficial/);
  assert.match(parent,/pathname:'\/communities\/\[id\]\/results'/);
 });
