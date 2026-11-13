@@ -56,7 +56,8 @@ test('private chat replies use server-verified quoted messages without cross-thr
  assert.match(api,/export async function sendDirectChatReply\(/);
  assert.match(api,/Number\.isSafeInteger\(replyToMessageId\)/);
  assert.match(api,/body:\{text:body,replyToMessageId\}/);
- assert.match(chat,/if\(originalReply\)await sendDirectChatReply\(peer,submittedText,auth\.token,originalReply\.id\)/);
+ assert.match(chat,/await sendDirectChatReply\(peer,submittedText,auth\.token,originalReply\.id\)/);
+ assert.match(chat,/confirmedDirectChatSend\(confirmed,auth\.username\|\|'',peer,submittedText,originalReply\?\.id\)/);
  assert.match(chat,/setReplyTarget\(current=>current\?\.id===originalReply\.id\?null:current\)/);
  assert.match(chat,/accessibilityLabel="Cancelar resposta"/);
  assert.match(chat,/accessibilityLabel=\{`Responder à mensagem de/);
