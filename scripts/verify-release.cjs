@@ -2,7 +2,8 @@
 /** Never ship a demo or private-network API endpoint to Play Store. */
 const {isIP}=require('node:net');
 const httpUrl=(process.env.EXPO_PUBLIC_JYNLO_API_URL||'').trim();
-const release=process.argv.includes('--production') || process.env.JYNLO_REQUIRE_REAL_API==='1' || ['production','play-internal'].includes(process.env.EAS_BUILD_PROFILE);
+const storeRelease=process.argv.includes('--production') || ['production','play-internal'].includes(process.env.EAS_BUILD_PROFILE);
+const release=storeRelease || process.env.JYNLO_REQUIRE_REAL_API==='1';
 function checkProductionEnvironment(){
   if(!release) return {ok:true,mode:httpUrl?'api':'demo'};
   let url;
@@ -12,6 +13,12 @@ function checkProductionEnvironment(){
     throw new Error('BUILD BLOQUEADO: define EXPO_PUBLIC_JYNLO_API_URL=https://... para a versão de loja. Não podes publicar o modo demonstração.');
   }
   const host=url.hostname.toLowerCase();
+  // A valid public HTTPS URL can still point to the preview database.
+  // Never ship a Play Store AAB targeting our development/staging backend.
+  if(storeRelease && (host==='desporto24-preview-api.onrender.com' ||
+     /(?:^|[.-])(?:preview|staging|sandbox)(?:[.-]|$)/.test(host))) {
+    throw new Error('BUILD BLOQUEADO: a versão de loja não pode usar o backend preview/staging. Configura a API de produção.');
+  }
   const ipHost=host.startsWith('[') && host.endsWith(']') ? host.slice(1,-1) : host;
   // Store builds must not target literal IP addresses: private, loopback or public.
   // A verified DNS hostname is required for stable TLS and environment configuration.
