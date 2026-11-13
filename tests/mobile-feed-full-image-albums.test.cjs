@@ -77,3 +77,20 @@ test('native picker caps selection to free album capacity and rejects late Story
  assert.match(s,/storyComposerWasOpen&&storyComposerRef\.current&&prepared\[0\]/);
  assert.match(s,/storyComposerRef\.current=false;setStoryCaption\(''\)/);
 });
+
+test('camera and gallery drafts cannot cross a closed and reopened editor',()=>{
+ const s=read('app/(tabs)/index.tsx');
+ assert.match(s,/const postComposerRevision=useRef\(0\)/);
+ assert.match(s,/const storyComposerRevision=useRef\(0\)/);
+ assert.match(s,/postComposerRevision\.current!==postRevision/);
+ assert.match(s,/storyComposerRevision\.current===storyRevision/);
+ assert.match(s,/key=\{storyComposerRevision\.current\} onCaptured/);
+ assert.match(s,/storyComposerRef\.current&&!storyInFlight\.current/);
+});
+test('story editor warns before discarding a video photo or caption',()=>{
+ const s=read('app/(tabs)/index.tsx');
+ assert.match(s,/function closeStoryComposer\(/);
+ assert.match(s,/Descartar Story\?/);
+ assert.match(s,/onRequestClose=\{closeStoryComposer\}/);
+ assert.match(s,/onPress=\{closeStoryComposer\}/);
+});

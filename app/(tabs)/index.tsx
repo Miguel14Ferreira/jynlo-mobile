@@ -201,6 +201,7 @@ export default function JynloFeedHome(){
   const [storyViewer,setStoryViewer]=useState<StoriesGroup|null>(null);
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
   const storyComposerRef=useRef(false);
+  const storyComposerRevision=useRef(0);
   storyComposerRef.current=storyComposer;
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
   const [composerOpen,setComposerOpen]=useState(false);
@@ -208,6 +209,7 @@ export default function JynloFeedHome(){
   const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const composerMediaRef=useRef<MobileMedia[]>([]);
   const composerOpenRef=useRef(false);
+  const postComposerRevision=useRef(0);
   composerOpenRef.current=composerOpen;
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
@@ -231,8 +233,8 @@ export default function JynloFeedHome(){
       commentsRequest.current++;
       setPosts([]);setStories([]);setOwnStories([]);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
-      setStoryViewer(null);storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
-      composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');
+      setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
+      postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
     }
     setLoading(true);setError('');
@@ -268,8 +270,8 @@ export default function JynloFeedHome(){
       router.push({pathname:'/login',params:{redirect:'/'}});
       return;
     }
-    if(compose==='post')setComposerOpen(true);
-    else setStoryComposer(true);
+    if(compose==='post')openPostComposer();
+    else openStoryComposer();
   },[compose,auth.ready,auth.token,auth.username,router]);
   useEffect(()=>{
     if(typeof storyId!=='string'||!auth.ready||!auth.token)return;
@@ -373,6 +375,29 @@ export default function JynloFeedHome(){
     actions.push({text:'Cancelar',style:'cancel'});
     Alert.alert('Opções de publicação','Escolhe o que pretendes fazer.',actions);
   }
+  function openPostComposer(){
+    postComposerRevision.current++;
+    composerOpenRef.current=true;setComposerOpen(true);
+  }
+  function openStoryComposer(){
+    storyComposerRevision.current++;
+    storyComposerRef.current=true;setStoryComposer(true);
+  }
+  function closeStoryComposer(){
+    if(storyInFlight.current)return;
+    const discard=()=>{
+      storyComposerRevision.current++;storyComposerRef.current=false;
+      setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
+    };
+    if(storyMedia||storyCaption.trim()){
+      Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
+        {text:'Continuar a editar',style:'cancel'},
+        {text:'Descartar',style:'destructive',onPress:discard}
+      ]);
+      return;
+    }
+    discard();
+  }
   function changeComposerMedia(update:(current:MobileMedia[])=>MobileMedia[]){
     const next=update(composerMediaRef.current);
     composerMediaRef.current=next;setComposerMedia(next);
@@ -383,18 +408,20 @@ export default function JynloFeedHome(){
       Alert.alert('Descartar publicação?','As fotografias, os vídeos e o texto deste rascunho serão perdidos.',[
         {text:'Continuar a editar',style:'cancel'},
         {text:'Descartar',style:'destructive',onPress:()=>{
-          composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerOpen(false);
+          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerOpen(false);
         }}
       ]);
       return;
     }
-    composerOpenRef.current=false;setComposerOpen(false);
+    postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);
   }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery',album=false){
     if(!requireLogin()||mediaPickerInFlight.current)return;
     const actorToken=auth.token;
     const postComposerWasOpen=album&&composerOpenRef.current;
+    const postRevision=postComposerRevision.current;
+    const storyRevision=storyComposerRevision.current;
     const storyComposerWasOpen=!album&&storyComposerRef.current;
     const availableAlbumSlots=album?Math.max(0,MAX_ALBUM_ITEMS-composerMediaRef.current.length):1;
     if(album&&availableAlbumSlots===0){Alert.alert('Álbum completo','Remove um ficheiro antes de adicionares outro.');return;}
@@ -419,11 +446,11 @@ export default function JynloFeedHome(){
       // Never apply its old assets to a different account's composer.
       if(activeStoryAccount.current!==actorToken)return;
       if(album){
-        if(!postComposerWasOpen||!composerOpenRef.current||postInFlight.current)return;
+        if(!postComposerWasOpen||!composerOpenRef.current||postComposerRevision.current!==postRevision||postInFlight.current)return;
         const result=appendAlbumSelection(composerMediaRef.current,prepared);
         if(result.error){Alert.alert('Álbum não aceite',result.error);return;}
         changeComposerMedia(()=>result.items);
-      }else if(storyComposerWasOpen&&storyComposerRef.current&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
+      }else if(storyComposerWasOpen&&storyComposerRef.current&&storyComposerRevision.current===storyRevision&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
     }catch{if(activeStoryAccount.current===actorToken)Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
     finally{mediaPickerInFlight.current=false;}
   }
@@ -439,7 +466,7 @@ export default function JynloFeedHome(){
     }finally{postInFlight.current=false;setPublishing(false);}
     // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
     if(feedIdentity.current===`${username}:${actor}`){
-      composerOpenRef.current=false;setComposerText('');changeComposerMedia(()=>[]);setComposerOpen(false);
+      postComposerRevision.current++;composerOpenRef.current=false;setComposerText('');changeComposerMedia(()=>[]);setComposerOpen(false);
       void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
     }
   }
@@ -454,7 +481,7 @@ export default function JynloFeedHome(){
       return;
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
     if(feedIdentity.current===`${username}:${actor}`){
-      storyComposerRef.current=false;setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
+      storyComposerRevision.current++;storyComposerRef.current=false;setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
       void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
     }
   }
@@ -531,9 +558,9 @@ export default function JynloFeedHome(){
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"/>
-      {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={()=>setStoryComposer(true)} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>A tua story</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
+      {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>A tua story</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
         <View style={styles.storyRing}><CircleAvatar name={group.name} image={group.avatar} size={57}/></View><Text style={styles.storyItemName} numberOfLines={1}>{group.name}</Text></Pressable>)}</ScrollView>
-        :<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={()=>requireLogin()&&setStoryComposer(true)} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><Text style={{color:TEAL,fontSize:23}}>{auth.token?'＋':'◎'}</Text></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
+        :<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={()=>requireLogin()&&openStoryComposer()} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><Text style={{color:TEAL,fontSize:23}}>{auth.token?'＋':'◎'}</Text></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
     </View>
     {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>:null}
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
@@ -614,12 +641,12 @@ export default function JynloFeedHome(){
       </SafeAreaView>
     </Modal>
 
-    <Modal visible={identityMatches&&storyComposer} animationType="slide" onRequestClose={()=>!storyPublishing&&setStoryComposer(false)}>
+    <Modal visible={identityMatches&&storyComposer} animationType="slide" onRequestClose={closeStoryComposer}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
-        <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={()=>setStoryComposer(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
-            <StoryCameraCapture onCaptured={media=>{if(activeStoryAccount.current===auth.token)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
+            <StoryCameraCapture key={storyComposerRevision.current} onCaptured={media=>{if(activeStoryAccount.current===auth.token&&storyComposerRef.current&&!storyInFlight.current)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
           </Suspense>:null}
           {storyMedia?<View style={styles.storyPreview}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
