@@ -24,8 +24,9 @@ function ParticipantAvatar({participant}:{participant:SessionParticipant}){
 }
 
 export default function SessionScreen(){
-  const {id:rawId}=useLocalSearchParams<{id:string}>();
+  const {id:rawId,guest:rawGuest}=useLocalSearchParams<{id:string;guest?:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
+  const guestToken=typeof rawGuest==='string'&&/^[A-Za-z0-9_-]{8,180}$/.test(rawGuest)?rawGuest:null;
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
   const detailRequestGeneration=useRef(0);
   const operationInFlight=useRef(false);
@@ -466,6 +467,14 @@ export default function SessionScreen(){
     <Eyebrow>JYNLO · DETALHES DO JOGO</Eyebrow>
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
+     {guestToken?<View style={styles.guestInvitePanel}>
+       <Text style={styles.panelHeading}>Convite de participação recebido</Text>
+       <Text style={styles.hint}>O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, a confirmação da presença continua disponível no site através da ligação original.</Text>
+       <Button secondary title="Partilhar ligação de confirmação" onPress={()=>{
+         const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
+         void Share.share({message:url,url}).catch(()=>Alert.alert('Convite','Não foi possível partilhar a ligação.'));
+       }}/>
+     </View>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
@@ -654,7 +663,8 @@ export default function SessionScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
-  hero:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:24,padding:20,gap:10},
+  guestInvitePanel:{gap:10,padding:16,borderRadius:16,borderWidth:1,borderColor:C.mint,backgroundColor:C.surface},
+   hero:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:24,padding:20,gap:10},
   sessionPhoto:{width:'100%',height:185,borderRadius:16,marginBottom:7},
   communityLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:6},
   minimumHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
