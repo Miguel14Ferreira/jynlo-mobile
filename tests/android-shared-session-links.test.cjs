@@ -32,8 +32,9 @@ test('private session passwords must never be embedded in invite app-link filter
 });
 
 test('signed guest session links keep invitation identity without forwarding unrelated secrets',()=>{
- const guest='12345678-1234-1234-1234-1234567890ab';
+ const guest='A'.repeat(43);
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/42?guest='+guest),'/sessions/42?guest='+guest);
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/42?guest='+guest+'&password=secret'),'/sessions/42?guest='+guest);
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/42?guest=bad!'),'/sessions/42');
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/42?guest=12345678-1234-1234-1234-1234567890ab'),'/sessions/42');
 });
