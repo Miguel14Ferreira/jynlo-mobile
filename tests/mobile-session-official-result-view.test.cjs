@@ -36,3 +36,16 @@ test('stale account responses cannot show another user private scores',()=>{
  assert.match(ui,/return\(\)=>\{requestVersion.current\+\+;setResult\(null\);setLoadedFor\(''\);\}/);
  assert.match(ui,/if\(response.sessionId!==sessionId\|\|!Number.isSafeInteger\(response.roundId\)\|\|response.roundId<=0\)/);
 });
+
+test('authorized final score includes only actual recorded scorer contributions, not inferred player totals',()=>{
+ const api=read('src/lib/session-competition-api.ts');
+ const card=read('src/components/SessionOfficialResultCard.tsx');
+ assert.match(api,/contributions:Array<\{username:string;team:'A'\|'B'\|string\|null;goals:number;assists:number\}>/);
+ assert.match(card,/Array.isArray\(result.contributions\)&&result.contributions.length>0/);
+ assert.match(card,/MARCADORES E ASSISTÊNCIAS/);
+ assert.match(card,/Number.isInteger\(player.goals\)&&Number.isInteger\(player.assists\)/);
+ assert.match(card,/\(player.goals>0\|\|player.assists>0\)/);
+ assert.match(card,/player.goals>0\?player.goals\+' golos'/);
+ assert.match(card,/player.assists>0\?player.assists\+' assistências'/);
+ assert.doesNotMatch(card,/result.contributions\.map\(player=>\{.*player.goals\|\|0/);
+});
