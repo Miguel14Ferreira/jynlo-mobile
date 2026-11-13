@@ -17,14 +17,16 @@ test('native notification cleanup failing cannot stop opening authenticated inbo
  const callback=layout.slice(layout.indexOf('function open(response:'),layout.indexOf('let listener:ReturnType'));
  assert.match(callback,/try\{nativeNotifications\.clearLastNotificationResponse\(\);\}catch\{/);
  assert.match(callback,/router\.push\(\{pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}\}\)/);
- assert.ok(callback.indexOf('clearLastNotificationResponse()')<callback.indexOf("router.push({pathname:'/notifications'"));
+ assert.ok(callback.indexOf("router.push({pathname:'/notifications'")<callback.indexOf('clearLastNotificationResponse()'),
+  'Do not clear a native tap until inbox navigation succeeds');
 });
 
 test('push navigation remains gated behind restored authentication',()=>{
  assert.match(layout,/if\(!auth\.ready\)return/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/data\?\.kind!=='notification'/);
- assert.match(layout,/lastHandled\.current===identifier/);
+ assert.match(layout,/lastHandled\.current===handledKey/);
+ assert.match(layout,/const handledKey=auth\.username\+'\|'\+auth\.token\+'\|'\+identifier/);
 });
 
 test('malformed native push responses cannot dereference missing notification data',()=>{

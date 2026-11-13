@@ -9,7 +9,7 @@ test('authentication and root navigator do not eagerly evaluate optional push na
  const auth=read('src/lib/auth.tsx');
  const mobile=read('src/lib/mobile-push.ts');
  const root=read('app/_layout.tsx');
- assert.match(auth,/import \{disableMobilePush,clearNativePushPresentation\} from '\.\/mobile-push'/);
+ assert.match(auth,/import \{disableMobilePush,clearNativePushPresentation,invalidatePendingPushRegistration\} from '\.\/mobile-push'/);
  for(const source of [mobile,root])
   assert.doesNotMatch(source,/^import \* as Notifications from 'expo-notifications'/m);
  assert.match(mobile,/const Notifications=await import\('expo-notifications'\)/);
