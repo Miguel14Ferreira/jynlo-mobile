@@ -20,7 +20,7 @@ test('notification and invitation lists are rendered only for the currently auth
 test('old account cannot trigger invitation, notification, push changes or request refresh',()=>{
  assert.match(code,/if\(!sameAccount\|\|!auth\.token\|\|inviteDecisionInFlight\.current!==null\)return/);
  assert.match(code,/if\(!sameAccount\|\|!auth\.token\|\|!auth\.username\)return/);
- assert.match(code,/if\(!sameAccount\|\|!auth\.username\|\|!auth\.token\|\|pushBusy\)return/);
+ assert.match(code,/if\(!sameAccount\|\|!auth\.username\|\|!auth\.token\|\|pushBusyRef\.current\)return/);
  assert.match(code,/disabled=\{!sameAccount\|\|loading\|\|busyInvite!==null\}/);
 });
 

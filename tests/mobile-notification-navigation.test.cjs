@@ -55,7 +55,8 @@ test('stale inbox and invitation requests cannot change account after switching 
  assert.match(screen,/setHistoryReady\(false\);setLoading\(false\);setItems\(\[\]\)/);
  assert.match(screen,/if\(account\.current!==initialIdentity\|\|inviteOperation\.current!==operation\)return;/);
  assert.match(screen,/setInvites\(old=>old\.filter\(x=>x\.id!==invite\.id\)\)/);
- assert.match(screen,/if\(account\.current===initialIdentity\)setItems\(/);
+ assert.match(screen,/if\(account\.current!==initialIdentity\)return;\s*\/\/ Invalidate a polling response/);
+ assert.match(screen,/setItems\(old=>old\.map\(n=>n\.id===item\.id\?\{\.\.\.n,read:true\}:n\)\)/);
  assert.match(screen,/if\(account\.current===initialIdentity\)setError\(/);
 });
 
