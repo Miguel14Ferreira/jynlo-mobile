@@ -60,3 +60,25 @@ test('successful batch with unreadable JSON preserves uncertain delivery warning
  assert.match(uploader,/try\{\s*reply=await response\.json\(\) as typeof reply;\s*\}catch\{\s*throw Error\('O envio não foi confirmado\. Consulta o histórico antes de repetir\.'\);/);
  assert.match(uploader,/\^\(A sessão\|Já não tens\|O álbum\|O armazenamento\|O servidor\|O envio\)/);
 });
+
+test('media drafts append from multiple gallery visits and keep valid existing items on rejection',()=>{
+ const {appendChatMediaSelection:append}=require('../src/lib/chat-attachments-core.cjs');
+ const one=img('file://one');
+ const first=append([], [one,video('file://two')]);
+ assert.equal(first.error,null);assert.deepEqual(first.items.map(x=>x.uri),['file://one','file://two']);
+ const next=append(first.items,[img('file://one'),img('file://three')]);
+ assert.equal(next.error,null);assert.deepEqual(next.items.map(x=>x.uri),['file://one','file://two','file://three']);
+ const tooMany=append(next.items,[img('file://four'),img('file://five')]);
+ assert.match(tooMany.error,/1 e 4/);assert.deepEqual(tooMany.items,next.items);
+ const bad=append(next.items,[img('file://bad',6*1024*1024)]);
+ assert.match(bad.error,/5 MB/);assert.deepEqual(bad.items,next.items);
+});
+test('all chat surfaces merge gallery picks instead of replacing an existing album',()=>{
+ for(const path of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+  const s=read(path);
+  assert.match(s,/appendChatMediaSelection\(current,(?:selected|chosen)\.assets\)/);
+  assert.match(s,/selectionLimit:remaining/);
+  assert.match(s,/pickerInFlight\.current/);
+  assert.match(s,/const ImagePicker=await import\('expo-image-picker'\)/);
+ }
+});

@@ -19,10 +19,10 @@ for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','ap
  test(file+' refuses invalid photo immediately after picker selection',()=>{
   const screen=read(file);
   assert.match(screen,/import \{validateChatPhoto\} from /);
-  assert.match(screen,/validateChatPhoto\((?:selected|chosen)\.assets\[0\]\);setPhoto\((?:selected|chosen)\.assets\[0\]\)/);
-  assert.match(screen,/setError\(e instanceof Error\?e\.message:'Não foi possível abrir a galeria\.'\)/);
+  assert.match(screen,/for\(const asset of (?:chosen|selected)\.assets\)\{if\(asset\.type==='image'\)validateChatPhoto\(asset\);\}/);
+  assert.match(screen,/setError\(e instanceof Error\?e\.message:'Não foi possível abrir a câmara ou a galeria\.'\)/);
   assert.match(screen,/send(?:DirectPhoto|ChatPhoto)\(/);
  assert.match(screen,/sendChatPhotoAlbum\(/);
- assert.match(screen,/allowsMultipleSelection:true,selectionLimit:4/);
+ assert.match(screen,/allowsMultipleSelection:true,selectionLimit:remaining/);
  });
 }

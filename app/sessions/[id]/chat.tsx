@@ -1,6 +1,6 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
-import {chatAttachmentList,recentPreviewMessageIds} from '../../../src/lib/chat-attachments-core.cjs';
+import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
@@ -178,26 +178,28 @@ export default function SessionChat(){
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!photoReady||closed||sendingNow.current||uploading||pickerInFlight.current||mutationLock.current)return;
+  const current=photo?[photo,...extraPhotos]:[];
+  const remaining=4-current.length;
+  if(remaining<=0){setError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
   const version=generation.current,identity=id+'|'+auth.token,token=auth.token;
   pickerInFlight.current=true;
   try{
-   // Never load the native picker on chat startup: open it only on user action.
    const ImagePicker=await import('expo-image-picker');
    const chosen=source==='camera'?
     await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
-    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:remaining});
    if(version!==generation.current||activeChat.current!==identity||auth.token!==token||chosen.canceled||!chosen.assets?.length)return;
    for(const asset of chosen.assets){if(asset.type==='image')validateChatPhoto(asset);}
-   const issue=validateChatAlbum(chosen.assets,{allowUnknownSize:true});
-   if(issue)throw Error(issue);
+   const result=appendChatMediaSelection(current,chosen.assets);
+   if(result.error)throw Error(result.error);
    if(version!==generation.current||activeChat.current!==identity||closed)return;
-   setPhoto(chosen.assets[0]);setExtraPhotos(chosen.assets.slice(1));
+   setPhoto(result.items[0]);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');
   }finally{pickerInFlight.current=false;}
  }
- async function uploadPhoto(){
+  async function uploadPhoto(){
   const identity=id+'|'+auth.token;
   if(mutationLock.current||!auth.token||!photo||!photoReady||closed||sendingNow.current||pendingWrites.current.has(identity)||uploading)return;
   const version=generation.current,originalReplyId=reply?.id;

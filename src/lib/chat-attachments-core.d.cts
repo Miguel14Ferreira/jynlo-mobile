@@ -26,3 +26,6 @@ export declare function recentPreviewMessageIds(
 
 /** Confirm that all uploaded album files are represented by the server. */
 export declare function confirmedChatAlbumReply(reply:{id?:number;attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>}|null,requestedMimes:string[]):boolean;
+
+/** Append selected picker assets without replacing earlier files. */
+export declare function appendChatMediaSelection(existing:ImagePickerAsset[],selected:ImagePickerAsset[]):{items:ImagePickerAsset[];error:string|null};

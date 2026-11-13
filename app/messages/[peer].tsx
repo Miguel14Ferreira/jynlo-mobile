@@ -1,9 +1,9 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
-import {chatAttachmentList,recentPreviewMessageIds} from '../../src/lib/chat-attachments-core.cjs';
+import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -47,6 +47,7 @@ export default function DirectConversation(){
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
+ const pickerInFlight=useRef(false);
  const [attachmentCaption,setAttachmentCaption]=useState('');
  const [photoAvailable,setPhotoAvailable]=useState(false),[photoBusy,setPhotoBusy]=useState(false);
  const [photoAvailabilityError,setPhotoAvailabilityError]=useState('');
@@ -366,25 +367,28 @@ export default function DirectConversation(){
   ]);
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
-  if(mutationLock.current||!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy)return;
   const identity=peer+'|'+auth.token;
-  const version=generation.current;
-  setError('');
+  if(mutationLock.current||!auth.token||blocked||!blockStatusKnown||!photoAvailable||photoBusy||sendingNow.current||pickerInFlight.current)return;
+  const current=photo?[photo,...extraPhotos]:[];
+  const remaining=4-current.length;
+  if(remaining<=0){setError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
+  const version=generation.current,token=auth.token;
+  pickerInFlight.current=true;setError('');
   try{
+   const ImagePicker=await import('expo-image-picker');
    const selected=source==='camera'?
     await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
-    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:4});
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:remaining});
+   if(version!==generation.current||conversation.current!==identity||auth.token!==token||selected.canceled||!selected.assets?.length)return;
+   for(const asset of selected.assets){if(asset.type==='image')validateChatPhoto(asset);}
+   const result=appendChatMediaSelection(current,selected.assets);
+   if(result.error)throw Error(result.error);
    if(version!==generation.current||conversation.current!==identity)return;
-   if(!selected.canceled&&selected.assets?.[0]){
-    selected.assets.forEach(asset=>{if(asset.type==='image')validateChatPhoto(asset);})
-    const issue=validateChatAlbum(selected.assets,{allowUnknownSize:true});
-    if(issue)throw Error(issue);
-    if(selected.assets[0].type==='image')validateChatPhoto(selected.assets[0]);setPhoto(selected.assets[0]);setExtraPhotos(selected.assets.slice(1));
-   }
+   setPhoto(result.items[0]);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
-    setError(e instanceof Error?e.message:'Não foi possível abrir a galeria.');
-  }
+    setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');
+  }finally{pickerInFlight.current=false;}
  }
  async function uploadPhoto(){
   const identity=peer+'|'+auth.token;
