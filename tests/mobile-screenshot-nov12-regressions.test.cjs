@@ -14,10 +14,10 @@ test('Stories open native inline camera and gallery, with explicit upload errors
  assert.match(camera,/onPickGallery/);
  assert.match(camera,/onPickGallery/);
  assert.equal(pkg.dependencies['expo-camera'],'~58.0.14');
- assert.match(api,/uri\.startsWith\('content:'\)/);
- assert.match(api,/source\.copy\(temporary\)/);
+ assert.match(api,/if\(!uri.startsWith\('file:\/\/'\)\)/);
+ assert.match(api,/source\.copy\(copy\)/);
  assert.match(api,/response\.status>=500/);
- assert.match(api,/temporary\.delete\(\)/);
+ assert.match(api,/for\(const file of temporary\)/);
 });
 test('Android screens remain inside system navigation area and season help is readable',()=>{
  const ui=read('src/components/UI.tsx'),create=read('app/sessions/create.tsx');
