@@ -21,7 +21,8 @@ export default function TabsLayout(){
  const [checking,setChecking]=useState(false);
  const [checkError,setCheckError]=useState(false);
  const [chooseChampionship,setChooseChampionship]=useState(false);
- const close=useCallback(()=>{setOpen(false);setChooseChampionship(false);},[]);
+ const [moreOpen,setMoreOpen]=useState(false);
+ const close=useCallback(()=>{setOpen(false);setChooseChampionship(false);setMoreOpen(false);},[]);
  useEffect(()=>{
   if(!open||!auth.token||!auth.username){setEligible([]);setChecking(false);return;}
   let active=true;setChecking(true);setCheckError(false);setEligible([]);
@@ -99,6 +100,11 @@ export default function TabsLayout(){
         <Text style={styles.actionIcon}>◎</Text><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
        </Pressable>
       </View>
+      <Pressable accessibilityRole="button" accessibilityLabel="Mostrar outras ferramentas de criação"
+       accessibilityState={{expanded:moreOpen}} style={styles.moreToggle} onPress={()=>setMoreOpen(value=>!value)}>
+       <Text style={styles.moreToggleLabel}>Outras ferramentas</Text><Text style={styles.chevron}>{moreOpen?'⌃':'⌄'}</Text>
+      </Pressable>
+      {moreOpen?<>
       <Pressable accessibilityRole="button" accessibilityLabel="Sugerir um recinto desportivo" style={styles.secondaryAction} onPress={()=>action('venue')}>
        <Text style={styles.secondaryIcon}>⌖</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Acrescenta um espaço desportivo à Jynlo</Text></View><Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -117,6 +123,7 @@ export default function TabsLayout(){
           <Text style={styles.communityChoiceText} numberOfLines={1}>{group.name}</Text><Text style={styles.chevron}>›</Text>
         </Pressable>)}
        </View>:null}
+      </>:null}
       </>:null}
      </ScrollView>
     </View>
@@ -140,6 +147,8 @@ const styles=StyleSheet.create({
  close:{width:MobileTheme.touchTarget,height:MobileTheme.touchTarget,alignItems:'center',justifyContent:'center'},
  closeText:{fontSize:30,color:colors.text},
  actions:{gap:12,paddingBottom:14},
+ moreToggle:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,borderRadius:14,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface},
+ moreToggleLabel:{fontSize:13,fontWeight:'800',color:colors.text},
  primaryGrid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:10},
  sessionHero:{width:'100%',minHeight:142,borderRadius:20,backgroundColor:colors.accent,padding:18,flexDirection:'row',alignItems:'center',gap:13},
  sessionHeroIcon:{width:51,height:51,borderRadius:16,backgroundColor:colors.background,alignItems:'center',justifyContent:'center'},

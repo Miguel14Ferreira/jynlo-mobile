@@ -10,6 +10,7 @@ import {SPORTS} from '../../src/lib/sports';
 import {useAuth} from '../../src/lib/auth';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
+import OfflineSessionMap from '../../src/components/OfflineSessionMap';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -137,7 +138,10 @@ export default function DiscoverScreen(){
        <SessionNativeMap initialRegion={PORTUGAL} sessions={mappedSessions}
          onRegionChange={region=>{viewport.current=region;}}
          onSelectSession={setSelectedPin}/>
-     </Suspense>:<Message>O mapa integrado requer configuração da Google Maps SDK nesta versão da aplicação. Para evitar encerramentos inesperados, podes abrir o mapa no navegador.</Message>}
+     </Suspense>:<>
+       <OfflineSessionMap sessions={mappedSessions} selectedId={selectedPin} onSelect={setSelectedPin}/>
+       <Message>Esta APK não tem o mapa Google configurado. Mostramos um esquema geográfico simplificado e seguro; o mapa com ruas requer uma APK com a chave da SDK Android.</Message>
+     </>}
      {NATIVE_MAP_READY?<View style={styles.mapActions}>
        <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar sessões nesta área do mapa"
          style={styles.areaSearch} onPress={()=>{
@@ -159,12 +163,11 @@ export default function DiscoverScreen(){
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir mapa no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
        <Text style={styles.areaSearchText}>⌖ Abrir Google Maps</Text>
      </Pressable>
-     {!NATIVE_MAP_READY?mappedSessions.map(s=><SessionCard key={s.id} session={s}
-       onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>):null}
-     {NATIVE_MAP_READY&&currentPin?<View style={styles.pinCard}><SessionCard session={currentPin}
+     {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>Toca num pino para consultar a sessão correspondente.</Text>:null}
+     {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin}
        onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
      <Text style={styles.mapNotice}>{mappedSessions.length} sessões com coordenadas públicas · {sessions.length} resultados</Text>
-     <Text style={styles.mapNotice}>© OpenStreetMap contributors</Text>
+     {NATIVE_MAP_READY?<Text style={styles.mapNotice}>Mapa Google · coordenadas fornecidas pelos organizadores</Text>:null}
      {sessions.length>0&&mappedSessions.length===0?<Message>Estas sessões não têm coordenadas públicas. Consulta a vista Lista para ver todos os resultados.</Message>:null}
    </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
    {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>Ver todas as sessões na lista →</Text></Pressable>:null}
