@@ -17,7 +17,7 @@ export async function competitionSessionRoster(communityId:number,sessionId:numb
  */
 export async function competitionSessionCapabilities(communityId:number,sessionId:number,token:string|null){
  if(!token||DEMO_MODE)throw Error('Inicia sessão para confirmar as funcionalidades.');
- return request<{footballGoalsAssists:boolean;version:number}>(
+ return request<{footballGoalsAssists:boolean;footballFinalScore?:boolean;version:number}>(
   resource(communityId,sessionId)+'/competition-result/capabilities',{token});
 }
 /** Admin-only recorded IDs; used to avoid submitting a duplicate round. */
@@ -28,7 +28,7 @@ export async function recordedCompetitionSessionIds(communityId:number,token:str
 }
 export async function recordCompetitionSessionResult(communityId:number,sessionId:number,token:string|null,payload:CompetitionResultPayload){
  if(!token||DEMO_MODE)throw Error('Inicia sessão para registar resultados.');
- return request<{id:number;entries?:Array<{username:string;goals:number;assists:number}>}>(resource(communityId,sessionId)+'/competition-result',{
+ return request<{id:number;entries?:Array<{username:string;goals:number;assists:number}>;teamScore?:{sideA:number;sideB:number}|null}>(resource(communityId,sessionId)+'/competition-result',{
   token,method:'POST',body:payload
  });
 }
