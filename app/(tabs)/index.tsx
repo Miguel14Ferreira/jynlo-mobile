@@ -477,7 +477,13 @@ export default function JynloFeedHome(){
     if(album&&availableAlbumSlots===0){Alert.alert('Álbum completo','Remove um ficheiro antes de adicionares outro.');return;}
     mediaPickerInFlight.current=true;
     try{const ImagePicker=await import('expo-image-picker');
-      const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:availableAlbumSlots}: {})});
+      if(source==='camera'){
+        const permission=await ImagePicker.requestCameraPermissionsAsync();
+        if(!permission.granted){Alert.alert('Câmara sem autorização','Autoriza o acesso à câmara nas definições do telemóvel ou escolhe a galeria.');return;}
+      }
+      const result=source==='camera'
+        ?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86,videoMaxDuration:30,exif:false,base64:false})
+        :await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:availableAlbumSlots}: {})});
       if(activeStoryAccount.current!==actorToken||result.canceled||!result.assets.length)return;
       const prepared:MobileMedia[]=[];
       for(const asset of result.assets){
@@ -488,7 +494,8 @@ export default function JynloFeedHome(){
         if(!size){
           try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
         }
-        const validation=validateMedia(mime,size||1,!album&&setter===setStoryMedia);
+        if(!size){Alert.alert('Ficheiro não aceite','Não foi possível confirmar o tamanho do ficheiro selecionado. Escolhe outro ficheiro.');return;}
+        const validation=validateMedia(mime,size,!album&&setter===setStoryMedia);
         if(validation){Alert.alert('Ficheiro não aceite',validation);return;}
         prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
       }
@@ -501,7 +508,7 @@ export default function JynloFeedHome(){
         if(result.error){Alert.alert('Álbum não aceite',result.error);return;}
         changeComposerMedia(()=>result.items);
       }else if(storyComposerWasOpen&&storyComposerRef.current&&storyComposerRevision.current===storyRevision&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
-    }catch{if(activeStoryAccount.current===actorToken)Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
+    }catch(e){if(activeStoryAccount.current===actorToken)Alert.alert(source==='camera'?'Não foi possível abrir a câmara':'Não foi possível abrir a galeria',e instanceof Error?e.message:'Confirma as permissões do teu telemóvel.');}
     finally{mediaPickerInFlight.current=false;}
   }
   async function submitPost(){
