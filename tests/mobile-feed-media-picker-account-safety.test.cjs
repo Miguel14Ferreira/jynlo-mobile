@@ -19,13 +19,19 @@ test('gallery results and camera captures from a previous session are never appl
  assert.match(home,/changeComposerMedia\(\(\)=>result\.items\)/);
  assert.match(home,/setStoryMedia\(null\)/);
 });
-test('Story camera exposes accessible gallery button alongside upward swipe and recording lock',()=>{
+test('Story camera opens the device camera and offers gallery fallback after cancellation',()=>{
  const camera=source('src/components/StoryCameraCapture.tsx');
- assert.match(camera,/finishGalleryGesture=\(x:number,y:number\)=>/);
- assert.match(camera,/start.y-y>75&&Math.abs\(start.x-x\)<110\)onPickGallery\(\)/);
+ assert.match(camera,/ImagePicker\.launchCameraAsync\(/);
+ assert.match(camera,/requestCameraPermissionsAsync\(\)/);
+ assert.match(camera,/mediaTypes:\['images','videos'\]/);
+ assert.match(camera,/videoMaxDuration:30/);
  assert.match(camera,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
- assert.match(camera,/accessibilityHint="Também podes deslizar para cima na câmara"/);
- assert.match(camera,/disabled=\{busy\|\|recording\} onPress=\{onPickGallery\}/);
- assert.match(camera,/onResponderRelease=\{e=>finishGalleryGesture/);
- assert.match(camera,/if\(recordingRef.current\)\{\s*try\{camera.current\?\.stopRecording\(\)/);
+ assert.match(camera,/onPickGallery/);
+ assert.doesNotMatch(camera,/<CameraView|stopRecording\(|takePictureAsync/);
+});
+test('Android media with unavailable size metadata can be selected but is checked before upload',()=>{
+ const home=source('app/(tabs)/index.tsx'),api=source('src/lib/social-feed-api.ts');
+ assert.match(home,/size>0\?validateMedia\(mime,size/);
+ assert.match(api,/const actualSize=localFile.exists\?localFile.size:-1/);
+ assert.match(api,/validateMedia\(file.mimeType,actualSize/);
 });
