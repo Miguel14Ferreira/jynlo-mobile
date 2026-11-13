@@ -90,3 +90,7 @@ Referência: https://docs.expo.dev/push-notifications/fcm-credentials/
 - Se o registo no servidor for confirmado mas o armazenamento seguro local falhar, a app tenta revogar o registo com a sessão que o criou e informa o utilizador caso a revogação não seja confirmada.
 - A API bloqueia, por segurança, a apropriação do mesmo dispositivo/token por outra conta. É necessário iniciar sessão na conta original e desativar push antes da troca; **não limpar o identificador ou registar com outra conta por tentativa**.
 - A limpeza dos avisos locais no logout é de melhor esforço, de forma a não impedir o encerramento de sessão se o módulo nativo de notificações estiver indisponível.
+
+## Registo em curso durante logout
+
+As ativações push têm um identificador de operação em memória. Terminar sessão invalida imediatamente as operações que ainda aguardam permissões nativas, o token do Firebase ou o registo HTTP. Se o registo já foi aceite pelo servidor entretanto, a aplicação tenta anulá-lo com a mesma sessão e não apresenta uma ativação antiga como nova. Isto **não substitui** o teste de revogação real no Android e no backend.

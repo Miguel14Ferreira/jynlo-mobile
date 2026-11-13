@@ -8,6 +8,8 @@ import {registerPushDevice,unregisterPushDevice,getPushDeviceStatus} from './pus
 
 const INSTALL_ID_KEY='jynlo.mobile.push.installId';
 const REGISTERED_ACCOUNT_KEY='jynlo.mobile.push.account';
+// Logout invalidates native permission and registration tasks still in flight.
+let pushOperationEpoch=0;
 
 function projectId():string{
  const configured=Constants.easConfig?.projectId||Constants.expoConfig?.extra?.eas?.projectId||
@@ -44,11 +46,14 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  if(DEMO_MODE||!username||!token)throw Error('Inicia sessão para ativar notificações.');
  if(Platform.OS!=='android'&&Platform.OS!=='ios')throw Error('Notificações só disponíveis em Android e iOS.');
  if(!androidPushConfigured())throw Error('As notificações Android ainda precisam da configuração Firebase. A lista de notificações da Jynlo continua disponível nesta página.');
+ const operation=++pushOperationEpoch;
+ const ensureActive=()=>{if(operation!==pushOperationEpoch)throw Error('Ativação cancelada após mudança de sessão.');};
  const prior=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
  if(prior&&prior!==username.toLowerCase())
   throw Error('Este dispositivo ainda tem o registo push de outra conta. Entra nessa conta e desativa as notificações antes de ativá-las nesta. Por segurança não é possível transferir o registo automaticamente.');
  const easProjectId=projectId();
  const Notifications=await import('expo-notifications');
+ ensureActive();
  if(Platform.OS==='android'){
   await Notifications.setNotificationChannelAsync('jynlo-messages',{
    name:'Mensagens Jynlo',
@@ -58,6 +63,7 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  const current=await Notifications.getPermissionsAsync();
  const permission=current.granted?current:await Notifications.requestPermissionsAsync();
  if(!permission.granted)throw Error('Não concedeste permissão para notificações. Podes alterar nas definições do telemóvel.');
+ ensureActive();
  let expoPushToken:string;
  try{expoPushToken=(await Notifications.getExpoPushTokenAsync({projectId:easProjectId})).data;}
  catch(e){
@@ -66,11 +72,19 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
    throw Error('O Firebase/FCM não está operacional nesta APK. Confirma o ficheiro google-services.json e as credenciais da build Preview.');
   throw Error('Não foi possível obter o token push neste dispositivo. Verifica os Google Play Services e a ligação à Internet.');
  }
+ ensureActive();
  const deviceId=await installId();
+ ensureActive();
  await registerPushDevice(token,{
   deviceId,expoPushToken,
   platform:Platform.OS as 'android'|'ios'
  });
+ // Logout might happen while the server is processing the authenticated PUT.
+ if(operation!==pushOperationEpoch){
+  try{await unregisterPushDevice(token,deviceId);}
+  catch{throw Error('A sessão mudou durante o registo. Não foi possível confirmar a revogação do dispositivo.');}
+  throw Error('Ativação cancelada após mudança de sessão.');
+ }
  try{
   await SecureStore.setItemAsync(REGISTERED_ACCOUNT_KEY,username.toLowerCase());
  }catch{
@@ -80,9 +94,20 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
   catch{throw Error('O dispositivo foi registado, mas a confirmação local falhou e não foi possível revogar o registo. Volta a esta conta para tentar desativar as notificações.');}
   throw Error('Não foi possível guardar a ativação das notificações no telemóvel. Tenta novamente.');
  }
+ // A local SecureStore write can finish after logout. Revoke and remove only
+ // this account's marker; never let stale work re-enable notifications.
+ if(operation!==pushOperationEpoch){
+  try{await unregisterPushDevice(token,deviceId);}
+  catch{throw Error('A sessão mudou durante a ativação. Não foi possível confirmar a revogação do dispositivo.');}
+  if((await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY))===username.toLowerCase())
+   await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
+  throw Error('Ativação cancelada após mudança de sessão.');
+ }
 }
 /** Server revocation is attempted before logout; local state remains if it fails. */
 export async function disableMobilePush(username:string,token:string):Promise<void>{
+ // Invalidate an opt-in still waiting for native permission, Firebase or HTTP.
+ pushOperationEpoch++;
  if(!username||!token||DEMO_MODE)return;
  const registered=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
  if(registered!==username.toLowerCase())return;
