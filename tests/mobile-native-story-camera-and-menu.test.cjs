@@ -27,5 +27,5 @@ test('post actions menu respects Android bottom system navigation and scrolls al
  assert.match(modal,/<ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator=\{false\}/);
  assert.match(modal,/accessibilityLabel="Cancelar opções da publicação"/);
  assert.match(modal,/accessibilityLabel="Fechar opções da publicação"/);
- assert.match(src,/postMenuContainer:\{maxHeight:'78%'/);
+ assert.match(src,/maxHeight:Math.max\(220,Math.floor\(screenHeight\*\.72\)\)/);
 });
