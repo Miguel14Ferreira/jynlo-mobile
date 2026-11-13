@@ -66,3 +66,22 @@ test('switching accounts releases old pending actions but ignores their eventual
  assert.match(screen,/if\(account\.current===initialIdentity&&inviteOperation\.current===operation\)setBusyInvite\(null\)/);
  assert.match(screen,/if\(pushOperation\.current===operation\)setPushBusy\(false\)/);
 });
+
+test('notification navigation is immediate and read receipts settle asynchronously',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+ const handler=screen.slice(screen.indexOf('function open(item:JynloNotification)'),screen.indexOf('useEffect(()=>{\n  if(!isFocused'));
+ assert.match(handler,/function open\(item:JynloNotification\):boolean/);
+ assert.ok(handler.indexOf('router.push(')<handler.indexOf('void markNotificationRead('));
+ assert.match(handler,/const originalToken=auth\.token/);
+ assert.match(handler,/notificationRevision\.current\+\+/);
+ assert.match(handler,/if\(account\.current!==initialIdentity\)return/);
+ assert.match(handler,/return false;/);
+ assert.match(handler,/return true;/);
+});
+test('push deep links are consumed only after a destination successfully opens',()=>{
+ const start=screen.indexOf('const target=items.find(item=>String(item.id)===notificationId)');
+ const end=screen.indexOf('return <Page>',start);
+ const effect=screen.slice(start,end);
+ assert.match(effect,/if\(open\(target\)\)\{/);
+ assert.ok(effect.indexOf('if(open(target))')<effect.indexOf('lastPushHandled.current=key'));
+});

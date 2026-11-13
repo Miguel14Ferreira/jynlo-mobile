@@ -38,7 +38,7 @@ test('account switching and stale polling cannot resurrect deleted private notif
  assert.match(screen,/account.current===identity&&notificationRevision.current===revision/);
  assert.match(screen,/setItems\(old=>old.filter\(n=>n.id!==item.id\)\)/);
  assert.match(screen,/setItems\(\[\]\);setNotice\('Notificações eliminadas.'\)/);
- assert.match(screen,/await markNotificationRead\(item.id,auth.token\)/);
+ assert.match(screen,/void markNotificationRead\(item.id,originalToken\).then\(/);
  assert.match(screen,/setItems\(old=>old.map\(n=>n.id===item.id\?\{\.\.\.n,read:true\}:n\)\)/);
  assert.match(screen,/notificationLock.current=true;setNotificationBusy\(true\)/);
 });

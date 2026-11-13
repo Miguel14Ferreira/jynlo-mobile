@@ -223,29 +223,42 @@ export default function NotificationsScreen(){
    if(notificationRevision.current===revision){notificationLock.current=false;setNotificationBusy(false);}
   }
  }
- async function open(item:JynloNotification){
-  if(!sameAccount||!auth.token||!auth.username)return;
+ function open(item:JynloNotification):boolean{
+  if(!sameAccount||!auth.token||!auth.username)return false;
   const initialIdentity=auth.username+'|'+auth.token;
-  try{if(!item.read){
-   await markNotificationRead(item.id,auth.token);
-   if(account.current===initialIdentity)setItems(old=>old.map(x=>x.id===item.id?{...x,read:true}:x));
-  }}
-  catch{if(account.current===initialIdentity)setError('Não foi possível marcar a notificação como lida.');}
-  if(account.current!==initialIdentity)return;
+  const originalToken=auth.token;
   const destination=notificationDestination(item);
-  if(!destination)return;
-  switch(destination.kind){
-   case 'invites':router.push('/communities/invites');break;
-   case 'community':router.push({pathname:'/communities/[id]',params:{id:destination.id!}});break;
-   case 'session':router.push({pathname:'/sessions/[id]',params:{id:destination.id!}});break;
-   case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
-   case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
-   case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
-   case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
-   case 'social-post':router.push({pathname:'/posts/[postId]',params:{postId:destination.id!}});break;
-   case 'social-story':router.push({pathname:'/',params:{storyId:destination.id!}});break;
-   case 'story-replies':router.push('/stories/replies');break;
+  if(!destination){setNotice('Esta notificação não tem um destino disponível.');return false;}
+  try{
+   // Navigation must never wait for a slow PUT /read. Use only routes derived
+   // from a verified notification in this authenticated account's inbox.
+   switch(destination.kind){
+    case 'invites':router.push('/communities/invites');break;
+    case 'community':router.push({pathname:'/communities/[id]',params:{id:destination.id!}});break;
+    case 'session':router.push({pathname:'/sessions/[id]',params:{id:destination.id!}});break;
+    case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
+    case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
+    case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
+    case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
+    case 'social-post':router.push({pathname:'/posts/[postId]',params:{postId:destination.id!}});break;
+    case 'social-story':router.push({pathname:'/',params:{storyId:destination.id!}});break;
+    case 'story-replies':router.push('/stories/replies');break;
+   }
+  }catch{
+   if(account.current===initialIdentity)setError('Não foi possível abrir esta notificação. Tenta novamente.');
+   return false;
   }
+  if(!item.read){
+   void markNotificationRead(item.id,originalToken).then(()=>{
+    if(account.current!==initialIdentity)return;
+    // Invalidate a polling response that started before the confirmed PUT.
+    notificationRevision.current++;
+    setItems(old=>old.map(n=>n.id===item.id?{...n,read:true}:n));
+   }).catch(()=>{
+    if(account.current===initialIdentity)setError('Não foi possível marcar a notificação como lida.');
+   });
+  }
+  return true;
  }
  useEffect(()=>{
   if(!isFocused||!auth.token||!auth.username||loading||!historyReady)return;
@@ -261,9 +274,11 @@ export default function NotificationsScreen(){
    setNotice('A confirmar a notificação no servidor. Podes atualizar a lista.');
    return;
   }
-  lastPushHandled.current=key;
-  router.setParams({notificationId:''});
-  void open(target);
+  // An unresolved route remains retryable; do not consume the incoming tap.
+  if(open(target)){
+   lastPushHandled.current=key;
+   try{router.setParams({notificationId:''});}catch{/* Navigation already succeeded. */}
+  }
  },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
