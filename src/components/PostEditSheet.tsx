@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {Alert,Modal,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {FeedItem} from '../lib/types';
 import {editPost} from '../lib/social-feed-api';
 import {postMediaItems} from '../lib/post-album.cjs';
@@ -61,11 +61,12 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  }
  return <Modal visible={visible} animationType="slide" onRequestClose={close}>
   <SafeAreaView style={styles.screen}>
+  <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
    <View style={styles.header}>
     <Text style={styles.heading}>Editar publicação</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar edição da publicação" disabled={busy} onPress={close} style={styles.close}><Text style={styles.closeText}>✕</Text></Pressable>
    </View>
-   <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+   <ScrollView style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={styles.hint}>Podes alterar a descrição ou localização. As fotografias, vídeos, gostos e comentários mantêm-se.</Text>
     <Text style={styles.label}>Descrição (opcional com fotografias ou vídeos)</Text>
     <TextInput accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
@@ -83,11 +84,12 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
     disabled={!changed||busy} style={[styles.save,(!changed||busy)&&styles.disabled]}>
     <Text style={styles.saveText}>{busy?'A guardar…':'Guardar alterações'}</Text>
    </Pressable>
+  </KeyboardAvoidingView>
   </SafeAreaView>
  </Modal>;
 }
 const styles=StyleSheet.create({
- screen:{flex:1,backgroundColor:C.background,padding:18,gap:14},
+ screen:{flex:1,backgroundColor:C.background,padding:18},keyboardFrame:{flex:1,gap:14},
  header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  heading:{color:C.text,fontSize:22,fontWeight:'900'},close:{minWidth:48,minHeight:48,alignItems:'center',justifyContent:'center'},
  closeText:{fontSize:24,fontWeight:'700',color:C.text},
