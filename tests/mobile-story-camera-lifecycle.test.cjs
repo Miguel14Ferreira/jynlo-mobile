@@ -4,7 +4,7 @@ const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraC
 test('native Story camera never applies stale capture after unmount or switch of account',()=>{
  assert.match(camera,/const alive=useRef\(true\),busyRef=useRef\(false\)/);
  assert.match(camera,/if\(!alive\.current\|\|result\.canceled\|\|!result\.assets\?\.length\)return/);
- assert.match(camera,/if\(!alive\.current\)return;\s*const problem=validateMedia/);
+ assert.match(camera,/if\(!alive\.current\)return;[\s\S]*const problem=size>0\?validateMedia/);
  assert.match(camera,/return\(\)=>\{alive\.current=false;clearTimeout\(timer\);\}/);
 });
 test('camera requests permission before invoking native UI and unlocks busy state on completion',()=>{
