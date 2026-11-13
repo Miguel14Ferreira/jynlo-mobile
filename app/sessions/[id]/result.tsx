@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
@@ -9,7 +9,9 @@ import {buildSessionCompetitionResult,editableCompetitionRoster} from '../../../
 import type {CompetitionOutcome,CompetitionRosterEntry,CompetitionTeam} from '../../../src/lib/session-competition-result.cjs';
 
 export default function SessionCompetitionResultScreen(){
- const params=useLocalSearchParams<{id:string;communityId?:string}>();
+ const params=useLocalSearchParams<{id:string;communityId?:string;sport?:string}>();
+ const sport=typeof params.sport==='string'?params.sport:'';
+ const football=sport==='Futebol';
  const sessionId=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
  const communityId=typeof params.communityId==='string'&&/^[1-9]\d*$/.test(params.communityId)?Number(params.communityId):NaN;
  const valid=Number.isSafeInteger(sessionId)&&Number.isSafeInteger(communityId);
@@ -19,7 +21,7 @@ export default function SessionCompetitionResultScreen(){
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [recorded,setRecorded]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
  const generation=useRef(0),writing=useRef(false);
- const identity=(auth.username||'')+'|'+(auth.token||'')+'|'+sessionId+'|'+communityId;
+ const identity=(auth.username||'')+'|'+(auth.token||'')+'|'+sessionId+'|'+communityId+'|'+sport;
  const identityRef=useRef(identity);
  identityRef.current=identity;
  const [loadedIdentity,setLoadedIdentity]=useState('');
@@ -57,7 +59,7 @@ export default function SessionCompetitionResultScreen(){
  function confirm(){
   if(!confirmedIdentity||recorded||busy||writing.current||!auth.token||!valid)return;
   let payload:ReturnType<typeof buildSessionCompetitionResult>;
-  try{payload=buildSessionCompetitionResult(outcome,roster);}
+  try{payload=buildSessionCompetitionResult(outcome,roster,sport);}
   catch(e){setError(e instanceof Error?e.message:'Confirma jogadores e equipas.');return;}
   const version=generation.current,actor=identity,token=auth.token;
   const label=outcome==='DRAW'?'Empate':outcome==='A'?'Equipa A venceu':'Equipa B venceu';
@@ -84,7 +86,7 @@ export default function SessionCompetitionResultScreen(){
   <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
   <Text style={styles.title}>Resultado da sessão</Text>
   <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
-  <Message>Este formulário não regista golos, marcadores ou assistências. Esses dados não são calculados automaticamente.</Message>
+  <Message>{football?'Podes registar golos e assistências por jogador. Campos opcionais; os valores não são calculados automaticamente. O marcador coletivo ainda não é guardado.':'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!busy&&auth.token?<Button secondary title="Verificar novamente" onPress={()=>{void load();}}/>:null}
@@ -121,6 +123,20 @@ export default function SessionCompetitionResultScreen(){
       <Text style={styles.teamText}>{team}</Text>
      </Pressable>)}
     </View>)}
+    {football?<Text style={styles.hint}>Indica apenas as estatísticas que conheces. Deixa em branco quando não souberes; zero significa que confirmaste 0.</Text>:null}
+    {football?roster.filter(player=>player.selected).map(player=><View key={'stats-'+player.id} style={styles.statsRow}>
+      <Text style={styles.statsName} numberOfLines={1}>{player.username} · Equipa {player.team||'?'}</Text>
+      <View style={styles.statFields}>
+        <View style={styles.statField}><Text style={styles.statLabel}>Golos</Text>
+          <TextInput accessibilityLabel={'Golos de '+player.username} value={player.goals}
+            keyboardType="number-pad" maxLength={2} editable={!busy}
+            onChangeText={value=>change(player.id,{goals:value})} placeholder="—" placeholderTextColor={C.muted} style={styles.statInput}/></View>
+        <View style={styles.statField}><Text style={styles.statLabel}>Assistências</Text>
+          <TextInput accessibilityLabel={'Assistências de '+player.username} value={player.assists}
+            keyboardType="number-pad" maxLength={2} editable={!busy}
+            onChangeText={value=>change(player.id,{assists:value})} placeholder="—" placeholderTextColor={C.muted} style={styles.statInput}/></View>
+      </View>
+    </View>):null}
     <Button title={busy?'A registar…':'Registar resultado nas classificações'} disabled={busy||!roster.length||!outcome} onPress={confirm}/>
    </View>:null}
   <Button secondary title="Voltar à sessão" onPress={()=>router.back()}/>
@@ -135,5 +151,6 @@ const styles=StyleSheet.create({
  player:{flexDirection:'row',gap:9,alignItems:'center',minHeight:48,paddingVertical:6,borderBottomWidth:1,borderBottomColor:C.border},
  checkbox:{flex:1,minHeight:44,justifyContent:'center'},playerName:{color:C.white,fontSize:13,fontWeight:'700'},
  teamButton:{width:42,minHeight:42,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:10},
- teamSelected:{borderColor:C.mint,backgroundColor:C.surface2},teamText:{color:C.white,fontSize:13,fontWeight:'900'}
+ teamSelected:{borderColor:C.mint,backgroundColor:C.surface2},teamText:{color:C.white,fontSize:13,fontWeight:'900'},
+ statsRow:{gap:9,paddingVertical:9,borderBottomWidth:1,borderBottomColor:C.border},statsName:{fontSize:13,color:C.white,fontWeight:'800'},statFields:{flexDirection:'row',gap:10},statField:{flex:1,gap:5},statLabel:{fontSize:11,color:C.muted,fontWeight:'800'},statInput:{minHeight:46,backgroundColor:C.surface2,color:C.white,borderRadius:10,borderWidth:1,borderColor:C.border,paddingHorizontal:12,fontSize:15}
 });
