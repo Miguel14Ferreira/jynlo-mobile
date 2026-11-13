@@ -11,7 +11,7 @@ import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publ
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
-import {albumError,mergeAlbum,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
+import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
@@ -204,6 +204,9 @@ export default function JynloFeedHome(){
   const [composerOpen,setComposerOpen]=useState(false);
   const [expandedPostImage,setExpandedPostImage]=useState<string|null>(null);
   const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
+  const composerMediaRef=useRef<MobileMedia[]>([]);
+  const composerOpenRef=useRef(false);
+  composerOpenRef.current=composerOpen;
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
@@ -227,7 +230,7 @@ export default function JynloFeedHome(){
       setPosts([]);setStories([]);setOwnStories([]);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
-      setComposerOpen(false);setComposerMedia([]);setComposerText('');
+      composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
     }
     setLoading(true);setError('');
@@ -368,10 +371,28 @@ export default function JynloFeedHome(){
     actions.push({text:'Cancelar',style:'cancel'});
     Alert.alert('Opções de publicação','Escolhe o que pretendes fazer.',actions);
   }
+  function changeComposerMedia(update:(current:MobileMedia[])=>MobileMedia[]){
+    const next=update(composerMediaRef.current);
+    composerMediaRef.current=next;setComposerMedia(next);
+  }
+  function closePostComposer(){
+    if(postInFlight.current)return;
+    if(composerMediaRef.current.length||composerText.trim()){
+      Alert.alert('Descartar publicação?','As fotografias, os vídeos e o texto deste rascunho serão perdidos.',[
+        {text:'Continuar a editar',style:'cancel'},
+        {text:'Descartar',style:'destructive',onPress:()=>{
+          composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerOpen(false);
+        }}
+      ]);
+      return;
+    }
+    composerOpenRef.current=false;setComposerOpen(false);
+  }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery',album=false){
     if(!requireLogin()||mediaPickerInFlight.current)return;
     const actorToken=auth.token;
+    const postComposerWasOpen=album&&composerOpenRef.current;
     mediaPickerInFlight.current=true;
     try{const ImagePicker=await import('expo-image-picker');
       const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:MAX_ALBUM_ITEMS}: {})});
@@ -393,11 +414,10 @@ export default function JynloFeedHome(){
       // Never apply its old assets to a different account's composer.
       if(activeStoryAccount.current!==actorToken)return;
       if(album){
-        const next=mergeAlbum(composerMedia,prepared);
-        if(next.length>MAX_ALBUM_ITEMS){Alert.alert('Álbum completo','Podes escolher até 6 fotografias ou vídeos.');return;}
-        const error=albumError(next,true);
-        if(error){Alert.alert('Álbum não aceite',error);return;}
-        setComposerMedia(next);
+        if(!postComposerWasOpen||!composerOpenRef.current||postInFlight.current)return;
+        const result=appendAlbumSelection(composerMediaRef.current,prepared);
+        if(result.error){Alert.alert('Álbum não aceite',result.error);return;}
+        changeComposerMedia(()=>result.items);
       }else if(prepared[0])setter(prepared[0]);
     }catch{if(activeStoryAccount.current===actorToken)Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
     finally{mediaPickerInFlight.current=false;}
@@ -414,7 +434,7 @@ export default function JynloFeedHome(){
     }finally{postInFlight.current=false;setPublishing(false);}
     // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
     if(feedIdentity.current===`${username}:${actor}`){
-      setComposerText('');setComposerMedia([]);setComposerOpen(false);
+      composerOpenRef.current=false;setComposerText('');changeComposerMedia(()=>[]);setComposerOpen(false);
       void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
     }
   }
@@ -555,24 +575,28 @@ export default function JynloFeedHome(){
       </View>
     </Modal>
 
-    <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={()=>!publishing&&setComposerOpen(false)}>
+    <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
-        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={()=>setComposerOpen(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
           </View>
           {composerMedia.length?<View style={styles.postMediaPreview}>
-            <Text style={styles.storiesIntro}>{composerMedia.length}/6 ficheiros · Desliza e usa as setas para ordenar</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Remover todos os ficheiros da publicação" disabled={publishing} onPress={()=>Alert.alert('Limpar álbum?','Remover todas as fotografias e vídeos deste rascunho?',[
+              {text:'Cancelar',style:'cancel'},
+              {text:'Limpar álbum',style:'destructive',onPress:()=>changeComposerMedia(()=>[])}
+            ])} style={[styles.removeMediaButton,{alignSelf:'flex-end'}]}><Text style={styles.removeMediaText}>Limpar álbum</Text></Pressable>
+            <Text style={styles.storiesIntro}>{composerMedia.length}/6 ficheiros · O primeiro é a capa · Desliza e usa as setas para ordenar</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{gap:10,paddingVertical:8}}>
               {composerMedia.map((media,i)=><View key={media.uri} style={{width:230,gap:5}}>
                 {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
-                <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{i+1}. {media.fileName}</Text>
+                <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{i===0?'Capa · ':''}{i+1}. {media.fileName}</Text>
                   <View style={{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para trás`} disabled={publishing||i===0} onPress={()=>setComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><Text style={styles.removeMediaText}>←</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para a frente`} disabled={publishing||i===composerMedia.length-1} onPress={()=>setComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><Text style={styles.removeMediaText}>→</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>setComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para trás`} disabled={publishing||i===0} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><Text style={styles.removeMediaText}>←</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para a frente`} disabled={publishing||i===composerMedia.length-1} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><Text style={styles.removeMediaText}>→</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>changeComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
                   </View>
                 </View>
               </View>)}

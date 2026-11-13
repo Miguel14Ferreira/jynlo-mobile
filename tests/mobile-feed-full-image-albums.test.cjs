@@ -44,3 +44,27 @@ test('post editor exposes reorder controls, preserving chosen cover for upload',
  assert.match(s,/Mover ficheiro .* para a frente/);
  assert.match(s,/setComposerMedia\(prev=>prev.filter/);
 });
+
+test('native album selection merges and validates the full draft atomically',()=>{
+ const {appendAlbumSelection}=require('../src/lib/post-album.cjs');
+ const make=i=>({uri:'file://'+i+'.jpg',type:'image',mimeType:'image/jpeg',fileSize:1200});
+ const current=[make(1),make(2)];
+ const good=appendAlbumSelection(current,[make(2),make(3)]);
+ assert.equal(good.error,null);
+ assert.deepEqual(good.items.map(x=>x.uri),['file://1.jpg','file://2.jpg','file://3.jpg']);
+ assert.equal(current.length,2);
+ const excess=appendAlbumSelection(current,[make(3),make(4),make(5),make(6),make(7)]);
+ assert.match(excess.error,/até 6/);
+ assert.deepEqual(excess.items,current);
+ const invalid=appendAlbumSelection(current,[{...make(4),mimeType:'video/mp4'}]);
+ assert.match(invalid.error,/Formato/);assert.deepEqual(invalid.items,current);
+});
+test('composer protects unsent posts and native picker does not restore abandoned drafts',()=>{
+ const s=read('app/(tabs)/index.tsx');
+ assert.match(s,/function closePostComposer\(/);
+ assert.match(s,/Descartar publicação\?/);
+ assert.match(s,/onRequestClose=\{closePostComposer\}/);
+ assert.match(s,/Remover todos os ficheiros da publicação/);
+ assert.match(s,/!postComposerWasOpen\|\|!composerOpenRef\.current/);
+ assert.match(s,/appendAlbumSelection\(composerMediaRef\.current,prepared\)/);
+});

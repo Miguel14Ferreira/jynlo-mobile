@@ -26,6 +26,13 @@ function mergeAlbum(existing,incoming){
  }
  return result;
 }
+/** Add native gallery results without clipping or mutating the current draft. */
+function appendAlbumSelection(current,selected){
+ const next=mergeAlbum(current,selected);
+ if(next.length>MAX_ALBUM_ITEMS)return {items:[...(current||[])],error:'Podes escolher até 6 fotografias ou vídeos.'};
+ const error=next.length?albumError(next,true):null;
+ return {items:error?[...(current||[])]:next,error};
+}
 /** Move a selected photo/video without changing its identity or other attachments. */
 function moveAlbumItem(items,from,to){
  if(!Array.isArray(items)||!Number.isSafeInteger(from)||!Number.isSafeInteger(to)||
@@ -54,4 +61,4 @@ function postMediaItems(item){
  }
  return result;
 }
-module.exports={MAX_ALBUM_ITEMS,MAX_ALBUM_BYTES,albumError,mergeAlbum,moveAlbumItem,postMediaItems};
+module.exports={MAX_ALBUM_ITEMS,MAX_ALBUM_BYTES,albumError,mergeAlbum,appendAlbumSelection,moveAlbumItem,postMediaItems};
