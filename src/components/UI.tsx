@@ -1,5 +1,5 @@
-import React,{useRef} from 'react';
-import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import React,{useEffect,useRef} from 'react';
+import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
@@ -11,6 +11,19 @@ import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollView|null>(null);
   const nearBottom=useRef(true);
+  // When a chat composer receives focus Android can resize the window without
+  // moving the last message and input into view. Scroll after the keyboard
+  // transition; the shared Page uses this only for chat views that explicitly
+  // opt into autoScrollToEnd.
+  useEffect(()=>{
+    if(!autoScrollToEnd)return;
+    const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+    const subscription=Keyboard.addListener(event,()=>{
+      nearBottom.current=true;
+      scrollRef.current?.scrollToEnd({animated:true});
+    });
+    return()=>subscription.remove();
+  },[autoScrollToEnd]);
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
     <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
     {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
