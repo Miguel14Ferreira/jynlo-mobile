@@ -22,3 +22,19 @@ test('a signed link does not by itself confirm attendance or expose a receipt',(
  assert.match(view,/if\(alive&&state\.status!=='CANCELLED'/);
  assert.doesNotMatch(view,/console\.(log|warn)\(/);
 });
+
+test('guest RSVP recovers from an uncertain previous confirmation without booking twice',()=>{
+ const view=read('src/components/GuestSessionRSVP.tsx');
+ assert.match(view,/setStatusUnknown\(true\)/);
+ assert.match(view,/setRefreshId\(n=>n\+1\)/);
+ assert.match(view,/pending\.current\|\|loading\|\|statusUnknown\|\|receipt/);
+ assert.match(view,/!loading&&!error&&!statusUnknown/);
+});
+test('confirmed server cancellation clears the UI before local secure storage cleanup',()=>{
+ const view=read('src/components/GuestSessionRSVP.tsx');
+ const done=view.indexOf("if(result.status!=='CANCELLED')");
+ const clear=view.indexOf("setReceipt(null);onConfirmed();",done);
+ const storage=view.indexOf("SecureStore.deleteItemAsync(key)",done);
+ assert.ok(done>=0&&clear>done&&storage>clear);
+ assert.match(view,/Presença cancelada no servidor/);
+});
