@@ -145,7 +145,8 @@ export default function SessionScreen(){
     }finally{backgroundSyncInFlight.current=false;}
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
-    setBusy(false);
+    // A write may still be pending when returning to this screen.
+    setBusy(operationInFlight.current||removalInFlight.current||attendanceInFlight.current);
     // Keep pending team writes locked across a blur/refocus; otherwise the
     // same confirmation could be posted twice while its first POST is alive.
     setTeamsBusy(teamsInFlight.current);
@@ -200,10 +201,13 @@ export default function SessionScreen(){
   const action=registrationAction(detail,auth.username);
   const join=()=>{void perform(async()=>{
     if(!auth.token)throw new Error('Inicia sessão primeiro.');
-    const result=await joinSession(id,auth.token,auth.username||undefined,password);
+    const actorToken=auth.token,actorUsername=auth.username,submittedPassword=password;
+    const operationVersion=detailRequestGeneration.current,operationEpoch=actionEpoch.current;
+    const result=await joinSession(id,actorToken,actorUsername||undefined,submittedPassword);
     const confirmed=confirmedSessionJoin(result);
     if(!confirmed)throw Error('O servidor respondeu, mas não confirmou a entrada no jogo. Verifica a lista de jogadores antes de repetir.');
-    setPassword('');
+    if(operationVersion===detailRequestGeneration.current&&operationEpoch===actionEpoch.current)
+      setPassword(current=>current===submittedPassword?'':current);
     return confirmed;
   },(result)=>(result as {message:string}).message);};
   const leave=()=>{
@@ -306,7 +310,13 @@ export default function SessionScreen(){
        }}]);
   }
   const sendInvite=()=>{const invitee=inviteUsername.trim();if(!invitee||!auth.token)return;
-    void perform(async()=>{await inviteToSession(id,invitee,auth.token!,auth.username||undefined);setInviteUsername('');},'Convite enviado. A outra pessoa tem de o aceitar.');};
+    const actorToken=auth.token,actorUsername=auth.username;
+    const operationVersion=detailRequestGeneration.current,operationEpoch=actionEpoch.current;
+    void perform(async()=>{
+      await inviteToSession(id,invitee,actorToken,actorUsername||undefined);
+      if(operationVersion===detailRequestGeneration.current&&operationEpoch===actionEpoch.current)
+        setInviteUsername(current=>current.trim()===invitee?'':current);
+    },'Convite enviado. A outra pessoa tem de o aceitar.');};
   const share=()=>{
     if(DEMO_MODE){setFeedback('Não é possível partilhar uma sessão fictícia da demonstração.');return;}
     void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});

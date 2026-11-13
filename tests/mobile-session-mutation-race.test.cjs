@@ -37,3 +37,23 @@ test('session join only reports confirmed server membership or waitlist',()=>{
  assert.match(screen,/return confirmed/);
  assert.match(screen,/\(result\)=>\(result as \{message:string\}\)\.message/);
 });
+
+test('session refocus retains an unsettled mutation busy state',()=>{
+ const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('const perform=async('));
+ assert.match(focused,/setBusy\(operationInFlight\.current\|\|removalInFlight\.current\|\|attendanceInFlight\.current\)/);
+ assert.doesNotMatch(focused,/setBusy\(false\)/);
+});
+test('joined session cannot erase a newly edited password after a slow response',()=>{
+ const join=screen.slice(screen.indexOf('const join=()=>'),screen.indexOf('const leave=()=>'));
+ assert.match(join,/const actorToken=auth\.token,actorUsername=auth\.username,submittedPassword=password/);
+ assert.match(join,/joinSession\(id,actorToken,actorUsername\|\|undefined,submittedPassword\)/);
+ assert.match(join,/operationVersion===detailRequestGeneration\.current&&operationEpoch===actionEpoch\.current/);
+ assert.match(join,/setPassword\(current=>current===submittedPassword\?'':current\)/);
+});
+test('sent session invite keeps newer draft and cannot cross account changes',()=>{
+ const invite=screen.slice(screen.indexOf('const sendInvite=()=>'),screen.indexOf('const share=()=>'));
+ assert.match(invite,/const actorToken=auth\.token,actorUsername=auth\.username/);
+ assert.match(invite,/inviteToSession\(id,invitee,actorToken,actorUsername\|\|undefined\)/);
+ assert.match(invite,/operationVersion===detailRequestGeneration\.current&&operationEpoch===actionEpoch\.current/);
+ assert.match(invite,/setInviteUsername\(current=>current\.trim\(\)===invitee\?'':current\)/);
+});
