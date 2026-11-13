@@ -17,3 +17,8 @@ test('microphone permission cannot start a recording after leaving the editor',(
  assert.match(camera,/if\(!alive\.current\|\|!camera\.current\|\|!cameraReady\|\|mode!=='video'\|\|recordingRef\.current\)return/);
  assert.match(camera,/if\(alive\.current\)onCaptured\(\{uri:result\.uri/);
 });
+
+test('native stopRecording errors during teardown never throw from React cleanup',()=>{
+ assert.match(camera,/alive\.current=false;if\(recordingRef\.current\)\{try\{camera\.current\?\.stopRecording\(\);\}catch/);
+ assert.match(camera,/try\{camera\.current\?\.stopRecording\(\);\}catch\{if\(alive\.current\)setError/);
+});

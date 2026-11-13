@@ -22,7 +22,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const permissionRequestInFlight=useRef(false);
  const captureInFlight=useRef(false);
  const alive=useRef(true);
- useEffect(()=>{alive.current=true;return ()=>{alive.current=false;if(recordingRef.current)camera.current?.stopRecording();};},[]);
+ useEffect(()=>{alive.current=true;return ()=>{alive.current=false;if(recordingRef.current){try{camera.current?.stopRecording();}catch{/* Native camera teardown is best effort. */}}};},[]);
  const [facing,setFacing]=useState<'back'|'front'>('back');
  const [busy,setBusy]=useState(false);
  const [cameraReady,setCameraReady]=useState(false);
@@ -43,7 +43,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  }
  async function toggleRecording(){
   if(recordingRef.current){
-   camera.current?.stopRecording();
+   try{camera.current?.stopRecording();}catch{if(alive.current)setError('Não foi possível terminar a gravação.');}
    return;
   }
   if(busy||permissionRequestInFlight.current||!alive.current||!cameraReady||!permission?.granted||!camera.current||mode!=='video')return;
