@@ -11,28 +11,30 @@ export default function MySessionsScreen(){
  const auth=useAuth(),router=useRouter();const [data,setData]=useState<MySessions>({created:[],joined:[],waitlisted:[]});
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const generation=useRef(0);
+ const identity=(auth.username||'')+'|'+(auth.token||'');
+ const [loadedIdentity,setLoadedIdentity]=useState('');
  const load=useCallback(async()=>{
   const requestId=++generation.current;
   // Do not retain another account's roster while loading or after sign-out.
-  setData({created:[],joined:[],waitlisted:[]});setError('');
+  setData({created:[],joined:[],waitlisted:[]});setLoadedIdentity('');setError('');
   if(!auth.token||!auth.username){setLoading(false);return;}
   setLoading(true);
   try{
    const next=await mySessions(auth.token,auth.username);
-   if(requestId===generation.current)setData(next);
+   if(requestId===generation.current){setData(next);setLoadedIdentity(identity);}
   }catch(e){
    if(requestId===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');
   }finally{
    if(requestId===generation.current)setLoading(false);
   }
- },[auth.token,auth.username]);
+ },[auth.token,auth.username,identity]);
  useFocusEffect(useCallback(()=>{
   void load();
   return()=>{generation.current++;setData({created:[],joined:[],waitlisted:[]});};
  },[load]));
  const open=(s:SessionSummary)=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}});
  const [showHistory,setShowHistory]=useState(false);
- const sections=organizeMySessions(data);
+ const sections=organizeMySessions(loadedIdentity===identity?data:null);
  const upcomingCount=sections.upcoming.reduce((sum,section)=>sum+section.items.length,0);
  const historyCount=sections.history.reduce((sum,section)=>sum+section.items.length,0);
  return <Page><Brand subtitle="A TUA ATIVIDADE"/><DemoBanner/><Eyebrow>MINHAS SESSÕES</Eyebrow>
