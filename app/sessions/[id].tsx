@@ -524,7 +524,7 @@ export default function SessionScreen(){
         <View style={styles.info}><Text style={styles.label}>DATA E HORA</Text><Text style={styles.value}>{formatDate(s.gameDate)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>VALOR</Text><Text style={styles.value}>{money(s.priceAmount)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>PARTICIPANTES</Text><Text style={styles.value}>{s.participantCount??'—'}/{s.maxParticipants??'—'}</Text></View>
-        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{s.status==='OPEN'?'Aberta':s.status==='FULL'?'Completa':s.status==='CANCELLED'?'Cancelada':s.status==='COMPLETED'?'Concluída':s.status||'—'}</Text></View>
+        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{sessionParticipationLabel({status:s.status,gameDate:s.gameDate,joined:false,waitlisted:false})}</Text></View>
       </View>
       {minimum?<View style={styles.panel}>
         <View style={styles.minimumHeading}>
