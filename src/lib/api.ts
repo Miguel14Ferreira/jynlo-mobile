@@ -198,3 +198,15 @@ export async function confirmMfa(challengeId:string,code:string):Promise<LoginRe
 export async function resendMfa(challengeId:string):Promise<LoginResponse>{
   return request<LoginResponse>('/api/auth/mfa/resend',{method:'POST',body:{challengeId}});
 }
+
+/** An organizer-issued guest invitation permits an RSVP without a Jynlo account.
+ * Issuing a new token revokes the previous token on the backend.
+ */
+export async function issueSessionGuestLink(id:number,token:string):Promise<string>{
+  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)
+    throw Error('Inicia sessão para criares uma ligação de convite válida.');
+  const reply=await request<{token:string}>(`/api/sessions/${id}/guest-link`,{token,method:'POST'});
+  if(!reply||typeof reply.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(reply.token))
+    throw Error('O servidor não confirmou uma ligação de convite válida.');
+  return `https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(reply.token)}`;
+}
