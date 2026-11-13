@@ -206,13 +206,19 @@ export default function JynloFeedHome(){
   const storyCaptureRevision=storyComposerRevision.current;
   storyComposerRef.current=storyComposer;
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
+  const storyCaptionRef=useRef(''),storyMediaRef=useRef<MobileMedia|null>(null);
+  storyMediaRef.current=storyMedia;
   const [composerOpen,setComposerOpen]=useState(false);
   const [expandedPostImage,setExpandedPostImage]=useState<string|null>(null);
   const [composerText,setComposerText]=useState(''),[composerLocation,setComposerLocation]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
+  const composerTextRef=useRef(''),composerLocationRef=useRef('');
   const composerMediaRef=useRef<MobileMedia[]>([]);
   const composerOpenRef=useRef(false);
   const postComposerRevision=useRef(0);
   composerOpenRef.current=composerOpen;
+  composerTextRef.current=composerText;
+  composerLocationRef.current=composerLocation;
+  storyCaptionRef.current=storyCaption;
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
@@ -455,33 +461,56 @@ export default function JynloFeedHome(){
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
     const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
+    const revision=postComposerRevision.current;
     postInFlight.current=true;setPublishing(true);
     try{
       await publishPost(body,media,actor,username,place);
+      // A user may have kept typing or selected another file during the upload.
+      // The server has published the original snapshot, never discard newer edits.
+      if(feedIdentity.current===`${username}:${actor}`&&
+         postComposerRevision.current===revision&&composerOpenRef.current){
+        const unchanged=composerTextRef.current===body&&composerLocationRef.current===place&&
+          composerMediaRef.current.length===media.length&&
+          composerMediaRef.current.every((file,index)=>file.uri===media[index]?.uri);
+        if(unchanged){
+          postComposerRevision.current++;composerOpenRef.current=false;
+          setComposerText('');composerTextRef.current='';
+          setComposerLocation('');composerLocationRef.current='';
+          changeComposerMedia(()=>[]);setComposerOpen(false);
+        }else{
+          Alert.alert('Publicação enviada','As alterações feitas durante o envio ficaram guardadas no editor. Podes criar outra publicação.');
+        }
+        // Refresh failure must not be interpreted as a failed published POST.
+        void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
+      }
     }catch(e){
-      Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
-      return;
+      if(feedIdentity.current===`${username}:${actor}`)
+        Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
     }finally{postInFlight.current=false;setPublishing(false);}
-    // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
-    if(feedIdentity.current===`${username}:${actor}`){
-      postComposerRevision.current++;composerOpenRef.current=false;setComposerText('');setComposerLocation('');changeComposerMedia(()=>[]);setComposerOpen(false);
-      void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
-    }
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
     const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia;
+    const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);
     try{
       await publishStory(body,media,actor,username);
+      if(feedIdentity.current===`${username}:${actor}`&&
+         storyComposerRevision.current===revision&&storyComposerRef.current){
+        const unchanged=storyCaptionRef.current===body&&storyMediaRef.current?.uri===media.uri;
+        if(unchanged){
+          storyComposerRevision.current++;storyComposerRef.current=false;
+          setStoryCaption('');storyCaptionRef.current='';
+          setStoryMedia(null);storyMediaRef.current=null;setStoryComposer(false);
+        }else{
+          Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
+        }
+        void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
+      }
     }catch(e){
-      Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
-      return;
+      if(feedIdentity.current===`${username}:${actor}`)
+        Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
-    if(feedIdentity.current===`${username}:${actor}`){
-      storyComposerRevision.current++;storyComposerRef.current=false;setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
-      void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
-    }
   }
   async function toggleLike(item:FeedItem){if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null)return;
     setBusyPost(item.postId);try{await likePost(item.postId,item.likedByMe,auth.token,auth.username);await load();}
@@ -666,9 +695,9 @@ export default function JynloFeedHome(){
               </View>)}
             </ScrollView>
           </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.</Text></View>}
-          <TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
+          <TextInput style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
-          <TextInput style={styles.storyCaptionInput} value={composerLocation} onChangeText={setComposerLocation} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
+          <TextInput style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);}} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
         </ScrollView>
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
       </SafeAreaView>
@@ -688,7 +717,7 @@ export default function JynloFeedHome(){
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Trocar pela galeria</Text></Pressable>:null}
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover fotografia ou vídeo</Text></Pressable>:null}
           <Text style={styles.storiesIntro}>Texto sobre o Story (visível também como legenda na web)</Text>
-          <TextInput value={storyCaption} onChangeText={setStoryCaption} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
+          <TextInput value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyCaption.length}/180</Text>
         </ScrollView>
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}><Text style={styles.primaryButtonText}>{storyPublishing?'A publicar…':'Publicar Story'}</Text></Pressable>
