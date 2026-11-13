@@ -9,6 +9,7 @@ import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
+import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -453,6 +454,9 @@ export default function SessionScreen(){
         {safeMeetingPoint(detail,auth.username)?<Text style={styles.hint}>{safeMeetingPoint(detail,auth.username)}</Text>:null}
         <Text style={styles.hint}>Os detalhes de localização são mostrados apenas quando a API autoriza.</Text>
       </View>
+      {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
+        typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
+        <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
       {feedback?<Message>{feedback}</Message>:null}
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
