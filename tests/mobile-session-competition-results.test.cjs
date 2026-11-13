@@ -42,7 +42,7 @@ test('result API uses only existing server endpoints and server-side community a
 });
 test('post-game editor never posts before explicit user approval and keeps session/account isolation',()=>{
  const s=read('app/sessions/[id]/result.tsx');
- assert.match(s,/buildSessionCompetitionResult\(outcome,roster,sport\)/);
+ assert.match(s,/buildSessionCompetitionResult\(outcome,roster,sport,scoreA,scoreB\)/);
  assert.match(s,/Alert.alert\('Registar resultado oficial\?'/);
  assert.match(s,/if\(writing.current\|\|version!==generation.current\|\|actor!==identityRef.current\)return/);
  assert.match(s,/Promise.all\(\[/);
@@ -111,7 +111,7 @@ test('post game football-only form is gated by sport and passed through session 
  const detail=read('app/sessions/[id].tsx');
  const community=read('app/communities/[id].tsx');
  assert.match(view,/const football=sport==='Futebol'/);
- assert.match(view,/buildSessionCompetitionResult\(outcome,roster,sport\)/);
+ assert.match(view,/buildSessionCompetitionResult\(outcome,roster,sport,scoreA,scoreB\)/);
  assert.match(view,/accessibilityLabel=\{'Golos de '\+player.username\}/);
  assert.match(view,/accessibilityLabel=\{'Assistências de '\+player.username\}/);
  assert.match(view,/roster.filter\(player=>player.selected\)/);
@@ -179,4 +179,52 @@ test('result editor negotiates football fields at load and preserves legacy winn
  assert.match(view,/O backend ainda não confirmou suporte a golos e assistências/);
  assert.match(view,/Podes registar apenas o vencedor ou empate/);
  assert.match(view,/return recordCompetitionSessionResult\(communityId,sessionId,token,payload\)/);
+});
+
+test('football official score is optional and never derived from player statistics',()=>{
+ const roster=editableCompetitionRoster(members);
+ assert.deepEqual(buildSessionCompetitionResult('A',roster,'Futebol','3','1'),{
+  outcome:'A',players:[{username:'Ana',team:'A'},{username:'Bruno',team:'B'}],
+  scoreA:3,scoreB:1
+ });
+ assert.deepEqual(buildSessionCompetitionResult('DRAW',roster,'Futebol','0','0'),{
+  outcome:'DRAW',players:[{username:'Ana',team:'A'},{username:'Bruno',team:'B'}],
+  scoreA:0,scoreB:0
+ });
+ assert.deepEqual(buildSessionCompetitionResult('B',roster,'Futebol'),{
+  outcome:'B',players:[{username:'Ana',team:'A'},{username:'Bruno',team:'B'}]
+ });
+});
+test('score must be complete, consistent with winner and not below known player goals',()=>{
+ const roster=editableCompetitionRoster(members);
+ for(const invalid of [['','1'],['1',''],['100','1'],['-1','0'],['1.5','1']]){
+  assert.throws(()=>buildSessionCompetitionResult('A',roster,'Futebol',...invalid));
+ }
+ assert.throws(()=>buildSessionCompetitionResult('A',roster,'Futebol','0','1'),/vencedor|empate/);
+ assert.throws(()=>buildSessionCompetitionResult('A',roster,'Futebol','1','1'),/vencedor|empate/);
+ assert.throws(()=>buildSessionCompetitionResult('A',roster,'Andebol','2','1'),/Futebol/);
+ const scorers=roster.map((p,i)=>i===0?{...p,goals:'3'}:p);
+ assert.throws(()=>buildSessionCompetitionResult('A',scorers,'Futebol','2','1'),/excedem/);
+ assert.equal(buildSessionCompetitionResult('A',scorers,'Futebol','3','1').scoreA,3);
+});
+test('official score success requires the backend to return the exact persisted team score',()=>{
+ const {confirmedOfficialScore}=require('../src/lib/session-competition-result.cjs');
+ const payload=buildSessionCompetitionResult('B',editableCompetitionRoster(members),'Futebol','1','4');
+ assert.equal(confirmedOfficialScore(payload,{teamScore:{sideA:1,sideB:4}}),true);
+ assert.equal(confirmedOfficialScore(payload,{teamScore:{sideA:1,sideB:3}}),false);
+ assert.equal(confirmedOfficialScore(payload,{teamScore:null}),false);
+ assert.equal(confirmedOfficialScore(payload,{id:31}),false);
+ assert.equal(confirmedOfficialScore(buildSessionCompetitionResult('B',editableCompetitionRoster(members)),{id:31}),true);
+});
+test('official score fields are visible only if authenticated backend confirms football score capability',()=>{
+ const screen=read('app/sessions/[id]/result.tsx');
+ const api=read('src/lib/session-competition-api.ts');
+ assert.match(screen,/const \[scoreA,setScoreA\]=useState\(''\),\[scoreB,setScoreB\]=useState\(''\)/);
+ assert.match(screen,/setScoreSupported\(football&&capabilities\?\.version===1&&capabilities.footballFinalScore===true\)/);
+ assert.match(screen,/football&&scoreSupported\?<View style=\{styles.scorePanel\}>/);
+ assert.match(screen,/accessibilityLabel="Golos oficiais Equipa A"/);
+ assert.match(screen,/accessibilityLabel="Golos oficiais Equipa B"/);
+ assert.match(screen,/confirmedOfficialScore\(payload,reply\)/);
+ assert.match(api,/footballFinalScore\?:boolean/);
+ assert.match(api,/teamScore\?:\{sideA:number;sideB:number\}/);
 });
