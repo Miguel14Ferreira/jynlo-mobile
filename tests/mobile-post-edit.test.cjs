@@ -9,7 +9,7 @@ test('post editor uses authenticated backend edit endpoint without touching medi
  assert.match(api,/token,method:'PUT',body:\{content:description,location:place\|\|null\}/);
  assert.match(api,/description\.length>1000/);
  assert.match(api,/place\.length>160/);
- assert.match(api,/item\.authorUsername\.toLowerCase\(\)===username!\.toLowerCase\(\)/);
+ assert.match(api,/post\.authorUsername\.toLowerCase\(\)===username!\.toLowerCase\(\)/);
 });
 test('post editing is exposed only to author, in feed and full post details',()=>{
  const feed=read('app/(tabs)/index.tsx');
@@ -29,4 +29,14 @@ test('post editor prevents empty text-only posts and protects unsaved changes',(
  assert.match(editor,/onSaved\(result\)/);
  assert.match(editor,/maxLength=\{1000\}/);
  assert.match(editor,/maxLength=\{160\}/);
+});
+
+test('Android menu uses a native sheet rather than more than three Alert buttons',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(feed,/<Modal visible=\{identityMatches&&!!postMenuItem\}/);
+ assert.match(feed,/accessibilityLabel="Editar publicação"/);
+ assert.match(feed,/accessibilityLabel="Ocultar do meu feed"/);
+ assert.match(feed,/accessibilityLabel="Eliminar publicação"/);
+ assert.match(feed,/accessibilityLabel="Cancelar opções da publicação"/);
+ assert.doesNotMatch(feed,/Alert\.alert\('Opções de publicação'/);
 });

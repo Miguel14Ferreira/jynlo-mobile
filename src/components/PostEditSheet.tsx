@@ -29,7 +29,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
    setText(post?.content||'');setLocation(post?.location||'');
    return ()=>{generation.current++;};
  },[post?.postId,token,username]);
- const visible=Boolean(currentIdentity&&post?.type==='POST'&&Number.isSafeInteger(post?.postId)&&post!.postId!>0);
+ const visible=Boolean(currentIdentity&&post?.type==='POST'&&Number.isSafeInteger(post?.postId)&&(post?.postId??0)>0);
  const changed=Boolean(post&&(text.trim()!==(post.content||'').trim()||location.trim()!==(post.location||'').trim()));
  function close(){
    if(lock.current)return;

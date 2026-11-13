@@ -217,6 +217,7 @@ export default function JynloFeedHome(){
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
   const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
+  const [postMenuItem,setPostMenuItem]=useState<FeedItem|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
@@ -234,7 +235,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
-      setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);
+      setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
@@ -343,41 +344,34 @@ export default function JynloFeedHome(){
     setRecentlyHidden(null);
   }
   function openPostMenu(item:FeedItem){
-    if(!auth.token||!auth.username||!identityMatches)return;
-    const own=item.authorUsername.toLowerCase()===auth.username.toLowerCase();
-    const actions:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[
-      {text:'Ocultar do meu feed',onPress:()=>hideFromFeed(item)},
-    ];
-    if(own&&item.type==='SESSION_ATTENDED'&&item.sessionId){
-      actions.push({text:'Ocultar esta atividade para todos',style:'destructive',onPress:()=>{
-        if(busyPost!==null||!auth.token||!item.sessionId)return;
-        const identity=currentFeedIdentity;
-        setBusyPost(-item.sessionId);
-        void hideAttendanceActivity(item.sessionId,auth.token).then(()=>{
-          if(feedIdentity.current===identity){setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===item.sessionId&&x.authorUsername===item.authorUsername)));}
-        }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
-         .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
-      }});
-    }
-    if(own&&item.type==='POST'&&item.postId){
-      actions.push({text:'Editar texto e localização',onPress:()=>setEditingPost(item)});
-      actions.push({text:'Eliminar a minha publicação',style:'destructive',onPress:()=>{
-        Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
-          {text:'Cancelar',style:'cancel'},
-          {text:'Eliminar',style:'destructive',onPress:()=>{
-            if(!auth.token||!item.postId||busyPost!==null)return;
-            const identity=currentFeedIdentity;
-            setBusyPost(item.postId);
-            void deletePost(item.postId,auth.token).then(()=>{
-              if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>x.postId!==item.postId));
-            }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
-             .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
-          }}
-        ]);
-      }});
-    }
-    actions.push({text:'Cancelar',style:'cancel'});
-    Alert.alert('Opções de publicação','Escolhe o que pretendes fazer.',actions);
+    if(!auth.token||!auth.username||!identityMatches||busyPost!==null)return;
+    setPostMenuItem(item);
+  }
+  function deleteOwnedPost(item:FeedItem){
+    if(!auth.token||!auth.username||!item.postId||item.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
+    setPostMenuItem(null);
+    const id=item.postId,actor=auth.token,identity=currentFeedIdentity;
+    Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
+      {text:'Cancelar',style:'cancel'},
+      {text:'Eliminar',style:'destructive',onPress:()=>{
+        if(busyPost!==null||feedIdentity.current!==identity||!actor)return;
+        setBusyPost(id);
+        void deletePost(id,actor).then(()=>{
+          if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>x.postId!==id));
+        }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
+        .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
+      }}
+    ]);
+  }
+  function hideOwnAttendance(item:FeedItem){
+    if(!auth.token||!item.sessionId||busyPost!==null||item.type!=='SESSION_ATTENDED')return;
+    setPostMenuItem(null);
+    const identity=currentFeedIdentity,id=item.sessionId,actor=auth.token;
+    setBusyPost(-id);
+    void hideAttendanceActivity(id,actor).then(()=>{
+      if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
+    }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
+    .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
   }
   function openPostComposer(){
     postComposerRevision.current++;
@@ -612,6 +606,33 @@ export default function JynloFeedHome(){
       </View>
     </Modal>
 
+    <Modal visible={identityMatches&&!!postMenuItem} transparent animationType="fade" onRequestClose={()=>setPostMenuItem(null)}>
+      <View style={styles.commentsModal}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" style={styles.commentsBackdrop} onPress={()=>setPostMenuItem(null)}/>
+        <View style={[styles.commentsSheet,{height:'auto',maxHeight:'80%',paddingBottom:26,gap:12}]}>
+          <View style={styles.commentsHandle}/>
+          <Text style={styles.commentsTitle}>Opções da publicação</Text>
+          {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed" style={styles.postMenuAction} onPress={()=>{
+            const post=postMenuItem;setPostMenuItem(null);hideFromFeed(post);
+          }}><Text style={styles.postMenuText}>Ocultar do meu feed</Text></Pressable>:null}
+          {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
+            <Pressable accessibilityRole="button" accessibilityLabel="Editar publicação" style={styles.postMenuAction} onPress={()=>{
+              const post=postMenuItem;setPostMenuItem(null);setEditingPost(post);
+            }}><Text style={styles.postMenuText}>Editar texto e localização</Text></Pressable>:null}
+          {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
+            <Pressable accessibilityRole="button" accessibilityLabel="Eliminar publicação" style={styles.postMenuAction} onPress={()=>deleteOwnedPost(postMenuItem)}>
+              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Eliminar publicação</Text>
+            </Pressable>:null}
+          {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='SESSION_ATTENDED'&&postMenuItem.sessionId?
+            <Pressable accessibilityRole="button" accessibilityLabel="Ocultar esta atividade para todos" style={styles.postMenuAction} onPress={()=>hideOwnAttendance(postMenuItem)}>
+              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Ocultar atividade para todos</Text>
+            </Pressable>:null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Cancelar opções da publicação" style={styles.postMenuAction} onPress={()=>setPostMenuItem(null)}>
+            <Text style={styles.postMenuText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
     <PostEditSheet post={identityMatches?editingPost:null} token={auth.token} username={auth.username}
       onClose={()=>setEditingPost(null)} onSaved={updated=>{
         if(feedIdentity.current!==currentFeedIdentity)return;
@@ -676,6 +697,8 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+  postMenuAction:{padding:14,minHeight:48,justifyContent:'center',borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
+  postMenuText:{fontSize:14,fontWeight:'800',color:WHITE},
   albumCounter:{position:'absolute',right:10,top:10,paddingHorizontal:9,paddingVertical:4,borderRadius:12,backgroundColor:'rgba(0,0,0,.72)'},
   albumCounterText:{color:'#fff',fontWeight:'800',fontSize:12},
   hiddenNotice:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
