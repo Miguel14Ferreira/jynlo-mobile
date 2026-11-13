@@ -42,7 +42,7 @@ test('result API uses only existing server endpoints and server-side community a
 });
 test('post-game editor never posts before explicit user approval and keeps session/account isolation',()=>{
  const s=read('app/sessions/[id]/result.tsx');
- assert.match(s,/buildSessionCompetitionResult\(outcome,roster\)/);
+ assert.match(s,/buildSessionCompetitionResult\(outcome,roster,sport\)/);
  assert.match(s,/Alert.alert\('Registar resultado oficial\?'/);
  assert.match(s,/if\(writing.current\|\|version!==generation.current\|\|actor!==identityRef.current\)return/);
  assert.match(s,/Promise.all\(\[/);
