@@ -11,7 +11,7 @@ import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publ
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
-import {albumError,mergeAlbum,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
+import {albumError,mergeAlbum,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
@@ -564,12 +564,16 @@ export default function JynloFeedHome(){
             <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
           </View>
           {composerMedia.length?<View style={styles.postMediaPreview}>
-            <Text style={styles.storiesIntro}>{composerMedia.length}/6 ficheiros · Desliza para pré-visualizar</Text>
+            <Text style={styles.storiesIntro}>{composerMedia.length}/6 ficheiros · Desliza e usa as setas para ordenar</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{gap:10,paddingVertical:8}}>
               {composerMedia.map((media,i)=><View key={media.uri} style={{width:230,gap:5}}>
                 {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
                 <View style={styles.postMediaPreviewFooter}><Text style={styles.attachedText} numberOfLines={1}>{i+1}. {media.fileName}</Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>setComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
+                  <View style={{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para trás`} disabled={publishing||i===0} onPress={()=>setComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><Text style={styles.removeMediaText}>←</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para a frente`} disabled={publishing||i===composerMedia.length-1} onPress={()=>setComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><Text style={styles.removeMediaText}>→</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>setComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
+                  </View>
                 </View>
               </View>)}
             </ScrollView>
