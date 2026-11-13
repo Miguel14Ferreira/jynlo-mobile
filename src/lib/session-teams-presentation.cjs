@@ -16,10 +16,13 @@ function confirmedSessionTeams(participants){
  groups.A.sort(byName);groups.B.sort(byName);groups.unassigned.sort(byName);
  return groups;
 }
-function sessionParticipationLabel(session){
+function sessionParticipationLabel(session,at=Date.now()){
  if(!session)return 'Sessão indisponível';
  if(session.status==='CANCELLED')return 'Cancelada';
  if(session.status==='COMPLETED')return 'Concluída';
+ // A stale OPEN/FULL status must not advertise expired sessions as joinable.
+ const time=Date.parse(session.gameDate||'');
+ if(['OPEN','FULL'].includes(session.status)&&Number.isFinite(time)&&time<=at)return 'Data ultrapassada';
  if(session.joined)return 'Confirmado';
  if(session.waitlisted)return 'Lista de espera';
  if(session.status==='FULL')return 'Completa';
