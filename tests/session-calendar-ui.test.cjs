@@ -20,3 +20,10 @@ test('registration opening and recurring session days use the same calendar',()=
  assert.match(source,/parseSessionDate\(form\.day,form\.time\)/);
  assert.match(source,/createSessionPayload\(form,SPORTS\)/);
 });
+
+test('selected date is recognized and the calendar opens on its chosen month',()=>{
+ assert.match(source,/const chosen=\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\//);
+ assert.match(source,/React\.useEffect\(\(\)=>\{/);
+ assert.match(source,/setMonth\(new Date\(date\.getFullYear\(\),date\.getMonth\(\),1\)\)/);
+ assert.match(source,/\},\[chosen\]\)/);
+});
