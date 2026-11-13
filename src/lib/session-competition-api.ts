@@ -35,7 +35,8 @@ export async function recordCompetitionSessionResult(communityId:number,sessionI
 
 /** Read-only official session score. Backend restricts to confirmed attendees or organizer. */
 export type SessionOfficialResult={
- sessionId:number;communityId:number;roundId:number;scoreA:number|null;scoreB:number|null
+ sessionId:number;communityId:number;roundId:number;scoreA:number|null;scoreB:number|null;
+ contributions:Array<{username:string;team:'A'|'B'|string|null;goals:number;assists:number}>
 };
 export async function sessionOfficialResult(sessionId:number,token:string|null){
  if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
