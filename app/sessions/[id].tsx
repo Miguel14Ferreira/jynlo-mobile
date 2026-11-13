@@ -693,7 +693,7 @@ export default function SessionScreen(){
       </View>:null}
       <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
-    <Button title="Atualizar estado da sessão" secondary onPress={()=>{void load();}} disabled={loading||busy}/>
+
     <Pressable onPress={()=>router.back()}><Text style={styles.back}>← Voltar</Text></Pressable>
   </Page>;
 }
