@@ -74,6 +74,23 @@ function chatAttachmentList(message){
  const item=safeAttachment(0,message.attachmentName,message.attachmentMimeType,message.attachmentSize);
  return item?[item]:[];
 }
+/** Validate exactly the files the server persisted before clearing the composer. */
+function confirmedChatAlbumReply(reply,requestedMimes){
+ if(!reply||!Number.isSafeInteger(reply.id)||reply.id<=0||
+  !Array.isArray(requestedMimes)||requestedMimes.length<1||requestedMimes.length>MAX_FILES||
+  !Array.isArray(reply.attachments)||reply.attachments.length!==requestedMimes.length)return false;
+ const seen=new Set();
+ for(const item of reply.attachments){
+  if(!item||!Number.isSafeInteger(item.index)||item.index<0||
+    item.index>=requestedMimes.length||seen.has(item.index)||
+    item.mimeType!==requestedMimes[item.index]||
+    typeof item.filename!=='string'||!item.filename||
+    !Number.isSafeInteger(item.size)||item.size<=0||
+    item.size>attachmentLimit(item.mimeType))return false;
+  seen.add(item.index);
+ }
+ return seen.size===requestedMimes.length;
+}
 // Prefetch a bounded number of recent image albums. The attachments are still
 // downloaded with per-account Authorization and deleted when chat loses focus.
 function recentPreviewMessageIds(messages,maxMessages=2){
@@ -82,4 +99,4 @@ function recentPreviewMessageIds(messages,maxMessages=2){
   chatAttachmentList(message).some(file=>typeof file.mime==='string'&&file.mime.startsWith('image/')));
  return eligible.slice(-maxMessages).map(message=>message.id);
 }
-module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,verifiedLocalChatMediaSize,chatAttachmentList,recentPreviewMessageIds};
+module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,measuredPhotoSize,verifiedLocalChatMediaSize,chatAttachmentList,recentPreviewMessageIds,confirmedChatAlbumReply};
