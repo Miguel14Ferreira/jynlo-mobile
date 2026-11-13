@@ -29,6 +29,9 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
   const initial=chosen?new Date(value+'T12:00:00'):new Date();
   return new Date(initial.getFullYear(),initial.getMonth(),1);
  });
+ React.useEffect(()=>{
+  if(chosen){const date=new Date(chosen+'T12:00:00');if(!Number.isNaN(date.getTime()))setMonth(new Date(date.getFullYear(),date.getMonth(),1));}
+ },[chosen]);
  const year=month.getFullYear(),index=month.getMonth();
  const firstWeekday=(new Date(year,index,1).getDay()+6)%7;
  const count=new Date(year,index+1,0).getDate();
