@@ -3,11 +3,18 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {spawnSync}=require('node:child_process');
 const path=require('node:path');
+const fs=require('node:fs');
+const os=require('node:os');
+const {after}=require('node:test');
+const tempDir=fs.mkdtempSync(path.join(os.tmpdir(),'jynlo-release-'));
+const firebaseFile=path.join(tempDir,'google-services.json');
+fs.writeFileSync(firebaseFile,JSON.stringify({client:[{client_info:{android_client_info:{package_name:'com.jynlo.app'}}}]}));
+after(()=>fs.rmSync(tempDir,{recursive:true,force:true}));
 const script=path.join(__dirname,'../scripts/verify-release.cjs');
-function run(url,profile='production'){
+function run(url,profile='production',firebase=firebaseFile){
   return spawnSync(process.execPath,[script],{
     encoding:'utf8',
-    env:{...process.env,EXPO_PUBLIC_JYNLO_API_URL:url,EAS_BUILD_PROFILE:profile,JYNLO_REQUIRE_REAL_API:'1'}
+    env:{...process.env,EXPO_PUBLIC_JYNLO_API_URL:url,EAS_BUILD_PROFILE:profile,JYNLO_REQUIRE_REAL_API:'1',GOOGLE_SERVICES_JSON:firebase}
   });
 }
 test('store builds require a real HTTPS API',()=>{
@@ -37,6 +44,19 @@ test('store builds refuse preview and staging backends',()=>{
     }
   }
   assert.equal(run('https://desporto24-preview-api.onrender.com','preview').status,0,'internal preview must still work');
+});
+test('store builds reject absent, invalid and wrong-package Firebase configs',()=>{
+  const wrongPackage=path.join(tempDir,'wrong.json');
+  const invalidJson=path.join(tempDir,'invalid.json');
+  fs.writeFileSync(wrongPackage,JSON.stringify({client:[{client_info:{android_client_info:{package_name:'com.someone.else'}}}]}));
+  fs.writeFileSync(invalidJson,'not JSON');
+  for(const profile of ['production','play-internal']){
+    for(const file of ['',wrongPackage,invalidJson,path.join(tempDir,'nonexistent.json')]){
+      const result=run('https://api.jynlo.com',profile,file);
+      assert.notEqual(result.status,0,`${profile}: ${file||'empty'}`);
+      assert.match(result.stderr,/BUILD BLOQUEADO/);
+    }
+  }
 });
 test('store build refuses diagnostic R8 override',()=>{
   const staticConfig=require('../app.json').expo;
