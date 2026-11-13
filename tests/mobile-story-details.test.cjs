@@ -13,15 +13,15 @@ test('Story details support any location text and up to five accepted-friend use
 });
 test('Story metadata is transmitted as backend multipart fields, not appended to caption',()=>{
  const api=read('src/lib/social-feed-api.ts');
- assert.match(api,/locationLabel:details\.locationLabel/);
- assert.match(api,/taggedUsernames:details\.taggedUsernames/);
- assert.match(api,/prepareStoryDetails\(details\.locationLabel,details\.taggedUsernames\)/);
+ assert.match(api,/locationLabel:safeDetails\.locationLabel/);
+ assert.match(api,/taggedUsernames:safeDetails\.taggedUsernames/);
+ assert.match(api,/prepareStoryDetails\(details\?\.locationLabel\|\|'',details\?\.taggedUsernames\|\|''\)/);
 });
 test('Story composer keeps location and tags if edited during upload and shows them after publishing',()=>{
  const home=read('app/(tabs)/index.tsx');
- assert.match(home,/const \[storyLocation,setStoryLocation\]/);
- assert.match(home,/const \[storyTags,setStoryTags\]/);
- assert.match(home,/storyLocationRef\.current===details\.locationLabel/);
+ assert.match(home,/const \[storyLocation,setStoryLocation\]=useState\(''\)/);
+ assert.match(home,/\[storyTags,setStoryTags\]=useState\(''\)/);
+ assert.match(home,/storyLocationRef\.current===locationDraft/);
  assert.match(home,/storyTagsRef\.current===tagsDraft/);
  assert.match(home,/locationLabel=\{story\.locationLabel\}/);
  assert.match(home,/taggedUsernames=\{story\.taggedUsernames\}/);

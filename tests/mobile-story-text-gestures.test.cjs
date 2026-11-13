@@ -15,7 +15,7 @@ test('Story draft remembers geometry and published preview uses server geometry'
  assert.match(home,/setStoryTextGeometry/);
  assert.match(home,/StoryTextPlacement caption=\{storyCaption\.trim\(\)\}/);
  assert.match(home,/StoryTextPlacement caption=\{story\.caption\.trim\(\)\}/);
- assert.match(home,/publishStory\(body,media,actor,username,null,geometry\)/);
+ assert.match(home,/publishStory\(body,media,actor,username,null,geometry,details\)/);
  assert.match(home,/currentGeometry\.rotation===geometry\.rotation/);
 });
 test('Story upload uses backend-supported textX/Y, rotation and zoom',()=>{
