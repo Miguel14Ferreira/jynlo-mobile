@@ -24,7 +24,7 @@ function emptySessionForm():CreateSessionForm{
 
 type CalendarProps={value:string;onSelect:(value:string)=>void;disabled?:boolean};
 function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
- const chosen=/^\\d{4}-\\d{2}-\\d{2}$/.test(value)?value:'';
+ const chosen=/^\d{4}-\d{2}-\d{2}$/.test(value)?value:'';
  const [month,setMonth]=useState(()=>{
   const initial=chosen?new Date(value+'T12:00:00'):new Date();
   return new Date(initial.getFullYear(),initial.getMonth(),1);
