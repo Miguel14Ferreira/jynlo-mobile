@@ -112,7 +112,7 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
        <Text style={styles.primaryText}>{busy?'A guardar…':'Guardar nome correto'}</Text>
      </Pressable>
    </View>:null}</>:null}
-   <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={cancel}><Text style={styles.buttonText}>Cancelar presença</Text></Pressable>
+   {receipt.status==='APPROVED'?<Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={cancel}><Text style={styles.buttonText}>Cancelar presença</Text></Pressable>:null}
   </>:!loading&&!error&&!statusUnknown?<><Text style={styles.hint}>Escolhe o teu nome na lista ou escreve um nome novo.</Text>
    {players.map(p=><Pressable key={p.id} accessibilityRole="radio" accessibilityState={{checked:playerId===p.id}}
     style={[styles.secondary,playerId===p.id&&styles.selected]} onPress={()=>{setPlayerId(p.id);setName('');}}>
