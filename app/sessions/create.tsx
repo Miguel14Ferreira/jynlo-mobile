@@ -22,6 +22,58 @@ function emptySessionForm():CreateSessionForm{
   maxParticipants:'10',price:'0',privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',communityId:null,registrationDay:'',registrationTime:'',recurrence:'NONE',recurrenceOccurrences:'4',recurrenceTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',venueId:null,seasonGame:false,communityRankingsEnabled:false,confirmActivateRankings:false,additionalWeeklySlots:[],communityShareIds:[]};
 }
 
+type CalendarProps={value:string;onSelect:(value:string)=>void;disabled?:boolean};
+function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
+ const chosen=/^\\d{4}-\\d{2}-\\d{2}$/.test(value)?value:'';
+ const [month,setMonth]=useState(()=>{
+  const initial=chosen?new Date(value+'T12:00:00'):new Date();
+  return new Date(initial.getFullYear(),initial.getMonth(),1);
+ });
+ const year=month.getFullYear(),index=month.getMonth();
+ const firstWeekday=(new Date(year,index,1).getDay()+6)%7;
+ const count=new Date(year,index+1,0).getDate();
+ const cells=Array.from({length:Math.ceil((firstWeekday+count)/7)*7},(_,i)=>{
+  const day=i-firstWeekday+1;
+  return day>=1&&day<=count?day:null;
+ });
+ const today=new Date();
+ const todayKey=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+ const label=month.toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
+ return <View style={{borderWidth:1,borderColor:C.muted,borderRadius:14,padding:12,gap:10,marginVertical:8}}>
+  <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Mês anterior" disabled={disabled}
+    onPress={()=>setMonth(new Date(year,index-1,1))} style={{padding:10}}>
+    <Text style={{color:C.text,fontSize:19}}>‹</Text>
+   </Pressable>
+   <Text style={{color:C.text,fontWeight:'700',textTransform:'capitalize'}}>{label}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Mês seguinte" disabled={disabled}
+    onPress={()=>setMonth(new Date(year,index+1,1))} style={{padding:10}}>
+    <Text style={{color:C.text,fontSize:19}}>›</Text>
+   </Pressable>
+  </View>
+  <View style={{flexDirection:'row'}}>
+   {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(day=><Text key={day} style={{width:'14.285%',textAlign:'center',color:C.muted,fontSize:12}}>{day}</Text>)}
+  </View>
+  <View style={{flexDirection:'row',flexWrap:'wrap'}}>
+   {cells.map((day,i)=>{
+    const key=day?[year,String(index+1).padStart(2,'0'),String(day).padStart(2,'0')].join('-'):'';
+    const selected=key===chosen;
+    const past=Boolean(key&&key<todayKey);
+    return <View key={i} style={{width:'14.285%',padding:2}}>
+     {day?<Pressable accessibilityRole="button" accessibilityLabel={key}
+       accessibilityState={{selected,disabled:disabled||past}}
+       disabled={disabled||past} onPress={()=>onSelect(key)}
+       style={{height:38,alignItems:'center',justifyContent:'center',borderRadius:9,
+        backgroundColor:selected?C.primary:'transparent',opacity:past?0.35:1}}>
+       <Text style={{color:selected?'#fff':C.text,fontWeight:selected?'700':'400'}}>{day}</Text>
+      </Pressable>:<View style={{height:38}}/>}
+    </View>;
+   })}
+  </View>
+  <Text style={{color:C.muted,fontSize:12}}>Escolhe uma data de hoje em diante. A hora é definida abaixo.</Text>
+ </View>;
+}
+
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
@@ -35,6 +87,7 @@ export default function CreateSessionScreen(){
  const [createdId,setCreatedId]=useState<number|null>(null);
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  const [step,setStep]=useState(0);
+ const [showDateCalendar,setShowDateCalendar]=useState(false);
  // Selection controls whether an existing group of players must be counted explicitly.
  const [hasExistingPlayers,setHasExistingPlayers]=useState(false);
  const stepLabels=['Modalidade','Local e data','Participação','Rever'];
@@ -454,8 +507,17 @@ export default function CreateSessionScreen(){
   </View>:null}
   </>:null}
   {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
-   {field('Data','day','AAAA-MM-DD','numeric')}{field('Hora local','time','HH:mm (24h)','numeric')}
-   <Text style={styles.note}>Escreve a data com oito dígitos e a hora com quatro (ex.: 20261208 e 1930). Os separadores são acrescentados automaticamente.</Text>
+   <Text style={styles.label}>Data da sessão</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário da sessão"
+    disabled={busy} onPress={()=>setShowDateCalendar(open=>!open)}
+    style={[styles.option,{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}]}>
+    <Text style={styles.optionText}>{form.day||'Escolher data no calendário'}</Text>
+    <Text style={styles.optionText}>{showDateCalendar?'Fechar calendário':'📅 Calendário'}</Text>
+   </Pressable>
+   {showDateCalendar?<SessionDateCalendar value={form.day} disabled={busy}
+    onSelect={date=>{patch('day',date);setShowDateCalendar(false);setError('');}}/>:null}
+   {field('Hora local','time','HH:mm (24h)','numeric')}
+   <Text style={styles.note}>Escolhe o dia no calendário e escreve a hora com quatro dígitos (ex.: 1930 → 19:30).</Text>
    <View style={styles.locationOptions}>
     <Text style={styles.heading}>Usar um recinto conhecido</Text>
     <Text style={styles.note}>Escolhe um recinto da Jynlo, partilha um link Google Maps ou confirma a localização onde estás.</Text>
