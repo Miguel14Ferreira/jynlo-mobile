@@ -27,7 +27,7 @@ function ParticipantAvatar({participant}:{participant:SessionParticipant}){
 export default function SessionScreen(){
   const {id:rawId,guest:rawGuest}=useLocalSearchParams<{id:string;guest?:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
-  const guestToken=typeof rawGuest==='string'&&/^[A-Za-z0-9_-]{8,180}$/.test(rawGuest)?rawGuest:null;
+  const guestToken=typeof rawGuest==='string'&&/^[A-Za-z0-9_-]{43}$/.test(rawGuest)?rawGuest:null;
   const [preview,setPreview]=useState<PublicSessionPreview|null>(null);
   const detailRequestGeneration=useRef(0);
   const operationInFlight=useRef(false);
