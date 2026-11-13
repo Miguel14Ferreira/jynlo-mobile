@@ -10,7 +10,7 @@ test('Story editor opens the native device camera and retains media safety limit
  const camera=read('src/components/StoryCameraCapture.tsx');
  assert.match(camera,/ImagePicker\.launchCameraAsync/);
  assert.match(camera,/videoMaxDuration:30/);
- assert.match(camera,/validateMedia\(mime,size,true\)/);
+ assert.match(camera,/size>0\?validateMedia\(mime,size,true\):null/);
  assert.match(camera,/onCaptured\(\{uri:asset\.uri/);
  assert.match(camera,/onPickGallery/);
  assert.match(camera,/alive\.current=true/);
@@ -23,7 +23,7 @@ test('Story uploads retain the legacy one-file contract while posts use albums',
  assert.match(api,/sendMedia\('\/api\/stories',[\s\S]*?\[file\],token!\)/);
  assert.match(api,/sendMedia\('\/api\/feed\/posts',[\s\S]*?files,token!\)/);
  assert.match(feed,/allowsMultipleSelection:true/);
- assert.match(feed,/setComposerMedia\(next\)/);
+ assert.match(feed,/composerMediaRef.current=next;setComposerMedia\(next\)/);
  assert.match(feed,/postMediaItems\(item\)/);
 });
 test('Microphone and camera privacy notices mention recording',()=>{
