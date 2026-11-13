@@ -3,7 +3,7 @@ import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleShee
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
-import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,editPost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 import {postMediaItems} from '../../../src/lib/post-album.cjs';

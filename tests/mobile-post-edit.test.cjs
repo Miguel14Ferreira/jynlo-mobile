@@ -14,7 +14,7 @@ test('post editor uses authenticated backend edit endpoint without touching medi
 test('post editing is exposed only to author, in feed and full post details',()=>{
  const feed=read('app/(tabs)/index.tsx');
  const detail=read('app/posts/[postId]/index.tsx');
- assert.match(feed,/if\(own&&item\.type==='POST'&&item\.postId\)/);
+ assert.match(feed,/postMenuItem\.authorUsername\.toLowerCase\(\)===auth\.username\.toLowerCase\(\)/);
  assert.match(feed,/Editar texto e localização/);
  assert.match(feed,/<PostEditSheet post=\{identityMatches\?editingPost:null\}/);
  assert.match(detail,/accessibilityLabel="Editar texto e localização da publicação"/);
