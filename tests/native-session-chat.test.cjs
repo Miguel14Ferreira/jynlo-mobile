@@ -19,7 +19,7 @@ test('native session chat only appears for confirmed participants before kickoff
  assert.match(detail,/Date\.parse\(s\.gameDate\)>Date\.now\(\)/);
  assert.match(detail,/pathname:'\/sessions\/\[id\]\/chat'/);
  assert.match(screen,/sessionChatHistory\(id,auth\.token\)/);
- assert.match(screen,/postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
+ assert.match(screen,/const confirmed=await postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
  assert.match(screen,/markSessionChatRead\(id,latest,auth\.token\)/);
  assert.match(screen,/Consulta o histórico antes de voltares a tentar/);
  assert.match(routes,/name="sessions\/\[id\]\/chat"/);
@@ -55,8 +55,8 @@ test('session chat photo upload uses private scoped endpoint with confirmation',
  assert.match(api,/method:'POST'/);
  assert.match(api,/credentials:'omit'/);
  assert.match(screen,/chatPhotoAvailable\('session',id,auth\.token\)/);
- assert.match(screen,/sendChatPhoto\('session',id,auth\.token,photo,reply\?\.id\)/);
- assert.match(screen,/Confirmar envio da fotografia/);
+ assert.match(screen,/sendChatPhoto\('session',id,auth\.token,photo,originalReplyId\)/);
+ assert.match(screen,/title=\{uploading\?'A enviar…':'Enviar ficheiros'\}/);
  assert.match(screen,/photoReady/);
  assert.match(screen,/!closed/);
 });
