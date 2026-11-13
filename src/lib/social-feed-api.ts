@@ -74,6 +74,25 @@ export async function hideAttendanceActivity(sessionId:number,token:string|null)
  await request<void>(`/api/feed/attendance/${sessionId}/hide`,{token,method:'PUT'});
 }
 
+/** Edit only owned post text/location; attachments remain untouched on the server. */
+export async function editPost(postId:number,content:string,location:string,token:string|null,username:string|null):Promise<FeedItem>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(postId)||postId<=0)throw Error('Publicação inválida.');
+ const description=content.trim(),place=location.trim();
+ if(description.length>1000)throw Error('A descrição pode ter até 1000 caracteres.');
+ if(place.length>160)throw Error('A localização pode ter até 160 caracteres.');
+ if(DEMO_MODE){
+   const post=demoPosts.find(item=>item.postId===postId&&item.authorUsername.toLowerCase()===username!.toLowerCase());
+   if(!post)throw Error('Não podes editar esta publicação.');
+   if(!description&&!post.imageUrl&&!post.videoUrl&&!post.extraMedia?.length)
+     throw Error('Uma publicação sem fotografias ou vídeos precisa de texto.');
+   post.content=description;post.location=place||null;
+   return {...post};
+ }
+ return request<FeedItem>(`/api/feed/posts/${postId}`,{
+   token,method:'PUT',body:{content:description,location:place||null}
+ });
+}
 export async function deletePost(postId:number,token:string|null):Promise<void>{
  if(!Number.isSafeInteger(postId)||postId<=0||!token)throw Error('Publicação inválida.');
  if(DEMO_MODE){

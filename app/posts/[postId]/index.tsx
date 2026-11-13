@@ -3,10 +3,11 @@ import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleShee
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
-import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,editPost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 import {postMediaItems} from '../../../src/lib/post-album.cjs';
+import PostEditSheet from '../../../src/components/PostEditSheet';
 const T=MobileTheme.colors;
 const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
 
@@ -17,6 +18,7 @@ export default function NotificationPost(){
  const auth=useAuth(),router=useRouter();
  const {width:screenWidth}=useWindowDimensions();
  const [expandedImage,setExpandedImage]=useState<string|null>(null);
+ const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
  const [post,setPost]=useState<FeedItem|null>(null);
  const [comments,setComments]=useState<SocialComment[]>([]);
  const [draft,setDraft]=useState('');
@@ -37,11 +39,11 @@ export default function NotificationPost(){
  },[id,valid,auth.token]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  setPost(null);setComments([]);setExpandedImage(null);setDraft('');setError('');setLoading(true);setCommentsLoading(true);
+  setPost(null);setComments([]);setExpandedImage(null);setEditingPost(null);setDraft('');setError('');setLoading(true);setCommentsLoading(true);
   writing.current=false;setBusy(false);
   if(!valid||!auth.token){setLoading(false);setCommentsLoading(false);return()=>{generation.current++;};}
   void refresh(version).finally(()=>{if(version===generation.current)setLoading(false);});
-  return()=>{generation.current++;setPost(null);setComments([]);setExpandedImage(null);};
+  return()=>{generation.current++;setPost(null);setComments([]);setExpandedImage(null);setEditingPost(null);};
  },[refresh,valid,auth.token]));
  async function like(){
   if(!post||!auth.token||!auth.username||writing.current||!valid)return;
@@ -136,6 +138,11 @@ export default function NotificationPost(){
      <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" onPress={()=>{void sharePost();}} style={styles.action}><Text style={styles.link}>↗ Partilhar</Text></Pressable>
     </View>
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
+     <Pressable accessibilityRole="button" accessibilityLabel="Editar texto e localização da publicação" disabled={busy} onPress={()=>setEditingPost(post)} style={styles.privacy}>
+      <Text style={styles.link}>Editar publicação</Text>
+      <Text style={styles.note}>Corrige a descrição ou localização sem perder os gostos e comentários.</Text>
+     </Pressable>:null}
+    {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?'Mostrar pessoas que gostaram':'Ocultar pessoas que gostaram'} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
       <Text style={styles.link}>{post.hideLikers?'Mostrar quem gostou':'Ocultar quem gostou'}</Text>
       <Text style={styles.note}>Só tu podes alterar esta preferência.</Text>
@@ -160,6 +167,8 @@ export default function NotificationPost(){
     </Pressable>
    </View>:null}
   </ScrollView>
+  <PostEditSheet post={editingPost&&post&&editingPost.postId===post.postId?editingPost:null} token={auth.token} username={auth.username}
+   onClose={()=>setEditingPost(null)} onSaved={updated=>{setPost(current=>current?.postId===updated.postId?updated:current);setEditingPost(null);}}/>
   <Modal visible={!!expandedImage&&!!post&&!!auth.token} transparent animationType="fade" onRequestClose={()=>setExpandedImage(null)}>
    <View style={styles.photoOverlay}>
     {expandedImage?<Image source={{uri:expandedImage}} resizeMode="contain" style={styles.fullImage}/>:null}

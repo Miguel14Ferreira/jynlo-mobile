@@ -7,13 +7,14 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,editPost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
+import PostEditSheet from '../../src/components/PostEditSheet';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
@@ -215,6 +216,7 @@ export default function JynloFeedHome(){
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
+  const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
@@ -232,7 +234,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
-      setPosts([]);setStories([]);setOwnStories([]);
+      setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
@@ -358,6 +360,7 @@ export default function JynloFeedHome(){
       }});
     }
     if(own&&item.type==='POST'&&item.postId){
+      actions.push({text:'Editar texto e localização',onPress:()=>setEditingPost(item)});
       actions.push({text:'Eliminar a minha publicação',style:'destructive',onPress:()=>{
         Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
           {text:'Cancelar',style:'cancel'},
@@ -609,6 +612,12 @@ export default function JynloFeedHome(){
       </View>
     </Modal>
 
+    <PostEditSheet post={identityMatches?editingPost:null} token={auth.token} username={auth.username}
+      onClose={()=>setEditingPost(null)} onSaved={updated=>{
+        if(feedIdentity.current!==currentFeedIdentity)return;
+        setPosts(current=>current.map(item=>item.postId===updated.postId?updated:item));
+        setEditingPost(null);
+      }}/>
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
         <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
