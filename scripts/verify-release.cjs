@@ -1,6 +1,7 @@
 'use strict';
 /** Never ship a demo or private-network API endpoint to Play Store. */
 const {isIP}=require('node:net');
+const fs=require('node:fs');
 const httpUrl=(process.env.EXPO_PUBLIC_JYNLO_API_URL||'').trim();
 const storeRelease=process.argv.includes('--production') || ['production','play-internal'].includes(process.env.EAS_BUILD_PROFILE);
 const release=storeRelease || process.env.JYNLO_REQUIRE_REAL_API==='1';
@@ -31,6 +32,17 @@ function checkProductionEnvironment(){
      /^10\./.test(host) || /^192\.168\./.test(host) ||
      /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^169\.254\./.test(host)) {
     throw new Error('BUILD BLOQUEADO: endpoint de demonstração/inválido ou rede privada.');
+  }
+  if(storeRelease){
+    const firebaseFile=(process.env.GOOGLE_SERVICES_JSON||'').trim();
+    if(!firebaseFile || !fs.existsSync(firebaseFile))
+      throw new Error('BUILD BLOQUEADO: falta GOOGLE_SERVICES_JSON (ficheiro Firebase Android) na configuração EAS de loja.');
+    let firebase;
+    try { firebase=JSON.parse(fs.readFileSync(firebaseFile,'utf8')); }
+    catch { throw new Error('BUILD BLOQUEADO: GOOGLE_SERVICES_JSON não contém JSON Firebase válido.'); }
+    if(!Array.isArray(firebase.client)||!firebase.client.some(client=>
+      client?.client_info?.android_client_info?.package_name==='com.jynlo.app'))
+      throw new Error('BUILD BLOQUEADO: o ficheiro Firebase não está configurado para com.jynlo.app.');
   }
   return {ok:true,mode:'api'};
 }
