@@ -8,7 +8,7 @@ const picker=source.slice(source.indexOf('async function choosePhoto('),source.i
 const upload=source.slice(source.indexOf('async function uploadPhoto()'),source.indexOf('const recentPhotoIds='));
 test('community sender and uploader keep server writes isolated to originating account',()=>{
  assert.match(send,/const version=generation\.current,token=auth\.token,username=auth\.username/);
- assert.match(send,/await sendCommunityMessage\(id,message,token,username,originalReplyId\)/);
+ assert.match(send,/const confirmed=await sendCommunityMessage\(id,message,token,username,originalReplyId\)/);
  assert.match(upload,/sendChatPhoto\('community',id,token,selectedPhoto,originalReplyId\)/);
  assert.match(upload,/sendChatPhotoAlbum\(/);
  for(const action of [send,upload]){

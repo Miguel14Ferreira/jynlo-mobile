@@ -1,6 +1,7 @@
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../../src/lib/chat-attachments-core.cjs';
+import {confirmedCommunityChatSend} from '../../../src/lib/chat-send-receipt.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
@@ -138,7 +139,9 @@ export default function CommunityChatScreen(){
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
-   await sendCommunityMessage(id,message,token,username,originalReplyId);
+   const confirmed=await sendCommunityMessage(id,message,token,username,originalReplyId);
+   if(!confirmedCommunityChatSend(confirmed,id,username,message,originalReplyId))
+    throw Error('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.');
    if(version!==generation.current)return;
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);

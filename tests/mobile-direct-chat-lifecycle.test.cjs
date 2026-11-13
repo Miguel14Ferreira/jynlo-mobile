@@ -24,8 +24,9 @@ test('direct chat refocus preserves an unsent album and caption for the same acc
 test('direct messages keep a single-flight lock and never erase later edits',()=>{
  assert.match(send,/pendingWrites\.current\.has\(identity\)/);
  assert.match(send,/pendingWrites\.current\.set\(identity,'text'\)/);
- assert.match(send,/if\(originalReply\)await sendDirectChatReply\(/);
- assert.match(send,/else await sendDirectChat\(/);
+ assert.match(send,/await sendDirectChatReply\(/);
+ assert.match(send,/await sendDirectChat\(/);
+ assert.match(send,/confirmedDirectChatSend\(/);
  assert.match(send,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
  assert.match(send,/setDraft\(current=>current===originalDraft\?'':current\)/);
  assert.match(send,/pendingWrites\.current\.delete\(identity\)/);

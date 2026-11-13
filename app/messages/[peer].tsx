@@ -1,6 +1,7 @@
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
+import {confirmedDirectChatSend} from '../../src/lib/chat-send-receipt.cjs';
 import React,{useCallback,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
@@ -325,8 +326,11 @@ export default function DirectConversation(){
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
-   if(originalReply)await sendDirectChatReply(peer,submittedText,auth.token,originalReply.id);
-   else await sendDirectChat(peer,submittedText,auth.token);
+   const confirmed=originalReply
+    ?await sendDirectChatReply(peer,submittedText,auth.token,originalReply.id)
+    :await sendDirectChat(peer,submittedText,auth.token);
+   if(!confirmedDirectChatSend(confirmed,auth.username||'',peer,submittedText,originalReply?.id))
+    throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current||conversation.current!==identity)return;
    // Preserve anything typed while the previous message was being sent.
    setDraft(current=>current===originalDraft?'':current);
