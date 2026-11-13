@@ -42,7 +42,7 @@ test('post editor exposes reorder controls, preserving chosen cover for upload',
  assert.match(s,/moveAlbumItem\(prev,prev.findIndex/);
  assert.match(s,/Mover ficheiro .* para trás/);
  assert.match(s,/Mover ficheiro .* para a frente/);
- assert.match(s,/setComposerMedia\(prev=>prev.filter/);
+ assert.match(s,/changeComposerMedia\(prev=>prev.filter/);
 });
 
 test('native album selection merges and validates the full draft atomically',()=>{
