@@ -4,6 +4,7 @@ import {feed as demoFeedSeed} from './parity-api';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
+import {confirmedTextPostReceipt} from './social-text-post-receipt.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
 const demoPosts:FeedItem[]=[];
@@ -183,7 +184,10 @@ export async function addPostComment(postId:number,content:string,token:string|n
 export async function createTextPost(content:string,token:string|null,username:string|null,location=''):Promise<FeedItem>{
   requireViewer(token,username);const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
   if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
-  return request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null}});
+  const result=await request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null}});
+  if(!confirmedTextPostReceipt(result,username!,body,location))
+    throw Error('O servidor respondeu, mas não confirmou a publicação de texto. Verifica o perfil antes de repetir.');
+  return result;
 }
 async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string):Promise<any>{
  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
