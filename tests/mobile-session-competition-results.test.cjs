@@ -73,7 +73,7 @@ test('absent and late-cancelled players cannot be inserted into a quick result',
 });
 test('community administrators also receive the official result entry for played ranked sessions',()=>{
  const community=read('app/communities/[id].tsx');
- assert.match(community,/owner&&community.rankingsEnabled&&s.status!=='CANCELLED'/);
+ assert.match(community,/owner&&isMember\(community\)&&community.rankingsEnabled&&s.status!=='CANCELLED'/);
  assert.match(community,/Date.parse\(s.gameDate\)<Date.now\(\)/);
  assert.match(community,/title="Registar resultado do jogo"/);
  assert.match(community,/pathname:'\/sessions\/\[id\]\/result'/);
