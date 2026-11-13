@@ -1,0 +1,139 @@
+import React,{useCallback,useRef,useState} from 'react';
+import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
+import {useAuth} from '../../../src/lib/auth';
+import {C} from '../../../src/lib/theme';
+import {competitionSessionRoster,recordedCompetitionSessionIds,recordCompetitionSessionResult} from '../../../src/lib/session-competition-api';
+import {buildSessionCompetitionResult,editableCompetitionRoster} from '../../../src/lib/session-competition-result.cjs';
+import type {CompetitionOutcome,CompetitionRosterEntry,CompetitionTeam} from '../../../src/lib/session-competition-result.cjs';
+
+export default function SessionCompetitionResultScreen(){
+ const params=useLocalSearchParams<{id:string;communityId?:string}>();
+ const sessionId=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
+ const communityId=typeof params.communityId==='string'&&/^[1-9]\d*$/.test(params.communityId)?Number(params.communityId):NaN;
+ const valid=Number.isSafeInteger(sessionId)&&Number.isSafeInteger(communityId);
+ const auth=useAuth(),router=useRouter();
+ const [roster,setRoster]=useState<CompetitionRosterEntry[]>([]);
+ const [outcome,setOutcome]=useState<CompetitionOutcome|null>(null);
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+ const [recorded,setRecorded]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ const generation=useRef(0),writing=useRef(false);
+ const identity=(auth.username||'')+'|'+(auth.token||'')+'|'+sessionId+'|'+communityId;
+ const identityRef=useRef(identity);
+ identityRef.current=identity;
+ const [loadedIdentity,setLoadedIdentity]=useState('');
+ const confirmedIdentity=loadedIdentity===identity;
+ const load=useCallback(async()=>{
+  const version=++generation.current,actor=identity;
+  setRoster([]);setOutcome(null);setRecorded(false);setError('');setSuccess('');setLoadedIdentity('');
+  if(!valid||!auth.token||!auth.username){setLoading(false);return;}
+  setLoading(true);
+  try{
+   const [players,recordedIds]=await Promise.all([
+    competitionSessionRoster(communityId,sessionId,auth.token),
+    recordedCompetitionSessionIds(communityId,auth.token)
+   ]);
+   if(version!==generation.current||actor!==identityRef.current)return;
+   if(!Array.isArray(recordedIds))throw Error('O servidor não confirmou os resultados anteriores.');
+   const already=recordedIds.includes(sessionId);
+   setRecorded(already);
+   if(!already)setRoster(editableCompetitionRoster(players));
+   setLoadedIdentity(actor);
+  }catch(e){
+   if(version===generation.current&&actor===identityRef.current)
+    setError(e instanceof Error?e.message:'Não foi possível consultar os dados desta comunidade.');
+  }finally{if(version===generation.current&&actor===identityRef.current)setLoading(false);}
+ },[communityId,sessionId,auth.token,auth.username,valid,identity]);
+ useFocusEffect(useCallback(()=>{
+  void load();
+  return()=>{generation.current++;setRoster([]);setLoadedIdentity('');};
+ },[load]));
+ const change=(id:number,patch:Partial<CompetitionRosterEntry>)=>{
+  if(busy||writing.current||!confirmedIdentity||recorded)return;
+  setRoster(current=>current.map(p=>p.id===id?{...p,...patch}:p));
+  setError('');
+ };
+ function confirm(){
+  if(!confirmedIdentity||recorded||busy||writing.current||!auth.token||!valid)return;
+  let payload:ReturnType<typeof buildSessionCompetitionResult>;
+  try{payload=buildSessionCompetitionResult(outcome,roster);}
+  catch(e){setError(e instanceof Error?e.message:'Confirma jogadores e equipas.');return;}
+  const version=generation.current,actor=identity,token=auth.token;
+  const label=outcome==='DRAW'?'Empate':outcome==='A'?'Equipa A venceu':'Equipa B venceu';
+  Alert.alert('Registar resultado oficial?',label+' · '+payload.players.length+' jogadores. Esta ação cria uma jornada na classificação e não pode ser repetida.',[
+   {text:'Voltar',style:'cancel'},
+   {text:'Registar resultado',onPress:()=>{
+    if(writing.current||version!==generation.current||actor!==identityRef.current)return;
+    writing.current=true;setBusy(true);setError('');
+    void recordCompetitionSessionResult(communityId,sessionId,token,payload).then(reply=>{
+     if(version!==generation.current||actor!==identityRef.current)return;
+     if(!Number.isSafeInteger(reply?.id)||reply.id<=0)
+      throw Error('O servidor não confirmou a jornada. Verifica as classificações antes de repetir.');
+     setRecorded(true);setRoster([]);setSuccess('Jornada registada. O resultado já pode contar para a classificação.');
+    }).catch(e=>{
+     if(version===generation.current&&actor===identityRef.current)
+      setError((e instanceof Error?e.message:'Não foi possível confirmar o registo.')+
+       ' Consulta as jornadas antes de repetir, para evitar resultados duplicados.');
+    }).finally(()=>{writing.current=false;if(version===generation.current&&actor===identityRef.current)setBusy(false);});
+   }}
+  ]);
+ }
+ if(!valid)return <Page><Message tone="error">Sessão ou comunidade inválida.</Message></Page>;
+ return <Page>
+  <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
+  <Text style={styles.title}>Resultado da sessão</Text>
+  <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
+  <Message>Este formulário não regista golos, marcadores ou assistências. Esses dados não são calculados automaticamente.</Message>
+  {loading?<Loader/>:null}
+  {error?<Message tone="error">{error}</Message>:null}
+  {error&&!busy&&auth.token?<Button secondary title="Verificar novamente" onPress={()=>{void load();}}/>:null}
+  {success?<Message>{success}</Message>:null}
+  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+  {confirmedIdentity&&recorded?<View style={styles.panel}>
+    <Text style={styles.sectionTitle}>Resultado já registado</Text>
+    <Text style={styles.hint}>Esta sessão já originou uma jornada. Consulta as classificações da comunidade; não vamos criar uma segunda jornada.</Text>
+    <Button secondary title="Abrir comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(communityId)}})}/>
+   </View>:null}
+  {confirmedIdentity&&!recorded&&!loading?<View style={styles.panel}>
+    <Text style={styles.sectionTitle}>Quem venceu?</Text>
+    <View style={styles.choiceRow}>
+     {([{id:'A',label:'Equipa A'},{id:'DRAW',label:'Empate'},{id:'B',label:'Equipa B'}] as const).map(option=>
+      <Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected:outcome===option.id,disabled:busy}}
+       disabled={busy} onPress={()=>setOutcome(option.id)}
+       style={[styles.choice,outcome===option.id&&styles.choiceActive]}>
+       <Text style={styles.choiceText}>{option.label}</Text>
+      </Pressable>)}
+    </View>
+    <Text style={styles.sectionTitle}>Jogadores que participaram</Text>
+    <Text style={styles.hint}>Confirma quem jogou e em que equipa. Só serão incluídos jogadores inscritos que o servidor devolveu.</Text>
+    {roster.length===0?<Message>Sem jogadores elegíveis. Atualiza a sessão e confirma as inscrições antes de registar o resultado.</Message>:null}
+    {roster.map(player=><View key={player.id} style={styles.player}>
+     <Pressable accessibilityRole="checkbox" accessibilityState={{checked:player.selected,disabled:busy}}
+      disabled={busy} onPress={()=>change(player.id,{selected:!player.selected})} style={styles.checkbox}>
+      <Text style={styles.playerName}>{player.selected?'☑':'☐'} {player.username}</Text>
+     </Pressable>
+     {(['A','B'] as CompetitionTeam[]).map(team=><Pressable key={team}
+      accessibilityRole="button" accessibilityLabel={'Atribuir '+player.username+' à equipa '+team}
+      accessibilityState={{selected:player.team===team,disabled:busy}} disabled={busy}
+      onPress={()=>change(player.id,{team,selected:true})}
+      style={[styles.teamButton,player.team===team&&player.selected&&styles.teamSelected]}>
+      <Text style={styles.teamText}>{team}</Text>
+     </Pressable>)}
+    </View>)}
+    <Button title={busy?'A registar…':'Registar resultado nas classificações'} disabled={busy||!roster.length||!outcome} onPress={confirm}/>
+   </View>:null}
+  <Button secondary title="Voltar à sessão" onPress={()=>router.back()}/>
+ </Page>;
+}
+const styles=StyleSheet.create({
+ title:{fontSize:26,color:C.white,fontWeight:'900'},hint:{fontSize:12,color:C.muted,lineHeight:19},
+ panel:{padding:16,borderRadius:18,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,gap:14},
+ sectionTitle:{fontSize:17,fontWeight:'900',color:C.white},
+ choiceRow:{flexDirection:'row',gap:7},choice:{flex:1,minHeight:48,padding:8,justifyContent:'center',alignItems:'center',borderRadius:12,borderWidth:1,borderColor:C.border},
+ choiceActive:{borderColor:C.mint,backgroundColor:C.surface2},choiceText:{fontSize:12,color:C.white,fontWeight:'800'},
+ player:{flexDirection:'row',gap:9,alignItems:'center',minHeight:48,paddingVertical:6,borderBottomWidth:1,borderBottomColor:C.border},
+ checkbox:{flex:1,minHeight:44,justifyContent:'center'},playerName:{color:C.white,fontSize:13,fontWeight:'700'},
+ teamButton:{width:42,minHeight:42,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:10},
+ teamSelected:{borderColor:C.mint,backgroundColor:C.surface2},teamText:{color:C.white,fontSize:13,fontWeight:'900'}
+});
