@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
@@ -15,6 +15,8 @@ export default function NotificationPost(){
  const id=typeof postId==='string'&&/^[1-9][0-9]*$/.test(postId)?Number(postId):NaN;
  const valid=Number.isSafeInteger(id)&&id>0;
  const auth=useAuth(),router=useRouter();
+ const {width:screenWidth}=useWindowDimensions();
+ const [expandedImage,setExpandedImage]=useState<string|null>(null);
  const [post,setPost]=useState<FeedItem|null>(null);
  const [comments,setComments]=useState<SocialComment[]>([]);
  const [draft,setDraft]=useState('');
@@ -35,11 +37,11 @@ export default function NotificationPost(){
  },[id,valid,auth.token]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  setPost(null);setComments([]);setDraft('');setError('');setLoading(true);setCommentsLoading(true);
+  setPost(null);setComments([]);setExpandedImage(null);setDraft('');setError('');setLoading(true);setCommentsLoading(true);
   writing.current=false;setBusy(false);
   if(!valid||!auth.token){setLoading(false);setCommentsLoading(false);return()=>{generation.current++;};}
   void refresh(version).finally(()=>{if(version===generation.current)setLoading(false);});
-  return()=>{generation.current++;setPost(null);setComments([]);};
+  return()=>{generation.current++;setPost(null);setComments([]);setExpandedImage(null);};
  },[refresh,valid,auth.token]));
  async function like(){
   if(!post||!auth.token||!auth.username||writing.current||!valid)return;
@@ -117,10 +119,10 @@ export default function NotificationPost(){
     </Pressable>
     <Text style={styles.body}>{post.content||''}</Text>
     {album.length?<View style={{gap:8}}>
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} contentContainerStyle={{gap:8}}>
-        {album.map((media,index)=>{const uri=resolveJynloMedia(media.url);return uri?<View key={index} style={{width:290,gap:5}}>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
+        {album.map((media,index)=>{const uri=resolveJynloMedia(media.url);return uri?<View key={index} style={{width:Math.max(220,screenWidth-64),gap:5}}>
           {media.type==='video'?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={uri}/></Suspense>:
-            <Image source={{uri}} style={styles.image} resizeMode="contain"/>}
+            <Pressable accessibilityRole="button" accessibilityLabel={'Ampliar fotografia '+(index+1)+' de '+album.length} onPress={()=>setExpandedImage(uri)}><Image source={{uri}} style={styles.image} resizeMode="contain"/></Pressable>}
           {album.length>1?<Text style={styles.note}>{index+1} / {album.length}</Text>:null}
         </View>:null;})}
       </ScrollView>
@@ -157,10 +159,17 @@ export default function NotificationPost(){
     </Pressable>
    </View>:null}
   </ScrollView>
+  <Modal visible={!!expandedImage&&!!post&&!!auth.token} transparent animationType="fade" onRequestClose={()=>setExpandedImage(null)}>
+   <View style={styles.photoOverlay}>
+    {expandedImage?<Image source={{uri:expandedImage}} resizeMode="contain" style={styles.fullImage}/>:null}
+    <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada" onPress={()=>setExpandedImage(null)} style={styles.closePhoto}><Text style={styles.closePhotoText}>✕ Fechar</Text></Pressable>
+   </View>
+  </Modal>
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:T.background},content:{padding:16,gap:14},
+ photoOverlay:{flex:1,backgroundColor:'#020A10',padding:12,justifyContent:'center',gap:12},fullImage:{width:'100%',height:'85%'},closePhoto:{alignSelf:'center',minHeight:48,justifyContent:'center',paddingHorizontal:22,backgroundColor:T.surface,borderWidth:1,borderColor:T.border,borderRadius:14},closePhotoText:{color:T.text,fontWeight:'800'},
  post:{padding:16,gap:12,backgroundColor:T.surface,borderWidth:1,borderColor:T.border,borderRadius:MobileTheme.radius.xl},
  author:{color:T.text,fontSize:15,fontWeight:'900'},handle:{color:T.muted,fontSize:12},body:{color:T.text,fontSize:14,lineHeight:21},
  image:{width:'100%',height:260,backgroundColor:T.raised,borderRadius:MobileTheme.radius.lg},
