@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Linking,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
@@ -471,6 +471,10 @@ export default function SessionScreen(){
      {guestToken?<View style={styles.guestInvitePanel}>
        <Text style={styles.panelHeading}>Convite de participação recebido</Text>
        <Text style={styles.hint}>O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.</Text>
+       <Button secondary title="Continuar no browser" onPress={()=>{
+         const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
+         void Linking.openURL(url).catch(()=>Alert.alert('Convite','Não foi possível abrir a ligação no browser.'));
+       }}/>
        <Button secondary title="Partilhar ligação de confirmação" onPress={()=>{
          const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
          void Share.share({message:url,url}).catch(()=>Alert.alert('Convite','Não foi possível partilhar a ligação.'));
