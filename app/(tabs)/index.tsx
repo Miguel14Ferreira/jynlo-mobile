@@ -7,11 +7,12 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 import {useAuth} from '../../src/lib/auth';
 import {DEMO_MODE} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
+import {sharedPostLink} from '../../src/lib/shared-post-link.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import PostEditSheet from '../../src/components/PostEditSheet';
@@ -259,6 +260,9 @@ export default function JynloFeedHome(){
   const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
   const [postMenuItem,setPostMenuItem]=useState<FeedItem|null>(null);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
+  const [editingComment,setEditingComment]=useState<number|null>(null),[editCommentDraft,setEditCommentDraft]=useState('');
+  const [commentWriteBusy,setCommentWriteBusy]=useState<number|null>(null);
+  const commentWriteLock=useRef(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
@@ -282,7 +286,7 @@ export default function JynloFeedHome(){
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
-      setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
+      setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);
     }
     setLoading(true);setError('');
     const fetches=await Promise.allSettled([
@@ -567,11 +571,11 @@ export default function JynloFeedHome(){
     setBusyPost(item.postId);try{await likePost(item.postId,item.likedByMe,auth.token,auth.username);await load();}
     catch(e){Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}finally{setBusyPost(null);}
   }
-  function closeComments(){commentsRequest.current++;setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);}
+  function closeComments(){commentsRequest.current++;setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');}
   async function openComments(item:FeedItem){if(!item.postId)return;const id=item.postId;
     const requestId=++commentsRequest.current;
     if(expandedComments===id){closeComments();return;}
-    setExpandedComments(id);setComments([]);setCommentText('');setCommentsLoading(true);
+    setExpandedComments(id);setComments([]);setCommentText('');setEditingComment(null);setEditCommentDraft('');setCommentsLoading(true);
     try{
       const next=await postComments(id,auth.token);
       if(requestId===commentsRequest.current)setComments(next);
@@ -587,9 +591,35 @@ export default function JynloFeedHome(){
     catch(e){if(requestId===commentsRequest.current)Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');}finally{setBusyPost(null);}
   }
   async function sharePost(item:FeedItem){
-    const id=item.sessionId;
-    const link=Number.isSafeInteger(id)&&id!==null&&id>0?`https://d24sports.com/sessions/${id}`:'https://d24sports.com';
-    await Share.share({message:[item.content||`${item.sport||'Desporto'} em ${item.city||'Jynlo'}`,link].join('\n')});
+    try{await Share.share({message:[item.content?.trim()||'Publicação na Jynlo',sharedPostLink(item)].join('\n')});}
+    catch(e){Alert.alert('Partilhar publicação',e instanceof Error?e.message:'Não foi possível partilhar.');}
+  }
+  async function toggleCommentLikeInFeed(c:SocialComment){
+    if(!auth.token||!auth.username||expandedComments!==c.postId||commentWriteLock.current)return;
+    const account=feedIdentity.current,revision=commentsRequest.current;
+    commentWriteLock.current=true;setCommentWriteBusy(c.id);
+    try{
+      const updated=await togglePostCommentLike(c.postId,c,auth.token,auth.username);
+      if(account===feedIdentity.current&&revision===commentsRequest.current)
+        setComments(old=>old.map(item=>item.id===c.id?updated:item));
+    }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
+      Alert.alert('Gosto no comentário',e instanceof Error?e.message:'Não foi possível atualizar.');}
+    finally{commentWriteLock.current=false;if(account===feedIdentity.current)setCommentWriteBusy(null);}
+  }
+  async function saveCommentEditInFeed(c:SocialComment){
+    if(!auth.token||!auth.username||expandedComments!==c.postId||commentWriteLock.current||
+      c.authorUsername.toLowerCase()!==auth.username.toLowerCase()||!editCommentDraft.trim())return;
+    const account=feedIdentity.current,revision=commentsRequest.current,content=editCommentDraft.trim();
+    commentWriteLock.current=true;setCommentWriteBusy(c.id);
+    try{
+      const updated=await editPostComment(c.postId,c.id,content,auth.token,auth.username);
+      if(account===feedIdentity.current&&revision===commentsRequest.current){
+        setComments(old=>old.map(item=>item.id===c.id?updated:item));
+        setEditingComment(null);setEditCommentDraft('');
+      }
+    }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
+      Alert.alert('Editar comentário',e instanceof Error?e.message:'Não foi possível guardar.');}
+    finally{commentWriteLock.current=false;if(account===feedIdentity.current)setCommentWriteBusy(null);}
   }
   function SessionPostAttachment({item}:{item:FeedItem}){
     const id=item.sessionId;
@@ -611,7 +641,7 @@ export default function JynloFeedHome(){
       <View style={styles.postTop}><CircleAvatar name={item.authorDisplayName||item.authorUsername} image={item.authorProfilePicUrl} size={43}/>
         <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
           <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></Pressable>
-        <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable>
+        
         {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><Text style={{color:MUTED,fontSize:24}}>⋯</Text></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {item.type==='POST'&&item.location?.trim()?<Text style={styles.postMeta}>⌖ {item.location.trim()}</Text>:null}
@@ -624,7 +654,7 @@ export default function JynloFeedHome(){
       {item.type==='POST'?<><View style={styles.postActions}>
         <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postAction} accessibilityRole="button" accessibilityLabel={item.likedByMe?'Retirar gosto':'Gostar'}><Text style={[styles.actionIcon,item.likedByMe&&{color:'#FF7797'}]}>{item.likedByMe?'♥':'♡'}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou desta publicação"} disabled={Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())||!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(item.postId)}})} style={styles.postAction}><Text style={styles.actionCount}>{item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${item.likeCount} gostos`}</Text></Pressable>
         <Pressable onPress={()=>{void openComments(item);}} style={styles.postAction} accessibilityRole="button" accessibilityLabel="Abrir comentários"><Text style={styles.actionIcon}>♧</Text><Text style={styles.actionCount}>{item.commentCount}</Text></Pressable>
-        <Pressable onPress={()=>{void sharePost(item);}} style={styles.postAction}><Text style={styles.actionIcon}>↗</Text><Text style={styles.actionCount}>Partilhar</Text></Pressable>
+        <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" style={styles.postAction}><Text style={styles.actionIcon}>↗</Text><Text style={styles.actionCount}>Partilhar</Text></Pressable>
         {Number.isSafeInteger(item.postId)&&item.postId!>0?<Pressable accessibilityRole="button" accessibilityLabel="Abrir detalhe completo da publicação" onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})} style={styles.postDetailAction}><Text style={styles.postDetailLabel}>Ver publicação ›</Text></Pressable>:null}
       </View>{item.content?<Text style={styles.postBody}>{item.content}</Text>:null}</>:null}
       <SessionPostAttachment item={item}/>
@@ -676,7 +706,22 @@ export default function JynloFeedHome(){
             <ScrollView style={styles.commentsList} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.commentsListContent}>
               {comments.length?comments.map(c=><View key={c.id} style={styles.comment}>
                 <CircleAvatar name={c.authorUsername} image={c.authorProfilePicUrl} size={34}/>
-                <View style={{flex:1,gap:4}}><Text style={styles.commentAuthor}>@{c.authorUsername}</Text><Text style={styles.commentBody}>{c.content}</Text></View>
+                <View style={{flex:1,gap:5}}><Text style={styles.commentAuthor}>@{c.authorUsername}</Text>
+                  {editingComment===c.id?<><TextInput value={editCommentDraft} onChangeText={setEditCommentDraft}
+                    maxLength={2000} multiline style={styles.commentInput} placeholder="Editar comentário" placeholderTextColor={MUTED}/>
+                    <View style={{flexDirection:'row',gap:12}}>
+                     <Pressable disabled={commentWriteBusy!==null||!editCommentDraft.trim()} onPress={()=>void saveCommentEditInFeed(c)} accessibilityRole="button" accessibilityLabel="Guardar comentário"><Text style={styles.commentAuthor}>Guardar</Text></Pressable>
+                     <Pressable disabled={commentWriteBusy!==null} onPress={()=>{setEditingComment(null);setEditCommentDraft('');}} accessibilityRole="button"><Text style={styles.commentAuthor}>Cancelar</Text></Pressable>
+                    </View></>:<Text style={styles.commentBody}>{c.content}{c.editedAt?' · editado':''}</Text>}
+                  <View style={{flexDirection:'row',gap:16,alignItems:'center'}}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?'Retirar gosto do comentário':'Gostar do comentário'} disabled={!auth.token||commentWriteBusy!==null}
+                     onPress={()=>void toggleCommentLikeInFeed(c)}>
+                     <Text style={styles.commentAuthor}>{c.likedByMe?'♥':'♡'} {c.likeCount||0}</Text>
+                    </Pressable>
+                    {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
+                     <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={commentWriteBusy!==null}
+                      onPress={()=>{setEditingComment(c.id);setEditCommentDraft(c.content);}}><Text style={styles.commentAuthor}>Editar</Text></Pressable>:null}
+                  </View></View>
               </View>):<Text style={styles.commentsEmpty}>Ainda não há comentários. Inicia a conversa!</Text>}
             </ScrollView>}
           <View style={styles.commentCompose}><TextInput value={commentText} onChangeText={setCommentText} style={styles.commentInput} maxLength={2000} placeholder={auth.token?'Escrever comentário…':'Inicia sessão para comentar'} placeholderTextColor={MUTED} editable={!!auth.token&&busyPost===null} multiline/>

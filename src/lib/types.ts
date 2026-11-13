@@ -218,7 +218,7 @@ export interface SocialStory {
   textX?:number|null;textY?:number|null;textRotation?:number|null;textZoom?:number|null;
   locationLabel?:string|null;taggedUsernames?:string|null;
 }
-export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;}
+export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;editedAt?:string|null;likeCount?:number;likedByMe?:boolean;}
 export interface FeedUserSuggestion {username:string;displayName:string;photoUrl:string|null;sport?:string|null;city?:string|null;}
 export interface MobileMedia {uri:string;type:'image'|'video';mimeType:string;fileName:string;fileSize:number;}
 

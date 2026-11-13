@@ -3,10 +3,11 @@ import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleShee
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../../src/lib/auth';
-import {socialPostById,likePost,postComments,addPostComment,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {socialPostById,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,setPostLikerPrivacy,deletePost,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {FeedItem,SocialComment} from '../../../src/lib/types';
 import {MobileTheme} from '../../../src/lib/theme';
 import {postMediaItems} from '../../../src/lib/post-album.cjs';
+import {sharedPostLink} from '../../../src/lib/shared-post-link.cjs';
 import PostEditSheet from '../../../src/components/PostEditSheet';
 const T=MobileTheme.colors;
 const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
@@ -22,6 +23,7 @@ export default function NotificationPost(){
  const [post,setPost]=useState<FeedItem|null>(null);
  const [comments,setComments]=useState<SocialComment[]>([]);
  const [draft,setDraft]=useState('');
+ const [editingComment,setEditingComment]=useState<number|null>(null),[editDraft,setEditDraft]=useState('');
  const [loading,setLoading]=useState(true),[commentsLoading,setCommentsLoading]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),writing=useRef(false);
@@ -91,11 +93,27 @@ export default function NotificationPost(){
  }
  async function sharePost(){
   if(!post||!valid)return;
-  const media=resolveJynloMedia(post.imageUrl||post.videoUrl);
   const contents=[post.content?.trim()||'Publicação desportiva na Jynlo',
-   'Por @'+post.authorUsername,media?.startsWith('https://')?media:null].filter(Boolean).join('\n');
+   'Por @'+post.authorUsername,sharedPostLink(post)].filter(Boolean).join('\n');
   try{await Share.share({message:contents});}
   catch(e){Alert.alert('Partilhar publicação',e instanceof Error?e.message:'Não foi possível partilhar.');}
+ }
+ async function commentLike(c:SocialComment){
+  if(!auth.token||!auth.username||writing.current||!valid)return;
+  const version=generation.current;writing.current=true;setBusy(true);
+  try{const updated=await togglePostCommentLike(id,c,auth.token,auth.username);
+    if(version===generation.current)setComments(old=>old.map(item=>item.id===c.id?updated:item));
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível gostar do comentário.');}
+  finally{if(version===generation.current){writing.current=false;setBusy(false);}}
+ }
+ async function saveEditedComment(c:SocialComment){
+  if(!auth.token||!auth.username||writing.current||!valid||!editDraft.trim()||
+    c.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
+  const version=generation.current;writing.current=true;setBusy(true);
+  try{const updated=await editPostComment(id,c.id,editDraft,auth.token,auth.username);
+    if(version===generation.current){setComments(old=>old.map(item=>item.id===c.id?updated:item));setEditingComment(null);setEditDraft('');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível editar o comentário.');}
+  finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  async function comment(){
   if(!post||!auth.token||!auth.username||!draft.trim()||writing.current||!valid)return;
@@ -158,7 +176,19 @@ export default function NotificationPost(){
    {post&&!commentsLoading&&comments.length===0?<Text style={styles.note}>Ainda não há comentários.</Text>:null}
    {post?comments.map(c=><View key={c.id} style={styles.comment}>
     <Pressable accessibilityRole="button" accessibilityLabel={`Ver perfil de ${c.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:c.authorUsername}})}><Text style={styles.author}>@{c.authorUsername}</Text></Pressable>
-    <Text style={styles.body}>{c.content}</Text>
+    {editingComment===c.id?<><TextInput multiline maxLength={2000} value={editDraft} onChangeText={setEditDraft}
+      style={styles.input} placeholder="Editar comentário" placeholderTextColor={T.muted}/>
+      <View style={styles.actions}>
+       <Pressable accessibilityRole="button" disabled={busy||!editDraft.trim()} onPress={()=>void saveEditedComment(c)}><Text style={styles.link}>Guardar</Text></Pressable>
+       <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{setEditingComment(null);setEditDraft('');}}><Text style={styles.link}>Cancelar</Text></Pressable>
+      </View></>:<Text style={styles.body}>{c.content}{c.editedAt?' · editado':''}</Text>}
+    <View style={styles.actions}>
+     <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?'Retirar gosto do comentário':'Gostar do comentário'} disabled={busy||!auth.token}
+      onPress={()=>void commentLike(c)}><Text style={styles.link}>{c.likedByMe?'♥':'♡'} {c.likeCount||0}</Text></Pressable>
+     {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
+      <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={busy}
+       onPress={()=>{setEditingComment(c.id);setEditDraft(c.content);}}><Text style={styles.link}>Editar</Text></Pressable>:null}
+    </View>
    </View>):null}
    {post&&auth.token?<View style={styles.editor}>
     <TextInput multiline maxLength={2000} placeholder="Escrever comentário…" placeholderTextColor={T.muted} value={draft} onChangeText={setDraft} style={styles.input} accessibilityLabel="Escrever comentário"/>

@@ -182,6 +182,38 @@ export async function addPostComment(postId:number,content:string,token:string|n
     demoComments.set(postId,[...(demoComments.get(postId)||[]),item]);return item;}
   return request<SocialComment>(`/api/feed/posts/${postId}/comments`,{token,method:'POST',body:{content:message}});
 }
+/** Backend verifies comment ownership and responds with the edited object. */
+export async function editPostComment(postId:number,commentId:number,content:string,token:string|null,username:string|null):Promise<SocialComment>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(postId)||postId<=0||!Number.isSafeInteger(commentId)||commentId<=0)throw Error('Comentário inválido.');
+ const message=content.trim();
+ if(!message||message.length>2000)throw Error('Escreve um comentário até 2000 caracteres.');
+ if(DEMO_MODE){
+  const existing=demoComments.get(postId)||[];
+  const original=existing.find(x=>x.id===commentId&&x.authorUsername.toLowerCase()===username!.toLowerCase());
+  if(!original)throw Error('Só podes editar os teus comentários.');
+  const updated={...original,content:message,editedAt:nowIso()};
+  demoComments.set(postId,existing.map(x=>x.id===commentId?updated:x));
+  return updated;
+ }
+ return request<SocialComment>(`/api/feed/posts/${postId}/comments/${commentId}`,{
+  token,method:'PUT',body:{content:message}
+ });
+}
+/** Backend verifies access to the target comment and owns like counts. */
+export async function togglePostCommentLike(postId:number,comment:SocialComment,token:string|null,username:string|null):Promise<SocialComment>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(postId)||postId<=0||!Number.isSafeInteger(comment.id)||comment.id<=0)throw Error('Comentário inválido.');
+ if(DEMO_MODE){
+  const liked=!Boolean(comment.likedByMe);
+  const updated={...comment,likedByMe:liked,likeCount:Math.max(0,(comment.likeCount||0)+(liked?1:-1))};
+  demoComments.set(postId,(demoComments.get(postId)||[]).map(x=>x.id===comment.id?updated:x));
+  return updated;
+ }
+ return request<SocialComment>(`/api/feed/posts/${postId}/comments/${comment.id}/likes`,{
+  token,method:comment.likedByMe?'DELETE':'POST'
+ });
+}
 export async function createTextPost(content:string,token:string|null,username:string|null,location=''):Promise<FeedItem>{
   requireViewer(token,username);const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
   if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
