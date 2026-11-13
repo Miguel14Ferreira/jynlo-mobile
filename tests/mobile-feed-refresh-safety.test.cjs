@@ -15,7 +15,7 @@ test('feed clears cached social content on account changes',()=>{
  assert.match(source,/const identityChanged=feedIdentity\.current!==identity/);
  assert.match(source,/if\(identityChanged\)\{\s*feedIdentity\.current=identity/);
  assert.match(source,/setPosts\(\[\]\);setStories\(\[\]\);setOwnStories\(\[\]\)/);
- assert.match(source,/setStoryViewer\(null\);setStoryComposer\(false\)/);
+ assert.match(source,/setStoryViewer\(null\);storyComposerRevision\.current\+\+;storyComposerRef\.current=false;setStoryComposer\(false\)/);
  assert.match(source,/const visiblePosts=identityMatches&&hiddenReady\?posts.filter\(item=>/);
 });
 

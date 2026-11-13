@@ -48,13 +48,13 @@ test('Feed apresenta stories e criação de publicações num ecrã próprio',()
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
 });
 
-test('Story creation is offered in the rail and central create menu, without redundant feed buttons',()=>{
+test('Story creation remains in the feed rail without a duplicate central create tile',()=>{
  const feed=read('app/(tabs)/index.tsx');
  const tabs=read('app/(tabs)/_layout.tsx');
  assert.match(feed,/<SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"\/>/);
  assert.match(feed,/accessibilityLabel="Criar a minha story"/);
  assert.doesNotMatch(feed,/\+ Criar Story/);
- assert.match(tabs,/onPress=\{\(\)=>action\('story'\)\}/);
+ assert.doesNotMatch(tabs,/onPress=\{\(\)=>action\('story'\)\}/);
  assert.match(tabs,/onPress=\{\(\)=>action\('venue'\)\}/);
 });
 

@@ -33,9 +33,9 @@ test('mobile feed has viewer-local hide, undo and protected author actions',()=>
  assert.match(code,/Ocultar do meu feed/);
  assert.match(code,/Desfazer/);
  assert.match(code,/Ocultar esta atividade para todos/);
- assert.match(code,/Eliminar a minha publicação/);
- assert.match(code,/hideAttendanceActivity\(item\.sessionId,auth\.token\)/);
- assert.match(code,/deletePost\(item\.postId,auth\.token\)/);
+ assert.match(code,/accessibilityLabel="Eliminar publicação"/);
+ assert.match(code,/hideAttendanceActivity\(id,actor\)/);
+ assert.match(code,/deletePost\(id,actor\)/);
  assert.match(code,/posts\.filter\(item=>/);
  assert.match(api,/api\/feed\/attendance\/\$\{sessionId\}\/hide/);
  assert.match(store,/expo-secure-store/);
