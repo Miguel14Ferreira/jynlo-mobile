@@ -30,3 +30,16 @@ test('editing a post is keyboard-aware',()=>{
  assert.match(source,/KeyboardAvoidingView/);
  assert.match(source,/keyboardDismissMode="on-drag"/);
 });
+
+test('chat keyboard opening scrolls the focused composer back into view without affecting normal pages',()=>{
+ const page=read('src/components/UI.tsx');
+ const community=read('app/communities/[id]/chat.tsx');
+ const session=read('app/sessions/[id]/chat.tsx');
+ assert.match(page,/if\(!autoScrollToEnd\)return/);
+ assert.match(page,/Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
+ assert.match(page,/Keyboard\.addListener\(event,/);
+ assert.match(page,/nearBottom\.current=true;\s*scrollRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
+ assert.match(page,/return\(\)=>subscription\.remove\(\)/);
+ assert.match(community,/return <Page autoScrollToEnd>/);
+ assert.match(session,/return <Page autoScrollToEnd>/);
+});
