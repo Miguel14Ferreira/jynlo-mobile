@@ -75,7 +75,8 @@ test('native picker caps selection to free album capacity and rejects late Story
  assert.match(s,/selectionLimit:availableAlbumSlots/);
  assert.match(s,/if\(album&&availableAlbumSlots===0\)/);
  assert.match(s,/storyComposerWasOpen&&storyComposerRef\.current&&storyComposerRevision\.current===storyRevision&&prepared\[0\]/);
- assert.match(s,/storyComposerRef\.current=false;setStoryCaption\(''\)/);
+ assert.match(s,/storyComposerRevision\.current\+\+;storyComposerRef\.current=false/);
+ assert.match(s,/setStoryCaption\(''\);storyCaptionRef\.current=''/);
 });
 
 test('camera and gallery drafts cannot cross a closed and reopened editor',()=>{
