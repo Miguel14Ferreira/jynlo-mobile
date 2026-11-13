@@ -21,11 +21,11 @@ test('gallery results and camera captures from a previous session are never appl
 });
 test('Story camera exposes accessible gallery button alongside upward swipe and recording lock',()=>{
  const camera=source('src/components/StoryCameraCapture.tsx');
- assert.match(camera,/finishGalleryGesture\(x:number,y:number\)/);
+ assert.match(camera,/finishGalleryGesture=\(x:number,y:number\)=>/);
  assert.match(camera,/start.y-y>75&&Math.abs\(start.x-x\)<110\)onPickGallery\(\)/);
  assert.match(camera,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
  assert.match(camera,/accessibilityHint="Também podes deslizar para cima na câmara"/);
  assert.match(camera,/disabled=\{busy\|\|recording\} onPress=\{onPickGallery\}/);
  assert.match(camera,/onResponderRelease=\{e=>finishGalleryGesture/);
- assert.match(camera,/if\(recordingRef.current\)camera.current\?\.stopRecording\(\)/);
+ assert.match(camera,/if\(recordingRef.current\)\{\s*camera.current\?\.stopRecording\(\)/);
 });
