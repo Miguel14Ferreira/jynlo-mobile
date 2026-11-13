@@ -81,5 +81,6 @@ test('logout invalidates pending push enrollment before it can re-register a sig
  assert.match(push,/const ensureActive=\(\)=>/);
  assert.match(push,/ensureActive\(\);\s*const deviceId=await installId\(\)/);
  assert.match(push,/if\(operation!==pushOperationEpoch\)\{\s*try\{await unregisterPushDevice\(token,deviceId\)/);
- assert.match(push,/export async function disableMobilePush[\s\S]*?pushOperationEpoch\+\+/);
+ assert.match(push,/export function invalidatePendingPushRegistration\(\):void\{pushOperationEpoch\+\+;\}/);
+ assert.match(push,/export async function disableMobilePush[\s\S]*?invalidatePendingPushRegistration\(\)/);
 });
