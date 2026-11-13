@@ -15,7 +15,8 @@ import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_I
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import PostEditSheet from '../../src/components/PostEditSheet';
-import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
+import StoryTextPlacement from '../../src/components/StoryTextPlacement';
+import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry} from '../../src/lib/types';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
 const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
@@ -163,7 +164,9 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
-        {story.caption?.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>:null}
+        {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
+          <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}/>:
+          <View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>):null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
           <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
@@ -201,6 +204,8 @@ export default function JynloFeedHome(){
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [storyViewer,setStoryViewer]=useState<StoriesGroup|null>(null);
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
+  const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
+  const storyGeometryRef=useRef<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const storyComposerRef=useRef(false);
   const storyComposerRevision=useRef(0);
   const storyCaptureRevision=storyComposerRevision.current;
@@ -219,6 +224,7 @@ export default function JynloFeedHome(){
   composerTextRef.current=composerText;
   composerLocationRef.current=composerLocation;
   storyCaptionRef.current=storyCaption;
+  storyGeometryRef.current=storyTextGeometry;
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
@@ -386,12 +392,14 @@ export default function JynloFeedHome(){
   function openStoryComposer(){
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);
+    setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
   }
   function closeStoryComposer(){
     if(storyInFlight.current)return;
     const discard=()=>{
       storyComposerRevision.current++;storyComposerRef.current=false;
       setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
+      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
     };
     if(storyMedia||storyCaption.trim()){
       Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
@@ -490,18 +498,22 @@ export default function JynloFeedHome(){
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
-    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia;
+    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current};
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);
     try{
-      await publishStory(body,media,actor,username);
+      await publishStory(body,media,actor,username,null,geometry);
       if(feedIdentity.current===`${username}:${actor}`&&
          storyComposerRevision.current===revision&&storyComposerRef.current){
-        const unchanged=storyCaptionRef.current===body&&storyMediaRef.current?.uri===media.uri;
+        const currentGeometry=storyGeometryRef.current;
+        const unchanged=storyCaptionRef.current===body&&storyMediaRef.current?.uri===media.uri&&
+          currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
+          currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom;
         if(unchanged){
           storyComposerRevision.current++;storyComposerRef.current=false;
           setStoryCaption('');storyCaptionRef.current='';
           setStoryMedia(null);storyMediaRef.current=null;setStoryComposer(false);
+          setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
         }else{
           Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
         }
@@ -712,11 +724,12 @@ export default function JynloFeedHome(){
           </Suspense>:null}
           {storyMedia?<View style={styles.storyPreview}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
-            {storyCaption.trim()?<View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{storyCaption.trim()}</Text></View>:null}
+            {storyCaption.trim()?<StoryTextPlacement caption={storyCaption.trim()} geometry={storyTextGeometry}
+              onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
           </View>:null}
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Trocar pela galeria</Text></Pressable>:null}
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover fotografia ou vídeo</Text></Pressable>:null}
-          <Text style={styles.storiesIntro}>Texto sobre o Story (visível também como legenda na web)</Text>
+          <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
           <TextInput value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyCaption.length}/180</Text>
         </ScrollView>

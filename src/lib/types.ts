@@ -215,7 +215,11 @@ export interface SocialStory {
   communityId:number|null;communityName:string|null;communityPhotoUrl:string|null;
   caption:string|null;mediaUrl:string;video:boolean;createdAt:string;expiresAt:string;
   canDelete:boolean;likeCount?:number;likedByMe?:boolean;
+  textX?:number|null;textY?:number|null;textRotation?:number|null;textZoom?:number|null;
 }
 export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;}
 export interface FeedUserSuggestion {username:string;displayName:string;photoUrl:string|null;sport?:string|null;city?:string|null;}
 export interface MobileMedia {uri:string;type:'image'|'video';mimeType:string;fileName:string;fileSize:number;}
+
+/** Percent coordinates, degrees and native scale, shared with the Jynlo Story backend. */
+export interface StoryTextGeometry {x:number;y:number;rotation:number;zoom:number}
