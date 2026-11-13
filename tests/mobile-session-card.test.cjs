@@ -14,7 +14,7 @@ test('session availability reflects backend status and actual capacity',()=>{
  assert.deepEqual(sessionCardStatus({...base,maxParticipants:null}),{label:'Vagas por confirmar',tone:'unavailable'});
  assert.deepEqual(sessionCardStatus({...base,participantCount:-1}),{label:'Vagas por confirmar',tone:'unavailable'});
  assert.deepEqual(sessionCardStatus({...base,maxParticipants:9.5}),{label:'Vagas por confirmar',tone:'unavailable'});
- assert.deepEqual(sessionCardStatus({...base,status:'CANCELLED'}),{label:'Indisponível',tone:'unavailable'});
+ assert.deepEqual(sessionCardStatus({...base,status:'CANCELLED'}),{label:'Cancelada',tone:'unavailable'});
  assert.deepEqual(sessionCardStatus({...base,privateGame:true}),{label:'Sessão privada',tone:'unavailable'});
  assert.deepEqual(sessionCardStatus({...base,audience:'COMMUNITY_ONLY'}),{label:'Só comunidade',tone:'unavailable'});
  assert.deepEqual(sessionCardStatus({...base,joinedByViewer:true}),{label:'Já vais!',tone:'joined'});
