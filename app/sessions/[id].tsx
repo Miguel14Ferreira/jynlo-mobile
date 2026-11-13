@@ -32,6 +32,7 @@ export default function SessionScreen(){
   const actionEpoch=useRef(0);
   // A returning view may have a newer focus epoch while the same write is pending.
   const focusedSessionIdentity=useRef('');
+  const lastSessionIdentity=useRef('');
   const backgroundSyncInFlight=useRef(false);
   const foregroundLoadVersion=useRef<number|null>(null);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
@@ -148,7 +149,16 @@ export default function SessionScreen(){
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
     const focusIdentity=id+'|'+auth.username+'|'+auth.token;
+    const switchedSessionOrAccount=lastSessionIdentity.current!==focusIdentity;
+    lastSessionIdentity.current=focusIdentity;
     focusedSessionIdentity.current=focusIdentity;
+    if(switchedSessionOrAccount){
+      // Do not leak drafts or organizer edits across sessions and accounts.
+      setPassword('');setInviteUsername('');
+      setEditMeetingPoint(false);setEditExternalCount(false);
+      setMeetingDraft('');setExternalDraft('');
+      setFeedback('');setRosterFeedback('');setTeamsMessage('');
+    }
     // A write may still be pending when returning to this screen.
     setBusy(operationInFlight.current||removalInFlight.current||attendanceInFlight.current);
     // Keep pending team writes locked across a blur/refocus; otherwise the

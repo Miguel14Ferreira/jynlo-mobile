@@ -80,3 +80,13 @@ test('a pending action settles and refreshes after refocusing the same session o
  assert.match(perform,/if\(focusedSessionIdentity\.current===identity\)\{/);
  assert.match(perform,/if\(epoch!==actionEpoch\.current\)void load\(\)/);
 });
+
+test('changing session or account clears confidential drafts while ordinary refocus preserves them',()=>{
+ const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('const perform=async('));
+ assert.match(screen,/const lastSessionIdentity=useRef\(''\)/);
+ assert.match(focused,/const switchedSessionOrAccount=lastSessionIdentity\.current!==focusIdentity/);
+ assert.match(focused,/if\(switchedSessionOrAccount\)\{/);
+ const branch=focused.slice(focused.indexOf('if(switchedSessionOrAccount){'),focused.indexOf('// A write may still be pending'));
+ for(const reset of ["setPassword('')","setInviteUsername('')","setMeetingDraft('')","setExternalDraft('')"])assert.ok(branch.includes(reset),reset);
+ assert.doesNotMatch(focused.slice(focused.indexOf('// A write may still be pending')),/setPassword\(''\)|setInviteUsername\(''\)/);
+});
