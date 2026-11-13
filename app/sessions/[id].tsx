@@ -340,7 +340,7 @@ export default function SessionScreen(){
     },'Convite enviado. A outra pessoa tem de o aceitar.');};
   const share=()=>{
     if(DEMO_MODE){setFeedback('Não é possível partilhar uma sessão fictícia da demonstração.');return;}
-    void Share.share({message:`Encontra esta sessão na Jynlo: https://d24sports.com/sessions/${id}`});
+    void Share.share({message:`🏟️ ${s?.sport||'Sessão desportiva'} na Jynlo\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}Vê os detalhes desta sessão: https://d24sports.com/sessions/${id}\nPodes abrir a ligação no browser, mesmo sem teres a aplicação instalada.`,url:`https://d24sports.com/sessions/${id}`}).catch(()=>setFeedback('Não foi possível abrir a partilha. Tenta novamente.'));
   };
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsInFlight.current||operationInFlight.current||
@@ -565,7 +565,10 @@ export default function SessionScreen(){
             <Button title="Confirmar distribuição de equipas" disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>
           </View>:null}
         </View>:null}
-        <Text style={styles.hint}>Convidar uma pessoa que já tem conta Jynlo:</Text>
+        <Text style={styles.hint}>Convidar participantes</Text>
+        <Button title="Partilhar sessão por WhatsApp, SMS ou ligação" secondary onPress={share}/>
+        <Text style={styles.hint}>Partilha a ligação com quem ainda não tem a aplicação. O acesso e a confirmação de presença seguem as regras da sessão na web.</Text>
+        <Text style={styles.hint}>Ou convida diretamente alguém com conta Jynlo:</Text>
         <TextInput style={styles.input} value={inviteUsername} onChangeText={setInviteUsername}
           autoCapitalize="none" autoCorrect={false} placeholder="Nome de utilizador" placeholderTextColor={C.muted}/>
         <Button title="Enviar convite" disabled={busy||!inviteUsername.trim()} onPress={sendInvite}/>
@@ -630,7 +633,7 @@ export default function SessionScreen(){
           </View>;
         })}
       </View>:null}
-      <Button title="Partilhar ligação pública" secondary onPress={share}/>
+      <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
     <Button title="Atualizar estado da sessão" secondary onPress={()=>{void load();}} disabled={loading||busy}/>
     <Pressable onPress={()=>router.back()}><Text style={styles.back}>← Voltar</Text></Pressable>
