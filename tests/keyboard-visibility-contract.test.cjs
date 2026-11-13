@@ -53,3 +53,12 @@ test('private messages scroll to the latest conversation only when the message c
  assert.match(source,/onBlur=\{\(\)=>\{composerFocused\.current=false;\}\}/);
  assert.match(source,/return\(\)=>subscription\.remove\(\)/);
 });
+
+test('long forms scroll their currently focused input above keyboard after Android resize',()=>{
+ const source=read('src/components/UI.tsx');
+ assert.match(source,/if\(autoScrollToEnd\|\|!scroll\)return/);
+ assert.match(source,/TextInput\.State\.currentlyFocusedInput\?\.\(\)/);
+ assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
+ assert.match(source,/Keyboard\.addListener\(event,/);
+ assert.match(source,/return\(\)=>subscription\.remove\(\)/);
+});
