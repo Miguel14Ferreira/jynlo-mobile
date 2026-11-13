@@ -58,7 +58,10 @@ export default function ProfilePosts({username,token}:{username:string;token:str
        {album.length>1?<View style={styles.albumMark}><Text style={styles.albumMarkText}>▤ {album.length}</Text></View>:null}
       </View>;
     })()}
-    <View style={styles.meta}><Text style={styles.metaText}>♡ {item.likeCount}  ·  ◯ {item.commentCount}</Text></View>
+    <View style={styles.meta}>
+     {item.location?.trim()?<Text style={styles.metaText} numberOfLines={1}>⌖ {item.location.trim()}</Text>:null}
+     <Text style={styles.metaText}>♡ {item.likeCount}  ·  ◯ {item.commentCount}</Text>
+    </View>
    </Pressable>)}
   </View>
   {sameProfile&&!loading&&!error&&visibleItems.length===0?<Text style={styles.empty}>Ainda não existem publicações neste perfil.</Text>:null}

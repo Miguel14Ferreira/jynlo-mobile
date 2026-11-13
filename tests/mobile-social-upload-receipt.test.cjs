@@ -60,3 +60,11 @@ test('optional post location uses backend supported 160 character limit',()=>{
  assert.match(feed,/item\.location\?\.trim\(\)/);
  assert.match(types,/location\?:string\|null/);
 });
+
+test('post details and profile gallery show only author supplied location',()=>{
+ const detail=read('app/posts/[postId]/index.tsx');
+ const profile=read('src/components/ProfilePosts.tsx');
+ assert.match(detail,/post\.location\?\.trim\(\)/);
+ assert.match(profile,/item\.location\?\.trim\(\)/);
+ assert.match(detail,/post\.content\?\.trim\(\)/);
+});

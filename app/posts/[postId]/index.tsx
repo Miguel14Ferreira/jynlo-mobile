@@ -117,7 +117,8 @@ export default function NotificationPost(){
      <Text style={styles.author}>{post.authorDisplayName||post.authorUsername}</Text>
      <Text style={styles.handle}>@{post.authorUsername}</Text>
     </Pressable>
-    <Text style={styles.body}>{post.content||''}</Text>
+    {post.content?.trim()?<Text style={styles.body}>{post.content}</Text>:null}
+    {post.location?.trim()?<Text style={styles.note}>⌖ {post.location.trim()}</Text>:null}
     {album.length?<View style={{gap:8}}>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
         {album.map((media,index)=>{const uri=resolveJynloMedia(media.url);return uri?<View key={index} style={{width:Math.max(220,screenWidth-64),gap:5}}>
