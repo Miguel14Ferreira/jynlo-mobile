@@ -34,6 +34,9 @@ function checkProductionEnvironment(){
     throw new Error('BUILD BLOQUEADO: endpoint de demonstração/inválido ou rede privada.');
   }
   if(storeRelease){
+    const mapsKey=(process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY||'').trim();
+    if(!/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
+      throw new Error('BUILD BLOQUEADO: falta uma chave Google Maps Android válida na configuração EAS de loja.');
     const firebaseFile=(process.env.GOOGLE_SERVICES_JSON||'').trim();
     if(!firebaseFile || !fs.existsSync(firebaseFile))
       throw new Error('BUILD BLOQUEADO: falta GOOGLE_SERVICES_JSON (ficheiro Firebase Android) na configuração EAS de loja.');
