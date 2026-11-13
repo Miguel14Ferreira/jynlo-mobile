@@ -68,3 +68,12 @@ test('composer protects unsent posts and native picker does not restore abandone
  assert.match(s,/!postComposerWasOpen\|\|!composerOpenRef\.current/);
  assert.match(s,/appendAlbumSelection\(composerMediaRef\.current,prepared\)/);
 });
+
+test('native picker caps selection to free album capacity and rejects late Story results',()=>{
+ const s=read('app/(tabs)/index.tsx');
+ assert.match(s,/MAX_ALBUM_ITEMS-composerMediaRef\.current\.length/);
+ assert.match(s,/selectionLimit:availableAlbumSlots/);
+ assert.match(s,/if\(album&&availableAlbumSlots===0\)/);
+ assert.match(s,/storyComposerWasOpen&&storyComposerRef\.current&&prepared\[0\]/);
+ assert.match(s,/storyComposerRef\.current=false;setStoryCaption\(''\)/);
+});

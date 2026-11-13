@@ -200,6 +200,8 @@ export default function JynloFeedHome(){
   const [loading,setLoading]=useState(false),[error,setError]=useState('');
   const [storyViewer,setStoryViewer]=useState<StoriesGroup|null>(null);
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
+  const storyComposerRef=useRef(false);
+  storyComposerRef.current=storyComposer;
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
   const [composerOpen,setComposerOpen]=useState(false);
   const [expandedPostImage,setExpandedPostImage]=useState<string|null>(null);
@@ -229,7 +231,7 @@ export default function JynloFeedHome(){
       commentsRequest.current++;
       setPosts([]);setStories([]);setOwnStories([]);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
-      setStoryViewer(null);setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
+      setStoryViewer(null);storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
       composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
     }
@@ -393,9 +395,12 @@ export default function JynloFeedHome(){
     if(!requireLogin()||mediaPickerInFlight.current)return;
     const actorToken=auth.token;
     const postComposerWasOpen=album&&composerOpenRef.current;
+    const storyComposerWasOpen=!album&&storyComposerRef.current;
+    const availableAlbumSlots=album?Math.max(0,MAX_ALBUM_ITEMS-composerMediaRef.current.length):1;
+    if(album&&availableAlbumSlots===0){Alert.alert('Álbum completo','Remove um ficheiro antes de adicionares outro.');return;}
     mediaPickerInFlight.current=true;
     try{const ImagePicker=await import('expo-image-picker');
-      const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:MAX_ALBUM_ITEMS}: {})});
+      const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:availableAlbumSlots}: {})});
       if(activeStoryAccount.current!==actorToken||result.canceled||!result.assets.length)return;
       const prepared:MobileMedia[]=[];
       for(const asset of result.assets){
@@ -418,7 +423,7 @@ export default function JynloFeedHome(){
         const result=appendAlbumSelection(composerMediaRef.current,prepared);
         if(result.error){Alert.alert('Álbum não aceite',result.error);return;}
         changeComposerMedia(()=>result.items);
-      }else if(prepared[0])setter(prepared[0]);
+      }else if(storyComposerWasOpen&&storyComposerRef.current&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
     }catch{if(activeStoryAccount.current===actorToken)Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
     finally{mediaPickerInFlight.current=false;}
   }
@@ -449,7 +454,7 @@ export default function JynloFeedHome(){
       return;
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
     if(feedIdentity.current===`${username}:${actor}`){
-      setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
+      storyComposerRef.current=false;setStoryCaption('');setStoryMedia(null);setStoryComposer(false);
       void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
     }
   }
