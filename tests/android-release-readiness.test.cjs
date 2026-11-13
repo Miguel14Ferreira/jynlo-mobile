@@ -5,19 +5,28 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const os = require('node:os');
 
 const root = path.resolve(__dirname, '..');
 const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8')).expo;
 const eas = JSON.parse(fs.readFileSync(path.join(root, 'eas.json'), 'utf8'));
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const releaseGuard = path.join(root, 'scripts', 'verify-release.cjs');
-const productionApi = 'https://desporto24-preview-api.onrender.com';
+// This is a syntactically valid HTTPS example, not a claim that production is deployed.
+const productionApi = 'https://api.d24sports.com';
 
-function runGuard(url) {
-  return spawnSync(process.execPath, [releaseGuard, '--production'], {
-    encoding: 'utf8',
-    env: { ...process.env, EXPO_PUBLIC_JYNLO_API_URL: url, JYNLO_REQUIRE_REAL_API: '1' },
-  });
+function runGuard(url, options={}) {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'jynlo-release-test-'));
+  try {
+    const firebase = path.join(temp, 'google-services.json');
+    fs.writeFileSync(firebase, JSON.stringify({client:[{client_info:{android_client_info:{package_name:'com.jynlo.app'}}}]}));
+    return spawnSync(process.execPath, [releaseGuard, '--production'], {
+      encoding: 'utf8',
+      env: { ...process.env, EAS_BUILD_PROFILE:'play-internal',
+        EXPO_PUBLIC_JYNLO_API_URL: url, JYNLO_REQUIRE_REAL_API:'1',
+        GOOGLE_SERVICES_JSON: options.missingFirebase ? '' : firebase },
+    });
+  } finally {fs.rmSync(temp,{recursive:true,force:true});}
 }
 
 test('Android release metadata agrees with Expo application identity', () => {
@@ -38,6 +47,12 @@ test('internal Android builds are explicitly APK, never accidentally store bundl
 test('release guard accepts only public HTTPS API origins', () => {
   const valid = runGuard(productionApi);
   assert.equal(valid.status, 0, valid.stderr || valid.stdout);
+  const preview = runGuard('https://desporto24-preview-api.onrender.com');
+  assert.notEqual(preview.status, 0);
+  assert.match(preview.stderr, /BUILD BLOQUEADO/);
+  const missingFirebase = runGuard(productionApi,{missingFirebase:true});
+  assert.notEqual(missingFirebase.status, 0);
+  assert.match(missingFirebase.stderr, /GOOGLE_SERVICES_JSON/);
   for (const url of [
     '', 'http://example.org', 'https://localhost', 'https://127.0.0.1',
     'https://10.1.2.3', 'https://example.com', 'https://demo.example.org',
