@@ -19,6 +19,8 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const [mode,setMode]=useState<'picture'|'video'>('picture');
  const [recording,setRecording]=useState(false);
  const recordingRef=useRef(false);
+ const permissionRequestInFlight=useRef(false);
+ const captureInFlight=useRef(false);
  const alive=useRef(true);
  useEffect(()=>{alive.current=true;return ()=>{alive.current=false;if(recordingRef.current)camera.current?.stopRecording();};},[]);
  const [facing,setFacing]=useState<'back'|'front'>('back');
@@ -26,30 +28,36 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const [cameraReady,setCameraReady]=useState(false);
  const [error,setError]=useState('');
  async function capture(){
-  if(busy||recordingRef.current||!cameraReady||mode!=='picture'||!permission?.granted||!camera.current)return;
-  setBusy(true);setError('');
+  if(busy||captureInFlight.current||recordingRef.current||!cameraReady||mode!=='picture'||!permission?.granted||!camera.current||!alive.current)return;
+  captureInFlight.current=true;setBusy(true);setError('');
   try{
    const photo=await camera.current.takePictureAsync({quality:0.7,exif:false,skipProcessing:false});
+   if(!alive.current)return;
    if(!photo?.uri)throw Error('A câmara não devolveu uma fotografia.');
    const file=new File(photo.uri);
    const size=file.size;
    if(!file.exists||!size||size>5*1024*1024)throw Error('A fotografia não pôde ser preparada (máximo 5 MB).');
-   onCaptured({uri:photo.uri,type:'image',mimeType:'image/jpeg',fileName:'jynlo-story-'+Date.now()+'.jpg',fileSize:size});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível tirar a fotografia.');}
-  finally{setBusy(false);}
+   if(alive.current)onCaptured({uri:photo.uri,type:'image',mimeType:'image/jpeg',fileName:'jynlo-story-'+Date.now()+'.jpg',fileSize:size});
+  }catch(e){if(alive.current)setError(e instanceof Error?e.message:'Não foi possível tirar a fotografia.');}
+  finally{captureInFlight.current=false;if(alive.current)setBusy(false);}
  }
  async function toggleRecording(){
   if(recordingRef.current){
    camera.current?.stopRecording();
    return;
   }
-  if(busy||!cameraReady||!permission?.granted||!camera.current||mode!=='video')return;
+  if(busy||permissionRequestInFlight.current||!alive.current||!cameraReady||!permission?.granted||!camera.current||mode!=='video')return;
   if(!micPermission?.granted){
+   permissionRequestInFlight.current=true;
    try{
     const granted=await requestMicPermission();
-    if(!granted.granted){if(alive.current)setError('Autoriza o microfone para gravar vídeo com som, ou utiliza a galeria.');return;}
+    if(!alive.current)return;
+    if(!granted.granted){setError('Autoriza o microfone para gravar vídeo com som, ou utiliza a galeria.');return;}
    }catch{if(alive.current)setError('Não foi possível obter a permissão do microfone.');return;}
+   finally{permissionRequestInFlight.current=false;}
   }
+  // Permissions can resolve after the user closed the Story or switched modes.
+  if(!alive.current||!camera.current||!cameraReady||mode!=='video'||recordingRef.current)return;
   recordingRef.current=true;setRecording(true);setBusy(true);setError('');
   try{
    // The server accepts MP4 up to 20 MB. The native recorder stops at either limit.
@@ -64,7 +72,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    const size=video.size;
    if(!video.exists||!size||size>20*1024*1024)
     throw Error('O vídeo excede 20 MB ou não pôde ser guardado.');
-   onCaptured({uri:result.uri,type:'video',mimeType:'video/mp4',
+   if(alive.current)onCaptured({uri:result.uri,type:'video',mimeType:'video/mp4',
      fileName:'jynlo-story-'+Date.now()+'.mp4',fileSize:size});
   }catch(e){
    if(alive.current)setError(e instanceof Error?e.message:'Falha ao gravar vídeo.');
