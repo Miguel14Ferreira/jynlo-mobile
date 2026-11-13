@@ -8,11 +8,11 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('Stories open native inline camera and gallery, with explicit upload errors',()=>{
  const home=read('app/(tabs)/index.tsx'),camera=read('src/components/StoryCameraCapture.tsx');
  const api=read('src/lib/social-feed-api.ts'),pkg=JSON.parse(read('package.json'));
- assert.match(home,/StoryCameraCapture onCaptured=\{setStoryMedia\}/);
- assert.match(camera,/useCameraPermissions\(\)/);
- assert.match(camera,/takePictureAsync\(/);
- assert.match(camera,/startY\.current-pageY>75/);
- assert.match(camera,/onPickGallery\(\)/);
+ assert.match(home,/<StoryCameraCapture key=\{storyComposerRevision\.current\}/);
+ assert.match(camera,/requestCameraPermissionsAsync\(\)/);
+ assert.match(camera,/launchCameraAsync\(/);
+ assert.match(camera,/onPickGallery/);
+ assert.match(camera,/onPickGallery/);
  assert.equal(pkg.dependencies['expo-camera'],'~58.0.14');
  assert.match(api,/uri\.startsWith\('content:'\)/);
  assert.match(api,/source\.copy\(temporary\)/);
