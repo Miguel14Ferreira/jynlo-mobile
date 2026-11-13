@@ -15,4 +15,23 @@ function prepareStoryDetails(location,tags){
  }
  return {locationLabel:label,taggedUsernames:normalized.join(',')};
 }
-module.exports={prepareStoryDetails};
+function storyMentionUsernames(value){
+ if(typeof value!=='string')return [];
+ const seen=new Set(),result=[];
+ for(const tag of value.split(',')){
+  const name=tag.trim().replace(/^@/,'').toLowerCase();
+  if(!/^[a-z0-9_.-]{2,45}$/.test(name)||seen.has(name))continue;
+  seen.add(name);result.push(name);
+  if(result.length===5)break;
+ }
+ return result;
+}
+function toggleStoryMention(current,username){
+ const name=typeof username==='string'?username.trim().toLowerCase():'';
+ if(!/^[a-z0-9_.-]{2,45}$/.test(name))throw Error('Perfil inválido.');
+ const users=storyMentionUsernames(current);
+ const next=users.includes(name)?users.filter(x=>x!==name):[...users,name];
+ if(next.length>5)throw Error('Podes identificar no máximo 5 amigos.');
+ return next.join(',');
+}
+module.exports={prepareStoryDetails,storyMentionUsernames,toggleStoryMention};

@@ -38,3 +38,13 @@ export async function changeFollow(username:string,follow:boolean,token:string|n
  if(!token||DEMO_MODE)throw new Error('Inicia sessão para seguir pessoas.');
  return request<FollowStatus>(`/api/follows/${user}`,{token,method:follow?'POST':'DELETE'});
 }
+
+export type StoryFriend={username:string;fullName:string|null;nickname:string|null;profilePicUrl:string|null;chatBlocked:boolean;blockedByMe:boolean};
+/** The backend's authenticated list is limited to established friendships. */
+export async function storyMentionFriends(token:string|null):Promise<StoryFriend[]>{
+ if(!token||DEMO_MODE)return [];
+ const result=await request<StoryFriend[]>('/api/friends/me',{token});
+ if(!Array.isArray(result))throw Error('Não foi possível carregar a lista de amigos.');
+ return result.filter(person=>person&&typeof person.username==='string'&&
+  /^[a-zA-Z0-9_.-]{2,45}$/.test(person.username)&&!person.chatBlocked&&!person.blockedByMe);
+}

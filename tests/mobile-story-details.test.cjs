@@ -46,3 +46,19 @@ test('real Story multipart receipt confirms metadata before reporting success',(
  const api=read('src/lib/social-feed-api.ts');
  assert.match(api,/confirmedStoryDetailsReceipt\(confirmed,safeDetails\)/);
 });
+
+test('published Story mentions open their corresponding profile',()=>{
+ const view=read('src/components/StoryDetailsView.tsx'),home=read('app/(tabs)/index.tsx');
+ assert.match(view,/onOpenProfile\?:\(username:string\)=>void/);
+ assert.match(view,/onPress=\{\(\)=>onOpenProfile\(username\)\}/);
+ assert.match(home,/onOpenProfile=\{profile=>/);
+ assert.match(home,/pathname:'\/social\/\[username\]'/);
+ assert.ok(home.indexOf('<StoryDetailsView locationLabel={story.locationLabel}')>home.indexOf('<View style={styles.storyTapZones}'));
+});
+test('friend list is authenticated and only unblocked friends offered',()=>{
+ const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-relations-api.ts');
+ assert.match(api,/request<StoryFriend\[]>\('\/api\/friends\/me',\{token\}\)/);
+ assert.match(api,/!person\.chatBlocked&&!person\.blockedByMe/);
+ assert.match(home,/storyMentionFriends\(auth\.token\)/);
+ assert.match(home,/toggleStoryMention\(storyTagsRef\.current,friend\.username\)/);
+});
