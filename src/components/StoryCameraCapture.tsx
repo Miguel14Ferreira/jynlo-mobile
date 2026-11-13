@@ -40,7 +40,9 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
     if(file.exists)size=file.size;
    }
    if(!alive.current)return;
-   const problem=validateMedia(mime,size,true);
+   // A few Android camera providers omit size metadata; the upload flow
+    // reads the real file and enforces the same limits before sending.
+    const problem=size>0?validateMedia(mime,size,true):null;
    if(problem){setError(problem);return;}
    const extension=mime==='image/png'?'png':mime==='image/webp'?'webp':
      kind==='video'?(mime==='video/webm'?'webm':'mp4'):'jpg';
