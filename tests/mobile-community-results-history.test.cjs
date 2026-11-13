@@ -9,11 +9,11 @@ test('history sorts by playedAt descending without mutating or inventing older r
  assert.deepEqual(input.rounds.map(r=>r.id),[1,2,3]);
  assert.equal(officialRoundScore(input.rounds[0]),null);
 });
-test('official team totals only display a verified football final, not unrelated sports or unsupported events',()=>{
+test('official team totals display real scored rounds across sports without fabricating missing totals',()=>{
  const match=round(1,'2026-11-01T10:00:00Z',{sideA:3,sideB:1});
  assert.deepEqual(officialRoundScore(match),{a:3,b:1,label:'3–1'});
  assert.equal(officialRoundScore({...match,eventType:null}),null);
- assert.equal(officialRoundScore({...match,sport:'Andebol'}),null);
+ assert.deepEqual(officialRoundScore({...match,sport:'Andebol',eventType:'HANDBALL_FINAL'}),{a:3,b:1,label:'3–1'});
  assert.equal(officialRoundScore({...match,teamScore:{sideA:3,sideB:-1}}),null);
  assert.equal(officialRoundScore({...match,teamScore:{sideA:'3',sideB:1}}),null);
 });
