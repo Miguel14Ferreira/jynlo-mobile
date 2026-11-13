@@ -43,3 +43,13 @@ test('chat keyboard opening scrolls the focused composer back into view without 
  assert.match(community,/return <Page autoScrollToEnd>/);
  assert.match(session,/return <Page autoScrollToEnd>/);
 });
+
+test('private messages scroll to the latest conversation only when the message composer has focus',()=>{
+ const source=read('app/messages/[peer].tsx');
+ assert.match(source,/const composerFocused=useRef\(false\)/);
+ assert.match(source,/Keyboard\.addListener\(event,/);
+ assert.match(source,/if\(!composerFocused\.current\)return/);
+ assert.match(source,/onFocus=\{\(\)=>\{composerFocused\.current=true;nearBottom\.current=true;conversationScroll\.current\?\.scrollToEnd/);
+ assert.match(source,/onBlur=\{\(\)=>\{composerFocused\.current=false;\}\}/);
+ assert.match(source,/return\(\)=>subscription\.remove\(\)/);
+});
