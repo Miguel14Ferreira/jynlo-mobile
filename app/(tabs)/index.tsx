@@ -12,6 +12,7 @@ import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cj
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,mergeAlbum,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
+import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia} from '../../src/lib/types';
 
@@ -378,7 +379,8 @@ export default function JynloFeedHome(){
       const prepared:MobileMedia[]=[];
       for(const asset of result.assets){
         const kind=asset.type==='video'?'video':'image';
-        const mime=asset.mimeType||(kind==='image'?'image/jpeg':'video/mp4');
+        const mime=pickerMediaMime(asset);
+        if(!mime){Alert.alert('Formato não suportado','Escolhe JPG, PNG, WebP, MP4 ou WebM. Os formatos MOV e HEIC ainda não são aceites.');return;}
         let size=asset.fileSize||0;
         if(!size){
           try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
