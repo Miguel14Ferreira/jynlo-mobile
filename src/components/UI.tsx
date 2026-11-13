@@ -1,5 +1,5 @@
 import React,{useRef} from 'react';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
@@ -12,7 +12,8 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
   const scrollRef=useRef<ScrollView|null>(null);
   const nearBottom=useRef(true);
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
-    {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
+    {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
       onScroll={autoScrollToEnd?event=>{
         const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
         nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
@@ -22,6 +23,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
         {children}
       </ScrollView>
       : <View style={styles.content}>{children}</View>}
+    </KeyboardAvoidingView>
   </SafeAreaView>;
 }
 export function Brand({subtitle}:{subtitle?:string}){
@@ -84,7 +86,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   </Pressable>;
 }
 const styles=StyleSheet.create({
-  page:{flex:1,backgroundColor:C.background},content:{paddingHorizontal:22,paddingTop:20,paddingBottom:88,gap:18},
+  page:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},content:{paddingHorizontal:22,paddingTop:20,paddingBottom:88,gap:18},
   brandRow:{flexDirection:'row',alignItems:'center',gap:12,marginBottom:8},logo:{width:45,height:45,borderRadius:13},
   brandTitle:{fontSize:26,fontWeight:'900',letterSpacing:3,color:C.white},brandSubtitle:{color:C.muted,fontSize:11,letterSpacing:1.3},
   demoBanner:{padding:13,borderRadius:14,backgroundColor:'#15362F',borderWidth:1,borderColor:'#306B59',gap:4},
