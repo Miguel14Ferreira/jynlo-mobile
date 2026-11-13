@@ -205,7 +205,7 @@ export default function JynloFeedHome(){
   const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const [publishing,setPublishing]=useState(false),[storyPublishing,setStoryPublishing]=useState(false),[busyPost,setBusyPost]=useState<number|null>(null);
   // State updates are async: refs prevent duplicate POSTs during rapid taps.
-  const postInFlight=useRef(false),storyInFlight=useRef(false);
+  const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
@@ -369,10 +369,12 @@ export default function JynloFeedHome(){
   }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery',album=false){
-    if(!requireLogin())return;
+    if(!requireLogin()||mediaPickerInFlight.current)return;
+    const actorToken=auth.token;
+    mediaPickerInFlight.current=true;
     try{const ImagePicker=await import('expo-image-picker');
       const result=source==='camera'?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86}):await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:.86,...(album?{allowsMultipleSelection:true,selectionLimit:MAX_ALBUM_ITEMS}: {})});
-      if(result.canceled||!result.assets.length)return;
+      if(activeStoryAccount.current!==actorToken||result.canceled||!result.assets.length)return;
       const prepared:MobileMedia[]=[];
       for(const asset of result.assets){
         const kind=asset.type==='video'?'video':'image';
@@ -385,6 +387,9 @@ export default function JynloFeedHome(){
         if(validation){Alert.alert('Ficheiro não aceite',validation);return;}
         prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
       }
+      // The picker can remain open while authentication changes in the app.
+      // Never apply its old assets to a different account's composer.
+      if(activeStoryAccount.current!==actorToken)return;
       if(album){
         const next=mergeAlbum(composerMedia,prepared);
         if(next.length>MAX_ALBUM_ITEMS){Alert.alert('Álbum completo','Podes escolher até 6 fotografias ou vídeos.');return;}
@@ -392,7 +397,8 @@ export default function JynloFeedHome(){
         if(error){Alert.alert('Álbum não aceite',error);return;}
         setComposerMedia(next);
       }else if(prepared[0])setter(prepared[0]);
-    }catch{Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
+    }catch{if(activeStoryAccount.current===actorToken)Alert.alert('Não foi possível abrir a galeria','Confirma as permissões do teu telemóvel.');}
+    finally{mediaPickerInFlight.current=false;}
   }
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
@@ -578,7 +584,7 @@ export default function JynloFeedHome(){
         <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={()=>setStoryComposer(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
-            <StoryCameraCapture onCaptured={setStoryMedia} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
+            <StoryCameraCapture onCaptured={media=>{if(activeStoryAccount.current===auth.token)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
           </Suspense>:null}
           {storyMedia?<View style={styles.storyPreview}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
