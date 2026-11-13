@@ -196,7 +196,7 @@ export default function CommunityDetailScreen(){
           <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
           {owner&&isMember(community)&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
            <Button secondary title="Registar resultado do jogo"
-            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id)}})}/>:null}
+            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id),sport:s.sport}})}/>:null}
         </View>)}
       </View>:null}
     </>:null}
