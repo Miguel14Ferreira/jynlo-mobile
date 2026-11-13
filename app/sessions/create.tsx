@@ -143,7 +143,7 @@ export default function CreateSessionScreen(){
  async function useMappedPoint(point:SessionCoordinates,requestId:number){
   // A reverse-geocoding outage must never silently discard the real GPS pin.
   let address:{city:string;address:string}|null=null;
-  try{address=await describeSessionCoordinates(point);}catch{}
+  try{address=await describeSessionCoordinates(point,auth.token||'');}catch{}
   if(locationRequest.current!==requestId)return;
   setVenueChosen(null);clearVenueSearch();
   setLocationAccuracy(point.accuracyMeters);
@@ -166,7 +166,7 @@ export default function CreateSessionScreen(){
   if(busy||locationLoading)return;
   const requestId=++locationRequest.current;
   setLocationLoading(true);setLocationMessage('');
-  try{await useMappedPoint(await resolveSessionMapLink(mapsLink),requestId);}
+  try{await useMappedPoint(await resolveSessionMapLink(mapsLink,auth.token||''),requestId);}
   catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível resolver a ligação.');}
   finally{if(locationRequest.current===requestId)setLocationLoading(false);}
  }
