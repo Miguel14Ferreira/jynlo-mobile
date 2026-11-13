@@ -62,3 +62,13 @@ test('browser fallback uses Android Custom Tabs instead of relaunching the nativ
  assert.match(details,/import\('expo-web-browser'\)/);
  assert.match(details,/browser\.openBrowserAsync\(url\)/);
 });
+
+test('guest can correct a confirmed identity with the original private receipt',()=>{
+ const view=read('src/components/GuestSessionRSVP.tsx');
+ assert.match(view,/Enganei-me no nome/);
+ assert.match(view,/guest-requests\/change-player/);
+ assert.match(view,/receipt:receipt\.receipt,playerId:editPlayerId\|\|null,newName:editPlayerId\?null:editName\.trim\(\)/);
+ assert.match(view,/updated\.status!=='APPROVED'/);
+ assert.match(view,/setReceipt\(\{\.\.\.updated,receipt:receipt\.receipt\}\)/);
+ assert.match(view,/receipt\.status==='APPROVED'\?<Pressable accessibilityRole="button" disabled=\{busy\} style=\{styles\.secondary\} onPress=\{cancel\}/);
+});
