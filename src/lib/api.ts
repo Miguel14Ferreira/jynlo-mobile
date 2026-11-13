@@ -4,12 +4,10 @@ import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionD
 
 /** Without an explicit environment override, the app is an isolated demo.
  * This avoids writing fictitious activity into Jynlo's real production backend. */
-const configuredUrl = (process.env.EXPO_PUBLIC_JYNLO_API_URL || '').trim().replace(/\/+$/, '');
-export const DEMO_MODE = !configuredUrl;
-if (configuredUrl && !/^https:\/\/[^/]+$/.test(configuredUrl) && !/^http:\/\/localhost:\d+$/.test(configuredUrl)) {
-  throw new Error('A API Jynlo requer HTTPS (ou localhost para desenvolvimento).');
-}
-export const API_BASE = configuredUrl;
+const rawApiUrl = (process.env.EXPO_PUBLIC_JYNLO_API_URL || '').trim();
+export const DEMO_MODE = !rawApiUrl;
+const {validateApiOrigin} = require('./api-origin.cjs');
+export const API_BASE: string = rawApiUrl ? validateApiOrigin(rawApiUrl,{allowLocalhost:__DEV__}) : '';
 
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name='ApiError'; }
