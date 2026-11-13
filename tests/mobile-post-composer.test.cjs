@@ -6,15 +6,15 @@ test('text-only posts remain available and use the real authenticated JSON API',
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
  assert.match(home,/async function submitPost\(\)\{/);
  assert.match(home,/!composerMedia.length&&!composerText.trim\(\)/);
- assert.match(api,/if\(!files\?\.length\)return createTextPost\(content,token,username\)/);
- assert.match(api,/request<FeedItem>\('\/api\/feed\/posts',\{method:'POST',token,body:\{content:body\}\}\)/);
+ assert.match(api,/if\(!files\?\.length\)return createTextPost\(caption,token,username,place\)/);
+ assert.match(api,/request<FeedItem>\('\/api\/feed\/posts',\{method:'POST',token,body:\{content:body,location:location\.trim\(\)\|\|null\}\}\)/);
  assert.match(api,/return request<FeedItem\[\]>\('\/api\/feed',\{token\}\)/);
 });
 test('Stories and post selection use file-type and on-disk media validation',()=>{
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
  assert.match(home,/mediaTypes:\['images','videos'\]/);
  assert.match(home,/validateMedia\(mime,size\|\|1,!album&&setter===setStoryMedia\)/);
- assert.match(home,/mergeAlbum\(composerMedia,prepared\)/);
+ assert.match(home,/appendAlbumSelection\(composerMediaRef\.current,prepared\)/);
  assert.match(home,/pickMedia\(setStoryMedia,'gallery'\)/);
  assert.match(api,/validateMedia\(file.mimeType,actualSize,path.includes\('\/stories'\)\)/);
  assert.match(api,/const actualSize=localFile.exists\?localFile.size:-1/);

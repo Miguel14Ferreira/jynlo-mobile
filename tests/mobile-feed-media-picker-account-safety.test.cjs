@@ -15,8 +15,8 @@ test('gallery results and camera captures from a previous session are never appl
  assert.match(home,/if\(activeStoryAccount.current!==actorToken\|\|result.canceled/);
  assert.match(home,/if\(activeStoryAccount.current!==actorToken\)return;\s*if\(album\)/);
  assert.match(home,/if\(activeStoryAccount.current===actorToken\)Alert.alert/);
- assert.match(home,/StoryCameraCapture onCaptured=\{media=>\{if\(activeStoryAccount.current===auth.token\)setStoryMedia\(media\);\}\}/);
- assert.match(home,/setComposerMedia\(next\)/);
+ assert.match(home,/StoryCameraCapture key=\{storyComposerRevision.current\} onCaptured=\{media=>\{if\(activeStoryAccount.current===auth.token&&storyComposerRef.current&&storyComposerRevision.current===storyCaptureRevision&&!storyInFlight.current\)setStoryMedia\(media\);\}\}/);
+ assert.match(home,/changeComposerMedia\(\(\)=>result\.items\)/);
  assert.match(home,/setStoryMedia\(null\)/);
 });
 test('Story camera exposes accessible gallery button alongside upward swipe and recording lock',()=>{
@@ -27,5 +27,5 @@ test('Story camera exposes accessible gallery button alongside upward swipe and 
  assert.match(camera,/accessibilityHint="Também podes deslizar para cima na câmara"/);
  assert.match(camera,/disabled=\{busy\|\|recording\} onPress=\{onPickGallery\}/);
  assert.match(camera,/onResponderRelease=\{e=>finishGalleryGesture/);
- assert.match(camera,/if\(recordingRef.current\)\{\s*camera.current\?\.stopRecording\(\)/);
+ assert.match(camera,/if\(recordingRef.current\)\{\s*try\{camera.current\?\.stopRecording\(\)/);
 });

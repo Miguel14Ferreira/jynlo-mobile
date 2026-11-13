@@ -70,7 +70,7 @@ test('story caption overlay is shown in preview and playback using the existing 
 test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
  const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(composer);
- assert.match(composer,/StoryCameraCapture onCaptured=\{media=>\{if\(activeStoryAccount\.current===auth\.token\)setStoryMedia\(media\);\}\}/);
+ assert.match(composer,/StoryCameraCapture key=\{storyComposerRevision.current\} onCaptured=\{media=>\{if\(activeStoryAccount\.current===auth\.token&&storyComposerRef\.current&&storyComposerRevision\.current===storyCaptureRevision&&!storyInFlight\.current\)setStoryMedia\(media\);\}\}/);
  const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
  assert.match(camera,/<CameraView/);
  assert.match(camera,/start\.y-y>75/);
@@ -96,7 +96,7 @@ test('post creation supports camera, multiple gallery assets and one-item remova
  assert.match(composer,/Image source=\{\{uri:media.uri\}\} resizeMode="contain"/);
  assert.match(composer,/MediaVideo key=\{media.uri\} uri=\{media.uri\}/);
  assert.match(composer,/accessibilityLabel=\{`Remover ficheiro \$\{i\+1\}`\}/);
- assert.match(composer,/setComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
+ assert.match(composer,/changeComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
  assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);
  assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300,backgroundColor:/);
