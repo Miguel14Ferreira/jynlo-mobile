@@ -38,3 +38,14 @@ test('shared session card retains navigation and truthful presentation',()=>{
  assert.match(card,/Number\.isFinite\(session\.maxParticipants\)/);
  assert.match(card,/Ver detalhes da sessão/);
 });
+
+test('past scheduled sessions cannot advertise open vacancies or attendance',()=>{
+ const now=Date.parse('2026-11-13T20:00:00Z');
+ const past={status:'OPEN',gameDate:'2026-11-12T20:00:00Z',maxParticipants:10,participantCount:3};
+ const future={...past,gameDate:'2026-11-14T20:00:00Z'};
+ assert.deepEqual(sessionCardStatus(past,now),{label:'Data ultrapassada',tone:'unavailable'});
+ assert.deepEqual(sessionCardStatus({...past,joinedByViewer:true},now),{label:'Data ultrapassada',tone:'unavailable'});
+ assert.deepEqual(sessionCardStatus(future,now),{label:'7 vagas',tone:'available'});
+ assert.deepEqual(sessionCardStatus({...past,status:'CANCELLED'},now),{label:'Cancelada',tone:'unavailable'});
+ assert.deepEqual(sessionCardStatus({...past,status:'COMPLETED'},now),{label:'Concluída',tone:'unavailable'});
+});
