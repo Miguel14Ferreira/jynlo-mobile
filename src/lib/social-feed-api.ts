@@ -3,6 +3,7 @@ import {API_BASE,DEMO_MODE,ApiError,request} from './api';
 import {feed as demoFeedSeed} from './parity-api';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
+import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
 const demoPosts:FeedItem[]=[];
@@ -227,27 +228,8 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      };
      try{confirmed=JSON.parse(raw) as typeof confirmed;}
      catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
-     const identifier=path.includes('/stories')?confirmed?.id:confirmed?.postId;
-     if(typeof identifier!=='number'||!Number.isSafeInteger(identifier)||identifier<=0)
-       throw new Error('O servidor respondeu, mas não confirmou o identificador. Consulta o perfil antes de repetir.');
-     const isStory=path.includes('/stories');
-     const hasMedia=(value:unknown)=>typeof value==='string'&&value.trim().length>0;
-     if(isStory){
-       if(!hasMedia(confirmed.mediaUrl))
-         throw new Error('O servidor respondeu, mas não confirmou o ficheiro da Story. Confirma o perfil antes de repetir.');
-     }else{
-       const first=files[0];
-       const cover=first.type==='video'?confirmed.videoUrl:confirmed.imageUrl;
-       const extras=confirmed.extraMedia;
-       if(!hasMedia(cover)||files.length>1&&(!Array.isArray(extras)||
-           extras.length!==files.length-1||
-           extras.some((item:unknown,index:number)=>{
-             if(!item||typeof item!=='object')return true;
-             const media=item as {url?:unknown;mimeType?:unknown};
-             return !hasMedia(media.url)||media.mimeType!==files[index+1]?.mimeType;
-           })))
-         throw new Error('O servidor respondeu, mas não confirmou todos os ficheiros da publicação. Consulta o perfil antes de repetir.');
-     }
+     if(!confirmedSocialMediaReceipt(confirmed,files.map(file=>file.mimeType),path.includes('/stories')))
+       throw new Error('O servidor respondeu, mas não confirmou todos os ficheiros. Consulta o perfil antes de repetir.');
      return confirmed;
    }catch(e){
      if(e instanceof ApiError)throw e;
