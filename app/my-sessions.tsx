@@ -6,6 +6,7 @@ import {mySessions} from '../src/lib/parity-api';
 import {useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
 import type {MySessions,SessionSummary} from '../src/lib/types';
+import {organizeMySessions} from '../src/lib/my-sessions-core.cjs';
 export default function MySessionsScreen(){
  const auth=useAuth(),router=useRouter();const [data,setData]=useState<MySessions>({created:[],joined:[],waitlisted:[]});
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -30,19 +31,36 @@ export default function MySessionsScreen(){
   return()=>{generation.current++;setData({created:[],joined:[],waitlisted:[]});};
  },[load]));
  const open=(s:SessionSummary)=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}});
- const owned=new Set(data.created.map(s=>s.id));
- const sections:[string,SessionSummary[]][]=[['Criadas por mim',data.created],['Vou participar',data.joined.filter(s=>!owned.has(s.id))],['Lista de espera',data.waitlisted.filter(s=>!owned.has(s.id))]];
+ const [showHistory,setShowHistory]=useState(false);
+ const sections=organizeMySessions(data);
+ const upcomingCount=sections.upcoming.reduce((sum,section)=>sum+section.items.length,0);
+ const historyCount=sections.history.reduce((sum,section)=>sum+section.items.length,0);
  return <Page><Brand subtitle="A TUA ATIVIDADE"/><DemoBanner/><Eyebrow>MINHAS SESSÕES</Eyebrow>
  <Text style={styles.heading}>Os teus próximos <Text style={{color:C.mint}}>desafios.</Text></Text>
  <Button title="Criar sessão" onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>
  {!auth.token?<><Message>Estás a explorar como visitante. Inicia sessão para consultares as sessões que criaste, confirmaste ou em que aguardas vaga.</Message>
    <Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/my-sessions'}})}/></>:null}
  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
- {!loading&&!error&&auth.token?sections.map(([title,items])=><View style={styles.section} key={title}>
-  <Text style={styles.sectionTitle}>{title} · {items.length}</Text>
-  {items.length?items.map(item=><SessionCard key={item.id} session={item} onPress={()=>open(item)}/>):<Text style={styles.empty}>Sem sessões nesta categoria.</Text>}
- </View>):null}
- {auth.token?<Message>Aqui mostramos as sessões criadas, confirmadas e em espera. Abre uma sessão para gerir a presença ou os convites. Histórico de assiduidade e disputas continuam pendentes.</Message>:null}
+ {!loading&&!error&&auth.token?<View style={styles.group}>
+  <Text style={styles.groupTitle}>Próximas sessões · {upcomingCount}</Text>
+  {upcomingCount===0?<Text style={styles.empty}>Não tens sessões futuras. Podes criar uma nova ou procurar uma atividade.</Text>:null}
+  {sections.upcoming.filter(section=>section.items.length>0).map(section=><View style={styles.section} key={section.title}>
+    <Text style={styles.sectionTitle}>{section.title} · {section.items.length}</Text>
+    {section.items.map(item=><SessionCard key={item.id} session={item} onPress={()=>open(item)}/>)}
+  </View>)}
+  <Pressable accessibilityRole="button" accessibilityLabel={showHistory?'Ocultar histórico de sessões':'Mostrar histórico de sessões'}
+    accessibilityState={{expanded:showHistory}} onPress={()=>setShowHistory(v=>!v)} style={styles.historyToggle}>
+    <Text style={styles.historyText}>{showHistory?'Ocultar histórico':'Ver histórico'} · {historyCount} <Text>{showHistory?'⌃':'⌄'}</Text></Text>
+  </Pressable>
+  {showHistory?<View style={styles.group}>
+    {historyCount===0?<Text style={styles.empty}>Ainda não tens sessões anteriores ou canceladas.</Text>:null}
+    {sections.history.filter(section=>section.items.length>0).map(section=><View style={styles.section} key={section.title}>
+      <Text style={styles.sectionTitle}>{section.title} · {section.items.length}</Text>
+      {section.items.map(item=><SessionCard key={item.id} session={item} onPress={()=>open(item)}/>)}
+    </View>)}
+  </View>:null}
+ </View>:null}
+ {auth.token?<Message>Consulta as sessões futuras e o histórico. Abre uma sessão para gerir a presença, os convites e as equipas. O histórico de assiduidade individual continua pendente.</Message>:null}
  </Page>
 }
-const styles=StyleSheet.create({heading:{color:C.white,fontWeight:'900',fontSize:28},section:{gap:13},sectionTitle:{color:C.white,fontWeight:'800',fontSize:19},empty:{color:C.muted,paddingVertical:8}});
+const styles=StyleSheet.create({heading:{color:C.white,fontWeight:'900',fontSize:28},group:{gap:16},groupTitle:{color:C.white,fontSize:21,fontWeight:'900'},section:{gap:13},sectionTitle:{color:C.white,fontWeight:'800',fontSize:17},empty:{color:C.muted,paddingVertical:8},historyToggle:{minHeight:48,justifyContent:'center',alignItems:'center',paddingHorizontal:16,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:14},historyText:{color:C.mint,fontWeight:'800',fontSize:14}});
