@@ -3,6 +3,7 @@ import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import {request} from '../lib/api';
 import {C} from '../lib/theme';
+import {guestReceiptStatusCategory} from '../lib/guest-receipt-status.cjs';
 
 type GuestReceipt={receipt:string;status:string;playerName?:string|null;meetingPointInstructions?:string|null};
 type Player={id:number;name:string};
@@ -28,11 +29,11 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
         // A successful authoritative lookup resolves a previous status error.
         // Only clear the unknown state when the server actually confirmed a
         // known receipt; an uncertain new POST without a receipt stays blocked.
-        if(['APPROVED','LINKED','PENDING'].includes(state.status)){
+        if(guestReceiptStatusCategory(state.status)==='active'){
           setReceipt({...state,receipt:previous});
           uncertainSubmission.current=false;
           setStatusUnknown(false);
-        }else if(['CANCELLED','REJECTED'].includes(state.status)){
+        }else if(guestReceiptStatusCategory(state.status)==='closed'){
           uncertainSubmission.current=false;
           setStatusUnknown(false);
           // The previous receipt is no longer actionable, so do not keep it
