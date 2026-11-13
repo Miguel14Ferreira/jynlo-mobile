@@ -168,3 +168,15 @@ test('legacy winner-only match reporting skips stats negotiation and keeps real 
  assert.match(api,/return request<\{id:number;entries\?:Array<\{username:string;goals:number;assists:number\}>\}>\(/);
  assert.match(ui,/if\(!Number.isSafeInteger\(reply\?\.id\)\|\|reply.id<=0\)/);
 });
+
+test('result editor negotiates football fields at load and preserves legacy winner-only submissions',()=>{
+ const view=read('app/sessions/[id]/result.tsx');
+ assert.match(view,/const \[playerStatsSupported,setPlayerStatsSupported\]=useState\(false\)/);
+ assert.match(view,/football\?competitionSessionCapabilities\(communityId,sessionId,auth.token\)\.catch\(\(\)=>null\):Promise.resolve\(null\)/);
+ assert.match(view,/setPlayerStatsSupported\(football&&capabilities\?\.version===1&&capabilities.footballGoalsAssists===true\)/);
+ assert.match(view,/setPlayerStatsSupported\(false\)/);
+ assert.match(view,/football&&playerStatsSupported\?roster.filter\(player=>player.selected\)/);
+ assert.match(view,/O backend ainda não confirmou suporte a golos e assistências/);
+ assert.match(view,/Podes registar apenas o vencedor ou empate/);
+ assert.match(view,/return recordCompetitionSessionResult\(communityId,sessionId,token,payload\)/);
+});
