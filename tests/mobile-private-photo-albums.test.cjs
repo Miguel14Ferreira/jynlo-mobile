@@ -32,7 +32,7 @@ test('all three chat scopes use one private atomic batch contract',()=>{
  assert.match(source,/form\.append\('replyToMessageId'/);
  assert.match(source,/prepared\.push\(attachment\)/);
  assert.match(source,/for\(const file of prepared\)file\.cleanup\(\)/);
- assert.match(source,/reply\.attachments\.length!==photos\.length/);
+ assert.match(source,/confirmedChatAlbumReply\(reply,photos\.map\(photo=>photo\.mimeType\|\|''\)\)/);
  assert.doesNotMatch(source,/\/media\//);
  for(const [file,scope] of [
   ['app/messages/[peer].tsx','direct'],
