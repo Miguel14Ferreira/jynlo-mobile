@@ -43,7 +43,14 @@ function nativeRouteForWebLink(path){
   if(organizerSession&&Number.isSafeInteger(Number(organizerSession[1])))
    return '/sessions/'+organizerSession[1];
   const session=url.pathname.match(/^\/sessions\/([1-9]\d*)$/);
-  if(session&&Number.isSafeInteger(Number(session[1])))return url.pathname;
+  if(session&&Number.isSafeInteger(Number(session[1]))){
+   // Preserve a legitimate guest invitation on verified app links, without
+   // forwarding arbitrary query parameters or passwords into native routing.
+   const guest=url.searchParams.get('guest');
+   if(guest&&/^[A-Za-z0-9_-]{8,180}$/.test(guest))
+    return url.pathname+'?guest='+encodeURIComponent(guest);
+   return url.pathname;
+  }
   const venue=url.pathname.match(/^\/venues\/([1-9]\d*)$/);
   if(venue&&Number.isSafeInteger(Number(venue[1])))return url.pathname;
   if(['/privacy','/terms','/delete-account'].includes(url.pathname))
