@@ -33,3 +33,13 @@ test('all three entry points use shared server album metadata rather than separa
  assert.match(detail,/socialPostById\(id,auth.token\)/);
  assert.match(profile,/profilePosts\(username,token,page\)/);
 });
+
+test('feed links server-backed posts to the same full post details used by profiles',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ const details=read('app/posts/[postId]/index.tsx');
+ assert.match(feed,/accessibilityLabel="Abrir detalhe completo da publicação"/);
+ assert.match(feed,/Number.isSafeInteger\(item.postId\)&&item.postId!>0/);
+ assert.match(feed,/router.push\(\{pathname:'\/posts\/\[postId\]',params:\{postId:String\(item.postId\)\}\}\)/);
+ assert.match(feed,/Ver publicação ›/);
+ assert.match(details,/socialPostById\(id,auth.token\)/);
+});
