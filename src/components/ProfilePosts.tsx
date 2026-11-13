@@ -54,7 +54,7 @@ export default function ProfilePosts({username,token}:{username:string;token:str
       return <View>
        {preview&&first.type==='image'?<Image source={{uri:preview}} style={styles.image} resizeMode="contain"/>:
         first?.type==='video'?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶ Vídeo</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
-        <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>
+        <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
        {album.length>1?<View style={styles.albumMark}><Text style={styles.albumMarkText}>▤ {album.length}</Text></View>:null}
       </View>;
     })()}
