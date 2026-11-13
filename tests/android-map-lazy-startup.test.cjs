@@ -28,7 +28,7 @@ test('native map implementation remains available only behind the lazy boundary'
 test('Android without Google Maps SDK remains usable through external map link',()=>{
  assert.match(explore,/https:\/\/www\.google\.com\/maps\/@/);
  assert.match(explore,/<OfflineSessionMap sessions=\{mappedSessions\}/);
- assert.match(explore,/O mapa integrado requer configuração da Google Maps SDK/);
+ assert.match(explore,/Esta APK não tem o mapa Google configurado/);
  assert.doesNotMatch(explore,/!NATIVE_MAP_READY\?mappedSessions\.map/);
  assert.match(explore,/NATIVE_MAP_READY\?<Suspense/);
 });
