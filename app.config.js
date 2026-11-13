@@ -7,6 +7,10 @@ module.exports = ({config}) => {
     throw new Error('O EAS Project ID configurado não corresponde ao projeto Jynlo.');
   }
   const diagnostic = process.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8 === '1';
+  const storeBuild = ['production', 'play-internal'].includes(process.env.EAS_BUILD_PROFILE);
+  if (diagnostic && storeBuild) {
+    throw new Error('BUILD BLOQUEADO: não desatives R8/minificação numa build destinada à Google Play.');
+  }
   // Disable native shrinking only in internal EAS diagnostic builds.
   // Never silently change the signed Play Store production profile.
   // A signed Android binary cannot initialize react-native-maps without a
