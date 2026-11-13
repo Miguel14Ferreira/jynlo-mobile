@@ -38,3 +38,10 @@ test('confirmed server cancellation clears the UI before local secure storage cl
  assert.ok(done>=0&&clear>done&&storage>clear);
  assert.match(view,/Presença cancelada no servidor/);
 });
+
+test('guest invitation stays usable from the browser even after a native app-link',()=>{
+ const details=read('app/sessions/[id].tsx');
+ assert.match(details,/title="Continuar no browser"/);
+ assert.match(details,/Linking\.openURL\(url\)/);
+ assert.match(details,/https:\/\/d24sports\.com\/sessions\/\$\{id\}\?guest=\$\{encodeURIComponent\(guestToken\)\}/);
+});
