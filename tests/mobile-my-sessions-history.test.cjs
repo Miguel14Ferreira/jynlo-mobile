@@ -35,3 +35,10 @@ test('screen renders upcoming grouped lists and optionally opens past sessions w
  assert.match(source,/SessionCard key=\{item.id\} session=\{item\} onPress=\{\(\)=>open\(item\)\}/);
  assert.match(read('src/lib/my-sessions-core.d.cts'),/organizeMySessions/);
 });
+
+test('failed personal session requests have an explicit safe retry',()=>{
+ const screen=read('app/my-sessions.tsx');
+ assert.match(screen,/Tentar carregar novamente/);
+ assert.match(screen,/disabled=\{loading\} onPress=\{\(\)=>\{void load\(\);\}\}/);
+ assert.match(screen,/if\(!auth.token\|\|!auth.username\)\{setLoading\(false\);return;\}/);
+});
