@@ -53,7 +53,8 @@ test('returning to foreground refreshes the inbox and removes background subscri
 test('stale inbox and invitation requests cannot change account after switching users',()=>{
  assert.match(screen,/if\(notifs\.status==='rejected'\)setHistoryReady\(false\)/);
  assert.match(screen,/setHistoryReady\(false\);setLoading\(false\);setItems\(\[\]\)/);
- assert.match(screen,/if\(account\.current!==initialIdentity\|\|inviteOperation\.current!==operation\)return;\s*setInvites\(/);
+ assert.match(screen,/if\(account\.current!==initialIdentity\|\|inviteOperation\.current!==operation\)return;/);
+ assert.match(screen,/setInvites\(old=>old\.filter\(x=>x\.id!==invite\.id\)\)/);
  assert.match(screen,/if\(account\.current===initialIdentity\)setItems\(/);
  assert.match(screen,/if\(account\.current===initialIdentity\)setError\(/);
 });
@@ -64,7 +65,7 @@ test('switching accounts releases old pending actions but ignores their eventual
  assert.match(screen,/const operation=\+\+inviteOperation\.current/);
  assert.match(screen,/const operation=\+\+pushOperation\.current/);
  assert.match(screen,/if\(account\.current===initialIdentity&&inviteOperation\.current===operation\)setBusyInvite\(null\)/);
- assert.match(screen,/if\(pushOperation\.current===operation\)setPushBusy\(false\)/);
+ assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushBusy\(false\)/);
 });
 
 test('notification navigation is immediate and read receipts settle asynchronously',()=>{
