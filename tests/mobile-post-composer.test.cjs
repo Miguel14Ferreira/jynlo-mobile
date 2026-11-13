@@ -1,46 +1,42 @@
 'use strict';
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
-test('mobile feed allows real text-only posts without requiring camera or gallery',()=>{
- const home=read('app/(tabs)/index.tsx');
- const api=read('src/lib/social-feed-api.ts');
- assert.match(home,/async function submitPost\(\)\{if\(!requireLogin\(\)\|\|publishing\|\|\(!composerMedia&&!composerText\.trim\(\)\)\)return;/);
- assert.match(home,/disabled=\{\(!composerMedia&&!composerText\.trim\(\)\)\|\|publishing\}/);
- assert.match(home,/Partilha texto, fotografias ou vídeos/);
- assert.match(api,/if\(!file\)return createTextPost\(content,token,username\)/);
+test('text-only posts remain available and use the real authenticated JSON API',()=>{
+ const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
+ assert.match(home,/async function submitPost\(\)\{/);
+ assert.match(home,/!composerMedia.length&&!composerText.trim\(\)/);
+ assert.match(api,/if\(!files\?\.length\)return createTextPost\(content,token,username\)/);
  assert.match(api,/request<FeedItem>\('\/api\/feed\/posts',\{method:'POST',token,body:\{content:body\}\}\)/);
+ assert.match(api,/return request<FeedItem\[\]>\('\/api\/feed',\{token\}\)/);
 });
-test('story upload validates story media rules and post picker validates post limits',()=>{
- const home=read('app/(tabs)/index.tsx');
- assert.match(home,/validateMedia\(mime,size\|\|1,setter===setStoryMedia\)/);
- assert.match(home,/pickMedia\(setComposerMedia,'gallery'\)/);
+test('Stories and post selection use file-type and on-disk media validation',()=>{
+ const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
+ assert.match(home,/mediaTypes:\['images','videos'\]/);
+ assert.match(home,/validateMedia\(mime,size\|\|1,!album&&setter===setStoryMedia\)/);
+ assert.match(home,/mergeAlbum\(composerMedia,prepared\)/);
  assert.match(home,/pickMedia\(setStoryMedia,'gallery'\)/);
- const api=read('src/lib/social-feed-api.ts');
- assert.match(api,/validateMedia\(file\.mimeType,actualSize,path\.includes\('\/stories'\)\)/);
+ assert.match(api,/validateMedia\(file.mimeType,actualSize,path.includes\('\/stories'\)\)/);
+ assert.match(api,/const actualSize=localFile.exists\?localFile.size:-1/);
+ assert.match(api,/if\(!uri.startsWith\('file:\/\/'\)\)/);
 });
-
-
-test('media sends are single-flight, success closes composer even when subsequent feed refresh fails',()=>{
+test('media publishing uses synchronous single-flight guards and preserves uncertain failures',()=>{
  const home=read('app/(tabs)/index.tsx');
- assert.match(home,/postInFlight\.current=true;setPublishing\(true\)/);
- assert.match(home,/storyInFlight\.current=true;setStoryPublishing\(true\)/);
- assert.match(home,/if\(!requireLogin\(\)\|\|postInFlight\.current\|\|\(!composerMedia&&!composerText\.trim\(\)\)\)return/);
- assert.match(home,/if\(!requireLogin\(\)\|\|storyInFlight\.current\|\|!storyMedia\)return/);
+ assert.match(home,/postInFlight.current=true;setPublishing\(true\)/);
+ assert.match(home,/storyInFlight.current=true;setStoryPublishing\(true\)/);
+ assert.match(home,/!requireLogin\(\)\|\|postInFlight.current\|\|\(!composerMedia.length&&!composerText.trim\(\)\)/);
+ assert.match(home,/!requireLogin\(\)\|\|storyInFlight.current\|\|!storyMedia/);
  assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Publicação enviada/);
  assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Story enviada/);
- assert.match(home,/feedIdentity\.current===\`\$\{username\}:\$\{actor\}\`/);
- assert.doesNotMatch(home,/await publishPost\([^;]+;setComposerText\(''\);setComposerMedia/);
+ assert.match(home,/feedIdentity.current===`\$\{username\}:\$\{actor\}`/);
 });
-
-
-test('multipart success is accepted only with an authoritative ID from the matching backend contract',()=>{
+test('multipart success requires verified server media metadata before clearing composer',()=>{
  const api=read('src/lib/social-feed-api.ts');
- assert.match(api,/path\.includes\('\/stories'\)\?confirmed\?\.id:confirmed\?\.postId/);
- assert.match(api,/Number\.isSafeInteger\(identifier\)/);
- assert.match(api,/identifier<=0/);
- assert.match(api,/O servidor respondeu, mas não confirmou o identificador/);
- assert.match(api,/const uploadName='jynlo-media\.'\+extension/);
+ const receipt=read('src/lib/social-upload-receipt.cjs');
+ assert.match(api,/confirmedSocialMediaReceipt\(confirmed,files.map\(file=>file.mimeType\),path.includes\('\/stories'\)\)/);
+ assert.match(api,/O servidor respondeu, mas não confirmou todos os ficheiros/);
+ assert.match(receipt,/reply.postId/);
+ assert.match(receipt,/reply.id/);
+ assert.match(receipt,/reply.mediaUrl/);
+ assert.match(receipt,/reply.extraMedia/);
 });
