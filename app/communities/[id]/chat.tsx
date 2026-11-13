@@ -100,7 +100,8 @@ export default function CommunityChatScreen(){
     setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');
     setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
    }
-   setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
+   // History requires fresh membership validation on every focus; local drafts do not.
+   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
    setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);

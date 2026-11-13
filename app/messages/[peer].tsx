@@ -126,6 +126,8 @@ export default function DirectConversation(){
    setSending(pending==='text');setPhotoBusy(pending==='photo');sendingNow.current=Boolean(pending);
   }
   const version=++generation.current;
+  // Revalidate private history on every focus, while retaining the unsent draft.
+  setMessages([]);setLoading(true);
   // Refocusing the same chat must not unlock an unsettled message or photo.
   const pending=pendingWrites.current.get(identity);
   sendingNow.current=Boolean(pending);

@@ -38,3 +38,10 @@ test('community refocus preserves unsent text, reply and media within the same a
  assert.doesNotMatch(focus.slice(focus.indexOf("setName('Comunidade')"),focus.indexOf('const pending=')),/setDraft\(''\)|setPhoto\(null\)/);
  assert.match(source,/activeChat\.current!==identity\|\|revokedRef\.current\|\|!canSendPhoto/);
 });
+
+test('community history is revalidated on focus while composer remains intact',()=>{
+ const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
+ assert.match(focus,/setMessages\(\[\]\);setName\('Comunidade'\)/);
+ const rest=focus.slice(focus.indexOf("// History requires fresh membership validation"));
+ assert.doesNotMatch(rest,/setDraft\(''\)|setPhoto\(null\);setExtraPhotos\(\[\]\)/);
+});

@@ -82,3 +82,10 @@ test('direct chat preserves selected photo album and caption on same-conversatio
  assert.doesNotMatch(secondary,/setPhoto\(null\);setExtraPhotos\(\[\]\)/);
  assert.match(screen,/conversation\.current!==identity\|\|blocked\|\|!blockStatusKnown\|\|!photoAvailable/);
 });
+
+test('private history is revalidated on focus without discarding unsent drafts',()=>{
+ const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('function toggleMute()'));
+ assert.match(focused,/setMessages\(\[\]\);setLoading\(true\)/);
+ const rest=focused.slice(focused.indexOf('// Revalidate private history'));
+ assert.doesNotMatch(rest,/setDraft\(''\)|setPhoto\(null\);setExtraPhotos\(\[\]\)/);
+});
