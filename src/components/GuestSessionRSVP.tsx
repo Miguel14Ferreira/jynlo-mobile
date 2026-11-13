@@ -43,7 +43,15 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
    try{await SecureStore.setItemAsync(key,result.receipt);}
    catch{setError('Presença confirmada, mas não foi possível guardar o comprovativo neste dispositivo. Não desinstales a aplicação antes de confirmares o estado com o organizador.');}
    setReceipt(result);onConfirmed();
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível confirmar a presença.');}
+  }catch(e){
+   const detail=e instanceof Error?e.message:'Não foi possível confirmar a presença.';
+   // A POST can succeed on the server even if Android loses the response.
+   // A second POST would either overbook or return a misleading duplicate error.
+   if(/ligação|tempo|servidor respondeu|confirmar|rede|timeout/i.test(detail)){
+    setStatusUnknown(true);
+    setError('Não foi possível saber se a presença ficou confirmada. Não repitas a inscrição: consulta o organizador ou verifica o estado da sessão no browser.');
+   }else setError(detail);
+  }
   finally{pending.current=false;setBusy(false);}
  }
  function cancel(){
