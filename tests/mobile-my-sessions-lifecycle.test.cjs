@@ -15,7 +15,7 @@ test('my-sessions invalidates stale responses after account or focus change',()=
 });
 
 test('my-sessions removes previously visible roster immediately and on screen exit',()=>{
- assert.match(code,/setData\(\{created:\[\],joined:\[\],waitlisted:\[\]\}\);setError\(''\)/);
+ assert.match(code,/setData\(\{created:\[\],joined:\[\],waitlisted:\[\]\}\);setLoadedIdentity\(''\);setError\(''\)/);
  assert.match(code,/return\(\)=>\{generation\.current\+\+;setData\(\{created:\[\],joined:\[\],waitlisted:\[\]\}\);\}/);
 });
 
