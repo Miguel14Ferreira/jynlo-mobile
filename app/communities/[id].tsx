@@ -194,7 +194,7 @@ export default function CommunityDetailScreen(){
         {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
         {sessions.map(s=><View key={s.id} style={styles.communitySessionRow}>
           <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
-          {owner&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
+          {owner&&isMember(community)&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
            <Button secondary title="Registar resultado do jogo"
             onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id)}})}/>:null}
         </View>)}
