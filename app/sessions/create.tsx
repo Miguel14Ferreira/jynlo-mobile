@@ -88,6 +88,8 @@ export default function CreateSessionScreen(){
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  const [step,setStep]=useState(0);
  const [showDateCalendar,setShowDateCalendar]=useState(false);
+ const [showRegistrationCalendar,setShowRegistrationCalendar]=useState(false);
+ const [showExtraCalendar,setShowExtraCalendar]=useState(false);
  // Selection controls whether an existing group of players must be counted explicitly.
  const [hasExistingPlayers,setHasExistingPlayers]=useState(false);
  const stepLabels=['Modalidade','Local e data','Participação','Rever'];
@@ -635,8 +637,12 @@ export default function CreateSessionScreen(){
       <Text style={styles.optionText}>{index+2}. {slot.day} às {slot.time}</Text>
       <Button secondary title="Remover horário" disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
      </View>)}
-     <TextInput style={styles.input} value={extraDay} onChangeText={value=>setExtraDay(formatLocalDateInput(value))}
-      placeholder="Data adicional (AAAA-MM-DD)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário do horário adicional"
+      disabled={busy} onPress={()=>setShowExtraCalendar(value=>!value)} style={styles.option}>
+      <Text style={styles.optionText}>📅 {extraDay||'Escolher dia adicional'} {showExtraCalendar?'▴':'▾'}</Text>
+     </Pressable>
+     {showExtraCalendar?<SessionDateCalendar value={extraDay} disabled={busy}
+      onSelect={date=>{setExtraDay(date);setShowExtraCalendar(false);}}/>:null}
      <TextInput style={styles.input} value={extraTime} onChangeText={value=>setExtraTime(formatLocalTimeInput(value))}
       placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
      <Button secondary title="Adicionar horário" disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
@@ -650,7 +656,13 @@ export default function CreateSessionScreen(){
     <Button secondary={form.registrationOpeningMode!=='SCHEDULED'} title="Programada" disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','SCHEDULED')}/>
    </View>
    {form.registrationOpeningMode==='SCHEDULED'?<>
-    {field('Data de abertura','registrationDay','AAAA-MM-DD','numeric')}
+    <Text style={styles.label}>Data de abertura das inscrições</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário das inscrições"
+     disabled={busy} onPress={()=>setShowRegistrationCalendar(value=>!value)} style={styles.option}>
+     <Text style={styles.optionText}>📅 {form.registrationDay||'Escolher data de abertura'} {showRegistrationCalendar?'▴':'▾'}</Text>
+    </Pressable>
+    {showRegistrationCalendar?<SessionDateCalendar value={form.registrationDay} disabled={busy}
+     onSelect={date=>{patch('registrationDay',date);setShowRegistrationCalendar(false);}}/>:null}
     {field('Hora de abertura','registrationTime','HH:mm (24h)','numeric')}
    </>:null}
    {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
