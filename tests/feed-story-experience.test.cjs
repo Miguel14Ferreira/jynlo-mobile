@@ -70,10 +70,11 @@ test('story caption overlay is shown in preview and playback using the existing 
 test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
  const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(composer);
- assert.match(composer,/StoryCameraCapture onCaptured=\{setStoryMedia\}/);
+ assert.match(composer,/StoryCameraCapture onCaptured=\{media=>\{if\(activeStoryAccount\.current===auth\.token\)setStoryMedia\(media\);\}\}/);
  const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
  assert.match(camera,/<CameraView/);
- assert.match(camera,/startY\.current-pageY>75/);
+ assert.match(camera,/start\.y-y>75/);
+ assert.match(camera,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
  assert.match(camera,/takePictureAsync/);
  assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
  assert.match(composer,/<ScrollView keyboardShouldPersistTaps="handled"/);
@@ -86,20 +87,19 @@ test('feed engagement actions wrap rather than overlapping on small screens',()=
  assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:36/);
 });
 
-test('post creation opens a dedicated media-first screen with camera and gallery',()=>{
+test('post creation supports camera, multiple gallery assets and one-item removal',()=>{
  const composer=feed.split('<Modal visible={identityMatches&&composerOpen}')[1]?.split('</Modal>')[0];
- assert.ok(composer,'full-screen authenticated post composer exists');
- assert.match(composer,/launchCameraAsync|pickMedia\(setComposerMedia,'camera'\)/);
- assert.match(composer,/pickMedia\(setComposerMedia,'gallery'\)/);
- assert.match(composer,/composerMedia\.type==='image'/);
- assert.match(composer,/Image source=\{\{uri:composerMedia\.uri\}\}/);
- assert.match(composer,/MediaVideo key=\{composerMedia\.uri\} uri=\{composerMedia\.uri\}/);
- assert.match(composer,/accessibilityLabel="Remover media da publicação"/);
- assert.match(composer,/onPress=\{\(\)=>setComposerMedia\(null\)\}/);
+ assert.ok(composer,'authenticated full-screen post composer exists');
+ assert.match(composer,/pickMedia\(\(\)=>\{\},'camera',true\)/);
+ assert.match(composer,/pickMedia\(\(\)=>\{\},'gallery',true\)/);
+ assert.match(composer,/composerMedia\.map\(\(media,i\)=>/);
+ assert.match(composer,/Image source=\{\{uri:media.uri\}\} resizeMode="contain"/);
+ assert.match(composer,/MediaVideo key=\{media.uri\} uri=\{media.uri\}/);
+ assert.match(composer,/accessibilityLabel=\{`Remover ficheiro \$\{i\+1\}`\}/);
+ assert.match(composer,/setComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
- assert.match(composer,/disabled=\{!composerMedia\|\|publishing\}/);
- assert.doesNotMatch(feed,/auth\.token\?<View style=\{styles\.composerCard\}>/);
- assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300\}/);
+ assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);
+ assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300,backgroundColor:/);
 });
 
 test('feed comments use a dismissible bottom sheet instead of expanding under the post',()=>{
@@ -141,7 +141,8 @@ test('sharing a session-related post includes its direct web link',()=>{
  assert.match(share,/await Share\.share/);
 });
 
-test('posting without typed caption still satisfies current media API contract',()=>{
+test('posting media without typed caption uses a valid default backend caption',()=>{
  const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
- assert.match(api,/return sendMedia\('\/api\/feed\/posts',\{content:content\.trim\(\)\|\|'Partilhei um momento desportivo\.'\}/);
+ assert.match(api,/const caption=content.trim\(\)\|\|'Partilhei um momento desportivo\.'/);
+ assert.match(api,/return sendMedia\('\/api\/feed\/posts',\{content:caption\},files,token!\)/);
 });
