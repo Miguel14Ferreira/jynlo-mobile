@@ -50,6 +50,7 @@ export default function SessionScreen(){
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
+  const [adminToolsOpen,setAdminToolsOpen]=useState(false);
   const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'|'RANDOM'>('FORM');
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
@@ -570,6 +571,9 @@ export default function SessionScreen(){
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
         <Button title="Editar dados da sessão" secondary disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/[id]/edit',params:{id:String(id)}})}/>
+        <Button title="Partilhar convite da sessão" secondary onPress={share}/>
+        <Button title={adminToolsOpen?'Ocultar ferramentas avançadas':'Mostrar ferramentas avançadas'} secondary onPress={()=>setAdminToolsOpen(open=>!open)}/>
+        {adminToolsOpen?<View style={styles.editor}>
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
         <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
         {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}
@@ -620,13 +624,13 @@ export default function SessionScreen(){
           </View>:null}
         </View>:null}
         <Text style={styles.hint}>Convidar participantes</Text>
-        <Button title="Partilhar sessão por WhatsApp, SMS ou ligação" secondary onPress={share}/>
         <Text style={styles.hint}>Partilha a ligação com quem ainda não tem a aplicação. O acesso e a confirmação de presença seguem as regras da sessão na web.</Text>
         <Text style={styles.hint}>Ou convida diretamente alguém com conta Jynlo:</Text>
         <TextInput style={styles.input} value={inviteUsername} onChangeText={setInviteUsername}
           autoCapitalize="none" autoCorrect={false} placeholder="Nome de utilizador" placeholderTextColor={C.muted}/>
         <Button title="Enviar convite" disabled={busy||!inviteUsername.trim()} onPress={sendInvite}/>
         <Button danger title="Cancelar esta sessão" disabled={busy} onPress={cancel}/>
+        </View>:null}
       </View>:null}
       {detail?.communityId&&owner&&detail.status!=='CANCELLED'&&
         typeof detail.gameDate==='string'&&Number.isFinite(Date.parse(detail.gameDate))&&Date.parse(detail.gameDate)<Date.now()?
