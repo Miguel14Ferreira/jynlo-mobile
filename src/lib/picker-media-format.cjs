@@ -23,7 +23,12 @@ function pickerMediaMime(asset){
  const declared=typeof asset.mimeType==='string'?asset.mimeType.toLowerCase():'';
  const extension=mediaUriExtension(asset.uri);
  const fromUri=extension?formats[extension]:null;
- const mime=declared||fromUri||null;
+ // Android document providers often return opaque content:// URIs with no
+ // extension or MIME type, but still provide the original filename.
+ // Inspect the filename only as a fallback; never override a declared MIME.
+ const nameExtension=mediaUriExtension(asset.fileName);
+ const fromName=nameExtension?formats[nameExtension]:null;
+ const mime=declared||fromUri||fromName||null;
  if(!mime)return null;
  if(asset.type==='video'&&!mime.startsWith('video/'))return null;
  if(asset.type==='image'&&!mime.startsWith('image/'))return null;
