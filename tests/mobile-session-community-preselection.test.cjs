@@ -93,3 +93,18 @@ test('manual community mode selection wins over a late shortcut response',()=>{
 test('preselected community cannot inherit an unsupported sport from a previous form',()=>{
  assert.match(source,/sport:chosenSport\|\|\(sports\.includes\(previous\.sport\)\?previous\.sport:''\)/);
 });
+
+test('confirmed session creation cannot be submitted twice after navigation fails',()=>{
+ assert.match(source,/const confirmedCreation=useRef<\{id:number;identity:string\}\|null>\(null\)/);
+ assert.match(source,/if\(step!==3\|\|locked\.current\|\|busy\|\|DEMO_MODE\|\|!auth\.token\|\|!auth\.username\|\|confirmedCreation\.current\)return/);
+ assert.match(source,/if\(locked\.current\|\|confirmedCreation\.current\|\|/);
+ assert.match(source,/confirmedCreation\.current=\{id:result\.id,identity\}/);
+ assert.match(source,/setCreatedId\(result\.id\)/);
+ assert.match(source,/title="Abrir sessão criada"/);
+ assert.match(source,/confirmedCreation\.current=null;setCreatedId\(null\)/);
+});
+test('session create confirmation captures the actor identity before async callback',()=>{
+ assert.match(source,/const actorToken=auth\.token,actorUsername=auth\.username/);
+ assert.match(source,/createSessionWithPayload\(payload,actorToken,actorUsername\)/);
+ assert.doesNotMatch(source,/createSessionWithPayload\(payload,auth\.token!,auth\.username!\)/);
+});

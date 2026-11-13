@@ -30,6 +30,9 @@ export default function CreateSessionScreen(){
  const preselectionOverridden=useRef(false);
  const communityLoadVersion=useRef(0),communityLoadIdentity=useRef('');
  const createOperation=useRef(0);
+ // Persist a confirmed creation across refocus so a navigation failure cannot duplicate it.
+ const confirmedCreation=useRef<{id:number;identity:string}|null>(null);
+ const [createdId,setCreatedId]=useState<number|null>(null);
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  const [step,setStep]=useState(0);
  // Selection controls whether an existing group of players must be counted explicitly.
@@ -188,6 +191,7 @@ export default function CreateSessionScreen(){
   const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'');
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
+   confirmedCreation.current=null;setCreatedId(null);
    preselectionApplied.current=false;
    preselectionOverridden.current=false;
    setCommunities([]);setCommunityError('');setCommunitySearch('');
@@ -280,7 +284,7 @@ export default function CreateSessionScreen(){
   setStep(current=>Math.min(3,current+1));
  }
  function confirm(){
-  if(step!==3||locked.current||busy||DEMO_MODE||!auth.token||!auth.username)return;
+  if(step!==3||locked.current||busy||DEMO_MODE||!auth.token||!auth.username||confirmedCreation.current)return;
   let payload:ReturnType<typeof createSessionPayload>;
   try{
    if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
@@ -302,6 +306,7 @@ export default function CreateSessionScreen(){
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   const identity=communityLoadIdentity.current;
   const version=communityLoadVersion.current;
+  const actorToken=auth.token,actorUsername=auth.username;
   Alert.alert('Criar sessão desportiva?',describeSessionConfirmation(payload,{
    communityName:selectedCommunity?.name,
    sharedCommunityNames:sharedCommunities.map(c=>c.name),
@@ -309,16 +314,22 @@ export default function CreateSessionScreen(){
   }),[
    {text:'Voltar',style:'cancel'},
    {text:'Criar sessão',onPress:async()=>{
-    if(locked.current||version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
+    if(locked.current||confirmedCreation.current||
+       version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
     const operation=++createOperation.current;
     locked.current=true;setBusy(true);setError('');
     try{
-     const result=await createSessionWithPayload(payload,auth.token!,auth.username!);
+     const result=await createSessionWithPayload(payload,actorToken,actorUsername);
      if(operation!==createOperation.current||version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
+     // The server confirmed the creation. Never POST this draft again.
+     confirmedCreation.current={id:result.id,identity};
+     setCreatedId(result.id);
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){
      if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current)
-      setError((e instanceof Error?e.message:'Não foi possível criar a sessão.')+
+      setError(confirmedCreation.current?
+       'A sessão foi criada, mas não foi possível abrir o detalhe automaticamente. Usa o botão «Abrir sessão criada» para continuar.':
+       (e instanceof Error?e.message:'Não foi possível criar a sessão.')+
        ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');
     }finally{
      // Do not allow another POST until this one has actually settled, even after navigation.
@@ -347,6 +358,11 @@ export default function CreateSessionScreen(){
   {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
   {DEMO_MODE?<Message>Na demonstração a criação real está desativada. Liga a app à API Jynlo para publicar.</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {createdId&&confirmedCreation.current?.identity===communityLoadIdentity.current?
+   <View style={{gap:9}}>
+    <Message>Sessão criada com sucesso. Já não é necessário repetir a criação.</Message>
+    <Button title="Abrir sessão criada" onPress={()=>router.replace({pathname:'/sessions/[id]',params:{id:String(createdId)}})}/>
+   </View>:null}
   {communityError?<Message tone="error">{communityError}</Message>:null}
   {communityError&&auth.token&&auth.username?<Button secondary title="Voltar a carregar comunidades" disabled={busy} onPress={()=>{void loadCommunities();}}/>:null}
   {step===0?<>
