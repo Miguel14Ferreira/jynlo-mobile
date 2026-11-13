@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const {buildSessionCompetitionResult,editableCompetitionRoster}=require('../src/lib/session-competition-result.cjs');
+const {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics}=require('../src/lib/session-competition-result.cjs');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const members=[
  {id:1,username:'Ana',teamCode:'A'},
@@ -116,4 +116,26 @@ test('post game football-only form is gated by sport and passed through session 
  assert.match(view,/roster.filter\(player=>player.selected\)/);
  assert.match(detail,/sport:detail.sport/);
  assert.match(community,/sport:s.sport/);
+});
+
+test('a round acknowledgement never falsely confirms unsupported football statistics',()=>{
+ const payload={outcome:'A',players:[
+  {username:'Ana',team:'A',goals:2,assists:0},
+  {username:'Bruno',team:'B',goals:1}
+ ]};
+ assert.equal(confirmedPlayerStatistics(payload,{entries:[
+  {username:'ana',goals:2,assists:0},{username:'BRUNO',goals:1,assists:0}]}),true);
+ assert.equal(confirmedPlayerStatistics(payload,{id:123}),false);
+ assert.equal(confirmedPlayerStatistics(payload,{entries:[
+  {username:'ana',goals:0,assists:0},{username:'Bruno',goals:0,assists:0}]}),false);
+ assert.equal(confirmedPlayerStatistics(payload,{entries:[
+  {username:'ana',goals:2,assists:0}]}),false);
+ assert.equal(confirmedPlayerStatistics({outcome:'DRAW',players:[
+  {username:'Ana',team:'A'},{username:'Bruno',team:'B'}]}, {id:123}),true);
+});
+test('result UI tells the difference between creating a round and verifying scorer data',()=>{
+ const s=read('app/sessions/[id]/result.tsx');
+ assert.match(s,/confirmedPlayerStatistics\(payload,reply\)/);
+ assert.match(s,/setRecorded\(true\);setRoster\(\[\]\)/);
+ assert.match(s,/não foi possível confirmar os golos e assistências guardados/);
 });
