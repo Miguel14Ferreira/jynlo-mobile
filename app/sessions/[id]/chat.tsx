@@ -193,7 +193,7 @@ export default function SessionChat(){
    const result=appendChatMediaSelection(current,chosen.assets);
    if(result.error)throw Error(result.error);
    if(version!==generation.current||activeChat.current!==identity||closed)return;
-   setPhoto(result.items[0]);setExtraPhotos(result.items.slice(1));
+   setPhoto(result.items[0]||null);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');

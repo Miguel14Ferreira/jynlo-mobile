@@ -30,7 +30,7 @@ test('all three screens select videos and use the protected batch endpoint',()=>
   const s=read(file);
   assert.match(s,/mediaTypes:\['images','videos'\]/,file);
   assert.ok(s.includes(`extraPhotos.length||${identifier}.type==='video'`),file);
-  assert.match(s,/validateChatAlbum\(/,file);
+  assert.match(s,/appendChatMediaSelection\(current,(?:chosen|selected)\.assets\)/,file);
   assert.match(s,/▶ Vídeo/,file);
  }
  const uploader=read('src/lib/chat-photo-album.ts');
