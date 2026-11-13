@@ -34,14 +34,21 @@ function PushNavigation(){
       if(data?.kind!=='notification'||typeof data.id!=='number'||
         !Number.isSafeInteger(data.id)||data.id<=0)return;
       const identifier=response.notification?.request?.identifier;
-      if(typeof identifier!=='string'||!identifier||lastHandled.current===identifier)return;
-      // Consume only a validated, newly handled notification. Otherwise, an
-      // unrelated action or malformed payload could erase a legitimate tap.
-      lastHandled.current=identifier;
-      try{nativeNotifications.clearLastNotificationResponse();}catch{
-        // Native notification availability must not block opening the inbox.
+      if(typeof identifier!=='string'||!identifier)return;
+      // Notification identifiers are not globally unique across logins.
+      const handledKey=auth.username+'|'+auth.token+'|'+identifier;
+      if(lastHandled.current===handledKey)return;
+      try{
+        // Do not acknowledge a notification before navigation succeeds. If the
+        // router is not yet mounted, the same native tap can be retried.
+        router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
+      }catch{
+        return;
       }
-      router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
+      lastHandled.current=handledKey;
+      try{nativeNotifications.clearLastNotificationResponse();}catch{
+        // An unavailable native module must never break inbox navigation.
+      }
     }
     let listener:ReturnType<typeof Notifications.addNotificationResponseReceivedListener>|null=null;
     try{

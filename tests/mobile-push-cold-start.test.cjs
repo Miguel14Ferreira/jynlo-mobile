@@ -15,3 +15,13 @@ test('cold-start notification is retained until authentication is available',()=
  assert.match(source,/Number\.isSafeInteger\(data\.id\)/);
  assert.match(source,/router\.push\(\{pathname:'\/notifications'/);
 });
+
+test('notification taps are acknowledged only after successful inbox navigation',()=>{
+ const root=source.slice(source.indexOf('function PushNavigation()'),source.indexOf('function Navigation()'));
+ const navigate=root.indexOf("router.push({pathname:'/notifications'");
+ const handled=root.indexOf('lastHandled.current=handledKey');
+ const clear=root.indexOf('nativeNotifications.clearLastNotificationResponse()');
+ assert.ok(navigate>=0&&navigate<handled&&handled<clear);
+ assert.match(root,/catch\{\s*return;\s*\}\s*lastHandled\.current=handledKey/);
+ assert.match(root,/const handledKey=auth\.username\+'\|'\+auth\.token\+'\|'\+identifier/);
+});
