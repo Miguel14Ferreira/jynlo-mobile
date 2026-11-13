@@ -12,6 +12,14 @@ export async function competitionSessionRoster(communityId:number,sessionId:numb
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar os jogadores.');
  return request<SessionParticipant[]>(resource(communityId,sessionId)+'/competition-result/roster',{token});
 }
+/** Fail-closed feature negotiation: older backends may ignore JSON player stats.
+ * A result with statistics must never be posted before this check succeeds.
+ */
+export async function competitionSessionCapabilities(communityId:number,sessionId:number,token:string|null){
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para confirmar as funcionalidades.');
+ return request<{footballGoalsAssists:boolean;version:number}>(
+  resource(communityId,sessionId)+'/competition-result/capabilities',{token});
+}
 /** Admin-only recorded IDs; used to avoid submitting a duplicate round. */
 export async function recordedCompetitionSessionIds(communityId:number,token:string|null){
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar os resultados.');
