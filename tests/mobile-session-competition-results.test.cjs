@@ -138,7 +138,7 @@ test('result UI tells the difference between creating a round and verifying scor
  const s=read('app/sessions/[id]/result.tsx');
  assert.match(s,/confirmedPlayerStatistics\(payload,reply\)/);
  assert.match(s,/setRecorded\(true\);setRoster\(\[\]\)/);
- assert.match(s,/não foi possível confirmar os golos e assistências guardados/);
+ assert.match(s,/não foi possível confirmar o marcador ou os golos e assistências guardados/);
 });
 
 test('new football stats require an authenticated capability preflight before any POST',()=>{
@@ -150,7 +150,9 @@ test('new football stats require an authenticated capability preflight before an
  assert.match(api,/resource\(communityId,sessionId\)/);
  assert.match(resultAction,/payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)/);
  assert.match(resultAction,/capabilities=await competitionSessionCapabilities\(communityId,sessionId,token\)/);
- assert.match(resultAction,/capabilities\?\.version!==1\|\|capabilities.footballGoalsAssists!==true/);
+ assert.match(resultAction,/capabilities\?\.version!==1\|\|/);
+ assert.match(resultAction,/capabilities.footballGoalsAssists!==true/);
+ assert.match(resultAction,/capabilities.footballFinalScore!==true/);
  assert.match(resultAction,/Nenhuma jornada foi enviada/);
  assert.match(resultAction,/if\(version!==generation.current\|\|actor!==identityRef.current\)return null/);
  assert.match(resultAction,/submitted=true;\s*return recordCompetitionSessionResult/);
@@ -164,7 +166,7 @@ test('legacy winner-only match reporting skips stats negotiation and keeps real 
  const roster=editableCompetitionRoster(members);
  const payload=buildSessionCompetitionResult('B',roster);
  assert.ok(payload.players.every(p=>!Object.hasOwn(p,'goals')&&!Object.hasOwn(p,'assists')));
- assert.match(ui,/if\(payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)\)\{/);
+ assert.match(ui,/if\(payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)\|\|payload.scoreA!==undefined\)\{/);
  assert.match(api,/return request<\{id:number;entries\?:Array<\{username:string;goals:number;assists:number\}>\}>\(/);
  assert.match(ui,/if\(!Number.isSafeInteger\(reply\?\.id\)\|\|reply.id<=0\)/);
 });
@@ -176,7 +178,7 @@ test('result editor negotiates football fields at load and preserves legacy winn
  assert.match(view,/setPlayerStatsSupported\(football&&capabilities\?\.version===1&&capabilities.footballGoalsAssists===true\)/);
  assert.match(view,/setPlayerStatsSupported\(false\)/);
  assert.match(view,/football&&playerStatsSupported\?roster.filter\(player=>player.selected\)/);
- assert.match(view,/O backend ainda não confirmou suporte a golos e assistências/);
+ assert.match(view,/O backend ainda não confirmou suporte ao marcador oficial/);
  assert.match(view,/Podes registar apenas o vencedor ou empate/);
  assert.match(view,/return recordCompetitionSessionResult\(communityId,sessionId,token,payload\)/);
 });
