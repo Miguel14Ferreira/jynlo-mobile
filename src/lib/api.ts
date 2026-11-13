@@ -156,8 +156,14 @@ export async function pendingSessionInvites(token:string,username?:string):Promi
   return request<PendingSessionInvite[]>('/api/session-invites/pending',{token});
 }
 export async function inviteToSession(id:number,username:string,token:string,actor?:string):Promise<{id:number}>{
-  if(DEMO_MODE)return demoInvitePlayer(id,actor||'',username.trim());
-  return request<{id:number}>(`/api/sessions/${id}/invites`,{token,method:'POST',body:{username:username.trim()}});
+  const invitee=username.trim();
+  if(!Number.isSafeInteger(id)||id<=0||!invitee||!token)
+    throw Error('Sessão, destinatário ou autenticação inválidos para enviar convite.');
+  const result=DEMO_MODE?await demoInvitePlayer(id,actor||'',invitee):
+    await request<{id:number}>(`/api/sessions/${id}/invites`,{token,method:'POST',body:{username:invitee}});
+  if(!Number.isSafeInteger(result?.id)||result.id<=0)
+    throw Error('O servidor respondeu, mas não confirmou o convite. Confirma a lista antes de repetir.');
+  return result;
 }
 export async function answerSessionInvite(sessionId:number,inviteId:number,accept:boolean,token:string,username?:string):Promise<JoinSessionResponse|void>{
   if(DEMO_MODE){if(!username)throw new Error('Inicia sessão.');return demoRespondInvite(sessionId,inviteId,username,accept);}

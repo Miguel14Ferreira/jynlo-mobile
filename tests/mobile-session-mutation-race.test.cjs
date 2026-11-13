@@ -57,3 +57,13 @@ test('sent session invite keeps newer draft and cannot cross account changes',()
  assert.match(invite,/operationVersion===detailRequestGeneration\.current&&operationEpoch===actionEpoch\.current/);
  assert.match(invite,/setInviteUsername\(current=>current\.trim\(\)===invitee\?'':current\)/);
 });
+
+test('session invites require a real server ID rather than treating HTTP success as creation',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const invite=api.slice(api.indexOf('export async function inviteToSession('),api.indexOf('export async function answerSessionInvite('));
+ assert.match(invite,/const invitee=username\.trim\(\)/);
+ assert.match(invite,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\|\|!invitee\|\|!token\)/);
+ assert.match(invite,/if\(!Number\.isSafeInteger\(result\?\.id\)\|\|result\.id<=0\)/);
+ assert.match(invite,/não confirmou o convite/);
+});
