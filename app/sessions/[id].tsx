@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -233,6 +233,25 @@ export default function SessionScreen(){
       setPassword(current=>current===submittedPassword?'':current);
     return confirmed;
   },(result)=>(result as {message:string}).message);};
+  const joinWithGuestInvitation=()=>{void perform(async()=>{
+    if(!auth.token||!guestToken)throw Error('Inicia sessão para confirmar o convite.');
+    // The invitation establishes access; the JWT identifies the user.
+    // Never create an anonymous guest seat for an authenticated account.
+    const presence=await request<{status:string;canCancel:boolean}>(`/api/sessions/${id}/guest-member-presence`,{
+      token:auth.token,method:'POST',body:{token:guestToken}
+    });
+    if(presence.status==='PARTICIPANT'||presence.status==='ORGANIZER')
+      return {message:'Já tens presença confirmada nesta sessão.'};
+    if(presence.status==='WAITLISTED')
+      return {message:'Já estás na lista de espera desta sessão.'};
+    if(presence.status!=='NONE')throw Error('Não foi possível verificar o teu estado de participação.');
+    const result=await request<Awaited<ReturnType<typeof joinSession>>>(`/api/sessions/${id}/guest-join-account`,{
+      token:auth.token,method:'POST',body:{token:guestToken}
+    });
+    if(!confirmedSessionJoin(result))
+      throw Error('O servidor não confirmou a participação. Verifica a lista de jogadores antes de repetir.');
+    return result;
+  },result=>(result as {message?:string}).message||'Convite confirmado.');};
   const leave=()=>{
     if(!auth.token||!detail||!canLeave(detail))return;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
@@ -485,7 +504,8 @@ export default function SessionScreen(){
          void Share.share({message:url,url}).catch(()=>Alert.alert('Convite','Não foi possível partilhar a ligação.'));
        }}/>
      </View>:null}
-    {guestToken&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
+    {guestToken&&auth.token&&!loading&&Number.isSafeInteger(id)&&id>0?<Button title="Confirmar com a minha conta Jynlo" disabled={busy||Boolean(detail?.joined||detail?.waitlisted||owner)} onPress={joinWithGuestInvitation}/>:null}
+    {guestToken&&!auth.token&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
