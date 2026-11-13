@@ -40,3 +40,23 @@ test('feed uses authenticated API, native measured sizes and checked server rece
  assert.match(api,/confirmedSocialMediaReceipt\(confirmed,files.map\(file=>file.mimeType\),path.includes\('\/stories'\)\)/);
  assert.match(read('src/lib/social-upload-receipt.d.cts'),/confirmedSocialMediaReceipt\(/);
 });
+
+test('mobile posts may contain only media, with no invented mandatory caption',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ assert.doesNotMatch(api,/Partilhei um momento desportivo/);
+ assert.match(api,/const caption=content\.trim\(\)/);
+ assert.match(api,/sendMedia\('\/api\/feed\/posts',\{content:caption/);
+ assert.match(api,/if\(caption\)item=await createTextPost/);
+});
+test('optional post location uses backend supported 160 character limit',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ const feed=read('app/(tabs)/index.tsx');
+ const types=read('src/lib/types.ts');
+ assert.match(api,/if\(place\.length>160\)/);
+ assert.match(api,/location:place/);
+ assert.match(feed,/placeholder="Adicionar localização \(opcional\)"/);
+ assert.match(feed,/maxLength=\{160\}/);
+ assert.match(feed,/publishPost\(body,media,actor,username,place\)/);
+ assert.match(feed,/item\.location\?\.trim\(\)/);
+ assert.match(types,/location\?:string\|null/);
+});

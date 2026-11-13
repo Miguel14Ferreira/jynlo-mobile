@@ -207,7 +207,7 @@ export default function JynloFeedHome(){
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
   const [composerOpen,setComposerOpen]=useState(false);
   const [expandedPostImage,setExpandedPostImage]=useState<string|null>(null);
-  const [composerText,setComposerText]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
+  const [composerText,setComposerText]=useState(''),[composerLocation,setComposerLocation]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const composerMediaRef=useRef<MobileMedia[]>([]);
   const composerOpenRef=useRef(false);
   const postComposerRevision=useRef(0);
@@ -235,7 +235,7 @@ export default function JynloFeedHome(){
       setPosts([]);setStories([]);setOwnStories([]);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');setExpandedPostImage(null);
-      postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');
+      postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);
     }
     setLoading(true);setError('');
@@ -405,11 +405,11 @@ export default function JynloFeedHome(){
   }
   function closePostComposer(){
     if(postInFlight.current)return;
-    if(composerMediaRef.current.length||composerText.trim()){
+    if(composerMediaRef.current.length||composerText.trim()||composerLocation.trim()){
       Alert.alert('Descartar publicação?','As fotografias, os vídeos e o texto deste rascunho serão perdidos.',[
         {text:'Continuar a editar',style:'cancel'},
         {text:'Descartar',style:'destructive',onPress:()=>{
-          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerOpen(false);
+          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);
         }}
       ]);
       return;
@@ -457,17 +457,17 @@ export default function JynloFeedHome(){
   }
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
-    const actor=auth.token,username=auth.username,body=composerText,media=[...composerMedia];
+    const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
     postInFlight.current=true;setPublishing(true);
     try{
-      await publishPost(body,media,actor,username);
+      await publishPost(body,media,actor,username,place);
     }catch(e){
       Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
       return;
     }finally{postInFlight.current=false;setPublishing(false);}
     // Publishing succeeded. A feed refresh failure must never be shown as an upload failure.
     if(feedIdentity.current===`${username}:${actor}`){
-      postComposerRevision.current++;composerOpenRef.current=false;setComposerText('');changeComposerMedia(()=>[]);setComposerOpen(false);
+      postComposerRevision.current++;composerOpenRef.current=false;setComposerText('');setComposerLocation('');changeComposerMedia(()=>[]);setComposerOpen(false);
       void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
     }
   }
@@ -537,6 +537,7 @@ export default function JynloFeedHome(){
         <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" hitSlop={8}><Text style={{color:MUTED,fontSize:19}}>↗</Text></Pressable>
         {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><Text style={{color:MUTED,fontSize:24}}>⋯</Text></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
+      {item.type==='POST'&&item.location?.trim()?<Text style={styles.postMeta}>⌖ {item.location.trim()}</Text>:null}
       {album.length?<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
         {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:Math.max(220,screenWidth-56),position:'relative'}}>
           {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<Pressable accessibilityRole="button" accessibilityLabel={'Ampliar fotografia '+(i+1)+' de '+album.length} onPress={()=>setExpandedPostImage(uri)}><Image source={{uri}} style={styles.postImage} resizeMode="contain"/></Pressable>):null}
@@ -637,6 +638,7 @@ export default function JynloFeedHome(){
           </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.</Text></View>}
           <TextInput style={styles.composerInput} value={composerText} onChangeText={setComposerText} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
+          <TextInput style={styles.storyCaptionInput} value={composerLocation} onChangeText={setComposerLocation} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
         </ScrollView>
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
       </SafeAreaView>

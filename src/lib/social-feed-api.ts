@@ -161,10 +161,10 @@ export async function addPostComment(postId:number,content:string,token:string|n
     demoComments.set(postId,[...(demoComments.get(postId)||[]),item]);return item;}
   return request<SocialComment>(`/api/feed/posts/${postId}/comments`,{token,method:'POST',body:{content:message}});
 }
-export async function createTextPost(content:string,token:string|null,username:string|null):Promise<FeedItem>{
+export async function createTextPost(content:string,token:string|null,username:string|null,location=''):Promise<FeedItem>{
   requireViewer(token,username);const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
-  if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0};demoPosts.unshift(item);return item;}
-  return request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body}});
+  if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
+  return request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null}});
 }
 async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string):Promise<any>{
  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
@@ -241,18 +241,29 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    for(const file of temporary){try{if(file.exists)file.delete();}catch{}}
  }
 }
-export async function publishPost(content:string,files:MobileMedia[]|null,token:string|null,username:string|null):Promise<FeedItem>{
+export async function publishPost(content:string,files:MobileMedia[]|null,token:string|null,username:string|null,location=''):Promise<FeedItem>{
   requireViewer(token,username);
-  if(!files?.length)return createTextPost(content,token,username);
-  const caption=content.trim()||'Partilhei um momento desportivo.';
+  const caption=content.trim();
+  const place=location.trim();
+  if(caption.length>1000)throw new Error('A publicação não pode exceder 1000 caracteres.');
+  if(place.length>160)throw new Error('A localização pode ter até 160 caracteres.');
+  if(!files?.length)return createTextPost(caption,token,username,place);
+  // Photo/video-only posts are supported by the server; never invent a caption.
   if(DEMO_MODE){
-    const item=await createTextPost(caption,token,username);
+    let item:FeedItem;
+    if(caption)item=await createTextPost(caption,token,username,place);
+    else{
+      item={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,
+        authorProfilePicUrl:null,content:'',imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,
+        sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:place||null};
+      demoPosts.unshift(item);
+    }
     const [first,...extra]=files;
     if(first.type==='image')item.imageUrl=first.uri;else item.videoUrl=first.uri;
     item.extraMedia=extra.map(file=>({url:file.uri,mimeType:file.mimeType}));
     return item;
   }
-  return sendMedia('/api/feed/posts',{content:caption},files,token!);
+  return sendMedia('/api/feed/posts',{content:caption,...(place?{location:place}:{})},files,token!);
 }
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);

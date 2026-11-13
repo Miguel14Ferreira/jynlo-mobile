@@ -187,6 +187,8 @@ export interface FeedItem {
   extraMedia?:Array<{url:string;mimeType:string}>;
   createdAt:string;sessionId:number|null;sport:string|null;city:string|null;gameDate:string|null;
   likeCount:number;likedByMe:boolean;commentCount:number;hideLikers?:boolean;
+  /** Optional label supplied by the author, not the device GPS. */
+  location?:string|null;
 }
 /** Reduced mobile view; all fields are server sourced, never infer GPS/address. */
 export interface VenueSummary {
