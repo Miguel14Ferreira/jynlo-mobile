@@ -1,6 +1,13 @@
 'use strict';
 /** Quick session competition result: report only actual team membership and outcome. */
-function buildSessionCompetitionResult(outcome,players){
+function optionalStat(value,label){
+ if(value===undefined||value===null||value==='')return null;
+ const normalized=String(value).trim();
+ if(!/^(?:0|[1-9][0-9]?)$/.test(normalized))
+  throw Error(label+' deve ser um número inteiro entre 0 e 99.');
+ return Number(normalized);
+}
+function buildSessionCompetitionResult(outcome,players,sport=null){
  if(!['A','B','DRAW'].includes(outcome))throw Error('Escolhe Equipa A, Equipa B ou empate.');
  if(!Array.isArray(players))throw Error('A lista de jogadores não está disponível.');
  const byName=new Set(),selected=[];
@@ -12,7 +19,14 @@ function buildSessionCompetitionResult(outcome,players){
   const key=username.toLowerCase();
   if(!username||!['A','B'].includes(team)||byName.has(key))
     throw Error('Verifica os jogadores e as equipas antes de registar o resultado.');
-  byName.add(key);selected.push({username,team});
+  const goals=optionalStat(player.goals,'Golos');
+  const assists=optionalStat(player.assists,'Assistências');
+  if((goals!==null||assists!==null)&&sport!=='Futebol')
+   throw Error('Golos e assistências só podem ser registados em sessões de Futebol.');
+  byName.add(key);
+  selected.push(goals!==null||assists!==null
+   ?{username,team,...(goals!==null?{goals}:{}),...(assists!==null?{assists}:{})}
+   :{username,team});
   if(team==='A')a++;else b++;
  }
  if(selected.length<2||selected.length>100||!a||!b)
@@ -31,7 +45,8 @@ function editableCompetitionRoster(roster){
   id:p.id,username:p.username.trim(),
   // Only server-persisted team assignments are trusted. Never invent teams.
   team:p.teamCode==='A'||p.teamCode==='B'?p.teamCode:null,
-  selected:p.teamCode==='A'||p.teamCode==='B'
+  selected:p.teamCode==='A'||p.teamCode==='B',
+  goals:'',assists:''
  }));
 }
-module.exports={buildSessionCompetitionResult,editableCompetitionRoster};
+module.exports={buildSessionCompetitionResult,editableCompetitionRoster,optionalStat};
