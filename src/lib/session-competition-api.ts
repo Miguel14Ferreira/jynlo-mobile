@@ -20,7 +20,7 @@ export async function recordedCompetitionSessionIds(communityId:number,token:str
 }
 export async function recordCompetitionSessionResult(communityId:number,sessionId:number,token:string|null,payload:CompetitionResultPayload){
  if(!token||DEMO_MODE)throw Error('Inicia sessão para registar resultados.');
- return request<{id:number}>(resource(communityId,sessionId)+'/competition-result',{
+ return request<{id:number;entries?:Array<{username:string;goals:number;assists:number}>}>(resource(communityId,sessionId)+'/competition-result',{
   token,method:'POST',body:payload
  });
 }
