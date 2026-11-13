@@ -15,3 +15,12 @@ test('waitlist acknowledgement validates position without inventing one',()=>{
  assert.equal(receipt({state:'WAITLISTED',waitlistPosition:-1}),null);
  assert.equal(receipt({state:'WAITLISTED',waitlistPosition:'1'}),null);
 });
+
+test('shared join API refuses malformed and unconfirmed server participation states',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const source=api.slice(api.indexOf('export async function joinSession('),api.indexOf('export async function leaveSession('));
+ assert.match(source,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\|\|!token\)/);
+ assert.match(source,/if\(!confirmedSessionJoin\(result\)\)/);
+ assert.match(source,/não confirmou a participação/);
+});

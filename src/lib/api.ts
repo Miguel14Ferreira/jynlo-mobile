@@ -79,8 +79,13 @@ export async function sessionParticipants(id:number,token:string):Promise<Sessio
 }
 /** IMPORTANT: never automatically retry a POST on a connection timeout. */
 export async function joinSession(id:number,token:string,username?:string,password?:string):Promise<JoinSessionResponse>{
-  if(DEMO_MODE){ if(!username)throw new Error('Inicia sessão para participar.');return demoJoin(id,username); }
-  return request<JoinSessionResponse>(`/api/sessions/${id}/join`,{token,method:'POST',body:{password:password?.trim()||null}});
+  if(!Number.isSafeInteger(id)||id<=0||!token)throw Error('Sessão ou autenticação inválida.');
+  const result=DEMO_MODE
+    ?(username?demoJoin(id,username):(()=>{throw Error('Inicia sessão para participar.');})())
+    :await request<JoinSessionResponse>(`/api/sessions/${id}/join`,{token,method:'POST',body:{password:password?.trim()||null}});
+  if(!confirmedSessionJoin(result))
+    throw Error('O servidor respondeu, mas não confirmou a participação. Atualiza os jogadores antes de repetir.');
+  return result;
 }
 /** Mutations are only issued by explicit user interaction. Never retry after a network timeout. */
 export async function leaveSession(id:number,token:string,username?:string):Promise<void>{
