@@ -47,7 +47,7 @@ function nativeRouteForWebLink(path){
    // Preserve a legitimate guest invitation on verified app links, without
    // forwarding arbitrary query parameters or passwords into native routing.
    const guest=url.searchParams.get('guest');
-   if(guest&&/^[A-Za-z0-9_-]{8,180}$/.test(guest))
+   if(guest&&/^[A-Za-z0-9_-]{43}$/.test(guest))
     return url.pathname+'?guest='+encodeURIComponent(guest);
    return url.pathname;
   }
