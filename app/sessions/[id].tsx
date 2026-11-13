@@ -473,7 +473,7 @@ export default function SessionScreen(){
        <Text style={styles.hint}>O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.</Text>
        <Button secondary title="Continuar no browser" onPress={()=>{
          const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
-         void Linking.openURL(url).catch(()=>Alert.alert('Convite','Não foi possível abrir a ligação no browser.'));
+         void import('expo-web-browser').then(browser=>browser.openBrowserAsync(url)).catch(()=>Alert.alert('Convite','Não foi possível abrir a ligação no browser.'));
        }}/>
        <Button secondary title="Partilhar ligação de confirmação" onPress={()=>{
          const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
