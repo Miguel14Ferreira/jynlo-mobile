@@ -36,6 +36,12 @@ function nativeRouteForWebLink(path){
     return '/tournaments/'+community[1]+'/'+tournament+'/teams/'+team;
    return '/communities/'+community[1];
   }
+  // The web organizer uses /menu/events/:id for private or members-only
+  // sessions. The native detail screen performs its own authentication and
+  // visibility checks; do not propagate passwords or guest tokens.
+  const organizerSession=url.pathname.match(/^\/menu\/events\/([1-9]\d*)$/);
+  if(organizerSession&&Number.isSafeInteger(Number(organizerSession[1])))
+   return '/sessions/'+organizerSession[1];
   const session=url.pathname.match(/^\/sessions\/([1-9]\d*)$/);
   if(session&&Number.isSafeInteger(Number(session[1])))return url.pathname;
   const venue=url.pathname.match(/^\/venues\/([1-9]\d*)$/);

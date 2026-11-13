@@ -13,13 +13,17 @@ function hasAndroidLink(prefix){
 }
 test('Android registered session and venue app links match native navigation',()=>{
  assert.equal(hasAndroidLink('/sessions/'),true);
+ assert.equal(hasAndroidLink('/menu/events/'),true);
  assert.equal(hasAndroidLink('/venues/'),true);
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/42'),'/sessions/42');
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/menu/events/42'),'/sessions/42');
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/menu/events/42?token=never-expose'),'/sessions/42');
  assert.equal(nativeRouteForWebLink('https://d24sports.com/venues/25'),'/venues/25');
 });
 test('share URLs reject untrusted hosts and invalid session identifiers',()=>{
  assert.equal(nativeRouteForWebLink('https://evil.example/sessions/42'),'https://evil.example/sessions/42');
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/0'),'https://d24sports.com/sessions/0');
+ assert.equal(nativeRouteForWebLink('https://d24sports.com/menu/events/0'),'https://d24sports.com/menu/events/0');
  assert.equal(nativeRouteForWebLink('https://d24sports.com/sessions/../../private'),'https://d24sports.com/sessions/../../private');
 });
 test('private session passwords must never be embedded in invite app-link filters',()=>{
