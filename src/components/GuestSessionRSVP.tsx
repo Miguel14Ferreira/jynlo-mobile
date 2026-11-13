@@ -24,7 +24,25 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
     const previous=await SecureStore.getItemAsync(key);
     if(previous&&validSecret(previous)){
      try{const state=await request<GuestReceipt>('/api/sessions/'+sessionId+'/guest-requests/status',{method:'POST',body:{receipt:previous}});
-      if(alive&&state.status!=='CANCELLED'&&state.status!=='REJECTED')setReceipt({...state,receipt:previous});
+      if(alive){
+        // A successful authoritative lookup resolves a previous status error.
+        // Only clear the unknown state when the server actually confirmed a
+        // known receipt; an uncertain new POST without a receipt stays blocked.
+        if(['APPROVED','LINKED','PENDING'].includes(state.status)){
+          setReceipt({...state,receipt:previous});
+          uncertainSubmission.current=false;
+          setStatusUnknown(false);
+        }else if(['CANCELLED','REJECTED'].includes(state.status)){
+          uncertainSubmission.current=false;
+          setStatusUnknown(false);
+          // The previous receipt is no longer actionable, so do not keep it
+          // on this device or show an obsolete confirmed presence.
+          try{await SecureStore.deleteItemAsync(key);}catch{}
+        }else{
+          setStatusUnknown(true);
+          setError('O servidor devolveu um estado de presença desconhecido. Contacta o organizador antes de tentares novamente.');
+        }
+      }
      }catch{if(alive){setStatusUnknown(true);setError('Não foi possível confirmar o estado da presença anterior. Verifica novamente antes de pedires outra vaga.');}}
     }
     const data=await request<{players:Player[]}>('/api/sessions/'+sessionId+'/guest-roster',{method:'POST',body:{token:guestToken}});
