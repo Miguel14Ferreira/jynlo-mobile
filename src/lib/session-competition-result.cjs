@@ -7,7 +7,7 @@ function optionalStat(value,label){
   throw Error(label+' deve ser um número inteiro entre 0 e 99.');
  return Number(normalized);
 }
-function buildSessionCompetitionResult(outcome,players,sport=null){
+function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scoreB=''){
  if(!['A','B','DRAW'].includes(outcome))throw Error('Escolhe Equipa A, Equipa B ou empate.');
  if(!Array.isArray(players))throw Error('A lista de jogadores não está disponível.');
  const byName=new Set(),selected=[];
@@ -31,7 +31,20 @@ function buildSessionCompetitionResult(outcome,players,sport=null){
  }
  if(selected.length<2||selected.length>100||!a||!b)
   throw Error('Seleciona pelo menos um jogador em cada equipa.');
- return {outcome,players:selected};
+ const hasA=String(scoreA??'').trim().length>0;
+ const hasB=String(scoreB??'').trim().length>0;
+ if(hasA!==hasB)throw Error('Preenche os dois resultados ou deixa os dois vazios.');
+ if(!hasA)return {outcome,players:selected};
+ if(sport!=='Futebol')throw Error('O marcador oficial só pode ser registado para Futebol.');
+ const aScore=optionalStat(scoreA,'Golos da Equipa A');
+ const bScore=optionalStat(scoreB,'Golos da Equipa B');
+ const winner=aScore===bScore?'DRAW':aScore>bScore?'A':'B';
+ if(outcome!==winner)throw Error('O vencedor ou empate não corresponde ao marcador.');
+ const goalsA=selected.filter(p=>p.team==='A').reduce((sum,p)=>sum+(p.goals||0),0);
+ const goalsB=selected.filter(p=>p.team==='B').reduce((sum,p)=>sum+(p.goals||0),0);
+ if(goalsA>aScore||goalsB>bScore)
+  throw Error('Os golos atribuídos aos jogadores excedem o marcador oficial.');
+ return {outcome,players:selected,scoreA:aScore,scoreB:bScore};
 }
 function editableCompetitionRoster(roster){
  if(!Array.isArray(roster))throw Error('Não foi possível confirmar os jogadores inscritos.');
@@ -66,4 +79,8 @@ function confirmedPlayerStatistics(payload,round){
    (player.assists===undefined||actual.assists===player.assists);
  });
 }
-module.exports={buildSessionCompetitionResult,editableCompetitionRoster,optionalStat,confirmedPlayerStatistics};
+function confirmedOfficialScore(payload,round){
+ if(payload?.scoreA===undefined&&payload?.scoreB===undefined)return true;
+ return round?.teamScore?.sideA===payload.scoreA&&round?.teamScore?.sideB===payload.scoreB;
+}
+module.exports={buildSessionCompetitionResult,editableCompetitionRoster,optionalStat,confirmedPlayerStatistics,confirmedOfficialScore};
