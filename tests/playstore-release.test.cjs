@@ -13,7 +13,7 @@ test('only real HTTPS release with matching Firebase app config passes',()=>{
   const output=execFileSync(process.execPath,[script,'--production'],{env:{...process.env,
    EAS_BUILD_PROFILE:'play-internal',EXPO_PUBLIC_JYNLO_API_URL:'https://api.d24sports.com',GOOGLE_SERVICES_JSON:configFile
   },encoding:'utf8'});
-  assert.match(output,/OK \\(api\\)/);
+  assert.ok(output.includes('OK (api)'));
   assert.throws(()=>execFileSync(process.execPath,[script,'--production'],{env:{...process.env,
    EAS_BUILD_PROFILE:'play-internal',EXPO_PUBLIC_JYNLO_API_URL:'https://desporto24-preview-api.onrender.com',GOOGLE_SERVICES_JSON:configFile
   },stdio:'pipe'}));
