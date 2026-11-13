@@ -24,7 +24,8 @@ function runGuard(url, options={}) {
       encoding: 'utf8',
       env: { ...process.env, EAS_BUILD_PROFILE:'play-internal',
         EXPO_PUBLIC_JYNLO_API_URL: url, JYNLO_REQUIRE_REAL_API:'1',
-        GOOGLE_SERVICES_JSON: options.missingFirebase ? '' : firebase },
+        GOOGLE_SERVICES_JSON: options.missingFirebase ? '' : firebase,
+        JYNLO_GOOGLE_MAPS_ANDROID_API_KEY: options.missingMaps ? '' : 'AIza'+'A'.repeat(35) },
     });
   } finally {fs.rmSync(temp,{recursive:true,force:true});}
 }
@@ -50,6 +51,9 @@ test('release guard accepts only public HTTPS API origins', () => {
   const preview = runGuard('https://desporto24-preview-api.onrender.com');
   assert.notEqual(preview.status, 0);
   assert.match(preview.stderr, /BUILD BLOQUEADO/);
+  const missingMaps = runGuard(productionApi,{missingMaps:true});
+  assert.notEqual(missingMaps.status, 0);
+  assert.match(missingMaps.stderr, /Google Maps Android/);
   const missingFirebase = runGuard(productionApi,{missingFirebase:true});
   assert.notEqual(missingFirebase.status, 0);
   assert.match(missingFirebase.stderr, /GOOGLE_SERVICES_JSON/);
