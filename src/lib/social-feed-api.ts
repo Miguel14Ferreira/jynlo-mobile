@@ -4,7 +4,7 @@ import {feed as demoFeedSeed} from './parity-api';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
-import {confirmedTextPostReceipt} from './social-text-post-receipt.cjs';
+import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt} from './social-text-post-receipt.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
 const demoPosts:FeedItem[]=[];
@@ -286,7 +286,10 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     item.extraMedia=extra.map(file=>({url:file.uri,mimeType:file.mimeType}));
     return item;
   }
-  return sendMedia('/api/feed/posts',{content:caption,...(place?{location:place}:{})},files,token!);
+  const confirmed=await sendMedia('/api/feed/posts',{content:caption,...(place?{location:place}:{})},files,token!);
+  if(!confirmedTextPostReceipt(confirmed,username!,caption,place))
+    throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
+  return confirmed;
 }
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
@@ -298,8 +301,11 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
   if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true,
     textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null};demoStories.unshift(item);return item;}
-  return sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
+  const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
     ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{})},[file],token!);
+  if(!confirmedStoryAuthorReceipt(confirmed,username!,caption))
+    throw Error('O servidor não confirmou o autor ou a legenda da Story. Verifica o teu perfil antes de repetir.');
+  return confirmed;
 }
 export async function discoverPeople(token:string|null):Promise<FeedUserSuggestion[]>{
   if(DEMO_MODE)return [{username:'rita_demo',displayName:'Rita',photoUrl:null,sport:'Voleibol',city:'Odivelas'},
