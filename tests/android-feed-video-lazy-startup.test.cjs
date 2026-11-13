@@ -19,7 +19,7 @@ test('on-demand video module preserves story autoplay and post media controls',(
  assert.match(video,/import \{VideoView,useVideoPlayer\} from 'expo-video'/);
  assert.match(video,/p\.loop=story/);
  assert.match(video,/if\(story\)\{p\.muted=true;p\.play\(\);\}/);
- assert.match(video,/contentFit="cover" nativeControls=\{!story\}/);
+ assert.match(video,/contentFit=\{story\?'cover':'contain'\} nativeControls=\{!story\}/);
  assert.match(video,/postVideo:\{width:'100%',height:235,borderRadius:9\}/);
  assert.match(video,/storyVideo:\{width:'100%',height:'100%'\}/);
 });
