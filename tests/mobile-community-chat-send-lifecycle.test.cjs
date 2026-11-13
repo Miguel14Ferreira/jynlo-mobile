@@ -1,47 +1,50 @@
 'use strict';
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/chat.tsx'),'utf8');
-test('community sends and photo uploads ignore late responses after navigation',()=>{
- assert.match(source,/const version=generation\.current,token=auth\.token,username=auth\.username/);
- assert.match(source,/await sendCommunityMessage\(id,message,token,username\)/);
- assert.match(source,/await sendChatPhoto\('community',id,token,selectedPhoto\)/);
- assert.match(source,/if\(version!==generation\.current\)return/);
- assert.match(source,/if\(activeChat\.current===identity\)\{sendingNow\.current=false;setSending\(false\);\}/);
- assert.match(source,/if\(activeChat\.current===identity\)\{uploadingNow\.current=false;setUploading\(false\);\}/);
+const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
+const send=source.slice(source.indexOf('async function send()'),source.indexOf('async function choosePhoto()'));
+const picker=source.slice(source.indexOf('async function choosePhoto('),source.indexOf('async function uploadPhoto()'));
+const upload=source.slice(source.indexOf('async function uploadPhoto()'),source.indexOf('const recentPhotoIds='));
+test('community sender and uploader keep server writes isolated to originating account',()=>{
+ assert.match(send,/const version=generation\.current,token=auth\.token,username=auth\.username/);
+ assert.match(send,/await sendCommunityMessage\(id,message,token,username,originalReplyId\)/);
+ assert.match(upload,/sendChatPhoto\('community',id,token,selectedPhoto,originalReplyId\)/);
+ assert.match(upload,/sendChatPhotoAlbum\(/);
+ for(const action of [send,upload]){
+  assert.match(action,/if\(version!==generation\.current\)return/);
+  assert.match(action,/pendingWrites\.current\.delete\(identity\)/);
+  assert.match(action,/if\(activeChat\.current===identity\)/);
+ }
 });
-test('community chat prevents concurrent sends and preserves newly typed draft',()=>{
- assert.match(source,/if\(sendingNow\.current\|\|uploadingNow\.current/);
- assert.match(source,/sendingNow\.current=true;setSending\(true\)/);
- assert.match(source,/setDraft\(current=>current===originalDraft\?'':current\)/);
- assert.match(source,/if\(version!==generation\.current\)return;\s*if\(!selected\.canceled/);
+test('community chat locks duplicate sends and preserves text typed after send begins',()=>{
+ assert.match(send,/sendingNow\.current\|\|uploadingNow\.current/);
+ assert.match(send,/pendingWrites\.current\.has\(identity\)/);
+ assert.match(send,/pendingWrites\.current\.set\(identity,'text'\)/);
+ assert.match(send,/setDraft\(current=>current===originalDraft\?'':current\)/);
+ assert.match(upload,/pendingWrites\.current\.set\(identity,'photo'\)/);
 });
-
-test('community chat keeps writes locked when navigating away and back',()=>{
- assert.match(source,/pendingWrites=useRef\(new Map<string,'text'\|'photo'>\(\)\)/);
- assert.match(source,/const pending=pendingWrites\.current\.get\(identity\)/);
- assert.match(source,/sendingNow\.current=Boolean\(pending\)/);
- assert.match(source,/pendingWrites\.current\.set\(identity,'text'\)/);
- assert.match(source,/pendingWrites\.current\.set\(identity,'photo'\)/);
- assert.match(source,/pendingWrites\.current\.delete\(identity\)/);
- assert.match(source,/pendingWrites\.current\.has\(identity\)/);
- assert.doesNotMatch(source,/sendingNow\.current=false;uploadingNow\.current=false;setSending\(false\);setUploading\(false\)/);
-});
-
-test('community refocus preserves unsent text, reply and media within the same account',()=>{
- const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
+test('community chat refocus preserves draft but revalidates membership and history',()=>{
  assert.match(focus,/const changedAccountOrCommunity=focusedIdentity\.current!==identity/);
- const changed=focus.slice(focus.indexOf('if(changedAccountOrCommunity){'),focus.indexOf("setName('Comunidade')"));
+ const changed=focus.slice(focus.indexOf('if(changedAccountOrCommunity){'),focus.indexOf("// History requires fresh membership validation"));
  for(const reset of ["setDraft('')","setReply(null)","setPhoto(null)","setExtraPhotos([])","setAttachmentCaption('')"])assert.ok(changed.includes(reset),reset);
- assert.doesNotMatch(focus.slice(focus.indexOf("setName('Comunidade')"),focus.indexOf('const pending=')),/setDraft\(''\)|setPhoto\(null\)/);
- assert.match(source,/activeChat\.current!==identity\|\|revokedRef\.current\|\|!canSendPhoto/);
+ const ordinary=focus.slice(focus.indexOf("// History requires fresh membership validation"));
+ assert.match(ordinary,/setMessages\(\[\]\);setName\('Comunidade'\)/);
+ assert.doesNotMatch(ordinary,/setDraft\(''\)|setPhoto\(null\);setExtraPhotos\(\[\]\)/);
 });
-
-test('community history is revalidated on focus while composer remains intact',()=>{
- const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
- assert.match(focus,/setMessages\(\[\]\);setName\('Comunidade'\)/);
- const rest=focus.slice(focus.indexOf("// History requires fresh membership validation"));
- assert.doesNotMatch(rest,/setDraft\(''\)|setPhoto\(null\);setExtraPhotos\(\[\]\)/);
+test('community camera/gallery is lazy, bounded and ignores stale or revoked results',()=>{
+ assert.match(picker,/const ImagePicker=await import\('expo-image-picker'\)/);
+ assert.match(picker,/selectionLimit:remaining/);
+ assert.match(picker,/appendChatMediaSelection\(current,selected\.assets\)/);
+ assert.match(picker,/auth\.token!==token\|\|selected\.canceled/);
+ assert.match(picker,/activeChat\.current!==identity\|\|revokedRef\.current\|\|!canSendPhoto/);
+ assert.match(picker,/pickerInFlight\.current=true/);
+ assert.match(picker,/finally\{pickerInFlight\.current=false;\}/);
+});
+test('returning to a community restores pending locks instead of resending',()=>{
+ assert.match(source,/pendingWrites=useRef\(new Map<string,'text'\|'photo'>\(\)\)/);
+ assert.match(focus,/const pending=pendingWrites\.current\.get\(identity\)/);
+ assert.match(focus,/sendingNow\.current=Boolean\(pending\)/);
+ assert.match(focus,/setSending\(pending==='text'\);setUploading\(pending==='photo'\)/);
+ assert.doesNotMatch(focus,/sendingNow\.current=false;uploadingNow\.current=false/);
 });

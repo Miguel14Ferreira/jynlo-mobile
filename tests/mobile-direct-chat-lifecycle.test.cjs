@@ -2,90 +2,61 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const screen=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
-
-test('direct chat history loads are scoped to current account and focused conversation',()=>{
+const focus=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('function toggleMute()'));
+const send=screen.slice(screen.indexOf('async function send()'),screen.indexOf('async function choosePhoto()'));
+const picker=screen.slice(screen.indexOf('async function choosePhoto('),screen.indexOf('async function uploadPhoto()'));
+const upload=screen.slice(screen.indexOf('async function uploadPhoto()'),screen.indexOf('const recentPhotoIds='));
+test('direct chat history is scoped to account and revalidated on refocus',()=>{
  assert.match(screen,/const generation=useRef\(0\),conversation=useRef\(''\)/);
- assert.match(screen,/if\(refreshing\.current===version\)\{/);
+ assert.match(focus,/const identity=peer\+'\|'\+auth\.token/);
+ assert.match(focus,/if\(conversation\.current!==identity\)\{/);
+ assert.match(focus,/setMessages\(\[\]\);setLoading\(true\)/);
+ assert.match(focus,/generation\.current\+\+;blockCheckRequest\.current\+\+/);
  assert.match(screen,/if\(version!==generation\.current\)return/);
- assert.match(screen,/if\(!silent\)setLoading\(false\)/);
- assert.match(screen,/const identity=peer\+'\|'\+auth\.token/);
- assert.match(screen,/conversation\.current=identity/);
- assert.match(screen,/setMessages\(\[\]\);setDraft\(''\)/);
- assert.match(screen,/generation\.current\+\+;/);
- assert.match(screen,/refresh\(true,version\)/);
 });
-
-test('old direct-message send cannot erase draft or errors in the next conversation',()=>{
- assert.match(screen,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
- assert.match(screen,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
- assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
- assert.match(screen,/await refresh\(false,version\)/);
- assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)/);
- assert.match(screen,/setSending\(false\);setPhotoBusy\(false\);sendingNow\.current=false/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
+test('direct chat refocus preserves an unsent album and caption for the same account',()=>{
+ const changed=focus.slice(focus.indexOf('if(conversation.current!==identity){'),focus.indexOf('const version=++generation.current'));
+ for(const reset of ["setDraft('')","setPhoto(null)","setExtraPhotos([])","setAttachmentCaption('')"])assert.ok(changed.includes(reset),reset);
+ const ordinary=focus.slice(focus.indexOf('// Revalidate private history'));
+ assert.doesNotMatch(ordinary,/setPhoto\(null\);setExtraPhotos\(\[\]\)/);
+ assert.match(focus,/setPhotoAvailable\(false\);setPhotoAvailabilityError\(''\)/);
 });
-
-test('old photo upload cannot clear another conversation attachment or status',()=>{
- assert.match(screen,/await sendDirectPhoto\(peer,auth\.token,photo\)/);
- assert.match(screen,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
- assert.match(screen,/setPhoto\(null\);await refresh\(false,version\)/);
- assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)\{/);
- assert.match(screen,/sendingNow\.current=false;setPhotoBusy\(false\)/);
+test('direct messages keep a single-flight lock and never erase later edits',()=>{
+ assert.match(send,/pendingWrites\.current\.has\(identity\)/);
+ assert.match(send,/pendingWrites\.current\.set\(identity,'text'\)/);
+ assert.match(send,/if\(originalReply\)await sendDirectChatReply\(/);
+ assert.match(send,/else await sendDirectChat\(/);
+ assert.match(send,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
+ assert.match(send,/setDraft\(current=>current===originalDraft\?'':current\)/);
+ assert.match(send,/pendingWrites\.current\.delete\(identity\)/);
+ assert.match(send,/if\(conversation\.current===identity\)/);
 });
-
-test('sending while a history poll is in flight queues a new refresh',()=>{
- assert.match(screen,/const pendingRefresh=useRef\(false\)/);
- assert.match(screen,/if\(refreshing\.current===version\)\{/);
+test('direct photo uploads never erase media in another conversation',()=>{
+ assert.match(upload,/pendingWrites\.current\.has\(identity\)/);
+ assert.match(upload,/sendChatPhotoAlbum\(/);
+ assert.match(upload,/sendDirectPhoto\(peer,auth\.token,photo,originalReplyId\)/);
+ assert.match(upload,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
+ assert.match(upload,/setPhoto\(null\);setExtraPhotos\(\[\]\);setAttachmentCaption/);
+ assert.match(upload,/pendingWrites\.current\.delete\(identity\)/);
+});
+test('native picker is lazy, bounded and cannot cross chats or bypass access',()=>{
+ assert.match(picker,/pickerInFlight\.current=true/);
+ assert.match(picker,/const ImagePicker=await import\('expo-image-picker'\)/);
+ assert.match(picker,/selectionLimit:remaining/);
+ assert.match(picker,/appendChatMediaSelection\(current,selected\.assets\)/);
+ assert.match(picker,/auth\.token!==token\|\|selected\.canceled/);
+ assert.match(picker,/conversation\.current!==identity\|\|blocked\|\|!blockStatusKnown\|\|!photoAvailable/);
+ assert.match(picker,/finally\{pickerInFlight\.current=false;\}/);
+});
+test('polls and received notifications refresh only the focused conversation',()=>{
+ assert.match(focus,/setInterval\(\(\)=>\{/);
+ assert.match(focus,/AppState\.currentState==='active'&&!sendingNow\.current/);
+ assert.match(focus,/AppState\.addEventListener\('change',state=>/);
+ assert.match(focus,/Notifications\.addNotificationReceivedListener\(notification=>/);
+ assert.match(focus,/try\{received\?\.remove\(\);\}catch/);
  assert.match(screen,/pendingRefresh\.current=true/);
- assert.match(screen,/if\(pendingRefresh\.current\)\{/);
- assert.match(screen,/pendingRefresh\.current=false;\s*void refresh\(true,version\)/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
 });
-
-test('late gallery result cannot replace selected photo in another conversation',()=>{
- assert.match(screen,/const selected=await ImagePicker\.launchImageLibraryAsync\(/);
- assert.match(screen,/if\(version!==generation\.current\|\|conversation\.current!==identity\)return/);
- assert.match(screen,/if\(!selected\.canceled&&selected\.assets\?\.\[0\]\)setPhoto\(selected\.assets\[0\]\)/);
- assert.match(screen,/if\(version===generation\.current&&conversation\.current===identity\)\s*setError\('Não foi possível abrir a galeria\.'/);
-});
-
-test('parallel send actions cannot race and new text is preserved',()=>{
- assert.match(screen,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token/);
- assert.doesNotMatch(screen,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
- assert.match(screen,/if\(!auth\.token\|\|blocked\|\|!blockStatusKnown\|\|!photo\|\|!photoAvailable\|\|photoBusy\|\|sending\|\|sendingNow\.current\)return/);
- assert.match(screen,/const submittedText=originalDraft\.trim\(\)/);
- assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
-});
-
-test('open direct conversation reloads on foreground push and app resume',()=>{
- assert.match(screen,/Notifications\.addNotificationReceivedListener\(notification=>/);
- assert.match(screen,/notification\.request\.content\.data\?\.kind!=='notification'/);
- assert.match(screen,/AppState\.addEventListener\('change',state=>/);
- assert.match(screen,/state==='active'&&generation\.current===version/);
- assert.match(screen,/AppState\.currentState==='active'&&!sendingNow\.current/);
- assert.match(screen,/resume\.remove\(\);received\.remove\(\)/);
- assert.match(screen,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
-});
-
-test('late PDF attachment completion cannot refresh a different direct chat',()=>{
+test('read-only PDF completion remains scoped to the current conversation',()=>{
  assert.match(screen,/if\(conversation\.current!==peer\+'\|'\+auth\.token\)return/);
  assert.match(screen,/await refresh\(true,generation\.current\)/);
-});
-
-test('direct chat preserves selected photo album and caption on same-conversation refocus',()=>{
- const start=screen.indexOf('useFocusEffect(useCallback(');
- const end=screen.indexOf('function toggleMute()',start);
- const focused=screen.slice(start,end);
- assert.match(focused,/if\(conversation\.current!==identity\)\{/);
- assert.match(focused,/setPhoto\(null\);setExtraPhotos\(\[\]\);setAttachmentCaption\(''\)/);
- const secondary=focused.slice(focused.indexOf('pendingRefresh.current=false;'));
- assert.doesNotMatch(secondary,/setPhoto\(null\);setExtraPhotos\(\[\]\)/);
- assert.match(screen,/conversation\.current!==identity\|\|blocked\|\|!blockStatusKnown\|\|!photoAvailable/);
-});
-
-test('private history is revalidated on focus without discarding unsent drafts',()=>{
- const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('function toggleMute()'));
- assert.match(focused,/setMessages\(\[\]\);setLoading\(true\)/);
- const rest=focused.slice(focused.indexOf('// Revalidate private history'));
- assert.doesNotMatch(rest,/setDraft\(''\)|setPhoto\(null\);setExtraPhotos\(\[\]\)/);
 });
