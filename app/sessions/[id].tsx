@@ -9,6 +9,7 @@ import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
+import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 
@@ -191,6 +192,8 @@ export default function SessionScreen(){
   };
   const s=detail||preview,spots=Math.max(0,(s?.maxParticipants??0)-(s?.participantCount??0));
   const minimum=minimumPlayersProgress(detail);
+  const confirmedTeams=confirmedSessionTeams(participants);
+  const hasConfirmedTeams=confirmedTeams.A.length+confirmedTeams.B.length>0;
   const sessionPhoto=resolveJynloMedia(s?.gamePhoto);
   const action=registrationAction(detail,auth.username);
   const join=()=>{void perform(async()=>{
@@ -419,7 +422,7 @@ export default function SessionScreen(){
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
         <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
-          <Badge text={detail?.joined?'Confirmado':detail?.waitlisted?'Lista de espera':s.status==='CANCELLED'?'Cancelada':s.status==='FULL'?'Completa':`${spots} vagas`}/></View>
+          <Badge text={sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <Text style={styles.city}>⌖ {s.city||'Local a confirmar'}</Text>
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
@@ -531,6 +534,17 @@ export default function SessionScreen(){
         <Button title="Enviar convite" disabled={busy||!inviteUsername.trim()} onPress={sendInvite}/>
         <Button danger title="Cancelar esta sessão" disabled={busy} onPress={cancel}/>
       </View>:null}
+      {detail&&canViewRoster(detail,auth.username)&&!rosterError&&hasConfirmedTeams?<View style={styles.panel}>
+        <Eyebrow>EQUIPAS CONFIRMADAS</Eyebrow>
+        <Text style={styles.hint}>Distribuição guardada no servidor. Todos os participantes autorizados podem consultar as equipas.</Text>
+        {(['A','B'] as const).map(team=><View key={team} style={styles.confirmedTeamCard}>
+          <Text style={styles.teamHeading}>Equipa {team} · {confirmedTeams[team].length} jogadores</Text>
+          {confirmedTeams[team].length?confirmedTeams[team].map(player=><View key={player.id} style={styles.confirmedTeamPlayer}>
+            <ParticipantAvatar participant={player}/><Text style={styles.confirmedTeamName}>{player.username}{player.username.toLowerCase()===auth.username?.toLowerCase()?' · Tu':''}</Text>
+          </View>):<Text style={styles.hint}>Sem jogadores atribuídos.</Text>}
+        </View>)}
+        {confirmedTeams.unassigned.length>0?<Text style={styles.hint}>{confirmedTeams.unassigned.length} jogadores ainda sem equipa atribuída.</Text>:null}
+      </View>:null}
       {detail&&canViewRoster(detail,auth.username)?<View style={{gap:11}}>
         <View style={styles.top}><Text style={styles.rosterTitle}>Quem vai</Text><Text style={styles.hint}>{participants.length} participantes visíveis</Text></View>
         {rosterError?<Text style={styles.rosterError}>{rosterError}</Text>:null}
@@ -596,6 +610,8 @@ const styles=StyleSheet.create({
   panel:{gap:12,padding:17,borderRadius:18,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
   editor:{gap:10},
   teamPanel:{padding:12,gap:7,borderColor:C.border,borderWidth:1,borderRadius:12},
+  confirmedTeamCard:{gap:10,padding:13,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2,borderRadius:14},
+  confirmedTeamPlayer:{flexDirection:'row',alignItems:'center',gap:9,minHeight:40},confirmedTeamName:{color:C.white,fontSize:13,fontWeight:'700',flex:1},
   teamHeading:{fontSize:14,fontWeight:'800',color:C.white},
   panelHeading:{color:C.white,fontSize:16,fontWeight:'800',lineHeight:23},
   hint:{color:C.muted,fontSize:12,lineHeight:19},
