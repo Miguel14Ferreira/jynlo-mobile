@@ -24,7 +24,8 @@ function editableCompetitionRoster(roster){
  const seen=new Set();
  return roster.filter(p=>{
   const username=typeof p?.username==='string'?p.username.trim():'';
-  if(!Number.isSafeInteger(p?.id)||p.id<=0||!username||seen.has(username.toLowerCase()))return false;
+  if(!Number.isSafeInteger(p?.id)||p.id<=0||!username||seen.has(username.toLowerCase())||
+     ['NO_SHOW','LATE_CANCELLED'].includes(p.attendanceStatus))return false;
   seen.add(username.toLowerCase());return true;
  }).map(p=>({
   id:p.id,username:p.username.trim(),
