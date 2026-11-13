@@ -15,7 +15,8 @@ test('rapid taps cannot answer the same invitation twice before React updates',(
 });
 
 test('old account operation cannot unlock a new account invitation response',()=>{
- assert.match(screen,/pushOperation\.current\+\+;inviteOperation\.current\+\+;\s*inviteDecisionInFlight\.current=null/);
+ assert.match(screen,/pushOperation\.current\+\+;inviteOperation\.current\+\+;notificationRevision\.current\+\+/);
+ assert.match(screen,/inviteDecisionInFlight\.current=null/);
  assert.match(decision,/if\(inviteDecisionInFlight\.current===operation\)inviteDecisionInFlight\.current=null/);
  assert.match(decision,/if\(account\.current===initialIdentity&&inviteOperation\.current===operation\)setBusyInvite\(null\)/);
 });
