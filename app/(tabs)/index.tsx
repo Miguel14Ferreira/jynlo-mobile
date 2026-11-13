@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Modal,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 // Load the native media picker only when the user explicitly opens the gallery.
@@ -156,6 +156,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     delayLongPress:250
   });
   return <Modal visible transparent={false} animationType="fade" onRequestClose={safeClose}>
+    <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':'height'}>
     <SafeAreaView style={styles.storyOverlay}
       onTouchStart={event=>{touchStartY.current=event.nativeEvent.pageY;}}
       onTouchEnd={event=>{
@@ -202,6 +203,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       {!ownStory?<Text style={styles.storyReplyHint}>Resposta privada, guardada para o autor. A notificação é opcional.</Text>:null}
       {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha Story" disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>Eliminar Story</Text></Pressable>:null}
     </SafeAreaView>
+    </KeyboardAvoidingView>
   </Modal>;
 }
 export default function JynloFeedHome(){
@@ -706,7 +708,7 @@ export default function JynloFeedHome(){
       </View>
     </Modal>
     <Modal visible={identityMatches&&expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
-      <View style={styles.commentsModal}>
+      <KeyboardAvoidingView style={styles.commentsModal} behavior={Platform.OS==='ios'?'padding':'height'}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
         <SafeAreaView edges={['bottom']} style={styles.commentsSheet}>
           <View style={styles.commentsHandle}/>
@@ -739,7 +741,7 @@ export default function JynloFeedHome(){
             <Pressable onPress={()=>expandedComments!==null&&void submitComment(expandedComments)} disabled={!auth.token||!commentText.trim()||busyPost!==null||commentsLoading} style={[styles.sendComment,(!auth.token||!commentText.trim()||busyPost!==null||commentsLoading)&&{opacity:.45}]} accessibilityRole="button" accessibilityLabel="Enviar comentário"><Text style={styles.sendText}>➤</Text></Pressable>
           </View>
         </SafeAreaView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
 
     <Modal visible={identityMatches&&!!postMenuItem} transparent animationType="fade" onRequestClose={()=>setPostMenuItem(null)}>
@@ -786,8 +788,9 @@ export default function JynloFeedHome(){
       }}/>
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
+        <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
         <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
+        <ScrollView style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>◎</Text><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><Text style={styles.mediaChooseIcon}>▧</Text><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
@@ -816,13 +819,15 @@ export default function JynloFeedHome(){
           <TextInput style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);}} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
         </ScrollView>
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
 
     <Modal visible={identityMatches&&storyComposer} animationType="slide" onRequestClose={closeStoryComposer}>
       <SafeAreaView style={styles.storyComposerOverlay} edges={['top','bottom']}>
+        <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
         <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
+        <ScrollView style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
             <StoryCameraCapture key={storyComposerRevision.current} onCaptured={media=>{if(activeStoryAccount.current===auth.token&&storyComposerRef.current&&storyComposerRevision.current===storyCaptureRevision&&!storyInFlight.current)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
           </Suspense>:null}
@@ -871,6 +876,7 @@ export default function JynloFeedHome(){
           })}
         </ScrollView>
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}><Text style={styles.primaryButtonText}>{storyPublishing?'A publicar…':'Publicar Story'}</Text></Pressable>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   </SafeAreaView>;
