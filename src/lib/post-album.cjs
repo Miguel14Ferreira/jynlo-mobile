@@ -12,7 +12,7 @@ function albumError(files,allowUnknownSize=false){
   const {validateMedia}=require('./social-feed-core.cjs');
   if(typeof file.mimeType!=='string'||!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.mimeType)||
     (file.type==='video')!==file.mimeType.startsWith('video/'))
-   return 'O formato do ficheiro não corresponde ao tipo de fotografia ou vídeo.';
+   return 'Formato do ficheiro não corresponde ao tipo de fotografia ou vídeo.';
   const error=file.fileSize===0&&allowUnknownSize?null:validateMedia(file.mimeType,file.fileSize,false);
   if(error)return error;
   total+=file.fileSize;
