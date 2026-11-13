@@ -8,6 +8,7 @@ import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
 import {myNotifications,markNotificationRead,deleteMyNotification,deleteAllMyNotifications} from '../src/lib/notifications-api';
 import {C} from '../src/lib/theme';
+import {confirmedSessionJoin} from '../src/lib/session-join-receipt.cjs';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
@@ -149,11 +150,14 @@ export default function NotificationsScreen(){
   try{
    const response=await answerSessionInvite(invite.sessionId,invite.id,accept,auth.token,auth.username||undefined);
    if(account.current!==initialIdentity||inviteOperation.current!==operation)return;
+   const confirmed=accept?confirmedSessionJoin(response):null;
+   if(accept&&!confirmed)
+    throw Error('A aceitação ainda não foi confirmada. Atualiza a lista de convites antes de repetir.');
+   // Rejecting is a confirmed HTTP 204; accepting requires a validated state.
    setInvites(old=>old.filter(x=>x.id!==invite.id));
    setNotice(!accept?'Convite recusado.':
-    response?.state==='WAITLISTED'?'Convite aceite: estás na lista de espera.':
-    response?.state==='PARTICIPANT'?'Convite aceite: presença confirmada pelo servidor.':
-    'Resposta registada. Abre a sessão para confirmar a tua presença ou posição na lista de espera.');
+    confirmed?.state==='WAITLISTED'?('Convite aceite: '+confirmed.message):
+    'Convite aceite: presença confirmada pelo servidor.');
   }catch(e){if(account.current===initialIdentity&&inviteOperation.current===operation)
    setError((e instanceof Error?e.message:'Não foi possível responder ao convite.')+' Atualiza antes de repetir.');}
   finally{

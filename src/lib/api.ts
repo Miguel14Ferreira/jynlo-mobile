@@ -1,3 +1,4 @@
+import {confirmedSessionJoin} from './session-join-receipt.cjs';
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
 import {readSuccessfulResponse,InvalidSuccessfulResponseError} from './response-body.cjs';
 import {validateApiOrigin} from './api-origin.cjs';
@@ -166,8 +167,15 @@ export async function inviteToSession(id:number,username:string,token:string,act
   return result;
 }
 export async function answerSessionInvite(sessionId:number,inviteId:number,accept:boolean,token:string,username?:string):Promise<JoinSessionResponse|void>{
+  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(inviteId)||inviteId<=0||!token)
+    throw Error('Identificador do convite ou autenticação inválidos.');
   if(DEMO_MODE){if(!username)throw new Error('Inicia sessão.');return demoRespondInvite(sessionId,inviteId,username,accept);}
-  return request<JoinSessionResponse|void>(`/api/sessions/${sessionId}/invites/${inviteId}/${accept?'accept':'decline'}`,{token,method:'POST',body:null});
+  const result=await request<JoinSessionResponse|void>(
+    `/api/sessions/${sessionId}/invites/${inviteId}/${accept?'accept':'decline'}`,{token,method:'POST',body:null});
+  // The Java backend returns a JoinSessionResponse only for accept (decline is HTTP 204).
+  if(accept&&!confirmedSessionJoin(result))
+    throw Error('O servidor respondeu, mas não confirmou a aceitação do convite. Atualiza a lista antes de repetir.');
+  return result;
 }
 
 export async function logoutServer(token:string):Promise<void>{
