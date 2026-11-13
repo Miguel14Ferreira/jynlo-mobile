@@ -78,3 +78,42 @@ test('community administrators also receive the official result entry for played
  assert.match(community,/title="Registar resultado do jogo"/);
  assert.match(community,/pathname:'\/sessions\/\[id\]\/result'/);
 });
+
+test('football stats are optional and preserve explicitly entered zero versus unknown',()=>{
+ const roster=editableCompetitionRoster(members);
+ assert.equal(roster[0].goals,'');
+ assert.equal(roster[0].assists,'');
+ assert.deepEqual(buildSessionCompetitionResult('DRAW',roster,'Futebol'),{
+  outcome:'DRAW',players:[{username:'Ana',team:'A'},{username:'Bruno',team:'B'}]
+ });
+ const withStats=roster.map(p=>p.username==='Ana'?{...p,goals:'2',assists:'0'}:
+  {...p,goals:'',assists:'1'});
+ assert.deepEqual(buildSessionCompetitionResult('A',withStats,'Futebol'),{
+  outcome:'A',players:[
+   {username:'Ana',team:'A',goals:2,assists:0},
+   {username:'Bruno',team:'B',assists:1}
+  ]
+ });
+});
+test('reject invalid football goals and assists or individual statistics from other sports',()=>{
+ const roster=editableCompetitionRoster(members);
+ for(const bad of ['-1','100','2.5','1a','  ', '5e2']){
+  const wrong=roster.map((p,i)=>i===0?{...p,goals:bad}:p);
+  if(bad==='  ')continue;
+  assert.throws(()=>buildSessionCompetitionResult('A',wrong,'Futebol'),/Golos/);
+ }
+ assert.throws(()=>buildSessionCompetitionResult('A',roster.map((p,i)=>i===1?{...p,assists:'100'}:p),'Futebol'),/Assistências/);
+ assert.throws(()=>buildSessionCompetitionResult('A',roster.map((p,i)=>i===0?{...p,goals:'1'}:p),'Andebol'),/Futebol/);
+});
+test('post game football-only form is gated by sport and passed through session navigation',()=>{
+ const view=read('app/sessions/[id]/result.tsx');
+ const detail=read('app/sessions/[id].tsx');
+ const community=read('app/communities/[id].tsx');
+ assert.match(view,/const football=sport==='Futebol'/);
+ assert.match(view,/buildSessionCompetitionResult\(outcome,roster,sport\)/);
+ assert.match(view,/accessibilityLabel=\{'Golos de '\+player.username\}/);
+ assert.match(view,/accessibilityLabel=\{'Assistências de '\+player.username\}/);
+ assert.match(view,/roster.filter\(player=>player.selected\)/);
+ assert.match(detail,/sport:detail.sport/);
+ assert.match(community,/sport:s.sport/);
+});
