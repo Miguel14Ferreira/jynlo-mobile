@@ -49,4 +49,21 @@ function editableCompetitionRoster(roster){
   goals:'',assists:''
  }));
 }
-module.exports={buildSessionCompetitionResult,editableCompetitionRoster,optionalStat};
+/** An older backend may accept unknown JSON fields but silently drop stats.
+ * Verify persisted player values before claiming they were recorded. */
+function confirmedPlayerStatistics(payload,round){
+ const reported=(payload?.players||[]).filter(p=>p.goals!==undefined||p.assists!==undefined);
+ if(!reported.length)return true;
+ if(!Array.isArray(round?.entries))return false;
+ const byUsername=new Map();
+ for(const entry of round.entries){
+  if(typeof entry?.username==='string')byUsername.set(entry.username.toLowerCase(),entry);
+ }
+ return reported.every(player=>{
+  const actual=byUsername.get(player.username.toLowerCase());
+  return actual&&
+   (player.goals===undefined||actual.goals===player.goals)&&
+   (player.assists===undefined||actual.assists===player.assists);
+ });
+}
+module.exports={buildSessionCompetitionResult,editableCompetitionRoster,optionalStat,confirmedPlayerStatistics};
