@@ -79,3 +79,12 @@ test('native crypto is loaded only when push opt-in needs a new installation ID'
  assert.ok(installer>=0&&saved>installer&&load>saved&&create>load);
  assert.match(mobile,/SecureStore\.setItemAsync\(INSTALL_ID_KEY,id\)/);
 });
+
+test('logout notification cleanup tolerates absent or broken native bindings',()=>{
+ const mobile=read('src/lib/mobile-push.ts');
+ const cleanup=mobile.slice(mobile.indexOf('export async function clearNativePushPresentation'));
+ assert.match(cleanup,/try\{Notifications=await import\('expo-notifications'\);\}/);
+ assert.match(cleanup,/catch\{return;\}/);
+ assert.match(cleanup,/try\{await Notifications\.clearLastNotificationResponse\(\);\}catch\{\}/);
+ assert.match(cleanup,/try\{await Notifications\.dismissAllNotificationsAsync\(\);\}catch\{\}/);
+});

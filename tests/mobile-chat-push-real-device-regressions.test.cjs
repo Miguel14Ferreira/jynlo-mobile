@@ -62,3 +62,13 @@ test('private chat replies use server-verified quoted messages without cross-thr
  assert.match(chat,/accessibilityLabel=\{`Responder à mensagem de/);
  assert.match(chat,/setReplyTarget\(null\);setEditing\(null\);setEditText\(''\);setPhoto\(null\);setExtraPhotos\(\[\]\);setAttachmentCaption\(''\);setError\(''\)/);
 });
+
+test('push registration revokes server registration if local device ownership cannot be saved',()=>{
+ const push=read('src/lib/mobile-push.ts');
+ assert.match(push,/await registerPushDevice\(token,\{/);
+ assert.match(push,/try\{\s*await SecureStore\.setItemAsync\(REGISTERED_ACCOUNT_KEY/);
+ assert.match(push,/try\{await unregisterPushDevice\(token,deviceId\);\}/);
+ assert.match(push,/registo push de outra conta/);
+ assert.match(push,/getExpoPushTokenAsync/);
+ assert.match(push,/O Firebase\/FCM não está operacional nesta APK/);
+});

@@ -83,3 +83,10 @@ obtida da API. Uma configuração nativa presente **não prova por si só** que 
 envio remoto está operacional: requer testes end-to-end.
 
 Referência: https://docs.expo.dev/push-notifications/fcm-credentials/
+
+## Recuperação de falhas do token e troca de conta
+
+- A ativação push distingue explicitamente falhas de Firebase/FCM de falhas de conectividade/Google Play Services.
+- Se o registo no servidor for confirmado mas o armazenamento seguro local falhar, a app tenta revogar o registo com a sessão que o criou e informa o utilizador caso a revogação não seja confirmada.
+- A API bloqueia, por segurança, a apropriação do mesmo dispositivo/token por outra conta. É necessário iniciar sessão na conta original e desativar push antes da troca; **não limpar o identificador ou registar com outra conta por tentativa**.
+- A limpeza dos avisos locais no logout é de melhor esforço, de forma a não impedir o encerramento de sessão se o módulo nativo de notificações estiver indisponível.

@@ -88,3 +88,13 @@ test('Google native sign-in is not imported during Expo Router startup',()=>{
  assert.match(native,/GoogleSignin\.hasPlayServices/);
  assert.match(native,/GoogleSignin\.signIn\(\)/);
 });
+
+test('Google sign-in maps common native Android errors without accepting OAuth failures as login',()=>{
+ const native=read('src/lib/google-credential.ts');
+ assert.match(native,/message\.includes\('ApiException: 10'\)/);
+ assert.match(native,/code==='DEVELOPER_ERROR'/);
+ assert.match(native,/code==='IN_PROGRESS'/);
+ assert.match(native,/code==='PLAY_SERVICES_NOT_AVAILABLE'/);
+ assert.match(native,/code==='CANCELED'/);
+ assert.match(native,/result\.data\?\.idToken/);
+});

@@ -46,7 +46,7 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  if(!androidPushConfigured())throw Error('As notificações Android ainda precisam da configuração Firebase. A lista de notificações da Jynlo continua disponível nesta página.');
  const prior=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
  if(prior&&prior!==username.toLowerCase())
-  throw Error('Este dispositivo ainda está associado a outra conta. Termina sessão nessa conta primeiro.');
+  throw Error('Este dispositivo ainda tem o registo push de outra conta. Entra nessa conta e desativa as notificações antes de ativá-las nesta. Por segurança não é possível transferir o registo automaticamente.');
  const easProjectId=projectId();
  const Notifications=await import('expo-notifications');
  if(Platform.OS==='android'){
@@ -58,13 +58,28 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  const current=await Notifications.getPermissionsAsync();
  const permission=current.granted?current:await Notifications.requestPermissionsAsync();
  if(!permission.granted)throw Error('Não concedeste permissão para notificações. Podes alterar nas definições do telemóvel.');
- const expoPushToken=(await Notifications.getExpoPushTokenAsync({projectId:easProjectId})).data;
+ let expoPushToken:string;
+ try{expoPushToken=(await Notifications.getExpoPushTokenAsync({projectId:easProjectId})).data;}
+ catch(e){
+  const reason=e instanceof Error?e.message:'';
+  if(/FirebaseApp|Firebase|FCM|SERVICE_NOT_AVAILABLE/i.test(reason))
+   throw Error('O Firebase/FCM não está operacional nesta APK. Confirma o ficheiro google-services.json e as credenciais da build Preview.');
+  throw Error('Não foi possível obter o token push neste dispositivo. Verifica os Google Play Services e a ligação à Internet.');
+ }
  const deviceId=await installId();
  await registerPushDevice(token,{
   deviceId,expoPushToken,
   platform:Platform.OS as 'android'|'ios'
  });
- await SecureStore.setItemAsync(REGISTERED_ACCOUNT_KEY,username.toLowerCase());
+ try{
+  await SecureStore.setItemAsync(REGISTERED_ACCOUNT_KEY,username.toLowerCase());
+ }catch{
+  // The server registered this device but local ownership could not be saved.
+  // Compensate by revoking the just-created record while this token is valid.
+  try{await unregisterPushDevice(token,deviceId);}
+  catch{throw Error('O dispositivo foi registado, mas a confirmação local falhou e não foi possível revogar o registo. Volta a esta conta para tentar desativar as notificações.');}
+  throw Error('Não foi possível guardar a ativação das notificações no telemóvel. Tenta novamente.');
+ }
 }
 /** Server revocation is attempted before logout; local state remains if it fails. */
 export async function disableMobilePush(username:string,token:string):Promise<void>{
@@ -76,9 +91,11 @@ export async function disableMobilePush(username:string,token:string):Promise<vo
  await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
 }
 
-/** Clear notification-tray content and consumed navigation intent on account exit. */
+/** Clear notification presentation without making logout depend on a broken native bridge. */
 export async function clearNativePushPresentation():Promise<void>{
- const Notifications=await import('expo-notifications');
- await Notifications.clearLastNotificationResponse();
- await Notifications.dismissAllNotificationsAsync();
+ let Notifications:typeof import('expo-notifications');
+ try{Notifications=await import('expo-notifications');}
+ catch{return;}
+ try{await Notifications.clearLastNotificationResponse();}catch{}
+ try{await Notifications.dismissAllNotificationsAsync();}catch{}
 }
