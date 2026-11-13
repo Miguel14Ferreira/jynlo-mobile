@@ -22,8 +22,8 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(tabs,/router\.push\('\/tournaments\/create'\)/);
  assert.match(tabs,/params:\{compose:destination\}/);
  assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string\}>\(\)/);
- assert.match(feed,/if\(compose==='post'\)setComposerOpen\(true\)/);
- assert.match(feed,/else setStoryComposer\(true\)/);
+ assert.match(feed,/if\(compose==='post'\)openPostComposer\(\)/);
+ assert.match(feed,/else openStoryComposer\(\)/);
  assert.match(feed,/router\.setParams\(\{compose:undefined\}\)/);
  assert.ok(feed.indexOf('useFocusEffect(useCallback(()=>{if(!auth.ready')<feed.indexOf('  // The central + action reuses'), 'initial identity reset precedes opening composer');
 });

@@ -202,6 +202,7 @@ export default function JynloFeedHome(){
   const [storyComposer,setStoryComposer]=useState(false),[storyCaption,setStoryCaption]=useState('');
   const storyComposerRef=useRef(false);
   const storyComposerRevision=useRef(0);
+  const storyCaptureRevision=storyComposerRevision.current;
   storyComposerRef.current=storyComposer;
   const [storyMedia,setStoryMedia]=useState<MobileMedia|null>(null);
   const [composerOpen,setComposerOpen]=useState(false);
@@ -646,7 +647,7 @@ export default function JynloFeedHome(){
         <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><Text style={styles.modalCloseText}>✕</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
-            <StoryCameraCapture key={storyComposerRevision.current} onCaptured={media=>{if(activeStoryAccount.current===auth.token&&storyComposerRef.current&&!storyInFlight.current)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
+            <StoryCameraCapture key={storyComposerRevision.current} onCaptured={media=>{if(activeStoryAccount.current===auth.token&&storyComposerRef.current&&storyComposerRevision.current===storyCaptureRevision&&!storyInFlight.current)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
           </Suspense>:null}
           {storyMedia?<View style={styles.storyPreview}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
