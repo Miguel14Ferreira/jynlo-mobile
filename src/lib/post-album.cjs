@@ -26,6 +26,15 @@ function mergeAlbum(existing,incoming){
  }
  return result;
 }
+/** Move a selected photo/video without changing its identity or other attachments. */
+function moveAlbumItem(items,from,to){
+ if(!Array.isArray(items)||!Number.isSafeInteger(from)||!Number.isSafeInteger(to)||
+    from<0||to<0||from>=items.length||to>=items.length)return Array.isArray(items)?[...items]:[];
+ const reordered=[...items];
+ const [selected]=reordered.splice(from,1);
+ reordered.splice(to,0,selected);
+ return reordered;
+}
 /** Render only bounded, supported media from backend or archived posts. */
 function postMediaItems(item){
  if(!item||typeof item!=='object')return [];
@@ -45,4 +54,4 @@ function postMediaItems(item){
  }
  return result;
 }
-module.exports={MAX_ALBUM_ITEMS,MAX_ALBUM_BYTES,albumError,mergeAlbum,postMediaItems};
+module.exports={MAX_ALBUM_ITEMS,MAX_ALBUM_BYTES,albumError,mergeAlbum,moveAlbumItem,postMediaItems};
