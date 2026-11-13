@@ -12,7 +12,7 @@ test('signed guest invites can confirm native attendance using existing backend'
  assert.match(view,/SecureStore\.setItemAsync/);
  assert.match(view,/SecureStore\.getItemAsync/);
  assert.match(view,/SecureStore\.deleteItemAsync/);
- assert.match(details,/<GuestSessionRSVP sessionId=\{id\} guestToken=\{guestToken\}/);
+ assert.match(details,/!auth\.token&&!loading&&Number\.isSafeInteger\(id\)[\s\S]*?<GuestSessionRSVP sessionId=\{id\} guestToken=\{guestToken\}/);
 });
 test('a signed link does not by itself confirm attendance or expose a receipt',()=>{
  const view=read('src/components/GuestSessionRSVP.tsx');
@@ -71,4 +71,16 @@ test('guest can correct a confirmed identity with the original private receipt',
  assert.match(view,/updated\.status!=='APPROVED'/);
  assert.match(view,/setReceipt\(\{\.\.\.updated,receipt:receipt\.receipt\}\)/);
  assert.match(view,/receipt\.status==='APPROVED'\?<Pressable accessibilityRole="button" disabled=\{busy\} style=\{styles\.secondary\} onPress=\{cancel\}/);
+});
+
+test('registered invitation uses authenticated seat instead of anonymous guest RSVP',()=>{
+ const detail=read('app/sessions/[id].tsx');
+ assert.match(detail,/guest-member-presence/);
+ assert.match(detail,/guest-join-account/);
+ assert.match(detail,/token:auth\.token,method:'POST',body:\{token:guestToken\}/);
+ assert.match(detail,/confirmedSessionJoin\(result\)/);
+ assert.match(detail,/Confirmar com a minha conta Jynlo/);
+ assert.match(detail,/guestToken&&!auth\.token&&!loading/);
+ assert.match(detail,/presence\.status==='PARTICIPANT'/);
+ assert.match(detail,/presence\.status==='WAITLISTED'/);
 });
