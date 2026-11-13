@@ -497,8 +497,9 @@ export default function JynloFeedHome(){
         if(!size){
           try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
         }
-        if(!size){Alert.alert('Ficheiro não aceite','Não foi possível confirmar o tamanho do ficheiro selecionado. Escolhe outro ficheiro.');return;}
-        const validation=validateMedia(mime,size,!album&&setter===setStoryMedia);
+        // Some Android gallery providers expose content:// without a file size.
+        // Keep the selection and validate the real bytes after copying into cache on upload.
+        const validation=size>0?validateMedia(mime,size,!album&&setter===setStoryMedia):null;
         if(validation){Alert.alert('Ficheiro não aceite',validation);return;}
         prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
       }
