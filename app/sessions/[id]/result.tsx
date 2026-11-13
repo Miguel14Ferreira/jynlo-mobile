@@ -5,7 +5,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/compon
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
 import {competitionSessionRoster,recordedCompetitionSessionIds,recordCompetitionSessionResult,competitionSessionCapabilities} from '../../../src/lib/session-competition-api';
-import {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics} from '../../../src/lib/session-competition-result.cjs';
+import {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics,confirmedOfficialScore} from '../../../src/lib/session-competition-result.cjs';
 import type {CompetitionOutcome,CompetitionRosterEntry,CompetitionTeam} from '../../../src/lib/session-competition-result.cjs';
 
 export default function SessionCompetitionResultScreen(){
@@ -18,6 +18,8 @@ export default function SessionCompetitionResultScreen(){
  const auth=useAuth(),router=useRouter();
  const [roster,setRoster]=useState<CompetitionRosterEntry[]>([]);
  const [outcome,setOutcome]=useState<CompetitionOutcome|null>(null);
+ const [scoreA,setScoreA]=useState(''),[scoreB,setScoreB]=useState('');
+ const [scoreSupported,setScoreSupported]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [recorded,setRecorded]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
  const [playerStatsSupported,setPlayerStatsSupported]=useState(false);
@@ -29,7 +31,7 @@ export default function SessionCompetitionResultScreen(){
  const confirmedIdentity=loadedIdentity===identity;
  const load=useCallback(async()=>{
   const version=++generation.current,actor=identity;
-  setRoster([]);setOutcome(null);setRecorded(false);setPlayerStatsSupported(false);setError('');setSuccess('');setLoadedIdentity('');
+  setRoster([]);setOutcome(null);setScoreA('');setScoreB('');setRecorded(false);setPlayerStatsSupported(false);setScoreSupported(false);setError('');setSuccess('');setLoadedIdentity('');
   if(!valid||!auth.token||!auth.username){setLoading(false);return;}
   setLoading(true);
   try{
@@ -43,6 +45,7 @@ export default function SessionCompetitionResultScreen(){
    const already=recordedIds.includes(sessionId);
    setRecorded(already);
    setPlayerStatsSupported(football&&capabilities?.version===1&&capabilities.footballGoalsAssists===true);
+   setScoreSupported(football&&capabilities?.version===1&&capabilities.footballFinalScore===true);
    if(!already)setRoster(editableCompetitionRoster(players));
    setLoadedIdentity(actor);
   }catch(e){
@@ -62,10 +65,11 @@ export default function SessionCompetitionResultScreen(){
  function confirm(){
   if(!confirmedIdentity||recorded||busy||writing.current||!auth.token||!valid)return;
   let payload:ReturnType<typeof buildSessionCompetitionResult>;
-  try{payload=buildSessionCompetitionResult(outcome,roster,sport);}
+  try{payload=buildSessionCompetitionResult(outcome,roster,sport,scoreA,scoreB);}
   catch(e){setError(e instanceof Error?e.message:'Confirma jogadores e equipas.');return;}
   const version=generation.current,actor=identity,token=auth.token;
-  const label=outcome==='DRAW'?'Empate':outcome==='A'?'Equipa A venceu':'Equipa B venceu';
+  const label=(outcome==='DRAW'?'Empate':outcome==='A'?'Equipa A venceu':'Equipa B venceu')+
+    (payload.scoreA!==undefined?' · '+payload.scoreA+'–'+payload.scoreB:'');
   Alert.alert('Registar resultado oficial?',label+' · '+payload.players.length+' jogadores. Esta ação cria uma jornada na classificação e não pode ser repetida.',[
    {text:'Voltar',style:'cancel'},
    {text:'Registar resultado',onPress:()=>{
@@ -76,13 +80,15 @@ export default function SessionCompetitionResultScreen(){
     // while creating an irreversible round. Never send those statistics until
     // this authenticated endpoint confirms that the server understands them.
     void (async()=>{
-     if(payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)){
+     if(payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)||payload.scoreA!==undefined){
       let capabilities:Awaited<ReturnType<typeof competitionSessionCapabilities>>;
       try{capabilities=await competitionSessionCapabilities(communityId,sessionId,token);}
       catch{throw Error('O servidor ainda não confirmou o suporte a golos e assistências. Nenhuma jornada foi enviada. Atualiza o backend ou deixa as estatísticas em branco.');}
       if(version!==generation.current||actor!==identityRef.current)return null;
-      if(capabilities?.version!==1||capabilities.footballGoalsAssists!==true)
-       throw Error('Este servidor não suporta estatísticas individuais de Futebol. Nenhuma jornada foi enviada.');
+      if(capabilities?.version!==1||
+         (payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)&&capabilities.footballGoalsAssists!==true)||
+         (payload.scoreA!==undefined&&capabilities.footballFinalScore!==true))
+       throw Error('Este servidor ainda não suporta o marcador oficial ou as estatísticas enviadas. Nenhuma jornada foi enviada.');
      }
      // A user might switch account or navigate away during the capabilities GET.
      if(version!==generation.current||actor!==identityRef.current)return null;
@@ -93,8 +99,9 @@ export default function SessionCompetitionResultScreen(){
      if(!Number.isSafeInteger(reply?.id)||reply.id<=0)
       throw Error('O servidor não confirmou a jornada. Verifica as classificações antes de repetir.');
      setRecorded(true);setRoster([]);
-     if(confirmedPlayerStatistics(payload,reply))setSuccess('Jornada registada. O resultado e as estatísticas confirmadas já contam para a classificação.');
-     else setSuccess('A jornada foi criada, mas não foi possível confirmar os golos e assistências guardados. Consulta a classificação antes de voltares a registar dados.');
+     if(confirmedPlayerStatistics(payload,reply)&&confirmedOfficialScore(payload,reply))
+      setSuccess('Jornada registada. O marcador oficial e as estatísticas confirmadas já contam para a classificação.');
+     else setSuccess('A jornada foi criada, mas não foi possível confirmar o marcador ou os golos e assistências guardados. Consulta a classificação antes de voltares a registar dados.');
     }).catch(e=>{
      if(version===generation.current&&actor===identityRef.current)
       setError((e instanceof Error?e.message:'Não foi possível confirmar o registo.')+
@@ -108,7 +115,7 @@ export default function SessionCompetitionResultScreen(){
   <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
   <Text style={styles.title}>Resultado da sessão</Text>
   <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
-  <Message>{football?(playerStatsSupported?'Podes registar golos e assistências por jogador. Campos opcionais; os valores não são calculados automaticamente. O marcador coletivo ainda não é guardado.':'O backend ainda não confirmou suporte a golos e assistências. Podes registar apenas o vencedor ou empate, sem perder a jornada.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
+  <Message>{football?(scoreSupported?'Regista o marcador oficial e, se souberes, os golos e assistências dos jogadores. Não são inferidos dados em falta.':'O backend ainda não confirmou suporte ao marcador oficial. Podes registar vitória ou empate, sem criar pontuações fictícias.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!busy&&auth.token?<Button secondary title="Verificar novamente" onPress={()=>{void load();}}/>:null}
@@ -120,6 +127,19 @@ export default function SessionCompetitionResultScreen(){
     <Button secondary title="Abrir comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(communityId)}})}/>
    </View>:null}
   {confirmedIdentity&&!recorded&&!loading?<View style={styles.panel}>
+    {football&&scoreSupported?<View style={styles.scorePanel}>
+      <Text style={styles.sectionTitle}>Marcador oficial</Text>
+      <Text style={styles.hint}>Preenche ambos os resultados ou deixa ambos vazios. O marcador tem de concordar com o vencedor escolhido.</Text>
+      <View style={styles.scoreRow}>
+        <View style={styles.scoreField}><Text style={styles.statLabel}>Equipa A</Text><TextInput accessibilityLabel="Golos oficiais Equipa A"
+          value={scoreA} onChangeText={setScoreA} editable={!busy} keyboardType="number-pad" maxLength={2}
+          placeholder="—" placeholderTextColor={C.muted} style={styles.scoreInput}/></View>
+        <Text style={styles.scoreDivider}>–</Text>
+        <View style={styles.scoreField}><Text style={styles.statLabel}>Equipa B</Text><TextInput accessibilityLabel="Golos oficiais Equipa B"
+          value={scoreB} onChangeText={setScoreB} editable={!busy} keyboardType="number-pad" maxLength={2}
+          placeholder="—" placeholderTextColor={C.muted} style={styles.scoreInput}/></View>
+      </View>
+    </View>:null}
     <Text style={styles.sectionTitle}>Quem venceu?</Text>
     <View style={styles.choiceRow}>
      {([{id:'A',label:'Equipa A'},{id:'DRAW',label:'Empate'},{id:'B',label:'Equipa B'}] as const).map(option=>
@@ -174,5 +194,6 @@ const styles=StyleSheet.create({
  checkbox:{flex:1,minHeight:44,justifyContent:'center'},playerName:{color:C.white,fontSize:13,fontWeight:'700'},
  teamButton:{width:42,minHeight:42,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:10},
  teamSelected:{borderColor:C.mint,backgroundColor:C.surface2},teamText:{color:C.white,fontSize:13,fontWeight:'900'},
- statsRow:{gap:9,paddingVertical:9,borderBottomWidth:1,borderBottomColor:C.border},statsName:{fontSize:13,color:C.white,fontWeight:'800'},statFields:{flexDirection:'row',gap:10},statField:{flex:1,gap:5},statLabel:{fontSize:11,color:C.muted,fontWeight:'800'},statInput:{minHeight:46,backgroundColor:C.surface2,color:C.white,borderRadius:10,borderWidth:1,borderColor:C.border,paddingHorizontal:12,fontSize:15}
+ statsRow:{gap:9,paddingVertical:9,borderBottomWidth:1,borderBottomColor:C.border},statsName:{fontSize:13,color:C.white,fontWeight:'800'},statFields:{flexDirection:'row',gap:10},statField:{flex:1,gap:5},statLabel:{fontSize:11,color:C.muted,fontWeight:'800'},statInput:{minHeight:46,backgroundColor:C.surface2,color:C.white,borderRadius:10,borderWidth:1,borderColor:C.border,paddingHorizontal:12,fontSize:15},
+ scorePanel:{gap:12},scoreRow:{flexDirection:'row',alignItems:'center',gap:12},scoreField:{flex:1,gap:6},scoreDivider:{color:C.white,fontSize:24,fontWeight:'900'},scoreInput:{minHeight:64,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.border,color:C.white,textAlign:'center',fontSize:30,fontWeight:'900'}
 });
