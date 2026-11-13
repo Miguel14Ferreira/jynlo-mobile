@@ -36,16 +36,21 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   // Auth responses and secure-store writes must never revive a logged-out account.
   const authEpoch=useRef(0);
   const credentialQueue=useRef<Promise<void>>(Promise.resolve());
-  useEffect(()=>{let active=true;(async()=>{
+  useEffect(()=>{let active=true;const restoreEpoch=authEpoch.current;(async()=>{
     try{
       if(!DEMO_MODE){const [savedToken,savedName]=await Promise.all([
         SecureStore.getItemAsync(TOKEN_KEY),SecureStore.getItemAsync(USER_KEY)]);
-        if(active){
+        // Logout or a newer login can win while SecureStore is restoring.
+        if(active&&restoreEpoch===authEpoch.current){
           if(savedToken&&savedName&&isAccessTokenUsable(savedToken)){
             setToken(savedToken);setUsername(savedName);
           }else{
             setToken(null);setUsername(null);
-            if(savedToken||savedName)await Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+            if(savedToken||savedName){
+              const clear=()=>Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).then(()=>{});
+              credentialQueue.current=credentialQueue.current.then(clear,clear);
+              await credentialQueue.current;
+            }
           }
         }
       }

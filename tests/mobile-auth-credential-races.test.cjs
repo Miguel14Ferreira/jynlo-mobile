@@ -22,3 +22,11 @@ test('logout immediately cancels old login responses and deletes after pending s
  assert.match(logout,/await cleanup/);
  assert.ok(logout.indexOf('await cleanup')<logout.indexOf('await logoutServer(tokenToRevoke)'));
 });
+
+test('startup session restoration cannot revive an account after logout',()=>{
+ const startup=source.slice(source.indexOf('useEffect(()=>{let active=true;const restoreEpoch'),source.indexOf('},[]);'));
+ assert.match(startup,/const restoreEpoch=authEpoch\.current/);
+ assert.match(startup,/if\(active&&restoreEpoch===authEpoch\.current\)/);
+ assert.match(startup,/credentialQueue\.current=credentialQueue\.current\.then\(clear,clear\)/);
+ assert.match(startup,/await credentialQueue\.current/);
+});

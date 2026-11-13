@@ -46,3 +46,9 @@ test('logout queues secure storage deletion after any pending login write',()=>{
  assert.match(logout,/credentialQueue\.current=cleanup/);
  assert.match(logout,/await cleanup/);
 });
+
+test('cold-start credential read never restores a session if logout invalidated it',()=>{
+ const startup=code.slice(code.indexOf('useEffect(()=>{let active=true;const restoreEpoch'),code.indexOf('},[]);'));
+ assert.match(startup,/restoreEpoch===authEpoch\.current/);
+ assert.match(startup,/setToken\(savedToken\);setUsername\(savedName\)/);
+});
