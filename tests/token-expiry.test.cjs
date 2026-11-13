@@ -28,3 +28,11 @@ test('authentication re-arms long-lived expiry timers rather than abandoning fut
  assert.match(lifecycle,/active=false;if\(timer\)clearTimeout\(timer\);sub\.remove\(\)/);
  assert.doesNotMatch(lifecycle,/setTimeout\(expire,delay\)/);
 });
+
+test('expired JWT cancels pending push activation before clearing in-memory login',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const auth=fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8');
+ const expire=auth.slice(auth.indexOf('const expire=()=>{'),auth.indexOf('const expiresAt=accessTokenExpiresAt(token)'));
+ assert.match(expire,/invalidatePendingPushRegistration\(\)/);
+ assert.ok(expire.indexOf('invalidatePendingPushRegistration()')<expire.indexOf('setToken(null)'));
+});

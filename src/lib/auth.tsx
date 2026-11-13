@@ -6,7 +6,7 @@ import {assertCanStartLogin} from './account-session.cjs';
 import {googleLoginWithIdToken,googleRegisterWithIdToken} from './google-auth-api';
 import type {GoogleSignupInput} from './google-auth-api';
 import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
-import {disableMobilePush,clearNativePushPresentation} from './mobile-push';
+import {disableMobilePush,clearNativePushPresentation,invalidatePendingPushRegistration} from './mobile-push';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
 type GoogleAuthOutcome = AuthOutcome|'ONBOARDING_REQUIRED';
@@ -53,6 +53,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(DEMO_MODE||!token)return;
     const expire=()=>{
       if(isAccessTokenUsable(token))return;
+      invalidatePendingPushRegistration();
       setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
       setBrowsingAsGuest(false);
       void clearNativePushPresentation().catch(()=>{});
@@ -151,6 +152,8 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     // keep an account visible or interactive after the user chooses to sign out.
     const tokenToRevoke=token;
     const nameToRevoke=username;
+    // Synchronous cancellation before the first async credential or native operation.
+    invalidatePendingPushRegistration();
     setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
     // Remove local credentials before potentially slow remote revocation.

@@ -10,6 +10,8 @@ const INSTALL_ID_KEY='jynlo.mobile.push.installId';
 const REGISTERED_ACCOUNT_KEY='jynlo.mobile.push.account';
 // Logout invalidates native permission and registration tasks still in flight.
 let pushOperationEpoch=0;
+/** Immediately invalidate pending opt-in; no SecureStore or native bridge needed. */
+export function invalidatePendingPushRegistration():void{pushOperationEpoch++;}
 
 function projectId():string{
  const configured=Constants.easConfig?.projectId||Constants.expoConfig?.extra?.eas?.projectId||
@@ -107,7 +109,7 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
 /** Server revocation is attempted before logout; local state remains if it fails. */
 export async function disableMobilePush(username:string,token:string):Promise<void>{
  // Invalidate an opt-in still waiting for native permission, Firebase or HTTP.
- pushOperationEpoch++;
+ invalidatePendingPushRegistration();
  if(!username||!token||DEMO_MODE)return;
  const registered=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
  if(registered!==username.toLowerCase())return;

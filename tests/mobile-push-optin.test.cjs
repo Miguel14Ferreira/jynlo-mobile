@@ -149,3 +149,13 @@ test('stale push-device queries cannot overwrite explicit opt-in or account chan
  assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushEnabled\(true\)/);
  assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushEnabled\(false\)/);
 });
+
+test('push opt-in can be synchronously cancelled before the native permission promise resolves',()=>{
+ const push=read('src/lib/mobile-push.ts');
+ const auth=read('src/lib/auth.tsx');
+ assert.match(push,/export function invalidatePendingPushRegistration\(\):void\{pushOperationEpoch\+\+;\}/);
+ assert.match(push,/const operation=\+\+pushOperationEpoch/);
+ assert.match(push,/const ensureActive=\(\)=>\{if\(operation!==pushOperationEpoch\)/);
+ assert.match(push,/invalidatePendingPushRegistration\(\);\s*if\(!username\|\|!token\|\|DEMO_MODE\)return/);
+ assert.match(auth,/import \{disableMobilePush,clearNativePushPresentation,invalidatePendingPushRegistration\}/);
+});

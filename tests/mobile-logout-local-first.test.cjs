@@ -30,3 +30,10 @@ test('logout resets MFA and OAuth registration state synchronously',()=>{
   assert.ok(logout.indexOf(value)>0&&logout.indexOf(value)<logout.indexOf('await clearNativePushPresentation()'),value);
  }
 });
+
+test('logout invalidates pending Firebase enrollment before clearing auth state or awaiting native work',()=>{
+ const invalidate=logout.indexOf('invalidatePendingPushRegistration()');
+ const clearToken=logout.indexOf('setToken(null)');
+ const firstAwait=logout.indexOf('await ');
+ assert.ok(invalidate>=0&&invalidate<clearToken&&invalidate<firstAwait);
+});
