@@ -35,9 +35,14 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    if(!mime){setError('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.');return;}
    let size=asset.fileSize||0;
    if(!size){
-    const {File}=await import('expo-file-system');
-    const file=new File(asset.uri);
-    if(file.exists)size=file.size;
+    // Android can return a content:// URI without readable picker metadata.
+    // Do not block capture if this preliminary size probe fails: the uploader
+    // copies the file to app cache and validates its actual byte count.
+    try{
+     const {File}=await import('expo-file-system');
+     const file=new File(asset.uri);
+     if(file.exists)size=file.size;
+    }catch{}
    }
    if(!alive.current)return;
    // A few Android camera providers omit size metadata; the upload flow
