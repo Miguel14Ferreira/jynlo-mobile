@@ -4,7 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
-import {competitionSessionRoster,recordedCompetitionSessionIds,recordCompetitionSessionResult} from '../../../src/lib/session-competition-api';
+import {competitionSessionRoster,recordedCompetitionSessionIds,recordCompetitionSessionResult,competitionSessionCapabilities} from '../../../src/lib/session-competition-api';
 import {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics} from '../../../src/lib/session-competition-result.cjs';
 import type {CompetitionOutcome,CompetitionRosterEntry,CompetitionTeam} from '../../../src/lib/session-competition-result.cjs';
 
@@ -68,8 +68,25 @@ export default function SessionCompetitionResultScreen(){
    {text:'Registar resultado',onPress:()=>{
     if(writing.current||version!==generation.current||actor!==identityRef.current)return;
     writing.current=true;setBusy(true);setError('');
-    void recordCompetitionSessionResult(communityId,sessionId,token,payload).then(reply=>{
-     if(version!==generation.current||actor!==identityRef.current)return;
+    let submitted=false;
+    // Older servers can silently discard unknown JSON player-stat fields
+    // while creating an irreversible round. Never send those statistics until
+    // this authenticated endpoint confirms that the server understands them.
+    void (async()=>{
+     if(payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)){
+      let capabilities:Awaited<ReturnType<typeof competitionSessionCapabilities>>;
+      try{capabilities=await competitionSessionCapabilities(communityId,sessionId,token);}
+      catch{throw Error('O servidor ainda não confirmou o suporte a golos e assistências. Nenhuma jornada foi enviada. Atualiza o backend ou deixa as estatísticas em branco.');}
+      if(version!==generation.current||actor!==identityRef.current)return null;
+      if(capabilities?.version!==1||capabilities.footballGoalsAssists!==true)
+       throw Error('Este servidor não suporta estatísticas individuais de Futebol. Nenhuma jornada foi enviada.');
+     }
+     // A user might switch account or navigate away during the capabilities GET.
+     if(version!==generation.current||actor!==identityRef.current)return null;
+     submitted=true;
+     return recordCompetitionSessionResult(communityId,sessionId,token,payload);
+    })().then(reply=>{
+     if(!reply||version!==generation.current||actor!==identityRef.current)return;
      if(!Number.isSafeInteger(reply?.id)||reply.id<=0)
       throw Error('O servidor não confirmou a jornada. Verifica as classificações antes de repetir.');
      setRecorded(true);setRoster([]);
@@ -78,7 +95,7 @@ export default function SessionCompetitionResultScreen(){
     }).catch(e=>{
      if(version===generation.current&&actor===identityRef.current)
       setError((e instanceof Error?e.message:'Não foi possível confirmar o registo.')+
-       ' Consulta as jornadas antes de repetir, para evitar resultados duplicados.');
+       (submitted?' Consulta as jornadas antes de repetir, para evitar resultados duplicados.':''));
     }).finally(()=>{writing.current=false;if(version===generation.current&&actor===identityRef.current)setBusy(false);});
    }}
   ]);
