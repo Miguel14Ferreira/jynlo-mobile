@@ -15,4 +15,10 @@ function confirmedStoryAuthorReceipt(reply,username,caption){
   (typeof reply.caption==='string'?reply.caption.trim():'')===caption.trim()&&
   typeof reply.createdAt==='string'&&Number.isFinite(Date.parse(reply.createdAt)));
 }
-module.exports={confirmedTextPostReceipt,confirmedStoryAuthorReceipt};
+function confirmedStoryDetailsReceipt(reply,details){
+ if(!reply||typeof reply!=='object'||!details)return false;
+ const location=typeof reply.locationLabel==='string'?reply.locationLabel.trim():'';
+ const tags=typeof reply.taggedUsernames==='string'?reply.taggedUsernames.trim().toLowerCase():'';
+ return location===details.locationLabel&&tags===details.taggedUsernames;
+}
+module.exports={confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt};

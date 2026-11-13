@@ -4,7 +4,7 @@ import {feed as demoFeedSeed} from './parity-api';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry,StoryDetails} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
-import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt} from './social-text-post-receipt.cjs';
+import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt} from './social-text-post-receipt.cjs';
 import {prepareStoryDetails} from './story-details.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
@@ -308,8 +308,9 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
     ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{}),
     ...(safeDetails.locationLabel?{locationLabel:safeDetails.locationLabel}:{}),
     ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
-  if(!confirmedStoryAuthorReceipt(confirmed,username!,caption))
-    throw Error('O servidor não confirmou o autor ou a legenda da Story. Verifica o teu perfil antes de repetir.');
+  if(!confirmedStoryAuthorReceipt(confirmed,username!,caption)||
+     !confirmedStoryDetailsReceipt(confirmed,safeDetails))
+    throw Error('O servidor não confirmou o conteúdo, localização ou identificações da Story. Verifica o teu perfil antes de repetir.');
   return confirmed;
 }
 export async function discoverPeople(token:string|null):Promise<FeedUserSuggestion[]>{

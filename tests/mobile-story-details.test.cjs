@@ -26,3 +26,23 @@ test('Story composer keeps location and tags if edited during upload and shows t
  assert.match(home,/locationLabel=\{story\.locationLabel\}/);
  assert.match(home,/taggedUsernames=\{story\.taggedUsernames\}/);
 });
+
+test('Story receipt confirms stored location and profile tags, even when empty',()=>{
+ const {confirmedStoryDetailsReceipt:confirmed}=require('../src/lib/social-text-post-receipt.cjs');
+ const expected={locationLabel:'Benfica, Lisboa',taggedUsernames:'ana,joao'};
+ assert.equal(confirmed({...expected},expected),true);
+ assert.equal(confirmed({locationLabel:'Benfica, Lisboa',taggedUsernames:'ana'},expected),false);
+ assert.equal(confirmed({locationLabel:'Outra cidade',taggedUsernames:'ana,joao'},expected),false);
+ assert.equal(confirmed({},expected),false);
+ assert.equal(confirmed({locationLabel:null,taggedUsernames:null},{locationLabel:'',taggedUsernames:''}),true);
+});
+test('changing account removes Story locations and mentions together with previous media',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ const reset=home.slice(home.indexOf('const identityChanged=feedIdentity.current!==identity'),home.indexOf('setLoading(true);setError('));
+ assert.match(reset,/setStoryLocation\(''\);setStoryTags\(''\);storyLocationRef\.current='';storyTagsRef\.current=''/);
+ assert.match(reset,/setStoryTextGeometry\(\{x:50,y:78,rotation:0,zoom:1\}\)/);
+});
+test('real Story multipart receipt confirms metadata before reporting success',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(api,/confirmedStoryDetailsReceipt\(confirmed,safeDetails\)/);
+});
