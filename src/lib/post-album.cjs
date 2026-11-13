@@ -10,6 +10,9 @@ function albumError(files,allowUnknownSize=false){
   if(!Number.isFinite(file.fileSize)||file.fileSize<0||(!allowUnknownSize&&file.fileSize===0))
    return 'Não foi possível confirmar o tamanho de um ficheiro.';
   const {validateMedia}=require('./social-feed-core.cjs');
+  if(typeof file.mimeType!=='string'||!['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(file.mimeType)||
+    (file.type==='video')!==file.mimeType.startsWith('video/'))
+   return 'O formato do ficheiro não corresponde ao tipo de fotografia ou vídeo.';
   const error=file.fileSize===0&&allowUnknownSize?null:validateMedia(file.mimeType,file.fileSize,false);
   if(error)return error;
   total+=file.fileSize;
@@ -23,13 +26,22 @@ function mergeAlbum(existing,incoming){
  }
  return result;
 }
+/** Render only bounded, supported media from backend or archived posts. */
 function postMediaItems(item){
- const result=[];
- if(item.imageUrl)result.push({url:item.imageUrl,type:'image'});
- else if(item.videoUrl)result.push({url:item.videoUrl,type:'video'});
- for(const extra of item.extraMedia||[]){
-  if(!extra?.url)continue;
-  result.push({url:extra.url,type:extra.mimeType?.startsWith('video/')?'video':'image'});
+ if(!item||typeof item!=='object')return [];
+ const result=[],seen=new Set();
+ const put=(url,type)=>{
+  if(typeof url!=='string'||!url.trim()||seen.has(url)||result.length>=MAX_ALBUM_ITEMS)return;
+  seen.add(url);result.push({url,type});
+ };
+ if(typeof item.imageUrl==='string'&&item.imageUrl.trim())put(item.imageUrl,'image');
+ else if(typeof item.videoUrl==='string'&&item.videoUrl.trim())put(item.videoUrl,'video');
+ if(Array.isArray(item.extraMedia)){
+  for(const extra of item.extraMedia.slice(0,MAX_ALBUM_ITEMS*2)){
+   if(!extra||typeof extra!=='object')continue;
+   if(['image/jpeg','image/png','image/webp'].includes(extra.mimeType))put(extra.url,'image');
+   else if(['video/mp4','video/webm'].includes(extra.mimeType))put(extra.url,'video');
+  }
  }
  return result;
 }
