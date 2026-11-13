@@ -29,3 +29,13 @@ test('Quem vai protege lista e utiliza avatares sem criar endpoints novos',()=>{
  assert.ok(view.includes('rosterError'));
  assert.ok(view.includes('Abrir comunidade associada'));
 });
+
+test('participation status distinguishes past, future, cancelled and completed sessions',()=>{
+ const {sessionParticipationLabel}=require('../src/lib/session-teams-presentation.cjs');
+ const now=Date.parse('2026-11-13T20:00:00Z');
+ const open={status:'OPEN',gameDate:'2026-11-14T20:00:00Z'};
+ assert.equal(sessionParticipationLabel(open,now),'Aberta');
+ assert.equal(sessionParticipationLabel({...open,gameDate:'2026-11-12T20:00:00Z'},now),'Data ultrapassada');
+ assert.equal(sessionParticipationLabel({...open,status:'CANCELLED'},now),'Cancelada');
+ assert.equal(sessionParticipationLabel({...open,status:'COMPLETED'},now),'Concluída');
+});
