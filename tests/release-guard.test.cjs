@@ -96,4 +96,9 @@ test('Google Play build produces an Android App Bundle',()=>{
   assert.equal(eas.build.production.android.buildType,'app-bundle');
   assert.equal(eas.build['play-internal'].android.buildType,'app-bundle');
   assert.equal(eas.build['play-internal'].env.JYNLO_REQUIRE_REAL_API,'1');
+  for(const profile of ['production','play-internal']){
+    assert.equal(eas.build[profile].environment,'production',`${profile} must use production EAS secrets`);
+    assert.notEqual(eas.build[profile].env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+    assert.notEqual(eas.build[profile].env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
+  }
 });
