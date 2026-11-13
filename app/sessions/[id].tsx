@@ -534,6 +534,14 @@ export default function SessionScreen(){
         <Button title="Enviar convite" disabled={busy||!inviteUsername.trim()} onPress={sendInvite}/>
         <Button danger title="Cancelar esta sessão" disabled={busy} onPress={cancel}/>
       </View>:null}
+      {detail?.communityId&&owner&&detail.status!=='CANCELLED'&&
+        typeof detail.gameDate==='string'&&Number.isFinite(Date.parse(detail.gameDate))&&Date.parse(detail.gameDate)<Date.now()?
+        <View style={styles.panel}>
+          <Eyebrow>DEPOIS DO JOGO</Eyebrow>
+          <Text style={styles.hint}>Regista o vencedor, empate e participantes para as classificações da comunidade. A administração da comunidade e o servidor validam a operação.</Text>
+          <Button title="Registar resultado da sessão" secondary
+            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(id),communityId:String(detail.communityId)}})}/>
+        </View>:null}
       {detail&&canViewRoster(detail,auth.username)&&!rosterError&&hasConfirmedTeams?<View style={styles.panel}>
         <Eyebrow>EQUIPAS CONFIRMADAS</Eyebrow>
         <Text style={styles.hint}>Distribuição guardada no servidor. Todos os participantes autorizados podem consultar as equipas.</Text>
