@@ -30,3 +30,10 @@ test('busy state recovers after load refresh yet does not affect a newly focused
  assert.match(perform,/await load\(\)/);
  assert.match(perform,/if\(epoch===actionEpoch\.current\)setBusy\(false\)/);
 });
+
+test('session join only reports confirmed server membership or waitlist',()=>{
+ assert.match(screen,/const confirmed=confirmedSessionJoin\(result\)/);
+ assert.match(screen,/if\(!confirmed\)throw Error\('O servidor respondeu, mas não confirmou a entrada no jogo/);
+ assert.match(screen,/return confirmed/);
+ assert.match(screen,/\(result\)=>\(result as \{message:string\}\)\.message/);
+});

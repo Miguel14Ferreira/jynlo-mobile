@@ -5,6 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/com
 import {ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
+import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
 import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -200,10 +201,11 @@ export default function SessionScreen(){
   const join=()=>{void perform(async()=>{
     if(!auth.token)throw new Error('Inicia sessão primeiro.');
     const result=await joinSession(id,auth.token,auth.username||undefined,password);
+    const confirmed=confirmedSessionJoin(result);
+    if(!confirmed)throw Error('O servidor respondeu, mas não confirmou a entrada no jogo. Verifica a lista de jogadores antes de repetir.');
     setPassword('');
-    // Preserve the actual server outcome rather than assuming every join is confirmed.
-    return result;
-  },(result)=>{const state=(result as {state?:string})?.state;return state==='WAITLISTED'?'Entraste na lista de espera.':'Presença confirmada pelo servidor.';});};
+    return confirmed;
+  },(result)=>(result as {message:string}).message);};
   const leave=()=>{
     if(!auth.token||!detail||!canLeave(detail))return;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
