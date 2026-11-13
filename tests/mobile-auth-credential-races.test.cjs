@@ -30,3 +30,19 @@ test('startup session restoration cannot revive an account after logout',()=>{
  assert.match(startup,/credentialQueue\.current=credentialQueue\.current\.then\(clear,clear\)/);
  assert.match(startup,/await credentialQueue\.current/);
 });
+
+test('successful credential commit invalidates stale SecureStore restoration before publishing login',()=>{
+ const save=source.slice(source.indexOf('const save=useCallback'),source.indexOf('const login=useCallback'));
+ const commit=save.indexOf('authEpoch.current++');
+ assert.ok(commit>save.indexOf('await Promise.all([SecureStore.setItemAsync'));
+ assert.ok(commit<save.indexOf('setUsername(name);setToken(accessToken)'));
+ const restore=source.slice(source.indexOf('useEffect(()=>{let active=true;const restoreEpoch'),source.indexOf('},[]);'));
+ assert.match(restore,/if\(!active\|\|restoreEpoch!==authEpoch\.current\)return/);
+});
+test('old JWT timer and serialized expiry cleanup cannot invalidate a newer Google login',()=>{
+ const lifecycle=source.slice(source.indexOf('useEffect(()=>{\n    if(DEMO_MODE||!token)return;'),source.indexOf('},[token]);'));
+ assert.match(lifecycle,/const tokenEpoch=authEpoch\.current/);
+ assert.match(lifecycle,/if\(tokenEpoch!==authEpoch\.current\|\|isAccessTokenUsable\(token\)\)return/);
+ assert.match(lifecycle,/if\(!active\|\|tokenEpoch!==authEpoch\.current\)return/);
+ assert.match(lifecycle,/if\(expireEpoch!==authEpoch\.current\)return/);
+});

@@ -47,7 +47,12 @@ export function AuthProvider({children}:{children:React.ReactNode}){
           }else{
             setToken(null);setUsername(null);
             if(savedToken||savedName){
-              const clear=()=>Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).then(()=>{});
+              const clear=async()=>{
+                // A login may have succeeded while the stale restore was waiting
+                // for its turn in the SecureStore queue. Never delete its credentials.
+                if(!active||restoreEpoch!==authEpoch.current)return;
+                await Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+              };
               credentialQueue.current=credentialQueue.current.then(clear,clear);
               await credentialQueue.current;
             }
@@ -59,15 +64,20 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   })();return()=>{active=false;};},[]);
   useEffect(()=>{
     if(DEMO_MODE||!token)return;
+    const tokenEpoch=authEpoch.current;
     const expire=()=>{
-      if(isAccessTokenUsable(token))return;
+      if(tokenEpoch!==authEpoch.current||isAccessTokenUsable(token))return;
       authEpoch.current++;
       invalidatePendingPushRegistration();
       setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
       setBrowsingAsGuest(false);
       void clearNativePushPresentation().catch(()=>{});
       // Serialize expiry cleanup after an in-flight credential write.
-      const clear=()=>Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).then(()=>{});
+      const expireEpoch=authEpoch.current;
+      const clear=async()=>{
+        if(expireEpoch!==authEpoch.current)return;
+        await Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+      };
       credentialQueue.current=credentialQueue.current.then(clear,clear);
       void credentialQueue.current.catch(()=>{});
     };
@@ -77,7 +87,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     let timer:ReturnType<typeof setTimeout>|null=null;
     let active=true;
     const schedule=()=>{
-      if(!active)return;
+      if(!active||tokenEpoch!==authEpoch.current)return;
       if(!isAccessTokenUsable(token)){expire();return;}
       const remaining=(expiresAt??0)-Date.now()-15000;
       timer=setTimeout(schedule,Math.max(1,Math.min(2147483647,remaining)));
@@ -99,6 +109,9 @@ export function AuthProvider({children}:{children:React.ReactNode}){
       }
       if(epoch!==authEpoch.current)
         throw Error('Esta tentativa de login foi cancelada após mudança de sessão.');
+      // Commit a new auth generation before publishing React state. The
+      // SecureStore cold-start restore and older expiry callbacks are stale now.
+      authEpoch.current++;
       setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
       setBrowsingAsGuest(false);
     });
