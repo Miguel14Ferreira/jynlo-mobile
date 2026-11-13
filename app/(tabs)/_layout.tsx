@@ -44,7 +44,7 @@ export default function TabsLayout(){
   close();
   router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}});
  };
- const action=(destination:'session'|'post'|'story'|'community'|'tournament'|'venue')=>{
+ const action=(destination:'session'|'post'|'community'|'tournament'|'venue')=>{
   close();
   if(!auth.token||!auth.username){
    router.push({pathname:'/login',params:{redirect:'/'}});
@@ -90,13 +90,10 @@ export default function TabsLayout(){
        <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>AÇÃO PRINCIPAL</Text><Text style={styles.sessionHeroTitle}>Criar sessão</Text><Text style={styles.sessionHeroSubtitle}>Marca o jogo, reúne jogadores e organiza as equipas.</Text></View>
        <Text style={styles.sessionHeroArrow}>›</Text>
       </Pressable>
-      <Text style={styles.moreActionsTitle}>Ou partilha algo com a comunidade</Text>
+      <Text style={styles.moreActionsTitle}>Também podes criar</Text>
       <View style={styles.primaryGrid}>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('post')}>
         <Text style={styles.actionIcon}>▤</Text><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
-       </Pressable>
-       <Pressable accessibilityRole="button" accessibilityLabel="Criar Story com a câmara" style={styles.actionCard} onPress={()=>action('story')}>
-        <Text style={styles.actionIcon}>◉</Text><Text style={styles.actionTitle}>Story</Text><Text style={styles.actionHint}>Câmara e galeria · 24 h</Text>
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <Text style={styles.actionIcon}>◎</Text><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>

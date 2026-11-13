@@ -21,7 +21,7 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(tabs,/router\.push\('\/venues\/create'\)/);
  assert.match(tabs,/router\.push\('\/tournaments\/create'\)/);
  assert.match(tabs,/params:\{compose:destination\}/);
- assert.match(feed,/useLocalSearchParams<\{compose\?:string\}>\(\)/);
+ assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string\}>\(\)/);
  assert.match(feed,/if\(compose==='post'\)setComposerOpen\(true\)/);
  assert.match(feed,/else setStoryComposer\(true\)/);
  assert.match(feed,/router\.setParams\(\{compose:undefined\}\)/);
@@ -33,7 +33,7 @@ test('tournament is gated by owned or administrated communities, not membership 
  assert.match(tabs,/eligible\.length>0/);
  assert.match(tabs,/checkError\?/);
  assert.match(tabs,/Para criar torneios, precisas de administrar uma comunidade/);
- assert.match(tabs,/Campeonatos exigem uma comunidade e gestão própria/);
+ assert.match(tabs,/Várias provas numa época · comunidade que administras/);
 });
 
 test('jogo de época explains rankings and keeps long choices in a vertical layout',()=>{
@@ -53,5 +53,15 @@ test('session creation is an accessible full-width hero above secondary actions'
  assert.match(layout,/sessionHero:\{width:'100%',minHeight:142/);
  assert.ok(layout.indexOf('accessibilityLabel="Criar sessão desportiva"') < layout.indexOf("onPress={()=>action('post')}"));
  assert.match(layout,/Marca o jogo, reúne jogadores e organiza as equipas/);
- assert.match(layout,/Or partilha|Ou partilha algo com a comunidade/);
+ assert.match(layout,/Também podes criar/);
+});
+
+test('plus menu contains only post and community secondary tiles without duplicate Story tile',()=>{
+ const layout=read('app/(tabs)/_layout.tsx');
+ const tiles=layout.slice(layout.indexOf('<View style={styles.primaryGrid}>'),layout.indexOf('</View>',layout.indexOf('<View style={styles.primaryGrid}>')));
+ assert.match(tiles,/action\('post'\)/);
+ assert.match(tiles,/action\('community'\)/);
+ assert.doesNotMatch(tiles,/action\('story'\)/);
+ assert.doesNotMatch(layout,/Criar Story com a câmara/);
+ assert.match(feed,/accessibilityLabel="Criar a minha story"/);
 });
