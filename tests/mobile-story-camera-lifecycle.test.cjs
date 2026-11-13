@@ -1,24 +1,20 @@
 'use strict';
-const test=require('node:test');
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const path=require('node:path');
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
-test('pending camera captures cannot mutate an unmounted Story editor',()=>{
- assert.match(camera,/const captureInFlight=useRef\(false\)/);
- assert.match(camera,/if\(!alive\.current\)return;\s*if\(!photo\?\.uri\)/);
- assert.match(camera,/if\(alive\.current\)onCaptured\(\{uri:photo\.uri/);
- assert.match(camera,/captureInFlight\.current=false;if\(alive\.current\)setBusy\(false\)/);
+test('native Story camera never applies stale capture after unmount or switch of account',()=>{
+ assert.match(camera,/const alive=useRef\(true\),busyRef=useRef\(false\)/);
+ assert.match(camera,/if\(!alive\.current\|\|result\.canceled\|\|!result\.assets\?\.length\)return/);
+ assert.match(camera,/if\(!alive\.current\)return;\s*const problem=validateMedia/);
+ assert.match(camera,/return\(\)=>\{alive\.current=false;clearTimeout\(timer\);\}/);
 });
-test('microphone permission cannot start a recording after leaving the editor',()=>{
- assert.match(camera,/permissionRequestInFlight\.current=true/);
- assert.match(camera,/if\(!alive\.current\)return;\s*if\(!granted\.granted\)/);
- assert.match(camera,/finally\{permissionRequestInFlight\.current=false;\}/);
- assert.match(camera,/if\(!alive\.current\|\|!camera\.current\|\|!cameraReady\|\|mode!=='video'\|\|recordingRef\.current\)return/);
- assert.match(camera,/if\(alive\.current\)onCaptured\(\{uri:result\.uri/);
+test('camera requests permission before invoking native UI and unlocks busy state on completion',()=>{
+ assert.match(camera,/requestCameraPermissionsAsync\(\)/);
+ assert.match(camera,/if\(!alive\.current\)return;\s*if\(!permission\.granted\)/);
+ assert.match(camera,/finally\{\s*busyRef\.current=false;/);
+ assert.match(camera,/if\(alive\.current\)setBusy\(false\)/);
 });
-
-test('native stopRecording errors during teardown never throw from React cleanup',()=>{
- assert.match(camera,/alive\.current=false;if\(recordingRef\.current\)\{try\{camera\.current\?\.stopRecording\(\);\}catch/);
- assert.match(camera,/try\{camera\.current\?\.stopRecording\(\);\}catch\{if\(alive\.current\)setError/);
+test('native camera offers retry and gallery after cancellation or denial',()=>{
+ assert.match(camera,/accessibilityLabel="Abrir câmara do dispositivo"/);
+ assert.match(camera,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
+ assert.match(camera,/onPickGallery/);
 });

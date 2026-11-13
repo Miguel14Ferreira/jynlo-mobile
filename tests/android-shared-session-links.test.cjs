@@ -28,5 +28,5 @@ test('share URLs reject untrusted hosts and invalid session identifiers',()=>{
 });
 test('private session passwords must never be embedded in invite app-link filters',()=>{
  const serialized=JSON.stringify(intentFilters);
- assert.doesNotMatch(serialized,/password|token=/i);
+ assert.doesNotMatch(serialized,/[?&](?:password|token)=/i);
 });

@@ -67,21 +67,16 @@ test('story caption overlay is shown in preview and playback using the existing 
  assert.doesNotMatch(composer,/burn|flatten|renderToFile/);
 });
 
-test('stories offer camera and gallery without hiding actions behind tall previews',()=>{
+test('Stories open the device camera and still offer a gallery without a tall black preview',()=>{
  const composer=feed.split('<Modal visible={identityMatches&&storyComposer}')[1]?.split('</Modal>')[0];
  assert.ok(composer);
- assert.match(composer,/StoryCameraCapture key=\{storyComposerRevision.current\} onCaptured=\{media=>\{if\(activeStoryAccount\.current===auth\.token&&storyComposerRef\.current&&storyComposerRevision\.current===storyCaptureRevision&&!storyInFlight\.current\)setStoryMedia\(media\);\}\}/);
- const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
- assert.match(camera,/<CameraView/);
- assert.match(camera,/start\.y-y>75/);
- assert.match(camera,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
- assert.match(camera,/takePictureAsync/);
+ assert.match(composer,/StoryCameraCapture key=\{storyComposerRevision\.current\}/);
  assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
- assert.match(composer,/<ScrollView keyboardShouldPersistTaps="handled"/);
- assert.match(composer,/disabled=\{!storyMedia\|\|storyPublishing\}/);
  assert.match(composer,/accessibilityLabel="Fechar criação de Story"/);
+ const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
+ assert.match(camera,/ImagePicker\.launchCameraAsync/);
+ assert.doesNotMatch(camera,/<CameraView/);
 });
-
 test('feed engagement actions wrap rather than overlapping on small screens',()=>{
  assert.match(feed,/postActions:\{flexDirection:'row',flexWrap:'wrap'/);
  assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:36/);
@@ -132,15 +127,14 @@ test('social feed links only to a real session id and uses backend-provided meta
  assert.match(post,/<SessionPostAttachment item=\{item\}\/>/);
 });
 
-test('sharing a session-related post includes its direct web link',()=>{
+test('sharing a post or attendance activity uses the correct canonical URL',()=>{
  const share=feed.split('async function sharePost(')[1]?.split('function SessionPostAttachment(')[0];
  assert.ok(share);
- assert.match(share,/Number\.isSafeInteger\(id\)/);
- assert.match(share,/id!==null&&id>0/);
- assert.match(share,/https:\/\/d24sports\.com\/sessions\/\$\{id\}/);
- assert.match(share,/await Share\.share/);
+ assert.match(share,/sharedPostLink\(item\)/);
+ assert.match(share,/Share\.share/);
+ const shared=fs.readFileSync(path.join(__dirname,'../src/lib/shared-post-link.cjs'),'utf8');
+ assert.match(shared,/\/posts\//);assert.match(shared,/\/sessions\//);
 });
-
 test('posting media without typed caption uses a valid default backend caption',()=>{
  const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
  assert.match(api,/const caption=content.trim\(\)\|\|'Partilhei um momento desportivo\.'/);

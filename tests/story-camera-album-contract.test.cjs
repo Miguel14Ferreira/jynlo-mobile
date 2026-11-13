@@ -6,19 +6,15 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('Story camera records with Expo CameraView limits and stops on teardown',()=>{
+test('Story editor opens the native device camera and retains media safety limits',()=>{
  const camera=read('src/components/StoryCameraCapture.tsx');
- assert.match(camera,/useMicrophonePermissions/);
- assert.match(camera,/requestMicPermission\(\)/);
- assert.match(camera,/mode=\{mode\}/);
- assert.match(camera,/maxDuration:30,maxFileSize:20\*1024\*1024/);
- assert.match(camera,/camera\.current\?\.stopRecording\(\)/);
- assert.match(camera,/onCaptured\(\{uri:result\.uri,type:'video'/);
+ assert.match(camera,/ImagePicker\.launchCameraAsync/);
+ assert.match(camera,/videoMaxDuration:30/);
+ assert.match(camera,/validateMedia\(mime,size,true\)/);
+ assert.match(camera,/onCaptured\(\{uri:asset\.uri/);
  assert.match(camera,/onPickGallery/);
- assert.match(camera,/onCameraReady/);
- assert.match(camera,/cameraReady/);
- assert.match(camera,/alive\.current=true;return/);
- assert.match(camera,/O iPhone gravou em MOV/);
+ assert.match(camera,/alive\.current=true/);
+ assert.doesNotMatch(camera,/<CameraView|recordAsync|takePictureAsync/);
 });
 test('Story uploads retain the legacy one-file contract while posts use albums',()=>{
  const api=read('src/lib/social-feed-api.ts');
