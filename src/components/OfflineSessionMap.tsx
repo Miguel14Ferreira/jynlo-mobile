@@ -21,8 +21,8 @@ export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
     {mainland.map(s=><Pressable key={s.id} accessibilityRole="button"
       accessibilityLabel={'Ver sessão de '+s.sport+(s.city?' em '+s.city:'')}
       onPress={()=>onSelect(s.id)} style={[styles.pin,{
-       left:(clamp(100*((s.longitude!-boundaries.west)/(boundaries.east-boundaries.west))))+'%',
-       top:(clamp(100*((boundaries.north-s.latitude!)/(boundaries.north-boundaries.south))))+'%',
+       left:(clamp(100*((s.longitude!-boundaries.west)/(boundaries.east-boundaries.west))))+'%' as `${number}%`,
+       top:(clamp(100*((boundaries.north-s.latitude!)/(boundaries.north-boundaries.south))))+'%' as `${number}%`,
       },selectedId===s.id&&styles.selected]}>
       <Text style={styles.pinText}>{selectedId===s.id?'●':'•'}</Text>
      </Pressable>)}

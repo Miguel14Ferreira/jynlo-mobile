@@ -17,7 +17,8 @@ test('Explore no longer evaluates react-native-maps while loading tab routes',()
 });
 
 test('native map implementation remains available only behind the lazy boundary',()=>{
- assert.match(native,/import MapView,\{Marker,UrlTile,PROVIDER_GOOGLE\} from 'react-native-maps'/);
+ assert.match(native,/import MapView,\{Marker,PROVIDER_GOOGLE\} from 'react-native-maps'/);
+ assert.doesNotMatch(native,/UrlTile|tile\.openstreetmap\.org/);
  assert.match(native,/sessions\.map\(s=><Marker/);
  assert.match(native,/onPress=\{\(\)=>onSelectSession\(s\.id\)\}/);
  assert.match(native,/onRegionChangeComplete=\{onRegionChange\}/);
@@ -25,7 +26,9 @@ test('native map implementation remains available only behind the lazy boundary'
 });
 
 test('Android without Google Maps SDK remains usable through external map link',()=>{
- assert.match(explore,/https:\/\/www\.openstreetmap\.org\/#map=10\//);
+ assert.match(explore,/https:\/\/www\.google\.com\/maps\/@/);
+ assert.match(explore,/<OfflineSessionMap sessions=\{mappedSessions\}/);
  assert.match(explore,/O mapa integrado requer configuração da Google Maps SDK/);
- assert.match(explore,/!NATIVE_MAP_READY\?mappedSessions\.map/);
+ assert.doesNotMatch(explore,/!NATIVE_MAP_READY\?mappedSessions\.map/);
+ assert.match(explore,/NATIVE_MAP_READY\?<Suspense/);
 });

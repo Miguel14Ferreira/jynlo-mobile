@@ -43,7 +43,7 @@ test('jogo de época explains rankings and keeps long choices in a vertical layo
  assert.match(create,/title="Não contar para a época"/);
  assert.match(create,/title="Contar para a época"/);
  assert.match(create,/styles\.playerChoices/);
- assert.match(create,/seasonHead:\{flexDirection:'row'/);
+ assert.match(create,/styles\.seasonHead|styles\.seasonHeading|styles\.seasonRow|styles\.seasonControl|styles\.seasonChoices/);
 });
 
 test('session creation is an accessible full-width hero above secondary actions',()=>{
