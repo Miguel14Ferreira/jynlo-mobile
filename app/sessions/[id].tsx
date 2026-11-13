@@ -540,7 +540,7 @@ export default function SessionScreen(){
           <Eyebrow>DEPOIS DO JOGO</Eyebrow>
           <Text style={styles.hint}>Regista o vencedor, empate e participantes para as classificações da comunidade. A administração da comunidade e o servidor validam a operação.</Text>
           <Button title="Registar resultado da sessão" secondary
-            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(id),communityId:String(detail.communityId)}})}/>
+            onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(id),communityId:String(detail.communityId),sport:detail.sport}})}/>
         </View>:null}
       {detail&&canViewRoster(detail,auth.username)&&!rosterError&&hasConfirmedTeams?<View style={styles.panel}>
         <Eyebrow>EQUIPAS CONFIRMADAS</Eyebrow>
