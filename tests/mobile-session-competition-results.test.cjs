@@ -140,3 +140,31 @@ test('result UI tells the difference between creating a round and verifying scor
  assert.match(s,/setRecorded\(true\);setRoster\(\[\]\)/);
  assert.match(s,/não foi possível confirmar os golos e assistências guardados/);
 });
+
+test('new football stats require an authenticated capability preflight before any POST',()=>{
+ const ui=read('app/sessions/[id]/result.tsx');
+ const api=read('src/lib/session-competition-api.ts');
+ const resultAction=ui.slice(ui.indexOf('writing.current=true;setBusy(true)'),ui.indexOf('}).finally(()=>{writing.current=false'));
+ assert.match(api,/competitionSessionCapabilities\(communityId:number,sessionId:number,token:string\|null\)/);
+ assert.match(api,/competition-result\/capabilities/);
+ assert.match(api,/resource\(communityId,sessionId\)/);
+ assert.match(resultAction,/payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)/);
+ assert.match(resultAction,/capabilities=await competitionSessionCapabilities\(communityId,sessionId,token\)/);
+ assert.match(resultAction,/capabilities\?\.version!==1\|\|capabilities.footballGoalsAssists!==true/);
+ assert.match(resultAction,/Nenhuma jornada foi enviada/);
+ assert.match(resultAction,/if\(version!==generation.current\|\|actor!==identityRef.current\)return null/);
+ assert.match(resultAction,/submitted=true;\s*return recordCompetitionSessionResult/);
+ assert.ok(resultAction.indexOf('competitionSessionCapabilities(communityId,sessionId,token)')<
+  resultAction.indexOf('return recordCompetitionSessionResult('));
+ assert.match(resultAction,/submitted\?' Consulta as jornadas antes de repetir, para evitar resultados duplicados\.':''/);
+});
+test('legacy winner-only match reporting skips stats negotiation and keeps real round verification',()=>{
+ const api=read('src/lib/session-competition-api.ts');
+ const ui=read('app/sessions/[id]/result.tsx');
+ const roster=editableCompetitionRoster(members);
+ const payload=buildSessionCompetitionResult('B',roster);
+ assert.ok(payload.players.every(p=>!Object.hasOwn(p,'goals')&&!Object.hasOwn(p,'assists')));
+ assert.match(ui,/if\(payload.players.some\(player=>player.goals!==undefined\|\|player.assists!==undefined\)\)\{/);
+ assert.match(api,/return request<\{id:number;entries\?:Array<\{username:string;goals:number;assists:number\}>\}>\(/);
+ assert.match(ui,/if\(!Number.isSafeInteger\(reply\?\.id\)\|\|reply.id<=0\)/);
+});
