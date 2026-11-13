@@ -42,7 +42,7 @@ test('confirmed server cancellation clears the UI before local secure storage cl
 test('guest invitation stays usable from the browser even after a native app-link',()=>{
  const details=read('app/sessions/[id].tsx');
  assert.match(details,/title="Continuar no browser"/);
- assert.match(details,/Linking\.openURL\(url\)/);
+ assert.match(details,/openBrowserAsync\(url\)/);
  assert.match(details,/https:\/\/d24sports\.com\/sessions\/\$\{id\}\?guest=\$\{encodeURIComponent\(guestToken\)\}/);
 });
 
@@ -53,4 +53,12 @@ test('uncertain network response cannot create another guest RSVP on refresh',()
  assert.match(view,/setStatusUnknown\(uncertainSubmission\.current\)/);
  assert.match(view,/!loading&&!uncertainSubmission\.current&&/);
  assert.match(view,/Não repitas a inscrição/);
+});
+
+test('browser fallback uses Android Custom Tabs instead of relaunching the native App Link',()=>{
+ const details=read('app/sessions/[id].tsx');
+ const pkg=JSON.parse(read('package.json'));
+ assert.equal(pkg.dependencies['expo-web-browser'],'~58.0.8');
+ assert.match(details,/import\('expo-web-browser'\)/);
+ assert.match(details,/browser\.openBrowserAsync\(url\)/);
 });
