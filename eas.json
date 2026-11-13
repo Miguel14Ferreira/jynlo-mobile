@@ -21,7 +21,8 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "environment": "production"
     },
     "push-test": {
       "distribution": "internal",
@@ -40,7 +41,8 @@
       },
       "android": {
         "buildType": "app-bundle"
-      }
+      },
+      "environment": "production"
     },
     "diagnostic": {
       "distribution": "internal",
