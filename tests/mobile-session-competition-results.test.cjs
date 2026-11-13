@@ -60,3 +60,21 @@ test('session details only offer entry for community games that have actually ta
  assert.match(s,/pathname:'\/sessions\/\[id\]\/result'/);
  assert.match(s,/Registar resultado da sessão/);
 });
+
+test('absent and late-cancelled players cannot be inserted into a quick result',()=>{
+ const eligible=editableCompetitionRoster([
+  {...members[0],attendanceStatus:'ATTENDED'},
+  {...members[1],attendanceStatus:'PENDING'},
+  {id:4,username:'Falta',teamCode:'A',attendanceStatus:'NO_SHOW'},
+  {id:5,username:'Tardio',teamCode:'B',attendanceStatus:'LATE_CANCELLED'}
+ ]);
+ assert.deepEqual(eligible.map(p=>p.username),['Ana','Bruno']);
+ assert.equal(buildSessionCompetitionResult('B',eligible).players.length,2);
+});
+test('community administrators also receive the official result entry for played ranked sessions',()=>{
+ const community=read('app/communities/[id].tsx');
+ assert.match(community,/owner&&community.rankingsEnabled&&s.status!=='CANCELLED'/);
+ assert.match(community,/Date.parse\(s.gameDate\)<Date.now\(\)/);
+ assert.match(community,/title="Registar resultado do jogo"/);
+ assert.match(community,/pathname:'\/sessions\/\[id\]\/result'/);
+});
