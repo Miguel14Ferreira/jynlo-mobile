@@ -348,15 +348,20 @@ export default function SessionScreen(){
     }).catch(()=>setFeedback('Não foi possível abrir a partilha. Tenta novamente.'));
     const publicUrl=`https://d24sports.com/sessions/${id}`;
     if(!owner||!auth.token||!detail){void send(publicUrl);return;}
-    Alert.alert('Criar novo convite para convidados?',
-      'Esta ligação permite pedir presença sem conta Jynlo. Por segurança, criar um novo convite invalida as ligações de convite anteriores para esta sessão. As presenças já confirmadas mantêm-se.',
-      [{text:'Cancelar',style:'cancel'},{text:'Criar e partilhar',onPress:()=>{
-        if(operationInFlight.current)return;
-        operationInFlight.current=true;setBusy(true);setError('');
-        void issueSessionGuestLink(id,auth.token!).then(url=>send(url)).catch(e=>{
-          setError(e instanceof Error?e.message:'Não foi possível criar um convite válido.');
-        }).finally(()=>{operationInFlight.current=false;setBusy(false);});
-      }}]);
+    Alert.alert('Partilhar sessão',
+      'A ligação normal não altera convites existentes. Um convite sem conta permite confirmar presença como convidado, mas criar um novo invalida os convites anteriores.',
+      [
+        {text:'Cancelar',style:'cancel'},
+        {text:'Ligação normal',onPress:()=>{if(!operationInFlight.current)void send(publicUrl);}},
+        {text:'Convite sem conta',onPress:()=>{
+          if(operationInFlight.current)return;
+          // The organizer explicitly chose to replace the previous guest link.
+          operationInFlight.current=true;setBusy(true);setError('');
+          void issueSessionGuestLink(id,auth.token!).then(url=>send(url)).catch(e=>{
+            setError(e instanceof Error?e.message:'Não foi possível criar um convite válido.');
+          }).finally(()=>{operationInFlight.current=false;setBusy(false);});
+        }}
+      ]);
   };
   async function previewBalancedTeams(){
     if(!auth.token||!owner||!detail||teamsInFlight.current||operationInFlight.current||
