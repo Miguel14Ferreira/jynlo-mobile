@@ -1,12 +1,12 @@
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
 import {readSuccessfulResponse,InvalidSuccessfulResponseError} from './response-body.cjs';
+import {validateApiOrigin} from './api-origin.cjs';
 import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite, SessionTeamSuggestion } from './types';
 
 /** Without an explicit environment override, the app is an isolated demo.
  * This avoids writing fictitious activity into Jynlo's real production backend. */
 const rawApiUrl = (process.env.EXPO_PUBLIC_JYNLO_API_URL || '').trim();
 export const DEMO_MODE = !rawApiUrl;
-const {validateApiOrigin} = require('./api-origin.cjs');
 export const API_BASE: string = rawApiUrl ? validateApiOrigin(rawApiUrl,{allowLocalhost:__DEV__}) : '';
 
 export class ApiError extends Error {
