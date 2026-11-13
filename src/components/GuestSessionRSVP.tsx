@@ -12,11 +12,12 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
  const [players,setPlayers]=useState<Player[]>([]),[receipt,setReceipt]=useState<GuestReceipt|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [refreshId,setRefreshId]=useState(0),[statusUnknown,setStatusUnknown]=useState(false);
+ const [editingIdentity,setEditingIdentity]=useState(false),[editName,setEditName]=useState(''),[editPlayerId,setEditPlayerId]=useState<number|null>(null);
  const pending=useRef(false),uncertainSubmission=useRef(false);
  useEffect(()=>{uncertainSubmission.current=false;},[sessionId,guestToken]);
  const key='jynlo-guest-rsvp-'+sessionId;
  useEffect(()=>{
-  let alive=true;setLoading(true);setError('');setStatusUnknown(uncertainSubmission.current);setReceipt(null);setPlayers([]);
+  let alive=true;setLoading(true);setError('');setStatusUnknown(uncertainSubmission.current);setReceipt(null);setPlayers([]);setEditingIdentity(false);
   if(!validSecret(guestToken)){setError('Pede uma ligação de convite válida ao organizador.');setLoading(false);return;}
   void (async()=>{
    try{
@@ -55,6 +56,17 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
   }
   finally{pending.current=false;setBusy(false);}
  }
+ async function changeIdentity(){
+  if(pending.current||busy||!receipt||!validSecret(receipt.receipt)||(!editPlayerId&&!editName.trim()))return;
+  pending.current=true;setBusy(true);setError('');
+  try{
+   const updated=await request<GuestReceipt>('/api/sessions/'+sessionId+'/guest-requests/change-player',{
+    method:'POST',body:{receipt:receipt.receipt,playerId:editPlayerId||null,newName:editPlayerId?null:editName.trim()}});
+   if(updated.status!=='APPROVED'||!updated.playerName?.trim())throw Error('Não foi possível confirmar a alteração do jogador. Verifica a tua presença antes de repetir.');
+   setReceipt({...updated,receipt:receipt.receipt});setEditingIdentity(false);onConfirmed();
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar o jogador.');}
+  finally{pending.current=false;setBusy(false);}
+ }
  function cancel(){
   if(pending.current||!receipt||!validSecret(receipt.receipt))return;
   Alert.alert('Cancelar presença','Queres mesmo cancelar a tua participação?',[
@@ -81,6 +93,25 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
   {receipt?<><Text style={styles.ok}>{receipt.status==='APPROVED'||receipt.status==='LINKED'?'✓ Presença confirmada':'Pedido registado'}</Text>
    <Text style={styles.hint}>{receipt.playerName||'Convidado'}</Text>
    {receipt.meetingPointInstructions?<Text style={styles.hint}>Ponto de encontro: {receipt.meetingPointInstructions}</Text>:null}
+   {receipt.status==='APPROVED'?<><Pressable accessibilityRole="button" disabled={busy} style={styles.secondary}
+     onPress={()=>{setEditName(receipt.playerName||'');setEditPlayerId(null);setEditingIdentity(open=>!open);}}>
+    <Text style={styles.buttonText}>{editingIdentity?'Fechar correção':'Enganei-me no nome'}</Text>
+   </Pressable>
+   {editingIdentity?<View style={styles.editBox}>
+     <Text style={styles.hint}>Corrige o teu nome sem perder a presença confirmada.</Text>
+     {players.map(p=><Pressable key={p.id} accessibilityRole="radio" accessibilityState={{checked:editPlayerId===p.id}}
+       style={[styles.secondary,editPlayerId===p.id&&styles.selected]} onPress={()=>{setEditPlayerId(p.id);setEditName('');}}>
+       <Text style={styles.buttonText}>{editPlayerId===p.id?'✓ ':'○ '}{p.name}</Text></Pressable>)}
+     {editPlayerId!==null?<Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>setEditPlayerId(null)}>
+       <Text style={styles.buttonText}>Escrever outro nome</Text></Pressable>:null}
+     {editPlayerId===null?<TextInput style={styles.input} value={editName} maxLength={80}
+       onChangeText={setEditName} placeholder="Nome correto" placeholderTextColor={C.muted}
+       accessibilityLabel="Corrigir o nome do convidado"/>:null}
+     <Pressable accessibilityRole="button" disabled={busy||(!editPlayerId&&!editName.trim())}
+       onPress={()=>void changeIdentity()} style={[styles.primary,(busy||(!editPlayerId&&!editName.trim()))&&{opacity:.5}]}>
+       <Text style={styles.primaryText}>{busy?'A guardar…':'Guardar nome correto'}</Text>
+     </Pressable>
+   </View>:null}</>:null}
    <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={cancel}><Text style={styles.buttonText}>Cancelar presença</Text></Pressable>
   </>:!loading&&!error&&!statusUnknown?<><Text style={styles.hint}>Escolhe o teu nome na lista ou escreve um nome novo.</Text>
    {players.map(p=><Pressable key={p.id} accessibilityRole="radio" accessibilityState={{checked:playerId===p.id}}
@@ -99,6 +130,7 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
 }
 const styles=StyleSheet.create({
  panel:{gap:10,padding:16,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ editBox:{gap:10,padding:10,borderRadius:12,backgroundColor:C.surface2},
  heading:{fontSize:17,fontWeight:'900',color:C.white},hint:{color:C.muted,fontSize:12,lineHeight:19},
  error:{color:'#FF9999',fontSize:13,lineHeight:19},ok:{color:C.mint,fontSize:16,fontWeight:'900'},
  input:{backgroundColor:C.surface2,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:11,padding:12,minHeight:47},
