@@ -11,7 +11,7 @@ test('only real HTTPS release with matching Firebase app config passes',()=>{
   const configFile=path.join(dir,'google-services.json');
   fs.writeFileSync(configFile,JSON.stringify({client:[{client_info:{android_client_info:{package_name:'com.jynlo.app'}}}]}));
   const output=execFileSync(process.execPath,[script,'--production'],{env:{...process.env,
-   EAS_BUILD_PROFILE:'play-internal',EXPO_PUBLIC_JYNLO_API_URL:'https://api.d24sports.com',GOOGLE_SERVICES_JSON:configFile
+   EAS_BUILD_PROFILE:'play-internal',EXPO_PUBLIC_JYNLO_API_URL:'https://api.d24sports.com',GOOGLE_SERVICES_JSON:configFile,JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:'AIza'+'A'.repeat(35)
   },encoding:'utf8'});
   assert.ok(output.includes('OK (api)'));
   assert.throws(()=>execFileSync(process.execPath,[script,'--production'],{env:{...process.env,
