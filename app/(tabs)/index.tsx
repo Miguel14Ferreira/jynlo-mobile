@@ -206,7 +206,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
 }
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
-  const {width:screenWidth}=useWindowDimensions();
+  const {width:screenWidth,height:screenHeight}=useWindowDimensions();
   const {compose,storyId}=useLocalSearchParams<{compose?:string;storyId?:string}>();
   const activeStoryAccount=useRef<string|null>(auth.token);
   activeStoryAccount.current=auth.token;
@@ -735,7 +735,7 @@ export default function JynloFeedHome(){
       <View style={styles.commentsModal}>
         <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" style={styles.commentsBackdrop} onPress={()=>setPostMenuItem(null)}/>
         <SafeAreaView edges={['bottom']} style={styles.postMenuSafeArea}>
-         <View style={styles.postMenuContainer}>
+         <View style={[styles.postMenuContainer,{maxHeight:Math.max(220,Math.floor(screenHeight*.72))}]}>
           <View style={styles.commentsHandle}/>
           <View style={styles.postMenuHeading}>
            <Text style={styles.commentsTitle}>Opções da publicação</Text>
@@ -866,8 +866,8 @@ export default function JynloFeedHome(){
 }
 const styles=StyleSheet.create({
   postMenuSafeArea:{width:'100%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER},
-  postMenuContainer:{maxHeight:'78%',minHeight:160,paddingTop:12,paddingHorizontal:16,paddingBottom:12},
-  postMenuContents:{paddingBottom:16,gap:12},
+  postMenuContainer:{minHeight:220,paddingTop:12,paddingHorizontal:16,paddingBottom:12},
+  postMenuContents:{paddingBottom:28,gap:10},
   postMenuHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:8},
   postMenuClose:{width:48,height:48,alignItems:'center',justifyContent:'center'},
   postMenuAction:{padding:14,minHeight:48,justifyContent:'center',borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
