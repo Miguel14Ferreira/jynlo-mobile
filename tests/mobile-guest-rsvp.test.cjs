@@ -19,7 +19,7 @@ test('a signed link does not by itself confirm attendance or expose a receipt',(
  assert.match(view,/if\(!validSecret\(result\.receipt\)/);
  assert.match(view,/setReceipt\(result\);onConfirmed\(\)/);
  assert.match(view,/const state=await request<GuestReceipt>/);
- assert.match(view,/if\(alive&&state\.status!=='CANCELLED'/);
+ assert.match(view,/guestReceiptStatusCategory\(state\.status\)==='active'/);
  assert.doesNotMatch(view,/console\.(log|warn)\(/);
 });
 
