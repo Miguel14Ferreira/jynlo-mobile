@@ -84,3 +84,10 @@ test('logout invalidates pending push enrollment before it can re-register a sig
  assert.match(push,/export function invalidatePendingPushRegistration\(\):void\{pushOperationEpoch\+\+;\}/);
  assert.match(push,/export async function disableMobilePush[\s\S]*?invalidatePendingPushRegistration\(\)/);
 });
+
+test('push registration is single-flight even across native permission prompts',()=>{
+ const push=read('src/lib/mobile-push.ts');
+ assert.match(push,/let pushOptInPending=false/);
+ assert.match(push,/pushOptInPending=true/);
+ assert.match(push,/pushOptInPending=false/);
+});

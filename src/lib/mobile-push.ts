@@ -10,6 +10,7 @@ const INSTALL_ID_KEY='jynlo.mobile.push.installId';
 const REGISTERED_ACCOUNT_KEY='jynlo.mobile.push.account';
 // Logout invalidates native permission and registration tasks still in flight.
 let pushOperationEpoch=0;
+let pushOptInPending=false;
 /** Immediately invalidate pending opt-in; no SecureStore or native bridge needed. */
 export function invalidatePendingPushRegistration():void{pushOperationEpoch++;}
 
@@ -48,6 +49,9 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  if(DEMO_MODE||!username||!token)throw Error('Inicia sessão para ativar notificações.');
  if(Platform.OS!=='android'&&Platform.OS!=='ios')throw Error('Notificações só disponíveis em Android e iOS.');
  if(!androidPushConfigured())throw Error('As notificações Android ainda precisam da configuração Firebase. A lista de notificações da Jynlo continua disponível nesta página.');
+ if(pushOptInPending)throw Error('Já existe uma ativação de notificações em curso neste dispositivo.');
+ pushOptInPending=true;
+ try{
  const operation=++pushOperationEpoch;
  const ensureActive=()=>{if(operation!==pushOperationEpoch)throw Error('Ativação cancelada após mudança de sessão.');};
  const prior=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
@@ -104,6 +108,9 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
   if((await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY))===username.toLowerCase())
    await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
   throw Error('Ativação cancelada após mudança de sessão.');
+ }
+ }finally{
+  pushOptInPending=false;
  }
 }
 /** Server revocation is attempted before logout; local state remains if it fails. */

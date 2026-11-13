@@ -159,3 +159,11 @@ test('push opt-in can be synchronously cancelled before the native permission pr
  assert.match(push,/invalidatePendingPushRegistration\(\);\s*if\(!username\|\|!token\|\|DEMO_MODE\)return/);
  assert.match(auth,/import \{disableMobilePush,clearNativePushPresentation,invalidatePendingPushRegistration\}/);
 });
+
+test('concurrent Firebase opt-ins are rejected rather than racing registration and revocation',()=>{
+ const service=read('src/lib/mobile-push.ts');
+ assert.match(service,/let pushOptInPending=false/);
+ assert.match(service,/if\(pushOptInPending\)throw Error\('Já existe uma ativação/);
+ assert.match(service,/pushOptInPending=true;\s*try\{/);
+ assert.match(service,/\}finally\{\s*pushOptInPending=false;/);
+});
