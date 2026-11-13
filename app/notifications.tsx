@@ -23,6 +23,7 @@ export default function NotificationsScreen(){
  const [unreadOnly,setUnreadOnly]=useState(false),[notificationBusy,setNotificationBusy]=useState(false);
  const notificationLock=useRef(false),notificationRevision=useRef(0);
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
+ const pushBusyRef=useRef(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
  const pendingRefresh=useRef(false);
@@ -78,6 +79,8 @@ export default function NotificationsScreen(){
    pushOperation.current++;inviteOperation.current++;notificationRevision.current++;
    notificationLock.current=false;setNotificationBusy(false);setUnreadOnly(false);
    inviteDecisionInFlight.current=null;
+   // An old request finishing after account change cannot clear the new account's lock.
+   // The in-flight native enrollment is cancelled by auth logout/expiry.
    setPushBusy(false);setBusyInvite(null);setNotice('');
   }
   const version=++generation.current;
@@ -114,8 +117,9 @@ export default function NotificationsScreen(){
   };
  },[load,auth.username,auth.token]));
  async function togglePush(){
-  if(!sameAccount||!auth.username||!auth.token||pushBusy)return;
+  if(!sameAccount||!auth.username||!auth.token||pushBusyRef.current)return;
   // Ignore an older status lookup while an explicit user choice is processing.
+  pushBusyRef.current=true;
   statusRequest.current++;
   const identity=auth.username+'|'+auth.token;
   const operation=++pushOperation.current;
@@ -130,7 +134,10 @@ export default function NotificationsScreen(){
    }
   }catch(e){if(account.current===identity&&pushOperation.current===operation)
    setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
-  finally{if(pushOperation.current===operation)setPushBusy(false);}
+  finally{
+   pushBusyRef.current=false;
+   if(account.current===identity&&pushOperation.current===operation)setPushBusy(false);
+  }
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
   if(!sameAccount||!auth.token||inviteDecisionInFlight.current!==null)return;

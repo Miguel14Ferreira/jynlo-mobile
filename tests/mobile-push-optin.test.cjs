@@ -75,7 +75,9 @@ test('push switch verifies server ownership before displaying enabled state',()=
  assert.match(client,/getPushDeviceStatus\(token:string,deviceId:string\)/);
  assert.match(client,/\/api\/notifications\/me\/devices\//);
  assert.match(push,/await getPushDeviceStatus\(token,id\)/);
- assert.match(push,/if\(!actual\)await SecureStore\.deleteItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
+ assert.match(push,/if\(!actual\)\{/);
+ assert.match(push,/if\(pushOperationEpoch===revision&&!pushOptInPending&&latest===registered\)/);
+ assert.match(push,/await SecureStore\.deleteItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
  assert.match(screen,/pushRegistrationStatus\(auth\.username,auth\.token\)/);
 });
 
@@ -166,4 +168,21 @@ test('concurrent Firebase opt-ins are rejected rather than racing registration a
  assert.match(service,/if\(pushOptInPending\)throw Error\('Já existe uma ativação/);
  assert.match(service,/pushOptInPending=true;\s*try\{/);
  assert.match(service,/\}finally\{\s*pushOptInPending=false;/);
+});
+
+test('push status query cannot erase a new registration while old HTTP status is pending',()=>{
+ const service=read('src/lib/mobile-push.ts');
+ assert.match(service,/const revision=pushOperationEpoch/);
+ assert.match(service,/if\(pushOptInPending\)return false/);
+ assert.match(service,/getPushDeviceStatus\(token,id\)/);
+ assert.match(service,/if\(pushOperationEpoch!==revision\|\|pushOptInPending\)return false/);
+ assert.match(service,/const latest=await SecureStore\.getItemAsync\(REGISTERED_ACCOUNT_KEY\)/);
+ assert.match(service,/if\(pushOperationEpoch===revision&&!pushOptInPending&&latest===registered\)/);
+});
+test('push switch uses a synchronous lock against double taps',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/const pushBusyRef=useRef\(false\)/);
+ assert.match(screen,/if\(!sameAccount\|\|!auth\.username\|\|!auth\.token\|\|pushBusyRef\.current\)return/);
+ assert.match(screen,/pushBusyRef\.current=true/);
+ assert.match(screen,/pushBusyRef\.current=false/);
 });

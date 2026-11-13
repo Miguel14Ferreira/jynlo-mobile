@@ -91,3 +91,10 @@ test('push registration is single-flight even across native permission prompts',
  assert.match(push,/pushOptInPending=true/);
  assert.match(push,/pushOptInPending=false/);
 });
+
+test('push status only deletes matching old local marker after server validation',()=>{
+ const push=read('src/lib/mobile-push.ts');
+ assert.match(push,/const revision=pushOperationEpoch/);
+ assert.match(push,/if\(pushOperationEpoch!==revision\|\|pushOptInPending\)return false/);
+ assert.match(push,/if\(pushOperationEpoch===revision&&!pushOptInPending&&latest===registered\)/);
+});

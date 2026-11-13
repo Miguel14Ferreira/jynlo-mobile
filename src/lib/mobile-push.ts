@@ -31,13 +31,21 @@ async function installId():Promise<string>{
 }
 export async function pushRegistrationStatus(username:string,token:string):Promise<boolean>{
  if(!username||!token||DEMO_MODE)return false;
+ // A stale status query cannot remove a registration created by a newer opt-in.
+ const revision=pushOperationEpoch;
+ if(pushOptInPending)return false;
  const registered=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
- if(registered!==username.toLowerCase())return false;
+ if(registered!==username.toLowerCase()||pushOperationEpoch!==revision||pushOptInPending)return false;
  const id=await SecureStore.getItemAsync(INSTALL_ID_KEY);
- if(!id)return false;
- // Local marker alone does not prove a server-side registration remains active.
+ if(!id||pushOperationEpoch!==revision||pushOptInPending)return false;
+ // Local ownership alone is insufficient: the backend must confirm it.
  const actual=await getPushDeviceStatus(token,id);
- if(!actual)await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
+ if(pushOperationEpoch!==revision||pushOptInPending)return false;
+ if(!actual){
+  const latest=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
+  if(pushOperationEpoch===revision&&!pushOptInPending&&latest===registered)
+   await SecureStore.deleteItemAsync(REGISTERED_ACCOUNT_KEY);
+ }
  return actual;
 }
 /** A standalone APK must contain Firebase client configuration before requesting an FCM token. */
