@@ -101,7 +101,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
     <Pressable accessibilityRole="button" accessibilityLabel="Modo vídeo" disabled={busy} onPress={()=>{setCameraReady(false);setMode('video');}} style={[styles.modeButton,mode==='video'&&styles.modeActive]}><Text style={styles.modeText}>Vídeo</Text></Pressable>
   </View>
   <View style={styles.controls}>
-    <View style={styles.galleryButton} accessible={false}><Text style={styles.controlText}>↑ Galeria</Text></View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos" accessibilityHint="Também podes deslizar para cima na câmara" disabled={busy||recording} onPress={onPickGallery} style={styles.galleryButton}><Text style={styles.controlText}>↑ Galeria</Text></Pressable>
     <Pressable accessibilityRole="button"
       accessibilityLabel={mode==='video'?(recording?'Terminar gravação':'Começar gravação'):'Tirar fotografia'}
       disabled={(busy&&!recording)||(!cameraReady&&!recording)} onPress={()=>void (mode==='video'?toggleRecording():capture())}
