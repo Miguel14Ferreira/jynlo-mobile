@@ -58,6 +58,23 @@ test('store builds reject absent, invalid and wrong-package Firebase configs',()
     }
   }
 });
+test('Google Play configurations require a native Google Maps Android key',()=>{
+  const staticConfig=require('../app.json').expo;
+  const configPath=require.resolve('../app.config.js');
+  for(const profile of ['production','play-internal']){
+    const missing=spawnSync(process.execPath,['-e',`require(${JSON.stringify(configPath)})({config:${JSON.stringify(staticConfig)}})`],{
+      encoding:'utf8',
+      env:{...process.env,EAS_BUILD_PROFILE:profile,JYNLO_ANDROID_DIAGNOSTIC_NO_R8:'0',JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:''}
+    });
+    assert.notEqual(missing.status,0,profile);
+    assert.match(missing.stderr,/BUILD BLOQUEADO.*GOOGLE_MAPS_ANDROID_API_KEY/);
+    const present=spawnSync(process.execPath,['-e',`require(${JSON.stringify(configPath)})({config:${JSON.stringify(staticConfig)}})`],{
+      encoding:'utf8',
+      env:{...process.env,EAS_BUILD_PROFILE:profile,JYNLO_ANDROID_DIAGNOSTIC_NO_R8:'0',JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:'AIza'+'A'.repeat(35)}
+    });
+    assert.equal(present.status,0,present.stderr);
+  }
+});
 test('store build refuses diagnostic R8 override',()=>{
   const staticConfig=require('../app.json').expo;
   const configPath=require.resolve('../app.config.js');
