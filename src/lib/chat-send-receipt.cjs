@@ -6,7 +6,8 @@ function sameReply(reply,id){return (reply.replyToMessageId??null)===(id??null);
 function confirmedDirectChatSend(reply,author,peer,text,replyToId){
  return validId(reply)&&equalUser(reply.username1,author)&&equalUser(reply.username2,peer)&&
  sameText(reply.text,text)&&sameReply(reply,replyToId)&&
- reply.date!=null&&!Number.isNaN(Date.parse(reply.date));
+ reply.date!=null&&((typeof reply.date==='string'&&Number.isFinite(Date.parse(reply.date)))||
+ (typeof reply.date==='number'&&Number.isFinite(reply.date)&&reply.date>0));
 }
 function confirmedCommunityChatSend(reply,communityId,author,text,replyToId){
  return validId(reply)&&Number.isSafeInteger(communityId)&&reply.communityId===communityId&&

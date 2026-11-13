@@ -10,6 +10,8 @@ test('direct message is only confirmed for correct author, recipient, body and r
  }
  assert.equal(direct({...d,replyToMessageId:44},'Alice','Bob','Olá!',44),true);
  assert.equal(direct(d,'Alice','Bob','Olá!',44),false);
+ assert.equal(direct({...d,date:1794571800000},'Alice','Bob','Olá!',null),true);
+ assert.equal(direct({...d,date:0},'Alice','Bob','Olá!',null),false);
  assert.equal(direct(null,'Alice','Bob','Olá!',null),false);
 });
 test('community receipt belongs to exact community, text, author and reply',()=>{
