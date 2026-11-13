@@ -2,7 +2,7 @@ const test=require('node:test');const assert=require('node:assert/strict');const
 const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',()=>{
   const tabs=read('app/(tabs)/_layout.tsx');
-  assert.match(tabs, /name="index" options=\{\{title:'Feed'/);
+  assert.match(tabs, /name="index" options=\{\{title:'Início'/);
   assert.match(tabs, /name="explore" options=\{\{title:'Explorar'/);
   assert.ok(fs.existsSync(path.join(root,'app/(tabs)/explore.tsx')));
   assert.ok(fs.existsSync(path.join(root,'app/people.tsx')));
@@ -48,13 +48,13 @@ test('Feed apresenta stories e criação de publicações num ecrã próprio',()
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
 });
 
-test('only the story rail provides a Story creation entry',()=>{
+test('Story creation is offered in the rail and central create menu, without redundant feed buttons',()=>{
  const feed=read('app/(tabs)/index.tsx');
  const tabs=read('app/(tabs)/_layout.tsx');
  assert.match(feed,/<SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"\/>/);
  assert.match(feed,/accessibilityLabel="Criar a minha story"/);
  assert.doesNotMatch(feed,/\+ Criar Story/);
- assert.doesNotMatch(tabs,/onPress=\{\(\)=>action\('story'\)\}/);
+ assert.match(tabs,/onPress=\{\(\)=>action\('story'\)\}/);
  assert.match(tabs,/onPress=\{\(\)=>action\('venue'\)\}/);
 });
 
@@ -63,6 +63,8 @@ test('Feed mobile presents server session attendance and creation events alongsi
  const types=read('src/lib/types.ts');
  assert.match(types,/type:'POST'\|'SESSION_CREATED'\|'SESSION_ATTENDED'/);
  assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)setPosts\(value\(0,\[\] as FeedItem\[\]\)\)/);
- assert.match(feed,/item\.sessionId\?<Pressable onPress=\{\(\)=>router\.push/);
+ assert.match(feed,/<SessionPostAttachment item=\{item\}\/>/);
+ assert.match(feed,/function SessionPostAttachment\(/);
+ assert.match(feed,/router\.push\(\{pathname:'\/sessions\/\[id\]'/);
  assert.match(feed,/item\.type==='POST'\?/);
 });
