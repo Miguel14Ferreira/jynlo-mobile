@@ -48,7 +48,8 @@ test('stale confirmation alert cannot create a session for a different account o
  assert.match(source,/const createOperation=useRef\(0\)/);
  assert.match(source,/const identity=communityLoadIdentity\.current/);
  assert.match(source,/const version=communityLoadVersion\.current/);
- assert.match(source,/if\(locked\.current\|\|version!==communityLoadVersion\.current\|\|identity!==communityLoadIdentity\.current\)return/);
+ assert.match(source,/if\(locked\.current\|\|confirmedCreation\.current\|\|/);
+ assert.match(source,/version!==communityLoadVersion\.current\|\|identity!==communityLoadIdentity\.current\)return/);
  assert.match(source,/const operation=\+\+createOperation\.current/);
  assert.match(source,/if\(operation!==createOperation\.current\|\|version!==communityLoadVersion\.current\|\|identity!==communityLoadIdentity\.current\)return/);
 });
