@@ -12,6 +12,7 @@ import {sessionChatHistory,postSessionChat,markSessionChatRead,editSessionChatMe
 import type {SessionChatEntry} from '../../../src/lib/session-chat-api';
 import {C,MobileTheme} from '../../../src/lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../../../src/lib/chat-photo-attachment';
+import {confirmedSessionChatSend} from '../../../src/lib/session-chat-receipt.cjs';
 import {sendChatPhotoAlbum} from '../../../src/lib/chat-photo-album';
 import {validateChatAlbum} from '../../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
@@ -103,7 +104,10 @@ export default function SessionChat(){
   const version=generation.current,originalDraft=draft,originalReplyId=reply?.id;
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
-  try{await postSessionChat(id,originalDraft,auth.token,originalReplyId);
+  try{
+   const confirmed=await postSessionChat(id,originalDraft,auth.token,originalReplyId);
+   if(!confirmedSessionChatSend(confirmed,id,auth.username||'',originalDraft,originalReplyId))
+    throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current)return;
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);

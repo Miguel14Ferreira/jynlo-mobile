@@ -69,3 +69,10 @@ test('session photo picker loads only on request and ignores results from previo
  assert.match(screen,/activeChat\.current!==identity\|\|auth\.token!==token/);
  assert.match(screen,/finally\{pickerInFlight\.current=false;\}/);
 });
+
+test('session text send clears drafts only after server receipt confirms exact message',()=>{
+ const s=read('app/sessions/[id]/chat.tsx');
+ assert.match(s,/const confirmed=await postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
+ assert.match(s,/confirmedSessionChatSend\(confirmed,id,auth\.username\|\|'',originalDraft,originalReplyId\)/);
+ assert.ok(s.indexOf('confirmedSessionChatSend(confirmed')<s.indexOf("setDraft(current=>current===originalDraft?'':current)"));
+});
