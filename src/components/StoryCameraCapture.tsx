@@ -57,7 +57,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    if(!result?.uri)throw Error('Não foi possível guardar o vídeo gravado.');
    // The API only accepts MP4/WEBM. iOS may produce MOV, which must never be
    // mislabelled as MP4 (renaming a file does not convert its container).
-   if(/\\.mov(?:[?#]|$)/i.test(result.uri))
+   if(/\.mov(?:[?#]|$)/i.test(result.uri))
     throw Error('O iPhone gravou em MOV, que ainda não é aceite pelo servidor. Escolhe um MP4 na galeria.');
    const video=new File(result.uri);
    const size=video.size;
