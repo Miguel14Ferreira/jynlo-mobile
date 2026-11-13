@@ -16,6 +16,8 @@ module.exports = ({config}) => {
   // A signed Android binary cannot initialize react-native-maps without a
   // configured Google Maps SDK key. Inject it at build time, never hardcode it.
   const mapsKey = (process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY || '').trim();
+  if(storeBuild && !mapsKey)
+    throw new Error('BUILD BLOQUEADO: falta JYNLO_GOOGLE_MAPS_ANDROID_API_KEY para ativar o mapa nativo na versão de loja.');
   if(mapsKey && !/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
     throw new Error('A chave da Google Maps Android não tem o formato esperado.');
   // Set GOOGLE_SERVICES_JSON as an EAS file environment variable holding the
