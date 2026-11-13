@@ -185,6 +185,7 @@ export default function CommunityDetailScreen(){
         <Button title="Abrir chat da comunidade" onPress={()=>router.push({pathname:"/communities/[id]/chat",params:{id:String(id)}})}/>
         <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
+        {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
         {owner?<Button secondary title="Criar torneio nesta comunidade" onPress={()=>router.push({pathname:"/tournaments/create",params:{communityId:String(id)}})}/>:null}
       </View>:null}
       {role?<View style={styles.section}>
