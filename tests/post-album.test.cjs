@@ -25,3 +25,23 @@ test('render album from server first asset followed by extraMedia',()=>{
   {url:'/img/1',type:'image'},{url:'/vid/2',type:'video'},{url:'/img/3',type:'image'}]);
  assert.deepEqual(postMediaItems({imageUrl:null,videoUrl:'/first',extraMedia:[]}),[{url:'/first',type:'video'}]);
 });
+
+test('MIME must agree with selected photo or video type before real backend upload',()=>{
+ assert.match(albumError([{...photo('clip'),type:'image',mimeType:'video/mp4'}]),/formato/i);
+ assert.match(albumError([{...video('photo'),type:'video',mimeType:'image/jpeg'}]),/formato/i);
+ assert.match(albumError([{...photo('x'),mimeType:'image/heic'}]),/formato/i);
+ assert.equal(albumError([video('valid'),photo('valid2')]),null);
+});
+test('archived or malformed server albums never crash Feed, profiles or post details',()=>{
+ assert.deepEqual(postMediaItems(null),[]);
+ assert.deepEqual(postMediaItems({imageUrl:'/cover',extraMedia:{bad:'shape'}}),[{url:'/cover',type:'image'}]);
+ assert.deepEqual(postMediaItems({imageUrl:'/cover',extraMedia:[null,{url:'/wrong',mimeType:'image/svg+xml'},
+   {url:'/cover',mimeType:'image/png'},{url:'/movie',mimeType:'video/mp4'}]}),[
+   {url:'/cover',type:'image'},{url:'/movie',type:'video'}
+ ]);
+ assert.deepEqual(postMediaItems({imageUrl:3,videoUrl:'/video',extraMedia:[{url:'/image',mimeType:'image/webp'}]}),[
+   {url:'/video',type:'video'},{url:'/image',type:'image'}
+ ]);
+ assert.equal(postMediaItems({imageUrl:'/one',extraMedia:Array.from({length:50},(_,i)=>({
+   url:'/'+i,mimeType:'image/jpeg'}))}).length,6);
+});
