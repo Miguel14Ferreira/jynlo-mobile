@@ -30,6 +30,8 @@ export default function SessionScreen(){
   const detailRequestGeneration=useRef(0);
   const operationInFlight=useRef(false);
   const actionEpoch=useRef(0);
+  // A returning view may have a newer focus epoch while the same write is pending.
+  const focusedSessionIdentity=useRef('');
   const backgroundSyncInFlight=useRef(false);
   const foregroundLoadVersion=useRef<number|null>(null);
   const [detail,setDetail]=useState<SessionDetail|null>(null);
@@ -145,6 +147,8 @@ export default function SessionScreen(){
     }finally{backgroundSyncInFlight.current=false;}
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
+    const focusIdentity=id+'|'+auth.username+'|'+auth.token;
+    focusedSessionIdentity.current=focusIdentity;
     // A write may still be pending when returning to this screen.
     setBusy(operationInFlight.current||removalInFlight.current||attendanceInFlight.current);
     // Keep pending team writes locked across a blur/refocus; otherwise the
@@ -164,6 +168,7 @@ export default function SessionScreen(){
     // changing account, route, or leaving this screen.
     return ()=>{
       clearInterval(timer);resume.remove();
+      if(focusedSessionIdentity.current===focusIdentity)focusedSessionIdentity.current='';
       detailRequestGeneration.current++;actionEpoch.current++;
       // Invalidate callbacks, but let the original request release its lock
       // in finally. A pending server write must never become repeatable here.
@@ -178,6 +183,7 @@ export default function SessionScreen(){
     operationInFlight.current=true;
     const version=detailRequestGeneration.current;
     const epoch=actionEpoch.current;
+    const identity=id+'|'+auth.username+'|'+auth.token;
     setBusy(true);setError('');setFeedback('');
     try {
       const result=await operation();
@@ -190,7 +196,12 @@ export default function SessionScreen(){
         setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado da sessão antes de repetir.');
     }finally{
       operationInFlight.current=false;
-      if(epoch===actionEpoch.current)setBusy(false);
+      // Refocusing this exact session keeps the pending lock visible.
+      // Release it on settlement, even when the focus epoch has changed.
+      if(focusedSessionIdentity.current===identity){
+        setBusy(false);
+        if(epoch!==actionEpoch.current)void load();
+      }
     }
   };
   const s=detail||preview,spots=Math.max(0,(s?.maxParticipants??0)-(s?.participantCount??0));

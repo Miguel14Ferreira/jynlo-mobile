@@ -28,7 +28,9 @@ test('busy state recovers after load refresh yet does not affect a newly focused
  const perform=screen.slice(screen.indexOf('const perform=async('),screen.indexOf('const s=detail||preview'));
  assert.match(perform,/const epoch=actionEpoch\.current/);
  assert.match(perform,/await load\(\)/);
- assert.match(perform,/if\(epoch===actionEpoch\.current\)setBusy\(false\)/);
+ assert.match(perform,/if\(focusedSessionIdentity\.current===identity\)\{/);
+ assert.match(perform,/setBusy\(false\)/);
+ assert.match(perform,/if\(epoch!==actionEpoch\.current\)void load\(\)/);
 });
 
 test('session join only reports confirmed server membership or waitlist',()=>{
@@ -66,4 +68,15 @@ test('session invites require a real server ID rather than treating HTTP success
  assert.match(invite,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\|\|!invitee\|\|!token\)/);
  assert.match(invite,/if\(!Number\.isSafeInteger\(result\?\.id\)\|\|result\.id<=0\)/);
  assert.match(invite,/não confirmou o convite/);
+});
+
+test('a pending action settles and refreshes after refocusing the same session only',()=>{
+ const focused=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('const perform=async('));
+ const perform=screen.slice(screen.indexOf('const perform=async('),screen.indexOf('const s=detail||preview'));
+ assert.match(screen,/const focusedSessionIdentity=useRef\(''\)/);
+ assert.match(focused,/focusedSessionIdentity\.current=focusIdentity/);
+ assert.match(focused,/if\(focusedSessionIdentity\.current===focusIdentity\)focusedSessionIdentity\.current=''/);
+ assert.match(perform,/const identity=id\+'\|'\+auth\.username\+'\|'\+auth\.token/);
+ assert.match(perform,/if\(focusedSessionIdentity\.current===identity\)\{/);
+ assert.match(perform,/if\(epoch!==actionEpoch\.current\)void load\(\)/);
 });
