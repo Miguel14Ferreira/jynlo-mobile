@@ -52,9 +52,9 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     style={styles.post}>
     {(()=>{const album=postMediaItems(item),first=album[0],preview=first?resolveJynloMedia(first.url):null;
       return <View>
-       {preview&&first.type==='image'?<Image source={{uri:preview}} style={styles.image} resizeMode="cover"/>:
-        first?.type==='video'?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
-        <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
+       {preview&&first.type==='image'?<Image source={{uri:preview}} style={styles.image} resizeMode="contain"/>:
+        first?.type==='video'?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶ Vídeo</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
+        <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>
        {album.length>1?<View style={styles.albumMark}><Text style={styles.albumMarkText}>▤ {album.length}</Text></View>:null}
       </View>;
     })()}
@@ -73,7 +73,7 @@ const styles=StyleSheet.create({
  albumMarkText:{fontSize:11,fontWeight:'800',color:'#fff'},
  section:{gap:13},title:{fontSize:19,fontWeight:'900',color:C.white},description:{color:T.muted,fontSize:12,lineHeight:18},
  grid:{flexDirection:'row',flexWrap:'wrap',gap:9},post:{width:'48%',borderRadius:14,overflow:'hidden',backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
- image:{width:'100%',height:145},placeholder:{height:145,backgroundColor:T.raised,justifyContent:'center',alignItems:'center',padding:10,gap:6},
+ image:{width:'100%',height:155,backgroundColor:'#020A10'},placeholder:{height:155,backgroundColor:T.raised,justifyContent:'center',alignItems:'center',padding:10,gap:6},
  mediaIcon:{fontSize:27,color:T.accent},content:{color:T.text,fontSize:12,lineHeight:18,textAlign:'center'},
  meta:{paddingHorizontal:10,paddingVertical:9},metaText:{fontSize:11,color:T.muted},empty:{fontSize:13,color:T.muted,paddingVertical:14}
 });
