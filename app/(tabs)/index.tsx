@@ -784,8 +784,10 @@ export default function JynloFeedHome(){
            autoCapitalize="none" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           {storyFriendsBusy?<Text style={styles.storiesIntro}>A carregar amigos…</Text>:null}
           {storyFriendsError?<Text style={styles.storiesIntro}>{storyFriendsError}</Text>:null}
-          {storyFriends.filter(friend=>[friend.username,friend.nickname||'',friend.fullName||''].some(value=>
-           value.toLocaleLowerCase('pt-PT').includes(storyFriendSearch.trim().toLocaleLowerCase('pt-PT')))).slice(0,15).map(friend=>{
+          {storyFriends.filter(friend=>storyFriendSearch.trim()
+           ?[friend.username,friend.nickname||'',friend.fullName||''].some(value=>
+             value.toLocaleLowerCase('pt-PT').includes(storyFriendSearch.trim().toLocaleLowerCase('pt-PT')))
+           :storyMentionUsernames(storyTags).includes(friend.username.toLowerCase())).slice(0,15).map(friend=>{
            const selected=storyMentionUsernames(storyTags).includes(friend.username.toLowerCase());
            return <Pressable key={friend.username} accessibilityRole="button" disabled={storyPublishing}
             accessibilityLabel={(selected?'Remover identificação de ':'Identificar ')+friend.username}
