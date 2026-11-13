@@ -11,6 +11,7 @@ import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
+import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -469,12 +470,13 @@ export default function SessionScreen(){
     {error?<Message tone="error">{error}</Message>:null}
      {guestToken?<View style={styles.guestInvitePanel}>
        <Text style={styles.panelHeading}>Convite de participação recebido</Text>
-       <Text style={styles.hint}>O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, a confirmação da presença continua disponível no site através da ligação original.</Text>
+       <Text style={styles.hint}>O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.</Text>
        <Button secondary title="Partilhar ligação de confirmação" onPress={()=>{
          const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
          void Share.share({message:url,url}).catch(()=>Alert.alert('Convite','Não foi possível partilhar a ligação.'));
        }}/>
      </View>:null}
+    {guestToken&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
