@@ -10,7 +10,7 @@ test('Story creation launches the device native camera without mounting a large 
  assert.doesNotMatch(src,/<CameraView|takePictureAsync|recordAsync/);
  assert.match(src,/const timer=setTimeout/);
  assert.match(src,/if\(!alive\.current\|\|result\.canceled/);
- assert.match(src,/validateMedia\(mime,size,true\)/);
+ assert.match(src,/size>0\?validateMedia\(mime,size,true\):null/);
  assert.match(src,/accessibilityLabel="Abrir galeria de fotografias e vídeos"/);
 });
 test('cancelled camera has accessible retry and gallery actions, never blank dark camera pane',()=>{
