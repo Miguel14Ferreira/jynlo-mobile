@@ -20,7 +20,7 @@ test('no confirmed roster is restored following failed or anonymous refresh',()=
  assert.match(load,/return version===detailRequestGeneration\.current&&isOrganizer\(full,auth\.username\)\?full:null/);
  assert.match(load,/const publicPreview=await sessionPreview\(id\);[\s\S]*?setPreview\(publicPreview\);\s*return null/);
  assert.match(load,/\}catch\(e\)\{[\s\S]*?return null/);
- assert.match(confirm,/request===teamsOperation\.current&&epoch===actionEpoch\.current&&/);
+ assert.match(confirm,/if\(request!==teamsOperation\.current\|\|epoch!==actionEpoch\.current\)return/);
 });
 
 test('successful team POST reports refresh uncertainty without claiming confirmation failed',()=>{
