@@ -2,8 +2,8 @@ import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
 import {confirmedDirectChatSend} from '../../src/lib/chat-send-receipt.cjs';
-import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
@@ -30,6 +30,16 @@ export default function DirectConversation(){
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const conversationScroll=useRef<ScrollView|null>(null);
  const nearBottom=useRef(true);
+ const composerFocused=useRef(false);
+ useEffect(()=>{
+  const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+  const subscription=Keyboard.addListener(event,()=>{
+   if(!composerFocused.current)return;
+   nearBottom.current=true;
+   conversationScroll.current?.scrollToEnd({animated:true});
+  });
+  return()=>subscription.remove();
+ },[]);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [locationBusy,setLocationBusy]=useState(false);
  const [safetyOpen,setSafetyOpen]=useState(false);
@@ -564,6 +574,8 @@ export default function DirectConversation(){
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
+    onFocus={()=>{composerFocused.current=true;nearBottom.current=true;conversationScroll.current?.scrollToEnd({animated:true});}}
+    onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
     disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
