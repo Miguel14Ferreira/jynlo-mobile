@@ -45,3 +45,13 @@ test('jogo de época explains rankings and keeps long choices in a vertical layo
  assert.match(create,/styles\.playerChoices/);
  assert.match(create,/seasonHead:\{flexDirection:'row'/);
 });
+
+test('session creation is an accessible full-width hero above secondary actions',()=>{
+ const layout=read('app/(tabs)/_layout.tsx');
+ assert.match(layout,/accessibilityLabel="Criar sessão desportiva"/);
+ assert.match(layout,/style=\{styles\.sessionHero\} onPress=\{\(\)=>action\('session'\)\}/);
+ assert.match(layout,/sessionHero:\{width:'100%',minHeight:142/);
+ assert.ok(layout.indexOf('accessibilityLabel="Criar sessão desportiva"') < layout.indexOf("onPress={()=>action('post')}"));
+ assert.match(layout,/Marca o jogo, reúne jogadores e organiza as equipas/);
+ assert.match(layout,/Or partilha|Ou partilha algo com a comunidade/);
+});

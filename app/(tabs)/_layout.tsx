@@ -85,10 +85,13 @@ export default function TabsLayout(){
       <Text style={styles.sheetSubtitle}>Junta pessoas através do desporto.</Text>
      </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Fechar" style={styles.close}><Text style={styles.closeText}>×</Text></Pressable></View>
      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.actions}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Criar sessão desportiva" accessibilityHint="Organiza um jogo, convida participantes e gere equipas" style={styles.sessionHero} onPress={()=>action('session')}>
+       <View style={styles.sessionHeroIcon}><Text style={styles.sessionHeroIconText}>＋</Text></View>
+       <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>AÇÃO PRINCIPAL</Text><Text style={styles.sessionHeroTitle}>Criar sessão</Text><Text style={styles.sessionHeroSubtitle}>Marca o jogo, reúne jogadores e organiza as equipas.</Text></View>
+       <Text style={styles.sessionHeroArrow}>›</Text>
+      </Pressable>
+      <Text style={styles.moreActionsTitle}>Ou partilha algo com a comunidade</Text>
       <View style={styles.primaryGrid}>
-       <Pressable accessibilityRole="button" style={[styles.actionCard,styles.mainAction]} onPress={()=>action('session')}>
-        <Text style={styles.mainActionIcon}>▣</Text><Text style={styles.mainActionTitle}>Criar sessão</Text><Text style={styles.mainActionHint}>Organiza um jogo</Text>
-       </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('post')}>
         <Text style={styles.actionIcon}>▤</Text><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
        </Pressable>
@@ -140,10 +143,16 @@ const styles=StyleSheet.create({
  close:{width:MobileTheme.touchTarget,height:MobileTheme.touchTarget,alignItems:'center',justifyContent:'center'},
  closeText:{fontSize:30,color:colors.text},
  actions:{gap:12,paddingBottom:14},
- primaryGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},
+ primaryGrid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:10},
+ sessionHero:{width:'100%',minHeight:142,borderRadius:20,backgroundColor:colors.accent,padding:18,flexDirection:'row',alignItems:'center',gap:13},
+ sessionHeroIcon:{width:51,height:51,borderRadius:16,backgroundColor:colors.background,alignItems:'center',justifyContent:'center'},
+ sessionHeroIconText:{color:colors.accent,fontSize:34,fontWeight:'800',includeFontPadding:false},
+ sessionHeroCopy:{flex:1,gap:5},sessionHeroEyebrow:{color:colors.background,fontSize:10,fontWeight:'900',letterSpacing:1.1},
+ sessionHeroTitle:{color:colors.background,fontSize:23,fontWeight:'900'},
+ sessionHeroSubtitle:{color:colors.background,fontSize:12,lineHeight:18},
+ sessionHeroArrow:{color:colors.background,fontSize:34,fontWeight:'700'},
+ moreActionsTitle:{color:colors.muted,fontWeight:'800',fontSize:12,marginTop:4},
  actionCard:{width:'48%',minHeight:122,padding:15,borderRadius:18,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,justifyContent:'flex-end',gap:5},
- mainAction:{backgroundColor:colors.accent,borderColor:colors.accent},
- mainActionIcon:{color:colors.background,fontSize:23,fontWeight:'900'},mainActionTitle:{color:colors.background,fontSize:15,fontWeight:'900'},mainActionHint:{color:colors.background,fontSize:11},
  actionIcon:{fontSize:23,color:colors.accent},actionTitle:{fontSize:15,fontWeight:'900',color:colors.text},actionHint:{fontSize:11,color:colors.muted},
  secondaryAction:{minHeight:65,padding:12,borderRadius:15,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center',gap:12},
  secondaryIcon:{fontSize:26,color:colors.accent,width:31,textAlign:'center'},
