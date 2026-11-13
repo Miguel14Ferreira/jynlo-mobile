@@ -221,12 +221,33 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      }
      const raw=await response.text();
      if(!raw.trim())throw new Error('O servidor respondeu ao envio sem confirmar o conteúdo. Atualiza antes de repetir.');
-     let confirmed:{id?:unknown;postId?:unknown};
-     try{confirmed=JSON.parse(raw) as {id?:unknown;postId?:unknown};}
+     let confirmed:{
+       id?:unknown;postId?:unknown;imageUrl?:unknown;videoUrl?:unknown;
+       mediaUrl?:unknown;extraMedia?:unknown
+     };
+     try{confirmed=JSON.parse(raw) as typeof confirmed;}
      catch{throw new Error('O servidor respondeu, mas não confirmou a publicação. Atualiza antes de repetir.');}
      const identifier=path.includes('/stories')?confirmed?.id:confirmed?.postId;
      if(typeof identifier!=='number'||!Number.isSafeInteger(identifier)||identifier<=0)
        throw new Error('O servidor respondeu, mas não confirmou o identificador. Consulta o perfil antes de repetir.');
+     const isStory=path.includes('/stories');
+     const hasMedia=(value:unknown)=>typeof value==='string'&&value.trim().length>0;
+     if(isStory){
+       if(!hasMedia(confirmed.mediaUrl))
+         throw new Error('O servidor respondeu, mas não confirmou o ficheiro da Story. Confirma o perfil antes de repetir.');
+     }else{
+       const first=files[0];
+       const cover=first.type==='video'?confirmed.videoUrl:confirmed.imageUrl;
+       const extras=confirmed.extraMedia;
+       if(!hasMedia(cover)||files.length>1&&(!Array.isArray(extras)||
+           extras.length!==files.length-1||
+           extras.some((item:unknown,index:number)=>{
+             if(!item||typeof item!=='object')return true;
+             const media=item as {url?:unknown;mimeType?:unknown};
+             return !hasMedia(media.url)||media.mimeType!==files[index+1]?.mimeType;
+           })))
+         throw new Error('O servidor respondeu, mas não confirmou todos os ficheiros da publicação. Consulta o perfil antes de repetir.');
+     }
      return confirmed;
    }catch(e){
      if(e instanceof ApiError)throw e;
