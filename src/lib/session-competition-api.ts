@@ -32,3 +32,13 @@ export async function recordCompetitionSessionResult(communityId:number,sessionI
   token,method:'POST',body:payload
  });
 }
+
+/** Read-only official session score. Backend restricts to confirmed attendees or organizer. */
+export type SessionOfficialResult={
+ sessionId:number;communityId:number;roundId:number;scoreA:number|null;scoreB:number|null
+};
+export async function sessionOfficialResult(sessionId:number,token:string|null){
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar o resultado.');
+ return request<SessionOfficialResult>('/api/sessions/'+sessionId+'/official-result',{token});
+}
