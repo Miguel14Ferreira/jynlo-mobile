@@ -1,4 +1,4 @@
-import React, {createContext,useCallback,useContext,useEffect,useMemo,useState} from 'react';
+import React, {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import {DEMO_MODE,confirmMfa,resendMfa as apiResendMfa,signIn as apiSignIn,logoutServer} from './api';
@@ -33,6 +33,9 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   const [pendingUsername,setPendingUsername]=useState<string|null>(null);
   const [googlePending,setGooglePending]=useState<{credential:string;email:string}|null>(null);
   const [browsingAsGuest,setBrowsingAsGuest]=useState(false);
+  // Auth responses and secure-store writes must never revive a logged-out account.
+  const authEpoch=useRef(0);
+  const credentialQueue=useRef<Promise<void>>(Promise.resolve());
   useEffect(()=>{let active=true;(async()=>{
     try{
       if(!DEMO_MODE){const [savedToken,savedName]=await Promise.all([
@@ -53,11 +56,15 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if(DEMO_MODE||!token)return;
     const expire=()=>{
       if(isAccessTokenUsable(token))return;
+      authEpoch.current++;
       invalidatePendingPushRegistration();
       setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
       setBrowsingAsGuest(false);
       void clearNativePushPresentation().catch(()=>{});
-      void Promise.all([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).catch(()=>{});
+      // Serialize expiry cleanup after an in-flight credential write.
+      const clear=()=>Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]).then(()=>{});
+      credentialQueue.current=credentialQueue.current.then(clear,clear);
+      void credentialQueue.current.catch(()=>{});
     };
     const expiresAt=accessTokenExpiresAt(token);
     // setTimeout cannot represent delays longer than ~24.8 days. Re-arm
@@ -74,32 +81,43 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const sub=AppState.addEventListener('change',state=>{if(state==='active'){if(timer)clearTimeout(timer);schedule();}});
     return()=>{active=false;if(timer)clearTimeout(timer);sub.remove();};
   },[token]);
-  const save=useCallback(async(name:string,accessToken:string)=>{
+  const save=useCallback(async(name:string,accessToken:string,epoch:number)=>{
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
-    try{
-      await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
-    }catch{
-      // A partial storage write must never restore mismatched username/token on next launch.
-      await Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
-      throw new Error('Não foi possível guardar a sessão em segurança. Tenta iniciar sessão novamente.');
-    }
-    setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
-    setBrowsingAsGuest(false);
+    const work=credentialQueue.current.then(async()=>{
+      if(epoch!==authEpoch.current)throw Error('Esta tentativa de login foi cancelada após mudança de sessão.');
+      try{
+        await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,accessToken),SecureStore.setItemAsync(USER_KEY,name)]);
+      }catch{
+        // Queue serialization protects against another login writing during cleanup.
+        await Promise.allSettled([SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+        throw Error('Não foi possível guardar a sessão em segurança. Tenta iniciar sessão novamente.');
+      }
+      if(epoch!==authEpoch.current)
+        throw Error('Esta tentativa de login foi cancelada após mudança de sessão.');
+      setUsername(name);setToken(accessToken);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
+      setBrowsingAsGuest(false);
+    });
+    credentialQueue.current=work.then(()=>{},()=>{});
+    return work;
   },[]);
   const login=useCallback(async(name:string,password:string):Promise<AuthOutcome>=>{
     assertCanStartLogin(username);
     if(DEMO_MODE)throw new Error('Seleciona uma das contas de demonstração.');
+    const epoch=authEpoch.current;
     const response=await apiSignIn(name,password);
+    if(epoch!==authEpoch.current)throw Error('Login cancelado após mudança de sessão.');
     if(response.mfaRequired){if(!response.challengeId)throw new Error('Desafio MFA inválido.');
       setChallengeId(response.challengeId);setPendingUsername(name);return 'MFA_REQUIRED';}
     if(!response.token)throw new Error('O servidor não enviou uma sessão válida.');
-    await save(response.profile?.username?.trim()||name,response.token);return 'AUTHENTICATED';
+    await save(response.profile?.username?.trim()||name,response.token,epoch);return 'AUTHENTICATED';
   },[save,username]);
   const loginGoogle=useCallback(async(credential:string):Promise<GoogleAuthOutcome>=>{
     assertCanStartLogin(username);
     if(DEMO_MODE)throw Error('Autenticação Google indisponível em demonstração.');
     // The server verifies Google's signature, audience and email before any account is accepted.
+    const epoch=authEpoch.current;
     const googleResponse=await googleLoginWithIdToken(credential);
+    if(epoch!==authEpoch.current)throw Error('Login Google cancelado após mudança de sessão.');
     if(googleResponse.onboardingRequired){
       if(!googleResponse.email)throw Error('O servidor não confirmou o email Google.');
       setGooglePending({credential,email:googleResponse.email});
@@ -115,29 +133,35 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     }
     if(!googleResponse.token||!googleResponse.profile?.username?.trim())
       throw Error('O servidor não confirmou uma sessão Jynlo válida.');
-    await save(googleResponse.profile.username.trim(),googleResponse.token);
+    await save(googleResponse.profile.username.trim(),googleResponse.token,epoch);
     return 'AUTHENTICATED';
   },[save,username]);
   const completeGoogleRegistration=useCallback(async(input:GoogleSignupInput)=>{
     assertCanStartLogin(username);
     if(!googlePending)throw Error('A sessão de registo Google expirou. Volta a iniciar sessão.');
     // Never persist Google ID credentials; registration uses the same short-lived verified token.
+    const epoch=authEpoch.current;
     const googleResponse=await googleRegisterWithIdToken(googlePending.credential,input);
+    if(epoch!==authEpoch.current)throw Error('Registo Google cancelado após mudança de sessão.');
     if(googleResponse.onboardingRequired||googleResponse.mfaRequired||!googleResponse.token||
        !googleResponse.profile?.username?.trim())throw Error('O registo não devolveu uma sessão válida.');
-    await save(googleResponse.profile.username.trim(),googleResponse.token);
+    await save(googleResponse.profile.username.trim(),googleResponse.token,epoch);
   },[googlePending,save,username]);
   const completeMfa=useCallback(async(code:string)=>{
     if(!challengeId)throw new Error('Desafio MFA não encontrado.');
+    const epoch=authEpoch.current;
     const response=await confirmMfa(challengeId,code);
+    if(epoch!==authEpoch.current)throw Error('Verificação cancelada após mudança de sessão.');
     if(!response.token)throw new Error('O código não foi aceite.');
     const confirmedName=response.profile?.username?.trim()||pendingUsername;
     if(!confirmedName)throw Error('O servidor não confirmou o utilizador após MFA.');
-    await save(confirmedName,response.token);
+    await save(confirmedName,response.token,epoch);
   },[challengeId,pendingUsername,save]);
   const resendMfa=useCallback(async()=>{
     if(!challengeId)throw new Error('Desafio MFA não encontrado. Inicia sessão novamente.');
+    const epoch=authEpoch.current;
     const response=await apiResendMfa(challengeId);
+    if(epoch!==authEpoch.current)throw Error('Pedido MFA cancelado após mudança de sessão.');
     if(!response.mfaRequired||!response.challengeId)throw new Error('Não foi possível renovar o código MFA. Inicia sessão novamente.');
     setChallengeId(response.challengeId);
   },[challengeId,pendingUsername]);
@@ -152,6 +176,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     // keep an account visible or interactive after the user chooses to sign out.
     const tokenToRevoke=token;
     const nameToRevoke=username;
+    authEpoch.current++;
     // Synchronous cancellation before the first async credential or native operation.
     invalidatePendingPushRegistration();
     setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
@@ -160,9 +185,15 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     // Treat cleanup failures as non-fatal: the user is logged out in memory.
     let localRemovalFailed=false;
     if(!DEMO_MODE){
-      const removals=await Promise.allSettled([
-        SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
-      localRemovalFailed=removals.some(result=>result.status==='rejected');
+      // Wait for any credential write that started before logout, then delete it.
+      const clear=async()=>{
+        const removals=await Promise.allSettled([
+          SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+        localRemovalFailed=removals.some(result=>result.status==='rejected');
+      };
+      const cleanup=credentialQueue.current.then(clear,clear);
+      credentialQueue.current=cleanup;
+      await cleanup;
     }
     try{await clearNativePushPresentation();}catch{/* Local cleanup must never block logout. */}
     let serverRevokeFailed=false;

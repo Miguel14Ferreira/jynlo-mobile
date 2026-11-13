@@ -37,3 +37,12 @@ test('logout invalidates pending Firebase enrollment before clearing auth state 
  const firstAwait=logout.indexOf('await ');
  assert.ok(invalidate>=0&&invalidate<clearToken&&invalidate<firstAwait);
 });
+
+test('logout queues secure storage deletion after any pending login write',()=>{
+ assert.match(code,/const authEpoch=useRef\(0\)/);
+ assert.match(code,/const credentialQueue=useRef<Promise<void>>\(Promise\.resolve\(\)\)/);
+ assert.match(logout,/authEpoch\.current\+\+/);
+ assert.match(logout,/credentialQueue\.current\.then\(clear,clear\)/);
+ assert.match(logout,/credentialQueue\.current=cleanup/);
+ assert.match(logout,/await cleanup/);
+});

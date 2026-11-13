@@ -36,3 +36,14 @@ test('expired JWT cancels pending push activation before clearing in-memory logi
  assert.match(expire,/invalidatePendingPushRegistration\(\)/);
  assert.ok(expire.indexOf('invalidatePendingPushRegistration()')<expire.indexOf('setToken(null)'));
 });
+
+test('expiry invalidates old login responses and queues secure cleanup after writes',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const auth=fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8');
+ const expire=auth.slice(auth.indexOf('const expire=()=>{'),auth.indexOf('const expiresAt=accessTokenExpiresAt(token)'));
+ assert.match(expire,/authEpoch\.current\+\+/);
+ assert.match(expire,/credentialQueue\.current=credentialQueue\.current\.then\(clear,clear\)/);
+ const save=auth.slice(auth.indexOf('const save=useCallback'),auth.indexOf('const login=useCallback'));
+ assert.match(save,/if\(epoch!==authEpoch\.current\)/);
+ assert.match(save,/credentialQueue\.current=work\.then\(\(\)=>\{\},\(\)=>\{\}\)/);
+});
