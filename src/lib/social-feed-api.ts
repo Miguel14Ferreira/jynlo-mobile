@@ -1,10 +1,11 @@
 /** Jynlo Web contracts. The demo is isolated and never calls production. */
 import {API_BASE,DEMO_MODE,ApiError,request} from './api';
 import {feed as demoFeedSeed} from './parity-api';
-import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry} from './types';
+import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry,StoryDetails} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
 import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt} from './social-text-post-receipt.cjs';
+import {prepareStoryDetails} from './story-details.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
 const demoPosts:FeedItem[]=[];
@@ -291,18 +292,22 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
   return confirmed;
 }
-export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry):Promise<SocialStory>{
+export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
   if(geometry&&(![geometry.x,geometry.y,geometry.rotation,geometry.zoom].every(Number.isFinite)||
      geometry.x<0||geometry.x>100||geometry.y<0||geometry.y>100||
      geometry.rotation < -3600||geometry.rotation > 3600||geometry.zoom<.5||geometry.zoom>3))
     throw Error('A posição do texto da Story é inválida.');
+  const safeDetails=prepareStoryDetails(details?.locationLabel||'',details?.taggedUsernames||'');
   if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true,
-    textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null};demoStories.unshift(item);return item;}
+    textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null,
+    locationLabel:safeDetails.locationLabel||null,taggedUsernames:safeDetails.taggedUsernames||null};demoStories.unshift(item);return item;}
   const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
-    ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{})},[file],token!);
+    ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{}),
+    ...(safeDetails.locationLabel?{locationLabel:safeDetails.locationLabel}:{}),
+    ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
   if(!confirmedStoryAuthorReceipt(confirmed,username!,caption))
     throw Error('O servidor não confirmou o autor ou a legenda da Story. Verifica o teu perfil antes de repetir.');
   return confirmed;
