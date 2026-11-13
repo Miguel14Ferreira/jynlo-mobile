@@ -38,26 +38,41 @@ function measuredPhotoSize(actualSize,pickerSize){
  if(Number.isSafeInteger(pickerSize)&&pickerSize>0)return pickerSize;
  return 0;
 }
+// This set must stay aligned with SecureChatAttachment's authenticated viewers.
+// Never offer a download based on arbitrary MIME metadata supplied by a response.
+const RECEIVABLE_MIME=new Set([
+ 'image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm',
+ 'application/pdf','audio/webm','audio/ogg','audio/mpeg','audio/mp4','audio/x-m4a','audio/aac'
+]);
 function attachmentLimit(mime){
- if(typeof mime!=='string')return 5*1024*1024;
- if(mime.startsWith('video/'))return 20*1024*1024;
+ if(typeof mime!=='string'||!RECEIVABLE_MIME.has(mime))return 0;
+ if(mime.startsWith('video/'))return MAX_VIDEO_BYTES;
  if(mime.startsWith('audio/'))return 12*1024*1024;
  return MAX_PHOTO_BYTES;
 }
+function safeAttachment(index,name,mime,size){
+ if(!Number.isSafeInteger(index)||index<0||index>=MAX_FILES||
+  typeof name!=='string'||!name.trim()||name.length>255||/[\\/\x00-\x1f\x7f]/.test(name)||
+  typeof mime!=='string'||!RECEIVABLE_MIME.has(mime)||
+  !Number.isSafeInteger(size)||size<=0||size>attachmentLimit(mime))return null;
+ return {index,name,mime,size};
+}
 function chatAttachmentList(message){
- if(!message||message.deletedAt)return [];
- const extras=Array.isArray(message.attachments)?message.attachments:[];
- if(extras.length){
-  return extras.filter(file=>file&&Number.isSafeInteger(file.index)&&file.index>=0&&file.index<MAX_FILES&&
-    typeof file.filename==='string'&&file.filename&&typeof file.mimeType==='string'&&file.mimeType&&
-    Number.isSafeInteger(file.size)&&file.size>0&&file.size<=attachmentLimit(file.mimeType))
-   .filter((file,i,list)=>list.findIndex(other=>other.index===file.index)===i)
-   .sort((a,b)=>a.index-b.index)
-   .map(file=>({index:file.index,name:file.filename,mime:file.mimeType,size:file.size}));
+ if(!message||typeof message!=='object'||message.deletedAt)return [];
+ // If the backend advertises an album, do not fall back to an unverified
+ // cover when every album entry was malformed.
+ if(Array.isArray(message.attachments)&&message.attachments.length){
+  const seen=new Set(),valid=[];
+  for(const file of message.attachments.slice(0,MAX_FILES*4)){
+   if(!file||typeof file!=='object')continue;
+   const item=safeAttachment(file.index,file.filename,file.mimeType,file.size);
+   if(!item||seen.has(item.index))continue;
+   seen.add(item.index);valid.push(item);
+  }
+  return valid.sort((a,b)=>a.index-b.index);
  }
- if(typeof message.attachmentName!=='string'||!message.attachmentName)return [];
- return [{index:0,name:message.attachmentName,mime:message.attachmentMimeType||null,
-  size:message.attachmentSize??null}];
+ const item=safeAttachment(0,message.attachmentName,message.attachmentMimeType,message.attachmentSize);
+ return item?[item]:[];
 }
 // Prefetch a bounded number of recent image albums. The attachments are still
 // downloaded with per-account Authorization and deleted when chat loses focus.
