@@ -1,5 +1,5 @@
 import React,{useEffect,useRef} from 'react';
-import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
@@ -24,6 +24,18 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
     });
     return()=>subscription.remove();
   },[autoScrollToEnd]);
+  useEffect(()=>{
+    if(autoScrollToEnd||!scroll)return;
+    const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+    const subscription=Keyboard.addListener(event,()=>{
+      // On long forms the keyboard may cover a field even when Android has
+      // resized the window. The ScrollView responder measures the actual input
+      // rather than guessing an offset from the screen dimensions.
+      const focused=TextInput.State.currentlyFocusedInput?.();
+      if(focused)scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,24,true);
+    });
+    return()=>subscription.remove();
+  },[autoScrollToEnd,scroll]);
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
     <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
     {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
