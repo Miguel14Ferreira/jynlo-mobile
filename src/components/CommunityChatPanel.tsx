@@ -30,6 +30,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
+ const inlineNearBottom=useRef(true);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
@@ -129,7 +130,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);
    }
    // History requires fresh membership validation on every focus; local drafts do not.
-   setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
+   inlineNearBottom.current=true;setHistoryLimit(40);setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
    setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
@@ -371,8 +372,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
-   {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
-   {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>setHistoryLimit(count=>count+40)} style={styles.olderMessages}>
+   {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+   onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
+   onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+   contentContainerStyle={{gap:8,padding:8}}>
+   {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
     <Text style={styles.quoteTitle}>Ver mensagens anteriores</Text>
    </Pressable>:null}{renderedMessages}
   </ScrollView>:renderedMessages}
