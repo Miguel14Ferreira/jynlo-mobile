@@ -10,8 +10,9 @@ import {checkPdfAsset,sendChatPdf} from '../lib/chat-pdf-attachment';
 import type {PdfChatTarget} from '../lib/chat-pdf-attachment';
 
 type Props={target:PdfChatTarget;token:string|null;enabled:boolean;compact?:boolean;
- replyId?:number|null;onSent:(sentReplyId:number|null)=>Promise<void>}
-export default function ChatPdfComposer({target,token,enabled,replyId,onSent,compact=false}:Props){
+ replyId?:number|null;onSent:(sentReplyId:number|null)=>Promise<void>;
+ onPermissionError?:()=>void}
+export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onPermissionError,compact=false}:Props){
  const [selected,setSelected]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false),pickerRef=useRef(false),active=useRef(false),blocked=useRef(false);
@@ -80,6 +81,8 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
    // The POST may have completed even if its result was lost. Never retry this file automatically.
    if(!active.current||generation.current!==version)return;
    blocked.current=true;
+   if(target.scope==='session'&&e instanceof Error&&/chat da sessão está encerrado|permissão para enviar|Sessão expirada/i.test(e.message))
+    onPermissionError?.();
    setError((e instanceof Error?e.message:'Envio incerto.')+
      ' Verifica o histórico antes de escolher novamente o documento.');
   }finally{
