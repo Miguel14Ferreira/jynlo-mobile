@@ -257,7 +257,7 @@ export default function CreateSessionScreen(){
    setCommunityMode('INDEPENDENT');
    setForm(emptySessionForm());
    setStep(0);setHasExistingPlayers(false);
-   setSportSearch('');setShowSportResults(false);
+   setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
    setExtraDay('');setExtraTime('');
    setVenueQuery('');setVenueCityQuery('');
    setVenueChosen(null);clearVenueSearch();
@@ -318,7 +318,13 @@ export default function CreateSessionScreen(){
   if(busy)return;
   setError('');
   if(step===0){
-   if(!form.sport){setError('Escolhe uma modalidade.');return;}
+   if(!form.sport.trim()){setError('Escolhe uma modalidade.');return;}
+   if(customSportMode&&!customSportValid){
+    setError('Corrige o nome do desporto (2–60 caracteres) ou seleciona uma modalidade existente.');return;
+   }
+   if(!customSportMode&&!SPORTS.includes(form.sport)){
+    setError('Seleciona uma modalidade do catálogo ou escolhe a opção Outro.');return;
+   }
    if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError('Seleciona pelo menos uma comunidade ou escolhe sessão independente.');return;}
    if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
    if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport)){
