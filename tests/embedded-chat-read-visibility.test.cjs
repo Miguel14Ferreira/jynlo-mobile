@@ -24,3 +24,13 @@ for(const [name,file,api] of [
   assert.match(source,/lastAcknowledgedMessageId\.current=0;/);
  });
 }
+
+test('private chat marks the latest messages read only when the view is at the bottom',()=>{
+ const source=read('app/messages/[peer].tsx');
+ assert.match(source,/const nearBottom=useRef\(true\)/);
+ assert.match(source,/const lastAcknowledgedMessageId=useRef\(0\)/);
+ assert.match(source,/last>lastAcknowledgedMessageId\.current&&nearBottom\.current/);
+ assert.match(source,/if\(nearBottom\.current&&auth\.token\)/);
+ assert.match(source,/markDirectRead\(peer,latest,auth\.token\)/);
+ assert.match(source,/if\(lastAcknowledgedMessageId\.current===latest\)lastAcknowledgedMessageId\.current=0/);
+});
