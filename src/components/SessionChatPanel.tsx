@@ -28,13 +28,19 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
  const composerFocused=useRef(false);
+ const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
   if(!embedded)return;
-  const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
-  const subscription=Keyboard.addListener(event,()=>{
+  const showEvent=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+  const hideEvent=Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide';
+  const shown=Keyboard.addListener(showEvent,()=>{
+   setKeyboardVisible(true);
+   // Keep the most recent messages nearby while typing, without jumping
+   // when a caption or edit field (rather than the composer) has focus.
    if(composerFocused.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
   });
-  return()=>subscription.remove();
+  const hidden=Keyboard.addListener(hideEvent,()=>setKeyboardVisible(false));
+  return()=>{shown.remove();hidden.remove();};
  },[embedded]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
@@ -335,7 +341,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
-  {embedded?<ScrollView ref={inlineHistoryRef} style={styles.inlineHistory} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
+  {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
     {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>setHistoryLimit(count=>count+40)} style={styles.olderMessages}>
       <Text style={styles.actionText}>Ver mensagens anteriores</Text>
     </Pressable>:null}{renderedMessages}
@@ -411,6 +417,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
 const styles=StyleSheet.create({
  inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
  inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
+ inlineHistoryKeyboard:{height:168},
  olderMessages:{padding:10,alignItems:'center'},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},
  sendAction:{height:44,width:44,borderRadius:12,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
