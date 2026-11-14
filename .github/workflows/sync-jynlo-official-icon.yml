@@ -1,0 +1,53 @@
+name: Sync confirmed Jynlo brand icon from approved Web asset
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/sync-jynlo-official-icon.yml
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          persist-credentials: true
+      - name: Install Pillow
+        run: python3 -m pip install --user Pillow
+      - name: Convert approved original without redrawing
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://raw.githubusercontent.com/Miguel14Ferreira/jynlo-web-FE/b54e4e7a878a1e9cfec4b90a59c85b79304f768b/src/assets/jynlo-icon-approved.webp' \
+            -o /tmp/jynlo-approved.webp
+          python3 - <<'PY'
+          from PIL import Image, ImageOps
+          from pathlib import Path
+          original=Image.open('/tmp/jynlo-approved.webp').convert('RGBA')
+          assert original.width>=128 and original.height>=128
+          # Preserve the approved tile's proportions; only upscale and pad.
+          scaled=ImageOps.contain(original,(1024,1024),Image.Resampling.LANCZOS)
+          canvas=Image.new('RGBA',(1024,1024),'#041927')
+          canvas.alpha_composite(scaled,((1024-scaled.width)//2,(1024-scaled.height)//2))
+          output=Path('assets/jynlo-icon.png')
+          canvas.convert('RGB').save(output,optimize=True)
+          assert output.stat().st_size<1024*1024
+          print('Approved Jynlo icon prepared:',original.size,'=>',canvas.size)
+          PY
+      - name: Commit updated native icon to develop
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/jynlo-icon.png; then
+            echo 'Official icon is already synchronized'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- assets/jynlo-icon.png
+          git commit -m 'fix(brand): use confirmed approved Jynlo artwork as Android icon'
+          git push origin HEAD:develop
