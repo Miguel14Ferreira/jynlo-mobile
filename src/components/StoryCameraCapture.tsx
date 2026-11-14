@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Linking,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {MobileMedia} from '../lib/types';
 import {pickerMediaMime} from '../lib/picker-media-format.cjs';
 import {validateMedia} from '../lib/social-feed-core.cjs';
@@ -12,16 +12,17 @@ type Props={onCaptured:(media:MobileMedia)=>void;onPickGallery:()=>void};
  */
 export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
  const alive=useRef(true),busyRef=useRef(false),autoOpened=useRef(false);
- const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[permissionDenied,setPermissionDenied]=useState(false);
  const capture=async()=>{
   if(!alive.current||busyRef.current)return;
-  busyRef.current=true;setBusy(true);setError('');
+  busyRef.current=true;setBusy(true);setError('');setPermissionDenied(false);
   try{
    const ImagePicker=await import('expo-image-picker');
    const permission=await ImagePicker.requestCameraPermissionsAsync();
    if(!alive.current)return;
    if(!permission.granted){
-    setError('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe um ficheiro da galeria.');
+    setPermissionDenied(true);
+     setError('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe um ficheiro da galeria.');
     return;
    }
    // The native camera chooses photo/video without a custom preview overlay.
@@ -73,6 +74,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   <Text style={styles.description}>Usa a câmara do teu telemóvel para capturar um momento ou escolhe da galeria.</Text>
   {busy?<View style={styles.loading}><ActivityIndicator color={C.mint}/><Text style={styles.description}>A abrir a câmara…</Text></View>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
+  {permissionDenied?<Pressable accessibilityRole="button" accessibilityLabel="Abrir definições de permissões da câmara" onPress={()=>void Linking.openSettings().catch(()=>setError('Abre as definições da Jynlo e autoriza a câmara.'))} style={styles.settingsAction}><Text style={styles.settingsText}>Abrir definições</Text></Pressable>:null}
   <View style={styles.actions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara do dispositivo"
     disabled={busy} style={[styles.action,styles.primary,busy&&styles.disabled]} onPress={()=>{void capture();}}>
@@ -94,5 +96,5 @@ const styles=StyleSheet.create({
  primary:{backgroundColor:C.mint},secondary:{borderWidth:1,borderColor:C.border},
  primaryText:{color:C.background,fontWeight:'900'},secondaryText:{color:C.white,fontWeight:'800'},
  loading:{flexDirection:'row',alignItems:'center',gap:9},
- error:{fontSize:12,color:'#FF9F9F'},disabled:{opacity:.5}
+ error:{fontSize:12,color:'#FF9F9F'},settingsAction:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:14,borderRadius:10,borderWidth:1,borderColor:C.mint},settingsText:{fontSize:13,color:C.mint,fontWeight:'800'},disabled:{opacity:.5}
 });
