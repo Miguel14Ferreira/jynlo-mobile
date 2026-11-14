@@ -31,8 +31,8 @@ test('malformed or oversized attachments are never prefetched',()=>{
 test('direct, community and session chats render recent authenticated album images inline',()=>{
  for(const [file,collection] of [
   ['app/messages/[peer].tsx','messages'],
-  ['app/communities/[id]/chat.tsx','messages'],
-  ['app/sessions/[id]/chat.tsx','entries']
+  ['src/components/CommunityChatPanel.tsx','messages'],
+  ['src/components/SessionChatPanel.tsx','entries']
  ]){
   const s=source(file);
   assert.ok(s.includes('recentPreviewMessageIds('+collection+')'),file);
