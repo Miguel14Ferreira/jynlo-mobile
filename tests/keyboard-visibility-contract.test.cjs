@@ -31,17 +31,17 @@ test('editing a post is keyboard-aware',()=>{
  assert.match(source,/keyboardDismissMode="on-drag"/);
 });
 
-test('chat keyboard opening scrolls the focused composer back into view without affecting normal pages',()=>{
+test('chat pages scroll focused controls into view without blindly jumping past replies',()=>{
  const page=read('src/components/UI.tsx');
  const community=read('src/components/CommunityChatPanel.tsx');
  const session=read('src/components/SessionChatPanel.tsx');
- assert.match(page,/if\(!autoScrollToEnd\)return/);
  assert.match(page,/Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
  assert.match(page,/Keyboard\.addListener\(event,/);
- assert.match(page,/nearBottom\.current=true;\s*scrollRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
+ assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
+ assert.match(page,/else if\(autoScrollToEnd&&nearBottom\.current\)/);
  assert.match(page,/return\(\)=>subscription\.remove\(\)/);
- assert.match(community,/return <Page autoScrollToEnd>/);
- assert.match(session,/return <Page autoScrollToEnd>/);
+ assert.match(community,/<Page autoScrollToEnd>/);
+ assert.match(session,/<Page autoScrollToEnd>/);
 });
 
 test('private messages scroll to the latest conversation only when the message composer has focus',()=>{
@@ -54,9 +54,9 @@ test('private messages scroll to the latest conversation only when the message c
  assert.match(source,/return\(\)=>subscription\.remove\(\)/);
 });
 
-test('long forms scroll their currently focused input above keyboard after Android resize',()=>{
+test('long forms scroll the actual focused input above the keyboard',()=>{
  const source=read('src/components/UI.tsx');
- assert.match(source,/if\(autoScrollToEnd\|\|!scroll\)return/);
+ assert.match(source,/if\(!scroll\)return/);
  assert.match(source,/TextInput\.State\.currentlyFocusedInput\?\.\(\)/);
  assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
  assert.match(source,/Keyboard\.addListener\(event,/);
