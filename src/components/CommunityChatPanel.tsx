@@ -25,6 +25,7 @@ import {listConversationMutes,isConversationMuted,setConversationMuted} from '..
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
+import ChatSearchPanel from './ChatSearchPanel';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
@@ -374,6 +375,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    </View>);
  const content=<>
    {!embedded?<DemoBanner/>:null}<Eyebrow>CHAT DA COMUNIDADE</Eyebrow>{!embedded?<Text style={styles.title}>{name}</Text>:null}
+   <ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/>
    <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
    {muteError&&!accessRevoked?<Message tone="error">{muteError}</Message>:null}
