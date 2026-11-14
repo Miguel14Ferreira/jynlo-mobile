@@ -29,4 +29,5 @@ export function changeCommunityMode(form:CreateSessionForm,mode:'INDEPENDENT'|'S
 export function describeSessionConfirmation(payload:CreateSessionPayload,context?:{
  communityName?:string;sharedCommunityNames?:string[];venueName?:string;
 }):string;
+export function isValidCustomSport(name:string,allowedSports:readonly string[]):boolean;
 export function createSessionPayload(input:CreateSessionForm,allowedSports:readonly string[],now?:number):CreateSessionPayload;
