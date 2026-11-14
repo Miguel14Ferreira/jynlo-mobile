@@ -36,7 +36,8 @@ export default function ChampionshipFixtureScreen(){
   if(!auth.token||!auth.username||![cid,chid,eid,fid].every(valid)){
    if(version===generation.current){setError('Sessão ou jogo inválido.');setLoading(false);}return;
   }
-  setLoading(true);setError('');
+  // Fail closed: a failed refresh must never leave the previous match editable.
+  if(version===generation.current){setLoading(true);setError('');setCanWrite(false);setFixture(null);setRoster([]);}
   try{
    const [championships,group,events,fixtures]=await Promise.all([
     communityChampionships(cid,auth.token),communityDetails(cid,auth.token,auth.username),
@@ -52,7 +53,6 @@ export default function ChampionshipFixtureScreen(){
    const editable=(role==='OWNER'||role==='ADMIN')&&!championship.closedAt&&
      (championship.sport==='Futebol'||championship.sport==='Futsal')&&
      event.format==='LEAGUE'&&event.status==='SCHEDULED'&&match.homeScore!=null&&match.awayScore!=null;
-   setFixture(match);setCanWrite(editable);
    const token=auth.token;
    const [playersHome,playersAway,g,c,l,sub]=await Promise.all([
     championshipTeamPlayers(cid,chid,match.homeTeamId,token),
@@ -64,6 +64,7 @@ export default function ChampionshipFixtureScreen(){
    ]);
    if(version!==generation.current)return;
    // The two rosters are kept distinct: one player cannot be assigned to the opposing team.
+   setFixture(match);setCanWrite(editable);
    setRoster([...playersHome.map(p=>({...p,teamId:match.homeTeamId})),
               ...playersAway.map(p=>({...p,teamId:match.awayTeamId}))]);
    setGoals(g);setCards(c);setLineup(l);setSubs(sub);
@@ -86,7 +87,7 @@ export default function ChampionshipFixtureScreen(){
   setSelectedTeam(teamId);setPlayer(null);setOther(null);
  }
  async function perform(action:()=>Promise<unknown>){
-  if(!canWrite||pending.current||!fixture)return;
+  if(!canWrite||loading||pending.current||!fixture)return;
   pending.current=true;setBusy(true);setError('');
   const version=generation.current;
   try{
@@ -97,14 +98,14 @@ export default function ChampionshipFixtureScreen(){
   }finally{pending.current=false;if(version===generation.current)setBusy(false);}
  }
  function removeEvent(description:string,action:()=>Promise<void>){
-  if(!canWrite||pending.current)return;
+  if(!canWrite||loading||pending.current)return;
   Alert.alert('Remover acontecimento?',description+' Esta alteração será guardada no servidor.',[
    {text:'Cancelar',style:'cancel'},
    {text:'Remover',style:'destructive',onPress:()=>{void perform(action);}}
   ]);
  }
  function confirm(){
-  if(!canWrite||!selectedTeam||!player||!selectedPlayer||pending.current)return;
+  if(!canWrite||loading||!selectedTeam||!player||!selectedPlayer||pending.current)return;
   if(mode!=='LINEUP'&&!validMinute){setError('Indica um minuto entre 0 e 200.');return;}
   if(mode==='SUB'&&(!other||other===player||!selectedOther)){setError('Escolhe dois jogadores diferentes da mesma equipa.');return;}
   const label=mode==='GOAL'?'Golo':mode==='CARD'?'Cartão':mode==='LINEUP'?'Convocatória':'Substituição';
