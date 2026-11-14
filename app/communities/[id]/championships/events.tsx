@@ -70,13 +70,18 @@ export default function ChampionshipOwnedEventsScreen(){
    if(!championship||championship.communityId!==cid||group.id!==cid)throw Error('Campeonato não encontrado nesta comunidade.');
    const role='myRole' in group?group.myRole:null;
    if(!role)throw Error('É necessário pertencer à comunidade para consultar as provas.');
+   const organizerRole=role==='OWNER'||role==='ADMIN';
+   // Publish the role and season teams together. A failed team request cannot
+   // accidentally re-enable writes using a half-loaded championship.
+   let seasonTeams:ChampionshipTeams['teams']=[];
+   if(organizerRole&&!championship.closedAt){
+    const response=await getChampionshipTeams(cid,chid,auth.token);
+    seasonTeams=response.teams;
+   }
+   if(version!==generation.current)return;
    setTitle(championship.name);setSport(championship.sport);setClosed(Boolean(championship.closedAt));
-   setOrganizer(role==='OWNER'||role==='ADMIN');
+   setTeams(seasonTeams);setOrganizer(organizerRole);
    setEvents(owned);setSelected(current=>owned.some(item=>item.id===current)?current:owned[0]?.id??null);
-   if((role==='OWNER'||role==='ADMIN')&&!championship.closedAt){
-    const seasonTeams=await getChampionshipTeams(cid,chid,auth.token);
-    if(version===generation.current)setTeams(seasonTeams.teams);
-   }else setTeams([]);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as provas.');}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,chid,auth.token,auth.username]);
