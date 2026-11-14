@@ -414,7 +414,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
       style={styles.iconAction} onPress={()=>{void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/></Pressable>:null}
     {photoReady?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={sending||uploading}
       style={styles.iconAction} onPress={()=>{void choosePhoto('camera');}}><JynloIcon name="camera" size={22} color={C.mint}/></Pressable>:null}
-    <ChatPdfComposer compact target={{scope:'session',id}} token={auth.token} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id}
+    <ChatPdfComposer compact target={{scope:'session',id}} token={auth.token} onPermissionError={()=>{void refresh(true,generation.current);}} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id}
       onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual" disabled={locationBusy||sending||uploading}
       style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
@@ -425,7 +425,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    </Pressable>:null}
    {!embedded&&attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
    {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
-  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{
+  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} onPermissionError={()=>{void refresh(true,generation.current);}} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
    // the user may have made while the file was being uploaded.
    setReply(current=>current?.id===(sentReplyId??undefined)?null:current);
