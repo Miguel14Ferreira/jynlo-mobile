@@ -27,6 +27,7 @@ export default function ChampionshipFixtureScreen(){
  const [goals,setGoals]=useState<OwnedGoal[]>([]),[cards,setCards]=useState<OwnedCard[]>([]);
  const [lineup,setLineup]=useState<OwnedLineup[]>([]),[subs,setSubs]=useState<OwnedSubstitution[]>([]);
  const [selectedTeam,setSelectedTeam]=useState<number|null>(null),[player,setPlayer]=useState<number|null>(null),[other,setOther]=useState<number|null>(null);
+ const [assist,setAssist]=useState<number|null>(null);
  const [minute,setMinute]=useState('0'),[cardType,setCardType]=useState<'YELLOW'|'RED'>('YELLOW');
  const [selection,setSelection]=useState<'STARTER'|'BENCH'>('STARTER');
  const [mode,setMode]=useState<Mode>('GOAL');
@@ -84,7 +85,7 @@ export default function ChampionshipFixtureScreen(){
  const parsedMinute=Number(minute);
  const validMinute=/^\d{1,3}$/.test(minute)&&Number.isSafeInteger(parsedMinute)&&parsedMinute<=200;
  function chooseTeam(teamId:number){
-  setSelectedTeam(teamId);setPlayer(null);setOther(null);
+  setSelectedTeam(teamId);setPlayer(null);setOther(null);setAssist(null);
  }
  async function perform(action:()=>Promise<unknown>){
   if(!canWrite||loading||pending.current||!fixture)return;
@@ -92,7 +93,7 @@ export default function ChampionshipFixtureScreen(){
   const version=generation.current;
   try{
    await action();
-   if(version===generation.current){setPlayer(null);setOther(null);await reload(version);}
+   if(version===generation.current){setPlayer(null);setOther(null);setAssist(null);await reload(version);}
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível registar o acontecimento.')+' Verifica o histórico antes de repetir.');
   }finally{pending.current=false;if(version===generation.current)setBusy(false);}
@@ -108,12 +109,15 @@ export default function ChampionshipFixtureScreen(){
   if(!canWrite||loading||!selectedTeam||!player||!selectedPlayer||pending.current)return;
   if(mode!=='LINEUP'&&!validMinute){setError('Indica um minuto entre 0 e 200.');return;}
   if(mode==='SUB'&&(!other||other===player||!selectedOther)){setError('Escolhe dois jogadores diferentes da mesma equipa.');return;}
+  if(mode==='GOAL'&&assist!=null&&(assist===player||!selectedRoster.some(p=>p.profileId===assist))){
+   setError('A assistência deve ser de outro jogador da mesma equipa.');return;
+  }
   const label=mode==='GOAL'?'Golo':mode==='CARD'?'Cartão':mode==='LINEUP'?'Convocatória':'Substituição';
   Alert.alert('Confirmar '+label.toLowerCase()+'?',selectedPlayer.displayName+' · '+(mode==='LINEUP'?selection:minute+' min'),[
    {text:'Cancelar',style:'cancel'},
    {text:'Registar',onPress:()=>{void perform(()=>{
     switch(mode){
-     case 'GOAL':return addOwnedFixtureGoal(cid,chid,eid,fid,selectedTeam,player,parsedMinute,auth.token!);
+     case 'GOAL':return addOwnedFixtureGoal(cid,chid,eid,fid,selectedTeam,player,parsedMinute,auth.token!,assist);
      case 'CARD':return addOwnedFixtureCard(cid,chid,eid,fid,selectedTeam,player,cardType,parsedMinute,auth.token!);
      case 'LINEUP':return setOwnedFixtureLineup(cid,chid,eid,fid,selectedTeam,player,selection,auth.token!);
      case 'SUB':return addOwnedFixtureSubstitution(cid,chid,eid,fid,selectedTeam,player,other!,parsedMinute,auth.token!);
@@ -134,7 +138,7 @@ export default function ChampionshipFixtureScreen(){
   {!loading&&fixture&&!canWrite?<Message>Os acontecimentos estão disponíveis para consulta. A edição exige um organizador, uma liga ativa de Futebol/Futsal e um resultado registado.</Message>:null}
   {fixture?<View style={styles.card}>
    <Text style={styles.title}>Golos ({goals.length})</Text>
-   {goals.map(g=><View key={g.id} style={styles.row}><Text style={styles.note}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}</Text>
+   {goals.map(g=><View key={g.id} style={styles.row}><Text style={styles.note}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}{g.assisterName?' · Assistência: '+g.assisterName:''}</Text>
     {canWrite?<Button secondary title="Remover" disabled={busy} onPress={()=>removeEvent('Golo de '+g.scorerName,()=>removeOwnedFixtureGoal(cid,chid,eid,fid,g.id,auth.token!))}/>:null}
    </View>)}
    <Text style={styles.title}>Cartões ({cards.length})</Text>
@@ -154,7 +158,7 @@ export default function ChampionshipFixtureScreen(){
    <Text style={styles.title}>Registar acontecimento</Text>
    <View style={styles.row}>
     {(['GOAL','CARD','LINEUP','SUB'] as const).map(m=><Pressable key={m} accessibilityRole="radio" accessibilityState={{selected:mode===m}}
-     disabled={busy} onPress={()=>{setMode(m);setPlayer(null);setOther(null);}} style={[styles.chip,mode===m&&styles.selected]}>
+     disabled={busy} onPress={()=>{setMode(m);setPlayer(null);setOther(null);setAssist(null);}} style={[styles.chip,mode===m&&styles.selected]}>
      <Text style={styles.note}>{m==='GOAL'?'Golo':m==='CARD'?'Cartão':m==='LINEUP'?'Convocatória':'Substituição'}</Text>
     </Pressable>)}
    </View>
@@ -167,9 +171,15 @@ export default function ChampionshipFixtureScreen(){
    </View>
    <Text style={styles.note}>{mode==='SUB'?'Jogador a sair':'Jogador'}</Text>
    {selectedRoster.length===0?<Text style={styles.note}>Não existem jogadores confirmados no plantel desta equipa.</Text>:null}
-   {selectedRoster.map(p=><Pressable key={p.profileId} disabled={busy} onPress={()=>setPlayer(p.profileId)} accessibilityRole="radio"
+   {selectedRoster.map(p=><Pressable key={p.profileId} disabled={busy} onPress={()=>{setPlayer(p.profileId);setAssist(null);}} accessibilityRole="radio"
     accessibilityState={{selected:player===p.profileId}} style={[styles.chip,player===p.profileId&&styles.selected]}>
     <Text style={styles.note}>{p.displayName||p.username}</Text></Pressable>)}
+   {mode==='GOAL'&&player?<><Text style={styles.note}>Assistência (opcional)</Text>
+    <View style={styles.row}>
+     <Pressable accessibilityRole="radio" accessibilityState={{selected:assist===null}} disabled={busy} onPress={()=>setAssist(null)} style={[styles.chip,assist===null&&styles.selected]}><Text style={styles.note}>Sem assistência</Text></Pressable>
+     {selectedRoster.filter(p=>p.profileId!==player).map(p=><Pressable key={p.profileId} accessibilityRole="radio" accessibilityState={{selected:assist===p.profileId}} disabled={busy} onPress={()=>setAssist(p.profileId)} style={[styles.chip,assist===p.profileId&&styles.selected]}><Text style={styles.note}>{p.displayName||p.username}</Text></Pressable>)}
+    </View>
+   </>:null}
    {mode==='SUB'?<><Text style={styles.note}>Jogador a entrar</Text>
     {selectedRoster.filter(p=>p.profileId!==player).map(p=><Pressable key={p.profileId} disabled={busy} onPress={()=>setOther(p.profileId)} style={[styles.chip,other===p.profileId&&styles.selected]} accessibilityRole="radio" accessibilityState={{selected:other===p.profileId}}>
      <Text style={styles.note}>{p.displayName||p.username}</Text></Pressable>)}
