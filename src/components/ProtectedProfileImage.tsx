@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {Image,StyleProp,ImageStyle,View} from 'react-native';
+import {Image,StyleProp,ImageStyle,View,ViewStyle} from 'react-native';
 import {resolveJynloMedia} from '../lib/social-feed-api';
 import {downloadPrivateProfileMedia,releasePrivateProfileMedia} from '../lib/private-profile-media';
 
@@ -28,5 +28,5 @@ export default function ProtectedProfileImage({src,token,style,resizeMode='conta
    if(file)releasePrivateProfileMedia(file);
   };
  },[src,token]);
- return uri?<Image source={{uri}} style={style} resizeMode={resizeMode}/>:<View style={style}/>;
+ return uri?<Image source={{uri}} style={style} resizeMode={resizeMode}/>:<View style={style as StyleProp<ViewStyle>}/>;
 }
