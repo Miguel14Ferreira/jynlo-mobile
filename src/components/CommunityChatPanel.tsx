@@ -24,6 +24,7 @@ import type {CommunityChatEntry} from '../lib/types';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../lib/conversation-mutes-api';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
+import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
@@ -352,6 +353,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }
  }
  const recentPhotoIds=new Set(recentPreviewMessageIds(messages));
+ const reactions=useChatReactions('community',String(id),auth.token,(embedded?messages.slice(-historyLimit):messages).map(m=>m.id),!accessRevoked);
  const renderedMessages=(embedded?messages.slice(-historyLimit):messages).map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
        <Text style={styles.sender}>{m.username}</Text>
@@ -367,6 +369,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
+     {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={accessRevoked||!auth.token} onReact={reactions.react}/>:null}
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>);
  const content=<>
