@@ -66,3 +66,21 @@ test('league classification uses the actual backend DTO and retains tied-place w
  assert.match(list,/row\.goalsFor/);
  assert.match(list,/row\.goalDifference/);
 });
+
+test('organizers can correct previously recorded goals, cards, lineups and substitutions',()=>{
+ for(const method of [
+  'removeOwnedFixtureGoal','removeOwnedFixtureCard','removeOwnedFixtureLineup','removeOwnedFixtureSubstitution'
+ ]){
+  assert.match(api,new RegExp('export async function '+method+'\\('));
+  assert.ok(fixture.includes(method+'('),method+' must be accessible from fixture actions');
+ }
+ assert.match(fixture,/Alert\.alert\('Remover acontecimento\?'/);
+ assert.match(fixture,/style:'destructive'/);
+ assert.match(api,/method:'DELETE'/);
+});
+test('team registrations and draft competition deletion are restricted to organizers',()=>{
+ assert.match(list,/canManage&&activeEvent\.status==='DRAFT'/);
+ assert.match(list,/removeOwnedEventTeam\(cid,chid,activeEvent\.id,team\.id,auth\.token!\)/);
+ assert.match(list,/deleteOwnedEvent\(cid,chid,activeEvent\.id,auth\.token!\)/);
+ assert.match(list,/confirm\('Eliminar esta prova\?'/);
+});
