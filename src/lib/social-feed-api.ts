@@ -1,3 +1,4 @@
+import {fetch as expoFetch} from 'expo/fetch';
 /** Jynlo Web contracts. The demo is isolated and never calls production. */
 import {API_BASE,DEMO_MODE,ApiError,request} from './api';
 import {feed as demoFeedSeed} from './parity-api';
@@ -261,7 +262,7 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),90000);
    try{
-     const response=await fetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
+     const response=await expoFetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
        credentials:'omit',
        headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
      if(!response.ok){
