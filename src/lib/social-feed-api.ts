@@ -5,6 +5,7 @@ import {feed as demoFeedSeed} from './parity-api';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry,StoryDetails} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
+import {verifiedPostLikeReceipt} from './social-like-receipt.cjs';
 import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt} from './social-text-post-receipt.cjs';
 import {prepareStoryDetails} from './story-details.cjs';
 
@@ -159,11 +160,20 @@ export async function replyToStory(storyId:number,content:string,token:string|nu
  }
  await request<void>(`/api/stories/${storyId}/replies`,{token,method:'POST',body:{content:message}});
 }
-export async function likePost(postId:number,liked:boolean,token:string|null,username:string|null):Promise<void>{
+export async function likePost(postId:number,liked:boolean,token:string|null,username:string|null):Promise<{likedByMe:boolean;likeCount:number}>{
   requireViewer(token,username);
   if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
-  if(DEMO_MODE){const selected=demoLikes.get(postId)||new Set<string>();if(liked)selected.delete(username!);else selected.add(username!);demoLikes.set(postId,selected);return;}
-  await request<unknown>(`/api/feed/posts/${postId}/likes`,{token,method:liked?'DELETE':'POST',...(!liked?{body:null}:{})});
+  if(DEMO_MODE){
+    const selected=demoLikes.get(postId)||new Set<string>();
+    if(liked)selected.delete(username!);else selected.add(username!);
+    demoLikes.set(postId,selected);
+    return {likedByMe:selected.has(username!),likeCount:selected.size};
+  }
+  const response=await request<unknown>(`/api/feed/posts/${postId}/likes`,{token,method:liked?'DELETE':'POST',...(!liked?{body:null}:{})});
+  const verified=verifiedPostLikeReceipt(response);
+  if(!verified||verified.likedByMe===liked)
+    throw Error('O servidor não confirmou o estado do gosto. Atualiza a publicação antes de repetir.');
+  return verified;
 }
 export async function setPostLikerPrivacy(postId:number,hidden:boolean,token:string|null):Promise<boolean>{
  if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
