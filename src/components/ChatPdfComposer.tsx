@@ -90,7 +90,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
   }
  }
  if(!enabled||!token)return null;
- return <View style={compact?styles.compactPanel:styles.panel}>
+ return <View style={compact?(selected?styles.compactExpanded:styles.compactPanel):styles.panel}>
   {busyRef.current&&!selected?<Text style={styles.note}>Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.</Text>:null}
   {compact?<Pressable accessibilityRole="button" accessibilityLabel="Anexar documento PDF" disabled={busy||busyRef.current}
    style={styles.iconAction} onPress={()=>{void choose();}}><JynloIcon name="document" size={23} color={C.mint}/></Pressable>:
@@ -107,7 +107,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
 }
 const styles=StyleSheet.create({
  panel:{gap:8,padding:12,borderRadius:14,backgroundColor:C.surface},
- compactPanel:{gap:6},iconAction:{width:44,height:44,justifyContent:'center',alignItems:'center',borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
+ compactPanel:{gap:6},compactExpanded:{width:'100%',gap:8,padding:10,backgroundColor:C.surface,borderRadius:12},iconAction:{width:44,height:44,justifyContent:'center',alignItems:'center',borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  details:{gap:8},name:{fontSize:14,fontWeight:'700',color:C.white},
  note:{fontSize:12,color:C.muted},error:{fontSize:12,color:'#FF9898'}
 });
