@@ -36,6 +36,20 @@ function MediaVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:bool
   <FeedVideo uri={uri} story={story} paused={paused} onEnd={onEnd}/>
  </Suspense>;
 }
+function FeedPostPhoto({uri,width,label,onExpand}:{uri:string;width:number;label:string;onExpand:()=>void}){
+ const [dimensions,setDimensions]=useState<{width:number;height:number}|null>(null);
+ // Respect actual portrait/landscape dimensions rather than cropping every
+ // uploaded photo into a fixed 350px strip. Cap extreme panoramas for readability.
+ const height=dimensions?Math.min(620,Math.max(180,Math.round(width*dimensions.height/dimensions.width))):350;
+ return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onExpand}>
+   <Image source={{uri}} resizeMode="contain" style={[styles.postImage,{height}]}
+     onLoad={event=>{
+       const source=event.nativeEvent.source;
+       if(source&&Number.isFinite(source.width)&&Number.isFinite(source.height)&&source.width>0&&source.height>0)
+         setDimensions({width:source.width,height:source.height});
+     }}/>
+ </Pressable>;
+}
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
   const src=mediaSource(image);
   return <View style={[styles.avatar,{width:size,height:size,borderRadius:size/2}]}>{src?
@@ -660,7 +674,7 @@ export default function JynloFeedHome(){
       {item.type==='POST'&&item.location?.trim()?<Text style={styles.postMeta}>⌖ {item.location.trim()}</Text>:null}
       {album.length?<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
         {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:Math.max(220,screenWidth-56),position:'relative'}}>
-          {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<Pressable accessibilityRole="button" accessibilityLabel={'Ampliar fotografia '+(i+1)+' de '+album.length} onPress={()=>setExpandedPostImage(uri)}><Image source={{uri}} style={styles.postImage} resizeMode="contain"/></Pressable>):null}
+          {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<FeedPostPhoto uri={uri} width={Math.max(220,screenWidth-56)} label={'Ampliar fotografia '+(i+1)+' de '+album.length} onExpand={()=>setExpandedPostImage(uri)}/>):null}
           {album.length>1?<View pointerEvents="none" style={styles.albumCounter}><Text style={styles.albumCounterText}>{i+1}/{album.length}</Text></View>:null}
         </View>;})}
       </ScrollView>:null}
