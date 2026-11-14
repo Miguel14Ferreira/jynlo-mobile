@@ -2,8 +2,8 @@ import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
 import SecureChatAttachment from './SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
-import React,{useCallback,useRef,useState} from 'react';
-import {Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from './UI';
@@ -24,6 +24,18 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
  const [entries,setEntries]=useState<SessionChatEntry[]>([]);
+ // Keep embedded message history readable as the Android keyboard opens.
+ // Never auto-scroll older messages unless the composer has keyboard focus.
+ const inlineHistoryRef=useRef<ScrollView|null>(null);
+ const composerFocused=useRef(false);
+ useEffect(()=>{
+  if(!embedded)return;
+  const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+  const subscription=Keyboard.addListener(event,()=>{
+   if(composerFocused.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+  });
+  return()=>subscription.remove();
+ },[embedded]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [editing,setEditing]=useState<SessionChatEntry|null>(null),[editText,setEditText]=useState('');
@@ -323,7 +335,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
-  {embedded?<ScrollView style={styles.inlineHistory} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
+  {embedded?<ScrollView ref={inlineHistoryRef} style={styles.inlineHistory} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
     {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>setHistoryLimit(count=>count+40)} style={styles.olderMessages}>
       <Text style={styles.actionText}>Ver mensagens anteriores</Text>
     </Pressable>:null}{renderedMessages}
@@ -383,6 +395,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     <View style={styles.composer}>
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel="Mensagem da sessão" placeholder="Escreve uma mensagem"
+       onFocus={()=>{composerFocused.current=true;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
      <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem'} style={styles.sendAction}
        disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()}
