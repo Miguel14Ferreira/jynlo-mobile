@@ -9,6 +9,10 @@ function nativeRouteForWebLink(path){
   const url=new URL(path,'https://d24sports.com');
   if(url.protocol!=='https:'||url.hostname!=='d24sports.com'||
      url.port||url.username||url.password)return path;
+  // Browsers sometimes normalize shared links with a trailing slash.
+  // Keep the path canonical without trusting arbitrary hosts or route names.
+  if(url.pathname.length>1&&url.pathname.endsWith('/'))
+   url.pathname=url.pathname.replace(/\\/+$/,'');
   const token=(v)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'')?v:null;
   if(url.pathname==='/'){
    const confirmation=token(url.searchParams.get('confirmRegistration'));
@@ -40,8 +44,12 @@ function nativeRouteForWebLink(path){
   // sessions. The native detail screen performs its own authentication and
   // visibility checks; do not propagate passwords or guest tokens.
   const organizerSession=url.pathname.match(/^\/menu\/events\/([1-9]\d*)$/);
-  if(organizerSession&&Number.isSafeInteger(Number(organizerSession[1])))
+  if(organizerSession&&Number.isSafeInteger(Number(organizerSession[1]))){
+   const guest=url.searchParams.get('guest');
+   if(guest&&/^[A-Za-z0-9_-]{43}$/.test(guest))
+    return '/sessions/'+organizerSession[1]+'?guest='+encodeURIComponent(guest);
    return '/sessions/'+organizerSession[1];
+  }
   const session=url.pathname.match(/^\/sessions\/([1-9]\d*)$/);
   if(session&&Number.isSafeInteger(Number(session[1]))){
    // Preserve a legitimate guest invitation on verified app links, without
