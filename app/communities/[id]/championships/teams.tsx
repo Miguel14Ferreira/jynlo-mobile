@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -14,6 +14,7 @@ export default function ChampionshipTeamsScreen(){
  const [organizer,setOrganizer]=useState(false),[closed,setClosed]=useState(false);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [name,setName]=useState(''),[selected,setSelected]=useState<Record<number,number>>({}),[retry,setRetry]=useState(0);
+ const savingRef=useRef(false);
  useFocusEffect(useCallback(()=>{
   let active=true;
   setLoading(true);setError('');setData(null);setOrganizer(false);setClosed(false);
@@ -39,11 +40,11 @@ export default function ChampionshipTeamsScreen(){
   void load();return()=>{active=false;};
  },[communityId,championshipId,auth.token,auth.username,retry]));
  async function update(action:()=>Promise<ChampionshipTeams>){
-  if(saving||closed||!organizer||!auth.token)return;
-  setSaving(true);setError('');
+  if(savingRef.current||saving||closed||!organizer||!auth.token||!data)return;
+  savingRef.current=true;setSaving(true);setError('');
   try{const next=await action();setData(next);setName('');setSelected({});}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a alteração.');}
-  finally{setSaving(false);}
+  catch(e){setError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');}
+  finally{savingRef.current=false;setSaving(false);}
  }
  return <Page><DemoBanner/><Eyebrow>EQUIPAS DA ÉPOCA</Eyebrow>
   <Text style={styles.heading}>Equipas do campeonato</Text>
