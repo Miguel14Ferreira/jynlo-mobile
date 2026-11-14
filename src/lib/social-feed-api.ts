@@ -256,9 +256,7 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      if(totalBytes>60*1024*1024)throw Error('O álbum não pode exceder 60 MB no total.');
      // Back-end accepts the legacy image/video part for one asset, or repeated
      // "files" parts for albums. Do not mix these two request formats.
-     form.append(files.length>1?'files':file.type==='video'?'video':'image',{
-       uri,type:file.mimeType,name:'jynlo-media.'+extension
-     } as any);
+     form.append(files.length>1?'files':file.type==='video'?'video':'image',new File(uri) as unknown as Blob,'jynlo-media.'+extension);
    }
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),90000);
