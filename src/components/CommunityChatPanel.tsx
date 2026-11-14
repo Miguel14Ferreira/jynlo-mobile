@@ -170,7 +170,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    }}, 
     onMessage:(msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
       setMessages(old=>mergeMessages(old,[msg]));
-      if(msg.username!==auth.username)void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
+      // WebSocket delivery is not proof an embedded reader saw an off-screen message.
+       if(!embedded&&AppState.currentState==='active'&&msg.username!==auth.username)
+        void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
    });
    // A disconnected WebSocket must not leave the conversation frozen until a manual refresh.
    const timer=setInterval(()=>{
