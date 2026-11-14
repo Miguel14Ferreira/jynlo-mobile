@@ -749,7 +749,7 @@ export default function JynloFeedHome(){
   if(!auth.ready)return <SafeAreaView style={{flex:1,backgroundColor:INDIGO,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></SafeAreaView>;
   if(!auth.token&&!auth.browsingAsGuest)return <Redirect href="/welcome"/>;
   return <SafeAreaView style={{flex:1,backgroundColor:INDIGO}} edges={['top','left','right']}>
-    <FlatList data={visiblePosts} keyExtractor={(item,index)=>`${item.type}-${item.postId||item.sessionId||index}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
+    <FlatList data={visiblePosts} keyExtractor={(item,index)=>feedEntryKey(item)||`${item.type}-${item.authorUsername}-${item.createdAt}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&visiblePosts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
     <StoryViewer group={visibleStoryViewer} groups={visibleStoryGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
