@@ -70,9 +70,8 @@ test('successful cancellation offers an optional native share sheet for external
  const cancelStart=feed.indexOf('async function requestCancelFeedSession(',shareStart);
  assert.ok(shareStart>0&&cancelStart>shareStart);
  const share=feed.slice(shareStart,cancelStart);
- assert.match(share,/Share\.share\(\{message\}\)/);
- assert.match(share,/O organizador cancelou esta sessão e o jogo não se vai realizar/);
- assert.match(share,/Por favor, não te desloques ao recinto/);
+ assert.match(share,/Share\.share\(\{message:cancellationNotice\(item\)\}\)/);
+ assert.match(feed,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
  assert.match(cancel,/\{text:'Partilhar aviso',onPress:\(\)=>\{void shareCancelledFeedSession\(item\);\}\}/);
  assert.match(cancel,/cancelSession\(id,actor,username\)\.then\(\(\)=>\{/);
  assert.doesNotMatch(share,/request<|cancelSession\(/);
