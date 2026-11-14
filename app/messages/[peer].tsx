@@ -1,3 +1,4 @@
+import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
 import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
@@ -498,10 +499,9 @@ export default function DirectConversation(){
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
     <Text style={styles.body}>{m.text||'Mensagem sem texto'}</Text>}
    {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
-   {!m.deletedAt&&m.text&&/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/.test(m.text)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps" onPress={()=>{
-    const url=m.text?.match(/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/)?.[0];
-    if(url)void Linking.openURL(url).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'));
-   }} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={15} color={C.mint}/><Text style={styles.replyActionText}>Abrir localização no mapa</Text></View></Pressable>:null}
+   {!m.deletedAt&&chatLocationUrl(m.text)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps"
+    onPress={()=>void Linking.openURL(chatLocationUrl(m.text)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}
+    style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={15} color={C.mint}/><Text style={styles.replyActionText}>Abrir localização no mapa</Text></View></Pressable>:null}
    <View style={{flexDirection:'row',justifyContent:'flex-end',gap:8}}>
     {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={16} color={C.mint}/><Text style={styles.replyActionText}>Responder</Text></View></Pressable>:null}
     {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
