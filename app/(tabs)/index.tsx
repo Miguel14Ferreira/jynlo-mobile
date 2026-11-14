@@ -334,7 +334,7 @@ export default function JynloFeedHome(){
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
-      setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);
+      setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
     }
     setLoading(true);setError('');
     const fetches=await Promise.allSettled([
