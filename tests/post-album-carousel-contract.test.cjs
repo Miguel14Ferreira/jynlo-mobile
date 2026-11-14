@@ -68,10 +68,10 @@ test('inactive videos do not mount a second player behind the carousel',()=>{
 
 test('full-screen photos support swipe gestures, page buttons and rotation',()=>{
  const viewer=read('src/components/PostImageLightbox.tsx');
- assert.match(viewer,/<ScrollView ref=\{scroll\} key=\{pageWidth\} style=\{\{flex:1\}\} horizontal pagingEnabled/);
+ assert.match(viewer,/<ScrollView ref=\{scroll\} key=\{viewport.width\+'x'\+viewport.height\} style=\{\{flex:1\}\} horizontal pagingEnabled/);
  assert.match(viewer,/onMomentumScrollEnd=\{event=>/);
- assert.match(viewer,/contentOffset=\{\{x:index\*pageWidth,y:0\}\}/);
- assert.match(viewer,/scroll\.current\?\.scrollTo\(\{x:selected\*pageWidth,animated:true\}\)/);
+ assert.match(viewer,/contentOffset=\{\{x:index\*viewport.width,y:0\}\}/);
+ assert.match(viewer,/scroll\.current\?\.scrollTo\(\{x:selected\*viewport.width,animated:true\}\)/);
  assert.match(viewer,/resizeMode="contain"/);
  assert.match(viewer,/onPress=\{\(\)=>moveTo\(index-1\)\}/);
  assert.match(viewer,/onPress=\{\(\)=>moveTo\(index\+1\)\}/);
@@ -89,4 +89,12 @@ test('Story video sound has a visible toggle and remains independent of feed vid
  assert.match(video,/muted=false,onEnd/);
  assert.match(video,/if\(story\)player\.muted=muted/);
  assert.match(icons,/'volume-off':\{regular:'volume-mute-outline'/);
+});
+
+test('lightbox explicitly measures width and height so media cannot collapse in a horizontal scroller',()=>{
+ const viewer=read('src/components/PostImageLightbox.tsx');
+ assert.match(viewer,/setViewport\(\{width,height\}\)/);
+ assert.match(viewer,/viewport\.width>0&&viewport\.height>0/);
+ assert.match(viewer,/style=\{\{width:viewport\.width,height:viewport\.height\}\}/);
+ assert.match(viewer,/style=\{\{width:viewport\.width,height:viewport\.height\}\}>/);
 });
