@@ -157,6 +157,7 @@ export default function SessionChat(){
       const url='https://www.google.com/maps?q='+lat.toFixed(5)+','+lng.toFixed(5);
       if(version===generation.current&&activeChat.current===identity){
        setDraft(current=>[current.trim(),url].filter(Boolean).join('\n'));
+        setAttachmentsOpen(false);
        Alert.alert('Localização pronta','Confirma o destino e envia a mensagem quando quiseres.');
       }
      })().catch(e=>{
@@ -332,8 +333,8 @@ export default function SessionChat(){
    setReply(current=>current?.id===(sentReplyId??undefined)?null:current);
    await refresh();
   }}/>
-  {auth.token&&!closed&&photoReady?<Button title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} secondary disabled={sending||uploading||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
-  {auth.token&&!closed&&photoReady?<Button title="Abrir câmara" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto('camera');}}/>:null}
+  {auth.token&&!closed&&photoReady?<Button title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} secondary disabled={sending||uploading||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+  {auth.token&&!closed&&photoReady?<Button title="Abrir câmara" secondary disabled={sending||uploading} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
   </View>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
