@@ -59,6 +59,8 @@ try {
     $env:JYNLO_REQUIRE_REAL_API = '1'
 
     Invoke-Checked 'Validar configuracao API real' 'npm.cmd' @('run','check:release')
+    Invoke-Checked 'Verificar identidade do projeto Expo' 'node.exe' @('scripts/check-eas-project.cjs')
+    Invoke-Checked 'Verificar compatibilidade Expo SDK sem alterar dependencias' 'npx.cmd' @('--no-install','expo','install','--check')
     Invoke-Checked 'Verificar TypeScript' 'npm.cmd' @('run','typecheck')
     Invoke-Checked 'Validar sintaxe e contratos Node' 'npm.cmd' @('run','test:all')
 
