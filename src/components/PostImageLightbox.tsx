@@ -8,7 +8,6 @@ type Props={photos:ExpandedPostPhotos|null;onClose:()=>void};
 
 /** Full-screen, uncropped photo review with album navigation and visible exit. */
 export default function PostImageLightbox({photos,onClose}:Props){
- const [viewWidth,setViewWidth]=useState(0);
  const entries=photos?.uris||[];
  const initial=photos?.index??0;
  const [offset,setOffset]=useState(0);
@@ -24,7 +23,7 @@ export default function PostImageLightbox({photos,onClose}:Props){
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada"
      onPress={onClose} hitSlop={10} style={styles.close}><JynloIcon name="close" size={26} color="#fff"/></Pressable>
    </View>
-   <View style={styles.photoArea} onLayout={e=>setViewWidth(e.nativeEvent.layout.width)}>
+   <View style={styles.photoArea}>
     {entries[index]?<Image key={entries[index]} source={{uri:entries[index]}}
       resizeMode="contain" style={styles.image} accessibilityLabel={'Fotografia '+(index+1)+' de '+entries.length}/>:null}
    </View>
