@@ -30,7 +30,7 @@ test('Feed opens the selected photo in a full-screen album and closes it safely'
 test('Feed item keys remain stable when new posts arrive',()=>{
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/keyExtractor=\{\(item,index\)=>feedEntryKey\(item\)/);
- assert.doesNotMatch(feed,/item\.postId\|\|item\.sessionId\|\|index\}\/);
+ assert.equal(feed.includes('item.postId||item.sessionId||index'),false);
 });
 
 test('photo composer preview uses contain rather than hiding edges of images',()=>{
