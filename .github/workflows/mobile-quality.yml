@@ -1,0 +1,36 @@
+name: Jynlo Mobile - Validation
+
+# Explicitly opt-in. Do not automatically consume build/CI minutes on every
+# autonomous development commit. This workflow does not build an APK.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: TypeScript, syntax and contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out selected commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without creating a lockfile
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+      - name: Validate app and TypeScript syntax
+        run: npm run test:syntax
+      - name: Check TypeScript types
+        run: npm run typecheck
+      - name: Run all contract tests
+        run: npm run test:contracts
+      - name: Verify release guard for non-store builds
+        run: node scripts/verify-release.cjs
