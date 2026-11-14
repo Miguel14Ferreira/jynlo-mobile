@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {stickerBounds,clampStickerPosition}=require('../src/lib/story-sticker-bounds.cjs');
+const {stickerBounds,clampStickerPosition,storyMetadataReservedHeight}=require('../src/lib/story-sticker-bounds.cjs');
 
 test('sticker stays inside a narrow mobile Story preview',()=>{
  const area={width:280,height:320},sticker={width:180,height:60};
@@ -46,6 +46,29 @@ test('Story composer uses responsive preview and compact layout on short screens
  const placement=fs.readFileSync(path.join(__dirname,'..','src','components','StoryTextPlacement.tsx'),'utf8');
  assert.match(screen,/screenHeight\*0\.48/);
  assert.match(screen,/screenHeight<700&&styles\.storyComposerCompact/);
- assert.match(placement,/clampStickerPosition\(next,area,sticker\)/);
- assert.match(placement,/clampStickerPosition\(geometry,area,sticker\)/);
+ assert.match(placement,/clampStickerPosition\(next,area,sticker,reservedTopPx\)/);
+ assert.match(placement,/clampStickerPosition\(geometry,area,sticker,reservedTopPx\)/);
+});
+
+test('Story metadata badges reserve space so caption does not overlap them',()=>{
+ assert.equal(storyMetadataReservedHeight('',''),0);
+ assert.ok(storyMetadataReservedHeight('Lisboa','')>0);
+ assert.ok(storyMetadataReservedHeight('','ana,joao')>0);
+ assert.ok(storyMetadataReservedHeight('Lisboa','ana,joao')>storyMetadataReservedHeight('Lisboa',''));
+ const area={width:320,height:400},caption={width:160,height:55};
+ const without=stickerBounds(area,caption,1,0,0);
+ const withDetails=stickerBounds(area,caption,1,0,112);
+ assert.ok(withDetails.minY>without.minY);
+ const pos=clampStickerPosition({x:50,y:0,rotation:0,zoom:1},area,caption,112);
+ assert.ok(pos.y>=withDetails.minY);
+});
+test('published Stories and the editor both reserve the same metadata zone',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ const details=fs.readFileSync(path.join(__dirname,'..','src','components','StoryDetailsView.tsx'),'utf8');
+ assert.match(screen,/storyMetadataReservedHeight\(story\.locationLabel,story\.taggedUsernames\)/);
+ assert.match(screen,/storyMetadataReservedHeight\(storyLocation,storyTags\)/);
+ assert.match(details,/<ScrollView horizontal showsHorizontalScrollIndicator=\{false\}/);
+ assert.match(details,/contentContainerStyle=\{styles\.tags\}/);
+ assert.match(details,/onPress=\{\(\)=>onOpenProfile\(username\)\}/);
 });
