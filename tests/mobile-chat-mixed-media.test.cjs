@@ -24,8 +24,8 @@ test('private chat accepts mixed media with correct individual and aggregate lim
 test('all three screens select videos and use the protected batch endpoint',()=>{
  for(const [file,identifier] of [
   ['app/messages/[peer].tsx','photo'],
-  ['app/communities/[id]/chat.tsx','selectedPhoto'],
-  ['app/sessions/[id]/chat.tsx','photo']
+  ['src/components/CommunityChatPanel.tsx','selectedPhoto'],
+  ['src/components/SessionChatPanel.tsx','photo']
  ]){
   const s=read(file);
   assert.match(s,/mediaTypes:\['images','videos'\]/,file);
@@ -74,7 +74,7 @@ test('media drafts append from multiple gallery visits and keep valid existing i
  assert.match(bad.error,/5 MB/);assert.deepEqual(bad.items,next.items);
 });
 test('all chat surfaces merge gallery picks instead of replacing an existing album',()=>{
- for(const path of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+ for(const path of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx']){
   const s=read(path);
   assert.match(s,/appendChatMediaSelection\(current,(?:selected|chosen)\.assets\)/);
   assert.match(s,/selectionLimit:remaining/);
