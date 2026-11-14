@@ -6,7 +6,11 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('Explorar usa catalogo completo em vez de chips exclusivos de tres desportos',()=>{
  const file=read('app/(tabs)/explore.tsx'),catalog=read('src/lib/sports.ts');
  assert.match(file,/import \{SPORTS\} from/);
- assert.match(file,/SPORTS\.filter\(/);
+ assert.match(file,/const all=\[\.\.\.SPORTS,\.\.\.discoveredCustomSports\]/);
+ assert.match(file,/all\.filter\(/);
+ assert.match(file,/setDiscoveredCustomSports\(/);
+ assert.match(file,/canSearchCustomSport/);
+ assert.match(file,/chooseSport\(typedCustomSport\)/);
  assert.match(file,/SPORTS\.length/);
  assert.match(file,/sportSuggestions\.map\(/);
  for(const sport of ["'Badminton'","'Padel'","'Cricket'","'Karting'","'Jiu-Jitsu'","'Teqball'"])assert.ok(catalog.includes(sport),sport);
