@@ -1,3 +1,4 @@
+import {JynloIcon} from '../../src/components/JynloIcon';
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
@@ -494,10 +495,10 @@ export default function DirectConversation(){
    {!m.deletedAt&&m.text&&/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/.test(m.text)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps" onPress={()=>{
     const url=m.text?.match(/https:\/\/www\.google\.com\/maps\?q=-?\d+\.\d+,-?\d+\.\d+/)?.[0];
     if(url)void Linking.openURL(url).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'));
-   }} style={styles.replyAction}><Text style={styles.replyActionText}>⌖ Abrir localização no mapa</Text></Pressable>:null}
+   }} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={15} color={C.mint}/><Text style={styles.replyActionText}>Abrir localização no mapa</Text></View></Pressable>:null}
    <View style={{flexDirection:'row',justifyContent:'flex-end',gap:8}}>
-    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><Text style={styles.replyActionText}>↩ Responder</Text></Pressable>:null}
-    {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><Text style={styles.replyActionText}>•••</Text></Pressable>:null}
+    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={16} color={C.mint}/><Text style={styles.replyActionText}>Responder</Text></View></Pressable>:null}
+    {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
    </View>
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
@@ -512,7 +513,7 @@ export default function DirectConversation(){
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{width:85,gap:3}}>
       {file.type==='video'?<View style={{width:85,height:85,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>}
-      <Text style={styles.note}>✕ Remover</Text>
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
      </Pressable>)}
     </View>
    <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
@@ -523,7 +524,7 @@ export default function DirectConversation(){
 
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
-    style={styles.attachmentToggle}><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text></Pressable>:null}
+    style={styles.attachmentToggle}><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View></Pressable>:null}
   {blocked?<Text style={styles.note}>Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.</Text>:null}
   {!blockStatusKnown&&auth.token&&!DEMO_MODE?<View style={{gap:7}}>
     <Text style={styles.note}>Não foi possível confirmar as opções de bloqueio. O envio continua protegido pelas permissões do servidor.</Text>
@@ -570,7 +571,7 @@ export default function DirectConversation(){
    <TextInput multiline maxLength={2000} accessibilityLabel="Editar mensagem" editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Editar texto…" placeholderTextColor={C.muted} style={styles.editInput}/>
    <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar edição" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
   </View>:null}
-  {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>A responder a {replyTarget.sender}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><Text style={styles.replyActionText}>✕</Text></Pressable></View>:null}
+  {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>A responder a {replyTarget.sender}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><JynloIcon name="close" size={19} color={C.mint}/></Pressable></View>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
