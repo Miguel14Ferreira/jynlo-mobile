@@ -296,6 +296,8 @@ export default function JynloFeedHome(){
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
+  const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
+  const recentlyConfirmedStories=useRef<Array<{item:SocialStory;until:number}>>([]);
   const hiddenKeysRef=useRef<string[]>([]);
   const [hiddenKeys,setHiddenKeys]=useState<string[]>([]);
   const [recentlyHidden,setRecentlyHidden]=useState<string|null>(null);
@@ -310,6 +312,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
+      recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
@@ -329,9 +332,17 @@ export default function JynloFeedHome(){
     ]);
     if(id!==reloadNumber.current)return;
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
-    if(fetches[0].status==='fulfilled')setPosts(value(0,[] as FeedItem[]));
+    if(fetches[0].status==='fulfilled'){
+      const received=value(0,[] as FeedItem[]);
+      recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.until>Date.now()&&!received.some(item=>item.postId===entry.item.postId));
+      setPosts([...recentlyConfirmedPosts.current.map(entry=>entry.item),...received]);
+    }
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
-    if(fetches[2].status==='fulfilled')setOwnStories(value(2,[] as SocialStory[]));
+    if(fetches[2].status==='fulfilled'){
+      const received=value(2,[] as SocialStory[]);
+      recentlyConfirmedStories.current=recentlyConfirmedStories.current.filter(entry=>entry.until>Date.now()&&!received.some(item=>item.id===entry.item.id));
+      setOwnStories([...recentlyConfirmedStories.current.map(entry=>entry.item),...received]);
+    }
      if(fetches[4].status==='fulfilled')setMyProfilePhoto(value(4,null as {profilePicUrl?:string|null}|null)?.profilePicUrl||null);
     if(identityChanged){
       const stored=value(3,[] as string[]);
@@ -437,7 +448,7 @@ export default function JynloFeedHome(){
         if(busyPost!==null||feedIdentity.current!==identity||!actor)return;
         setBusyPost(id);
         void deletePost(id,actor).then(()=>{
-          if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>x.postId!==id));
+          if(feedIdentity.current===identity){recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);setPosts(old=>old.filter(x=>x.postId!==id));}
         }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
         .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
       }}
@@ -561,6 +572,7 @@ export default function JynloFeedHome(){
       // Show the server-confirmed item immediately. A delayed feed refresh must
       // never make a successful post look as if it vanished.
       if(feedIdentity.current===`${username}:${actor}`){
+        recentlyConfirmedPosts.current=[...recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==created.postId),{item:created,until:Date.now()+120000}];
         setPosts(current=>[created,...current.filter(item=>item.postId!==created.postId)]);
       }
       // A user may have kept typing or selected another file during the upload.
@@ -597,6 +609,7 @@ export default function JynloFeedHome(){
     try{
       const created=await publishStory(body,media,actor,username,null,geometry,details);
       if(feedIdentity.current===`${username}:${actor}`){
+        recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
       }
       if(feedIdentity.current===`${username}:${actor}`&&
