@@ -17,7 +17,7 @@ test('sticker stays inside a narrow mobile Story preview',()=>{
 });
 test('zoom increases safe margins without changing rotation or zoom',()=>{
  const area={width:320,height:360},sticker={width:150,height:50};
- const base=stickerBounds(area,sticker,1),zoomed=stickerBounds(area,sticker,2);
+ const base=stickerBounds(area,sticker,1,30),zoomed=stickerBounds(area,sticker,2,30);
  assert.ok(zoomed.minX>base.minX);
  assert.ok(zoomed.minY>base.minY);
  const result=clampStickerPosition({x:100,y:0,rotation:30,zoom:2},area,sticker);
