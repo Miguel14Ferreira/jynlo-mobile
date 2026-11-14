@@ -300,6 +300,7 @@ export default function JynloFeedHome(){
   const [editingComment,setEditingComment]=useState<number|null>(null),[editCommentDraft,setEditCommentDraft]=useState('');
   const [commentWriteBusy,setCommentWriteBusy]=useState<number|null>(null);
   const commentWriteLock=useRef(false);
+  const postActionInFlight=useRef(false);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
@@ -467,8 +468,8 @@ export default function JynloFeedHome(){
     Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
       {text:'Cancelar',style:'cancel'},
       {text:'Eliminar',style:'destructive',onPress:()=>{
-        if(busyPost!==null||feedIdentity.current!==identity||!actor)return;
-        setBusyPost(id);
+        if(busyPost!==null||postActionInFlight.current||feedIdentity.current!==identity||!actor)return;
+        postActionInFlight.current=true;setBusyPost(id);
         void deletePost(id,actor).then(()=>{
           if(feedIdentity.current===identity){
             const key=removedFeedKey(item);
@@ -477,15 +478,15 @@ export default function JynloFeedHome(){
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
         }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
-        .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
+        .finally(()=>{postActionInFlight.current=false;if(feedIdentity.current===identity)setBusyPost(null);});
       }}
     ]);
   }
   function hideOwnAttendance(item:FeedItem){
-    if(!auth.token||!item.sessionId||busyPost!==null||item.type!=='SESSION_ATTENDED')return;
+    if(!auth.token||!item.sessionId||busyPost!==null||postActionInFlight.current||item.type!=='SESSION_ATTENDED')return;
     setPostMenuItem(null);
     const identity=currentFeedIdentity,id=item.sessionId,actor=auth.token;
-    setBusyPost(-id);
+    postActionInFlight.current=true;setBusyPost(-id);
     void hideAttendanceActivity(id,actor).then(()=>{
       if(feedIdentity.current===identity){
         const key=removedFeedKey(item);
@@ -493,7 +494,7 @@ export default function JynloFeedHome(){
         setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
       }
     }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
-    .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
+    .finally(()=>{postActionInFlight.current=false;if(feedIdentity.current===identity)setBusyPost(null);});
   }
   function openPostComposer(){
     setPublishNotice(null);setPostPublishError('');
@@ -676,9 +677,26 @@ export default function JynloFeedHome(){
       }
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
   }
-  async function toggleLike(item:FeedItem){if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null)return;
-    setBusyPost(item.postId);try{await likePost(item.postId,item.likedByMe,auth.token,auth.username);await load();}
-    catch(e){Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}finally{setBusyPost(null);}
+  async function toggleLike(item:FeedItem){
+    if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null||
+      postActionInFlight.current||!auth.token||!auth.username)return;
+    const account=feedIdentity.current,postId=item.postId;
+    postActionInFlight.current=true;setBusyPost(postId);
+    try{
+      const receipt=await likePost(postId,item.likedByMe,auth.token,auth.username);
+      if(feedIdentity.current!==account)return;
+      // Use the authoritative result without relying on a potentially stale
+      // full-feed reload, and preserve the optimistic publish overlay too.
+      const apply=(post:FeedItem)=>post.postId===postId?{...post,...receipt}:post;
+      recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({...entry,item:apply(entry.item)}));
+      setPosts(current=>current.map(apply));
+    }catch(e){
+      if(feedIdentity.current===account)
+        Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');
+    }finally{
+      postActionInFlight.current=false;
+      if(feedIdentity.current===account)setBusyPost(null);
+    }
   }
   function closeComments(){commentsRequest.current++;setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');}
   async function openComments(item:FeedItem){if(!item.postId)return;const id=item.postId;
