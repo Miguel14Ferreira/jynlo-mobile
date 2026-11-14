@@ -1,3 +1,4 @@
+import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import type {CommunityChatEntry} from './types';
@@ -30,7 +31,7 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  if(replyId!=null&&(!Number.isSafeInteger(replyId)||replyId<=0))throw Error('Resposta inválida.');
  const prepared=await prepareChatPhoto(asset,extension);
  const form=new FormData();
- form.append('file',{uri:prepared.uri,name:'jynlo-chat.'+extension,type:asset.mimeType} as unknown as Blob);
+ form.append('file',new File(prepared.uri) as unknown as Blob,'jynlo-chat.'+extension);
  if(replyId!=null)form.append('replyToMessageId',String(replyId));
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
