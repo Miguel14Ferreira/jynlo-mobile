@@ -1,3 +1,4 @@
+import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
 import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
 import SecureChatAttachment from './SecureChatAttachment';
@@ -320,6 +321,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   pickerInFlight.current=true;setError('');
   try{
    const ImagePicker=await import('expo-image-picker');
+   if(source==='camera'&&!await ensureChatCameraPermission())return;
    const selected=source==='camera'?
     await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
     await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:remaining});
