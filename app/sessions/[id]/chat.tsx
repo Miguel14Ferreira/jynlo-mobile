@@ -2,7 +2,7 @@ import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../../src/lib/chat-attachments-core.cjs';
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,AppState,Image,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -16,6 +16,8 @@ import {confirmedSessionChatSend} from '../../../src/lib/session-chat-receipt.cj
 import {sendChatPhotoAlbum} from '../../../src/lib/chat-photo-album';
 import {validateChatAlbum} from '../../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
+import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../../src/lib/conversation-mutes-api';
+import {giphyImageUrl} from '../../../src/lib/chat-giphy.cjs';
 export default function SessionChat(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -35,6 +37,9 @@ export default function SessionChat(){
  const [attachmentCaption,setAttachmentCaption]=useState('');
  const pickerInFlight=useRef(false),focusedIdentity=useRef('');
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
+ const [muted,setMuted]=useState(false),[muteKnown,setMuteKnown]=useState(false),[muteBusy,setMuteBusy]=useState(false);
+ const [muteError,setMuteError]=useState(''),[locationBusy,setLocationBusy]=useState(false);
+ const muteWrites=useRef(new Set<string>());
  const refresh=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){pendingRefresh.current=true;return;}
   refreshing.current=version;
@@ -89,8 +94,15 @@ export default function SessionChat(){
   }
   setClosed(false);setError('');setSyncWarning('');historyError.current=null;setLoading(true);
   sendingNow.current=Boolean(pending);setSending(pending==='text');setUploading(pending==='photo');
-  setPhotoReady(false);
+  setPhotoReady(false);setMuteKnown(false);setMuteError('');setLocationBusy(false);
   if(auth.token&&Number.isSafeInteger(id)&&id>0)void chatPhotoAvailable('session',id,auth.token).then(ok=>{if(active&&version===generation.current)setPhotoReady(ok);}).catch(()=>{});
+  if(auth.token&&Number.isSafeInteger(id)&&id>0){
+   void listConversationMutes(auth.token).then(items=>{
+    if(active&&version===generation.current&&!muteWrites.current.has(identity)){
+     setMuted(isConversationMuted(items,'session',String(id)));setMuteKnown(true);
+    }
+   }).catch(()=>{if(active&&version===generation.current)setMuteError('Não foi possível consultar os avisos deste chat.');});
+  }
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
   const timer=setInterval(()=>{if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);},15000);
@@ -98,6 +110,62 @@ export default function SessionChat(){
    if(activeChat.current===identity)activeChat.current='';
   };
  },[refresh,auth.token,id]));
+ function toggleMute(){
+  const token=auth.token,identity=id+'|'+token;
+  if(!token||closed||!muteKnown||muteBusy||muteWrites.current.has(identity))return;
+  const next=!muted,version=generation.current;
+  Alert.alert(next?'Silenciar avisos?':'Ativar avisos?',
+   'As mensagens e o histórico continuam disponíveis para os participantes.',[
+    {text:'Cancelar',style:'cancel'},
+    {text:next?'Silenciar':'Ativar',onPress:()=>{
+     if(activeChat.current!==identity||muteWrites.current.has(identity))return;
+     muteWrites.current.add(identity);setMuteBusy(true);setMuteError('');
+     void setConversationMuted('session',String(id),next,token).then(async()=>{
+      const updated=await listConversationMutes(token);
+      if(version===generation.current&&activeChat.current===identity){
+       setMuted(isConversationMuted(updated,'session',String(id)));setMuteKnown(true);
+      }
+     }).catch(()=>{
+      if(version===generation.current&&activeChat.current===identity)
+       setMuteError('Não foi possível confirmar a alteração de notificações.');
+     }).finally(()=>{
+      muteWrites.current.delete(identity);
+      if(version===generation.current&&activeChat.current===identity)setMuteBusy(false);
+     });
+    }}
+   ]);
+ }
+ function prepareLocation(){
+  const token=auth.token,identity=id+'|'+token,version=generation.current;
+  if(!token||closed||locationBusy||sendingNow.current||pendingWrites.current.has(identity))return;
+  Alert.alert('Partilhar localização atual?',
+   'A localização só será consultada se continuares. O link ficará no campo de escrita para reveres antes de enviar ao grupo.',[
+    {text:'Cancelar',style:'cancel'},
+    {text:'Continuar',onPress:()=>{
+     if(activeChat.current!==identity)return;
+     setLocationBusy(true);setError('');
+     void (async()=>{
+      const Location=await import('expo-location');
+      const permission=await Location.requestForegroundPermissionsAsync();
+      if(permission.status!=='granted')throw Error('Acesso à localização não autorizado.');
+      const point=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
+      const lat=point.coords.latitude,lng=point.coords.longitude;
+      if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)
+       throw Error('O telemóvel não devolveu uma localização válida.');
+      const url='https://www.google.com/maps?q='+lat.toFixed(5)+','+lng.toFixed(5);
+      if(version===generation.current&&activeChat.current===identity){
+       setDraft(current=>[current.trim(),url].filter(Boolean).join('\n'));
+       Alert.alert('Localização pronta','Confirma o destino e envia a mensagem quando quiseres.');
+      }
+     })().catch(e=>{
+      if(version===generation.current&&activeChat.current===identity)
+       setError(e instanceof Error?e.message:'Não foi possível obter a localização.');
+     }).finally(()=>{
+      if(version===generation.current&&activeChat.current===identity)setLocationBusy(false);
+     });
+    }}
+   ]);
+ }
  async function send(){
   const identity=id+'|'+auth.token;
   if(mutationLock.current||sendingNow.current||pendingWrites.current.has(identity)||closed||!auth.token||!draft.trim())return;
