@@ -140,6 +140,7 @@ export default function DirectConversation(){
   if(conversation.current!==identity){
    conversation.current=identity;
    lastAcknowledgedMessageId.current=0;
+   nearBottom.current=true;
    setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
