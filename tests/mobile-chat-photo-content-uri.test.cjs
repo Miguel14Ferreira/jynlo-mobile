@@ -14,7 +14,8 @@ test('all chat types normalize content URIs with temporary cleanup',()=>{
  assert.match(helper,/verifiedLocalChatMediaSize\(actualSize,'image'\)/);
  for(const source of [direct,community]){
   assert.match(source,/prepareChatPhoto\(asset,extension\)/);
-  assert.match(source,/uri:prepared\.uri/);
+  assert.match(source,/new File\(prepared\.uri\) as unknown as Blob/);
+  assert.doesNotMatch(source,/form\.append\('file',\{uri:/);
   assert.match(source,/prepared\.cleanup\(\)/);
  }
 });
