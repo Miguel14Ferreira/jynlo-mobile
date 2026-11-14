@@ -40,3 +40,13 @@ test('mobile goal creation supports optional same-team assistance and displays i
  assert.match(ui,/addOwnedFixtureGoal\(cid,chid,eid,fid,selectedTeam,player,parsedMinute,auth\.token!,assist\)/);
  assert.match(ui,/g\.assisterName\?' · Assistência: '\+g\.assisterName/);
 });
+
+test('partial fixture API failures cannot enable scoring and expose retry instead of infinite loading',()=>{
+ const source=read('app/communities/[id]/championships/events.tsx');
+ assert.match(source,/const \[detailsFailed,setDetailsFailed\]=useState\(false\)/);
+ assert.match(source,/const complete=a\.status==='fulfilled'&&b\.status==='fulfilled'&&c\.status==='fulfilled'/);
+ assert.match(source,/setLoadedEventId\(complete\?eventId:null\)/);
+ assert.match(source,/activeEvent&&!detailsReady&&!detailsFailed\?<Loader\/>/);
+ assert.match(source,/activeEvent&&detailsFailed\?<Button secondary title="Tentar carregar/);
+ assert.match(source,/onPress=\{\(\)=>setDetailsRefresh\(value=>value\+1\)\}/);
+});
