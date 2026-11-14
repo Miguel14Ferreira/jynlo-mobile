@@ -6,12 +6,12 @@ import {useAuth} from '../../src/lib/auth';
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {MobileTheme} from '../../src/lib/theme';
+import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 
 const colors=MobileTheme.colors;
-type NavSymbol='▣'|'⌕'|'✉'|'◉';
-function TabSymbol({symbol,color,focused}:{symbol:NavSymbol;color:string;focused:boolean}){
+function TabSymbol({name,color,focused}:{name:JynloIconName;color:string;focused:boolean}){
  return <View style={[styles.iconWrap,focused&&styles.iconActive]}>
-  <Text style={[styles.symbol,{color}]}>{symbol}</Text>
+  <JynloIcon name={name} color={color} size={24} active={focused}/>
  </View>;
 }
 export default function TabsLayout(){
@@ -64,15 +64,15 @@ export default function TabsLayout(){
    tabBarLabelStyle:{fontSize:MobileTheme.typography.label,fontWeight:'800'},
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
-   <Tabs.Screen name="index" options={{title:'Início',tabBarIcon:({color,focused})=><TabSymbol symbol="▣" color={color} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color,focused})=><TabSymbol symbol="⌕" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="index" options={{title:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={color} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:'Criar',tabBarButton:()=>(
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu de criação" onPress={()=>setOpen(true)} style={styles.createTab}>
-     <View style={styles.createCircle}><Text style={styles.createPlus}>＋</Text></View>
+     <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
      <Text style={styles.createLabel}>Criar</Text>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol symbol="✉" color={color} focused={focused}/>}}/>
-   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol symbol="◉" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={color} focused={focused}/>}}/>
    <Tabs.Screen name="communities" options={{href:null,title:'Comunidades'}}/>
    <Tabs.Screen name="tournaments" options={{href:null,title:'Torneios'}}/>
   </Tabs>
@@ -84,43 +84,43 @@ export default function TabsLayout(){
      <View style={styles.sheetHeader}><View style={{flex:1,gap:5}}>
       <Text style={styles.sheetTitle}>O que vamos criar?</Text>
       <Text style={styles.sheetSubtitle}>Junta pessoas através do desporto.</Text>
-     </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Fechar" style={styles.close}><Text style={styles.closeText}>×</Text></Pressable></View>
+     </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Fechar" style={styles.close}><JynloIcon name="close" size={25} color={colors.text}/></Pressable></View>
      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.actions}>
       <Pressable accessibilityRole="button" accessibilityLabel="Criar sessão desportiva" accessibilityHint="Organiza um jogo, convida participantes e gere equipas" style={styles.sessionHero} onPress={()=>action('session')}>
-       <View style={styles.sessionHeroIcon}><Text style={styles.sessionHeroIconText}>＋</Text></View>
+       <View style={styles.sessionHeroIcon}><JynloIcon name="session" size={26} color={colors.accent}/></View>
        <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>AÇÃO PRINCIPAL</Text><Text style={styles.sessionHeroTitle}>Criar sessão</Text><Text style={styles.sessionHeroSubtitle}>Marca o jogo, reúne jogadores e organiza as equipas.</Text></View>
-       <Text style={styles.sessionHeroArrow}>›</Text>
+       <JynloIcon name="chevron-right" size={25} color={colors.background}/>
       </Pressable>
       <Text style={styles.moreActionsTitle}>Também podes criar</Text>
       <View style={styles.primaryGrid}>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('post')}>
-        <Text style={styles.actionIcon}>▤</Text><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
+        <JynloIcon name="post" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
-        <Text style={styles.actionIcon}>◎</Text><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
+        <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
        </Pressable>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel="Mostrar outras ferramentas de criação"
        accessibilityState={{expanded:moreOpen}} style={styles.moreToggle} onPress={()=>setMoreOpen(value=>!value)}>
-       <Text style={styles.moreToggleLabel}>Outras ferramentas</Text><Text style={styles.chevron}>{moreOpen?'⌃':'⌄'}</Text>
+       <Text style={styles.moreToggleLabel}>Outras ferramentas</Text><JynloIcon name={moreOpen?'chevron-up':'chevron-down'} size={23} color={colors.accent}/>
       </Pressable>
       {moreOpen?<>
       <Pressable accessibilityRole="button" accessibilityLabel="Sugerir um recinto desportivo" style={styles.secondaryAction} onPress={()=>action('venue')}>
-       <Text style={styles.secondaryIcon}>⌖</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Acrescenta um espaço desportivo à Jynlo</Text></View><Text style={styles.chevron}>›</Text>
+       <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Acrescenta um espaço desportivo à Jynlo</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
       </Pressable>
       {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>A verificar as tuas comunidades…</Text></View>:checkError?<Text style={styles.info}>Não foi possível confirmar as permissões para torneios. Abre novamente este menu para tentar.</Text>:eligible.length>0?
        <Pressable accessibilityRole="button" style={styles.secondaryAction} onPress={()=>action('tournament')}>
-        <Text style={styles.secondaryIcon}>♜</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar torneio</Text><Text style={styles.secondaryHint}>Escolhe uma comunidade que administras</Text></View><Text style={styles.chevron}>›</Text>
+        <JynloIcon name="tournament" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar torneio</Text><Text style={styles.secondaryHint}>Escolhe uma comunidade que administras</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
        </Pressable>:<Text style={styles.info}>Para criar torneios, precisas de administrar uma comunidade. Podes criar uma acima.</Text>
        :<Text style={styles.info}>Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.</Text>}
       {auth.token&&auth.username&&!checking&&!checkError&&eligible.length>0?<>
        <Pressable accessibilityRole="button" accessibilityLabel="Criar campeonato" style={styles.secondaryAction} onPress={openChampionshipPicker}>
-        <Text style={styles.secondaryIcon}>🏆</Text><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar campeonato</Text><Text style={styles.secondaryHint}>Várias provas numa época · comunidade que administras</Text></View><Text style={styles.chevron}>›</Text>
+        <JynloIcon name="championship" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar campeonato</Text><Text style={styles.secondaryHint}>Várias provas numa época · comunidade que administras</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
        </Pressable>
        {chooseChampionship?<View style={styles.communityPicker}>
         <Text style={styles.pickerTitle}>Escolhe a comunidade</Text>
         {eligible.map(group=><Pressable key={group.id} accessibilityRole="button" accessibilityLabel={'Criar campeonato na comunidade '+group.name} style={styles.communityChoice} onPress={()=>selectChampionshipCommunity(group.id)}>
-          <Text style={styles.communityChoiceText} numberOfLines={1}>{group.name}</Text><Text style={styles.chevron}>›</Text>
+          <Text style={styles.communityChoiceText} numberOfLines={1}>{group.name}</Text><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
         </Pressable>)}
        </View>:null}
       </>:null}
