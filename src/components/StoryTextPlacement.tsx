@@ -2,6 +2,7 @@ import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GestureResponderEvent} from 'react-native';
 import type {StoryTextGeometry} from '../lib/types';
+import {clampStickerPosition} from '../lib/story-sticker-bounds.cjs';
 
 type Props={caption:string;geometry:StoryTextGeometry;onChange?:(value:StoryTextGeometry)=>void;disabled?:boolean};
 type TouchPoint={pageX:number;pageY:number};
@@ -33,19 +34,20 @@ export default function StoryTextPlacement({caption,geometry,onChange,disabled=f
   const initial=gesture.current;
   if(!initial||initial.count!==now.count){begin(event);return;}
   const base=initial.geometry;
-  onChange({
-   x:clamp(base.x+100*(now.centerX-initial.centerX)/Math.max(1,area.width),7,93),
-   y:clamp(base.y+100*(now.centerY-initial.centerY)/Math.max(1,area.height),7,93),
+  const next={
+   x:base.x+100*(now.centerX-initial.centerX)/Math.max(1,area.width),
+   y:base.y+100*(now.centerY-initial.centerY)/Math.max(1,area.height),
    rotation:now.count===2?clamp(base.rotation+(now.angle-initial.angle)*180/Math.PI,-360,360):base.rotation,
    zoom:now.count===2?clamp(base.zoom*now.distance/Math.max(1,initial.distance),.5,3):base.zoom
-  });
+  };
+  onChange(clampStickerPosition(next,area,sticker));
  }
  return <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}
   onLayout={event=>{const {width,height}=event.nativeEvent.layout;if(width>0&&height>0)setArea({width,height});}}>
   <View accessible accessibilityLabel={onChange?'Texto da Story: arrasta com um dedo, roda ou amplia com dois dedos':'Texto da Story'}
    style={[styles.caption,{
-    left:area.width*geometry.x/100-sticker.width/2,
-    top:area.height*geometry.y/100-sticker.height/2,
+    left:area.width*position.x/100-sticker.width/2,
+    top:area.height*position.y/100-sticker.height/2,
     transform:[{rotate:geometry.rotation+'deg'},{scale:geometry.zoom}]
    }]}
    onLayout={event=>{const {width,height}=event.nativeEvent.layout;
