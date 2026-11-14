@@ -1,0 +1,59 @@
+# Jynlo Android QA APK; run manually from develop in Codemagic.
+# Does not publish to Google Play, use EAS credits or access production API.
+# Default Expo prebuild signs assembleRelease with a DEBUG keystore.
+# This APK is for testing only and will not upgrade the EAS-signed APK in place.
+workflows:
+  jynlo-android-qa:
+    name: Jynlo Android - APK de testes (develop)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      node: v22.13.1
+      java: 17
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+        JYNLO_ANDROID_DIAGNOSTIC_NO_R8: "1"
+    scripts:
+      - name: Confirmar branch e ferramentas
+        script: |
+          set -eu
+          if [ "${CM_BRANCH:-}" != "develop" ]; then
+            echo "Build bloqueada: utilizar exclusivamente a branch develop."
+            exit 1
+          fi
+          node --version
+          npm --version
+          java -version
+      - name: Instalar dependencias
+        script: |
+          set -eu
+          npm install --no-audit --no-fund
+      - name: Verificar app e compatibilidade
+        script: |
+          set -eu
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          npx --no-install expo install --check
+      - name: Testar TypeScript e contratos
+        script: |
+          set -eu
+          npm run typecheck
+          npm run test:all
+      - name: Preparar icone oficial e projeto Android
+        script: |
+          set -eu
+          bash scripts/prepare-jynlo-icon.sh
+          npx --no-install expo prebuild --platform android --no-install
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Gerar APK standalone (release de testes)
+        script: |
+          set -eu
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          test -n "$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/mapping/release/mapping.txt
