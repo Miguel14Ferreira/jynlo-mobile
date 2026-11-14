@@ -53,3 +53,15 @@ test('uploads preserve edits made during slow publishing without a second POST',
  assert.match(home,/finally\{storyInFlight\.current=false;setStoryPublishing\(false\);\}/);
  assert.match(home,/onChangeText=\{value=>\{composerTextRef\.current=value;setComposerText\(value\);\}\}/);
 });
+
+test('Feed displays complete portrait and landscape photos using actual dimensions',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/function FeedPostPhoto\(\{uri,width,label,onExpand\}/);
+ assert.match(home,/onLoad=\{event=>\{/);
+ assert.match(home,/const source=event\.nativeEvent\.source/);
+ assert.match(home,/Math\.round\(width\*dimensions\.height\/dimensions\.width\)/);
+ assert.match(home,/Math\.min\(620,Math\.max\(180,/);
+ assert.match(home,/<FeedPostPhoto uri=\{uri\}/);
+ assert.match(home,/resizeMode="contain"/);
+ assert.match(home,/onExpand=\{\(\)=>setExpandedPostImage\(uri\)\}/);
+});
