@@ -33,8 +33,8 @@ test('editing a post is keyboard-aware',()=>{
 
 test('chat keyboard opening scrolls the focused composer back into view without affecting normal pages',()=>{
  const page=read('src/components/UI.tsx');
- const community=read('app/communities/[id]/chat.tsx');
- const session=read('app/sessions/[id]/chat.tsx');
+ const community=read('src/components/CommunityChatPanel.tsx');
+ const session=read('src/components/SessionChatPanel.tsx');
  assert.match(page,/if\(!autoScrollToEnd\)return/);
  assert.match(page,/Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
  assert.match(page,/Keyboard\.addListener\(event,/);
