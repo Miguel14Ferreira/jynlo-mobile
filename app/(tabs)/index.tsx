@@ -5,6 +5,7 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Load the native media picker only when the user explicitly opens the gallery.
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
+import {mediaRequestSource} from '../../src/lib/protected-media-source';
 import {DEMO_MODE,request} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -173,7 +174,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
              reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
