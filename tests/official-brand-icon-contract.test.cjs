@@ -23,7 +23,9 @@ test('both native Android icon paths are generated from approved artwork',()=>{
  assert.match(pkg.scripts['eas-build-pre-install'],/verify-release\.cjs && bash scripts\/prepare-jynlo-icon\.sh/);
  assert.match(iconScript,/assets\/approved-jynlo-icon\.webp\.base64/);
  assert.match(iconScript,/assets\/jynlo-icon\.png/);
- assert.match(iconScript,/ImageOps\.contain/);
+ assert.match(iconScript,/fit:'contain'/);
+ assert.match(iconScript,/sharp@0\.34\.5/);
+ assert.doesNotMatch(iconScript,/python3 -m venv/);
  assert.match(workflow,/approved-jynlo-icon\.webp\.base64/);
  assert.doesNotMatch(workflow,/raw\.githubusercontent\.com/);
 });
