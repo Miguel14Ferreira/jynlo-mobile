@@ -51,7 +51,6 @@ export default function ChampionshipOwnedEventsScreen(){
   .map(round=>({round,matches:fixtures.filter(f=>f.round===round)}));
  const canManage=organizer&&!closed&&Boolean(auth.token);
  // Never show fixtures/registrations from the previously selected competition.
- const detailsReady=eventId!==null&&loadedEventId===eventId;
  const football=sport==='Futebol'||sport==='Futsal';
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username||!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(chid)||chid<=0){
@@ -86,6 +85,7 @@ export default function ChampionshipOwnedEventsScreen(){
   return()=>{generation.current++;};
  },[load]));
  const eventId=activeEvent?.id??null;
+ const detailsReady=eventId!==null&&loadedEventId===eventId;
  React.useEffect(()=>{setExpandedRounds([]);},[eventId]);
  useFocusEffect(useCallback(()=>{
   if(eventId==null||!auth.token)return;
