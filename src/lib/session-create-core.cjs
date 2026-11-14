@@ -97,9 +97,19 @@ function describeSessionConfirmation(payload,context={}){
  parts.push('Inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas'));
  return parts.join(' · ')+'. O organizador fica automaticamente inscrito.';
 }
+function isValidCustomSport(name,allowedSports){
+ if(typeof name!=='string'||name.length<2||name.length>60||
+    name!==name.trim()||!/^[\p{L}\p{M}][\p{L}\p{M}\p{N} .&'’()/-]*$/u.test(name))
+  return false;
+ const normalize=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT');
+ return !allowedSports.some(existing=>normalize(existing)===normalize(name));
+}
 function createSessionPayload(input,allowedSports,now=Date.now()){
- const sport=String(input.sport||'').trim();
- if(!Array.isArray(allowedSports)||!allowedSports.includes(sport))throw Error('Seleciona uma modalidade do catálogo Jynlo.');
+ const sport=String(input.sport||'').trim().replace(/\s+/g,' ');
+ if(!Array.isArray(allowedSports))throw Error('Catálogo de modalidades indisponível.');
+ const customSport=!allowedSports.includes(sport);
+ if(customSport&&!isValidCustomSport(sport,allowedSports))
+  throw Error('Indica uma modalidade válida ou escolhe uma existente do catálogo.');
  const locationLatitude=input.latitude==null?null:Number(input.latitude);
  const locationLongitude=input.longitude==null?null:Number(input.longitude);
  const hasLatitude=locationLatitude!==null,hasLongitude=locationLongitude!==null;
@@ -140,6 +150,8 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(shareIds.length&&communityId!==null)
   throw Error('Escolhe uma comunidade direta ou partilha entre comunidades, não ambas.');
  const hasCommunity=communityId!==null||shareIds.length>0;
+ if(customSport&&(hasCommunity||venueId!==null||input.seasonGame===true))
+  throw Error('Modalidades sugeridas só podem ser usadas em sessões independentes, sem recinto oficial ou classificação.');
  const registrationOpeningMode=input.registrationOpeningMode??'IMMEDIATE';
  if(!['IMMEDIATE','MANUAL','SCHEDULED'].includes(registrationOpeningMode))
   throw Error('Modo de abertura de inscrições inválido.');
@@ -190,4 +202,4 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   meetingPointInstructions:meetingPointInstructions||null,minParticipants
  };
 }
-module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,detachVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,createSessionPayload};
+module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,detachVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,isValidCustomSport,createSessionPayload};
