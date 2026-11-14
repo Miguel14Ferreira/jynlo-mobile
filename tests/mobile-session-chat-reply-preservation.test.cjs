@@ -6,7 +6,7 @@ const path=require('node:path');
 const code=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
 
 test('session photo uses reply selected when upload started and preserves later selection',()=>{
- const upload=code.slice(code.indexOf('async function uploadPhoto()'),code.indexOf('return <Page>'));
+ const upload=code.slice(code.indexOf('async function uploadPhoto()'),code.indexOf('const recentPhotoIds='));
  assert.match(upload,/const version=generation\.current,originalReplyId=reply\?\.id/);
  assert.match(upload,/sendChatPhoto\('session',id,auth\.token,photo,originalReplyId\)/);
  assert.match(upload,/if\(version!==generation\.current\)return/);
@@ -15,7 +15,7 @@ test('session photo uses reply selected when upload started and preserves later 
 });
 
 test('session PDF completion only clears the reply owned by its upload',()=>{
- const pdf=code.slice(code.indexOf('<ChatPdfComposer target='),code.indexOf('{auth.token&&!closed&&photoReady?'));
+ const pdf=code.slice(code.indexOf('<ChatPdfComposer compact target='),code.indexOf('{auth.token&&!closed&&photoReady?'));
  assert.match(pdf,/replyId=\{reply\?\.id\}/);
  assert.match(pdf,/onSent=\{async\(sentReplyId\)=>\{/);
  assert.match(pdf,/setReply\(current=>current\?\.id===\(sentReplyId\?\?undefined\)\?null:current\)/);
