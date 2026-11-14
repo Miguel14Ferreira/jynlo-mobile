@@ -1,6 +1,6 @@
 {
   "name": "jynlo-mobile",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -12,7 +12,7 @@
     "doctor": "expo-doctor",
     "test:syntax": "node tests/check-ts-syntax.cjs",
     "test:all": "node tests/check-ts-syntax.cjs && node --test tests/*.test.cjs",
-    "eas-build-pre-install": "node scripts/verify-release.cjs",
+    "eas-build-pre-install": "node scripts/verify-release.cjs && bash scripts/prepare-jynlo-icon.sh",
     "check:release": "node scripts/verify-release.cjs --production",
     "check:push": "node scripts/check-push-readiness.cjs"
   },
