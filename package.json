@@ -14,7 +14,8 @@
     "test:all": "node tests/check-ts-syntax.cjs && node --test tests/*.test.cjs",
     "eas-build-pre-install": "node scripts/verify-release.cjs && bash scripts/prepare-jynlo-icon.sh",
     "check:release": "node scripts/verify-release.cjs --production",
-    "check:push": "node scripts/check-push-readiness.cjs"
+    "check:push": "node scripts/check-push-readiness.cjs",
+    "check:app-links": "node scripts/check-android-app-links.cjs"
   },
   "dependencies": {
     "@config-plugins/react-native-webrtc": "15.0.2",
