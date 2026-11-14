@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import {JynloIcon} from './JynloIcon';
 import {CHAT_REACTION_EMOJIS,changeChatReaction,listChatReactions} from '../lib/chat-reactions-api';
@@ -19,12 +19,13 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
  const activeIdentity=useRef(identity);
  activeIdentity.current=identity;
  const idKey=messageIds.filter(id=>Number.isSafeInteger(id)&&id>0).slice(-60).join(',');
+ useEffect(()=>{setSummaries({});setBusyIds(new Set());pending.current.clear();},[identity]);
  useEffect(()=>{
   let active=true;
-  setSummaries({});setBusyIds(new Set());pending.current.clear();
   const ids=idKey.split(',').map(Number).filter(id=>Number.isSafeInteger(id)&&id>0);
   if(!token||!enabled||ids.length===0)return ()=>{active=false;};
   const refresh=()=>{
+   if(AppState.currentState!=='active')return;
    void listChatReactions(kind,conversationId,ids,token).then(data=>{
     if(!active)return;
     setSummaries(current=>{
@@ -49,6 +50,8 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
   }catch{
    // The server may have applied an update before the network failed.
    // Do not optimistically update the reaction or retry a mutation.
+   if(activeIdentity.current===currentIdentity)
+    Alert.alert('Reação não confirmada','Confirma o estado da mensagem antes de voltares a tentar.');
   }finally{
    pending.current.delete(messageId);
    if(activeIdentity.current===currentIdentity)setBusyIds(previous=>{
