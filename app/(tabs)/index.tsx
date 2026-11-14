@@ -303,6 +303,9 @@ export default function JynloFeedHome(){
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
   const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
+  // Authoritative delete/hide responses must outlive feed requests that were
+  // already in flight. Clear a tombstone only when the backend omits the item.
+  const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
   const recentlyConfirmedStories=useRef<Array<{item:SocialStory;until:number}>>([]);
@@ -321,6 +324,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
+      confirmedRemovedFeedKeys.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
@@ -343,8 +347,17 @@ export default function JynloFeedHome(){
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
     if(fetches[0].status==='fulfilled'){
       const received=value(0,[] as FeedItem[]);
-      recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.until>Date.now()&&!received.some(item=>item.postId===entry.item.postId));
-      setPosts([...recentlyConfirmedPosts.current.map(entry=>entry.item),...received]);
+      const receivedKeys=new Set(received.map(item=>feedEntryKey(item)).filter(Boolean));
+      // A response fetched before a confirmed deletion may still include the
+      // deleted row. Do not resurrect it; drop the guard once the server agrees.
+      for(const key of confirmedRemovedFeedKeys.current){
+        if(!receivedKeys.has(key))confirmedRemovedFeedKeys.current.delete(key);
+      }
+      const visibleReceived=received.filter(item=>!confirmedRemovedFeedKeys.current.has(feedEntryKey(item)));
+      recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>
+        entry.until>Date.now()&&!received.some(item=>item.postId===entry.item.postId)&&
+        !confirmedRemovedFeedKeys.current.has(feedEntryKey(entry.item)));
+      setPosts([...recentlyConfirmedPosts.current.map(entry=>entry.item),...visibleReceived]);
     }
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled'){
@@ -459,7 +472,12 @@ export default function JynloFeedHome(){
         if(busyPost!==null||feedIdentity.current!==identity||!actor)return;
         setBusyPost(id);
         void deletePost(id,actor).then(()=>{
-          if(feedIdentity.current===identity){recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);setPosts(old=>old.filter(x=>x.postId!==id));}
+          if(feedIdentity.current===identity){
+            const key=feedEntryKey(item);
+            if(key)confirmedRemovedFeedKeys.current.add(key);
+            recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);
+            setPosts(old=>old.filter(x=>x.postId!==id));
+          }
         }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
         .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
       }}
@@ -471,7 +489,11 @@ export default function JynloFeedHome(){
     const identity=currentFeedIdentity,id=item.sessionId,actor=auth.token;
     setBusyPost(-id);
     void hideAttendanceActivity(id,actor).then(()=>{
-      if(feedIdentity.current===identity)setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
+      if(feedIdentity.current===identity){
+        const key=feedEntryKey(item);
+        if(key)confirmedRemovedFeedKeys.current.add(key);
+        setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
+      }
     }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
     .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
   }
