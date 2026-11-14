@@ -10,7 +10,7 @@ test('switching league/cup never renders the fixtures from a previously selected
  assert.match(source,/const \[loadedEventId,setLoadedEventId\]=useState<number\|null>\(null\)/);
  assert.match(source,/const detailsReady=eventId!==null&&loadedEventId===eventId/);
  assert.match(source,/setLoadedEventId\(null\);setFixtures\(\[\]\);setRegistrations\(\[\]\);setStandings\(null\)/);
- assert.match(source,/setLoadedEventId\(eventId\)/);
+ assert.match(source,/setLoadedEventId\(complete\?eventId:null\)/);
  assert.match(source,/activeEvent&&detailsReady\?<View style=\{styles\.card\}>/);
  assert.match(source,/disabled=\{busy\|\|pending\.current\} onPress=\{\(\)=>setSelected\(item\.id\)\}/);
 });
