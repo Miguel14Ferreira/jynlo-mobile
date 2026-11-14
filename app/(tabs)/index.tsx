@@ -10,6 +10,7 @@ import {DEMO_MODE,request} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
+import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
 import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib/attendance-digest.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
@@ -34,10 +35,6 @@ const maxPostLength=1000;
 const startLetter=(s:string)=>s.replace(/^@/,'').charAt(0).toUpperCase()||'J';
 const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return 'Recentemente';const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return 'Agora';if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
-// Session attendance entries can share a session id across different people.
-// Keep authoritative removal guards scoped to the actual attendee.
-const removedFeedKey=(item:FeedItem)=>item.type==='SESSION_ATTENDED'&&item.sessionId
- ?'attendance:'+item.sessionId+':'+item.authorUsername.toLowerCase():feedEntryKey(item);
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
 const StoryCameraCapture=lazy(()=>import('../../src/components/StoryCameraCapture'));
@@ -351,13 +348,10 @@ export default function JynloFeedHome(){
     const value=<T,>(i:number,fallback:T):T=>{const entry=fetches[i];return entry?.status==='fulfilled'?(entry as PromiseFulfilledResult<T>).value:fallback;};
     if(fetches[0].status==='fulfilled'){
       const received=value(0,[] as FeedItem[]);
-      const receivedKeys=new Set(received.map(item=>removedFeedKey(item)).filter(Boolean));
-      // A response fetched before a confirmed deletion may still include the
-      // deleted row. Do not resurrect it; drop the guard once the server agrees.
-      for(const key of confirmedRemovedFeedKeys.current){
-        if(!receivedKeys.has(key))confirmedRemovedFeedKeys.current.delete(key);
-      }
-      const visibleReceived=received.filter(item=>!confirmedRemovedFeedKeys.current.has(removedFeedKey(item)));
+      // A pre-delete GET may finish after a successful DELETE.
+      const reconciled=reconcileRemovedFeedKeys(confirmedRemovedFeedKeys.current,received);
+      confirmedRemovedFeedKeys.current=reconciled.removed;
+      const visibleReceived=reconciled.visible;
       recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>
         entry.until>Date.now()&&!received.some(item=>item.postId===entry.item.postId)&&
         !confirmedRemovedFeedKeys.current.has(removedFeedKey(entry.item)));
