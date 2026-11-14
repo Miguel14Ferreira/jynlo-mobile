@@ -59,6 +59,10 @@ function nativeRouteForWebLink(path){
     return url.pathname+'?guest='+encodeURIComponent(guest);
    return url.pathname;
   }
+  // Published post links lead to the existing authenticated post detail screen.
+  // The detail API remains responsible for authorization.
+  const post=url.pathname.match(/^\/posts\/([1-9]\d*)$/);
+  if(post&&Number.isSafeInteger(Number(post[1])))return '/posts/'+post[1];
   const venue=url.pathname.match(/^\/venues\/([1-9]\d*)$/);
   if(venue&&Number.isSafeInteger(Number(venue[1])))return url.pathname;
   if(['/privacy','/terms','/delete-account'].includes(url.pathname))
