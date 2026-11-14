@@ -10,7 +10,8 @@ test('authenticated media uploads explicitly omit browser credentials', () => {
   const source = fs.readFileSync(path.join(__dirname, '../src/lib/social-feed-api.ts'), 'utf8');
   const upload = source.match(/async function sendMedia\([\s\S]*?\n}\n/);
   assert.ok(upload, 'expected sendMedia upload implementation');
-  assert.match(upload[0], /fetch\(`\$\{API_BASE}\$\{path}`,\s*\{[\s\S]*?credentials:\s*'omit'/);
+  assert.match(source, /import \{fetch as expoFetch\} from 'expo\/fetch'/);
+  assert.match(upload[0], /expoFetch\(`\$\{API_BASE}\$\{path}`,\s*\{[\s\S]*?credentials:\s*'omit'/);
   assert.match(upload[0], /Authorization:\s*`Bearer \$\{token}`/);
   assert.doesNotMatch(upload[0], /['"]Cookie['"]\s*:/);
 });
