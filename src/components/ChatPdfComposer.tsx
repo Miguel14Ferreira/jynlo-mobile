@@ -14,7 +14,7 @@ type Props={target:PdfChatTarget;token:string|null;enabled:boolean;compact?:bool
 export default function ChatPdfComposer({target,token,enabled,replyId,onSent,compact=false}:Props){
  const [selected,setSelected]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- const busyRef=useRef(false),active=useRef(false),blocked=useRef(false);
+ const busyRef=useRef(false),pickerRef=useRef(false),active=useRef(false),blocked=useRef(false);
  const generation=useRef(0);
  const selectedRef=useRef<DocumentPicker.DocumentPickerAsset|null>(null);
  const uploadingRef=useRef<DocumentPicker.DocumentPickerAsset|null>(null);
@@ -40,8 +40,9 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
   };
  },[reset,target.scope,target.id,token]));
  async function choose(){
-  if(!enabled||!token||busyRef.current)return;
+  if(!enabled||!token||busyRef.current||pickerRef.current)return;
   const version=generation.current;
+  pickerRef.current=true;
   setError('');
   try{
    const picked=await DocumentPicker.getDocumentAsync({
@@ -58,7 +59,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
   }catch(e){
    if(active.current&&generation.current===version)
     setError(e instanceof Error?e.message:'Não foi possível selecionar o PDF.');
-  }
+  }finally{pickerRef.current=false;}
  }
  async function send(){
   const asset=selectedRef.current;
@@ -92,9 +93,9 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
  if(!enabled||!token)return null;
  return <View style={compact?(selected?styles.compactExpanded:styles.compactPanel):styles.panel}>
   {busyRef.current&&!selected?<Text style={styles.note}>Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.</Text>:null}
-  {compact?<Pressable accessibilityRole="button" accessibilityLabel="Anexar documento PDF" disabled={busy||busyRef.current}
+  {compact?<Pressable accessibilityRole="button" accessibilityLabel="Anexar documento PDF" disabled={busy||busyRef.current||pickerRef.current}
    style={styles.iconAction} onPress={()=>{void choose();}}><JynloIcon name="document" size={23} color={C.mint}/></Pressable>:
-  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current} onPress={()=>{void choose();}}/>}
+  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current||pickerRef.current} onPress={()=>{void choose();}}/>}
   {selected?<View style={styles.details}>
    <Text style={styles.name}>{selected.name}</Text>
    <Text style={styles.note}>{Math.ceil((selected.size||0)/1024)} KB · O ficheiro só é enviado após confirmação.</Text>
