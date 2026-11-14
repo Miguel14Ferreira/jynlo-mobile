@@ -25,6 +25,7 @@ test('location sharing requires foreground permission and an explicit send',()=>
  assert.match(view,/setDraft\(current=>\[current.trim\(\),url\].filter\(Boolean\).join\('\\n'\)\)/);
  assert.match(view,/Partilhar localização atual/);
  assert.match(view,/Abrir localização no mapa/);
+ assert.match(view,/chatLocationUrl\(m.body\)/);
  assert.doesNotMatch(view,/postSessionChat\(id,url/);
 });
 test('historic GIFs are safely decoded and only valid media URL is displayed',()=>{
@@ -41,4 +42,15 @@ test('session chat does not permit invitations or bypass closed access',()=>{
  assert.match(view,/auth.token&&muteKnown&&!closed/);
  assert.match(view,/auth.token&&!closed\?<Button title=\{locationBusy/);
  assert.match(view,/const accessRevoked=e instanceof ApiError/);
+});
+
+test('map links inside messages have bounded coordinates and safe HTTPS host',()=>{
+ const {chatLocationUrl}=require('../src/lib/chat-location.cjs');
+ const link='https://www.google.com/maps?q=38.71667,-9.13333';
+ assert.equal(chatLocationUrl('Vamos jogar aqui:\n'+link),link);
+ assert.equal(chatLocationUrl('https://www.google.com/maps?q=123,-9'),null);
+ assert.equal(chatLocationUrl('http://www.google.com/maps?q=38,-9'),null);
+ assert.equal(chatLocationUrl('https://evil.example/maps?q=38,-9'),null);
+ assert.equal(chatLocationUrl('https://www.google.com/maps?q=38,-181'),null);
+ assert.equal(chatLocationUrl(null),null);
 });
