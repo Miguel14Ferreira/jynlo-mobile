@@ -10,7 +10,7 @@ const screens={
 test('all three conversations offer message replies, edits, deletion and secure media',()=>{
  for(const [kind,s] of Object.entries(screens)){
   for(const re of [/ChatPdfComposer/,/SecureChatAttachment/,/sendChatPhotoAlbum\(/,/choosePhoto\('camera'\)/,
-   /accessibilityLabel="Editar mensagem"/,/Responder a |Responder a\s/,/deleteMessage\(/]){
+   /accessibilityLabel="Editar mensagem"/,/replyToMessageId|replyTarget|setReply/,/deleteMessage\(/]){
    assert.match(s,re,kind+': '+re);
   }
  }
