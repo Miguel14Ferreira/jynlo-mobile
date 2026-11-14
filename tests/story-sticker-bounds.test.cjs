@@ -26,6 +26,15 @@ test('zoom increases safe margins without changing rotation or zoom',()=>{
  assert.equal(result.x,zoomed.maxX);
  assert.equal(result.y,zoomed.minY);
 });
+test('rotation grows the safe edge margin when long captions turn sideways',()=>{
+ const area={width:320,height:400},sticker={width:220,height:40};
+ const normal=stickerBounds(area,sticker,1,0);
+ const rotated=stickerBounds(area,sticker,1,90);
+ assert.ok(rotated.minY>normal.minY);
+ assert.ok(rotated.minX<normal.minX);
+ const moved=clampStickerPosition({x:50,y:100,rotation:90,zoom:1},area,sticker);
+ assert.equal(moved.y,rotated.maxY);
+});
 test('extremely large sticker remains centered when it cannot fit',()=>{
  const result=clampStickerPosition({x:2,y:99,rotation:0,zoom:3},{width:200,height:220},{width:300,height:160});
  assert.equal(result.x,50);
