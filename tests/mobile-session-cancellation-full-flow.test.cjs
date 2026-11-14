@@ -35,7 +35,7 @@ test('cancellation text tolerates legacy null or invalid date values',()=>{
 test('both session detail and feed use the same public-only notice generator',()=>{
  assert.match(detail,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
  assert.match(feed,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
- assert.match(detail,/setCancelledShare\(\{id,actor:actorUsername,text:cancellationNotice\(detail\)\}\)/);
+ assert.match(detail,/setCancelledShare\(\{id,actor:actorUsername,text:cancellationNotice\(sessionAtPrompt\)\}\)/);
  assert.match(feed,/Share\.share\(\{message:cancellationNotice\(item\)\}\)/);
 });
 test('detail share follows a verified cancellation response, not a pending action',()=>{
