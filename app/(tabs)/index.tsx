@@ -43,9 +43,13 @@ function MediaVideo({uri,story=false,paused=false,muted=false,onEnd}:{uri:string
  </Suspense>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
+  const {token}=useAuth();
   const src=mediaSource(image);
-  return <View style={[styles.avatar,{width:size,height:size,borderRadius:size/2}]}>{src?
-    <Image source={{uri:src}} style={{width:size,height:size,borderRadius:size/2}}/>:
+  const [failed,setFailed]=useState(false);
+  useEffect(()=>{setFailed(false);},[src,token]);
+  return <View style={[styles.avatar,{width:size,height:size,borderRadius:size/2}]}>{src&&!failed?
+    <Image source={mediaRequestSource(src,token)} onError={()=>setFailed(true)}
+      style={{width:size,height:size,borderRadius:size/2}}/>:
     <Text style={[styles.avatarLetter,{fontSize:size*.38}]}>{startLetter(name)}</Text>}</View>;
 }
 function SectionHeader({eyebrow,title,action,onPress}:{eyebrow?:string;title:string;action?:string;onPress?:()=>void}){
@@ -985,7 +989,7 @@ export default function JynloFeedHome(){
               storyTagsRef.current=updated;setStoryTags(updated);
              }catch(e){Alert.alert('Identificações',e instanceof Error?e.message:'Limite de identificações atingido.');}
             }}>
-            {friend.profilePicUrl?<Image source={{uri:resolveJynloMedia(friend.profilePicUrl)||undefined}} style={styles.storyFriendAvatar}/>:
+            {friend.profilePicUrl?<Image source={mediaRequestSource(resolveJynloMedia(friend.profilePicUrl)||'',auth.token)} style={styles.storyFriendAvatar}/>:
              <View style={styles.storyFriendAvatarPlaceholder}><Text style={{color:WHITE,fontWeight:'800'}}>{friend.username.slice(0,1).toUpperCase()}</Text></View>}
             <View style={{flex:1}}><Text style={styles.storyFriendName}>{friend.nickname||friend.fullName||friend.username}</Text>
              <Text style={styles.storiesIntro}>@{friend.username}</Text></View>
