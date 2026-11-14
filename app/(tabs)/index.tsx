@@ -11,7 +11,7 @@ import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
-import {rememberPostLike,reconcilePostLikes} from '../../src/lib/feed-interaction-reconciliation.cjs';
+import {rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts} from '../../src/lib/feed-interaction-reconciliation.cjs';
 import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib/attendance-digest.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
@@ -307,6 +307,7 @@ export default function JynloFeedHome(){
   const feedIdentity=useRef('');
   const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
   const verifiedPostLikes=useRef<Map<number,{likedByMe:boolean;likeCount:number;until:number}>>(new Map());
+  const confirmedCommentFloors=useRef<Map<number,{count:number;until:number}>>(new Map());
   // Authoritative delete/hide responses must outlive feed requests that were
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
@@ -333,7 +334,7 @@ export default function JynloFeedHome(){
       postActionInFlight.current=false;commentWriteLock.current=false;
       postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
       setPublishing(false);setStoryPublishing(false);
-      confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();
+      confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
@@ -366,7 +367,9 @@ export default function JynloFeedHome(){
       const merged=[...recentlyConfirmedPosts.current.map(entry=>entry.item),...visibleReceived];
       const likes=reconcilePostLikes(verifiedPostLikes.current,merged);
       verifiedPostLikes.current=likes.receipts;
-      setPosts(likes.posts);
+      const comments=reconcileCommentCounts(confirmedCommentFloors.current,likes.posts);
+      confirmedCommentFloors.current=comments.floors;
+      setPosts(comments.posts);
     }
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled'){
@@ -484,7 +487,7 @@ export default function JynloFeedHome(){
           if(feedIdentity.current===identity){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
-            verifiedPostLikes.current.delete(id);
+            verifiedPostLikes.current.delete(id);confirmedCommentFloors.current.delete(id);
             recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
@@ -727,17 +730,28 @@ export default function JynloFeedHome(){
     if(!requireLogin()||busyPost!==null||commentWriteLock.current||!commentText.trim()||
       expandedComments!==postId||!auth.token||!auth.username)return;
     const account=feedIdentity.current,requestId=commentsRequest.current,body=commentText.trim();
+    const previousCount=posts.find(item=>item.type==='POST'&&item.postId===postId)?.commentCount??0;
     commentWriteLock.current=true;setBusyPost(postId);
     try{
       const created=await addPostComment(postId,body,auth.token,auth.username);
       if(!created||!Number.isSafeInteger(created.id)||created.id<=0||created.postId!==postId||
          created.content?.trim()!==body)
         throw Error('O servidor não confirmou o comentário. Verifica a conversa antes de repetir.');
-      if(account===feedIdentity.current&&requestId===commentsRequest.current){
-        setComments(prev=>prev.some(item=>item.id===created.id)?prev:[...prev,created]);
-        setCommentText(current=>current.trim()===body?'':current);
+      if(account===feedIdentity.current){
+        // The POST was persisted. Until a later GET includes it, ignore old
+        // aggregate counts returned by feed requests already in flight.
+        const floor=Math.max(previousCount,confirmedCommentFloors.current.get(postId)?.count??0)+1;
+        confirmedCommentFloors.current=rememberCommentFloor(confirmedCommentFloors.current,postId,floor);
+        const apply=(item:FeedItem)=>item.type==='POST'&&item.postId===postId?
+          {...item,commentCount:Math.max(item.commentCount||0,floor)}:item;
+        recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({...entry,item:apply(entry.item)}));
+        setPosts(current=>current.map(apply));
+        if(requestId===commentsRequest.current){
+          setComments(prev=>prev.some(item=>item.id===created.id)?prev:[...prev,created]);
+          setCommentText(current=>current.trim()===body?'':current);
+        }
+        await load();
       }
-      if(account===feedIdentity.current)await load();
     }catch(e){
       if(account===feedIdentity.current&&requestId===commentsRequest.current)
         Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');
