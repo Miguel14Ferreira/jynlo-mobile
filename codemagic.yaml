@@ -41,6 +41,13 @@ workflows:
           set -eu
           npm run typecheck
           npm run test:all
+      - name: Validar configuração nativa Android e Firebase opcional
+        script: |
+          set -eu
+          # Use JYNLO_FIREBASE_ANDROID_JSON_B64 from an encrypted Codemagic
+          # environment group, or GOOGLE_SERVICES_JSON as an existing file path.
+          # The secret is decoded outside the checkout and never printed.
+          node scripts/prepare-android-native-config.cjs
       - name: Preparar icone oficial e projeto Android
         script: |
           set -eu
