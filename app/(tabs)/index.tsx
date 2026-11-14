@@ -557,7 +557,12 @@ export default function JynloFeedHome(){
     const revision=postComposerRevision.current;
     postInFlight.current=true;setPublishing(true);
     try{
-      await publishPost(body,media,actor,username,place);
+      const created=await publishPost(body,media,actor,username,place);
+      // Show the server-confirmed item immediately. A delayed feed refresh must
+      // never make a successful post look as if it vanished.
+      if(feedIdentity.current===`${username}:${actor}`){
+        setPosts(current=>[created,...current.filter(item=>item.postId!==created.postId)]);
+      }
       // A user may have kept typing or selected another file during the upload.
       // The server has published the original snapshot, never discard newer edits.
       if(feedIdentity.current===`${username}:${actor}`&&
@@ -590,7 +595,10 @@ export default function JynloFeedHome(){
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);
     try{
-      await publishStory(body,media,actor,username,null,geometry,details);
+      const created=await publishStory(body,media,actor,username,null,geometry,details);
+      if(feedIdentity.current===`${username}:${actor}`){
+        setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
+      }
       if(feedIdentity.current===`${username}:${actor}`&&
          storyComposerRevision.current===revision&&storyComposerRef.current){
         const currentGeometry=storyGeometryRef.current;
