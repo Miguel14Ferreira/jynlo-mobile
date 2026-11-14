@@ -502,7 +502,7 @@ export default function DirectConversation(){
     {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={16} color={C.mint}/><Text style={styles.replyActionText}>Responder</Text></View></Pressable>:null}
     {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
    </View>
-   {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react}/>:null}
+   {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
