@@ -11,12 +11,12 @@ export default function PostImageLightbox({photos,onClose}:Props){
  const entries=photos?.uris||[];
  const initial=Math.max(0,Math.min(entries.length-1,photos?.index??0));
  const [index,setIndex]=useState(initial);
- const [pageWidth,setPageWidth]=useState(0);
+ const [viewport,setViewport]=useState({width:0,height:0});
  const scroll=useRef<ScrollView|null>(null);
  const moveTo=(next:number)=>{
   const selected=Math.max(0,Math.min(entries.length-1,next));
   setIndex(selected);
-  if(pageWidth>0)scroll.current?.scrollTo({x:selected*pageWidth,animated:true});
+  if(viewport.width>0)scroll.current?.scrollTo({x:selected*viewport.width,animated:true});
  };
  return <Modal visible={Boolean(photos&&entries.length)} animationType="fade"
   presentationStyle="fullScreen" onRequestClose={onClose}>
@@ -28,18 +28,20 @@ export default function PostImageLightbox({photos,onClose}:Props){
    </View>
    <View style={styles.photoArea} onLayout={event=>{
     const width=Math.round(event.nativeEvent.layout.width);
-    if(width>0&&width!==pageWidth){setPageWidth(width);}
+    const height=Math.round(event.nativeEvent.layout.height);
+    if(width>0&&height>0&&(width!==viewport.width||height!==viewport.height))
+     setViewport({width,height});
    }}>
-    {pageWidth>0?<ScrollView ref={scroll} key={pageWidth} style={{flex:1}} horizontal pagingEnabled
+    {viewport.width>0&&viewport.height>0?<ScrollView ref={scroll} key={viewport.width+'x'+viewport.height} style={{flex:1}} horizontal pagingEnabled
       showsHorizontalScrollIndicator={false}
-      contentOffset={{x:index*pageWidth,y:0}}
+      contentOffset={{x:index*viewport.width,y:0}}
       onMomentumScrollEnd={event=>{
-       const next=Math.round(event.nativeEvent.contentOffset.x/pageWidth);
+       const next=Math.round(event.nativeEvent.contentOffset.x/viewport.width);
        setIndex(Math.max(0,Math.min(entries.length-1,next)));
       }}
       accessibilityLabel={'Fotografias ampliadas, '+entries.length+' imagens'}>
-      {entries.map((uri,i)=><View key={uri+'-'+i} style={{width:pageWidth,flex:1}}>
-       <Image source={{uri}} resizeMode="contain" style={styles.image}
+      {entries.map((uri,i)=><View key={uri+'-'+i} style={{width:viewport.width,height:viewport.height}}>
+       <Image source={{uri}} resizeMode="contain" style={{width:viewport.width,height:viewport.height}}
         accessibilityLabel={'Fotografia '+(i+1)+' de '+entries.length}/>
       </View>)}
     </ScrollView>:null}
@@ -64,7 +66,7 @@ const styles=StyleSheet.create({
  counter:{fontSize:14,color:'#fff',fontWeight:'800'},
  close:{height:44,width:44,alignItems:'center',justifyContent:'center'},
  photoArea:{flex:1,alignItems:'center',justifyContent:'center'},
- image:{width:'100%',height:'100%'},
+
  navigation:{minHeight:68,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:18,gap:12},
  arrow:{height:48,width:48,borderRadius:15,backgroundColor:'#173A43',alignItems:'center',justifyContent:'center'},
  disabled:{opacity:.3},
