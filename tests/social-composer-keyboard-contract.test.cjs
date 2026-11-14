@@ -31,3 +31,14 @@ test('post media album uses shared icons for reordering without losing file-leve
  assert.doesNotMatch(source,/<Text style=\{styles\.removeMediaText\}>[←→]<\/Text>/);
  assert.match(source,/changeComposerMedia\(prev=>moveAlbumItem/);
 });
+
+test('editing a published post retains focused description and location above keyboard',()=>{
+ const edit=fs.readFileSync(path.join(__dirname,'..','src','components','PostEditSheet.tsx'),'utf8');
+ assert.match(edit,/Keyboard\.addListener\(showEvent/);
+ assert.match(edit,/return\(\)=>subscription\.remove\(\)/);
+ assert.match(edit,/<ScrollView ref=\{editorScrollRef\}/);
+ assert.match(edit,/scrollResponderScrollNativeHandleToKeyboard\(focused,28,true\)/);
+ assert.match(edit,/accessibilityLabel="Editar descrição da publicação"/);
+ assert.match(edit,/accessibilityLabel="Editar localização da publicação"/);
+ assert.ok((edit.match(/onFocus=\{event=>editorScrollRef\.current\?\.scrollResponderScrollNativeHandleToKeyboard/g)||[]).length===2);
+});
