@@ -27,3 +27,25 @@ test('feed and native Story capture both use the same validated parser',()=>{
  assert.match(feed,/pickerMediaMime\(asset\)/);
  assert.match(camera,/pickerMediaMime\(asset\)/);
 });
+
+test('camera permission denial offers settings without blocking the gallery',()=>{
+ const feed=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ const story=fs.readFileSync(path.join(__dirname,'..','src','components','StoryCameraCapture.tsx'),'utf8');
+ assert.match(feed,/if\(!permission\.granted\)/);
+ assert.match(feed,/Linking\.openSettings\(\)/);
+ assert.match(story,/setPermissionDenied\(true\)/);
+ assert.match(story,/permissionDenied\?<Pressable accessibilityRole="button"/);
+ assert.match(story,/Linking\.openSettings\(\)/);
+ assert.match(story,/onPickGallery/);
+ assert.match(feed,/source==='camera'/);
+ assert.match(feed,/launchImageLibraryAsync/);
+});
+test('media selection prevents duplicate pickers and stale cross-account uploads',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ assert.match(screen,/mediaPickerInFlight\.current\)return/);
+ assert.match(screen,/mediaPickerInFlight\.current=true/);
+ assert.match(screen,/finally\{mediaPickerInFlight\.current=false;\}/);
+ assert.match(screen,/activeStoryAccount\.current!==actorToken/);
+ assert.match(screen,/postComposerRevision\.current!==postRevision/);
+ assert.match(screen,/storyComposerRevision\.current===storyRevision/);
+});
