@@ -53,3 +53,17 @@ test('group chat mute is persisted server-side and verified with readback',()=>{
   assert.match(s,/muteKnown&&!/);
  }
 });
+
+test('all chats expose the same collapsed attachment tray instead of long button stacks',()=>{
+ for(const [kind,source] of Object.entries(screens)){
+  assert.match(source,/const \[attachmentsOpen,setAttachmentsOpen\]=useState\(false\)/,kind);
+  assert.match(source,/accessibilityState=\{\{expanded:attachmentsOpen\}\}/,kind);
+  assert.match(source,/attachmentsOpen\?'Fechar anexos':'＋ Anexar ficheiro'/,kind);
+  assert.match(source,/onPress=\{\(\)=>setAttachmentsOpen\(value=>!value\)\}/,kind);
+  assert.match(source,/styles\.attachmentOptions/,kind);
+ }
+ for(const kind of ['community','session']){
+  assert.match(screens[kind],/attachmentsOpen&&!/,kind);
+  assert.match(screens[kind],/setAttachmentsOpen\(false\)/,kind);
+ }
+});
