@@ -28,6 +28,13 @@ test('backend convergence retires the verified receipt',()=>{
  assert.deepEqual(second.posts,[post(42,true,5)]);
 });
 
+test('new interactions from other users do not freeze a converged like count',()=>{
+ const receipts=rememberPostLike(new Map(),42,{likedByMe:true,likeCount:5},1000);
+ const result=reconcilePostLikes(receipts,[post(42,true,9)],2000);
+ assert.equal(result.receipts.size,0);
+ assert.deepEqual(result.posts,[post(42,true,9)]);
+});
+
 test('expired receipts are not persisted forever',()=>{
  const receipts=rememberPostLike(new Map(),42,{likedByMe:true,likeCount:5},1000);
  const result=reconcilePostLikes(receipts,[post(42,false,4)],1000+RECEIPT_TTL_MS+1);
