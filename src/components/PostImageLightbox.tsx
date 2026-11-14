@@ -3,12 +3,15 @@ import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-nativ
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {JynloIcon} from './JynloIcon';
 import {CloseIconButton} from './CloseIconButton';
+import {useAuth} from '../lib/auth';
+import {mediaRequestSource} from '../lib/protected-media-source';
 
 export type ExpandedPostPhotos={uris:string[];index:number};
 type Props={photos:ExpandedPostPhotos|null;onClose:()=>void};
 
 /** Full-screen, uncropped photo review with album navigation and visible exit. */
 export default function PostImageLightbox({photos,onClose}:Props){
+ const {token}=useAuth();
  const entries=photos?.uris||[];
  const initial=Math.max(0,Math.min(entries.length-1,photos?.index??0));
  const [index,setIndex]=useState(initial);
@@ -41,7 +44,7 @@ export default function PostImageLightbox({photos,onClose}:Props){
       }}
       accessibilityLabel={'Fotografias ampliadas, '+entries.length+' imagens'}>
       {entries.map((uri,i)=><View key={uri+'-'+i} style={{width:viewport.width,height:viewport.height}}>
-       <Image source={{uri}} resizeMode="contain" style={{width:viewport.width,height:viewport.height}}
+       <Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={{width:viewport.width,height:viewport.height}}
         accessibilityLabel={'Fotografia '+(i+1)+' de '+entries.length}/>
       </View>)}
     </ScrollView>:null}
