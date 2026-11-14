@@ -32,6 +32,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const inlineHistoryRef=useRef<ScrollView|null>(null);
  const inlineNearBottom=useRef(true);
  const previousLatestMessageId=useRef(0);
+ const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
@@ -88,7 +89,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
-   if(latest>0)void markSessionChatRead(id,latest,auth.token).catch(()=>{});
+   if(latest>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
+    lastAcknowledgedMessageId.current=latest;
+    void markSessionChatRead(id,latest,auth.token).catch(()=>{});
+   }
   }catch(e){
    if(version!==generation.current)return;
    const accessRevoked=e instanceof ApiError&&[401,403,404,409,410].includes(e.status);
@@ -122,6 +126,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
   if(changedAccountOrSession){
+   lastAcknowledgedMessageId.current=0;
    // Preserve unsent text, replies and selected media on ordinary refocus.
    // Clear everything only when the session or authenticated account changed.
    inlineNearBottom.current=true;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);
@@ -362,7 +367,14 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
-    if(inlineNearBottom.current)setUnseenBelow(false);}}
+    if(inlineNearBottom.current){
+     setUnseenBelow(false);
+     const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+     if(auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
+      lastAcknowledgedMessageId.current=latest;
+      void markSessionChatRead(id,latest,auth.token).catch(()=>{});
+     }
+    }}}
    onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
    contentContainerStyle={{gap:8,padding:8}}>
     {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
