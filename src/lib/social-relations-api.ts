@@ -18,7 +18,7 @@ export async function postLikers(postId:number,token:string|null):Promise<Social
  return request<SocialPerson[]>(`/api/feed/posts/${postId}/likers`,{token});
 }
 
-export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number};
+export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number;requestPending?:boolean;privateProfile?:boolean};
 export type PublicSportsProfile=SocialPerson&{
  bio?:string|null;location?:string|null;country?:string|null;
  favoriteSports?:string|null;skillLevel?:string|null;joinDateDisplay?:string|null;
