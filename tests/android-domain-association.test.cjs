@@ -21,8 +21,8 @@ test('the Android release exposes an explicit domain verification command',()=>{
  const pkg=require('../package.json');
  assert.equal(pkg.scripts['check:app-links'],'node scripts/check-android-app-links.cjs');
  const src=fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8');
- assert.match(src,/const domain='d24sports\\.com'/);
- assert.match(src,/const uri='https:\\/\\/'\\+domain/);
+ assert.ok(src.includes("const domain='d24sports.com'"));
+ assert.ok(src.includes("const uri='https://'"+'+domain'));
  assert.match(src,/\.well-known\/assetlinks\.json/);
  assert.match(src,/setTimeout\(10000/);
 });
