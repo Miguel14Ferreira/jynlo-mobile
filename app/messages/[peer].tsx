@@ -584,7 +584,7 @@ export default function DirectConversation(){
     onFocus={()=>{composerFocused.current=true;nearBottom.current=true;conversationScroll.current?.scrollToEnd({animated:true});}}
     onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
-   <Pressable accessibilityRole="button" style={[styles.send,sending&&{opacity:0.5}]}
+   <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem privada'} style={[styles.send,sending&&{opacity:0.5}]}
     disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
