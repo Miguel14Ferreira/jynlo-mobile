@@ -50,3 +50,10 @@ test('partial fixture API failures cannot enable scoring and expose retry instea
  assert.match(source,/activeEvent&&detailsFailed\?<Button secondary title="Tentar carregar/);
  assert.match(source,/onPress=\{\(\)=>setDetailsRefresh\(value=>value\+1\)\}/);
 });
+
+test('championship organizer privileges are revoked before every membership recheck',()=>{
+ const source=read('app/communities/[id]/championships/events.tsx');
+ assert.match(source,/setLoading\(true\);setError\(''\);setOrganizer\(false\);setClosed\(true\);setTeams\(\[\]\)/);
+ assert.match(source,/const canManage=organizer&&!closed&&!loading&&Boolean\(auth\.token\)/);
+ assert.match(source,/setOrganizer\(role==='OWNER'\|\|role==='ADMIN'\)/);
+});
