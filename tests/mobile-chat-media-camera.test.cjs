@@ -13,7 +13,7 @@ for(const screen of ['app/messages/[peer].tsx','src/components/CommunityChatPane
   assert.match(code,/launchImageLibraryAsync\(\{mediaTypes:\['images','videos'\]/);
   assert.match(code,/allowsMultipleSelection:true,selectionLimit:remaining/);
   assert.match(code,/appendChatMediaSelection\(current,(?:chosen|selected)\.assets\)/);
-  assert.match(code,/title="Abrir câmara"/);
+  assert.match(code,/accessibilityLabel="Abrir câmara"/);
   assert.match(code,/void choosePhoto\('camera'\)/);
   assert.match(code,/accessibilityLabel="Legenda dos anexos"/);
  });
