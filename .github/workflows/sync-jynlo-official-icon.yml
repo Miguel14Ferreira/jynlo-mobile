@@ -22,9 +22,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --silent --show-error \
-            'https://raw.githubusercontent.com/Miguel14Ferreira/jynlo-web-FE/b54e4e7a878a1e9cfec4b90a59c85b79304f768b/src/assets/jynlo-icon-approved.webp' \
-            -o /tmp/jynlo-approved.webp
+          base64 --decode assets/approved-jynlo-icon.webp.base64 > /tmp/jynlo-approved.webp
           python3 - <<'PY'
           from PIL import Image, ImageOps
           from pathlib import Path
