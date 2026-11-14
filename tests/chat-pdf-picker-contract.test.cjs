@@ -12,6 +12,7 @@ test('PDF picker opens at most once while native document selection is pending',
  assert.match(composer,/pickerRef\.current=true;/);
  assert.match(composer,/finally\{pickerRef\.current=false;\}/);
  assert.match(composer,/disabled=\{busy\|\|busyRef\.current\|\|pickerRef\.current\}/);
+ assert.match(composer,/if\(!asset\|\|!enabled\|\|!token\|\|busyRef\.current\|\|pickerRef\.current\|\|blocked\.current\)return/);
 });
 test('PDF picker discards results from a previous chat without leaking cached files',()=>{
  const composer=read('src/components/ChatPdfComposer.tsx');
