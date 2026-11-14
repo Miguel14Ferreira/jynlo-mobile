@@ -21,6 +21,7 @@ import {listConversationMutes,isConversationMuted,setConversationMuted} from '..
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
+import ChatSearchPanel from './ChatSearchPanel';
 export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -345,6 +346,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   </View>);
  const content=<>{!embedded?<><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow></>:null}
   <Text style={styles.title}>Conversa do jogo</Text>
+  <ChatSearchPanel kind="session" conversationId={String(id)} token={auth.token} enabled={!closed}/> 
   {!embedded?<Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {muteError&&!closed?<Message tone="error">{muteError}</Message>:null}
