@@ -1,3 +1,4 @@
+import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import type {DirectChatEntry} from './chat-api';
@@ -35,7 +36,7 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
   throw Error('Mensagem citada inválida.');
  const prepared=await prepareChatPhoto(asset,extension);
  const form=new FormData();
- form.append('file',{uri:prepared.uri,name:'jynlo-chat.'+extension,type:mime} as unknown as Blob);
+ form.append('file',new File(prepared.uri) as unknown as Blob,'jynlo-chat.'+extension);
  if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
