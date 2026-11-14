@@ -18,6 +18,7 @@ import {validateChatAlbum} from '../../../src/lib/chat-attachments-core.cjs';
 import {validateChatPhoto} from '../../../src/lib/chat-photo-validation';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../../src/lib/conversation-mutes-api';
 import {giphyImageUrl} from '../../../src/lib/chat-giphy.cjs';
+import {chatLocationUrl} from '../../../src/lib/chat-location.cjs';
 export default function SessionChat(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -310,8 +311,8 @@ export default function SessionChat(){
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
-    {!m.deletedAt&&/^https:\/\/www\.google\.com\/maps\?q=-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test((m.body||'').trim())?
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(m.body.trim()).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
+    {!m.deletedAt&&chatLocationUrl(m.body)?
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
        <Text style={styles.mapLink}>Abrir localização no mapa ↗</Text>
      </Pressable>:null}
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
