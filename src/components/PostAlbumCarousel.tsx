@@ -15,7 +15,7 @@ export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
  const [width,setWidth]=useState(0),[active,setActive]=useState(0);
  return <View style={styles.frame} onLayout={event=>{
   const next=Math.round(event.nativeEvent.layout.width);
-  if(next>0&&next!==width)setWidth(next);
+  if(next>0&&next!==width){setWidth(next);setActive(0);}
  }}>
   {width>0?<ScrollView key={width} horizontal pagingEnabled
    showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"
