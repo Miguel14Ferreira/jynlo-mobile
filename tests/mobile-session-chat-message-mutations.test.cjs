@@ -12,7 +12,7 @@ test('session chat mutation API aligns with server methods and validates IDs',()
  assert.match(api,/Number.isSafeInteger\(messageId\)/);
 });
 test('session chat UI exposes own-message edit policy and confirmed removal',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.match(screen,/function ownMessage\(/);
  assert.match(screen,/!message.senderGuest/);
  assert.match(screen,/message.senderUsername.toLowerCase\(\)===auth.username.toLowerCase\(\)/);
@@ -26,7 +26,7 @@ test('session chat UI exposes own-message edit policy and confirmed removal',()=
  assert.match(screen,/m.deletedAt\?'Mensagem removida'/);
 });
 test('session mutation lifecycle guards concurrent sends and preserves failed drafts',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.match(screen,/mutationLock.current=true;setMutationBusy\(true\)/);
  assert.match(screen,/if\(mutationLock.current\|\|sendingNow.current/);
  assert.match(screen,/activeChat.current!==identity/);
