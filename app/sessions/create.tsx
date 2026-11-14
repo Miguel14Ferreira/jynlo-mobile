@@ -468,7 +468,7 @@ export default function CreateSessionScreen(){
     {customMatches.length?<Text style={styles.note}>Modalidades semelhantes:</Text>:null}
     {customMatches.map(s=><Pressable key={'similar-'+s} style={styles.option} onPress={()=>{
       setCustomSportMode(false);setForm(prev=>({...prev,sport:s,venueId:null}));
-    }}><Text style={styles.optionText}>{s}</Text></Press>)}
+    }}><Text style={styles.optionText}>{s}</Text></Pressable>)}
    </>:null}
    {!form.sport?<Text style={styles.note}>Escolhe uma modalidade ou sugere outra.</Text>:null}
    {communityMode!=='INDEPENDENT'&&hasCommunity?<Text style={styles.note}>
