@@ -313,10 +313,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   </View>);
  const content=<>{!embedded?<><Brand subtitle="SESSÃO"/><DemoBanner/><Eyebrow>CHAT DA SESSÃO</Eyebrow></>:null}
   <Text style={styles.title}>Conversa do jogo</Text>
-  <Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>
+  {!embedded?<Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {muteError&&!closed?<Message tone="error">{muteError}</Message>:null}
-  {auth.token&&muteKnown&&!closed?<View style={styles.muteRow}>
+  {!embedded&&auth.token&&muteKnown&&!closed?<View style={styles.muteRow}>
    <Text style={styles.note}>{muted?'Avisos deste chat silenciados':'Avisos deste chat ativos'}</Text>
    <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
   </View>:null}
@@ -329,6 +329,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     </Pressable>:null}{renderedMessages}
    </ScrollView>:renderedMessages}
   {embedded&&auth.token&&!closed?<View style={styles.quickActions}>
+    {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
+      style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
+      <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
+    </Pressable>:null}
     {photoReady?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos" disabled={sending||uploading}
       style={styles.iconAction} onPress={()=>{void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/></Pressable>:null}
     {photoReady?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={sending||uploading}
