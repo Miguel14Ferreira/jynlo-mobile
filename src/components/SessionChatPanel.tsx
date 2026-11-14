@@ -91,7 +91,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
    if(latest>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
     lastAcknowledgedMessageId.current=latest;
-    void markSessionChatRead(id,latest,auth.token).catch(()=>{});
+    void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
    }
   }catch(e){
    if(version!==generation.current)return;
@@ -372,7 +372,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
      const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
      if(auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
-      void markSessionChatRead(id,latest,auth.token).catch(()=>{});
+      void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
     }}}
    onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
