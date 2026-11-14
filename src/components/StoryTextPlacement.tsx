@@ -4,7 +4,7 @@ import type {GestureResponderEvent} from 'react-native';
 import type {StoryTextGeometry} from '../lib/types';
 import {clampStickerPosition} from '../lib/story-sticker-bounds.cjs';
 
-type Props={caption:string;geometry:StoryTextGeometry;onChange?:(value:StoryTextGeometry)=>void;disabled?:boolean};
+type Props={caption:string;geometry:StoryTextGeometry;onChange?:(value:StoryTextGeometry)=>void;disabled?:boolean;reservedTopPx?:number};
 type TouchPoint={pageX:number;pageY:number};
 type GestureStart={count:number;centerX:number;centerY:number;distance:number;angle:number;geometry:StoryTextGeometry};
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
@@ -17,7 +17,7 @@ const touchMetrics=(touches:readonly TouchPoint[])=>{
   angle:b?Math.atan2(b.pageY-a.pageY,b.pageX-a.pageX):0};
 };
 /** Drag a Story caption with one finger; pinch and rotate with two fingers. */
-export default function StoryTextPlacement({caption,geometry,onChange,disabled=false}:Props){
+export default function StoryTextPlacement({caption,geometry,onChange,disabled=false,reservedTopPx=0}:Props){
  const [area,setArea]=useState({width:340,height:320});
  const [sticker,setSticker]=useState({width:150,height:54});
  const gesture=useRef<GestureStart|null>(null);
@@ -40,9 +40,9 @@ export default function StoryTextPlacement({caption,geometry,onChange,disabled=f
    rotation:now.count===2?clamp(base.rotation+(now.angle-initial.angle)*180/Math.PI,-360,360):base.rotation,
    zoom:now.count===2?clamp(base.zoom*now.distance/Math.max(1,initial.distance),.5,3):base.zoom
   };
-  onChange(clampStickerPosition(next,area,sticker));
+  onChange(clampStickerPosition(next,area,sticker,reservedTopPx));
  }
- const position=clampStickerPosition(geometry,area,sticker);
+ const position=clampStickerPosition(geometry,area,sticker,reservedTopPx);
  return <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}
   onLayout={event=>{const {width,height}=event.nativeEvent.layout;if(width>0&&height>0)setArea({width,height});}}>
   <View accessible accessibilityLabel={onChange?'Texto da Story: arrasta com um dedo, roda ou amplia com dois dedos':'Texto da Story'}
