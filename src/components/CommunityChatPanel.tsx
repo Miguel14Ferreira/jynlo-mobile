@@ -400,7 +400,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{gap:4}}>
-      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
+      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:12}}>Vídeo</Text></View></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
      </Pressable>)}
     </View>
@@ -424,7 +424,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
    </KeyboardAvoidingView>:null}
-   {refreshWarning&&!accessRevoked?<Button secondary title="↻ Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
+   {refreshWarning&&!accessRevoked?<Button secondary title="Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </>;
  return embedded?<View style={styles.inline}>{content}</View>:<Page autoScrollToEnd>{content}</Page>;
 }
