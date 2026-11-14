@@ -20,6 +20,7 @@ import {validateChatPhoto} from '../lib/chat-photo-validation';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../lib/conversation-mutes-api';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
+import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -321,6 +322,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   }
  }
  const recentPhotoIds=new Set(recentPreviewMessageIds(entries));
+ const reactions=useChatReactions('session',String(id),auth.token,(embedded?entries.slice(-historyLimit):entries).map(m=>m.id),!closed);
  const renderedMessages=(embedded?entries.slice(-historyLimit):entries).map(m=><View key={m.id} style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
      <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
@@ -337,6 +339,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
        <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
+    {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={closed||!auth.token} onReact={reactions.react}/>:null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>);
