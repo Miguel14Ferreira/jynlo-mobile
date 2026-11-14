@@ -22,6 +22,7 @@ import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
+import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 
 export default function DirectConversation(){
@@ -433,6 +434,7 @@ export default function DirectConversation(){
  // Only preview the most recent images automatically; all attachments remain
  // authenticated and subject to the secure 5 MB cache limit.
  const recentPhotoIds=new Set(recentPreviewMessageIds(messages));
+ const reactions=useChatReactions('direct',peer,auth.token,messages.map(m=>m.id),!blocked&&blockStatusKnown);
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
@@ -500,6 +502,7 @@ export default function DirectConversation(){
     {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={`Responder à mensagem de ${m.username1}`} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||'Anexo').slice(0,150)});}} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={16} color={C.mint}/><Text style={styles.replyActionText}>Responder</Text></View></Pressable>:null}
     {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
    </View>
+   {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react}/>:null}
    <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
