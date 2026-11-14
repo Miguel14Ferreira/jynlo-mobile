@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -18,6 +18,7 @@ export default function ChampionshipDetail(){
  const [retry,setRetry]=useState(0);
  const [organizer,setOrganizer]=useState(false),[available,setAvailable]=useState<JynloTournament[]>([]);
  const [manageError,setManageError]=useState(''),[saving,setSaving]=useState(false),[pointsDraft,setPointsDraft]=useState<Record<number,string>>({}),[placementDraft,setPlacementDraft]=useState<Record<number,string>>({});
+ const savingRef=useRef(false);
  useFocusEffect(useCallback(()=>{
   let active=true;
   const load=async()=>{
@@ -51,11 +52,11 @@ export default function ChampionshipDetail(){
   void load();return()=>{active=false;};
  },[communityId,competitionId,auth.token,auth.username,retry]));
  async function update(action:()=>Promise<CommunityChampionship>){
-  if(saving||!auth.token||!organizer||championship?.closedAt)return;
-  setSaving(true);setManageError('');
+  if(savingRef.current||saving||!auth.token||!organizer||!championship||championship.closedAt)return;
+  savingRef.current=true;setSaving(true);setManageError('');
   try{await action();setRetry(n=>n+1);}
-  catch(e){setManageError(e instanceof Error?e.message:'Não foi possível guardar a alteração.');}
-  finally{setSaving(false);}
+  catch(e){setManageError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');}
+  finally{savingRef.current=false;setSaving(false);}
  }
  return <Page><DemoBanner/><Eyebrow>CAMPEONATO</Eyebrow>
   {loading?<Loader/>:null}
