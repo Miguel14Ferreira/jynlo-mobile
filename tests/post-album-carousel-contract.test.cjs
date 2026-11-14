@@ -21,9 +21,11 @@ test('mixed image/video posts retain contained images, video controls and expand
  const carousel=read('src/components/PostAlbumCarousel.tsx');
  const image=read('src/components/AdaptivePostPhoto.tsx');
  const video=read('src/components/FeedVideo.tsx');
- assert.match(carousel,/entry\.type==='video'\?renderVideo\(uri\)/);
+ assert.match(carousel,/entry\.type==='video'\?\(index===active\?renderVideo\(uri\)/);
+ assert.match(carousel,/styles\.videoInactive/);
  assert.match(carousel,/<AdaptivePostPhoto uri=\{uri\} width=\{width\}/);
- assert.match(carousel,/onExpand=\{\(\)=>onExpand\(uri\)\}/);
+ assert.match(carousel,/onExpand=\{\(\)=>\{const images=items\.filter/);
+ assert.match(carousel,/onExpand\(\{uris:images,index:images\.indexOf\(uri\)\}\)/);
  assert.match(image,/resizeMode="contain"/);
  assert.match(video,/contentFit=\{story\?'cover':'contain'\}/);
  assert.match(video,/nativeControls=\{!story\}/);
@@ -43,4 +45,23 @@ test('album editor adapts preview width and allows long filenames to wrap withou
  assert.match(feed,/postMediaPreviewFooter:\{gap:8/);
  assert.match(feed,/accessibilityLabel=\{\x60Mover ficheiro \$\{i\+1\} para trás\x60\}/);
  assert.match(feed,/accessibilityLabel=\{\x60Remover ficheiro \$\{i\+1\}\x60\}/);
+});
+
+test('fullscreen gallery keeps images uncropped with visible close and album controls',()=>{
+ const lightbox=read('src/components/PostImageLightbox.tsx');
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(lightbox,/presentationStyle="fullScreen"/);
+ assert.match(lightbox,/resizeMode="contain"/);
+ assert.match(lightbox,/accessibilityLabel="Fechar fotografia ampliada"/);
+ assert.match(lightbox,/accessibilityLabel="Fotografia anterior"/);
+ assert.match(lightbox,/accessibilityLabel="Fotografia seguinte"/);
+ assert.match(feed,/<PostImageLightbox key=\{expandedPostImage\?\.uris\[expandedPostImage\.index\]/);
+ assert.match(feed,/photos=\{identityMatches\?expandedPostImage:null\}/);
+ assert.doesNotMatch(feed,/<Modal visible=\{identityMatches&&!!expandedPostImage\}/);
+});
+test('inactive videos do not mount a second player behind the carousel',()=>{
+ const s=read('src/components/PostAlbumCarousel.tsx');
+ assert.match(s,/index===active\?renderVideo\(uri\)/);
+ assert.match(s,/videoInactive:\{height:300/);
+ assert.match(s,/onMomentumScrollEnd=\{event=>/);
 });
