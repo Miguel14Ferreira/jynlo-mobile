@@ -1,3 +1,4 @@
+import {fetch as expoFetch} from 'expo/fetch';
 import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
@@ -36,7 +37,7 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
-  const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',body:form,signal:controller.signal});
+  const response=await expoFetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',body:form,signal:controller.signal});
   if(!response.ok)throw Error('O servidor recusou o envio ('+response.status+').');
   const result=await response.json() as CommunityChatEntry|SessionChatEntry;
   if(!Number.isSafeInteger(result.id)||!result.attachmentName)throw Error('Envio não confirmado.');
