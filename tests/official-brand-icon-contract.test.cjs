@@ -31,6 +31,6 @@ test('both native Android icon paths are generated from approved artwork',()=>{
 });
 test('Android APK test build has an incremented version code',()=>{
  assert.equal(expo.version,pkg.version);
- assert.equal(expo.version,'0.16.2');
- assert.equal(expo.android.versionCode,9);
+ assert.equal(expo.version,'0.16.3');
+ assert.equal(expo.android.versionCode,10);
 });
