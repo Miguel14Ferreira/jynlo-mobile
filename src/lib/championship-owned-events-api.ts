@@ -93,3 +93,51 @@ export async function getOwnedLeagueStandings(cid:number,chid:number,eid:number,
  requireAuth(token);
  return request<OwnedLeagueStandings>(eventPath(cid,chid,eid)+'/standings',{token});
 }
+
+export type ChampionshipTeamPlayer={profileId:number;username:string;displayName:string;profilePicUrl:string|null};
+export type OwnedGoal={id:number;profileId:number;scorerName:string;teamId:number;teamName:string;minute:number|null;assistProfileId:number|null;assisterName:string|null};
+export type OwnedCard={id:number;profileId:number;playerName:string;teamId:number;teamName:string;cardType:'YELLOW'|'RED';minute:number|null};
+export type OwnedLineup={id:number;teamId:number;profileId:number;playerName:string;selection:'STARTER'|'BENCH'};
+export type OwnedSubstitution={id:number;teamId:number;teamName:string;outProfileId:number;playerOutName:string;inProfileId:number;playerInName:string;minute:number};
+const fixturePath=(cid:number,chid:number,eid:number,fid:number)=>
+ eventPath(cid,chid,eid)+'/fixtures/'+validId(fid);
+export async function championshipTeamPlayers(cid:number,chid:number,teamId:number,token:string):Promise<ChampionshipTeamPlayer[]>{
+ requireAuth(token);
+ const data=await request<ChampionshipTeamPlayer[]>('/api/communities/'+validId(cid)+'/championships/'+validId(chid)+'/teams/'+validId(teamId)+'/players',{token});
+ if(!Array.isArray(data))throw Error('Plantel inválido.');
+ return data;
+}
+export async function ownedFixtureGoals(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedGoal[]>{
+ requireAuth(token);return request<OwnedGoal[]>(fixturePath(cid,chid,eid,fid)+'/goals',{token});
+}
+export async function addOwnedFixtureGoal(cid:number,chid:number,eid:number,fid:number,teamId:number,profileId:number,minute:number,token:string):Promise<OwnedGoal[]>{
+ requireAuth(token);return request<OwnedGoal[]>(fixturePath(cid,chid,eid,fid)+'/goals',{token,method:'POST',body:{teamId:validId(teamId),profileId:validId(profileId),minute:validMinute(minute)}});
+}
+export async function ownedFixtureCards(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedCard[]>{
+ requireAuth(token);return request<OwnedCard[]>(fixturePath(cid,chid,eid,fid)+'/cards',{token});
+}
+export async function addOwnedFixtureCard(cid:number,chid:number,eid:number,fid:number,teamId:number,profileId:number,cardType:'YELLOW'|'RED',minute:number,token:string):Promise<OwnedCard[]>{
+ requireAuth(token);
+ if(cardType!=='YELLOW'&&cardType!=='RED')throw Error('Tipo de cartão inválido.');
+ return request<OwnedCard[]>(fixturePath(cid,chid,eid,fid)+'/cards',{token,method:'POST',body:{teamId:validId(teamId),profileId:validId(profileId),cardType,minute:validMinute(minute)}});
+}
+export async function ownedFixtureLineup(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedLineup[]>{
+ requireAuth(token);return request<OwnedLineup[]>(fixturePath(cid,chid,eid,fid)+'/lineup',{token});
+}
+export async function setOwnedFixtureLineup(cid:number,chid:number,eid:number,fid:number,teamId:number,profileId:number,selection:'STARTER'|'BENCH',token:string):Promise<OwnedLineup[]>{
+ requireAuth(token);
+ if(selection!=='STARTER'&&selection!=='BENCH')throw Error('Posição inválida.');
+ return request<OwnedLineup[]>(fixturePath(cid,chid,eid,fid)+'/lineup',{token,method:'PUT',body:{teamId:validId(teamId),profileId:validId(profileId),selection}});
+}
+export async function ownedFixtureSubstitutions(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedSubstitution[]>{
+ requireAuth(token);return request<OwnedSubstitution[]>(fixturePath(cid,chid,eid,fid)+'/substitutions',{token});
+}
+export async function addOwnedFixtureSubstitution(cid:number,chid:number,eid:number,fid:number,teamId:number,outProfileId:number,inProfileId:number,minute:number,token:string):Promise<OwnedSubstitution[]>{
+ requireAuth(token);
+ if(outProfileId===inProfileId)throw Error('Seleciona jogadores diferentes.');
+ return request<OwnedSubstitution[]>(fixturePath(cid,chid,eid,fid)+'/substitutions',{token,method:'POST',body:{teamId:validId(teamId),outProfileId:validId(outProfileId),inProfileId:validId(inProfileId),minute:validMinute(minute)}});
+}
+function validMinute(minute:number):number{
+ if(!Number.isSafeInteger(minute)||minute<0||minute>200)throw Error('O minuto deve estar entre 0 e 200.');
+ return minute;
+}
