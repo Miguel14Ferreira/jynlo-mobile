@@ -7,6 +7,7 @@ import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {parseFavoriteSports} from '../../src/lib/favorite-sports.cjs';
 import ProfilePosts from '../../src/components/ProfilePosts';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {followStatus,type FollowStatus} from '../../src/lib/social-relations-api';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
@@ -83,7 +84,7 @@ export default function ProfileScreen(){
       {profileLoading?<Text style={styles.profileHint}>A carregar o teu perfil…</Text>:null}
       {profileError?<Text style={styles.profileHint}>Não foi possível carregar os detalhes do perfil. Podes tentar novamente ao regressar a este ecrã.</Text>:null}
       {profile?.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}
-      {location?<Text style={styles.location}>⌖  {location}</Text>:null}
+      {location?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={16} color={C.muted}/><Text style={styles.location}>{location}</Text></View>:null}
       {favoriteSports.length>0?<View style={styles.favoriteSection}>
         <Text style={styles.favoriteHeading}>MODALIDADES FAVORITAS</Text>
         <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
@@ -93,7 +94,7 @@ export default function ProfileScreen(){
         <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>A seguir</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
       </View>:null}
       {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel="Editar o meu perfil desportivo" onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
-        <Text style={styles.editProfileText}>Editar perfil</Text><Text style={styles.editProfileArrow}>↗</Text>
+        <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
       </Pressable>:null}
     </View>
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
