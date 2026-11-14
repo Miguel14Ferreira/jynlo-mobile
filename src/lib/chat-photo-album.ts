@@ -1,3 +1,4 @@
+import {fetch as expoFetch} from 'expo/fetch';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
@@ -54,7 +55,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
   const controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),120000);
   try{
-   const response=await fetch(API_BASE+path,{
+   const response=await expoFetch(API_BASE+path,{
     method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
     credentials:'omit',body:form,signal:controller.signal
    });
