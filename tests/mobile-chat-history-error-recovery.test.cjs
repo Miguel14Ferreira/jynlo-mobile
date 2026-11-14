@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
-for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+for(const file of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx']){
  test(file+' clears only stale history errors after recovery',()=>{
   const source=read(file);
   assert.match(source,/const historyError=useRef<string\|null>\(null\)/);
@@ -15,7 +15,7 @@ for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','ap
  });
 }
 test('community reconnect reconciles before a failure notice is cleared',()=>{
- const source=read('app/communities/[id]/chat.tsx');
+ const source=read('src/components/CommunityChatPanel.tsx');
  assert.match(source,/if\(status==='online'&&!wasConnected\)void refresh\(version,true\)/);
  assert.match(source,/setMessages\(old=>mergeMessages\(old,chat\)\)/);
  assert.match(source,/setRefreshWarning\(''\)/);
