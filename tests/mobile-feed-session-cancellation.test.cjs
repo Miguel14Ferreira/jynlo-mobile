@@ -64,3 +64,24 @@ test('logout clears progress and old requests cannot unblock a newer account',()
  assert.match(feed,/sessionCancelInFlight\.current=false;setSessionCancelBusyId\(null\)/);
  assert.match(cancel,/if\(feedIdentity\.current===identity\)\{sessionCancelInFlight\.current=false;setSessionCancelBusyId\(null\);\}/);
 });
+
+test('successful cancellation offers an optional native share sheet for external guests',()=>{
+ const shareStart=feed.indexOf('async function shareCancelledFeedSession(');
+ const cancelStart=feed.indexOf('async function requestCancelFeedSession(',shareStart);
+ assert.ok(shareStart>0&&cancelStart>shareStart);
+ const share=feed.slice(shareStart,cancelStart);
+ assert.match(share,/Share\.share\(\{message\}\)/);
+ assert.match(share,/O organizador cancelou esta sessão e o jogo não se vai realizar/);
+ assert.match(share,/Por favor, não te desloques ao recinto/);
+ assert.match(cancel,/\{text:'Partilhar aviso',onPress:\(\)=>\{void shareCancelledFeedSession\(item\);\}\}/);
+ assert.match(cancel,/cancelSession\(id,actor,username\)\.then\(\(\)=>\{/);
+ assert.doesNotMatch(share,/request<|cancelSession\(/);
+});
+
+test('the app never shares a guest cancellation warning on a failed POST',()=>{
+ const success=cancel.indexOf('void cancelSession(id,actor,username).then(()=>{');
+ const failure=cancel.indexOf('}).catch(e=>{',success);
+ const sharePrompt=cancel.indexOf("'Partilhar aviso'",success);
+ assert.ok(success>=0&&failure>success&&sharePrompt>success&&sharePrompt<failure);
+ assert.match(cancel.slice(failure),/Cancelamento não confirmado/);
+});
