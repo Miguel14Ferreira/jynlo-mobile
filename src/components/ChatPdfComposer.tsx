@@ -63,7 +63,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,com
  }
  async function send(){
   const asset=selectedRef.current;
-  if(!asset||!enabled||!token||busyRef.current||blocked.current)return;
+  if(!asset||!enabled||!token||busyRef.current||pickerRef.current||blocked.current)return;
   const version=generation.current;
   const sentReplyId=replyId??null;
   busyRef.current=true;uploadingRef.current=asset;setBusy(true);setError('');
