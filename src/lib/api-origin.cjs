@@ -11,8 +11,8 @@ function validateApiOrigin(value,{allowLocalhost=false}={}){
  if(!localhost && url.protocol!=='https:')throw new Error('A API Jynlo requer HTTPS (ou localhost para desenvolvimento).');
  // A mobile release must never send bearer tokens to private addresses or
  // internal DNS names. Localhost is only permitted in explicit dev mode.
- const host=url.hostname.toLowerCase().replace(/^\\[|\\]$/g,'');
- if(!localhost && (/^(?:\\d{1,3}\\.){3}\\d{1,3}$/.test(host) || host.includes(':') ||
+ const host=url.hostname.toLowerCase().replace(/^\[|\]$/g,'');
+ if(!localhost && (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) || host.includes(':') ||
     host==='localhost' || host.endsWith('.localhost') || host.endsWith('.local') ||
     host.endsWith('.internal') || host.endsWith('.test') || host.endsWith('.invalid'))) {
    throw new Error('A API Jynlo deve usar um domínio HTTPS público.');
