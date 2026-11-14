@@ -38,6 +38,7 @@ export default function SessionChat(){
  const [attachmentCaption,setAttachmentCaption]=useState('');
  const pickerInFlight=useRef(false),focusedIdentity=useRef('');
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
+ const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [muted,setMuted]=useState(false),[muteKnown,setMuteKnown]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const [muteError,setMuteError]=useState(''),[locationBusy,setLocationBusy]=useState(false);
  const muteWrites=useRef(new Set<string>());
@@ -61,7 +62,7 @@ export default function SessionChat(){
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
     setClosed(true);setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');setSyncWarning('');
-    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setPhotoReady(false);
+    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);setPhotoReady(false);setAttachmentsOpen(false);
     historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
    }else{
@@ -319,7 +320,12 @@ export default function SessionChat(){
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
-  {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
+  {auth.token&&!closed?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
+    onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
+    <Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text>
+   </Pressable>:null}
+   {attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
+   {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
   <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
    // the user may have made while the file was being uploaded.
@@ -328,6 +334,7 @@ export default function SessionChat(){
   }}/>
   {auth.token&&!closed&&photoReady?<Button title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} secondary disabled={sending||uploading||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
   {auth.token&&!closed&&photoReady?<Button title="Abrir câmara" secondary disabled={sending||uploading} onPress={()=>{void choosePhoto('camera');}}/>:null}
+  </View>:null}
   {photo&&!closed?<View style={styles.photoPanel}>
    <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
@@ -370,6 +377,8 @@ const styles=StyleSheet.create({
  quote:{color:C.muted,fontSize:12},body:{color:C.white,fontSize:15},time:{color:C.muted,fontSize:10,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  muteRow:{padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface,gap:8},
+ attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
+ attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},attachmentOptions:{gap:8},
  mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  editor:{gap:9},composer:{flexDirection:'row',gap:8,alignItems:'center'},
  input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:MobileTheme.colors.surface,color:MobileTheme.colors.text,
