@@ -99,7 +99,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(accessRevoked){
     // A confirmed permission change must immediately hide private messages.
     setClosed(true);setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');setSyncWarning('');
-    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);setPhotoReady(false);setAttachmentsOpen(false);
+    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);setPhotoReady(false);
     historyError.current=null;
     setError(e instanceof Error?e.message:'Já não tens acesso a este chat.');
    }else{
@@ -222,8 +222,15 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
-  }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Falha no envio.')+
-   ' Consulta o histórico antes de voltares a tentar.');}
+  }catch(e){
+   if(version!==generation.current||activeChat.current!==identity)return;
+   if(e instanceof ApiError&&[401,403,404,409,410].includes(e.status)){
+    // A session may have started while the send was in flight.
+    await refresh(true,version);return;
+   }
+   setError((e instanceof Error?e.message:'Falha no envio.')+
+    ' Consulta o histórico antes de voltares a tentar.');
+  }
   finally{
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
@@ -265,8 +272,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    setEditing(current=>current?.id===original.id?null:current);setEditText('');
    await refresh(true,version);
   }catch(e){
-   if(version===generation.current&&activeChat.current===identity)
-    setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+   if(version===generation.current&&activeChat.current===identity){
+    if(e instanceof ApiError&&[401,403,404,409,410].includes(e.status))await refresh(true,version);
+    else setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+   }
   }finally{mutationLock.current=false;setMutationBusy(false);}
  }
  async function deleteMessage(message:SessionChatEntry){
@@ -282,8 +291,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    setReply(current=>current?.id===message.id?null:current);
    await refresh(true,version);
   }catch(e){
-   if(version===generation.current&&activeChat.current===identity)
-    setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+   if(version===generation.current&&activeChat.current===identity){
+    if(e instanceof ApiError&&[401,403,404,409,410].includes(e.status))await refresh(true,version);
+    else setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+   }
   }finally{mutationLock.current=false;setMutationBusy(false);}
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
@@ -323,7 +334,16 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(version!==generation.current)return;
    setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
-  }catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');}
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity){
+    // Multipart failures may surface as text instead of ApiError. Never
+    // retry an uncertain upload, only revalidate conversation access.
+    if((e instanceof ApiError&&[401,403,404,409,410].includes(e.status))||
+       (e instanceof Error&&/permissão para enviar|sessão expirou|chat (?:da sessão )?(?:fechado|encerrado)/i.test(e.message)))
+     await refresh(true,version);
+    else setError((e instanceof Error?e.message:'Envio não confirmado.')+' Verifica o histórico antes de repetir.');
+   }
+  }
   finally{
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setUploading(false);}
