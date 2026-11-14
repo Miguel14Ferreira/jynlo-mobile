@@ -47,7 +47,8 @@ test('invalid IDs, counts and account transitions cannot leak protected counts',
 test('feed updates confirmed counters immediately and clears them for another account',()=>{
  assert.match(feed,/confirmedCommentFloors\.current\.clear\(\)/);
  assert.match(feed,/const comments=reconcileCommentCounts\(confirmedCommentFloors\.current,likes\.posts\)/);
- assert.match(feed,/setPosts\(comments\.posts\)/);
+ assert.match(feed,/const edits=reconcilePostEdits\(confirmedPostEdits\.current,comments\.posts\)/);
+ assert.match(feed,/setPosts\(edits\.posts\)/);
  assert.match(feed,/const previousCount=posts\.find\(item=>item\.type==='POST'&&item\.postId===postId\)\?\.commentCount\?\?0/);
  assert.match(feed,/rememberCommentFloor\(confirmedCommentFloors\.current,postId,floor\)/);
  assert.match(feed,/confirmedCommentFloors\.current\.delete\(id\)/);
