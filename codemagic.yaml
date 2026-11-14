@@ -64,3 +64,73 @@ workflows:
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
       - android/app/build/outputs/mapping/release/mapping.txt
+
+# Optional push-enabled QA build. Create Codemagic app variable group
+# jynlo_android_native with JYNLO_FIREBASE_ANDROID_JSON_B64 marked Secret.
+# No Firebase data or Expo access token must be committed to the repository.
+  jynlo-android-push-qa:
+    name: Jynlo Android - APK de testes com push (develop)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      # Create this encrypted variable group in Codemagic before selecting
+      # the push workflow. A plain QA workflow remains available without it.
+      groups:
+        - jynlo_android_native
+      node: v22.13.1
+      java: 17
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+        JYNLO_REQUIRE_NATIVE_PUSH: "1"
+        JYNLO_ANDROID_DIAGNOSTIC_NO_R8: "1"
+    scripts:
+      - name: Confirmar branch e ferramentas
+        script: |
+          set -eu
+          if [ "${CM_BRANCH:-}" != "develop" ]; then
+            echo "Build bloqueada: utilizar exclusivamente a branch develop."
+            exit 1
+          fi
+          node --version
+          npm --version
+          java -version
+      - name: Instalar dependencias
+        script: |
+          set -eu
+          npm install --no-audit --no-fund
+      - name: Verificar app e compatibilidade
+        script: |
+          set -eu
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          npx --no-install expo install --check
+      - name: Testar TypeScript e contratos
+        script: |
+          set -eu
+          npm run typecheck
+          npm run test:all
+      - name: Validar configuração nativa Android e Firebase opcional
+        script: |
+          set -eu
+          # Use JYNLO_FIREBASE_ANDROID_JSON_B64 from an encrypted Codemagic
+          # environment group, or GOOGLE_SERVICES_JSON as an existing file path.
+          # The secret is decoded outside the checkout and never printed.
+          node scripts/prepare-android-native-config.cjs
+      - name: Preparar icone oficial e projeto Android
+        script: |
+          set -eu
+          bash scripts/prepare-jynlo-icon.sh
+          npx --no-install expo prebuild --platform android --no-install
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Gerar APK standalone (release de testes)
+        script: |
+          set -eu
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          test -n "$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -print -quit)"
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/mapping/release/mapping.txt
