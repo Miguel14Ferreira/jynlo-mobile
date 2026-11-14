@@ -13,7 +13,7 @@ test('community replies preserve backend contract for text and attachment messag
  assert.match(types,/replyToSender\?:string\|null;replyToText\?:string\|null/);
 });
 test('community chat UI supports quoted reply selection, rendering and cancellation',()=>{
- const screen=read('app/communities/[id]/chat.tsx');
+ const screen=read('src/components/CommunityChatPanel.tsx');
  assert.match(screen,/\[reply,setReply\]=useState<CommunityChatEntry\|null>\(null\)/);
  assert.match(screen,/messages\.map\(m=><View/);
  assert.match(screen,/accessibilityLabel=\{'Responder a '\+m.username\}/);
@@ -24,7 +24,7 @@ test('community chat UI supports quoted reply selection, rendering and cancellat
  assert.match(screen,/setReply\(null\)/);
 });
 test('all community reply send paths preserve selected message and clear only after success',()=>{
- const screen=read('app/communities/[id]/chat.tsx');
+ const screen=read('src/components/CommunityChatPanel.tsx');
  assert.match(screen,/await sendCommunityMessage\(id,message,token,username,originalReplyId\)/);
  assert.match(screen,/sendChatPhotoAlbum\(\{scope:'community',id\},token,\[selectedPhoto,\.\.\.extraPhotos\],originalReplyId,captionToSend\)/);
  assert.match(screen,/sendChatPhoto\('community',id,token,selectedPhoto,originalReplyId\)/);
