@@ -342,7 +342,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
    </Pressable>:null}
-   {attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
+   {!embedded&&attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
    {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
   <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
@@ -380,7 +380,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel="Mensagem da sessão" placeholder="Escreve uma mensagem"
       placeholderTextColor={C.muted} style={styles.input}/>
-     <Button title={sending?'A enviar…':'Enviar'} disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}/>
+     <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem'} style={styles.sendAction}
+       disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()}
+       onPress={()=>{void send();}}><JynloIcon name="send" size={22} color={C.background}/></Pressable>
     </View>
   </KeyboardAvoidingView>:null}
   {syncWarning&&!closed?<Button title="↻ Tentar novamente" secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
@@ -389,6 +391,11 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  return embedded?<View style={styles.inline}>{content}</View>:<Page autoScrollToEnd>{content}</Page>;
 }
 const styles=StyleSheet.create({
+ inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
+ inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
+ olderMessages:{padding:10,alignItems:'center'},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
+ iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},
+ sendAction:{height:44,width:44,borderRadius:12,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
  editPanel:{padding:12,gap:9,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:150,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:10},messageAction:{minHeight:38,minWidth:35,alignItems:'center',justifyContent:'center'},actionText:{fontSize:12,color:C.mint,fontWeight:'800'},
  title:{fontSize:26,fontWeight:'900',color:C.white},note:{fontSize:12,color:C.muted},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
