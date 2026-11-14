@@ -20,6 +20,6 @@ test('shared native size check and bounded album preview are typed at their cons
  assert.match(types,/recentPreviewMessageIds\(/);
  assert.match(types,/attachments\?:PrivateAttachmentMeta\[\]\|null/);
  assert.match(source('src/lib/chat-photo-source.ts'),/import \{verifiedLocalChatMediaSize\} from '\.\/chat-attachments-core\.cjs'/);
- for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx'])
+ for(const file of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx'])
   assert.match(source(file),/chatAttachmentList,recentPreviewMessageIds/);
 });
