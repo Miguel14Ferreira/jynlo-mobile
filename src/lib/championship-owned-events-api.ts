@@ -39,6 +39,14 @@ export async function createOwnedEvent(cid:number,chid:number,token:string,name:
   throw Error('Indica um nome válido e escolhe Liga ou Taça.');
  return request<OwnedEvent>(base(cid,chid),{token,method:'POST',body:{name:normalized,format}});
 }
+export async function deleteOwnedEvent(cid:number,chid:number,eid:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(eventPath(cid,chid,eid),{token,method:'DELETE'});
+}
+export async function removeOwnedEventTeam(cid:number,chid:number,eid:number,registrationId:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(eventPath(cid,chid,eid)+'/teams/'+validId(registrationId),{token,method:'DELETE'});
+}
 export async function listOwnedEventTeams(cid:number,chid:number,eid:number,token:string):Promise<OwnedEventTeam[]>{
  requireAuth(token);
  const data=await request<OwnedEventTeam[]>(eventPath(cid,chid,eid)+'/teams',{token});
