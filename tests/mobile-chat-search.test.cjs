@@ -17,8 +17,8 @@ test('message search is inline across private, community and session chats',()=>
 });
 test('search uses authorized endpoints, literal query and backend bounds',()=>{
  const api=read('src/lib/chat-search-api.ts');
- assert.match(api,/\\/api\\/messages\\/inbox\\/search\\?/);
- assert.match(api,/\\/api\\/messages\\/inbox\\/context\\?/);
+ assert.ok(api.includes("/api/messages/inbox/search?"));
+ assert.ok(api.includes("/api/messages/inbox/context?"));
  assert.match(api,/if\(term.length<2\|\|term.length>80\)/);
  assert.match(api,/if\(!Number.isSafeInteger\(page\)\|\|page<0\|\|page>50\)/);
  assert.match(api,/encodeURIComponent\(term\)/);
