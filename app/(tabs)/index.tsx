@@ -1,5 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Keyboard,KeyboardAvoidingView,Linking,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 // Load the native media picker only when the user explicitly opens the gallery.
@@ -512,7 +512,13 @@ export default function JynloFeedHome(){
     try{const ImagePicker=await import('expo-image-picker');
       if(source==='camera'){
         const permission=await ImagePicker.requestCameraPermissionsAsync();
-        if(!permission.granted){Alert.alert('Câmara sem autorização','Autoriza o acesso à câmara nas definições do telemóvel ou escolhe a galeria.');return;}
+        if(!permission.granted){
+          Alert.alert('Câmara sem autorização','Autoriza o acesso à câmara nas definições do telemóvel ou escolhe a galeria.',[
+            {text:'Cancelar',style:'cancel'},
+            {text:'Abrir definições',onPress:()=>{void Linking.openSettings().catch(()=>Alert.alert('Permissões','Abre as definições da Jynlo e autoriza a câmara.'));}}
+          ]);
+          return;
+        }
       }
       const result=source==='camera'
         ?await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:.86,videoMaxDuration:30,exif:false,base64:false})
