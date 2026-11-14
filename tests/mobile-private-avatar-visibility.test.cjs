@@ -18,7 +18,7 @@ test('feed and story avatars authorize protected private photos and show initial
 });
 
 test('private story mentions and media viewers preserve the authenticated source',()=>{
- assert.match(feed,/mediaRequestSource\(resolveJynloMedia\(friend\.profilePicUrl\)\|\|'',auth\.token\)/);
+ assert.match(feed,/<CircleAvatar name=\{friend\.nickname\|\|friend\.fullName\|\|friend\.username\} image=\{friend\.profilePicUrl\} size=\{36\}\/>/);
  assert.match(feed,/source=\{mediaRequestSource\(uri,token\)\}/);
  assert.match(video,/mediaRequestSource\(uri,token\)/);
  assert.match(image,/mediaRequestSource\(uri,token\)/);
