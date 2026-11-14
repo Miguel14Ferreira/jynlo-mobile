@@ -40,5 +40,5 @@ test('ordinary session refocus does not discard an unsent chat draft or selected
  assert.match(focused,/const changedAccountOrSession=focusedIdentity\.current!==identity/);
  const reset=focused.slice(focused.indexOf('if(changedAccountOrSession){'),focused.indexOf('setClosed(false)'));
  for(const field of ["setDraft('')","setPhoto(null)","setExtraPhotos([])","setAttachmentCaption('')"])assert.ok(reset.includes(field),field);
- assert.doesNotMatch(focused.slice(focused.indexOf('setClosed(false)'),focused.indexOf('void refresh(false,version)'),/setDraft\(''\)|setPhoto\(null\)/);
+ assert.doesNotMatch(focused.slice(focused.indexOf('setClosed(false)'),focused.indexOf('void refresh(false,version)')),/setDraft\(''\)|setPhoto\(null\)/);
 });
