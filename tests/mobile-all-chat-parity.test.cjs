@@ -63,7 +63,7 @@ test('group chat has compact icon controls and standalone route keeps legacy tra
   assert.match(source,/embedded&&auth.token/);
   assert.match(source,/!embedded&&attachmentsOpen/);
  }
- assert.match(screens.direct,/attachmentsOpen\?'Fechar anexos':'＋ Anexar ficheiro'/);
+ assert.match(screens.direct,/accessibilityLabel=\{attachmentsOpen\?'Fechar anexos':'Abrir anexos'\}/);
 });
 
 test('PDF permission is independent of camera/photo availability in group conversations',()=>{
