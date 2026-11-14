@@ -50,3 +50,14 @@ test('chat scopes remain backed by their own access-authorized APIs',()=>{
  assert.match(session,/closed/);
  assert.match(community,/accessRevoked/);
 });
+
+test('inline history follows new messages only while near latest items',()=>{
+ for(const name of ['Session','Community']){
+  const src=read('src/components/'+name+'ChatPanel.tsx');
+  assert.match(src,/const inlineNearBottom=useRef\(true\)/);
+  assert.match(src,/onScroll=\{event=>\{const \{contentOffset,layoutMeasurement,contentSize\}=event.nativeEvent/);
+  assert.match(src,/inlineNearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
+  assert.match(src,/onContentSizeChange=\{\(\)=>\{if\(inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/);
+  assert.match(src,/inlineNearBottom\.current=false;setHistoryLimit\(count=>count\+40\)/);
+ }
+});
