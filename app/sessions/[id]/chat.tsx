@@ -1,3 +1,4 @@
+import {JynloIcon} from '../../../src/components/JynloIcon';
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../../src/lib/chat-attachments-core.cjs';
@@ -315,7 +316,7 @@ export default function SessionChat(){
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
     {!m.deletedAt&&chatLocationUrl(m.body)?
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
-       <Text style={styles.mapLink}>Abrir localização no mapa ↗</Text>
+       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
@@ -323,7 +324,7 @@ export default function SessionChat(){
   </View>)}
   {auth.token&&!closed?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
-    <Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text>
+    <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
    </Pressable>:null}
    {attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
    {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
@@ -343,7 +344,7 @@ export default function SessionChat(){
      setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
     }} style={{gap:4}}>
      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
-     <Text style={styles.note}>✕ Remover</Text>
+     <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
     </Pressable>)}
    </View>
    <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
