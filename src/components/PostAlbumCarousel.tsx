@@ -4,7 +4,7 @@ import AdaptivePostPhoto from './AdaptivePostPhoto';
 import {resolveJynloMedia} from '../lib/social-feed-api';
 
 type AlbumEntry={url:string;type:'image'|'video'};
-type Props={items:AlbumEntry[];onExpand:(uri:string)=>void;renderVideo:(uri:string)=>React.ReactNode};
+type Props={items:AlbumEntry[];onExpand:(photos:{uris:string[];index:number})=>void;renderVideo:(uri:string)=>React.ReactNode};
 const uriFor=(url:string)=>(url.startsWith('file:')||url.startsWith('content:'))?url:resolveJynloMedia(url);
 
 /**
@@ -30,7 +30,7 @@ export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
       {uri?(entry.type==='video'?renderVideo(uri):
         <AdaptivePostPhoto uri={uri} width={width}
           label={'Ampliar fotografia '+(index+1)+' de '+items.length}
-          onExpand={()=>onExpand(uri)}/>):null}
+          onExpand={()=>{const images=items.filter(item=>item.type==='image').map(item=>uriFor(item.url)).filter((value):value is string=>Boolean(value));onExpand({uris:images,index:images.indexOf(uri)});}}/>):null}
     </View>;
    })}
   </ScrollView>:<View style={styles.placeholder}/>}
