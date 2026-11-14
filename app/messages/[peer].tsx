@@ -34,15 +34,15 @@ export default function DirectConversation(){
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const conversationScroll=useRef<ScrollView|null>(null);
- const nearBottom=useRef(true);
+ const nearBottom=useRef(false);
+ const historyViewportMeasured=useRef(false);
  const lastAcknowledgedMessageId=useRef(0);
  const composerFocused=useRef(false);
  useEffect(()=>{
   const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
   const subscription=Keyboard.addListener(event,()=>{
    if(!composerFocused.current)return;
-   nearBottom.current=true;
-   conversationScroll.current?.scrollToEnd({animated:true});
+   if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:true});
   });
   return()=>subscription.remove();
  },[]);
@@ -100,7 +100,7 @@ export default function DirectConversation(){
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
-   if(last>lastAcknowledgedMessageId.current&&nearBottom.current){
+   if(last>lastAcknowledgedMessageId.current&&nearBottom.current&&historyViewportMeasured.current){
     lastAcknowledgedMessageId.current=last;
     void markDirectRead(peer,last,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
    }
@@ -140,7 +140,8 @@ export default function DirectConversation(){
   if(conversation.current!==identity){
    conversation.current=identity;
    lastAcknowledgedMessageId.current=0;
-   nearBottom.current=true;
+   nearBottom.current=false;
+   historyViewportMeasured.current=false;
    setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
@@ -449,7 +450,8 @@ export default function DirectConversation(){
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
-      nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+      historyViewportMeasured.current=layoutMeasurement.height>0&&contentSize.height>0;
+      nearBottom.current=historyViewportMeasured.current&&contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
       if(nearBottom.current&&auth.token){
        const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
        if(latest>lastAcknowledgedMessageId.current){
@@ -458,7 +460,7 @@ export default function DirectConversation(){
        }
       }}}
     scrollEventThrottle={100}
-    onContentSizeChange={()=>{if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
+    onContentSizeChange={()=>{if(nearBottom.current&&historyViewportMeasured.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
   <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <ChatSearchPanel kind="direct" conversationId={peer} token={auth.token} enabled={blockStatusKnown&&!blocked}/>
@@ -601,7 +603,7 @@ export default function DirectConversation(){
   {auth.token&&!blocked?<View style={styles.composer}>
    <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem privada…"
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-    onFocus={()=>{composerFocused.current=true;nearBottom.current=true;conversationScroll.current?.scrollToEnd({animated:true});}}
+    onFocus={()=>{composerFocused.current=true;if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:true});}}
     onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem privada'} style={[styles.send,sending&&{opacity:0.5}]}
