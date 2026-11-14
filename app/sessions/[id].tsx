@@ -12,6 +12,7 @@ import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -513,10 +514,10 @@ export default function SessionScreen(){
         <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
-        <Text style={styles.city}>⌖ {s.city||'Local a confirmar'}</Text>
+        <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||'Local a confirmar'}</Text></View>
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
           <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(detail.communityId)}})}>
-            <Text style={styles.communityLink}>◎ Abrir comunidade associada ↗</Text>
+            <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="community" size={17} color={C.mint}/><Text style={styles.communityLink}>Abrir comunidade associada</Text><JynloIcon name="chevron-right" size={16} color={C.mint}/></View>
           </Pressable>:null}
         {detail?.audience==='COMMUNITY_ONLY'?<Text style={styles.hint}>Sessão reservada a membros da comunidade.</Text>:null}
       </View>
