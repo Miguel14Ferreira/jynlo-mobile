@@ -11,6 +11,7 @@ import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
+import {rememberPostLike,reconcilePostLikes} from '../../src/lib/feed-interaction-reconciliation.cjs';
 import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib/attendance-digest.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
@@ -305,6 +306,7 @@ export default function JynloFeedHome(){
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
   const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
+  const verifiedPostLikes=useRef<Map<number,{likedByMe:boolean;likeCount:number;until:number}>>(new Map());
   // Authoritative delete/hide responses must outlive feed requests that were
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
@@ -326,7 +328,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
-      confirmedRemovedFeedKeys.current.clear();
+      confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
@@ -356,7 +358,10 @@ export default function JynloFeedHome(){
       recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>
         entry.until>Date.now()&&!received.some(item=>item.postId===entry.item.postId)&&
         !confirmedRemovedFeedKeys.current.has(removedFeedKey(entry.item)));
-      setPosts([...recentlyConfirmedPosts.current.map(entry=>entry.item),...visibleReceived]);
+      const merged=[...recentlyConfirmedPosts.current.map(entry=>entry.item),...visibleReceived];
+      const likes=reconcilePostLikes(verifiedPostLikes.current,merged);
+      verifiedPostLikes.current=likes.receipts;
+      setPosts(likes.posts);
     }
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled'){
@@ -474,6 +479,7 @@ export default function JynloFeedHome(){
           if(feedIdentity.current===identity){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
+            verifiedPostLikes.current.delete(id);
             recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
@@ -688,6 +694,7 @@ export default function JynloFeedHome(){
       // Use the authoritative result without relying on a potentially stale
       // full-feed reload, and preserve the optimistic publish overlay too.
       const apply=(post:FeedItem)=>post.postId===postId?{...post,...receipt}:post;
+      verifiedPostLikes.current=rememberPostLike(verifiedPostLikes.current,postId,receipt);
       recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({...entry,item:apply(entry.item)}));
       setPosts(current=>current.map(apply));
     }catch(e){
