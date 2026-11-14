@@ -1,3 +1,4 @@
+import {JynloIcon} from '../../../src/components/JynloIcon';
 import ChatPdfComposer from '../../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../../src/lib/chat-attachments-core.cjs';
@@ -346,14 +347,14 @@ export default function CommunityChatScreen(){
      {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
      <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
      {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
-      <Text style={styles.mapLink}>Abrir localização no mapa ↗</Text>
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>)}
    {auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
      onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
-     <Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text>
+     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
     </Pressable>:null}
     {attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
     {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
@@ -368,7 +369,7 @@ export default function CommunityChatScreen(){
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{gap:4}}>
       {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
-      <Text style={styles.note}>✕ Remover</Text>
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
      </Pressable>)}
     </View>
      <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
@@ -381,7 +382,7 @@ export default function CommunityChatScreen(){
      <TextInput accessibilityLabel="Editar mensagem" multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Mensagem…" placeholderTextColor={C.muted} style={styles.editInput}/>
      <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
    </View>:null}
-   {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><Text style={styles.quoteCancel}>✕</Text></Pressable></View>:null}
+   {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><JynloIcon name="close" size={20} color={C.mint}/></Pressable></View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"/>
