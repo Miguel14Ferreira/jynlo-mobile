@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/sessions/[id]/chat.tsx'),'utf8');
+const code=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
 
 test('session photo uses reply selected when upload started and preserves later selection',()=>{
  const upload=code.slice(code.indexOf('async function uploadPhoto()'),code.indexOf('return <Page>'));
