@@ -14,6 +14,7 @@ import {
 } from '../../../../src/lib/championship-owned-events-api';
 
 type Mode='GOAL'|'CARD'|'LINEUP'|'SUB';
+type FixturePlayer=ChampionshipTeamPlayer&{teamId:number};
 const valid=(n:number)=>Number.isSafeInteger(n)&&n>0;
 
 export default function ChampionshipFixtureScreen(){
@@ -21,7 +22,7 @@ export default function ChampionshipFixtureScreen(){
  const cid=Number(id),chid=Number(championshipId),eid=Number(eventId),fid=Number(fixtureId);
  const auth=useAuth(),router=useRouter();
  const [fixture,setFixture]=useState<OwnedFixture|null>(null),[canWrite,setCanWrite]=useState(false);
- const [roster,setRoster]=useState<ChampionshipTeamPlayer[]>([]);
+ const [roster,setRoster]=useState<FixturePlayer[]>([]);
  const [goals,setGoals]=useState<OwnedGoal[]>([]),[cards,setCards]=useState<OwnedCard[]>([]);
  const [lineup,setLineup]=useState<OwnedLineup[]>([]),[subs,setSubs]=useState<OwnedSubstitution[]>([]);
  const [selectedTeam,setSelectedTeam]=useState<number|null>(null),[player,setPlayer]=useState<number|null>(null),[other,setOther]=useState<number|null>(null);
@@ -63,7 +64,7 @@ export default function ChampionshipFixtureScreen(){
    if(version!==generation.current)return;
    // The two rosters are kept distinct: one player cannot be assigned to the opposing team.
    setRoster([...playersHome.map(p=>({...p,teamId:match.homeTeamId})),
-              ...playersAway.map(p=>({...p,teamId:match.awayTeamId}))] as ChampionshipTeamPlayer[]);
+              ...playersAway.map(p=>({...p,teamId:match.awayTeamId}))]);
    setGoals(g);setCards(c);setLineup(l);setSubs(sub);
    setSelectedTeam(current=>current===match.homeTeamId||current===match.awayTeamId?current:match.homeTeamId);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar os acontecimentos do jogo.');}
@@ -75,7 +76,7 @@ export default function ChampionshipFixtureScreen(){
   void reload(version);
   return()=>{generation.current++;};
  },[reload]));
- const selectedRoster=roster.filter(p=>(p as ChampionshipTeamPlayer&{teamId:number}).teamId===selectedTeam);
+ const selectedRoster=roster.filter(p=>p.teamId===selectedTeam);
  const selectedPlayer=selectedRoster.find(p=>p.profileId===player);
  const selectedOther=selectedRoster.find(p=>p.profileId===other);
  const parsedMinute=Number(minute);
