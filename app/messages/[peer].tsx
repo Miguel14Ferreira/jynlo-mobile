@@ -23,6 +23,7 @@ import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
 import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
+import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 
 export default function DirectConversation(){
@@ -444,6 +445,7 @@ export default function DirectConversation(){
     onContentSizeChange={()=>{if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
   <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
+  <ChatSearchPanel kind="direct" conversationId={peer} token={auth.token} enabled={blockStatusKnown&&!blocked}/>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
   {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
