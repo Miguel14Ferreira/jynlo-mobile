@@ -5,7 +5,7 @@ import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
-import {createSessionPayload,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation,detachVenueLocation} from '../../src/lib/session-create-core.cjs';
+import {createSessionPayload,isValidCustomSport,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation,detachVenueLocation} from '../../src/lib/session-create-core.cjs';
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
@@ -307,6 +307,7 @@ export default function CreateSessionScreen(){
  const suggestions=sportSearch.trim()
   ?availableSports.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
   :[];
+ const customSportValid=customSportMode&&isValidCustomSport(form.sport.trim().replace(/\s+/g,' '),SPORTS);
  const customMatches=customSportMode&&form.sport.trim().length>1
   ?SPORTS.filter(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT')
     .includes(form.sport.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT'))).slice(0,5)
@@ -465,6 +466,10 @@ export default function CreateSessionScreen(){
       onChangeText={value=>{preselectionOverridden.current=true;setForm(prev=>({...prev,sport:value,venueId:null}));}}
       placeholder="Ex.: Bossaball" placeholderTextColor={C.muted}
       editable={!busy} accessibilityLabel="Nome da modalidade personalizada"/>
+    {form.sport.trim().length>0&&!customSportValid?
+      <Text accessibilityRole="alert" style={styles.note}>
+       Verifica o nome (2–60 caracteres, sem símbolos especiais) ou escolhe uma modalidade existente.
+      </Text>:null}
     {customMatches.length?<Text style={styles.note}>Modalidades semelhantes:</Text>:null}
     {customMatches.map(s=><Pressable key={'similar-'+s} style={styles.option} onPress={()=>{
       setCustomSportMode(false);setForm(prev=>({...prev,sport:s,venueId:null}));
