@@ -39,3 +39,16 @@ test('media upload retains user draft when server confirmation is uncertain',()=
  assert.match(home,/Alert\.alert\('Publicação',e instanceof Error/);
  assert.match(home,/Alert\.alert\('Story',e instanceof Error/);
 });
+
+test('freshly confirmed posts are retained until the authenticated feed catches up',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/const recentlyConfirmedPosts=useRef/);
+ assert.match(home,/const recentlyConfirmedStories=useRef/);
+ assert.match(home,/entry\.until>Date\.now\(\)&&!received\.some\(item=>item\.postId===entry\.item\.postId\)/);
+ assert.match(home,/entry\.until>Date\.now\(\)&&!received\.some\(item=>item\.id===entry\.item\.id\)/);
+ assert.match(home,/setPosts\(\[\.\.\.recentlyConfirmedPosts\.current\.map\(entry=>entry\.item\),\.\.\.received\]\)/);
+ assert.match(home,/setOwnStories\(\[\.\.\.recentlyConfirmedStories\.current\.map\(entry=>entry\.item\),\.\.\.received\]\)/);
+ assert.match(home,/recentlyConfirmedPosts\.current=\[\.\.\.recentlyConfirmedPosts\.current\.filter/);
+ assert.match(home,/recentlyConfirmedStories\.current=\[\.\.\.recentlyConfirmedStories\.current\.filter/);
+ assert.match(home,/recentlyConfirmedPosts\.current=\[\];recentlyConfirmedStories\.current=\[\]/);
+});
