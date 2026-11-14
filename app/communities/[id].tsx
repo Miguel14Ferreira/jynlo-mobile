@@ -1,3 +1,4 @@
+import CommunityChatPanel from '../../src/components/CommunityChatPanel';
 import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -182,7 +183,7 @@ export default function CommunityDetailScreen(){
       {role?<View style={styles.section}>
         <Eyebrow>A CONVERSA CONTINUA</Eyebrow>
         <Text style={styles.sectionTitle}>Juntos, mesmo fora do campo</Text>
-        <Button title="Abrir chat da comunidade" onPress={()=>router.push({pathname:"/communities/[id]/chat",params:{id:String(id)}})}/>
+        <CommunityChatPanel embedded/>
         <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
         {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
