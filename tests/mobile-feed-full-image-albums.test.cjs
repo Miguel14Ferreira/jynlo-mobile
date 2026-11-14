@@ -106,3 +106,10 @@ test('story editor warns before discarding a video photo or caption',()=>{
  assert.match(s,/onRequestClose=\{closeStoryComposer\}/);
  assert.match(s,/onPress=\{closeStoryComposer\}/);
 });
+
+test('album paging resets when gallery changes without resetting on ordinary feed reloads',()=>{
+ const album=read('src/components/PostAlbumCarousel.tsx');
+ assert.match(album,/const albumIdentity=items\.map\(entry=>entry\.type\+':'\+entry\.url\)\.join\('\|'\)/);
+ assert.match(album,/useEffect\(\(\)=>\{setActive\(0\);\},\[albumIdentity\]\)/);
+ assert.match(album,/key=\{width\+'-'\+albumIdentity\}/);
+});
