@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {parseSessionDate,createSessionPayload}=require('../src/lib/session-create-core.cjs');
+const {parseSessionDate,createSessionPayload,isValidCustomSport}=require('../src/lib/session-create-core.cjs');
 const sports=['Futebol','Padel','Karting'];
 const valid={sport:'Padel',day:'2030-06-10',time:'18:30',city:'Lisboa',address:'Rua do Clube, 1',
  maxParticipants:'10',price:'3,50',privateGame:false,password:'',meetingPointInstructions:'Entrada principal'};
@@ -261,4 +261,16 @@ test('session creation: accepts valid custom sport only in independent sessions'
  assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball',seasonGame:true},sports,0));
  assert.throws(()=>createSessionPayload({...valid,sport:'PADEL'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball?'},sports,0));
+});
+
+test('custom sports: unicode names, official aliases, invalid input and payload normalization',()=>{
+ assert.equal(isValidCustomSport('Bossaball',sports),true);
+ assert.equal(isValidCustomSport('Hóquei de areia',sports),true);
+ assert.equal(isValidCustomSport('PADEL',sports),false);
+ assert.equal(isValidCustomSport(' Pádel',sports),false);
+ assert.equal(isValidCustomSport('Pádel',sports),false);
+ assert.equal(isValidCustomSport('<script>',sports),false);
+ assert.equal(isValidCustomSport('A',sports),false);
+ assert.equal(isValidCustomSport('X'.repeat(61),sports),false);
+ assert.equal(createSessionPayload({...valid,sport:'  Hóquei   de areia '},sports,0).sport,'Hóquei de areia');
 });
