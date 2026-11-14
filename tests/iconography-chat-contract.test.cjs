@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 test('direct, session and community chats render vector attachments and remove actions',()=>{
- for(const screen of ['app/messages/[peer].tsx','app/sessions/[id]/chat.tsx','app/communities/[id]/chat.tsx']){
+ for(const screen of ['app/messages/[peer].tsx','src/components/SessionChatPanel.tsx','src/components/CommunityChatPanel.tsx']){
   const source=read(screen);
   assert.match(source,/import \{JynloIcon\}/,screen);
   assert.match(source,/name=\{attachmentsOpen\?'close':'attachment'\}/,screen);
@@ -16,7 +16,7 @@ test('direct, session and community chats render vector attachments and remove a
  }
 });
 test('all three chats have a vector map affordance, not platform-specific Unicode arrows',()=>{
- for(const screen of ['app/messages/[peer].tsx','app/sessions/[id]/chat.tsx','app/communities/[id]/chat.tsx']){
+ for(const screen of ['app/messages/[peer].tsx','src/components/SessionChatPanel.tsx','src/components/CommunityChatPanel.tsx']){
   const source=read(screen);
   assert.match(source,/name="location"/,screen);
   assert.doesNotMatch(source,/⌖ Abrir localização|Abrir localização no mapa ↗/,screen);
