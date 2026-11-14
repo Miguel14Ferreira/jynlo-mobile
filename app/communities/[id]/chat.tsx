@@ -376,7 +376,7 @@ export default function CommunityChatScreen(){
    {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><Text style={styles.quoteCancel}>✕</Text></Pressable></View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-       maxLength={4000} accessibilityLabel="Mensagem para a comunidade"/>
+       maxLength={2000} accessibilityLabel="Mensagem para a comunidade"/>
      <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button">
        {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
      </Pressable>
