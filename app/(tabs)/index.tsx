@@ -862,8 +862,20 @@ export default function JynloFeedHome(){
               reservedTopPx={storyMetadataReservedHeight(storyLocation,storyTags)}
               onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
           </View>:null}
-          {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Trocar pela galeria</Text></Pressable>:null}
-          {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover fotografia ou vídeo</Text></Pressable>:null}
+          {storyMedia?<View style={styles.storyMediaActions}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Tirar nova fotografia ou vídeo para a Story"
+             disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'camera')} style={styles.storyMediaAction}>
+             <JynloIcon name="camera" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Câmara</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Trocar fotografia ou vídeo da Story pela galeria"
+             disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.storyMediaAction}>
+             <JynloIcon name="gallery" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Galeria</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Remover fotografia ou vídeo da Story"
+             disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.storyMediaAction}>
+             <JynloIcon name="remove" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Remover</Text>
+            </Pressable>
+           </View>:null}
           <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyCaption.length}/180</Text>
@@ -942,5 +954,6 @@ const styles=StyleSheet.create({
  storyFriendAvatar:{width:38,height:38,borderRadius:19},
  storyFriendAvatarPlaceholder:{width:38,height:38,borderRadius:19,backgroundColor:'#24545D',alignItems:'center',justifyContent:'center'},
  storyFriendName:{color:WHITE,fontWeight:'800',fontSize:13},
- storyPreview:{width:'100%',height:320,backgroundColor:'#020A10',borderRadius:16,overflow:'hidden',justifyContent:'center'},storyPreviewMedia:{width:'100%',height:'100%'},storyCaptionInput:{backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,color:WHITE,padding:13,borderRadius:12,minHeight:50}
+ storyMediaActions:{flexDirection:'row',flexWrap:'wrap',gap:8},storyMediaAction:{flexGrow:1,flexDirection:'row',gap:6,alignItems:'center',justifyContent:'center',minHeight:46,paddingHorizontal:10,borderRadius:11,borderWidth:1,borderColor:BORDER,backgroundColor:PANEL},
+  storyPreview:{width:'100%',height:320,backgroundColor:'#020A10',borderRadius:16,overflow:'hidden',justifyContent:'center'},storyPreviewMedia:{width:'100%',height:'100%'},storyCaptionInput:{backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,color:WHITE,padding:13,borderRadius:12,minHeight:50}
 });
