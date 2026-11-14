@@ -10,6 +10,7 @@ import {postMediaItems} from '../../../src/lib/post-album.cjs';
 import {sharedPostLink} from '../../../src/lib/shared-post-link.cjs';
 import PostEditSheet from '../../../src/components/PostEditSheet';
 import AdaptivePostPhoto from '../../../src/components/AdaptivePostPhoto';
+import ProtectedPostMedia from '../../../src/components/ProtectedPostMedia';
 const T=MobileTheme.colors;
 const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
 
@@ -142,11 +143,13 @@ export default function NotificationPost(){
     {post.location?.trim()?<Text style={styles.note}>⌖ {post.location.trim()}</Text>:null}
     {album.length?<View style={{gap:8}}>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
-        {album.map((media,index)=>{const uri=resolveJynloMedia(media.url);return uri?<View key={index} style={{width:Math.max(220,screenWidth-64),gap:5}}>
-          {media.type==='video'?<Suspense fallback={<ActivityIndicator color={T.accent}/>}><FeedVideo uri={uri}/></Suspense>:
-            <AdaptivePostPhoto uri={uri} width={Math.max(220,screenWidth-64)} label={'Ampliar fotografia '+(index+1)+' de '+album.length} onExpand={()=>setExpandedImage(uri)}/>}
+        {album.map((media,index)=><View key={index} style={{width:Math.max(220,screenWidth-64),gap:5}}>
+          <ProtectedPostMedia src={media.url} type={media.type} token={auth.token}
+            width={Math.max(220,screenWidth-64)}
+            label={'Ampliar fotografia '+(index+1)+' de '+album.length}
+            onExpand={setExpandedImage}/>
           {album.length>1?<Text style={styles.note}>{index+1} / {album.length}</Text>:null}
-        </View>:null;})}
+        </View>)}
       </ScrollView>
       {album.length>1?<Text style={styles.note}>Desliza para ver todas as fotografias e vídeos.</Text>:null}
     </View>:null}
