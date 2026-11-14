@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -37,36 +37,46 @@ export default function TournamentManagerScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[role,setRole]=useState<string|null>(null);
  const [matches,setMatches]=useState<OrganizerMatch[]>([]),[page,setPage]=useState(0),[hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);setTournament(null);setRole(null);return;}
+ const generation=useRef(0),pendingWrite=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current){setLoading(false);setTournament(null);setRole(null);}return;}
   setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);
   try{
    const [info,community]=await Promise.all([
     tournamentDetails(cid,tid,auth.token,auth.username),
     communityDetails(cid,auth.token,auth.username)
    ]);
+   if(version!==generation.current)return;
+   if(community.id!==cid)throw Error('Comunidade diferente da competição selecionada.');
    const currentRole='myRole' in community?community.myRole:null;
    setTournament(info);setRole(currentRole||null);
    const kind=organizerFixtureType(info);
    if(!isOrganizer(currentRole)||!kind||info.status==='DRAFT')return;
    const response=kind==='TEAM'?await teamTournamentMatches(cid,tid,0,auth.token,auth.username):await individualTournamentMatches(cid,tid,0,auth.token,auth.username);
+   if(version!==generation.current)return;
    setMatches(response.matches.map(m=>kind==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch)));
    setPage(response.page);setHasMore(response.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar a gestão do torneio.');}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a gestão do torneio.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  setTournament(null);setRole(null);setMatches([]);setPage(0);setHasMore(false);setNotice('');setError('');setLoading(true);
+  void load(version);
+  return ()=>{generation.current++;};
+ },[load]));
  const type=tournament?organizerFixtureType(tournament):null;
  const canPublish=canGenerateSchedule(role,tournament)&&!DEMO_MODE;
  const canRecord=canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
  const canFinish=canCompleteTournament(role,tournament)&&!DEMO_MODE;
  const allVisibleFinished=matches.length>0&&!hasMore&&matches.every(m=>m.status==='COMPLETED');
  async function act(run:()=>Promise<unknown>,success:string){
-  if(busy)return;
-  setBusy(true);setError('');setNotice('');
-  try{await run();await load();setNotice(success);}
-  catch(e){setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado atual antes de repetir.');}
-  finally{setBusy(false);}
+  if(busy||pendingWrite.current)return;
+  const version=generation.current;
+  pendingWrite.current=true;setBusy(true);setError('');setNotice('');
+  try{await run();if(version!==generation.current)return;await load(version);if(version===generation.current)setNotice(success);}
+  catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado atual antes de repetir.');}
+  finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
  function publish(){if(!tournament||!canPublish||!auth.token||!auth.username)return;
   Alert.alert('Publicar calendário?','Esta ação inicia o torneio e fecha as inscrições. Confirma primeiro as equipas ou os participantes.',[
@@ -87,14 +97,16 @@ export default function TournamentManagerScreen(){
    {text:'Encerrar liga',style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),'Liga encerrada pelo servidor.');}}
   ]);
  }
- async function more(){if(!tournament||!type||!auth.token||!auth.username||busy||!hasMore)return;
-  setBusy(true);setError('');
+ async function more(){if(!tournament||!type||!auth.token||!auth.username||busy||pendingWrite.current||!hasMore)return;
+  const version=generation.current;
+  pendingWrite.current=true;setBusy(true);setError('');
   try{const next=page+1;
    const response=type==='TEAM'?await teamTournamentMatches(cid,tid,next,auth.token,auth.username):await individualTournamentMatches(cid,tid,next,auth.token,auth.username);
    const items=response.matches.map(m=>type==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch));
+   if(version!==generation.current)return;
    setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(response.page);setHasMore(response.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{setBusy(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Gestão do torneio'}</Text>
