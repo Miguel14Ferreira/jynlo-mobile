@@ -21,6 +21,7 @@ import StoryTextPlacement from '../../src/components/StoryTextPlacement';
 import StoryDetailsView from '../../src/components/StoryDetailsView';
 import {storyMetadataReservedHeight} from '../../src/lib/story-sticker-bounds.cjs';
 import PostAlbumCarousel from '../../src/components/PostAlbumCarousel';
+import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails} from '../../src/lib/types';
@@ -237,7 +238,7 @@ export default function JynloFeedHome(){
   const storyCaptionRef=useRef(''),storyMediaRef=useRef<MobileMedia|null>(null);
   storyMediaRef.current=storyMedia;
   const [composerOpen,setComposerOpen]=useState(false);
-  const [expandedPostImage,setExpandedPostImage]=useState<string|null>(null);
+  const [expandedPostImage,setExpandedPostImage]=useState<ExpandedPostPhotos|null>(null);
   const [composerText,setComposerText]=useState(''),[composerLocation,setComposerLocation]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const composerTextRef=useRef(''),composerLocationRef=useRef('');
   const composerMediaRef=useRef<MobileMedia[]>([]);
@@ -721,12 +722,8 @@ export default function JynloFeedHome(){
       refreshControl={<RefreshControl refreshing={loading&&visiblePosts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
     <StoryViewer group={visibleStoryViewer} groups={visibleStoryGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
-    <Modal visible={identityMatches&&!!expandedPostImage} animationType="fade" transparent onRequestClose={()=>setExpandedPostImage(null)}>
-      <View style={styles.postPhotoBackdrop}>
-        {expandedPostImage?<Image source={{uri:expandedPostImage}} style={styles.postPhotoFull} resizeMode="contain"/>:null}
-        <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada" onPress={()=>setExpandedPostImage(null)} style={styles.postPhotoClose}><Text style={styles.postPhotoCloseText}>✕ Fechar</Text></Pressable>
-      </View>
-    </Modal>
+    <PostImageLightbox key={expandedPostImage?.uris[expandedPostImage.index]||'closed'}
+      photos={identityMatches?expandedPostImage:null} onClose={()=>setExpandedPostImage(null)}/>
     <Modal visible={identityMatches&&expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <KeyboardAvoidingView style={styles.commentsModal} behavior={Platform.OS==='ios'?'padding':'height'}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
