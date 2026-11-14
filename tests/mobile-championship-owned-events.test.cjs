@@ -91,3 +91,11 @@ test('event details reload only for selected competition or confirmed mutation',
  assert.match(list,/\[cid,chid,eventId,auth\.token,activeEvent\?\.format,detailsRefresh\]/);
  assert.doesNotMatch(list,/\[cid,chid,eventId,auth\.token,loading,events\]/);
 });
+
+test('fixtures are grouped by collapsible rounds rather than rendering an endless flat list',()=>{
+ assert.match(list,/const groupedFixtures=Array\.from\(new Set\(fixtures\.map\(f=>f\.round\)\)\)/);
+ assert.match(list,/accessibilityState=\{\{expanded:expandedRounds\.includes\(group\.round\)\}\}/);
+ assert.match(list,/setExpandedRounds\(current=>current\.includes\(group\.round\)/);
+ assert.match(list,/Expandir todas as jornadas/);
+ assert.match(list,/Recolher todas as jornadas/);
+});
