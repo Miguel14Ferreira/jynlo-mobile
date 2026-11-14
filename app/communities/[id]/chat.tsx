@@ -185,6 +185,7 @@ export default function CommunityChatScreen(){
      const url='https://www.google.com/maps?q='+lat.toFixed(5)+','+lng.toFixed(5);
      if(version===generation.current&&activeChat.current===identity){
       setDraft(current=>[current.trim(),url].filter(Boolean).join('\n'));
+        setAttachmentsOpen(false);
       Alert.alert('Localização pronta','Confirma o destinatário e toca em Enviar.');
      }
     })().catch(e=>{
@@ -357,8 +358,8 @@ export default function CommunityChatScreen(){
     {attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
     {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
    </View>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
