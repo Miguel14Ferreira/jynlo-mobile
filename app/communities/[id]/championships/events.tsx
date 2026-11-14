@@ -45,6 +45,7 @@ export default function ChampionshipOwnedEventsScreen(){
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [detailsRefresh,setDetailsRefresh]=useState(0);
  const [loadedEventId,setLoadedEventId]=useState<number|null>(null);
+ const [detailsFailed,setDetailsFailed]=useState(false);
  const generation=useRef(0),pending=useRef(false);
  const activeEvent=events.find(item=>item.id===selected);
  const groupedFixtures=Array.from(new Set(fixtures.map(f=>f.round))).sort((a,b)=>a-b)
@@ -80,7 +81,7 @@ export default function ChampionshipOwnedEventsScreen(){
  },[cid,chid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  setEvents([]);setSelected(null);setRegistrations([]);setFixtures([]);setLoadedEventId(null);setError('');setLoading(true);
+  setEvents([]);setSelected(null);setRegistrations([]);setFixtures([]);setLoadedEventId(null);setDetailsFailed(false);setError('');setLoading(true);
   void load(version);
   return()=>{generation.current++;};
  },[load]));
@@ -90,7 +91,7 @@ export default function ChampionshipOwnedEventsScreen(){
  useFocusEffect(useCallback(()=>{
   if(eventId==null||!auth.token)return;
   let active=true;const version=generation.current;
-  setLoadedEventId(null);setFixtures([]);setRegistrations([]);setStandings(null);
+  setLoadedEventId(null);setDetailsFailed(false);setFixtures([]);setRegistrations([]);setStandings(null);
   void Promise.allSettled([
    listOwnedEventTeams(cid,chid,eventId,auth.token),
    listOwnedFixtures(cid,chid,eventId,auth.token),
@@ -103,7 +104,9 @@ export default function ChampionshipOwnedEventsScreen(){
    else setError(b.reason instanceof Error?b.reason.message:'Não foi possível carregar jornadas.');
    if(c.status==='fulfilled')setStandings(c.value);
    else setError(c.reason instanceof Error?c.reason.message:'Não foi possível carregar a classificação.');
-   setLoadedEventId(eventId);
+   const complete=a.status==='fulfilled'&&b.status==='fulfilled'&&c.status==='fulfilled';
+   setDetailsFailed(!complete);
+   setLoadedEventId(complete?eventId:null);
   });
   return()=>{active=false;};
  },[cid,chid,eventId,auth.token,activeEvent?.format,detailsRefresh]));
@@ -163,7 +166,9 @@ export default function ChampionshipOwnedEventsScreen(){
    <Text style={styles.teamName}>{item.name}</Text>
    <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':'Taça'} · {item.status==='DRAFT'?'Em preparação':item.status==='SCHEDULED'?'Em curso':'Concluída'}{item.winnerTeamName?' · Campeão: '+item.winnerTeamName:''}</Text>
   </Pressable>)}
-  {activeEvent&&!detailsReady?<Loader/>:null}
+  {activeEvent&&!detailsReady&&!detailsFailed?<Loader/>:null}
+  {activeEvent&&detailsFailed?<Button secondary title="Tentar carregar equipas, jornadas e classificação novamente"
+    disabled={busy} onPress={()=>setDetailsRefresh(value=>value+1)}/>:null}
   {activeEvent&&detailsReady?<View style={styles.card}>
    <Text style={styles.title}>{activeEvent.name}</Text>
    <Text style={styles.note}>Equipas inscritas: {registrations.length}</Text>
