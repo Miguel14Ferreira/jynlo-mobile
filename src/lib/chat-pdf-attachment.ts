@@ -1,3 +1,4 @@
+import {fetch as expoFetch} from 'expo/fetch';
 import {File} from 'expo-file-system';
 import type {DocumentPickerAsset} from 'expo-document-picker';
 import {API_BASE,DEMO_MODE} from './api';
@@ -46,7 +47,7 @@ export async function sendChatPdf(
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),30000);
  try{
-  const response=await fetch(API_BASE+path,{
+  const response=await expoFetch(API_BASE+path,{
    method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
    credentials:'omit',redirect:'error',body:form,signal:controller.signal
   });
