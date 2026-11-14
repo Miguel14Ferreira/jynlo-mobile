@@ -6,7 +6,7 @@ import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-route
 // Native video is loaded on demand for actual video content.
 import {useAuth} from '../../src/lib/auth';
 import {mediaRequestSource} from '../../src/lib/protected-media-source';
-import {DEMO_MODE,request} from '../../src/lib/api';
+import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
@@ -302,6 +302,8 @@ export default function JynloFeedHome(){
   const [commentWriteBusy,setCommentWriteBusy]=useState<number|null>(null);
   const commentWriteLock=useRef(false);
   const postActionInFlight=useRef(false);
+  const sessionCancelInFlight=useRef(false);
+  const [sessionCancelBusyId,setSessionCancelBusyId]=useState<number|null>(null);
   const reloadNumber=useRef(0);
   const commentsRequest=useRef(0);
   const feedIdentity=useRef('');
@@ -332,7 +334,7 @@ export default function JynloFeedHome(){
       commentsRequest.current++;
       // A previous account's request must not block the new account or
       // release a newer action lock when its own finally handler runs.
-      postActionInFlight.current=false;commentWriteLock.current=false;
+      postActionInFlight.current=false;commentWriteLock.current=false;sessionCancelInFlight.current=false;setSessionCancelBusyId(null);
       postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
       setPublishing(false);setStoryPublishing(false);
       confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();confirmedPostEdits.current.clear();
@@ -513,6 +515,66 @@ export default function JynloFeedHome(){
     }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
     .finally(()=>{if(feedIdentity.current===identity){postActionInFlight.current=false;setBusyPost(null);}});
   }
+  async function shareFeedSession(item:FeedItem){
+    if(!Number.isSafeInteger(item.sessionId)||!item.sessionId||item.sessionId<=0)return;
+    try{
+      await Share.share({message:[item.sport||'Sessão desportiva',item.city||'',sharedPostLink(item)].filter(Boolean).join(' · ')});
+    }catch(e){
+      Alert.alert('Partilhar sessão',e instanceof Error?e.message:'Não foi possível partilhar a sessão.');
+    }
+  }
+
+  async function requestCancelFeedSession(item:FeedItem){
+    const id=item.sessionId,actor=auth.token,username=auth.username,identity=currentFeedIdentity;
+    if(item.type!=='SESSION_CREATED'||!Number.isSafeInteger(id)||!id||id<=0||
+       !actor||!username||!identityMatches||
+       item.authorUsername.toLowerCase()!==username.toLowerCase()||
+       sessionCancelInFlight.current)return;
+    sessionCancelInFlight.current=true;setSessionCancelBusyId(id);
+    try{
+      // The feed may be stale: never offer a destructive confirmation based
+      // solely on the author displayed in an old activity card.
+      const detail=await sessionDetail(id,actor,username);
+      if(feedIdentity.current!==identity)return;
+      if(detail.creatorUsername?.toLowerCase()!==username.toLowerCase()||
+         (detail.status!=='OPEN'&&detail.status!=='FULL')){
+        Alert.alert('Sessão indisponível','Esta sessão já não pode ser cancelada ou não és o organizador.');
+        return;
+      }
+      Alert.alert('Cancelar sessão',
+        `Vais cancelar a sessão de ${detail.sport||item.sport||'desporto'} para todos os participantes. Esta ação não pode ser anulada. Confirmas?`,[
+        {text:'Manter sessão',style:'cancel'},
+        {text:'Sim, cancelar sessão',style:'destructive',onPress:()=>{
+          if(feedIdentity.current!==identity||sessionCancelInFlight.current)return;
+          sessionCancelInFlight.current=true;setSessionCancelBusyId(id);
+          // Never automatically retry an uncertain POST. The session detail
+          // remains the source of truth if the connection drops.
+          void cancelSession(id,actor,username).then(()=>{
+            if(feedIdentity.current!==identity)return;
+            const key=removedFeedKey(item);
+            if(key)confirmedRemovedFeedKeys.current.add(key);
+            setPosts(current=>current.filter(entry=>!(entry.type==='SESSION_CREATED'&&entry.sessionId===id)));
+            Alert.alert('Sessão cancelada','A sessão foi cancelada para todos os participantes.');
+            void load();
+          }).catch(e=>{
+            if(feedIdentity.current===identity)
+              Alert.alert('Cancelamento não confirmado',
+                e instanceof Error&&e.message?e.message+' Verifica o estado da sessão antes de repetir.':
+                'Verifica o estado da sessão antes de repetir.');
+          }).finally(()=>{
+            if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
+          });
+        }}
+      ]);
+    }catch(e){
+      if(feedIdentity.current===identity)
+        Alert.alert('Não foi possível verificar a sessão',
+          e instanceof Error?e.message:'Abre o detalhe e tenta novamente.');
+    }finally{
+      if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
+    }
+  }
+
   function openPostComposer(){
     setPublishNotice(null);setPostPublishError('');
     postComposerRevision.current++;
@@ -833,14 +895,30 @@ export default function JynloFeedHome(){
     if(!Number.isSafeInteger(id)||!id||id<=0)return null;
     const scheduled= item.gameDate?Date.parse(item.gameDate):NaN;
     const when=Number.isFinite(scheduled)?new Date(scheduled).toLocaleString('pt-PT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null;
-    return <Pressable accessibilityRole="button" accessibilityLabel="Consultar sessão associada à publicação" onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
-      <View style={styles.postSessionIcon}><JynloIcon name="session" size={26} color={TEAL}/></View>
-      <View style={{flex:1,gap:4}}>
-        <Text style={styles.postSessionTitle}>{item.sport?.trim()||'Sessão desportiva'}</Text>
-        {(item.city?.trim()||when)?<Text style={styles.postSessionMeta}>{[item.city?.trim(),when].filter(Boolean).join(' · ')}</Text>:null}
-        <Text style={styles.postSessionLink}>Ver detalhes da sessão</Text>
-      </View>
-    </Pressable>;
+    const mine=item.type==='SESSION_CREATED'&&Boolean(auth.token&&auth.username&&
+      item.authorUsername.toLowerCase()===auth.username.toLowerCase());
+    return <View style={{gap:9}}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Consultar sessão associada à publicação" onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
+        <View style={styles.postSessionIcon}><JynloIcon name="session" size={26} color={TEAL}/></View>
+        <View style={{flex:1,gap:4}}>
+          <Text style={styles.postSessionTitle}>{item.sport?.trim()||'Sessão desportiva'}</Text>
+          {(item.city?.trim()||when)?<Text style={styles.postSessionMeta}>{[item.city?.trim(),when].filter(Boolean).join(' · ')}</Text>:null}
+          <Text style={styles.postSessionLink}>Ver detalhes da sessão</Text>
+        </View>
+      </Pressable>
+      {item.type==='SESSION_CREATED'?<View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar sessão" style={styles.attendanceButton}
+          onPress={()=>void shareFeedSession(item)}>
+          <Text style={styles.attendanceActionText}>Partilhar sessão</Text>
+        </Pressable>
+        {mine?<Pressable accessibilityRole="button" accessibilityLabel="Cancelar a minha sessão" style={styles.attendanceButton}
+          disabled={sessionCancelBusyId!==null} onPress={()=>void requestCancelFeedSession(item)}>
+          <Text style={{color:'#FF9292',fontWeight:'700'}}>
+            {sessionCancelBusyId===id?'A verificar…':'Cancelar sessão'}
+          </Text>
+        </Pressable>:null}
+      </View>:null}
+    </View>;
   }
   function PostCard({item}:{item:FeedItem}){
     const album=postMediaItems(item);const likeBusy=busyPost===item.postId;
