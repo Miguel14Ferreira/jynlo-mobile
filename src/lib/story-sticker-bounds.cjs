@@ -22,6 +22,6 @@ function clampStickerPosition(geometry,area,sticker,reservedTopPx=0){
 function storyMetadataReservedHeight(locationLabel,taggedUsernames){
  const location=typeof locationLabel==='string'&&locationLabel.trim().length>0;
  const mentions=typeof taggedUsernames==='string'&&taggedUsernames.trim().length>0;
- return location&&mentions?112:location?72:mentions?76:0;
+ return location&&mentions?124:location?80:mentions?76:0;
 }
 module.exports={stickerBounds,clampStickerPosition,storyMetadataReservedHeight};
