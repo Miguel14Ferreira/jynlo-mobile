@@ -524,7 +524,7 @@ export default function DirectConversation(){
 
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
-    style={styles.attachmentToggle}><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View></Pressable>:null}
+    style={styles.attachmentToggle} accessibilityLabel={attachmentsOpen?'Fechar anexos':'Abrir anexos'}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={23} color={C.mint}/></Pressable>:null}
   {blocked?<Text style={styles.note}>Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.</Text>:null}
   {!blockStatusKnown&&auth.token&&!DEMO_MODE?<View style={{gap:7}}>
     <Text style={styles.note}>Não foi possível confirmar as opções de bloqueio. O envio continua protegido pelas permissões do servidor.</Text>
@@ -556,14 +556,20 @@ export default function DirectConversation(){
       if(generation.current===version&&conversation.current===identity)setPhotoAvailabilityError('Não foi possível confirmar a disponibilidade das fotografias.');
     });
   }}/>:null}
-  <ChatPdfComposer target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} replyId={replyTarget?.id} onSent={async(sentReplyId)=>{
+  <ChatPdfComposer compact target={{scope:'direct',id:peer}} token={auth.token} enabled={!blocked&&blockStatusKnown&&!sending&&!photoBusy} replyId={replyTarget?.id} onSent={async(sentReplyId)=>{
    if(conversation.current!==peer+'|'+auth.token)return;
    setReplyTarget(current=>current?.id===(sentReplyId??undefined)?null:current);
    setAttachmentsOpen(false);await refresh(true,generation.current);
   }}/>
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={mutationBusy||photoBusy||sending||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
-  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Button secondary title="Abrir câmara" disabled={mutationBusy||photoBusy||sending} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
-  {auth.token&&!blocked&&blockStatusKnown?<Button secondary title={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending||photoBusy} onPress={()=>{void prepareLocation();}}/>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
+     style={styles.iconAction} disabled={mutationBusy||photoBusy||sending||Boolean(photo&&1+extraPhotos.length>=4)}
+     onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}><JynloIcon name="gallery" size={23} color={C.mint}/></Pressable>:null}
+  {auth.token&&!blocked&&blockStatusKnown&&photoAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara"
+     style={styles.iconAction} disabled={mutationBusy||photoBusy||sending}
+     onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}><JynloIcon name="camera" size={23} color={C.mint}/></Pressable>:null}
+  {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button" accessibilityLabel={locationBusy?'A obter localização…':'Partilhar localização atual'}
+     style={styles.iconAction} disabled={locationBusy||sending||photoBusy}
+     onPress={()=>{void prepareLocation();}}><JynloIcon name="location" size={23} color={C.mint}/></Pressable>:null}
 
   </View>
   {editing&&!blocked?<View style={styles.editPanel}>
@@ -600,7 +606,8 @@ const styles=StyleSheet.create({
  refreshLink:{alignSelf:'center',padding:10,minHeight:44,justifyContent:'center'},refreshText:{color:C.muted,fontSize:12,fontWeight:'700'},
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:7,paddingHorizontal:10},
  attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},
- attachmentOptions:{gap:7,maxHeight:180},
+ attachmentOptions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
+ iconAction:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  hidden:{display:'none'},
  safetyToggle:{fontSize:12,color:C.mint,fontWeight:'800'},
  safety:{gap:10,padding:14,borderRadius:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
