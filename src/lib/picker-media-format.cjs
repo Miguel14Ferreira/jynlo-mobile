@@ -20,7 +20,7 @@ function pickerMediaMime(asset){
  if(!asset||(asset.type!=='image'&&asset.type!=='video')||
   typeof asset.uri!=='string'||!asset.uri||
   isUnsupportedMediaContainer(asset.uri))return null;
- const declared=typeof asset.mimeType==='string'?asset.mimeType.toLowerCase():'';
+ const declared=typeof asset.mimeType==='string'?asset.mimeType.trim().toLowerCase():'';
  const extension=mediaUriExtension(asset.uri);
  const fromUri=extension?formats[extension]:null;
  // Android document providers often return opaque content:// URIs with no
@@ -28,7 +28,14 @@ function pickerMediaMime(asset){
  // Inspect the filename only as a fallback; never override a declared MIME.
  const nameExtension=mediaUriExtension(asset.fileName);
  const fromName=nameExtension?formats[nameExtension]:null;
- const mime=declared||fromUri||fromName||null;
+ // Generic Android document-provider MIME must not suppress a supported
+ // extension or a correctly typed filename.
+ const generic=!declared||declared==='application/octet-stream'||declared==='application/unknown';
+ if(!generic&&!Object.values(formats).includes(declared))return null;
+ // If both metadata and a reliable URI extension specify supported media,
+ // never relabel one container as another just to make an upload pass.
+ if(!generic&&fromUri&&fromUri!==declared)return null;
+ const mime=generic?(fromUri||fromName||null):declared;
  if(!mime)return null;
  if(asset.type==='video'&&!mime.startsWith('video/'))return null;
  if(asset.type==='image'&&!mime.startsWith('image/'))return null;
