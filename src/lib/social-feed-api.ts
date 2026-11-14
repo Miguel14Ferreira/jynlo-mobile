@@ -178,7 +178,7 @@ export async function postComments(postId:number,token:string|null):Promise<Soci
 }
 export async function addPostComment(postId:number,content:string,token:string|null,username:string|null):Promise<SocialComment>{
   requireViewer(token,username);
-  const message=content.trim();if(!message||message.length>2000)throw new Error('Escreve um comentário válido.');
+  const message=content.trim();if(!message||message.length>500)throw new Error('Escreve um comentário até 500 caracteres.');
   if(DEMO_MODE){const item:SocialComment={id:nextDemoCommentId++,postId,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:message,createdAt:nowIso()};
     demoComments.set(postId,[...(demoComments.get(postId)||[]),item]);return item;}
   return request<SocialComment>(`/api/feed/posts/${postId}/comments`,{token,method:'POST',body:{content:message}});
