@@ -112,7 +112,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
     if(last>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
      lastAcknowledgedMessageId.current=last;
-     void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
+     void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
     }
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
@@ -401,7 +401,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
      if(auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
-      void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{});
+      void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
     }}}
    onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
