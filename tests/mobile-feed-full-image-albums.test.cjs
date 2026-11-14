@@ -2,26 +2,37 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
-test('Feed displays every photo without cropping and keeps album width inside padded cards',()=>{
- const s=read('app/(tabs)/index.tsx');
- assert.match(s,/Math.max\(220,screenWidth-56\)/);
- assert.match(s,/style=\{styles.postImage\} resizeMode="contain"/);
- assert.match(s,/postImage:\{width:'100%',height:350,borderRadius:12,backgroundColor:/);
- assert.match(s,/pointerEvents="none" style=\{styles.albumCounter\}/);
- assert.match(s,/album.length>1/);
- assert.match(s,/postMediaItems\(item\)/);
+test('Feed renders the responsive album without clipping portrait photos',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ const album=read('src/components/PostAlbumCarousel.tsx');
+ const photo=read('src/components/AdaptivePostPhoto.tsx');
+ assert.match(feed,/postMediaItems\(item\)/);
+ assert.match(feed,/<PostAlbumCarousel items=\{album\} onExpand=\{setExpandedPostImage\}/);
+ assert.match(album,/onLayout=\{event=>/);
+ assert.match(album,/horizontal pagingEnabled/);
+ assert.match(photo,/resizeMode="contain"/);
+ assert.match(photo,/Math\.min\(620,Math\.max\(180/);
 });
-test('Feed image can be opened fullscreen and dismissed without leaving chat or feed',()=>{
- const s=read('app/(tabs)/index.tsx');
- assert.match(s,/\[expandedPostImage,setExpandedPostImage\]=useState<string\|null>\(null\)/);
- assert.match(s,/accessibilityLabel=\{'Ampliar fotografia '\+\(i\+1\)/);
- assert.match(s,/onPress=\{\(\)=>setExpandedPostImage\(uri\)\}/);
- assert.match(s,/visible=\{identityMatches&&!!expandedPostImage\}/);
- assert.match(s,/onRequestClose=\{\(\)=>setExpandedPostImage\(null\)\}/);
- assert.match(s,/accessibilityLabel="Fechar fotografia ampliada"/);
- assert.match(s,/postPhotoFull:\{width:'100%',height:'86%'\}/);
- assert.match(s,/setExpandedPostImage\(null\);/);
+
+test('Feed opens the selected photo in a full-screen album and closes it safely',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ const viewer=read('src/components/PostImageLightbox.tsx');
+ assert.match(feed,/\[expandedPostImage,setExpandedPostImage\]=useState<ExpandedPostPhotos\|null>\(null\)/);
+ assert.match(feed,/<PostImageLightbox key=\{/);
+ assert.match(feed,/photos=\{identityMatches\?expandedPostImage:null\}/);
+ assert.match(feed,/onClose=\{\(\)=>setExpandedPostImage\(null\)\}/);
+ assert.match(viewer,/presentationStyle="fullScreen"/);
+ assert.match(viewer,/resizeMode="contain"/);
+ assert.match(viewer,/onRequestClose=\{onClose\}/);
+ assert.match(viewer,/Fotografia seguinte/);
 });
+
+test('Feed item keys remain stable when new posts arrive',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(feed,/keyExtractor=\{\(item,index\)=>feedEntryKey\(item\)/);
+ assert.doesNotMatch(feed,/item\.postId\|\|item\.sessionId\|\|index\}\/);
+});
+
 test('photo composer preview uses contain rather than hiding edges of images',()=>{
  const s=read('app/(tabs)/index.tsx');
  assert.match(s,/media.type==='image'\?<Image source=\{\{uri:media.uri\}\} resizeMode="contain" style=\{styles.postMediaPreviewImage\}/);
