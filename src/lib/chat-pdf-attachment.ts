@@ -41,7 +41,7 @@ export async function sendChatPdf(
   throw Error('O ficheiro selecionado não é um PDF válido.');
  const form=new FormData();
  const safeName=asset.name.replace(/[\\/\x00-\x1f\x7f]/g,'_').slice(-140);
- form.append('file',{uri:asset.uri,name:safeName,type:'application/pdf'} as unknown as Blob);
+ form.append('file',file as unknown as Blob,safeName);
  if(replyId!=null)form.append('replyToMessageId',String(replyId));
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),30000);
