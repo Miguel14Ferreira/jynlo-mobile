@@ -11,6 +11,7 @@ import {sharedPostLink} from '../../../src/lib/shared-post-link.cjs';
 import PostEditSheet from '../../../src/components/PostEditSheet';
 import AdaptivePostPhoto from '../../../src/components/AdaptivePostPhoto';
 import ProtectedPostMedia from '../../../src/components/ProtectedPostMedia';
+import {mediaRequestSource} from '../../../src/lib/protected-media-source';
 const T=MobileTheme.colors;
 const FeedVideo=lazy(()=>import('../../../src/components/FeedVideo'));
 
@@ -205,7 +206,7 @@ export default function NotificationPost(){
    onClose={()=>setEditingPost(null)} onSaved={updated=>{setPost(current=>current?.postId===updated.postId?updated:current);setEditingPost(null);}}/>
   <Modal visible={!!expandedImage&&!!post&&!!auth.token} transparent animationType="fade" onRequestClose={()=>setExpandedImage(null)}>
    <View style={styles.photoOverlay}>
-    {expandedImage?<Image source={{uri:expandedImage}} resizeMode="contain" style={styles.fullImage}/>:null}
+    {expandedImage?<Image source={mediaRequestSource(expandedImage,auth.token)} resizeMode="contain" style={styles.fullImage}/>:null}
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada" onPress={()=>setExpandedImage(null)} style={styles.closePhoto}><Text style={styles.closePhotoText}>✕ Fechar</Text></Pressable>
    </View>
   </Modal>
