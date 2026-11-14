@@ -119,8 +119,10 @@ export async function championshipTeamPlayers(cid:number,chid:number,teamId:numb
 export async function ownedFixtureGoals(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedGoal[]>{
  requireAuth(token);return request<OwnedGoal[]>(fixturePath(cid,chid,eid,fid)+'/goals',{token});
 }
-export async function addOwnedFixtureGoal(cid:number,chid:number,eid:number,fid:number,teamId:number,profileId:number,minute:number,token:string):Promise<OwnedGoal[]>{
- requireAuth(token);return request<OwnedGoal[]>(fixturePath(cid,chid,eid,fid)+'/goals',{token,method:'POST',body:{teamId:validId(teamId),profileId:validId(profileId),minute:validMinute(minute)}});
+export async function addOwnedFixtureGoal(cid:number,chid:number,eid:number,fid:number,teamId:number,profileId:number,minute:number,token:string,assistProfileId?:number|null):Promise<OwnedGoal[]>{
+ requireAuth(token);
+ if(assistProfileId!=null){validId(assistProfileId);if(assistProfileId===profileId)throw Error('O marcador não pode assistir o próprio golo.');}
+ return request<OwnedGoal[]>(fixturePath(cid,chid,eid,fid)+'/goals',{token,method:'POST',body:{teamId:validId(teamId),profileId:validId(profileId),minute:validMinute(minute),assistProfileId:assistProfileId??null}});
 }
 export async function ownedFixtureCards(cid:number,chid:number,eid:number,fid:number,token:string):Promise<OwnedCard[]>{
  requireAuth(token);return request<OwnedCard[]>(fixturePath(cid,chid,eid,fid)+'/cards',{token});
