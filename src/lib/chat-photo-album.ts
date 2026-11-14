@@ -1,4 +1,5 @@
 import type {ImagePickerAsset} from 'expo-image-picker';
+import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
 import {prepareChatMedia} from './chat-photo-source';
 import {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES,confirmedChatAlbumReply} from './chat-attachments-core.cjs';
@@ -46,7 +47,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
    prepared.push(attachment);
    total+=attachment.size;
    if(total>MAX_TOTAL_BYTES)throw Error('Os anexos excedem 40 MB no total.');
-   form.append('files',{uri:attachment.uri,name:'jynlo-chat-'+(index+1)+'.'+extension,type:photo.mimeType} as unknown as Blob);
+   form.append('files',new File(attachment.uri) as unknown as Blob,'jynlo-chat-'+(index+1)+'.'+extension);
   }
   if(caption?.trim())form.append('caption',caption.trim());
   if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
