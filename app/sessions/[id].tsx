@@ -271,6 +271,7 @@ export default function SessionScreen(){
   };
   const cancel=()=>{
     if(!auth.token||!detail||!owner)return;
+    const sessionAtPrompt=detail;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     const actorToken=auth.token,actorUsername=auth.username;
     Alert.alert('Cancelar sessão','Esta ação cancela a sessão para todos os jogadores. Confirmas?',[
@@ -279,7 +280,7 @@ export default function SessionScreen(){
         if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
         void perform(()=>cancelSession(id,actorToken,actorUsername||undefined),()=>{
           if(actorUsername){
-            setCancelledShare({id,actor:actorUsername,text:cancellationNotice(detail)});
+            setCancelledShare({id,actor:actorUsername,text:cancellationNotice(sessionAtPrompt)});
           }
           return 'Sessão cancelada. Os inscritos serão avisados na Jynlo; partilha também com convidados externos.';
         });
