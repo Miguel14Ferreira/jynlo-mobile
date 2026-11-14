@@ -12,7 +12,7 @@ function nativeRouteForWebLink(path){
   // Browsers sometimes normalize shared links with a trailing slash.
   // Keep the path canonical without trusting arbitrary hosts or route names.
   if(url.pathname.length>1&&url.pathname.endsWith('/'))
-   url.pathname=url.pathname.replace(/\\/+$/,'');
+   url.pathname=url.pathname.replace(/\/+$/,'');
   const token=(v)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'')?v:null;
   if(url.pathname==='/'){
    const confirmation=token(url.searchParams.get('confirmRegistration'));
