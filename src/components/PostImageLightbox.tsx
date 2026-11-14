@@ -30,9 +30,9 @@ export default function PostImageLightbox({photos,onClose}:Props){
     const width=Math.round(event.nativeEvent.layout.width);
     if(width>0&&width!==pageWidth){setPageWidth(width);}
    }}>
-    {pageWidth>0?<ScrollView ref={scroll} key={pageWidth} horizontal pagingEnabled
+    {pageWidth>0?<ScrollView ref={scroll} key={pageWidth} style={{flex:1}} horizontal pagingEnabled
       showsHorizontalScrollIndicator={false}
-      contentOffset={{x:initial*pageWidth,y:0}}
+      contentOffset={{x:index*pageWidth,y:0}}
       onMomentumScrollEnd={event=>{
        const next=Math.round(event.nativeEvent.contentOffset.x/pageWidth);
        setIndex(Math.max(0,Math.min(entries.length-1,next)));
