@@ -28,6 +28,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
  const inlineNearBottom=useRef(true);
+ const previousLatestMessageId=useRef(0);
+ const [unseenBelow,setUnseenBelow]=useState(false);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
@@ -43,6 +45,13 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   const hidden=Keyboard.addListener(hideEvent,()=>setKeyboardVisible(false));
   return()=>{shown.remove();hidden.remove();};
  },[embedded]);
+ useEffect(()=>{
+  if(!embedded)return;
+  const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+  if(latest>previousLatestMessageId.current&&previousLatestMessageId.current>0&&!inlineNearBottom.current)
+   setUnseenBelow(true);
+  previousLatestMessageId.current=latest;
+ },[embedded,entries]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [editing,setEditing]=useState<SessionChatEntry|null>(null),[editText,setEditText]=useState('');
@@ -112,7 +121,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   if(changedAccountOrSession){
    // Preserve unsent text, replies and selected media on ordinary refocus.
    // Clear everything only when the session or authenticated account changed.
-   inlineNearBottom.current=true;setHistoryLimit(40);
+   inlineNearBottom.current=true;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);
    setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');
    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
   }
@@ -345,13 +354,18 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
   {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
-    inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
+    inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+    if(inlineNearBottom.current)setUnseenBelow(false);}}
    onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
    contentContainerStyle={{gap:8,padding:8}}>
     {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
       <Text style={styles.actionText}>Ver mensagens anteriores</Text>
     </Pressable>:null}{renderedMessages}
    </ScrollView>:renderedMessages}
+  {embedded&&unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
+    onPress={()=>{inlineNearBottom.current=true;setUnseenBelow(false);inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+    style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
+    <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
   {embedded&&auth.token&&!closed?<View style={styles.quickActions}>
     {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
       style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
@@ -424,7 +438,9 @@ const styles=StyleSheet.create({
  inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
  inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
  inlineHistoryKeyboard:{height:168},
- olderMessages:{padding:10,alignItems:'center'},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
+ olderMessages:{padding:10,alignItems:'center'},
+ newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:9,borderRadius:20,backgroundColor:C.mint},
+ newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},
  sendAction:{height:44,width:44,borderRadius:12,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
  editPanel:{padding:12,gap:9,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:150,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:10},messageAction:{minHeight:38,minWidth:35,alignItems:'center',justifyContent:'center'},actionText:{fontSize:12,color:C.mint,fontWeight:'800'},
