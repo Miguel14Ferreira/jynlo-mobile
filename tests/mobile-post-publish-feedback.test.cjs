@@ -26,3 +26,14 @@ test('publication success never belongs to another account or survives account s
  assert.match(feed,/identityMatches&&publishNotice\?/);
  assert.match(feed,/accessibilityLabel="Fechar confirmação de publicação"/);
 });
+
+test('failed uploads keep drafts and show a persistent error on post and story editors',()=>{
+ assert.match(feed,/const \[postPublishError,setPostPublishError\]=useState\(''\),\[storyPublishError,setStoryPublishError\]=useState\(''\)/);
+ assert.match(feed,/setPostPublishError\(message\)/);
+ assert.match(feed,/setStoryPublishError\(message\)/);
+ assert.match(feed,/postPublishError\?<View style=\{styles\.errorBox\} accessibilityRole="alert"/);
+ assert.match(feed,/storyPublishError\?<View style=\{styles\.errorBox\} accessibilityRole="alert"/);
+ assert.match(feed,/O rascunho continua aqui/);
+ assert.match(feed,/postInFlight\.current=true;setPublishing\(true\);setPostPublishError\(''\)/);
+ assert.match(feed,/storyInFlight\.current=true;setStoryPublishing\(true\);setStoryPublishError\(''\)/);
+});
