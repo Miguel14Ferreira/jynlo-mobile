@@ -6,7 +6,8 @@ export type JynloIconName=
  'home'|'explore'|'messages'|'profile'|'plus'|'post'|'community'|'session'|
  'venue'|'tournament'|'championship'|'notifications'|'camera'|'gallery'|
  'like'|'comment'|'share'|'location'|'more'|'close'|'send'|'chevron-down'|
- 'chevron-up'|'chevron-right'|'calendar'|'settings'|'search'|'check';
+ 'chevron-up'|'chevron-right'|'calendar'|'settings'|'search'|'check'|
+ 'attachment'|'remove'|'back'|'reply'|'edit'|'document'|'microphone'|'video';
 
 const icons:Record<JynloIconName,{regular:ComponentProps<typeof Ionicons>['name'];active:ComponentProps<typeof Ionicons>['name']}>={
  home:{regular:'home-outline',active:'home'},
@@ -37,6 +38,14 @@ const icons:Record<JynloIconName,{regular:ComponentProps<typeof Ionicons>['name'
  settings:{regular:'settings-outline',active:'settings'},
  search:{regular:'search-outline',active:'search'},
  check:{regular:'checkmark-circle-outline',active:'checkmark-circle'},
+ attachment:{regular:'attach-outline',active:'attach'},
+ remove:{regular:'trash-outline',active:'trash'},
+ back:{regular:'arrow-back',active:'arrow-back'},
+ reply:{regular:'return-up-back-outline',active:'return-up-back'},
+ edit:{regular:'create-outline',active:'create'},
+ document:{regular:'document-attach-outline',active:'document-attach'},
+ microphone:{regular:'mic-outline',active:'mic'},
+ video:{regular:'videocam-outline',active:'videocam'},
 };
 
 export function JynloIcon({name,size=24,color='#D4F6F2',active=false}:{
