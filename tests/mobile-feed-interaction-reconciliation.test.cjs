@@ -55,5 +55,6 @@ test('account change drops old confirmations and the feed integrates reconciliat
  assert.match(feed,/verifiedPostLikes\.current=likes\.receipts/);
  assert.match(feed,/verifiedPostLikes\.current=rememberPostLike\(verifiedPostLikes\.current,postId,receipt\)/);
  assert.match(feed,/verifiedPostLikes\.current\.delete\(id\)/);
- assert.match(feed,/setPosts\(likes\.posts\)/);
+ assert.match(feed,/const comments=reconcileCommentCounts\(confirmedCommentFloors\.current,likes\.posts\)/);
+ assert.match(feed,/setPosts\(comments\.posts\)/);
 });
