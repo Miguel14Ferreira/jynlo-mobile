@@ -1,0 +1,28 @@
+name: Jynlo Mobile attendance digest parity
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/lib/attendance-digest.cjs'
+      - 'src/lib/feed-visibility.cjs'
+      - 'tests/attendance-digest.test.cjs'
+      - 'app/(tabs)/index.tsx'
+      - '.github/workflows/mobile-attendance-digest.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  attendance-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Validate web/mobile attendance grouping behavior
+        run: node --test tests/attendance-digest.test.cjs
+      - name: Typecheck mobile feed
+        run: npx tsc --noEmit
