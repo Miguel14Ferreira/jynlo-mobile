@@ -7,6 +7,7 @@ import {DEMO_MODE,ApiError,request} from '../../src/lib/api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {parseFavoriteSports} from '../../src/lib/favorite-sports.cjs';
 import ProfilePosts from '../../src/components/ProfilePosts';
+import ProfilePrivacySettings from '../../src/components/ProfilePrivacySettings';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {followStatus,type FollowStatus} from '../../src/lib/social-relations-api';
 type ProfilePresentation={
@@ -97,6 +98,7 @@ export default function ProfileScreen(){
         <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
       </Pressable>:null}
     </View>
+    {auth.token&&!DEMO_MODE?<ProfilePrivacySettings token={auth.token}/>:null}
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
     <Eyebrow>EXPLORAR A JYNLO</Eyebrow>
     <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
