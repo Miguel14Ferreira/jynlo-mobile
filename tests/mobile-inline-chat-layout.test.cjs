@@ -33,13 +33,14 @@ test('inline composer uses icon-only actions with accessible names',()=>{
   assert.match(src,/name="gallery"/);
   assert.match(src,/name="camera"/);
   assert.match(src,/name="location"/);
+  assert.match(src,/accessibilityLabel=\{muted\?'Ativar avisos deste chat':'Silenciar avisos deste chat'\}/);
   assert.match(src,/<ChatPdfComposer compact/);
   assert.match(src,/name="send"/);
  }
  const pdf=read('src/components/ChatPdfComposer.tsx');
  assert.match(pdf,/accessibilityLabel="Anexar documento PDF"/);
  assert.match(pdf,/name="document"/);
- assert.match(pdf,/compact\?styles.compactPanel/);
+ assert.match(pdf,/compact\?\(selected\?styles.compactExpanded:styles.compactPanel\)/);
 });
 test('chat scopes remain backed by their own access-authorized APIs',()=>{
  const session=read('src/components/SessionChatPanel.tsx');
