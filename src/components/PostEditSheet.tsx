@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {Alert,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {FeedItem} from '../lib/types';
 import {editPost} from '../lib/social-feed-api';
 import {postMediaItems} from '../lib/post-album.cjs';
@@ -21,6 +21,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const lock=useRef(false);
+ const editorScrollRef=useRef<ScrollView|null>(null);
  const generation=useRef(0);
  const currentIdentity=post&&token&&username&&post.authorUsername.toLowerCase()===username.toLowerCase()?
    String(post.postId)+'|'+username.toLowerCase()+'|'+token:null;
@@ -32,6 +33,15 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  },[post?.postId,token,username]);
  const visible=Boolean(currentIdentity&&post?.type==='POST'&&Number.isSafeInteger(post?.postId)&&(post?.postId??0)>0);
  const changed=Boolean(post&&(text.trim()!==(post.content||'').trim()||location.trim()!==(post.location||'').trim()));
+ useEffect(()=>{
+   if(!visible)return;
+   const showEvent=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+   const subscription=Keyboard.addListener(showEvent,()=>{
+     const focused=TextInput.State.currentlyFocusedInput?.();
+     if(focused)editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,28,true);
+   });
+   return()=>subscription.remove();
+ },[visible]);
  function close(){
    if(lock.current)return;
    if(changed){
@@ -67,15 +77,15 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
     <Text style={styles.heading}>Editar publicação</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar edição da publicação" disabled={busy} onPress={close} style={styles.close}><JynloIcon name="close" size={24} color={C.text}/></Pressable>
    </View>
-   <ScrollView style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+   <ScrollView ref={editorScrollRef} style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={styles.hint}>Podes alterar a descrição ou localização. As fotografias, vídeos, gostos e comentários mantêm-se.</Text>
     <Text style={styles.label}>Descrição (opcional com fotografias ou vídeos)</Text>
-    <TextInput accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target,28,true)} accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
      value={text} onChangeText={setText} editable={!busy} placeholder="O que queres partilhar?"
      placeholderTextColor={C.muted} style={[styles.input,styles.description]}/>
     <Text style={styles.counter}>{text.length}/1000</Text>
     <Text style={styles.label}>Localização opcional</Text>
-    <TextInput accessibilityLabel="Editar localização da publicação" maxLength={160} editable={!busy}
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target,28,true)} accessibilityLabel="Editar localização da publicação" maxLength={160} editable={!busy}
      value={location} onChangeText={setLocation} placeholder="Ex.: Campo do Bairro, Lisboa"
      placeholderTextColor={C.muted} style={styles.input}/>
     <Text style={styles.counter}>{location.length}/160</Text>
