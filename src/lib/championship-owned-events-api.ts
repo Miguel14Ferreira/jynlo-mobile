@@ -86,8 +86,9 @@ export async function finishOwnedLeague(cid:number,chid:number,eid:number,token:
  return request<OwnedEvent>(eventPath(cid,chid,eid)+'/finalize-league',{token,method:'POST'});
 }
 export type OwnedLeagueStandings={
- standings?:Array<{teamId:number;teamName:string;position:number;played:number;won:number;drawn:number;lost:number;points:number}>;
- rows?:Array<{teamId:number;teamName:string;position:number;played:number;won:number;drawn:number;lost:number;points:number}>;
+ eventId:number;totalMatches:number;playedMatches:number;completed:boolean;firstPlaceTied:boolean;
+ standings:Array<{position:number;teamId:number;teamName:string;played:number;wins:number;draws:number;
+ losses:number;goalsFor:number;goalsAgainst:number;goalDifference:number;points:number}>;
 };
 export async function getOwnedLeagueStandings(cid:number,chid:number,eid:number,token:string):Promise<OwnedLeagueStandings>{
  requireAuth(token);
