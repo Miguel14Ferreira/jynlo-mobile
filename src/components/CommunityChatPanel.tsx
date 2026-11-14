@@ -3,8 +3,8 @@ import ChatPdfComposer from './ChatPdfComposer';
 import SecureChatAttachment from './SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import {confirmedCommunityChatSend} from '../lib/chat-send-receipt.cjs';
-import React,{useCallback,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from './UI';
@@ -27,6 +27,18 @@ import {chatLocationUrl} from '../lib/chat-location.cjs';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
+ // Keep embedded message history readable as the Android keyboard opens.
+ // Never auto-scroll older messages unless the composer has keyboard focus.
+ const inlineHistoryRef=useRef<ScrollView|null>(null);
+ const composerFocused=useRef(false);
+ useEffect(()=>{
+  if(!embedded)return;
+  const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
+  const subscription=Keyboard.addListener(event,()=>{
+   if(composerFocused.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+  });
+  return()=>subscription.remove();
+ },[embedded]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const generation=useRef(0),sendingNow=useRef(false),uploadingNow=useRef(false);
  // Keep in-flight writes locked across navigation; leaving the screen does not cancel the server request.
@@ -353,7 +365,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
-   {embedded?<ScrollView style={styles.inlineHistory} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
+   {embedded?<ScrollView ref={inlineHistoryRef} style={styles.inlineHistory} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>setHistoryLimit(count=>count+40)} style={styles.olderMessages}>
     <Text style={styles.quoteTitle}>Ver mensagens anteriores</Text>
    </Pressable>:null}{renderedMessages}
@@ -405,7 +417,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><JynloIcon name="close" size={20} color={C.mint}/></Pressable></View>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-       maxLength={2000} accessibilityLabel="Mensagem para a comunidade"/>
+       maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
+       onFocus={()=>{composerFocused.current=true;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onBlur={()=>{composerFocused.current=false;}}/>
      <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button">
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
