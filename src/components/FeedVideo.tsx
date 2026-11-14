@@ -1,10 +1,14 @@
-import React,{useEffect,useRef} from 'react';
+import React,{useEffect,useMemo,useRef} from 'react';
+import {useAuth} from '../lib/auth';
+import {mediaRequestSource} from '../lib/protected-media-source';
 import {StyleSheet} from 'react-native';
 import {VideoView,useVideoPlayer} from 'expo-video';
 
 /** Loaded only for an actual feed/story video, never at tab startup. */
 export default function FeedVideo({uri,story=false,paused=false,muted=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;muted?:boolean;onEnd?:()=>void}){
- const player=useVideoPlayer(uri,p=>{
+ const {token}=useAuth();
+ const source=useMemo(()=>mediaRequestSource(uri,token),[uri,token]);
+ const player=useVideoPlayer(source,p=>{
   // Stories must advance when playback finishes, not loop forever.
   p.loop=false;
   if(story){p.muted=muted;p.play();}
