@@ -8,9 +8,9 @@ import {communityDetails} from '../../../../src/lib/community-api';
 import {communityChampionships,getChampionshipTeams,type ChampionshipTeams} from '../../../../src/lib/championship-api';
 import {
  listOwnedEvents,createOwnedEvent,listOwnedEventTeams,registerOwnedEventTeam,
- listOwnedFixtures,scheduleOwnedLeague,drawOwnedCup,advanceOwnedCup,
+ listOwnedFixtures,scheduleOwnedLeague,drawOwnedCup,advanceOwnedCup,getOwnedLeagueStandings,
  recordOwnedFixtureScore,finishOwnedLeague,
- type OwnedEvent,type OwnedEventTeam,type OwnedFixture,type OwnedEventFormat,
+ type OwnedEvent,type OwnedEventTeam,type OwnedFixture,type OwnedEventFormat,type OwnedLeagueStandings,
 } from '../../../../src/lib/championship-owned-events-api';
 
 type FixtureProps={fixture:OwnedFixture;editable:boolean;busy:boolean;onSave:(fixture:OwnedFixture,home:number,away:number)=>void};
@@ -39,6 +39,7 @@ export default function ChampionshipOwnedEventsScreen(){
  const [selected,setSelected]=useState<number|null>(null);
  const [registrations,setRegistrations]=useState<OwnedEventTeam[]>([]);
  const [fixtures,setFixtures]=useState<OwnedFixture[]>([]);
+ const [standings,setStandings]=useState<OwnedLeagueStandings|null>(null);
  const [name,setName]=useState(''),[format,setFormat]=useState<OwnedEventFormat>('LEAGUE');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),pending=useRef(false);
@@ -81,19 +82,22 @@ export default function ChampionshipOwnedEventsScreen(){
  useFocusEffect(useCallback(()=>{
   if(eventId==null||!auth.token)return;
   let active=true;const version=generation.current;
-  setFixtures([]);setRegistrations([]);
+  setFixtures([]);setRegistrations([]);setStandings(null);
   void Promise.allSettled([
    listOwnedEventTeams(cid,chid,eventId,auth.token),
-   listOwnedFixtures(cid,chid,eventId,auth.token)
-  ]).then(([a,b])=>{
+   listOwnedFixtures(cid,chid,eventId,auth.token),
+   events.find(e=>e.id===eventId)?.format==='LEAGUE'?getOwnedLeagueStandings(cid,chid,eventId,auth.token):Promise.resolve(null)
+  ]).then(([a,b,c])=>{
    if(!active||version!==generation.current)return;
    if(a.status==='fulfilled')setRegistrations(a.value);
    else setError(a.reason instanceof Error?a.reason.message:'Não foi possível carregar equipas.');
    if(b.status==='fulfilled')setFixtures(b.value);
    else setError(b.reason instanceof Error?b.reason.message:'Não foi possível carregar jornadas.');
+   if(c.status==='fulfilled')setStandings(c.value);
+   else setError(c.reason instanceof Error?c.reason.message:'Não foi possível carregar a classificação.');
   });
   return()=>{active=false;};
- },[cid,chid,eventId,auth.token,loading]));
+ },[cid,chid,eventId,auth.token,loading,events]));
  async function mutate(action:()=>Promise<unknown>){
   if(pending.current||!canManage||loading)return;
   const version=generation.current;
@@ -161,6 +165,14 @@ export default function ChampionshipOwnedEventsScreen(){
       <Button secondary title="Gerar 2 voltas" disabled={busy} onPress={()=>confirm('Gerar duas voltas?', 'Os jogos serão criados pelo servidor.',()=>scheduleOwnedLeague(cid,chid,activeEvent.id,2,auth.token!))}/></>:
      <Button secondary title="Sortear Taça" disabled={busy} onPress={()=>confirm('Sortear Taça?', 'O sorteio será efetuado no servidor.',()=>drawOwnedCup(cid,chid,activeEvent.id,auth.token!))}/>}
    </View>:null}
+   {activeEvent.format==='LEAGUE'&&standings?<View style={styles.card}>
+    <Text style={styles.title}>Classificação da Liga</Text>
+    <Text style={styles.note}>{standings.playedMatches} de {standings.totalMatches} jogos realizados{standings.firstPlaceTied?' · liderança empatada':''}</Text>
+    {standings.standings.map(row=><View key={row.teamId} style={styles.standing}>
+     <Text style={styles.teamName}>{row.position}. {row.teamName}</Text>
+     <Text style={styles.note}>{row.points} pts · {row.played} J · {row.wins} V · {row.draws} E · {row.losses} D · {row.goalsFor}:{row.goalsAgainst} golos · DG {row.goalDifference}</Text>
+    </View>)}
+   </View>:null}
    <Text style={styles.title}>Jornadas e resultados ({fixtures.length})</Text>
    {fixtures.length===0?<Text style={styles.note}>Ainda não existem jogos nesta prova.</Text>:null}
    {fixtures.map(fixture=><View key={fixture.id} style={styles.fixture}>
@@ -185,5 +197,6 @@ const styles=StyleSheet.create({
  input:{borderWidth:1,borderColor:C.border,borderRadius:10,color:C.white,padding:11,minHeight:46},
  row:{flexDirection:'row',gap:10,alignItems:'center',flexWrap:'wrap'},chip:{padding:11,borderRadius:10,borderWidth:1,borderColor:C.border},chipActive:{borderColor:C.mint,backgroundColor:C.surface2},
  chipText:{color:C.white,fontWeight:'700'},fixture:{gap:9,padding:12,borderRadius:10,backgroundColor:C.surface2},
+ standing:{gap:3,paddingVertical:7,borderBottomWidth:1,borderBottomColor:C.border},
  score:{fontSize:19,fontWeight:'900',color:C.mint},scoreInput:{minWidth:58,height:46,borderColor:C.border,borderWidth:1,borderRadius:8,textAlign:'center',color:C.white}
 });
