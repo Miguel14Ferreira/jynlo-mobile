@@ -13,7 +13,7 @@ test('text-only posts remain available and use the real authenticated JSON API',
 test('Stories and post selection use file-type and on-disk media validation',()=>{
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
  assert.match(home,/mediaTypes:\['images','videos'\]/);
- assert.match(home,/validateMedia\(mime,size,!album&&setter===setStoryMedia\)/);
+ assert.match(home,/size>0\?validateMedia\(mime,size,!album&&setter===setStoryMedia\):null/);
  assert.match(home,/appendAlbumSelection\(composerMediaRef\.current,prepared\)/);
  assert.match(home,/pickMedia\(setStoryMedia,'gallery'\)/);
  assert.match(api,/validateMedia\(file.mimeType,actualSize,path.includes\('\/stories'\)\)/);
