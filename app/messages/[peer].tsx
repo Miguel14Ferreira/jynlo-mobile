@@ -1,3 +1,4 @@
+import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
@@ -396,6 +397,7 @@ export default function DirectConversation(){
   pickerInFlight.current=true;setError('');
   try{
    const ImagePicker=await import('expo-image-picker');
+   if(source==='camera'&&!await ensureChatCameraPermission())return;
    const selected=source==='camera'?
     await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
     await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:remaining});
@@ -517,7 +519,7 @@ export default function DirectConversation(){
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{width:85,gap:3}}>
-      {file.type==='video'?<View style={{width:85,height:85,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>}
+      {file.type==='video'?<View style={{width:85,height:85,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" color={C.white} size={19}/><Text style={{color:C.white,fontSize:12}}>Vídeo</Text></View></View>:<Image source={{uri:file.uri}} style={{width:85,height:85,borderRadius:10}}/>}
       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
      </Pressable>)}
     </View>
