@@ -45,6 +45,20 @@ test('store builds refuse preview and staging backends',()=>{
   }
   assert.equal(run('https://desporto24-preview-api.onrender.com','preview').status,0,'internal preview must still work');
 });
+test('store builds reject absent or malformed Google Maps Android keys',()=>{
+  for(const profile of ['production','play-internal']){
+    for(const key of ['', 'invalid-key', 'AIza'+'A'.repeat(34)]){
+      const result=spawnSync(process.execPath,[script],{
+        encoding:'utf8',
+        env:{...process.env,EXPO_PUBLIC_JYNLO_API_URL:'https://api.jynlo.com',
+          EAS_BUILD_PROFILE:profile,JYNLO_REQUIRE_REAL_API:'1',
+          GOOGLE_SERVICES_JSON:firebaseFile,JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:key}
+      });
+      assert.notEqual(result.status,0,`${profile}: ${key||'(missing)'}`);
+      assert.match(result.stderr,/BUILD BLOQUEADO.*Google Maps Android/);
+    }
+  }
+});
 test('store builds reject absent, invalid and wrong-package Firebase configs',()=>{
   const wrongPackage=path.join(tempDir,'wrong.json');
   const invalidJson=path.join(tempDir,'invalid.json');
