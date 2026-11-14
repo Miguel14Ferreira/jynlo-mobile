@@ -76,3 +76,17 @@ test('full-screen photos support swipe gestures, page buttons and rotation',()=>
  assert.match(viewer,/onPress=\{\(\)=>moveTo\(index-1\)\}/);
  assert.match(viewer,/onPress=\{\(\)=>moveTo\(index\+1\)\}/);
 });
+
+test('Story video sound has a visible toggle and remains independent of feed videos',()=>{
+ const screen=read('app/(tabs)/index.tsx');
+ const video=read('src/components/FeedVideo.tsx');
+ const icons=read('src/components/JynloIcon.tsx');
+ assert.match(screen,/storyMuted,setStoryMuted/);
+ assert.match(screen,/setStoryMuted\(true\)/);
+ assert.match(screen,/story muted=\{storyMuted\}/);
+ assert.match(screen,/accessibilityLabel=\{storyMuted\?'Ativar som do vídeo':'Silenciar vídeo'\}/);
+ assert.match(screen,/name=\{storyMuted\?'volume-off':'volume'\}/);
+ assert.match(video,/muted=false,onEnd/);
+ assert.match(video,/if\(story\)player\.muted=muted/);
+ assert.match(icons,/'volume-off':\{regular:'volume-mute-outline'/);
+});
