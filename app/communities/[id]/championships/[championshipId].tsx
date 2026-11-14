@@ -67,6 +67,7 @@ export default function ChampionshipDetail(){
    <Text style={styles.sub}>{championship.sport} · Época {championship.seasonLabel}</Text>
    {championship.closedAt?<Message>Campeonato encerrado · Classificação e resultados arquivados{championship.championDisplayName?` · Campeão: ${championship.championDisplayName}`:''}</Message>:null}
    <Button secondary title="Equipas do campeonato" onPress={()=>router.push({pathname:'/communities/[id]/championships/teams',params:{id:String(communityId),championshipId:String(competitionId)}})}/>
+   <Button title="Ligas, Taças e resultados" onPress={()=>router.push({pathname:'/communities/[id]/championships/events',params:{id:String(communityId),championshipId:String(competitionId)}})}/>
    <Text style={styles.title}>Provas do campeonato</Text>
    {championship.competitions.length===0?<Text style={styles.sub}>Ainda não há torneios associados.</Text>:null}
    {championship.competitions.map(item=><View key={item.id} style={styles.row}>
