@@ -308,8 +308,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
      <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
      <View style={{flexDirection:'row',gap:5}}>
-      {!m.deletedAt&&!closed?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.senderUsername} style={styles.messageAction} onPress={()=>setReply(m)}><Text style={styles.actionText}>↩</Text></Pressable>:null}
-      {ownMessage(m)&&!closed?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} style={styles.messageAction} onPress={()=>messageOptions(m)}><Text style={styles.actionText}>•••</Text></Pressable>:null}
+      {!m.deletedAt&&!closed?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.senderUsername} style={styles.messageAction} onPress={()=>setReply(m)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>:null}
+      {ownMessage(m)&&!closed?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} style={styles.messageAction} onPress={()=>messageOptions(m)}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
      </View>
     </View>
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
@@ -375,7 +375,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
      const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
      setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
     }} style={{gap:4}}>
-     {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><Text style={{color:'#fff'}}>▶ Vídeo</Text></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
+     {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:12}}>Vídeo</Text></View></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
     </Pressable>)}
    </View>
@@ -403,7 +403,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
        onPress={()=>{void send();}}><JynloIcon name="send" size={22} color={C.background}/></Pressable>
     </View>
   </KeyboardAvoidingView>:null}
-  {syncWarning&&!closed?<Button title="↻ Tentar novamente" secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
+  {syncWarning&&!closed?<Button title="Tentar novamente" secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
   {!embedded?<Button title="Voltar à sessão" secondary onPress={()=>router.back()}/>:null}
  </>;
  return embedded?<View style={styles.inline}>{content}</View>:<Page autoScrollToEnd>{content}</Page>;
