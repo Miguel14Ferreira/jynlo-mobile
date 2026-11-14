@@ -1,5 +1,5 @@
-import React,{useState} from 'react';
-import {Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
+import React,{useRef,useState} from 'react';
+import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {JynloIcon} from './JynloIcon';
 
@@ -9,12 +9,15 @@ type Props={photos:ExpandedPostPhotos|null;onClose:()=>void};
 /** Full-screen, uncropped photo review with album navigation and visible exit. */
 export default function PostImageLightbox({photos,onClose}:Props){
  const entries=photos?.uris||[];
- const initial=photos?.index??0;
- const [offset,setOffset]=useState(0);
- // Keying by selected photo identity remounts this viewer when a new album opens.
- const index=Math.max(0,Math.min(entries.length-1,initial+offset));
- const previous=()=>setOffset(current=>Math.max(-initial,current-1));
- const next=()=>setOffset(current=>Math.min(entries.length-1-initial,current+1));
+ const initial=Math.max(0,Math.min(entries.length-1,photos?.index??0));
+ const [index,setIndex]=useState(initial);
+ const [pageWidth,setPageWidth]=useState(0);
+ const scroll=useRef<ScrollView|null>(null);
+ const moveTo=(next:number)=>{
+  const selected=Math.max(0,Math.min(entries.length-1,next));
+  setIndex(selected);
+  if(pageWidth>0)scroll.current?.scrollTo({x:selected*pageWidth,animated:true});
+ };
  return <Modal visible={Boolean(photos&&entries.length)} animationType="fade"
   presentationStyle="fullScreen" onRequestClose={onClose}>
   <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
@@ -23,18 +26,32 @@ export default function PostImageLightbox({photos,onClose}:Props){
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada"
      onPress={onClose} hitSlop={10} style={styles.close}><JynloIcon name="close" size={26} color="#fff"/></Pressable>
    </View>
-   <View style={styles.photoArea}>
-    {entries[index]?<Image key={entries[index]} source={{uri:entries[index]}}
-      resizeMode="contain" style={styles.image} accessibilityLabel={'Fotografia '+(index+1)+' de '+entries.length}/>:null}
+   <View style={styles.photoArea} onLayout={event=>{
+    const width=Math.round(event.nativeEvent.layout.width);
+    if(width>0&&width!==pageWidth){setPageWidth(width);}
+   }}>
+    {pageWidth>0?<ScrollView ref={scroll} key={pageWidth} horizontal pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      contentOffset={{x:initial*pageWidth,y:0}}
+      onMomentumScrollEnd={event=>{
+       const next=Math.round(event.nativeEvent.contentOffset.x/pageWidth);
+       setIndex(Math.max(0,Math.min(entries.length-1,next)));
+      }}
+      accessibilityLabel={'Fotografias ampliadas, '+entries.length+' imagens'}>
+      {entries.map((uri,i)=><View key={uri+'-'+i} style={{width:pageWidth,flex:1}}>
+       <Image source={{uri}} resizeMode="contain" style={styles.image}
+        accessibilityLabel={'Fotografia '+(i+1)+' de '+entries.length}/>
+      </View>)}
+    </ScrollView>:null}
    </View>
    {entries.length>1?<View style={styles.navigation}>
     <Pressable accessibilityRole="button" accessibilityLabel="Fotografia anterior"
-     disabled={index===0} onPress={previous} style={[styles.arrow,index===0&&styles.disabled]}>
+     disabled={index===0} onPress={()=>moveTo(index-1)} style={[styles.arrow,index===0&&styles.disabled]}>
      <JynloIcon name="back" size={23} color="#fff"/>
     </Pressable>
-    <Text style={styles.hint}>Fotografia completa, sem cortes</Text>
+    <Text style={styles.hint}>Desliza para ver outras fotografias</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="Fotografia seguinte"
-     disabled={index===entries.length-1} onPress={next} style={[styles.arrow,index===entries.length-1&&styles.disabled]}>
+     disabled={index===entries.length-1} onPress={()=>moveTo(index+1)} style={[styles.arrow,index===entries.length-1&&styles.disabled]}>
      <JynloIcon name="chevron-right" size={23} color="#fff"/>
     </Pressable>
    </View>:<View style={styles.navigation}><Text style={styles.hint}>Fotografia completa, sem cortes</Text></View>}
