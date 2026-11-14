@@ -40,11 +40,14 @@ export default function ChampionshipOwnedEventsScreen(){
  const [registrations,setRegistrations]=useState<OwnedEventTeam[]>([]);
  const [fixtures,setFixtures]=useState<OwnedFixture[]>([]);
  const [standings,setStandings]=useState<OwnedLeagueStandings|null>(null);
+ const [expandedRounds,setExpandedRounds]=useState<number[]>([]);
  const [name,setName]=useState(''),[format,setFormat]=useState<OwnedEventFormat>('LEAGUE');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [detailsRefresh,setDetailsRefresh]=useState(0);
  const generation=useRef(0),pending=useRef(false);
  const activeEvent=events.find(item=>item.id===selected);
+ const groupedFixtures=Array.from(new Set(fixtures.map(f=>f.round))).sort((a,b)=>a-b)
+  .map(round=>({round,matches:fixtures.filter(f=>f.round===round)}));
  const canManage=organizer&&!closed&&Boolean(auth.token);
  const football=sport==='Futebol'||sport==='Futsal';
  const load=useCallback(async(version=generation.current)=>{
@@ -80,6 +83,7 @@ export default function ChampionshipOwnedEventsScreen(){
   return()=>{generation.current++;};
  },[load]));
  const eventId=activeEvent?.id??null;
+ React.useEffect(()=>{setExpandedRounds([]);},[eventId]);
  useFocusEffect(useCallback(()=>{
   if(eventId==null||!auth.token)return;
   let active=true;const version=generation.current;
@@ -185,12 +189,23 @@ export default function ChampionshipOwnedEventsScreen(){
    </View>:null}
    <Text style={styles.title}>Jornadas e resultados ({fixtures.length})</Text>
    {fixtures.length===0?<Text style={styles.note}>Ainda não existem jogos nesta prova.</Text>:null}
-   {fixtures.map(fixture=><View key={fixture.id} style={styles.fixture}>
-    <FixtureRow fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>
-    <Button secondary title="Golos, cartões e jogadores" onPress={()=>router.push({
-     pathname:'/communities/[id]/championships/fixture',
-     params:{id:String(cid),championshipId:String(chid),eventId:String(activeEvent.id),fixtureId:String(fixture.id)}
-    })}/>
+   {groupedFixtures.length>1?<Button secondary title={expandedRounds.length===groupedFixtures.length?'Recolher todas as jornadas':'Expandir todas as jornadas'}
+    onPress={()=>setExpandedRounds(expandedRounds.length===groupedFixtures.length?[]:groupedFixtures.map(group=>group.round))}/>:null}
+   {groupedFixtures.map(group=><View key={group.round} style={styles.roundGroup}>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:expandedRounds.includes(group.round)}}
+     accessibilityLabel={'Jornada '+group.round+', '+group.matches.length+' jogos'}
+     onPress={()=>setExpandedRounds(current=>current.includes(group.round)?current.filter(value=>value!==group.round):[...current,group.round])}
+     style={styles.roundHeader}>
+     <Text style={styles.teamName}>Jornada {group.round} · {group.matches.length} {group.matches.length===1?'jogo':'jogos'}</Text>
+     <Text style={styles.note}>{expandedRounds.includes(group.round)?'Recolher ▲':'Expandir ▼'}</Text>
+    </Pressable>
+    {expandedRounds.includes(group.round)?group.matches.map(fixture=><View key={fixture.id} style={styles.fixture}>
+     <FixtureRow fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>
+     <Button secondary title="Golos, cartões e jogadores" onPress={()=>router.push({
+      pathname:'/communities/[id]/championships/fixture',
+      params:{id:String(cid),championshipId:String(chid),eventId:String(activeEvent.id),fixtureId:String(fixture.id)}
+     })}/>
+    </View>):null}
    </View>)}
    {canScore&&activeEvent.format==='CUP'&&allDone?<Button title="Avançar eliminatória" disabled={busy} onPress={()=>confirm('Avançar Taça?', 'A próxima ronda será gerada após validar todos os resultados.',()=>advanceOwnedCup(cid,chid,activeEvent.id,auth.token!))}/>:null}
    {canScore&&activeEvent.format==='LEAGUE'&&allDone?<Button danger title="Finalizar liga" disabled={busy} onPress={()=>confirm('Finalizar liga?', 'A classificação e o vencedor serão fixados pelo servidor. A operação é definitiva.',()=>finishOwnedLeague(cid,chid,activeEvent.id,auth.token!))}/>:null}
@@ -203,6 +218,7 @@ const styles=StyleSheet.create({
  heading:{fontSize:25,fontWeight:'900',color:C.white},title:{fontSize:17,fontWeight:'800',color:C.white},
  card:{padding:13,gap:11,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  event:{padding:12,gap:6,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ roundGroup:{gap:8},roundHeader:{minHeight:48,padding:12,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.border,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  eventActive:{borderColor:C.mint},note:{fontSize:12,color:C.muted,lineHeight:18},teamName:{color:C.white,fontWeight:'700',fontSize:14},
  input:{borderWidth:1,borderColor:C.border,borderRadius:10,color:C.white,padding:11,minHeight:46},
  row:{flexDirection:'row',gap:10,alignItems:'center',flexWrap:'wrap'},chip:{padding:11,borderRadius:10,borderWidth:1,borderColor:C.border},chipActive:{borderColor:C.mint,backgroundColor:C.surface2},
