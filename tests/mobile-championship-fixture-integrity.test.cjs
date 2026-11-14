@@ -55,5 +55,7 @@ test('championship organizer privileges are revoked before every membership rech
  const source=read('app/communities/[id]/championships/events.tsx');
  assert.match(source,/setLoading\(true\);setError\(''\);setOrganizer\(false\);setClosed\(true\);setTeams\(\[\]\)/);
  assert.match(source,/const canManage=organizer&&!closed&&!loading&&Boolean\(auth\.token\)/);
- assert.match(source,/setOrganizer\(role==='OWNER'\|\|role==='ADMIN'\)/);
+ assert.match(source,/const organizerRole=role==='OWNER'\|\|role==='ADMIN'/);
+ assert.match(source,/setTeams\(seasonTeams\);setOrganizer\(organizerRole\)/);
+ assert.ok(source.indexOf('setTeams(seasonTeams);setOrganizer(organizerRole)')>source.indexOf('await getChampionshipTeams(cid,chid,auth.token)'));
 });
