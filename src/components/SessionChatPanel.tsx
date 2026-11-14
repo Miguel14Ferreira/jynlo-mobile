@@ -89,7 +89,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
-   if(latest>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
+   // Embedded chats acknowledge only after the history viewport reports a real bottom position.
+    // A refresh response alone does not prove that newly arrived messages were visible.
+    if(latest>lastAcknowledgedMessageId.current&&!embedded){
     lastAcknowledgedMessageId.current=latest;
     void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
    }
