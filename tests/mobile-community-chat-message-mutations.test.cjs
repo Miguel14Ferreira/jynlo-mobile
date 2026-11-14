@@ -13,7 +13,7 @@ test('community API uses real edit and delete-for-everyone routes, never deletin
  assert.match(api,/existing\.username\.toLowerCase\(\)!==username\.toLowerCase\(\)/);
 });
 test('community chat exposes edit for own recent plain messages and delete with confirmation',()=>{
- const screen=read('app/communities/[id]/chat.tsx');
+ const screen=read('src/components/CommunityChatPanel.tsx');
  assert.match(screen,/function ownMessage\(/);
  assert.match(screen,/message\.username\.toLowerCase\(\)===auth\.username\.toLowerCase\(\)/);
  assert.match(screen,/function editable\(/);
@@ -27,7 +27,7 @@ test('community chat exposes edit for own recent plain messages and delete with 
  assert.match(screen,/m\.deletedAt\?'Mensagem removida'/);
 });
 test('mutations lock concurrent writes and leave uncertain failures visible',()=>{
- const screen=read('app/communities/[id]/chat.tsx');
+ const screen=read('src/components/CommunityChatPanel.tsx');
  assert.match(screen,/mutationLock\.current=true;setMutationBusy\(true\)/);
  assert.match(screen,/if\(mutationLock\.current\|\|sendingNow\.current\|\|uploadingNow\.current/);
  assert.match(screen,/activeChat\.current!==identity/);
