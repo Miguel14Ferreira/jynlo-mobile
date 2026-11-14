@@ -426,7 +426,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
        onFocus={()=>{composerFocused.current=true;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
-     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button">
+     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
    </KeyboardAvoidingView>:null}
