@@ -20,7 +20,7 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
  const activeIdentity=useRef(identity);
  activeIdentity.current=identity;
  const idKey=messageIds.filter(id=>Number.isSafeInteger(id)&&id>0).slice(-60).join(',');
- useEffect(()=>{setSummaries({});setBusyIds(new Set());pending.current.clear();},[identity]);
+ useEffect(()=>{setSummaries({});setBusyIds(new Set());},[identity]);
  useEffect(()=>{
   let active=true;
   const ids=idKey.split(',').map(Number).filter(id=>Number.isSafeInteger(id)&&id>0);
@@ -31,7 +31,7 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
     if(!active)return;
     setSummaries(current=>{
      const next={...current};
-     for(const item of data)if(!pending.current.has(item.messageId))next[item.messageId]=item;
+     for(const item of data)if(!pending.current.has(identity+'|'+item.messageId))next[item.messageId]=item;
      return next;
     });
    }).catch(()=>{ /* Reactions must not interrupt reading or sending messages. */ });
@@ -52,9 +52,9 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
   }catch{if(activeIdentity.current===currentIdentity)Alert.alert('Reações','Não foi possível consultar quem reagiu.');}
  };
  const react=async(messageId:number,emoji:ChatReactionEmoji|null)=>{
-  if(!token||!enabled||pending.current.has(messageId))return;
+  if(!token||!enabled||pending.current.has(identity+'|'+messageId))return;
   const currentIdentity=identity;
-  pending.current.add(messageId);setBusyIds(previous=>new Set([...previous,messageId]));
+  pending.current.add(identity+'|'+messageId);setBusyIds(previous=>new Set([...previous,messageId]));
   try{
    const confirmed=await changeChatReaction(kind,conversationId,messageId,emoji,token);
    if(activeIdentity.current===currentIdentity)
@@ -65,7 +65,7 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
    if(activeIdentity.current===currentIdentity)
     Alert.alert('Reação não confirmada','Confirma o estado da mensagem antes de voltares a tentar.');
   }finally{
-   pending.current.delete(messageId);
+   pending.current.delete(currentIdentity+'|'+messageId);
    if(activeIdentity.current===currentIdentity)setBusyIds(previous=>{
     const next=new Set(previous);next.delete(messageId);return next;
    });
