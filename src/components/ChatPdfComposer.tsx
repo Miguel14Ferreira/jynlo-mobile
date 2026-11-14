@@ -1,16 +1,17 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import {File} from 'expo-file-system';
 import {useFocusEffect} from 'expo-router';
 import {Button} from './UI';
 import {C} from '../lib/theme';
+import {JynloIcon} from './JynloIcon';
 import {checkPdfAsset,sendChatPdf} from '../lib/chat-pdf-attachment';
 import type {PdfChatTarget} from '../lib/chat-pdf-attachment';
 
-type Props={target:PdfChatTarget;token:string|null;enabled:boolean;
+type Props={target:PdfChatTarget;token:string|null;enabled:boolean;compact?:boolean;
  replyId?:number|null;onSent:(sentReplyId:number|null)=>Promise<void>}
-export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Props){
+export default function ChatPdfComposer({target,token,enabled,replyId,onSent,compact=false}:Props){
  const [selected,setSelected]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const busyRef=useRef(false),active=useRef(false),blocked=useRef(false);
@@ -89,9 +90,11 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
   }
  }
  if(!enabled||!token)return null;
- return <View style={styles.panel}>
+ return <View style={compact?styles.compactPanel:styles.panel}>
   {busyRef.current&&!selected?<Text style={styles.note}>Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.</Text>:null}
-  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current} onPress={()=>{void choose();}}/>
+  {compact?<Pressable accessibilityRole="button" accessibilityLabel="Anexar documento PDF" disabled={busy||busyRef.current}
+   style={styles.iconAction} onPress={()=>{void choose();}}><JynloIcon name="document" size={23} color={C.mint}/></Pressable>:
+  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current} onPress={()=>{void choose();}}/>}
   {selected?<View style={styles.details}>
    <Text style={styles.name}>{selected.name}</Text>
    <Text style={styles.note}>{Math.ceil((selected.size||0)/1024)} KB · O ficheiro só é enviado após confirmação.</Text>
@@ -104,6 +107,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent}:Pr
 }
 const styles=StyleSheet.create({
  panel:{gap:8,padding:12,borderRadius:14,backgroundColor:C.surface},
+ compactPanel:{gap:6},iconAction:{width:44,height:44,justifyContent:'center',alignItems:'center',borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  details:{gap:8},name:{fontSize:14,fontWeight:'700',color:C.white},
  note:{fontSize:12,color:C.muted},error:{fontSize:12,color:'#FF9898'}
 });
