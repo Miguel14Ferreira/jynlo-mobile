@@ -51,5 +51,8 @@ test('feed integrates edit guard after likes and comment counts',()=>{
  assert.match(feed,/setPosts\(edits\.posts\)/);
  assert.match(feed,/confirmedPostEdits\.current=rememberPostEdit\(confirmedPostEdits\.current,updated\)/);
  assert.match(feed,/recentlyConfirmedPosts\.current=recentlyConfirmedPosts\.current\.map\(entry=>\(\{/);
+ assert.match(feed,/const applyEdit=\(item:FeedItem\)=>item\.postId===updated\.postId\?/);
+ assert.match(feed,/\{\.\.\.item,content:updated\.content,location:updated\.location\}:item/);
+ assert.match(feed,/setPosts\(current=>current\.map\(applyEdit\)\)/);
  assert.match(api,/updated\?\.postId!==postId\|\|!confirmedTextPostReceipt\(updated,username!,description,place\)/);
 });
