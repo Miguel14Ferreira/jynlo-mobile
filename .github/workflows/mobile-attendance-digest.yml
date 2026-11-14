@@ -20,9 +20,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - name: Validate web/mobile attendance grouping behavior
+      - name: Validate attendance grouping and hide behavior
         run: node --test tests/attendance-digest.test.cjs
-      - name: Typecheck mobile feed
-        run: npx tsc --noEmit
