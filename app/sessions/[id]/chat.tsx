@@ -327,7 +327,7 @@ export default function SessionChat(){
    </Pressable>:null}
    {attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
    {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
-  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async(sentReplyId)=>{
+  <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
    // the user may have made while the file was being uploaded.
    setReply(current=>current?.id===(sentReplyId??undefined)?null:current);
