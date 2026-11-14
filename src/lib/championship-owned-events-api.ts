@@ -150,3 +150,20 @@ function validMinute(minute:number):number{
  if(!Number.isSafeInteger(minute)||minute<0||minute>200)throw Error('O minuto deve estar entre 0 e 200.');
  return minute;
 }
+
+export async function removeOwnedFixtureGoal(cid:number,chid:number,eid:number,fid:number,goalId:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(fixturePath(cid,chid,eid,fid)+'/goals/'+validId(goalId),{token,method:'DELETE'});
+}
+export async function removeOwnedFixtureCard(cid:number,chid:number,eid:number,fid:number,cardId:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(fixturePath(cid,chid,eid,fid)+'/cards/'+validId(cardId),{token,method:'DELETE'});
+}
+export async function removeOwnedFixtureSubstitution(cid:number,chid:number,eid:number,fid:number,substitutionId:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(fixturePath(cid,chid,eid,fid)+'/substitutions/'+validId(substitutionId),{token,method:'DELETE'});
+}
+export async function removeOwnedFixtureLineup(cid:number,chid:number,eid:number,fid:number,profileId:number,token:string):Promise<void>{
+ requireAuth(token);
+ await request<unknown>(fixturePath(cid,chid,eid,fid)+'/lineup/'+validId(profileId),{token,method:'DELETE'});
+}
