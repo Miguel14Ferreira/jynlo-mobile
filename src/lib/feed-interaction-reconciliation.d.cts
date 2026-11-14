@@ -9,3 +9,10 @@ export declare function rememberPostLike(
 export declare function reconcilePostLikes(
  receipts:Map<number,PendingLikeReceipt>,posts:FeedItem[],now?:number
 ):{receipts:Map<number,PendingLikeReceipt>;posts:FeedItem[]};
+export interface PendingCommentFloor {count:number;until:number;}
+export declare function rememberCommentFloor(
+ floors:Map<number,PendingCommentFloor>,postId:number,count:number,now?:number
+):Map<number,PendingCommentFloor>;
+export declare function reconcileCommentCounts(
+ floors:Map<number,PendingCommentFloor>,posts:FeedItem[],now?:number
+):{floors:Map<number,PendingCommentFloor>;posts:FeedItem[]};
