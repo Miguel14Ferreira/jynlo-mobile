@@ -11,6 +11,7 @@ import {useAuth} from '../../src/lib/auth';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
+import {JynloIcon} from '../../src/components/JynloIcon';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -80,13 +81,13 @@ export default function DiscoverScreen(){
    </View>
    <View style={styles.shortcuts}>
      <Pressable style={styles.createShortcut} onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})} accessibilityRole="button" accessibilityLabel="Criar uma sessão desportiva">
-       <Text style={styles.createShortcutSymbol}>＋</Text>
+       <JynloIcon name="plus" size={29} color={MobileTheme.colors.background}/>
        <View style={{flex:1,gap:3}}><Text style={styles.createShortcutTitle}>Organizar um jogo</Text><Text style={styles.createShortcutSub}>Cria uma sessão e convida jogadores</Text></View>
        <Text style={styles.createShortcutArrow}>›</Text>
      </Pressable>
-     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos"><Text style={styles.venueShortcutText}>⌖  Explorar recintos</Text><Text style={styles.venueShortcutArrow}>↗</Text></Pressable>
+     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="venue" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Explorar recintos</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
    </View>
-   <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="⌖  Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
+   <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    <Text style={styles.filterLabel}>MODALIDADE · {SPORTS.length} DESPORTOS</Text>
    <Pressable style={styles.sportSelector} accessibilityRole="button" accessibilityState={{expanded:sportPickerVisible}}
       onPress={()=>setSportPickerVisible(previous=>!previous)}>
@@ -123,7 +124,7 @@ export default function DiscoverScreen(){
    <View style={styles.switcher}>
      <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões no mapa" accessibilityState={{selected:display==='map'}}
        style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
-       <Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>⌖ Mapa</Text>
+       <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={17} color={display==='map'?C.mint:C.muted}/><Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>Mapa</Text></View>
      </Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões em lista" accessibilityState={{selected:display==='list'}}
        style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
@@ -153,7 +154,7 @@ export default function DiscoverScreen(){
            setMapArea({latitude:r.latitude,longitude:r.longitude,
              radiusKm:Math.max(5,Math.min(500,Math.ceil(Math.hypot(latKm,lonKm))))});
          }}>
-         <Text style={styles.areaSearchText}>⌕ Pesquisar nesta zona</Text>
+         <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="search" size={17} color={C.background}/><Text style={styles.areaSearchText}>Pesquisar nesta zona</Text></View>
        </Pressable>
        {mapArea?<Pressable accessibilityRole="button" style={styles.clearArea} onPress={()=>setMapArea(null)}>
          <Text style={styles.clearAreaText}>Limpar zona</Text>
@@ -161,7 +162,7 @@ export default function DiscoverScreen(){
      </View>:null}
      {mapArea?<Text style={styles.mapNotice}>Pesquisa num raio aproximado de {mapArea.radiusKm} km</Text>:null}
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir mapa no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
-       <Text style={styles.areaSearchText}>⌖ Abrir Google Maps</Text>
+       <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="location" size={17} color={C.background}/><Text style={styles.areaSearchText}>Abrir Google Maps</Text></View>
      </Pressable>
      {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>Toca num pino para consultar a sessão correspondente.</Text>:null}
      {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin}
