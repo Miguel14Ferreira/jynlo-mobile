@@ -1,8 +1,11 @@
 name: Jynlo Mobile - Validation
 
-# Explicitly opt-in. Do not automatically consume build/CI minutes on every
-# autonomous development commit. This workflow does not build an APK.
+# Runs only when this workflow is edited on develop; never for ordinary
+# autonomous development commits. No Android APK is built.
 on:
+  push:
+    branches: [develop]
+    paths: ['.github/workflows/mobile-quality.yml']
   workflow_dispatch:
 
 permissions:
