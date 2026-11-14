@@ -95,6 +95,7 @@ export default function DiscoverScreen(){
        <View style={{flex:1,gap:3}}><Text style={styles.createShortcutTitle}>Organizar um jogo</Text><Text style={styles.createShortcutSub}>Cria uma sessão e convida jogadores</Text></View>
        <Text style={styles.createShortcutArrow}>›</Text>
      </Pressable>
+     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button" accessibilityLabel="Explorar comunidades desportivas"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="users" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Explorar comunidades</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
      <Pressable style={styles.venueShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="venue" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Explorar recintos</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
