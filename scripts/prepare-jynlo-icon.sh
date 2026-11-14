@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Convert the exact, user-approved Jynlo artwork to a native PNG before Expo prebuild.
-# This must run in the PRE-install hook; Android prebuild runs before post-install.
+# Generate the Android icon from the exact, user-approved Jynlo artwork.
+# This hook runs BEFORE Expo prebuild; post-install would be too late.
 if [[ "${EAS_BUILD_PLATFORM:-android}" != "android" ]]; then
   exit 0
 fi
@@ -13,32 +13,29 @@ if [[ ! -s "$SOURCE" ]]; then
   echo 'ERRO: falta o logótipo Jynlo aprovado.'
   exit 1
 fi
+
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 base64 --decode "$SOURCE" > "$work_dir/approved.webp"
 
-python_bin="python3"
-if ! python3 -c 'from PIL import Image' >/dev/null 2>&1; then
-  python3 -m venv "$work_dir/venv"
-  "$work_dir/venv/bin/python" -m pip install --disable-pip-version-check --no-input 'Pillow==11.3.0'
-  python_bin="$work_dir/venv/bin/python"
-fi
+# EAS Ubuntu 26.04 does not include python3-venv/ensurepip.
+# Install an isolated, pinned Node image processor without altering app deps.
+npm install --prefix "$work_dir" --no-save --no-audit --no-fund --ignore-scripts 'sharp@0.34.5'
 
-"$python_bin" - "$work_dir/approved.webp" "$OUTPUT" <<'PY'
-from PIL import Image, ImageOps
-from pathlib import Path
-import sys
-original=Image.open(sys.argv[1])
-assert original.format == "WEBP", 'A referência não é uma imagem WebP válida'
-original=original.convert("RGBA")
-assert original.width>=128 and original.height>=128, 'A referência tem resolução insuficiente'
-# Keep the approved source unchanged visually; pad to a square and do not
-# regenerate the J, colors, outlines, or the luminous effects.
-scaled=ImageOps.contain(original,(1024,1024),Image.Resampling.LANCZOS)
-canvas=Image.new("RGBA",(1024,1024),"#041927")
-canvas.alpha_composite(scaled,((1024-scaled.width)//2,(1024-scaled.height)//2))
-destination=Path(sys.argv[2])
-canvas.convert("RGB").save(destination,format="PNG",optimize=True)
-assert destination.stat().st_size>0
-print('Jynlo original aprovado convertido para ícone Android',canvas.size)
-PY
+node - "$work_dir/node_modules/sharp" "$work_dir/approved.webp" "$OUTPUT" <<'JS'
+'use strict';
+const sharp=require(process.argv[2]);
+const source=process.argv[3],destination=process.argv[4];
+(async()=>{
+  const meta=await sharp(source).metadata();
+  if(meta.format!=='webp'||meta.width<128||meta.height<128)
+    throw Error('A imagem aprovada tem formato ou resolução inválidos.');
+  // Preserve original J, outline, proportions and glow; pad only to square.
+  await sharp(source)
+    .resize(1024,1024,{fit:'contain',background:'#041927'})
+    .flatten({background:'#041927'})
+    .png()
+    .toFile(destination);
+  console.log('Jynlo original aprovado convertido para ícone Android 1024x1024');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+JS
