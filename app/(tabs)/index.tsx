@@ -17,6 +17,7 @@ import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-v
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {sharedPostLink} from '../../src/lib/shared-post-link.cjs';
+import {cancellationNotice} from '../../src/lib/session-cancellation-notice.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
 import {C,MobileTheme} from '../../src/lib/theme';
 import PostEditSheet from '../../src/components/PostEditSheet';
@@ -525,13 +526,7 @@ export default function JynloFeedHome(){
   }
 
   async function shareCancelledFeedSession(item:FeedItem){
-    const value=item.gameDate?new Date(item.gameDate):null;
-    const when=value&&Number.isFinite(value.getTime())?
-      value.toLocaleString('pt-PT',{timeZone:'Europe/Lisbon',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    const label=[item.sport||'desporto',when,item.city||''].filter(Boolean).join(' · ');
-    const message='⚠️ Sessão cancelada — '+label+
-      '. O organizador cancelou esta sessão e o jogo não se vai realizar. Por favor, não te desloques ao recinto.';
-    try{await Share.share({message});}
+    try{await Share.share({message:cancellationNotice(item)});}
     catch(e){Alert.alert('Partilhar cancelamento',e instanceof Error?e.message:'Não foi possível abrir a partilha.');}
   }
 
