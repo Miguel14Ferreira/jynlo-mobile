@@ -98,6 +98,7 @@ export default function CreateSessionScreen(){
  const stepLabels=['Modalidade','Local e data','Participação','Rever'];
  const [sportSearch,setSportSearch]=useState('');
  const [showSportResults,setShowSportResults]=useState(false);
+ const [customSportMode,setCustomSportMode]=useState(false);
  const [communitySearch,setCommunitySearch]=useState('');
  const [communityMode,setCommunityMode]=useState<'INDEPENDENT'|'SINGLE'|'SHARED'>('INDEPENDENT');
  const [extraDay,setExtraDay]=useState(''),[extraTime,setExtraTime]=useState('');
@@ -306,6 +307,10 @@ export default function CreateSessionScreen(){
  const suggestions=sportSearch.trim()
   ?availableSports.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
   :[];
+ const customMatches=customSportMode&&form.sport.trim().length>1
+  ?SPORTS.filter(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT')
+    .includes(form.sport.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT'))).slice(0,5)
+  :[];
  const visibleCommunities=communities.filter(c=>!communitySearch.trim()||
   (c.name+' '+(c.sport||'')).toLocaleLowerCase('pt-PT').includes(communitySearch.trim().toLocaleLowerCase('pt-PT')));
  function nextStep(){
@@ -438,13 +443,31 @@ export default function CreateSessionScreen(){
       preselectionOverridden.current=true;
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
       if(form.sport!==s){setVenueChosen(null);clearVenueSearch();}
-      setSportSearch('');setShowSportResults(false);
+      setSportSearch('');setShowSportResults(false);setCustomSportMode(false);setCustomSportMode(false);
      }} style={[styles.option,form.sport===s&&styles.chosen]}>
      <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
     </Pressable>)}
     {!suggestions.length?<Text style={styles.note}>Nenhuma modalidade corresponde à pesquisa.</Text>:null}
    </>:null}
-   {!form.sport?<Text style={styles.note}>Começa a escrever para escolher uma modalidade. Não são aceites nomes fora do catálogo.</Text>:null}
+   {communityMode==='INDEPENDENT'?<Button secondary
+    title={customSportMode?'Escolher modalidade do catálogo':'Não encontras o teu desporto? Sugerir outro'}
+    disabled={busy} onPress={()=>{
+     preselectionOverridden.current=true;setCustomSportMode(value=>!value);
+     setSportSearch('');setShowSportResults(false);setVenueChosen(null);clearVenueSearch();
+     setForm(prev=>({...prev,sport:'',venueId:null,seasonGame:false,confirmActivateRankings:false}));
+    }}/>:null}
+   {customSportMode?<>
+    <Text style={styles.note}>Escreve a modalidade. A sessão é independente e a sugestão será revista antes de entrar no catálogo oficial.</Text>
+    <TextInput style={styles.input} value={form.sport} maxLength={60}
+      onChangeText={value=>{preselectionOverridden.current=true;setForm(prev=>({...prev,sport:value,venueId:null}));}}
+      placeholder="Ex.: Bossaball" placeholderTextColor={C.muted}
+      editable={!busy} accessibilityLabel="Nome da modalidade personalizada"/>
+    {customMatches.length?<Text style={styles.note}>Modalidades semelhantes:</Text>:null}
+    {customMatches.map(s=><Pressable key={'similar-'+s} style={styles.option} onPress={()=>{
+      setCustomSportMode(false);setForm(prev=>({...prev,sport:s,venueId:null}));
+    }}><Text style={styles.optionText}>{s}</Text></Press>)}
+   </>:null}
+   {!form.sport?<Text style={styles.note}>Escolhe uma modalidade ou sugere outra.</Text>:null}
    {communityMode!=='INDEPENDENT'&&hasCommunity?<Text style={styles.note}>
     {availableSports.length?`${availableSports.length} modalidades compatíveis com ${communityMode==='SINGLE'?'a comunidade':'as comunidades'} selecionadas.`:
      'Estas comunidades não têm modalidades em comum. Retira uma comunidade ou escolhe outra combinação.'}
@@ -456,7 +479,9 @@ export default function CreateSessionScreen(){
      <Button key={mode} title={mode==='INDEPENDENT'?'Independente':mode==='SINGLE'?'Comunidade':'Partilhar'}
       secondary={communityMode!==mode} disabled={busy}
       onPress={()=>{preselectionOverridden.current=true;if(communityMode===mode)return;setCommunityMode(mode);setCommunitySearch('');
-       setForm(prev=>changeCommunityMode(prev,mode));setError('');}}/>)}
+       if(mode!=='INDEPENDENT')setCustomSportMode(false);
+       setForm(prev=>({...changeCommunityMode(prev,mode),
+         sport:mode==='INDEPENDENT'?prev.sport:SPORTS.includes(prev.sport)?prev.sport:''}));setError('');}}/>)}
    </View>
    {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
    {communityMode!=='INDEPENDENT'?<>
