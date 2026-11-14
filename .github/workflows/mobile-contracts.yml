@@ -1,9 +1,7 @@
 name: Jynlo Mobile contracts
+# GitHub-hosted Actions minutes are exhausted. Avoid a failed run on every
+# develop commit until quota is available; local validation remains available.
 on:
-  push:
-    branches: [develop]
-  pull_request:
-    branches: [develop]
   workflow_dispatch:
 
 permissions:
