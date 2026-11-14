@@ -431,19 +431,19 @@ export default function CreateSessionScreen(){
   {step===0?<>
   <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
    {form.sport?<Badge text={form.sport}/>:null}
-   <TextInput style={styles.input} value={sportSearch}
+   {!customSportMode?<TextInput style={styles.input} value={sportSearch}
     onChangeText={v=>{setSportSearch(v);setShowSportResults(true);}}
     onFocus={()=>setShowSportResults(true)}
     placeholder={'Procurar entre '+SPORTS.length+' modalidades'} placeholderTextColor={C.muted} editable={!busy}
-    autoCorrect={false} accessibilityLabel="Pesquisar modalidade"/>
-   {showSportResults&&sportSearch.trim()?<>
+    autoCorrect={false} accessibilityLabel="Pesquisar modalidade"/>:null}
+   {!customSportMode&&showSportResults&&sportSearch.trim()?<>
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
      accessibilityLabel={'Escolher '+s} onPress={()=>{
       // A late membership request must not overwrite a sport chosen by the user.
       preselectionOverridden.current=true;
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
       if(form.sport!==s){setVenueChosen(null);clearVenueSearch();}
-      setSportSearch('');setShowSportResults(false);setCustomSportMode(false);setCustomSportMode(false);
+      setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
      }} style={[styles.option,form.sport===s&&styles.chosen]}>
      <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
     </Pressable>)}
@@ -452,9 +452,12 @@ export default function CreateSessionScreen(){
    {communityMode==='INDEPENDENT'?<Button secondary
     title={customSportMode?'Escolher modalidade do catálogo':'Não encontras o teu desporto? Sugerir outro'}
     disabled={busy} onPress={()=>{
-     preselectionOverridden.current=true;setCustomSportMode(value=>!value);
-     setSportSearch('');setShowSportResults(false);setVenueChosen(null);clearVenueSearch();
-     setForm(prev=>({...prev,sport:'',venueId:null,seasonGame:false,confirmActivateRankings:false}));
+     preselectionOverridden.current=true;
+     const nextCustom=!customSportMode;
+     const proposedName=nextCustom?sportSearch.trim().replace(/\s+/g,' '):'';
+     setCustomSportMode(nextCustom);setSportSearch('');setShowSportResults(false);
+     setVenueChosen(null);clearVenueSearch();
+     setForm(prev=>({...prev,sport:proposedName,venueId:null,seasonGame:false,confirmActivateRankings:false}));
     }}/>:null}
    {customSportMode?<>
     <Text style={styles.note}>Escreve a modalidade. A sessão é independente e a sugestão será revista antes de entrar no catálogo oficial.</Text>
