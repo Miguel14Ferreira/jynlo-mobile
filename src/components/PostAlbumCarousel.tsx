@@ -1,5 +1,6 @@
 import React,{useState} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {JynloIcon} from './JynloIcon';
 import AdaptivePostPhoto from './AdaptivePostPhoto';
 import {resolveJynloMedia} from '../lib/social-feed-api';
 
@@ -27,7 +28,7 @@ export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
    {items.map((entry,index)=>{
     const uri=uriFor(entry.url);
     return <View key={entry.url+'-'+index} style={{width}}>
-      {uri?(entry.type==='video'?renderVideo(uri):
+      {uri?(entry.type==='video'?(index===active?renderVideo(uri):<View style={styles.videoInactive}><JynloIcon name="video" size={26} color="#B9D8DA"/><Text style={styles.videoInactiveText}>Vídeo {index+1} de {items.length}</Text></View>):
         <AdaptivePostPhoto uri={uri} width={width}
           label={'Ampliar fotografia '+(index+1)+' de '+items.length}
           onExpand={()=>{const images=items.filter(item=>item.type==='image').map(item=>uriFor(item.url)).filter((value):value is string=>Boolean(value));onExpand({uris:images,index:images.indexOf(uri)});}}/>):null}
@@ -51,5 +52,7 @@ const styles=StyleSheet.create({
  counter:{color:'#B9D8DA',fontSize:11,fontWeight:'800'},
  dots:{flexDirection:'row',alignItems:'center',gap:5},
  dot:{height:5,width:5,borderRadius:3,backgroundColor:'#527C85'},
- dotActive:{width:15,backgroundColor:'#4BE2CD'}
+ dotActive:{width:15,backgroundColor:'#4BE2CD'},
+ videoInactive:{height:300,backgroundColor:'#020A10',borderRadius:12,justifyContent:'center',alignItems:'center',gap:9},
+ videoInactiveText:{fontSize:12,color:'#B9D8DA',fontWeight:'700'}
 });
