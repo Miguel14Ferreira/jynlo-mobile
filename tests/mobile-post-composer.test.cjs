@@ -54,14 +54,17 @@ test('uploads preserve edits made during slow publishing without a second POST',
  assert.match(home,/onChangeText=\{value=>\{composerTextRef\.current=value;setComposerText\(value\);\}\}/);
 });
 
-test('Feed displays complete portrait and landscape photos using actual dimensions',()=>{
+test('Feed and post detail display full photos with responsive proportions',()=>{
  const home=read('app/(tabs)/index.tsx');
- assert.match(home,/function FeedPostPhoto\(\{uri,width,label,onExpand\}/);
- assert.match(home,/onLoad=\{event=>\{/);
- assert.match(home,/const source=event\.nativeEvent\.source/);
- assert.match(home,/Math\.round\(width\*dimensions\.height\/dimensions\.width\)/);
- assert.match(home,/Math\.min\(620,Math\.max\(180,/);
+ const detail=read('app/posts/[postId]/index.tsx');
+ const photo=read('src/components/AdaptivePostPhoto.tsx');
+ assert.match(home,/import FeedPostPhoto from '..\/..\/src\/components\/AdaptivePostPhoto'/);
  assert.match(home,/<FeedPostPhoto uri=\{uri\}/);
- assert.match(home,/resizeMode="contain"/);
- assert.match(home,/onExpand=\{\(\)=>setExpandedPostImage\(uri\)\}/);
+ assert.match(detail,/import AdaptivePostPhoto from '..\/..\/..\/src\/components\/AdaptivePostPhoto'/);
+ assert.match(detail,/<AdaptivePostPhoto uri=\{uri\}/);
+ assert.match(photo,/const source=event\.nativeEvent\.source/);
+ assert.match(photo,/Math\.round\(width\*dimensions\.height\/dimensions\.width\)/);
+ assert.match(photo,/Math\.min\(620,Math\.max\(180,/);
+ assert.match(photo,/resizeMode="contain"/);
+ assert.match(photo,/setDimensions\(null\)/);
 });
