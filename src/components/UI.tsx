@@ -12,28 +12,18 @@ import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollView|null>(null);
   const nearBottom=useRef(true);
-  // When a chat composer receives focus Android can resize the window without
-  // moving the last message and input into view. Scroll after the keyboard
-  // transition; the shared Page uses this only for chat views that explicitly
-  // opt into autoScrollToEnd.
+  // Measure the actual focused field instead of blindly jumping to the bottom.
+  // A caption, reply or edit box can be above the last message in long chats.
   useEffect(()=>{
-    if(!autoScrollToEnd)return;
+    if(!scroll)return;
     const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
     const subscription=Keyboard.addListener(event,()=>{
-      nearBottom.current=true;
-      scrollRef.current?.scrollToEnd({animated:true});
-    });
-    return()=>subscription.remove();
-  },[autoScrollToEnd]);
-  useEffect(()=>{
-    if(autoScrollToEnd||!scroll)return;
-    const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
-    const subscription=Keyboard.addListener(event,()=>{
-      // On long forms the keyboard may cover a field even when Android has
-      // resized the window. The ScrollView responder measures the actual input
-      // rather than guessing an offset from the screen dimensions.
       const focused=TextInput.State.currentlyFocusedInput?.();
-      if(focused)scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,24,true);
+      if(focused){
+        scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,24,true);
+      }else if(autoScrollToEnd&&nearBottom.current){
+        scrollRef.current?.scrollToEnd({animated:true});
+      }
     });
     return()=>subscription.remove();
   },[autoScrollToEnd,scroll]);
