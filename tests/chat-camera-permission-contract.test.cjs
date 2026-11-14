@@ -35,3 +35,13 @@ test('all three chats display vector previews for videos',()=>{
   assert.doesNotMatch(source,/>▶ Vídeo</);
  }
 });
+
+test('location links share one validated parser across all chat types',()=>{
+ for(const filename of chats){
+  const source=read(filename);
+  assert.match(source,/chatLocationUrl\(/);
+  assert.match(source,/Linking\.openURL\(chatLocationUrl\(/);
+ }
+ const helper=read('src/lib/chat-location.cjs');
+ assert.match(helper,/Math\.abs\(lat\)>90\|\|Math\.abs\(lng\)>180/);
+});
