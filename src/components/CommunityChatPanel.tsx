@@ -346,7 +346,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
    {muteError&&!accessRevoked?<Message tone="error">{muteError}</Message>:null}
-   {auth.token&&muteKnown&&!accessRevoked?<View style={styles.muteRow}>
+   {!embedded&&auth.token&&muteKnown&&!accessRevoked?<View style={styles.muteRow}>
     <Text style={styles.note}>{muted?'Avisos deste chat silenciados':'Avisos deste chat ativos'}</Text>
     <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
    </View>:null}
@@ -359,6 +359,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    </Pressable>:null}{renderedMessages}
   </ScrollView>:renderedMessages}
    {embedded&&auth.token&&!accessRevoked?<View style={styles.quickActions}>
+    {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
+      style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
+      <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
+    </Pressable>:null}
     {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos" disabled={sending||uploading}
      style={styles.iconAction} onPress={()=>{void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/></Pressable>:null}
     {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={sending||uploading}
