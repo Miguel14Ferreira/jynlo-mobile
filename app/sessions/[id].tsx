@@ -13,6 +13,7 @@ import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/sessio
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
+import SessionChatPanel from '../../src/components/SessionChatPanel';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -550,7 +551,7 @@ export default function SessionScreen(){
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
-        <Button title="Abrir chat da sessão" onPress={()=>router.push({pathname:'/sessions/[id]/chat',params:{id:String(id)}})}/>:null}
+        <SessionChatPanel embedded/>:null}
       {detail?.joined&&!['CANCELLED','COMPLETED'].includes(s.status||'')&&Date.parse(s.gameDate||'')>Date.now()?<Message>✓ A tua inscrição está confirmada.</Message>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
