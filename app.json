@@ -90,6 +90,21 @@
             {
               "scheme": "https",
               "host": "d24sports.com",
+              "pathPrefix": "/posts/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "d24sports.com",
               "pathPrefix": "/menu/events/"
             }
           ],
