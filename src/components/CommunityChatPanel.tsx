@@ -340,8 +340,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
        <Text style={styles.sender}>{m.username}</Text>
        <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
-        {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>↩ Responder</Text></Pressable>:null}
-        {ownMessage(m)&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><Text style={styles.quoteTitle}>•••</Text></Pressable>:null}
+        {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={18} color={C.mint}/><Text style={styles.quoteTitle}>Responder</Text></View></Pressable>:null}
+        {ownMessage(m)&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
        </View>
      </View>
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
