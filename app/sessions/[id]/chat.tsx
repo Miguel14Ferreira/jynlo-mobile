@@ -291,6 +291,11 @@ export default function SessionChat(){
   <Text style={styles.title}>Conversa do jogo</Text>
   <Text style={styles.note}>Apenas o organizador e participantes confirmados. O chat encerra quando o jogo começa.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+  {muteError&&!closed?<Message tone="error">{muteError}</Message>:null}
+  {auth.token&&muteKnown&&!closed?<View style={styles.muteRow}>
+   <Text style={styles.note}>{muted?'Avisos deste chat silenciados':'Avisos deste chat ativos'}</Text>
+   <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
+  </View>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
@@ -303,11 +308,17 @@ export default function SessionChat(){
      </View>
     </View>
     {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
-    <Text style={styles.body}>{m.deletedAt?'Mensagem removida':m.body||m.attachmentName||'Anexo'}</Text>
+    {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
+    <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
+    {!m.deletedAt&&/^https:\/\/www\.google\.com\/maps\?q=-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test((m.body||'').trim())?
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(m.body.trim()).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
+       <Text style={styles.mapLink}>Abrir localização no mapa ↗</Text>
+     </Pressable>:null}
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
      new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
   </View>)}
+  {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
   <ChatPdfComposer target={{scope:'session',id}} token={auth.token} enabled={!closed&&photoReady&&!sending&&!uploading} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
    // the user may have made while the file was being uploaded.
@@ -357,6 +368,8 @@ const styles=StyleSheet.create({
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:12,fontWeight:'800',color:C.mint},
  quote:{color:C.muted,fontSize:12},body:{color:C.white,fontSize:15},time:{color:C.muted,fontSize:10,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
+ muteRow:{padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface,gap:8},
+ mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  editor:{gap:9},composer:{flexDirection:'row',gap:8,alignItems:'center'},
  input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:MobileTheme.colors.surface,color:MobileTheme.colors.text,
   borderWidth:1,borderColor:MobileTheme.colors.border,borderRadius:MobileTheme.radius.lg,padding:12}
