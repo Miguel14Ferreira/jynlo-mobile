@@ -867,7 +867,7 @@ export default function JynloFeedHome(){
                 <CircleAvatar name={c.authorUsername} image={c.authorProfilePicUrl} size={34}/>
                 <View style={{flex:1,gap:5}}><Text style={styles.commentAuthor}>@{c.authorUsername}</Text>
                   {editingComment===c.id?<><TextInput value={editCommentDraft} onChangeText={setEditCommentDraft}
-                    maxLength={2000} multiline style={styles.commentInput} placeholder="Editar comentário" placeholderTextColor={MUTED}/>
+                    maxLength={500} multiline style={styles.commentInput} placeholder="Editar comentário" placeholderTextColor={MUTED}/>
                     <View style={{flexDirection:'row',gap:12}}>
                      <Pressable disabled={commentWriteBusy!==null||!editCommentDraft.trim()} onPress={()=>void saveCommentEditInFeed(c)} accessibilityRole="button" accessibilityLabel="Guardar comentário"><Text style={styles.commentAuthor}>Guardar</Text></Pressable>
                      <Pressable disabled={commentWriteBusy!==null} onPress={()=>{setEditingComment(null);setEditCommentDraft('');}} accessibilityRole="button"><Text style={styles.commentAuthor}>Cancelar</Text></Pressable>
@@ -883,7 +883,7 @@ export default function JynloFeedHome(){
                   </View></View>
               </View>):<Text style={styles.commentsEmpty}>Ainda não há comentários. Inicia a conversa!</Text>}
             </ScrollView>}
-          <View style={styles.commentCompose}><TextInput value={commentText} onChangeText={setCommentText} style={styles.commentInput} maxLength={2000} placeholder={auth.token?'Escrever comentário…':'Inicia sessão para comentar'} placeholderTextColor={MUTED} editable={!!auth.token&&busyPost===null} multiline/>
+          <View style={styles.commentCompose}><TextInput value={commentText} onChangeText={setCommentText} style={styles.commentInput} maxLength={500} placeholder={auth.token?'Escrever comentário…':'Inicia sessão para comentar'} placeholderTextColor={MUTED} editable={!!auth.token&&busyPost===null} multiline/>
             <Pressable onPress={()=>expandedComments!==null&&void submitComment(expandedComments)} disabled={!auth.token||!commentText.trim()||busyPost!==null||commentsLoading} style={[styles.sendComment,(!auth.token||!commentText.trim()||busyPost!==null||commentsLoading)&&{opacity:.45}]} accessibilityRole="button" accessibilityLabel="Enviar comentário"><JynloIcon name="send" size={23} color={INDIGO}/></Pressable>
           </View>
         </SafeAreaView>
