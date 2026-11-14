@@ -188,7 +188,7 @@ export async function editPostComment(postId:number,commentId:number,content:str
  requireViewer(token,username);
  if(!Number.isSafeInteger(postId)||postId<=0||!Number.isSafeInteger(commentId)||commentId<=0)throw Error('Comentário inválido.');
  const message=content.trim();
- if(!message||message.length>2000)throw Error('Escreve um comentário até 2000 caracteres.');
+ if(!message||message.length>500)throw Error('Escreve um comentário até 500 caracteres.');
  if(DEMO_MODE){
   const existing=demoComments.get(postId)||[];
   const original=existing.find(x=>x.id===commentId&&x.authorUsername.toLowerCase()===username!.toLowerCase());
