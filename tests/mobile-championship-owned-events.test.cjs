@@ -84,3 +84,10 @@ test('team registrations and draft competition deletion are restricted to organi
  assert.match(list,/deleteOwnedEvent\(cid,chid,activeEvent\.id,auth\.token!\)/);
  assert.match(list,/confirm\('Eliminar esta prova\?'/);
 });
+
+test('event details reload only for selected competition or confirmed mutation',()=>{
+ assert.match(list,/const \[detailsRefresh,setDetailsRefresh\]=useState\(0\)/);
+ assert.match(list,/setDetailsRefresh\(value=>value\+1\)/);
+ assert.match(list,/\[cid,chid,eventId,auth\.token,activeEvent\?\.format,detailsRefresh\]/);
+ assert.doesNotMatch(list,/\[cid,chid,eventId,auth\.token,loading,events\]/);
+});
