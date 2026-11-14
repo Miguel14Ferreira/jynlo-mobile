@@ -328,6 +328,11 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
+      // A previous account's request must not block the new account or
+      // release a newer action lock when its own finally handler runs.
+      postActionInFlight.current=false;commentWriteLock.current=false;
+      postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
+      setPublishing(false);setStoryPublishing(false);
       confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
@@ -484,7 +489,7 @@ export default function JynloFeedHome(){
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
         }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
-        .finally(()=>{postActionInFlight.current=false;if(feedIdentity.current===identity)setBusyPost(null);});
+        .finally(()=>{if(feedIdentity.current===identity){postActionInFlight.current=false;setBusyPost(null);}});
       }}
     ]);
   }
@@ -500,7 +505,7 @@ export default function JynloFeedHome(){
         setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
       }
     }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
-    .finally(()=>{postActionInFlight.current=false;if(feedIdentity.current===identity)setBusyPost(null);});
+    .finally(()=>{if(feedIdentity.current===identity){postActionInFlight.current=false;setBusyPost(null);}});
   }
   function openPostComposer(){
     setPublishNotice(null);setPostPublishError('');
@@ -600,7 +605,7 @@ export default function JynloFeedHome(){
         changeComposerMedia(()=>result.items);
       }else if(storyComposerWasOpen&&storyComposerRef.current&&storyComposerRevision.current===storyRevision&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
     }catch(e){if(activeStoryAccount.current===actorToken)Alert.alert(source==='camera'?'Não foi possível abrir a câmara':'Não foi possível abrir a galeria',e instanceof Error?e.message:'Confirma as permissões do teu telemóvel.');}
-    finally{mediaPickerInFlight.current=false;}
+    finally{if(activeStoryAccount.current===actorToken)mediaPickerInFlight.current=false;}
   }
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
@@ -640,7 +645,7 @@ export default function JynloFeedHome(){
         setPostPublishError(message);
         Alert.alert('Publicação',message);
       }
-    }finally{postInFlight.current=false;setPublishing(false);}
+    }finally{if(feedIdentity.current===`${username}:${actor}`){postInFlight.current=false;setPublishing(false);}}
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
@@ -681,7 +686,7 @@ export default function JynloFeedHome(){
         setStoryPublishError(message);
         Alert.alert('Story',message);
       }
-    }finally{storyInFlight.current=false;setStoryPublishing(false);}
+    }finally{if(feedIdentity.current===`${username}:${actor}`){storyInFlight.current=false;setStoryPublishing(false);}}
   }
   async function toggleLike(item:FeedItem){
     if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null||
@@ -701,8 +706,7 @@ export default function JynloFeedHome(){
       if(feedIdentity.current===account)
         Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');
     }finally{
-      postActionInFlight.current=false;
-      if(feedIdentity.current===account)setBusyPost(null);
+      if(feedIdentity.current===account){postActionInFlight.current=false;setBusyPost(null);}
     }
   }
   function closeComments(){commentsRequest.current++;setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');}
@@ -738,8 +742,7 @@ export default function JynloFeedHome(){
       if(account===feedIdentity.current&&requestId===commentsRequest.current)
         Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');
     }finally{
-      commentWriteLock.current=false;
-      if(account===feedIdentity.current)setBusyPost(null);
+      if(account===feedIdentity.current){commentWriteLock.current=false;setBusyPost(null);}
     }
   }
   async function sharePost(item:FeedItem){
@@ -756,7 +759,7 @@ export default function JynloFeedHome(){
         setComments(old=>old.map(item=>item.id===c.id?updated:item));
     }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
       Alert.alert('Gosto no comentário',e instanceof Error?e.message:'Não foi possível atualizar.');}
-    finally{commentWriteLock.current=false;if(account===feedIdentity.current)setCommentWriteBusy(null);}
+    finally{if(account===feedIdentity.current){commentWriteLock.current=false;setCommentWriteBusy(null);}}
   }
   async function saveCommentEditInFeed(c:SocialComment){
     if(!auth.token||!auth.username||expandedComments!==c.postId||commentWriteLock.current||
@@ -771,7 +774,7 @@ export default function JynloFeedHome(){
       }
     }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
       Alert.alert('Editar comentário',e instanceof Error?e.message:'Não foi possível guardar.');}
-    finally{commentWriteLock.current=false;if(account===feedIdentity.current)setCommentWriteBusy(null);}
+    finally{if(account===feedIdentity.current){commentWriteLock.current=false;setCommentWriteBusy(null);}}
   }
   function AttendanceDigest(){
     if(!attendanceGroups.length)return null;
