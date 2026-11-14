@@ -71,4 +71,29 @@ function reconcileCommentCounts(floors,posts,now=Date.now()){
   })
  };
 }
-module.exports={RECEIPT_TTL_MS,rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts};
+/** Preserve only the edited fields until the feed reflects the successful PUT.
+ * Other server-owned fields (likes, comments, media) remain authoritative.
+ */
+function rememberPostEdit(edits,post,now=Date.now()){
+ const next=new Map(edits);
+ if(!post||!Number.isSafeInteger(post.postId)||post.postId<=0||
+    post.type!=='POST'||typeof post.content!=='string')return next;
+ next.set(post.postId,{content:post.content,location:post.location||null,until:now+RECEIPT_TTL_MS});
+ return next;
+}
+function reconcilePostEdits(edits,posts,now=Date.now()){
+ const next=new Map();
+ const byId=new Map((posts||[]).filter(item=>item?.type==='POST'&&Number.isSafeInteger(item.postId))
+   .map(item=>[item.postId,item]));
+ for(const [id,entry] of edits){
+  if(!entry||typeof entry.content!=='string'||!Number.isFinite(entry.until)||entry.until<=now)continue;
+  const received=byId.get(id);
+  if(received&&received.content===entry.content&&(received.location||null)===(entry.location||null))continue;
+  next.set(id,entry);
+ }
+ return {edits:next,posts:(posts||[]).map(post=>{
+  const edited=post?.type==='POST'?next.get(post.postId):null;
+  return edited?{...post,content:edited.content,location:edited.location}:post;
+ })};
+}
+module.exports={RECEIPT_TTL_MS,rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts,rememberPostEdit,reconcilePostEdits};
