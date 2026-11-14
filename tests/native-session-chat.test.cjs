@@ -13,11 +13,11 @@ test('session chat API is authenticated and correctly scoped',()=>{
 });
 test('native session chat only appears for confirmed participants before kickoff',()=>{
  const detail=read('app/sessions/[id].tsx');
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  const routes=read('app/_layout.tsx');
  assert.match(detail,/owner\|\|detail\.joined/);
  assert.match(detail,/Date\.parse\(s\.gameDate\)>Date\.now\(\)/);
- assert.match(detail,/pathname:'\/sessions\/\[id\]\/chat'/);
+ assert.match(detail,/<SessionChatPanel embedded\/>/);
  assert.match(screen,/sessionChatHistory\(id,auth\.token\)/);
  assert.match(screen,/const confirmed=await postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
  assert.match(screen,/markSessionChatRead\(id,latest,auth\.token\)/);
@@ -26,7 +26,7 @@ test('native session chat only appears for confirmed participants before kickoff
 });
 
 test('session chat refreshes read-only while focused without overlapping a send',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.match(screen,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\},15000\)/);
  assert.match(screen,/clearInterval\(timer\)/);
  assert.match(screen,/if\(refreshing\.current===version\)\{pendingRefresh\.current=true;return;\}/);
@@ -36,17 +36,17 @@ test('session chat refreshes read-only while focused without overlapping a send'
 });
 
 test('session chat preserves messages on transient polling errors but closes revoked access',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.match(screen,/import \{ApiError\} from/);
  assert.match(screen,/const accessRevoked=e instanceof ApiError&&\[401,403,404,409,410\]\.includes\(e\.status\)/);
  assert.match(screen,/if\(accessRevoked\)\{/);
  assert.match(screen,/setClosed\(true\);setEntries\(\[\]\);setDraft\(''\);setReply\(null\)/);
- assert.match(screen,/\}else if\(!silent\)\{/);
+ assert.match(screen,/if\(!silent\)\{const message=e instanceof Error/);
 });
 
 test('session chat photo upload uses private scoped endpoint with confirmation',()=>{
  const api=read('src/lib/chat-photo-attachment.ts');
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.match(api,/kind==='community'\?'communities':'sessions'/);
  assert.match(api,/\/messages\/attachments/);
  assert.match(api,/\/availability/);
@@ -62,7 +62,7 @@ test('session chat photo upload uses private scoped endpoint with confirmation',
 });
 
 test('session photo picker loads only on request and ignores results from previous session',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  assert.doesNotMatch(screen,/^import \* as ImagePicker from 'expo-image-picker'/m);
  assert.match(screen,/const ImagePicker=await import\('expo-image-picker'\)/);
  assert.match(screen,/pickerInFlight\.current=true/);
@@ -71,7 +71,7 @@ test('session photo picker loads only on request and ignores results from previo
 });
 
 test('session text send clears drafts only after server receipt confirms exact message',()=>{
- const s=read('app/sessions/[id]/chat.tsx');
+ const s=read('src/components/SessionChatPanel.tsx');
  assert.match(s,/const confirmed=await postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
  assert.match(s,/confirmedSessionChatSend\(confirmed,id,auth\.username\|\|'',originalDraft,originalReplyId\)/);
  assert.ok(s.indexOf('confirmedSessionChatSend(confirmed')<s.indexOf("setDraft(current=>current===originalDraft?'':current)"));
