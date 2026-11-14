@@ -4,7 +4,7 @@ import type {FeedItem} from '../lib/types';
 import {editPost} from '../lib/social-feed-api';
 import {postMediaItems} from '../lib/post-album.cjs';
 import {MobileTheme} from '../lib/theme';
-import {JynloIcon} from './JynloIcon';
+import {CloseIconButton} from './CloseIconButton';
 
 const C=MobileTheme.colors;
 type Props={
@@ -75,7 +75,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
    <View style={styles.header}>
     <Text style={styles.heading}>Editar publicação</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fechar edição da publicação" disabled={busy} onPress={close} style={styles.close}><JynloIcon name="close" size={24} color={C.text}/></Pressable>
+    <CloseIconButton onPress={close} label="Fechar edição da publicação" disabled={busy} color={C.text}/>
    </View>
    <ScrollView ref={editorScrollRef} style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={styles.hint}>Podes alterar a descrição ou localização. As fotografias, vídeos, gostos e comentários mantêm-se.</Text>
