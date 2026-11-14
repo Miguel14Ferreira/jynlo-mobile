@@ -35,9 +35,9 @@ const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.s
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
 const StoryCameraCapture=lazy(()=>import('../../src/components/StoryCameraCapture'));
-function MediaVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;onEnd?:()=>void}){
+function MediaVideo({uri,story=false,paused=false,muted=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;muted?:boolean;onEnd?:()=>void}){
  return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
-  <FeedVideo uri={uri} story={story} paused={paused} onEnd={onEnd}/>
+  <FeedVideo uri={uri} story={story} paused={paused} muted={muted} onEnd={onEnd}/>
  </Suspense>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
@@ -56,7 +56,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
   const [appActive,setAppActive]=useState(AppState.currentState==='active');
-  const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false);
+  const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false),[storyMuted,setStoryMuted]=useState(true);
   const submittingStory=useRef(false);
   const activeAccount=useRef(token);
   activeAccount.current=token;
@@ -65,7 +65,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const progress=useRef(new Animated.Value(0)).current;
   const remaining=useRef(1);
   React.useEffect(()=>{
-    setCurrentKey(group?.key||null);setIndex(0);setPaused(false);setReplyText('');
+    setCurrentKey(group?.key||null);setIndex(0);setPaused(false);setReplyText('');setStoryMuted(true);
     remaining.current=1;progress.setValue(0);longPress.current=false;
   },[group?.key,progress]);
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
@@ -173,7 +173,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
              reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
@@ -192,6 +192,9 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       </View>
       <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text><Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text></View>
       <View style={styles.storyEngagement}>
+        {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?'Ativar som do vídeo':'Silenciar vídeo'} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
+          <JynloIcon name={storyMuted?'volume-off':'volume'} color={WHITE} size={21}/>
+        </Pressable>:null}
         <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?'Retirar gosto da Story':'Gostar da Story'} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
           <JynloIcon name="like" size={20} color={story.likedByMe?'#FF778C':WHITE} active={story.likedByMe}/><Text style={styles.storyEngagementText}>{story.likeCount||0}</Text>
         </Pressable>
