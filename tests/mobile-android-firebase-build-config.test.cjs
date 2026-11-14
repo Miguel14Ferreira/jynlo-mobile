@@ -17,6 +17,10 @@ test('missing Firebase config is an explicit QA-only fallback',()=>{
  assert.deepEqual(prepare({}),{configured:false,reason:'not-provided'});
 });
 
+test('push-enabled workflow fails closed without its encrypted Firebase group',()=>{
+ assert.throws(()=>prepare({JYNLO_REQUIRE_NATIVE_PUSH:'1'}),/exige o segredo/);
+});
+
 test('Firebase config must bind to the real Android application',()=>{
  assert.equal(validateAndroidFirebaseConfig(payload),true);
  assert.throws(()=>validateAndroidFirebaseConfig('invalid json'),/JSON inválido/);
@@ -70,4 +74,8 @@ test('Codemagic validates Firebase prior to native Expo prebuild',()=>{
  const prebuild=yaml.indexOf('expo prebuild --platform android');
  assert.ok(verify>0&&prebuild>verify);
  assert.match(yaml,/CM_BRANCH:-/);
+ assert.match(yaml,/jynlo-android-qa:/);
+ assert.match(yaml,/jynlo-android-push-qa:/);
+ assert.match(yaml,/groups:\s*\n\s*- jynlo_android_native/);
+ assert.match(yaml,/JYNLO_REQUIRE_NATIVE_PUSH: "1"/);
 });
