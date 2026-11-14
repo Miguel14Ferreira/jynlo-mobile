@@ -26,3 +26,21 @@ test('failed multipart media never retries an uncertain POST and rechecks access
  assert.match(source,/await refresh\(true,version\)/);
  assert.doesNotMatch(source,/catch\(e\)\{[^}]*sendChatPhotoAlbum\(/);
 });
+
+test('all session attachment transports identify the kickoff conflict',()=>{
+ const photo=fs.readFileSync(path.join(__dirname,'../src/lib/chat-photo-attachment.ts'),'utf8');
+ const album=fs.readFileSync(path.join(__dirname,'../src/lib/chat-photo-album.ts'),'utf8');
+ const pdf=fs.readFileSync(path.join(__dirname,'../src/lib/chat-pdf-attachment.ts'),'utf8');
+ assert.match(photo,/kind==='session'&&response\.status===409/);
+ assert.match(album,/target\.scope==='session'&&response\.status===409/);
+ assert.match(pdf,/target\.scope==='session'&&response\.status===409/);
+ for(const content of [photo,album,pdf])assert.match(content,/O chat da sessão está encerrado/);
+});
+
+test('PDF composer tells session chat to recheck permission after a rejected upload',()=>{
+ const pdf=fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8');
+ assert.match(pdf,/onPermissionError\?:\(\)=>void/);
+ assert.match(pdf,/onPermissionError\?\.\(\)/);
+ const matches=source.match(/onPermissionError=\{\(\)=>\{void refresh\(true,generation\.current\);\}\}/g)||[];
+ assert.equal(matches.length,2);
+});
