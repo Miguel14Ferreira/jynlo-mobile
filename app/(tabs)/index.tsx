@@ -10,6 +10,7 @@ import {DEMO_MODE,request} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
+import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib/attendance-digest.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
@@ -302,6 +303,7 @@ export default function JynloFeedHome(){
   const hiddenKeysRef=useRef<string[]>([]);
   const [hiddenKeys,setHiddenKeys]=useState<string[]>([]);
   const [recentlyHidden,setRecentlyHidden]=useState<string|null>(null);
+  const [showAllAttendance,setShowAllAttendance]=useState(false);
    const [myProfilePhoto,setMyProfilePhoto]=useState<string|null>(null);
   const [hiddenReady,setHiddenReady]=useState(false);
   const load=useCallback(async()=>{
@@ -315,7 +317,7 @@ export default function JynloFeedHome(){
       commentsRequest.current++;
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
-      hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);
+      hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
@@ -416,6 +418,8 @@ export default function JynloFeedHome(){
   const visiblePosts=identityMatches&&hiddenReady?posts.filter(item=>{
     const key=feedEntryKey(item);return !key||!hiddenKeys.includes(key);
   }):[];
+  const attendanceGroups=attendanceDigest(visiblePosts,auth.username) as Array<{sessionId:number;item:FeedItem;count:number;ownActivity:FeedItem|null}>;
+  const normalPosts=visiblePosts.filter(item=>!isDigestAttendance(item));
   function persistVisibility(keys:string[],identity:string,username:string){
     hiddenKeysRef.current=keys;setHiddenKeys(keys);
     void writeHiddenFeedEntries(username,keys).catch(()=>{
@@ -690,6 +694,41 @@ export default function JynloFeedHome(){
       Alert.alert('Editar comentário',e instanceof Error?e.message:'Não foi possível guardar.');}
     finally{commentWriteLock.current=false;if(account===feedIdentity.current)setCommentWriteBusy(null);}
   }
+  function AttendanceDigest(){
+    if(!attendanceGroups.length)return null;
+    const groups=showAllAttendance?attendanceGroups:attendanceGroups.slice(0,5);
+    return <View style={styles.attendanceDigest} accessibilityLabel="Atividade de sessões">
+      {groups.map(group=>{
+        const when=group.item.gameDate?new Date(group.item.gameDate):null;
+        const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}):null;
+        const place=[group.item.city?.trim(),date].filter(Boolean).join(' · ');
+        return <View key={group.sessionId} style={styles.attendanceRow}>
+          <View style={styles.attendanceCheck}><Text style={styles.attendanceCheckText}>✓</Text></View>
+          <View style={styles.attendanceDetails}>
+            <Text style={styles.attendanceTitle}>{attendanceTitle(group)}</Text>
+            {place?<Text style={styles.attendanceMeta}>{place}</Text>:null}
+            <View style={styles.attendanceActions}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão ${group.sessionId}`}
+                style={styles.attendanceButton} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(group.sessionId)}})}>
+                <Text style={styles.attendanceActionText}>Ver sessão →</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed"
+                disabled={!auth.token||!hiddenReady}
+                style={styles.attendanceButton} onPress={()=>hideFromFeed(group.item)}>
+                <Text style={styles.attendanceHideText}>Ocultar do meu feed</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>;
+      })}
+      {attendanceGroups.length>5?<Pressable accessibilityRole="button"
+        accessibilityLabel={showAllAttendance?'Mostrar menos atividades':'Ver todas as atividades'}
+        accessibilityState={{expanded:showAllAttendance}}
+        onPress={()=>setShowAllAttendance(value=>!value)} style={styles.attendanceMore}>
+        <Text style={styles.attendanceActionText}>{showAllAttendance?'Mostrar menos':'Ver todas'}</Text>
+      </Pressable>:null}
+    </View>;
+  }
   function SessionPostAttachment({item}:{item:FeedItem}){
     const id=item.sessionId;
     if(!Number.isSafeInteger(id)||!id||id<=0)return null;
@@ -738,18 +777,19 @@ export default function JynloFeedHome(){
     </View>
     {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>:null}
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
+    <AttendanceDigest/>
     {identityMatches&&recentlyHidden?<View style={styles.hiddenNotice}>
-      <Text style={styles.hiddenNoticeText}>Publicação ocultada só neste dispositivo.</Text>
+      <Text style={styles.hiddenNoticeText}>{recentlyHidden?.startsWith('attendance:')?'Atividade ocultada do teu feed neste dispositivo.':'Publicação ocultada só neste dispositivo.'}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="Desfazer ocultação" onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>Desfazer</Text></Pressable>
     </View>:null}
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
     {(loading||!identityMatches)&&visiblePosts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
-    {!loading&&!error&&identityMatches&&auth.token&&visiblePosts.length===0?<Text style={styles.mutedText}>Ainda não há publicações. Partilha o teu primeiro momento!</Text>:null}
+    {!loading&&!error&&identityMatches&&auth.token&&normalPosts.length===0&&attendanceGroups.length===0?<Text style={styles.mutedText}>Ainda não há publicações. Partilha o teu primeiro momento!</Text>:null}
   </View>;
   if(!auth.ready)return <SafeAreaView style={{flex:1,backgroundColor:INDIGO,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></SafeAreaView>;
   if(!auth.token&&!auth.browsingAsGuest)return <Redirect href="/welcome"/>;
   return <SafeAreaView style={{flex:1,backgroundColor:INDIGO}} edges={['top','left','right']}>
-    <FlatList data={visiblePosts} keyExtractor={(item,index)=>feedEntryKey(item)||`${item.type}-${item.authorUsername}-${item.createdAt}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
+    <FlatList data={normalPosts} keyExtractor={(item,index)=>feedEntryKey(item)||`${item.type}-${item.authorUsername}-${item.createdAt}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&visiblePosts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
     <StoryViewer group={visibleStoryViewer} groups={visibleStoryGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
@@ -943,6 +983,18 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+  attendanceDigest:{gap:8,marginVertical:4},
+  attendanceRow:{flexDirection:'row',gap:11,alignItems:'flex-start',borderWidth:1,borderColor:'#0B6071',borderRadius:13,backgroundColor:'#062C3A',padding:12},
+  attendanceCheck:{width:27,height:27,borderRadius:14,backgroundColor:'#0B5260',alignItems:'center',justifyContent:'center',marginTop:1},
+  attendanceCheckText:{color:TEAL,fontSize:16,fontWeight:'900'},
+  attendanceDetails:{flex:1,minWidth:0,gap:4},
+  attendanceTitle:{color:WHITE,fontSize:12,fontWeight:'800',lineHeight:17},
+  attendanceMeta:{color:'#C0D7DE',fontSize:11,lineHeight:16},
+  attendanceActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8,marginTop:4},
+  attendanceButton:{minHeight:40,justifyContent:'center',paddingHorizontal:4,paddingVertical:7},
+  attendanceActionText:{color:TEAL,fontWeight:'800',fontSize:11},
+  attendanceHideText:{color:'#BDCFD9',fontWeight:'700',fontSize:11},
+  attendanceMore:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:10,minHeight:40,justifyContent:'center'},
   postMenuSafeArea:{width:'100%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER},
   postMenuContainer:{minHeight:220,paddingTop:12,paddingHorizontal:16,paddingBottom:12},
   postMenuContents:{paddingBottom:28,gap:10},
