@@ -72,3 +72,16 @@ test('published Stories and the editor both reserve the same metadata zone',()=>
  assert.match(details,/contentContainerStyle=\{styles\.tags\}/);
  assert.match(details,/onPress=\{\(\)=>onOpenProfile\(username\)\}/);
 });
+
+test('editing a captured Story keeps native camera and gallery available in a compact toolbar',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const feed=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ assert.match(feed,/accessibilityLabel="Tirar nova fotografia ou vídeo para a Story"/);
+ assert.match(feed,/pickMedia\(setStoryMedia,'camera'\)/);
+ assert.match(feed,/accessibilityLabel="Trocar fotografia ou vídeo da Story pela galeria"/);
+ assert.match(feed,/accessibilityLabel="Remover fotografia ou vídeo da Story"/);
+ assert.match(feed,/storyMediaActions:\{flexDirection:'row',flexWrap:'wrap'/);
+ assert.match(feed,/<JynloIcon name="camera" color=\{TEAL\}/);
+ assert.match(feed,/<JynloIcon name="gallery" color=\{TEAL\}/);
+ assert.match(feed,/<JynloIcon name="remove" color=\{TEAL\}/);
+});
