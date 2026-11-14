@@ -3,7 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/chat.tsx'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
 test('community chat does not discard messages after a failed refresh',()=>{
  assert.match(source,/setRefreshWarning\('Não foi possível sincronizar o chat/);
  assert.doesNotMatch(source,/catch\(e\)\{if\(version===generation\.current\)\{setError\([^\n]+setMessages\(\[\]\)/);
