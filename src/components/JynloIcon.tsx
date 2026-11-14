@@ -7,7 +7,7 @@ export type JynloIconName=
  'venue'|'tournament'|'championship'|'notifications'|'camera'|'gallery'|
  'like'|'comment'|'share'|'location'|'more'|'close'|'send'|'chevron-down'|
  'chevron-up'|'chevron-right'|'calendar'|'settings'|'search'|'check'|
- 'attachment'|'remove'|'back'|'reply'|'edit'|'document'|'microphone'|'video';
+ 'attachment'|'remove'|'back'|'reply'|'edit'|'document'|'microphone'|'video'|'volume'|'volume-off';
 
 const icons:Record<JynloIconName,{regular:ComponentProps<typeof Ionicons>['name'];active:ComponentProps<typeof Ionicons>['name']}>={
  home:{regular:'home-outline',active:'home'},
@@ -46,6 +46,8 @@ const icons:Record<JynloIconName,{regular:ComponentProps<typeof Ionicons>['name'
  document:{regular:'document-attach-outline',active:'document-attach'},
  microphone:{regular:'mic-outline',active:'mic'},
  video:{regular:'videocam-outline',active:'videocam'},
+ volume:{regular:'volume-high-outline',active:'volume-high'},
+ 'volume-off':{regular:'volume-mute-outline',active:'volume-mute'},
 };
 
 export function JynloIcon({name,size=24,color='#D4F6F2',active=false}:{
