@@ -2,6 +2,7 @@ import React,{useRef,useState} from 'react';
 import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {JynloIcon} from './JynloIcon';
+import {CloseIconButton} from './CloseIconButton';
 
 export type ExpandedPostPhotos={uris:string[];index:number};
 type Props={photos:ExpandedPostPhotos|null;onClose:()=>void};
@@ -23,8 +24,7 @@ export default function PostImageLightbox({photos,onClose}:Props){
   <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
    <View style={styles.header}>
     <Text style={styles.counter}>{entries.length>1?index+1+' / '+entries.length:'Fotografia'}</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada"
-     onPress={onClose} hitSlop={10} style={styles.close}><JynloIcon name="close" size={26} color="#fff"/></Pressable>
+    <CloseIconButton onPress={onClose} label="Fechar fotografia ampliada"/>
    </View>
    <View style={styles.photoArea} onLayout={event=>{
     const width=Math.round(event.nativeEvent.layout.width);
