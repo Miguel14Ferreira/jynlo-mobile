@@ -15,10 +15,12 @@ test('the feed ignores deleted posts even if an older GET finishes later',()=>{
  assert.match(source,/setPosts\(\[\.\.\.recentlyConfirmedPosts\.current\.map\(entry=>entry\.item\),\.\.\.visibleReceived\]\)/);
 });
 
-test('attendance deletion does not remove another player's entry for same session',()=>{
+test("attendance deletion does not remove another player's entry for same session",()=>{
  const mine={type:'SESSION_ATTENDED',sessionId:87,authorUsername:'Miguel'};
  const other={type:'SESSION_ATTENDED',sessionId:87,authorUsername:'Rita'};
- assert.deepEqual(reconcileRemovedFeedKeys(new Set([removedFeedKey(mine)]),[mine,other]).visible,[other]);
+ const removed=new Set([removedFeedKey(mine)]);
+ const result=reconcileRemovedFeedKeys(removed,[mine,other]);
+ assert.deepEqual(result.visible,[other]);
  assert.match(source,/const key=removedFeedKey\(item\)/);
  assert.match(source,/confirmedRemovedFeedKeys\.current\.clear\(\)/);
 });
