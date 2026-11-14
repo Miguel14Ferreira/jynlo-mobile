@@ -39,8 +39,8 @@ jobs:
         run: npm run test:all
       - name: Typecheck
         run: npm run typecheck
-      - name: Reject demo backend
-        run: node scripts/verify-release.cjs --production
+      - name: Reject demo backend for internal preview APK
+        run: node scripts/verify-release.cjs
       - name: Verify Expo EAS project linkage
         run: |
           node - <<'NODE'
