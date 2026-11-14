@@ -58,7 +58,7 @@ export default function ChatSearchPanel({kind,conversationId,token,enabled=true}
  return <View style={styles.wrap}>
   <Pressable accessibilityRole="button" accessibilityLabel={open?'Fechar pesquisa de mensagens':'Pesquisar mensagens'}
    accessibilityState={{expanded:open}} onPress={()=>{generation.current++;working.current=false;setOpen(v=>!v);setBusy(false);setError('');}}
-   style={styles.toggle}><JynloIcon name="search" size={20} color={C.mint}/>{open?<Text style={styles.toggleText}>Fechar pesquisa</Text>:null}</Pressable>
+   style={[styles.toggle,open&&styles.toggleOpen]}><JynloIcon name="search" size={20} color={C.mint}/>{open?<Text style={styles.toggleText}>Fechar pesquisa</Text>:null}</Pressable>
   {open?<View style={styles.body}>
    <View style={styles.searchLine}>
     <TextInput value={query} onChangeText={setQuery} maxLength={80} editable={!busy} style={styles.input}
@@ -99,7 +99,7 @@ export default function ChatSearchPanel({kind,conversationId,token,enabled=true}
 }
 const styles=StyleSheet.create({
  wrap:{gap:8,alignSelf:'stretch'},toggle:{width:44,minHeight:44,flexDirection:'row',alignItems:'center',gap:7},
- toggleText:{color:C.mint,fontSize:12,fontWeight:'800'},body:{gap:9,padding:10,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:14},
+ toggleOpen:{width:'auto',paddingRight:10},toggleText:{color:C.mint,fontSize:12,fontWeight:'800'},body:{gap:9,padding:10,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:14},
  searchLine:{flexDirection:'row',alignItems:'center',gap:7},input:{flex:1,minHeight:44,borderWidth:1,borderColor:C.border,borderRadius:10,paddingHorizontal:12,color:C.white,fontSize:14},
  action:{width:44,height:44,borderRadius:11,backgroundColor:C.mint,justifyContent:'center',alignItems:'center'},
  error:{color:C.danger,fontSize:12},note:{color:C.muted,fontSize:12},
