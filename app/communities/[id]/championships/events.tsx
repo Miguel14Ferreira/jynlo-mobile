@@ -42,6 +42,7 @@ export default function ChampionshipOwnedEventsScreen(){
  const [standings,setStandings]=useState<OwnedLeagueStandings|null>(null);
  const [name,setName]=useState(''),[format,setFormat]=useState<OwnedEventFormat>('LEAGUE');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [detailsRefresh,setDetailsRefresh]=useState(0);
  const generation=useRef(0),pending=useRef(false);
  const activeEvent=events.find(item=>item.id===selected);
  const canManage=organizer&&!closed&&Boolean(auth.token);
@@ -86,7 +87,7 @@ export default function ChampionshipOwnedEventsScreen(){
   void Promise.allSettled([
    listOwnedEventTeams(cid,chid,eventId,auth.token),
    listOwnedFixtures(cid,chid,eventId,auth.token),
-   events.find(e=>e.id===eventId)?.format==='LEAGUE'?getOwnedLeagueStandings(cid,chid,eventId,auth.token):Promise.resolve(null)
+   activeEvent?.format==='LEAGUE'?getOwnedLeagueStandings(cid,chid,eventId,auth.token):Promise.resolve(null)
   ]).then(([a,b,c])=>{
    if(!active||version!==generation.current)return;
    if(a.status==='fulfilled')setRegistrations(a.value);
@@ -97,7 +98,7 @@ export default function ChampionshipOwnedEventsScreen(){
    else setError(c.reason instanceof Error?c.reason.message:'Não foi possível carregar a classificação.');
   });
   return()=>{active=false;};
- },[cid,chid,eventId,auth.token,loading,events]));
+ },[cid,chid,eventId,auth.token,activeEvent?.format,detailsRefresh]));
  async function mutate(action:()=>Promise<unknown>){
   if(pending.current||!canManage||loading)return;
   const version=generation.current;
@@ -106,6 +107,7 @@ export default function ChampionshipOwnedEventsScreen(){
    await action();
    if(version!==generation.current)return;
    await load(version);
+   if(version===generation.current)setDetailsRefresh(value=>value+1);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'A operação não foi concluída.')+' Confirma os resultados antes de repetir.');
   }finally{
