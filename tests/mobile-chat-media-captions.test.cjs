@@ -7,8 +7,8 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 test('all three chat composers attach one caption to a single atomic media message',()=>{
  for(const [screen,scope,media] of [
   ['app/messages/[peer].tsx','direct','photo'],
-  ['app/communities/[id]/chat.tsx','community','selectedPhoto'],
-  ['app/sessions/[id]/chat.tsx','session','photo']
+  ['src/components/CommunityChatPanel.tsx','community','selectedPhoto'],
+  ['src/components/SessionChatPanel.tsx','session','photo']
  ]){
   const source=read(screen);
   assert.match(source,/const \[attachmentCaption,setAttachmentCaption\]=useState\(''\)/,screen);
