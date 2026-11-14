@@ -18,7 +18,7 @@ test('old deep links still render exactly the same chat component',()=>{
 test('inline chats have independently scrollable history and show earlier messages on demand',()=>{
  for(const name of ['Session','Community']){
   const src=read('src/components/'+name+'ChatPanel.tsx');
-  assert.match(src,/embedded\?<ScrollView style=\{styles.inlineHistory\} nestedScrollEnabled/);
+  assert.match(src,/embedded\?<ScrollView ref=\{inlineHistoryRef\} style=\{\[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard\]\} nestedScrollEnabled/);
   assert.match(src,/setHistoryLimit\(count=>count\+40\)/);
   assert.match(src,/inlineHistory:\{height:290,/);
   assert.match(src,/return embedded\?<View style=\{styles.inline\}>/);
