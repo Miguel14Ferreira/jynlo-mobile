@@ -50,14 +50,15 @@ export default function ChampionshipOwnedEventsScreen(){
  const activeEvent=events.find(item=>item.id===selected);
  const groupedFixtures=Array.from(new Set(fixtures.map(f=>f.round))).sort((a,b)=>a-b)
   .map(round=>({round,matches:fixtures.filter(f=>f.round===round)}));
- const canManage=organizer&&!closed&&Boolean(auth.token);
+ const canManage=organizer&&!closed&&!loading&&Boolean(auth.token);
  // Never show fixtures/registrations from the previously selected competition.
  const football=sport==='Futebol'||sport==='Futsal';
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username||!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(chid)||chid<=0){
    if(version===generation.current){setError('Inicia sessão e seleciona um campeonato válido.');setLoading(false);}return;
   }
-  setLoading(true);setError('');
+  // A failed membership/organizer refresh must never leave stale write rights.
+  setLoading(true);setError('');setOrganizer(false);setClosed(true);setTeams([]);
   try{
    const [championships,group,owned]=await Promise.all([
     communityChampionships(cid,auth.token),
