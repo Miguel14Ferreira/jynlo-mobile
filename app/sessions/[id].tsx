@@ -6,6 +6,7 @@ import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,lea
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
+import {cancellationNotice} from '../../src/lib/session-cancellation-notice.cjs';
 import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -50,6 +51,7 @@ export default function SessionScreen(){
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
+  const [cancelledShare,setCancelledShare]=useState<{id:number;actor:string;text:string}|null>(null);
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const [adminToolsOpen,setAdminToolsOpen]=useState(false);
@@ -275,7 +277,12 @@ export default function SessionScreen(){
       {text:'Manter sessão',style:'cancel'},
       {text:'Cancelar sessão',style:'destructive',onPress:()=>{
         if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
-        void perform(()=>cancelSession(id,actorToken,actorUsername||undefined),'Sessão cancelada.');
+        void perform(()=>cancelSession(id,actorToken,actorUsername||undefined),()=>{
+          if(actorUsername){
+            setCancelledShare({id,actor:actorUsername,text:cancellationNotice(detail)});
+          }
+          return 'Sessão cancelada. Os inscritos serão avisados na Jynlo; partilha também com convidados externos.';
+        });
       }}
     ]);
   };
@@ -548,6 +555,16 @@ export default function SessionScreen(){
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
       {feedback?<Message>{feedback}</Message>:null}
+      {owner&&detail?.status==='CANCELLED'&&cancelledShare?.id===id&&
+        cancelledShare.actor===auth.username?<View style={styles.panel}>
+        <Eyebrow>AVISAR CONVIDADOS EXTERNOS</Eyebrow>
+        <Text style={styles.hint}>Os participantes com conta Jynlo recebem um aviso interno, sujeito às preferências. Se convidaste pessoas pelo WhatsApp, partilha também esta mensagem.</Text>
+        <Text selectable style={styles.hint}>{cancelledShare.text}</Text>
+        <Button title="Partilhar aviso de cancelamento" onPress={()=>{
+          void Share.share({message:cancelledShare.text}).catch(e=>
+            Alert.alert('Partilhar aviso',e instanceof Error?e.message:'Não foi possível abrir a partilha.'));
+        }}/>
+      </View>:null}
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
