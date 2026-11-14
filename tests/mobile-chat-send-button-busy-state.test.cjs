@@ -12,7 +12,7 @@ test('private chat does not display a tappable send action during photo or pendi
 });
 
 test('session chat send button respects active photo upload and identity-scoped writes',()=>{
- const source=read('app/sessions/[id]/chat.tsx');
+ const source=read('src/components/SessionChatPanel.tsx');
  assert.match(source,/disabled=\{sending\|\|uploading\|\|sendingNow\.current\|\|pendingWrites\.current\.has\(id\+'\|'\+auth\.token\)\|\|!draft\.trim\(\)\}/);
  assert.match(source,/if\(sendingNow\.current\|\|pendingWrites\.current\.has\(identity\)/);
 });
