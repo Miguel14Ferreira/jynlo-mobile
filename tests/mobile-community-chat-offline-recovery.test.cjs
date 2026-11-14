@@ -17,7 +17,7 @@ test('community chat polls while websocket is offline and the app is active',()=
 test('background refresh is silent and coalesces concurrent history requests',()=>{
  assert.match(source,/if\(refreshing\.current===version\)\{queuedRefresh\.current=true;return;\}/);
  assert.match(source,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
- assert.match(source,/if\(!silent\)setError\(/);
+ assert.match(source,/if\(!silent\)\{const message=e instanceof Error/);
  assert.match(source,/if\(!silent\)setLoading\(false\)/);
  assert.match(source,/if\(queuedRefresh\.current\)\{queuedRefresh\.current=false;void refresh\(version,true\);\}/);
 });
