@@ -15,7 +15,15 @@ function confirmedSocialMediaReceipt(reply,mediaTypes,isStory){
  if(!hasMedia(first))return false;
  if(mediaTypes.length===1)return true;
  if(!Array.isArray(reply.extraMedia)||reply.extraMedia.length!==mediaTypes.length-1)return false;
- return reply.extraMedia.every((part,i)=>part&&typeof part==='object'&&hasMedia(part.url)&&
-   part.mimeType===mediaTypes[i+1]);
+ const urls=new Set([first.trim()]);
+ return reply.extraMedia.every((part,i)=>{
+   if(!part||typeof part!=='object'||!hasMedia(part.url)||part.mimeType!==mediaTypes[i+1])return false;
+   const url=part.url.trim();
+   // The feed deduplicates media URLs. Never confirm a six-file upload if a
+   // malformed 2xx response points two different files at the same resource.
+   if(urls.has(url))return false;
+   urls.add(url);
+   return true;
+ });
 }
 module.exports={confirmedSocialMediaReceipt};
