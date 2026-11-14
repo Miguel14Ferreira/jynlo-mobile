@@ -7,10 +7,16 @@ const {validateApiOrigin}=require('../src/lib/api-origin.cjs');
 
 test('authenticated API origin requires public HTTPS',()=>{
  assert.equal(validateApiOrigin('https://api.jynlo.com'),'https://api.jynlo.com');
+ assert.equal(validateApiOrigin('https://desporto24-preview-api.onrender.com'),'https://desporto24-preview-api.onrender.com');
  for(const origin of [
   'http://api.jynlo.com',
   'https://127.0.0.1',
   'https://192.168.1.25',
+  'https://10.0.0.5',
+  'https://172.16.0.1',
+  'https://8.8.8.8',
+  'https://[2001:db8::1]',
+  'https://host.localhost',
   'https://[::1]',
   'https://localhost',
   'https://gateway.internal',
