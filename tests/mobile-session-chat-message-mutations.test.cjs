@@ -33,5 +33,5 @@ test('session mutation lifecycle guards concurrent sends and preserves failed dr
  assert.match(screen,/Consulta o histórico antes de repetir/);
  assert.match(screen,/await refresh\(true,version\)/);
  assert.match(screen,/setReply\(current=>current\?\.id===message.id\?null:current\)/);
- assert.match(screen,/entries.map\(m=><View/);
+ assert.match(screen,/const renderedMessages=.*\.map\(m=><View/);
 });
