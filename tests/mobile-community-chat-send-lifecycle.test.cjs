@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/chat.tsx'),'utf8');
+const source=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
 const focus=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
 const send=source.slice(source.indexOf('async function send()'),source.indexOf('async function choosePhoto()'));
 const picker=source.slice(source.indexOf('async function choosePhoto('),source.indexOf('async function uploadPhoto()'));
