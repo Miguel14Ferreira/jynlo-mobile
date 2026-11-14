@@ -6,6 +6,7 @@ import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,S
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
 import {verifiedPostLikeReceipt} from './social-like-receipt.cjs';
+import {verifiedCommentReceipt} from './social-comment-receipt.cjs';
 import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt} from './social-text-post-receipt.cjs';
 import {prepareStoryDetails} from './story-details.cjs';
 
@@ -191,7 +192,10 @@ export async function addPostComment(postId:number,content:string,token:string|n
   const message=content.trim();if(!message||message.length>500)throw new Error('Escreve um comentário até 500 caracteres.');
   if(DEMO_MODE){const item:SocialComment={id:nextDemoCommentId++,postId,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:message,createdAt:nowIso()};
     demoComments.set(postId,[...(demoComments.get(postId)||[]),item]);return item;}
-  return request<SocialComment>(`/api/feed/posts/${postId}/comments`,{token,method:'POST',body:{content:message}});
+  const result=await request<SocialComment>(`/api/feed/posts/${postId}/comments`,{token,method:'POST',body:{content:message}});
+  if(!verifiedCommentReceipt(result,{postId,username,content:message}))
+   throw Error('O servidor não confirmou o comentário. Verifica antes de repetir.');
+  return result;
 }
 /** Backend verifies comment ownership and responds with the edited object. */
 export async function editPostComment(postId:number,commentId:number,content:string,token:string|null,username:string|null):Promise<SocialComment>{
@@ -207,9 +211,12 @@ export async function editPostComment(postId:number,commentId:number,content:str
   demoComments.set(postId,existing.map(x=>x.id===commentId?updated:x));
   return updated;
  }
- return request<SocialComment>(`/api/feed/posts/${postId}/comments/${commentId}`,{
+ const result=await request<SocialComment>(`/api/feed/posts/${postId}/comments/${commentId}`,{
   token,method:'PUT',body:{content:message}
  });
+ if(!verifiedCommentReceipt(result,{postId,commentId,username,content:message}))
+  throw Error('O servidor não confirmou a edição do comentário. Verifica antes de repetir.');
+ return result;
 }
 /** Backend verifies access to the target comment and owns like counts. */
 export async function togglePostCommentLike(postId:number,comment:SocialComment,token:string|null,username:string|null):Promise<SocialComment>{
@@ -221,9 +228,12 @@ export async function togglePostCommentLike(postId:number,comment:SocialComment,
   demoComments.set(postId,(demoComments.get(postId)||[]).map(x=>x.id===comment.id?updated:x));
   return updated;
  }
- return request<SocialComment>(`/api/feed/posts/${postId}/comments/${comment.id}/likes`,{
+ const result=await request<SocialComment>(`/api/feed/posts/${postId}/comments/${comment.id}/likes`,{
   token,method:comment.likedByMe?'DELETE':'POST'
  });
+ if(!verifiedCommentReceipt(result,{postId,commentId:comment.id,likedByMe:!Boolean(comment.likedByMe)}))
+  throw Error('O servidor não confirmou o gosto no comentário. Atualiza antes de repetir.');
+ return result;
 }
 export async function createTextPost(content:string,token:string|null,username:string|null,location=''):Promise<FeedItem>{
   requireViewer(token,username);const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
