@@ -434,7 +434,7 @@ export default function CreateSessionScreen(){
    <TextInput style={styles.input} value={sportSearch}
     onChangeText={v=>{setSportSearch(v);setShowSportResults(true);}}
     onFocus={()=>setShowSportResults(true)}
-    placeholder="Procurar uma das 121 modalidades" placeholderTextColor={C.muted} editable={!busy}
+    placeholder={'Procurar entre '+SPORTS.length+' modalidades'} placeholderTextColor={C.muted} editable={!busy}
     autoCorrect={false} accessibilityLabel="Pesquisar modalidade"/>
    {showSportResults&&sportSearch.trim()?<>
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
