@@ -694,10 +694,28 @@ export default function JynloFeedHome(){
       if(requestId===commentsRequest.current)setCommentsLoading(false);
     }
   }
-  async function submitComment(postId:number){if(!requireLogin()||busyPost!==null||!commentText.trim())return;setBusyPost(postId);
-    const requestId=commentsRequest.current;
-    try{const created=await addPostComment(postId,commentText,auth.token,auth.username);if(requestId===commentsRequest.current){setComments(prev=>[...prev,created]);setCommentText('');}await load();}
-    catch(e){if(requestId===commentsRequest.current)Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');}finally{setBusyPost(null);}
+  async function submitComment(postId:number){
+    if(!requireLogin()||busyPost!==null||commentWriteLock.current||!commentText.trim()||
+      expandedComments!==postId||!auth.token||!auth.username)return;
+    const account=feedIdentity.current,requestId=commentsRequest.current,body=commentText.trim();
+    commentWriteLock.current=true;setBusyPost(postId);
+    try{
+      const created=await addPostComment(postId,body,auth.token,auth.username);
+      if(!created||!Number.isSafeInteger(created.id)||created.id<=0||created.postId!==postId||
+         created.content?.trim()!==body)
+        throw Error('O servidor não confirmou o comentário. Verifica a conversa antes de repetir.');
+      if(account===feedIdentity.current&&requestId===commentsRequest.current){
+        setComments(prev=>prev.some(item=>item.id===created.id)?prev:[...prev,created]);
+        setCommentText(current=>current.trim()===body?'':current);
+      }
+      if(account===feedIdentity.current)await load();
+    }catch(e){
+      if(account===feedIdentity.current&&requestId===commentsRequest.current)
+        Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');
+    }finally{
+      commentWriteLock.current=false;
+      if(account===feedIdentity.current)setBusyPost(null);
+    }
   }
   async function sharePost(item:FeedItem){
     try{await Share.share({message:[item.content?.trim()||'Publicação na Jynlo',sharedPostLink(item)].join('\n')});}
