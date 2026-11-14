@@ -10,6 +10,7 @@ import {
  listOwnedEvents,listOwnedFixtures,championshipTeamPlayers,
  ownedFixtureGoals,addOwnedFixtureGoal,ownedFixtureCards,addOwnedFixtureCard,
  ownedFixtureLineup,setOwnedFixtureLineup,ownedFixtureSubstitutions,addOwnedFixtureSubstitution,
+ removeOwnedFixtureGoal,removeOwnedFixtureCard,removeOwnedFixtureLineup,removeOwnedFixtureSubstitution,
  type OwnedFixture,type ChampionshipTeamPlayer,type OwnedGoal,type OwnedCard,type OwnedLineup,type OwnedSubstitution
 } from '../../../../src/lib/championship-owned-events-api';
 
@@ -95,6 +96,13 @@ export default function ChampionshipFixtureScreen(){
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível registar o acontecimento.')+' Verifica o histórico antes de repetir.');
   }finally{pending.current=false;if(version===generation.current)setBusy(false);}
  }
+ function removeEvent(description:string,action:()=>Promise<void>){
+  if(!canWrite||pending.current)return;
+  Alert.alert('Remover acontecimento?',description+' Esta alteração será guardada no servidor.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Remover',style:'destructive',onPress:()=>{void perform(action);}}
+  ]);
+ }
  function confirm(){
   if(!canWrite||!selectedTeam||!player||!selectedPlayer||pending.current)return;
   if(mode!=='LINEUP'&&!validMinute){setError('Indica um minuto entre 0 e 200.');return;}
@@ -125,13 +133,21 @@ export default function ChampionshipFixtureScreen(){
   {!loading&&fixture&&!canWrite?<Message>Os acontecimentos estão disponíveis para consulta. A edição exige um organizador, uma liga ativa de Futebol/Futsal e um resultado registado.</Message>:null}
   {fixture?<View style={styles.card}>
    <Text style={styles.title}>Golos ({goals.length})</Text>
-   {goals.map(g=><Text style={styles.note} key={g.id}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}</Text>)}
+   {goals.map(g=><View key={g.id} style={styles.row}><Text style={styles.note}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}</Text>
+    {canWrite?<Button secondary title="Remover" disabled={busy} onPress={()=>removeEvent('Golo de '+g.scorerName,()=>removeOwnedFixtureGoal(cid,chid,eid,fid,g.id,auth.token!))}/>:null}
+   </View>)}
    <Text style={styles.title}>Cartões ({cards.length})</Text>
-   {cards.map(c=><Text key={c.id} style={styles.note}>{c.cardType==='RED'?'🟥':'🟨'} {c.playerName} · {c.teamName}{c.minute==null?'':' · '+c.minute+"'"}</Text>)}
+   {cards.map(c=><View key={c.id} style={styles.row}><Text style={styles.note}>{c.cardType==='RED'?'🟥':'🟨'} {c.playerName} · {c.teamName}{c.minute==null?'':' · '+c.minute+"'"}</Text>
+    {canWrite?<Button secondary title="Remover" disabled={busy} onPress={()=>removeEvent('Cartão de '+c.playerName,()=>removeOwnedFixtureCard(cid,chid,eid,fid,c.id,auth.token!))}/>:null}
+   </View>)}
    <Text style={styles.title}>Convocatória ({lineup.length})</Text>
-   {lineup.map(l=><Text key={l.id} style={styles.note}>{l.playerName} · {l.selection==='STARTER'?'Titular':'Suplente'}</Text>)}
+   {lineup.map(l=><View key={l.id} style={styles.row}><Text style={styles.note}>{l.playerName} · {l.selection==='STARTER'?'Titular':'Suplente'}</Text>
+    {canWrite?<Button secondary title="Remover" disabled={busy} onPress={()=>removeEvent('Convocatória de '+l.playerName,()=>removeOwnedFixtureLineup(cid,chid,eid,fid,l.profileId,auth.token!))}/>:null}
+   </View>)}
    <Text style={styles.title}>Substituições ({subs.length})</Text>
-   {subs.map(s=><Text key={s.id} style={styles.note}>{s.minute}' · {s.playerOutName} → {s.playerInName} · {s.teamName}</Text>)}
+   {subs.map(s=><View key={s.id} style={styles.row}><Text style={styles.note}>{s.minute}' · {s.playerOutName} → {s.playerInName} · {s.teamName}</Text>
+    {canWrite?<Button secondary title="Remover" disabled={busy} onPress={()=>removeEvent('Substituição de '+s.playerOutName,()=>removeOwnedFixtureSubstitution(cid,chid,eid,fid,s.id,auth.token!))}/>:null}
+   </View>)}
   </View>:null}
   {canWrite?<View style={styles.card}>
    <Text style={styles.title}>Registar acontecimento</Text>
