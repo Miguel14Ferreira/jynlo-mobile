@@ -18,6 +18,7 @@ import {C,MobileTheme} from '../../src/lib/theme';
 import PostEditSheet from '../../src/components/PostEditSheet';
 import StoryTextPlacement from '../../src/components/StoryTextPlacement';
 import StoryDetailsView from '../../src/components/StoryDetailsView';
+import FeedPostPhoto from '../../src/components/AdaptivePostPhoto';
 import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails} from '../../src/lib/types';
@@ -35,20 +36,6 @@ function MediaVideo({uri,story=false,paused=false,onEnd}:{uri:string;story?:bool
  return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
   <FeedVideo uri={uri} story={story} paused={paused} onEnd={onEnd}/>
  </Suspense>;
-}
-function FeedPostPhoto({uri,width,label,onExpand}:{uri:string;width:number;label:string;onExpand:()=>void}){
- const [dimensions,setDimensions]=useState<{width:number;height:number}|null>(null);
- // Respect actual portrait/landscape dimensions rather than cropping every
- // uploaded photo into a fixed 350px strip. Cap extreme panoramas for readability.
- const height=dimensions?Math.min(620,Math.max(180,Math.round(width*dimensions.height/dimensions.width))):350;
- return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onExpand}>
-   <Image source={{uri}} resizeMode="contain" style={[styles.postImage,{height}]}
-     onLoad={event=>{
-       const source=event.nativeEvent.source;
-       if(source&&Number.isFinite(source.width)&&Number.isFinite(source.height)&&source.width>0&&source.height>0)
-         setDimensions({width:source.width,height:source.height});
-     }}/>
- </Pressable>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
   const src=mediaSource(image);
