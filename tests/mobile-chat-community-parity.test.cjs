@@ -95,7 +95,7 @@ test('private photo attachment uses authenticated private API and requires expli
 
 test('community chat photo upload checks private storage and requires confirmation',()=>{
  const api=read('src/lib/chat-photo-attachment.ts');
- const chat=read('app/communities/[id]/chat.tsx');
+ const chat=read('src/components/CommunityChatPanel.tsx');
  assert.match(api,/form\.append\('file'/);
  assert.match(api,/method:'POST'/);
  assert.match(api,/replyToMessageId/);
@@ -110,7 +110,7 @@ test('community chat photo upload checks private storage and requires confirmati
 });
 
 test('session chat discards stale responses after navigation and never auto-retries sends',()=>{
- const screen=read('app/sessions/[id]/chat.tsx');
+ const screen=read('src/components/SessionChatPanel.tsx');
  for(const marker of [
   'generation=useRef(0)', 'const version=++generation.current',
   'version!==generation.current', 'generation.current++',
@@ -123,7 +123,7 @@ test('session chat discards stale responses after navigation and never auto-retr
 });
 
 test('community chat clears only the submitted draft and never renders invalid timestamps',()=>{
- const screen=read('app/communities/[id]/chat.tsx');
+ const screen=read('src/components/CommunityChatPanel.tsx');
  assert.ok(screen.includes('const originalDraft=draft'));
  assert.ok(screen.includes("setDraft(current=>current===originalDraft?'':current)"));
  assert.ok(screen.includes('Number.isFinite(Date.parse(m.createdAt))'));
@@ -131,7 +131,7 @@ test('community chat clears only the submitted draft and never renders invalid t
 });
 
 test('queued session history refreshes and pending send do not erase new edits',()=>{
- const session=read('app/sessions/[id]/chat.tsx');
+ const session=read('src/components/SessionChatPanel.tsx');
  for(const item of ['pendingRefresh=useRef(false)','pendingRefresh.current=true',
   'pendingRefresh.current=false;void refresh(true,version)',
   'const version=generation.current,originalDraft=draft,originalReplyId=reply?.id',
