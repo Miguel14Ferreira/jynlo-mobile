@@ -1,3 +1,4 @@
+import {fetch as expoFetch} from 'expo/fetch';
 import {File} from 'expo-file-system';
 import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
@@ -41,7 +42,7 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
-  const response=await fetch(base(peer),{
+  const response=await expoFetch(base(peer),{
    method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
    body:form,credentials:'omit',signal:controller.signal
   });
