@@ -4,6 +4,7 @@ export type ChatReactionKind='direct'|'community'|'session';
 export type ChatReactionEmoji='👍'|'❤️'|'😂'|'🎉'|'👏'|'🔥';
 export const CHAT_REACTION_EMOJIS:readonly ChatReactionEmoji[]=['👍','❤️','😂','🎉','👏','🔥'];
 export type ChatReactionSummary={messageId:number;counts:Record<string,number>;myEmoji:string|null};
+export type ChatReactionParticipant={username:string;displayName:string;profilePicUrl:string|null;emoji:string;mine:boolean};
 
 function validateConversation(kind:ChatReactionKind,id:string):string{
  if(!['direct','community','session'].includes(kind))throw Error('Tipo de chat inválido.');
@@ -51,4 +52,14 @@ export async function changeChatReaction(kind:ChatReactionKind,id:string,message
  const checked=checkedSummary(value);
  if(checked.messageId!==messageId)throw Error('O servidor confirmou outra mensagem.');
  return checked;
+}
+
+export async function chatReactionParticipants(kind:ChatReactionKind,id:string,messageId:number,token:string):Promise<ChatReactionParticipant[]>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar as reações.');
+ validateMessageId(messageId);
+ const result=await request<ChatReactionParticipant[]>(endpoint(kind,id)+'/'+messageId+'/participants',{token});
+ if(!Array.isArray(result))throw Error('Participantes inválidos.');
+ return result.slice(0,200).filter(member=>member&&typeof member.username==='string'&&
+  typeof member.displayName==='string'&&member.displayName.length>0&&
+  typeof member.emoji==='string'&&CHAT_REACTION_EMOJIS.includes(member.emoji as ChatReactionEmoji));
 }
