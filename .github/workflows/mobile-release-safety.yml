@@ -23,12 +23,12 @@ jobs:
         run: npm run test:all
       - name: Typecheck mobile app
         run: npm run typecheck
-      - name: Validate preview APK uses real API
+      - name: Validate preview APK uses real API (not Play Store policy)
         env:
           EAS_BUILD_PROFILE: preview
           JYNLO_REQUIRE_REAL_API: '1'
           EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
-        run: node scripts/verify-release.cjs --production
+        run: node scripts/verify-release.cjs
       - name: Validate Android build configuration
         run: |
           node - <<'NODE'
