@@ -3,6 +3,7 @@ import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
+import {JynloIcon} from './JynloIcon';
 import type {SessionSummary} from '../lib/types';
 import {formatDate,money} from '../lib/format.cjs';
 import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
@@ -92,9 +93,9 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
       <View style={styles.sportBox}><Text style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
       <View style={styles.cardIdentity}>
         <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
-        <Text style={styles.cardCity} numberOfLines={1}>⌖  {location||'Local a confirmar'}</Text>
+        <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||'Local a confirmar'}</Text></View>
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <JynloIcon name="chevron-right" size={25} color={MobileTheme.colors.accent}/>
     </View>
     <View style={styles.metrics}>
       <View style={styles.metricCell}><Text style={styles.metricKey}>DATA E HORA</Text><Text style={styles.metricValue}>{formatDate(session.gameDate)}</Text></View>
@@ -107,7 +108,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
       </View>
     </View>
     {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel="Ocupação da sessão"><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
-    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>Ver detalhes da sessão</Text><Text style={styles.sessionFooterArrow}>↗</Text></View>
+    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>Ver detalhes da sessão</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
   </Pressable>;
 }
 const styles=StyleSheet.create({
