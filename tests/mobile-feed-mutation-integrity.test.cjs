@@ -37,3 +37,19 @@ test('comment form admits one in-flight submission and checks its server receipt
  assert.match(submit,/commentWriteLock\.current=false/);
  assert.match(submit,/setComments\(prev=>prev\.some\(item=>item\.id===created\.id\)\?prev:\[\.\.\.prev,created\]\)/);
 });
+
+test('comment limits agree with the server for creation and editing',()=>{
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const create=api.slice(api.indexOf('export async function addPostComment('),api.indexOf('export async function editPostComment('));
+ const edit=api.slice(api.indexOf('export async function editPostComment('),api.indexOf('export async function togglePostCommentLike('));
+ assert.match(create,/message\.length>500/);
+ assert.match(edit,/message\.length>500/);
+ assert.doesNotMatch(create,/message\.length>2000/);
+ assert.doesNotMatch(edit,/message\.length>2000/);
+ assert.match(source,/maxLength=\{500\} multiline style=\{styles\.commentInput\}/);
+ assert.match(source,/style=\{styles\.commentInput\} maxLength=\{500\} placeholder=/);
+});
+
+test('account switch clears obsolete mutation loading indicators',()=>{
+ assert.match(source,/setEditCommentDraft\(''\);setCommentWriteBusy\(null\);setBusyPost\(null\)/);
+});
