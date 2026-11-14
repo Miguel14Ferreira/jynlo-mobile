@@ -36,7 +36,7 @@ test('reaction loads are bounded, account-scoped and do not retry ambiguous writ
  assert.match(ui,/if\(AppState.currentState!=='active'\)return/);
  assert.match(ui,/const interval=setInterval\(refresh,30000\)/);
  assert.match(ui,/return\(\)=>\{active=false;clearInterval\(interval\);\}/);
- assert.match(ui,/if\(!token\|\|!enabled\|\|pending.current.has\(messageId\)\)return/);
+ assert.match(ui,/if\(!token\|\|!enabled\|\|pending.current.has\(identity\+'\|'\+messageId\)\)return/);
  assert.match(ui,/if\(activeIdentity.current===currentIdentity\)/);
  assert.match(ui,/Alert.alert\('Reação não confirmada'/);
  assert.doesNotMatch(ui,/setSummaries\(previous=>\(\{\.\.\.previous,\[messageId\]:\{.*emoji/);
