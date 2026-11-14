@@ -42,5 +42,5 @@ export default function ProtectedPostMedia({src,type,token,width,label,onExpand}
   </View>;
  return type==='video'
   ?<Suspense fallback={<ActivityIndicator color={MobileTheme.colors.accent}/>}><FeedVideo uri={uri}/></Suspense>
-  :<AdaptivePostPhoto uri={uri} width={width} label={label} onExpand={()=>onExpand(uri)}/>;
+  :<AdaptivePostPhoto uri={uri} width={width} label={label} onExpand={()=>onExpand(src.startsWith('/api/profile-media/')?(resolveJynloMedia(src)||uri):uri)}/>;
 }
