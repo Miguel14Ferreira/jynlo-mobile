@@ -11,7 +11,7 @@ import {myNotifications} from '../../src/lib/notifications-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
-import {rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts} from '../../src/lib/feed-interaction-reconciliation.cjs';
+import {rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts,rememberPostEdit,reconcilePostEdits} from '../../src/lib/feed-interaction-reconciliation.cjs';
 import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib/attendance-digest.cjs';
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
@@ -308,6 +308,7 @@ export default function JynloFeedHome(){
   const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
   const verifiedPostLikes=useRef<Map<number,{likedByMe:boolean;likeCount:number;until:number}>>(new Map());
   const confirmedCommentFloors=useRef<Map<number,{count:number;until:number}>>(new Map());
+  const confirmedPostEdits=useRef<Map<number,{content:string;location:string|null;until:number}>>(new Map());
   // Authoritative delete/hide responses must outlive feed requests that were
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
@@ -334,7 +335,7 @@ export default function JynloFeedHome(){
       postActionInFlight.current=false;commentWriteLock.current=false;
       postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
       setPublishing(false);setStoryPublishing(false);
-      confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();
+      confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();confirmedPostEdits.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
@@ -369,7 +370,9 @@ export default function JynloFeedHome(){
       verifiedPostLikes.current=likes.receipts;
       const comments=reconcileCommentCounts(confirmedCommentFloors.current,likes.posts);
       confirmedCommentFloors.current=comments.floors;
-      setPosts(comments.posts);
+      const edits=reconcilePostEdits(confirmedPostEdits.current,comments.posts);
+      confirmedPostEdits.current=edits.edits;
+      setPosts(edits.posts);
     }
     if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
     if(fetches[2].status==='fulfilled'){
@@ -487,7 +490,7 @@ export default function JynloFeedHome(){
           if(feedIdentity.current===identity){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
-            verifiedPostLikes.current.delete(id);confirmedCommentFloors.current.delete(id);
+            verifiedPostLikes.current.delete(id);confirmedCommentFloors.current.delete(id);confirmedPostEdits.current.delete(id);
             recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
@@ -971,6 +974,10 @@ export default function JynloFeedHome(){
     <PostEditSheet post={identityMatches?editingPost:null} token={auth.token} username={auth.username}
       onClose={()=>setEditingPost(null)} onSaved={updated=>{
         if(feedIdentity.current!==currentFeedIdentity)return;
+        confirmedPostEdits.current=rememberPostEdit(confirmedPostEdits.current,updated);
+        recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({
+          ...entry,item:entry.item.postId===updated.postId?updated:entry.item
+        }));
         setPosts(current=>current.map(item=>item.postId===updated.postId?updated:item));
         setEditingPost(null);
       }}/>
