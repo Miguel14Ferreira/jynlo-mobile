@@ -22,7 +22,11 @@ fi
 
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
-base64 --decode "$SOURCE" > "$work_dir/approved.webp"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  base64 -D -i "$SOURCE" -o "$work_dir/approved.webp"
+else
+  base64 --decode "$SOURCE" > "$work_dir/approved.webp"
+fi
 
 # EAS Ubuntu 26.04 does not include python3-venv/ensurepip.
 # Install an isolated, pinned Node image processor without altering app deps.
