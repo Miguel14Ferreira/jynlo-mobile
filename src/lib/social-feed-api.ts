@@ -94,9 +94,12 @@ export async function editPost(postId:number,content:string,location:string,toke
    post.content=description;post.location=place||null;
    return {...post};
  }
- return request<FeedItem>(`/api/feed/posts/${postId}`,{
+ const updated=await request<FeedItem>(`/api/feed/posts/${postId}`,{
    token,method:'PUT',body:{content:description,location:place||null}
  });
+ if(updated?.postId!==postId||!confirmedTextPostReceipt(updated,username!,description,place))
+   throw Error('O servidor não confirmou a edição da publicação. Consulta o perfil antes de repetir.');
+ return updated;
 }
 export async function deletePost(postId:number,token:string|null):Promise<void>{
  if(!Number.isSafeInteger(postId)||postId<=0||!token)throw Error('Publicação inválida.');
