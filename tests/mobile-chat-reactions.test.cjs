@@ -15,6 +15,7 @@ test('each chat renders the same message reaction controls and bulk-loads per co
   assert.match(src,/summary=\{reactions.summaries\[m.id\]\}/);
   assert.match(src,/busy=\{reactions.busyIds.has\(m.id\)\}/);
   assert.match(src,/onReact=\{reactions.react\}/);
+  assert.match(src,/onInspect=\{reactions.inspect\}/);
   assert.match(src,/!m.deletedAt\?<ChatReactionRow/);
  }
 });
@@ -47,4 +48,17 @@ test('reaction picker is compact, reversible and accessible for all six choices'
  assert.match(ui,/summary\?\.myEmoji===emoji\?null:emoji/);
  assert.match(ui,/counts.map\(emoji=>/);
  assert.match(ui,/disabled=\{busy\}/);
+});
+
+test('reaction participant details are fetched only on demand with server authorization',()=>{
+ const api=read('src/lib/chat-reactions-api.ts');
+ const ui=read('src/components/ChatReactionRow.tsx');
+ assert.match(api,/export async function chatReactionParticipants\(/);
+ assert.match(api,/endpoint\(kind,id\)\+'\/'\+messageId\+'\/participants'/);
+ assert.match(api,/if\(!token\|\|DEMO_MODE\)throw Error/);
+ assert.match(api,/result.slice\(0,200\).filter/);
+ assert.match(ui,/onLongPress=\{\(\)=>\{if\(!busy\)void onInspect\(id,emoji\);\}\}/);
+ assert.match(ui,/selected.slice\(0,25\)/);
+ assert.match(ui,/activeIdentity\.current!==currentIdentity/);
+ assert.match(ui,/member.displayName/);
 });
