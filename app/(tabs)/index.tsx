@@ -19,6 +19,7 @@ import PostEditSheet from '../../src/components/PostEditSheet';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import StoryTextPlacement from '../../src/components/StoryTextPlacement';
 import StoryDetailsView from '../../src/components/StoryDetailsView';
+import {storyMetadataReservedHeight} from '../../src/lib/story-sticker-bounds.cjs';
 import FeedPostPhoto from '../../src/components/AdaptivePostPhoto';
 import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
@@ -173,7 +174,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={{uri}} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
-          <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}/>:
+          <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
+             reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
           <View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>):null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
@@ -857,6 +859,7 @@ export default function JynloFeedHome(){
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
             <StoryDetailsView locationLabel={storyLocation} taggedUsernames={storyTags.replace(/@/g,'')}/>
             {storyCaption.trim()?<StoryTextPlacement caption={storyCaption.trim()} geometry={storyTextGeometry}
+              reservedTopPx={storyMetadataReservedHeight(storyLocation,storyTags)}
               onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
           </View>:null}
           {storyMedia?<Pressable accessibilityRole="button" disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Trocar pela galeria</Text></Pressable>:null}
