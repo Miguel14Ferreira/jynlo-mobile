@@ -65,3 +65,14 @@ test('inactive videos do not mount a second player behind the carousel',()=>{
  assert.match(s,/videoInactive:\{height:300/);
  assert.match(s,/onMomentumScrollEnd=\{event=>/);
 });
+
+test('full-screen photos support swipe gestures, page buttons and rotation',()=>{
+ const viewer=read('src/components/PostImageLightbox.tsx');
+ assert.match(viewer,/<ScrollView ref=\{scroll\} key=\{pageWidth\} style=\{\{flex:1\}\} horizontal pagingEnabled/);
+ assert.match(viewer,/onMomentumScrollEnd=\{event=>/);
+ assert.match(viewer,/contentOffset=\{\{x:index\*pageWidth,y:0\}\}/);
+ assert.match(viewer,/scroll\.current\?\.scrollTo\(\{x:selected\*pageWidth,animated:true\}\)/);
+ assert.match(viewer,/resizeMode="contain"/);
+ assert.match(viewer,/onPress=\{\(\)=>moveTo\(index-1\)\}/);
+ assert.match(viewer,/onPress=\{\(\)=>moveTo\(index\+1\)\}/);
+});
