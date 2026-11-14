@@ -26,3 +26,17 @@ test('the Android release exposes an explicit domain verification command',()=>{
  assert.match(src,/\.well-known\/assetlinks\.json/);
  assert.match(src,/setTimeout\(10000/);
 });
+
+test('verified Android links must match the exact installed APK signature',()=>{
+ const valid={relation:['delegate_permission/common.handle_all_urls'],
+  target:{namespace:'android_app',package_name:'com.jynlo.app',
+   sha256_cert_fingerprints:[validFingerprint]}};
+ assert.equal(validateAssociation([valid],validFingerprint.toLowerCase()),null);
+ assert.match(validateAssociation([valid],Array(32).fill('CD').join(':')),/não corresponde/);
+ assert.match(validateAssociation([valid],'BAD'),/não é SHA-256/);
+});
+test('the live domain check requires the installed APK signing certificate',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8');
+ assert.match(source,/process\.env\.JYNLO_ANDROID_SIGNING_SHA256/);
+ assert.match(source,/validateAssociation\(data,expected\)/);
+});
