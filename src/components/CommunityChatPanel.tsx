@@ -35,6 +35,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const inlineHistoryRef=useRef<ScrollView|null>(null);
  const inlineNearBottom=useRef(true);
  const previousLatestMessageId=useRef(0);
+ const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
@@ -109,7 +110,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     const previousHistoryError=historyError.current;historyError.current=null;
     if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
-    if(last)void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
+    if(last>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
+     lastAcknowledgedMessageId.current=last;
+     void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{});
+    }
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
@@ -137,6 +141,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
    if(changedAccountOrCommunity){
+    lastAcknowledgedMessageId.current=0;
     // Keep local drafts when refocusing the same community, but never cross accounts.
     setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');
     setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);
@@ -391,7 +396,14 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
-    if(inlineNearBottom.current)setUnseenBelow(false);}}
+    if(inlineNearBottom.current){
+     setUnseenBelow(false);
+     const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+     if(auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
+      lastAcknowledgedMessageId.current=latest;
+      void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{});
+     }
+    }}}
    onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
    contentContainerStyle={{gap:8,padding:8}}>
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
