@@ -1,6 +1,12 @@
 name: Jynlo Google Play official icon 512px
 on:
   workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/play-store-icon.yml
+      - assets/approved-jynlo-icon.webp.base64
+      - scripts/prepare-jynlo-icon.sh
 permissions:
   contents: read
 jobs:
@@ -9,24 +15,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Install Pillow
-        run: python3 -m pip install --user Pillow
-      - name: Export original logo for Play Store without redesign
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Export user-approved Jynlo artwork as Google Play 512px PNG
+        run: JYNLO_ICON_SIZE=512 JYNLO_ICON_OUTPUT=play-store-assets/jynlo-play-icon-512.png bash scripts/prepare-jynlo-icon.sh
+      - name: Validate Play Store dimensions and file size
         run: |
-          python3 - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          source=Path("assets/jynlo-icon.png")
-          icon=Image.open(source)
-          assert icon.format=="PNG", "Expected original PNG"
-          assert min(icon.size)>=256, "Source icon is too small"
-          target=icon.convert("RGBA").resize((512,512),Image.Resampling.LANCZOS)
-          out=Path("play-store-assets")
-          out.mkdir(exist_ok=True)
-          target.save(out/"jynlo-play-icon-512.png",optimize=True)
-          assert (out/"jynlo-play-icon-512.png").stat().st_size<=1024*1024
-          print("Official Jynlo icon exported:",icon.size,"to",(512,512))
-          PY
+          node - <<'JS'
+          const fs=require('node:fs');
+          const file=fs.readFileSync('play-store-assets/jynlo-play-icon-512.png');
+          if(file.subarray(0,8).toString('hex')!=='89504e470d0a1a0a' ||
+             file.readUInt32BE(16)!==512 || file.readUInt32BE(20)!==512 ||
+             file.length>1024*1024)throw Error('Google Play icon must be 512x512 PNG, up to 1 MB.');
+          console.log('Official Jynlo Google Play icon validated.');
+          JS
       - name: Upload official Google Play icon
         uses: actions/upload-artifact@v4
         with:
