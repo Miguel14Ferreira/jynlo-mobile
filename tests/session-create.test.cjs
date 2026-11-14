@@ -18,8 +18,8 @@ test('session creation: private game requires password and never leaks password 
  assert.equal(createSessionPayload({...valid,password:'secret'},sports,0).password,null);
  assert.equal(createSessionPayload({...valid,privateGame:true,password:'abcd'},sports,0).password,'abcd');
 });
-test('session creation: rejects fake sport, invalid cities, limits and prices',()=>{
- assert.throws(()=>createSessionPayload({...valid,sport:'Futebool'},sports,0));
+test('session creation: rejects unsafe sport names, invalid cities, limits and prices',()=>{
+ assert.throws(()=>createSessionPayload({...valid,sport:'<script>'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,city:'a'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,maxParticipants:'1'},sports,0));
  assert.throws(()=>createSessionPayload({...valid,price:'-2'},sports,0));
@@ -251,4 +251,14 @@ test('session creation: removing a venue clears its location before manual entry
  assert.equal(payload.venueId,null);
  assert.equal(payload.city,'Oeiras');
  assert.equal(payload.address,'Rua da Escola 2');
+});
+
+test('session creation: accepts valid custom sport only in independent sessions',()=>{
+ const custom=createSessionPayload({...valid,sport:'Bossaball'},sports,0);
+ assert.equal(custom.sport,'Bossaball');
+ assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball',communityId:12},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball',venueId:4},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball',seasonGame:true},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,sport:'PADEL'},sports,0));
+ assert.throws(()=>createSessionPayload({...valid,sport:'Bossaball?'},sports,0));
 });
