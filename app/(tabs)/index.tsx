@@ -20,7 +20,7 @@ import {JynloIcon} from '../../src/components/JynloIcon';
 import StoryTextPlacement from '../../src/components/StoryTextPlacement';
 import StoryDetailsView from '../../src/components/StoryDetailsView';
 import {storyMetadataReservedHeight} from '../../src/lib/story-sticker-bounds.cjs';
-import FeedPostPhoto from '../../src/components/AdaptivePostPhoto';
+import PostAlbumCarousel from '../../src/components/PostAlbumCarousel';
 import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails} from '../../src/lib/types';
@@ -681,13 +681,9 @@ export default function JynloFeedHome(){
         
         {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><JynloIcon name="more" color={MUTED} size={24}/></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
-      {item.type==='POST'&&item.location?.trim()?<Text style={styles.postMeta}>⌖ {item.location.trim()}</Text>:null}
-      {album.length?<ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={album.length>1} style={{width:'100%'}}>
-        {album.map((entry,i)=>{const uri=mediaSource(entry.url);return <View key={i} style={{width:Math.max(220,screenWidth-56),position:'relative'}}>
-          {uri?(entry.type==='video'?<MediaVideo uri={uri}/>:<FeedPostPhoto uri={uri} width={Math.max(220,screenWidth-56)} label={'Ampliar fotografia '+(i+1)+' de '+album.length} onExpand={()=>setExpandedPostImage(uri)}/>):null}
-          {album.length>1?<View pointerEvents="none" style={styles.albumCounter}><Text style={styles.albumCounterText}>{i+1}/{album.length}</Text></View>:null}
-        </View>;})}
-      </ScrollView>:null}
+      {item.type==='POST'&&item.location?.trim()?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={MUTED} size={15}/><Text style={styles.postMeta}>{item.location.trim()}</Text></View>:null}
+      {album.length?<PostAlbumCarousel items={album} onExpand={setExpandedPostImage}
+        renderVideo={uri=><MediaVideo uri={uri}/>}/>:null}
       {item.type==='POST'?<><View style={styles.postActions}>
         <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postAction} accessibilityRole="button" accessibilityLabel={item.likedByMe?'Retirar gosto':'Gostar'}><JynloIcon name="like" color={item.likedByMe?'#FF7797':TEAL} size={23} active={item.likedByMe}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel={item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou desta publicação"} disabled={Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())||!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(item.postId)}})} style={styles.postAction}><Text style={styles.actionCount}>{item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${item.likeCount} gostos`}</Text></Pressable>
         <Pressable onPress={()=>{void openComments(item);}} style={styles.postAction} accessibilityRole="button" accessibilityLabel="Abrir comentários"><JynloIcon name="comment" color={TEAL} size={23}/><Text style={styles.actionCount}>{item.commentCount}</Text></Pressable>
