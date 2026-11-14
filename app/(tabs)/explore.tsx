@@ -27,6 +27,7 @@ const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
+ const [discoveredCustomSports,setDiscoveredCustomSports]=useState<string[]>([]);
  const [display,setDisplay]=useState<'map'|'list'>('list');
  const [selectedPin,setSelectedPin]=useState<number|null>(null);
  const viewport=useRef<Region>(PORTUGAL);
@@ -53,8 +54,13 @@ export default function DiscoverScreen(){
  useEffect(()=>{const timer=setTimeout(()=>setDebouncedCity(city.trim()),350);return()=>clearTimeout(timer);},[city]);
  const sportSuggestions=useMemo(()=>{
    const query=normalize(sportQuery);
-   return (query?SPORTS.filter(name=>normalize(name).includes(query)):SPORTS).slice(0,12);
- },[sportQuery]);
+   const all=[...SPORTS,...discoveredCustomSports];
+   return (query?all.filter(name=>normalize(name).includes(query)):all).slice(0,12);
+ },[sportQuery,discoveredCustomSports]);
+ const typedCustomSport=sportQuery.trim().replace(/\s+/g,' ');
+ const canSearchCustomSport=typedCustomSport.length>=2&&typedCustomSport.length<=60
+   &&/^[\p{L}\p{M}][\p{L}\p{M}\p{N} .&'’()/-]*$/u.test(typedCustomSport)
+   &&!sportSuggestions.some(name=>normalize(name)===normalize(typedCustomSport));
  const chooseSport=(next:string)=>{setSport(next);setSportPickerVisible(false);setSportQuery('');};
  const load=useCallback(async()=>{
    const version=++loadVersion.current;
@@ -62,7 +68,11 @@ export default function DiscoverScreen(){
    try{
      const next=await discoverSessions({sport:sport||undefined,city:mapArea?undefined:debouncedCity,availableOnly,
        ...(mapArea?{...mapArea,sort:'distance' as const}:{})},auth.token,auth.username||undefined);
-     if(version===loadVersion.current){setSessions(next);setSelectedPin(null);}
+     if(version===loadVersion.current){
+       setSessions(next);setSelectedPin(null);
+       const custom=next.map(session=>session.sport).filter(name=>name&&!SPORTS.includes(name));
+       if(custom.length)setDiscoveredCustomSports(previous=>[...new Set([...previous,...custom])].slice(-40));
+     }
    }catch(e){
      if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');}
    }finally{if(version===loadVersion.current)setLoading(false);}
@@ -104,8 +114,14 @@ export default function DiscoverScreen(){
      {sportSuggestions.map(name=><Pressable key={name} accessibilityRole="button" onPress={()=>chooseSport(name)} style={styles.sportResult}>
        <Text style={styles.sportResultText}>{name}</Text>
      </Pressable>)}
-     {sportSuggestions.length===0?<Text style={styles.emptySport}>Não encontrámos essa modalidade. Experimenta outra pesquisa.</Text>:null}
-     <Text style={styles.pickerHint}>Escreve o nome para encontrares qualquer modalidade do catálogo.</Text>
+     {canSearchCustomSport?<Pressable accessibilityRole="button"
+       accessibilityLabel={'Pesquisar sessões de '+typedCustomSport}
+       onPress={()=>chooseSport(typedCustomSport)} style={styles.sportResult}>
+       <Text style={styles.sportResultText}>Pesquisar sessões de “{typedCustomSport}”</Text>
+     </Pressable>:null}
+     {sportSuggestions.length===0&&!canSearchCustomSport?
+       <Text style={styles.emptySport}>Não encontrámos essa modalidade. Verifica o nome.</Text>:null}
+     <Text style={styles.pickerHint}>Pesquisa uma modalidade oficial ou uma sugerida pela comunidade.</Text>
    </View>:null}
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
      {['',...POPULAR_SPORTS].map(item=><Pressable key={item||'Todas'} accessibilityRole="button"
