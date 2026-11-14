@@ -25,7 +25,7 @@ test('UI protects drafts from unverified HTTP responses',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const root=path.join(__dirname,'..');
  const directSource=fs.readFileSync(path.join(root,'app/messages/[peer].tsx'),'utf8');
- const communitySource=fs.readFileSync(path.join(root,'app/communities/[id]/chat.tsx'),'utf8');
+ const communitySource=fs.readFileSync(path.join(root,'src/components/CommunityChatPanel.tsx'),'utf8');
  assert.match(directSource,/confirmedDirectChatSend\(confirmed,auth\.username\|\|'',peer,submittedText,originalReply\?\.id\)/);
  assert.match(communitySource,/confirmedCommunityChatSend\(confirmed,id,username,message,originalReplyId\)/);
  for(const screen of [directSource,communitySource])assert.match(screen,/O servidor respondeu, mas não confirmou/);
