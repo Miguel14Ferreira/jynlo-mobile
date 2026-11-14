@@ -44,11 +44,14 @@ export default function ChampionshipOwnedEventsScreen(){
  const [name,setName]=useState(''),[format,setFormat]=useState<OwnedEventFormat>('LEAGUE');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [detailsRefresh,setDetailsRefresh]=useState(0);
+ const [loadedEventId,setLoadedEventId]=useState<number|null>(null);
  const generation=useRef(0),pending=useRef(false);
  const activeEvent=events.find(item=>item.id===selected);
  const groupedFixtures=Array.from(new Set(fixtures.map(f=>f.round))).sort((a,b)=>a-b)
   .map(round=>({round,matches:fixtures.filter(f=>f.round===round)}));
  const canManage=organizer&&!closed&&Boolean(auth.token);
+ // Never show fixtures/registrations from the previously selected competition.
+ const detailsReady=eventId!==null&&loadedEventId===eventId;
  const football=sport==='Futebol'||sport==='Futsal';
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username||!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(chid)||chid<=0){
@@ -78,7 +81,7 @@ export default function ChampionshipOwnedEventsScreen(){
  },[cid,chid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  setEvents([]);setSelected(null);setRegistrations([]);setFixtures([]);setError('');setLoading(true);
+  setEvents([]);setSelected(null);setRegistrations([]);setFixtures([]);setLoadedEventId(null);setError('');setLoading(true);
   void load(version);
   return()=>{generation.current++;};
  },[load]));
@@ -87,7 +90,7 @@ export default function ChampionshipOwnedEventsScreen(){
  useFocusEffect(useCallback(()=>{
   if(eventId==null||!auth.token)return;
   let active=true;const version=generation.current;
-  setFixtures([]);setRegistrations([]);setStandings(null);
+  setLoadedEventId(null);setFixtures([]);setRegistrations([]);setStandings(null);
   void Promise.allSettled([
    listOwnedEventTeams(cid,chid,eventId,auth.token),
    listOwnedFixtures(cid,chid,eventId,auth.token),
@@ -100,6 +103,7 @@ export default function ChampionshipOwnedEventsScreen(){
    else setError(b.reason instanceof Error?b.reason.message:'Não foi possível carregar jornadas.');
    if(c.status==='fulfilled')setStandings(c.value);
    else setError(c.reason instanceof Error?c.reason.message:'Não foi possível carregar a classificação.');
+   setLoadedEventId(eventId);
   });
   return()=>{active=false;};
  },[cid,chid,eventId,auth.token,activeEvent?.format,detailsRefresh]));
@@ -127,15 +131,15 @@ export default function ChampionshipOwnedEventsScreen(){
   ]);
  }
  function saveScore(fixture:OwnedFixture,home:number,away:number){
-  if(!activeEvent||!football||activeEvent.status!=='SCHEDULED')return;
+  if(!activeEvent||!detailsReady||busy||pending.current||!football||activeEvent.status!=='SCHEDULED')return;
   if(activeEvent.format==='CUP'&&home===away){setError('Uma eliminatória precisa de vencedor.');return;}
   confirm('Guardar resultado?',fixture.homeTeamName+' '+home+' – '+away+' '+fixture.awayTeamName,
    ()=>recordOwnedFixtureScore(cid,chid,activeEvent.id,fixture.id,home,away,auth.token!));
  }
  const registeredIds=new Set(registrations.map(team=>team.championshipTeamId));
- const canSchedule=canManage&&football&&activeEvent?.status==='DRAFT';
- const canScore=canManage&&football&&activeEvent?.status==='SCHEDULED';
- const allDone=fixtures.length>0&&fixtures.every(f=>f.homeScore!=null&&f.awayScore!=null);
+ const canSchedule=canManage&&detailsReady&&football&&activeEvent?.status==='DRAFT';
+ const canScore=canManage&&detailsReady&&football&&activeEvent?.status==='SCHEDULED';
+ const allDone=detailsReady&&fixtures.length>0&&fixtures.every(f=>f.homeScore!=null&&f.awayScore!=null);
  return <Page><DemoBanner/><Eyebrow>CAMPEONATOS · PROVAS</Eyebrow>
   <Text style={styles.heading}>{title}</Text>
   <Text style={styles.note}>Ligas e taças do campeonato. Resultados e classificações oficiais são calculados pelo servidor.</Text>
@@ -154,12 +158,13 @@ export default function ChampionshipOwnedEventsScreen(){
     confirm('Criar prova?',name,async()=>{const created=await createOwnedEvent(cid,chid,auth.token!,name,format);setName('');setSelected(created.id);})}/>
   </View>:null}
   {!loading&&events.length===0?<Message>Este campeonato ainda não tem ligas nem taças próprias.</Message>:null}
-  {events.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:selected===item.id}} onPress={()=>setSelected(item.id)}
+  {events.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:selected===item.id}} disabled={busy||pending.current} onPress={()=>setSelected(item.id)}
    style={[styles.event,selected===item.id&&styles.eventActive]}>
    <Text style={styles.teamName}>{item.name}</Text>
    <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':'Taça'} · {item.status==='DRAFT'?'Em preparação':item.status==='SCHEDULED'?'Em curso':'Concluída'}{item.winnerTeamName?' · Campeão: '+item.winnerTeamName:''}</Text>
   </Pressable>)}
-  {activeEvent?<View style={styles.card}>
+  {activeEvent&&!detailsReady?<Loader/>:null}
+  {activeEvent&&detailsReady?<View style={styles.card}>
    <Text style={styles.title}>{activeEvent.name}</Text>
    <Text style={styles.note}>Equipas inscritas: {registrations.length}</Text>
    {registrations.map(team=><View key={team.id} style={styles.row}>
@@ -200,7 +205,7 @@ export default function ChampionshipOwnedEventsScreen(){
      <Text style={styles.note}>{expandedRounds.includes(group.round)?'Recolher ▲':'Expandir ▼'}</Text>
     </Pressable>
     {expandedRounds.includes(group.round)?group.matches.map(fixture=><View key={fixture.id} style={styles.fixture}>
-     <FixtureRow fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>
+     <FixtureRow key={fixture.id+'-'+fixture.homeScore+'-'+fixture.awayScore} fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>
      <Button secondary title="Golos, cartões e jogadores" onPress={()=>router.push({
       pathname:'/communities/[id]/championships/fixture',
       params:{id:String(cid),championshipId:String(chid),eventId:String(activeEvent.id),fixtureId:String(fixture.id)}
