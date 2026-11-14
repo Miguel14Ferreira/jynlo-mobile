@@ -14,7 +14,7 @@ const script=path.join(__dirname,'../scripts/verify-release.cjs');
 function run(url,profile='production',firebase=firebaseFile){
   return spawnSync(process.execPath,[script],{
     encoding:'utf8',
-    env:{...process.env,EXPO_PUBLIC_JYNLO_API_URL:url,EAS_BUILD_PROFILE:profile,JYNLO_REQUIRE_REAL_API:'1',GOOGLE_SERVICES_JSON:firebase}
+    env:{...process.env,EXPO_PUBLIC_JYNLO_API_URL:url,EAS_BUILD_PROFILE:profile,JYNLO_REQUIRE_REAL_API:'1',GOOGLE_SERVICES_JSON:firebase,JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:'AIza'+'A'.repeat(35)}
   });
 }
 test('store builds require a real HTTPS API',()=>{
