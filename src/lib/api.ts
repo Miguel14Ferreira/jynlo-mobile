@@ -21,6 +21,9 @@ export async function request<T>(path:string, {token,method='GET',body}:{token?:
     const response = await fetch(`${API_BASE}${path}`,{
       // Android authenticates exclusively with bearer tokens; never persist browser refresh cookies.
       method, signal:controller.signal, credentials:'omit',
+      // Never follow an unexpected redirect while a bearer token is attached.
+      // Authenticated API responses must not be persisted by HTTP caches.
+      redirect:'error', cache:'no-store',
       headers:{'Accept':'application/json',
         ...(body === undefined?{}:{'Content-Type':'application/json'}),
         ...(token?{'Authorization':`Bearer ${token}`}:{})},
