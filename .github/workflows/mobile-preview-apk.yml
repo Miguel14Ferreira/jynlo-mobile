@@ -41,32 +41,8 @@ jobs:
         run: npm run typecheck
       - name: Reject demo backend for internal preview APK
         run: node scripts/verify-release.cjs
-      - name: Verify Expo EAS project linkage
-        run: |
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const app = JSON.parse(fs.readFileSync('app.json', 'utf8')).expo;
-          const embeddedId = app.extra?.eas?.projectId || '';
-          const secretId = process.env.EAS_PROJECT_ID || '';
-          const projectId = secretId || embeddedId;
-          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
-            console.error('::error::EAS projectId em falta. Liga este repositório ao projeto Expo existente antes de gerar APKs não interativas.');
-            process.exit(1);
-          }
-          if (embeddedId && secretId && embeddedId !== secretId) {
-            console.error('::error::EAS_PROJECT_ID não corresponde ao projeto associado no app.json. Compilação bloqueada para evitar publicar na conta errada.');
-            process.exit(1);
-          }
-          console.log('EAS projectId: configured');
-          NODE
-      - name: Link existing Expo project in CI when not already linked
-        if: env.EAS_PROJECT_ID != ''
-        run: |
-          if node -e "process.exit(require('./app.json').expo.extra?.eas?.projectId ? 0 : 1)"; then
-            echo 'Expo project already linked in app.json; skipping EAS init.'
-          else
-            npx --yes eas-cli init --id "$EAS_PROJECT_ID" --non-interactive
-          fi
+      - name: Verify effective Expo project linkage without EAS init
+        run: node scripts/check-eas-project.cjs
       - name: Build Android preview APK and wait for result
         run: |
           date -u +%Y-%m-%dT%H:%M:00Z > eas-build-started-at.txt
