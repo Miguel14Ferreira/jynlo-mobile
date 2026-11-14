@@ -61,3 +61,16 @@ test('inline history follows new messages only while near latest items',()=>{
   assert.match(src,/inlineNearBottom\.current=false;setHistoryLimit\(count=>count\+40\)/);
  }
 });
+
+test('readers get an explicit new-message shortcut without losing older scroll position',()=>{
+ for(const name of ['Session','Community']){
+  const source=read('src/components/'+name+'ChatPanel.tsx');
+  assert.match(source,/const previousLatestMessageId=useRef\(0\)/);
+  assert.match(source,/const \[unseenBelow,setUnseenBelow\]=useState\(false\)/);
+  assert.match(source,/latest>previousLatestMessageId\.current&&previousLatestMessageId\.current>0&&!inlineNearBottom\.current/);
+  assert.match(source,/embedded&&unseenBelow\?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"/);
+  assert.match(source,/inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
+  assert.match(source,/if\(inlineNearBottom\.current\)setUnseenBelow\(false\)/);
+  assert.match(source,/previousLatestMessageId\.current=0;setUnseenBelow\(false\)/);
+ }
+});
