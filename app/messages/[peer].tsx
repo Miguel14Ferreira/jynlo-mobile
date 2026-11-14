@@ -35,6 +35,7 @@ export default function DirectConversation(){
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const conversationScroll=useRef<ScrollView|null>(null);
  const nearBottom=useRef(true);
+ const lastAcknowledgedMessageId=useRef(0);
  const composerFocused=useRef(false);
  useEffect(()=>{
   const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
@@ -99,7 +100,10 @@ export default function DirectConversation(){
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
    const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
-   if(last>0)void markDirectRead(peer,last,auth.token).catch(()=>{});
+   if(last>lastAcknowledgedMessageId.current&&nearBottom.current){
+    lastAcknowledgedMessageId.current=last;
+    void markDirectRead(peer,last,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
+   }
   }catch(e){
    if(version===generation.current){
     const accessRevoked=e instanceof ApiError&&[401,403,404,410].includes(e.status);
@@ -135,6 +139,7 @@ export default function DirectConversation(){
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
    conversation.current=identity;
+   lastAcknowledgedMessageId.current=0;
    setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
@@ -443,7 +448,14 @@ export default function DirectConversation(){
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
-      nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
+      nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+      if(nearBottom.current&&auth.token){
+       const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+       if(latest>lastAcknowledgedMessageId.current){
+        lastAcknowledgedMessageId.current=latest;
+        void markDirectRead(peer,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
+       }
+      }}}
     scrollEventThrottle={100}
     onContentSizeChange={()=>{if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
   <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
