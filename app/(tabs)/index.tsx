@@ -300,6 +300,7 @@ export default function JynloFeedHome(){
   const feedIdentity=useRef('');
   const recentlyConfirmedPosts=useRef<Array<{item:FeedItem;until:number}>>([]);
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
+  const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
   const recentlyConfirmedStories=useRef<Array<{item:SocialStory;until:number}>>([]);
   const hiddenKeysRef=useRef<string[]>([]);
   const [hiddenKeys,setHiddenKeys]=useState<string[]>([]);
@@ -316,7 +317,7 @@ export default function JynloFeedHome(){
       // Never keep previous-account stories, private comments or pending media
       // visible when a user logs out or signs into a different account.
       commentsRequest.current++;
-      recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);
+      recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
@@ -471,12 +472,12 @@ export default function JynloFeedHome(){
     .finally(()=>{if(feedIdentity.current===identity)setBusyPost(null);});
   }
   function openPostComposer(){
-    setPublishNotice(null);
+    setPublishNotice(null);setPostPublishError('');
     postComposerRevision.current++;
     composerOpenRef.current=true;setComposerOpen(true);
   }
   function openStoryComposer(){
-    setPublishNotice(null);
+    setPublishNotice(null);setStoryPublishError('');
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
@@ -574,7 +575,7 @@ export default function JynloFeedHome(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
     const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
     const revision=postComposerRevision.current;
-    postInFlight.current=true;setPublishing(true);
+    postInFlight.current=true;setPublishing(true);setPostPublishError('');
     try{
       const created=await publishPost(body,media,actor,username,place);
       // Show the server-confirmed item immediately. A delayed feed refresh must
@@ -603,8 +604,11 @@ export default function JynloFeedHome(){
         void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
       }
     }catch(e){
-      if(feedIdentity.current===`${username}:${actor}`)
-        Alert.alert('Publicação',e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
+      if(feedIdentity.current===`${username}:${actor}`){
+        const message=e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.';
+        setPostPublishError(message);
+        Alert.alert('Publicação',message);
+      }
     }finally{postInFlight.current=false;setPublishing(false);}
   }
   async function submitStory(){
@@ -614,7 +618,7 @@ export default function JynloFeedHome(){
     let details:StoryDetails;
     try{details=prepareStoryDetails(locationDraft,tagsDraft);}catch(e){Alert.alert('Story',e instanceof Error?e.message:'Verifica a localização e as identificações.');return;}
     const revision=storyComposerRevision.current;
-    storyInFlight.current=true;setStoryPublishing(true);
+    storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
       const created=await publishStory(body,media,actor,username,null,geometry,details);
       if(feedIdentity.current===`${username}:${actor}`){
@@ -641,8 +645,11 @@ export default function JynloFeedHome(){
         void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
       }
     }catch(e){
-      if(feedIdentity.current===`${username}:${actor}`)
-        Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
+      if(feedIdentity.current===`${username}:${actor}`){
+        const message=e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.';
+        setStoryPublishError(message);
+        Alert.alert('Story',message);
+      }
     }finally{storyInFlight.current=false;setStoryPublishing(false);}
   }
   async function toggleLike(item:FeedItem){if(item.type!=='POST'||!item.postId||!requireLogin()||busyPost!==null)return;
@@ -915,6 +922,7 @@ export default function JynloFeedHome(){
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);}} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
         </ScrollView>
+        {postPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{postPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Confirma primeiro se já apareceu no teu perfil antes de repetires o envio.</Text></View>:null}
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -985,6 +993,7 @@ export default function JynloFeedHome(){
            </Pressable>;
           })}
         </ScrollView>
+        {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Verifica se a Story já foi publicada antes de repetires.</Text></View>:null}
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}><Text style={styles.primaryButtonText}>{storyPublishing?'A publicar…':'Publicar Story'}</Text></Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
