@@ -29,7 +29,11 @@ function prepare(config=process.env,io={fs,path,os}){
  const encoded=(config.JYNLO_FIREBASE_ANDROID_JSON_B64||'').trim();
  const existing=(config.GOOGLE_SERVICES_JSON||'').trim();
  if(encoded&&existing)throw Error('Firebase Android: usa apenas uma das duas fontes de configuração.');
- if(!encoded&&!existing)return {configured:false,reason:'not-provided'};
+ if(!encoded&&!existing){
+  if(config.JYNLO_REQUIRE_NATIVE_PUSH==='1')
+   throw Error('Firebase Android: este workflow exige o segredo JYNLO_FIREBASE_ANDROID_JSON_B64 no grupo Codemagic jynlo_android_native.');
+  return {configured:false,reason:'not-provided'};
+ }
  let file=existing;
  if(encoded){
   if(encoded.length>1024*1024||encoded.length%4!==0||
