@@ -6,6 +6,7 @@ import type {FeedItem} from '../lib/types';
 import {C,MobileTheme} from '../lib/theme';
 import {Button,Loader,Message} from './UI';
 import {postMediaItems} from '../lib/post-album.cjs';
+import {JynloIcon} from './JynloIcon';
 
 /** Public profile gallery. Posts remain until the author removes them; Stories are separate. */
 export default function ProfilePosts({username,token}:{username:string;token:string|null}){
@@ -53,14 +54,14 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     {(()=>{const album=postMediaItems(item),first=album[0],preview=first?resolveJynloMedia(first.url):null;
       return <View>
        {preview&&first.type==='image'?<Image source={{uri:preview}} style={styles.image} resizeMode="contain"/>:
-        first?.type==='video'?<View style={styles.placeholder}><Text style={styles.mediaIcon}>▶ Vídeo</Text><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
+        first?.type==='video'?<View style={styles.placeholder}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={23} color={T.accent}/><Text style={styles.metaText}>Vídeo</Text></View><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
         <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
-       {album.length>1?<View style={styles.albumMark}><Text style={styles.albumMarkText}>▤ {album.length}</Text></View>:null}
+       {album.length>1?<View style={styles.albumMark}><View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="gallery" size={15} color="#fff"/><Text style={styles.albumMarkText}>{album.length}</Text></View></View>:null}
       </View>;
     })()}
     <View style={styles.meta}>
-     {item.location?.trim()?<Text style={styles.metaText} numberOfLines={1}>⌖ {item.location.trim()}</Text>:null}
-     <Text style={styles.metaText}>♡ {item.likeCount}  ·  ◯ {item.commentCount}</Text>
+     {item.location?.trim()?<View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="location" size={14} color={T.muted}/><Text style={styles.metaText} numberOfLines={1}>{item.location.trim()}</Text></View>:null}
+     <View style={{flexDirection:"row",alignItems:"center",gap:10}}><View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="like" size={15} color={T.muted}/><Text style={styles.metaText}>{item.likeCount}</Text></View><View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="comment" size={15} color={T.muted}/><Text style={styles.metaText}>{item.commentCount}</Text></View></View>
     </View>
    </Pressable>)}
   </View>
