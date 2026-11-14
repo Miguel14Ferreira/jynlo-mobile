@@ -18,6 +18,12 @@ test('valid guest invitation survives on both public and organizer session links
  assert.equal(nativeRouteForWebLink(prefix+'/sessions/123?guest='+guest),'/sessions/123?guest='+guest);
  assert.equal(nativeRouteForWebLink(prefix+'/menu/events/123/?guest='+guest),'/sessions/123?guest='+guest);
 });
+test('published post URLs map to the existing post detail route',()=>{
+ assert.equal(nativeRouteForWebLink(prefix+'/posts/14'),'/posts/14');
+ assert.equal(nativeRouteForWebLink(prefix+'/posts/14/'),'/posts/14');
+ assert.equal(nativeRouteForWebLink(prefix+'/posts/14?utm_campaign=share'),'/posts/14');
+ assert.equal(nativeRouteForWebLink(prefix+'/posts/0'),prefix+'/posts/0');
+});
 test('untrusted credentials and arbitrary parameters never pass to the native session',()=>{
  assert.equal(nativeRouteForWebLink(prefix+'/sessions/123?password=secret&utm_source=test'),'/sessions/123');
  assert.equal(nativeRouteForWebLink(prefix+'/sessions/123?guest=bad'),'/sessions/123');
@@ -31,6 +37,9 @@ test('Android manifest and Expo native intent handle shared session links',()=>{
  const httpsFilters=app.android.intentFilters.filter(filter=>filter.action==='VIEW'&&filter.autoVerify);
  assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/sessions/')));
  assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/menu/events/')));
+ assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/posts/')));
  const native=fs.readFileSync(path.join(__dirname,'..','app','+native-intent.tsx'),'utf8');
  assert.match(native,/nativeRouteForWebLink\(path\)/);
+ const screen=fs.readFileSync(path.join(__dirname,'..','app','posts','[postId]','index.tsx'),'utf8');
+ assert.match(screen,/socialPostById\(id,auth.token\)/);
 });
