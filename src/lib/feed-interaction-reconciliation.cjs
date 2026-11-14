@@ -25,8 +25,9 @@ function reconcilePostLikes(receipts,posts,now=Date.now()){
  for(const [postId,entry] of receipts){
   if(!validReceipt(entry)||!Number.isFinite(entry.until)||entry.until<=now)continue;
   const authoritative=byId.get(postId);
-  // The GET now matches the verified mutation: release its override.
-  if(authoritative&&authoritative.likedByMe===entry.likedByMe&&authoritative.likeCount===entry.likeCount)continue;
+  // A matching viewer like-state proves the backend caught up. Do not
+  // freeze the count if other users have added or removed likes meanwhile.
+  if(authoritative&&authoritative.likedByMe===entry.likedByMe)continue;
   next.set(postId,entry);
  }
  return {
