@@ -975,10 +975,14 @@ export default function JynloFeedHome(){
       onClose={()=>setEditingPost(null)} onSaved={updated=>{
         if(feedIdentity.current!==currentFeedIdentity)return;
         confirmedPostEdits.current=rememberPostEdit(confirmedPostEdits.current,updated);
+        // The edit endpoint returns new text/location but not the aggregate
+        // like/comment counters. Preserve those server-backed feed values.
+        const applyEdit=(item:FeedItem)=>item.postId===updated.postId?
+          {...item,content:updated.content,location:updated.location}:item;
         recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({
-          ...entry,item:entry.item.postId===updated.postId?updated:entry.item
+          ...entry,item:applyEdit(entry.item)
         }));
-        setPosts(current=>current.map(item=>item.postId===updated.postId?updated:item));
+        setPosts(current=>current.map(applyEdit));
         setEditingPost(null);
       }}/>
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
