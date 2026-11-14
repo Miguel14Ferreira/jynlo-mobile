@@ -8,7 +8,7 @@ import {communityDetails} from '../../../../src/lib/community-api';
 import {communityChampionships,getChampionshipTeams,type ChampionshipTeams} from '../../../../src/lib/championship-api';
 import {
  listOwnedEvents,createOwnedEvent,listOwnedEventTeams,registerOwnedEventTeam,
- listOwnedFixtures,scheduleOwnedLeague,getOwnedCupDraw,drawOwnedCup,advanceOwnedCup,
+ listOwnedFixtures,scheduleOwnedLeague,drawOwnedCup,advanceOwnedCup,
  recordOwnedFixtureScore,finishOwnedLeague,
  type OwnedEvent,type OwnedEventTeam,type OwnedFixture,type OwnedEventFormat,
 } from '../../../../src/lib/championship-owned-events-api';
@@ -163,7 +163,13 @@ export default function ChampionshipOwnedEventsScreen(){
    </View>:null}
    <Text style={styles.title}>Jornadas e resultados ({fixtures.length})</Text>
    {fixtures.length===0?<Text style={styles.note}>Ainda não existem jogos nesta prova.</Text>:null}
-   {fixtures.map(fixture=><FixtureRow key={fixture.id+'-'+fixture.homeScore+'-'+fixture.awayScore} fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>)}
+   {fixtures.map(fixture=><View key={fixture.id} style={styles.fixture}>
+    <FixtureRow fixture={fixture} editable={canScore} busy={busy} onSave={saveScore}/>
+    <Button secondary title="Golos, cartões e jogadores" onPress={()=>router.push({
+     pathname:'/communities/[id]/championships/fixture',
+     params:{id:String(cid),championshipId:String(chid),eventId:String(activeEvent.id),fixtureId:String(fixture.id)}
+    })}/>
+   </View>)}
    {canScore&&activeEvent.format==='CUP'&&allDone?<Button title="Avançar eliminatória" disabled={busy} onPress={()=>confirm('Avançar Taça?', 'A próxima ronda será gerada após validar todos os resultados.',()=>advanceOwnedCup(cid,chid,activeEvent.id,auth.token!))}/>:null}
    {canScore&&activeEvent.format==='LEAGUE'&&allDone?<Button danger title="Finalizar liga" disabled={busy} onPress={()=>confirm('Finalizar liga?', 'A classificação e o vencedor serão fixados pelo servidor. A operação é definitiva.',()=>finishOwnedLeague(cid,chid,activeEvent.id,auth.token!))}/>:null}
    {!football?<Message>Para esta modalidade, os resultados necessitam de regras próprias. Não são utilizados resultados de futebol.</Message>:null}
