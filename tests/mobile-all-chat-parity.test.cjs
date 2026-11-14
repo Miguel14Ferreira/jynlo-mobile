@@ -67,3 +67,13 @@ test('all chats expose the same collapsed attachment tray instead of long button
   assert.match(screens[kind],/setAttachmentsOpen\(false\)/,kind);
  }
 });
+
+test('PDF permission is independent of camera/photo availability in group conversations',()=>{
+ for(const kind of ['community','session']){
+  const source=screens[kind];
+  const pdf=source.match(/<ChatPdfComposer[^>]+enabled=\{([^}]+)\}/);
+  assert.ok(pdf,'PDF composer must exist: '+kind);
+  assert.doesNotMatch(pdf[1],/canSendPhoto|photoReady/);
+  assert.match(pdf[1],/!sending&&!uploading/);
+ }
+});
