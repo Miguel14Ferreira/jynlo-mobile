@@ -11,7 +11,7 @@ const protectedPath=/^\/api\/profile-media\/(?:posts\/[1-9]\d*\/(?:image|video|e
  */
 export async function downloadPrivateProfileMedia(path:string,token:string):Promise<File>{
  if(DEMO_MODE||!token||!protectedPath.test(path))throw Error('Conteúdo protegido inválido.');
- const target=new File(Paths.cache,`jynlo-private-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+ let target:File|null=null;
  try{
   const response=await expoFetch(API_BASE+path,{
    headers:{Authorization:`Bearer ${token}`,Accept:'image/*, video/*'},
@@ -23,12 +23,17 @@ export async function downloadPrivateProfileMedia(path:string,token:string):Prom
     throw Error('Formato protegido inesperado.');
   const length=Number(response.headers.get('content-length')||0);
   if(length>60*1024*1024)throw Error('Conteúdo demasiado grande.');
+  const extension=mime.toLowerCase().includes('webp')?'.webp'
+   :mime.toLowerCase().includes('png')?'.png'
+   :mime.toLowerCase().includes('webm')?'.webm'
+   :mime.toLowerCase().includes('mp4')?'.mp4':'.jpg';
+  target=new File(Paths.cache,`jynlo-private-${Date.now()}-${Math.random().toString(36).slice(2)}${extension}`);
   const bytes=await response.bytes();
   if(bytes.length===0||bytes.length>60*1024*1024)throw Error('Ficheiro protegido inválido.');
   await target.write(bytes);
   return target;
  }catch(error){
-  try{if(target.exists)target.delete();}catch{}
+  try{if(target?.exists)target.delete();}catch{}
   throw error;
  }
 }
