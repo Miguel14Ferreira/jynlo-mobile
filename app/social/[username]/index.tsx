@@ -7,6 +7,7 @@ import {resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import ProfilePosts from '../../../src/components/ProfilePosts';
 import {changeFollow,followStatus,publicSportsProfile,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
+import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/profile-privacy-api';
 import {MobileTheme} from '../../../src/lib/theme';
 const T=MobileTheme.colors;
 export default function PublicSocialProfile(){
@@ -15,26 +16,29 @@ export default function PublicSocialProfile(){
  const auth=useAuth(),router=useRouter();
  const [profile,setProfile]=useState<PublicSportsProfile|null>(null);
  const [status,setStatus]=useState<FollowStatus|null>(null);
+ const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const version=useRef(0),inFlight=useRef(false);
  const own=!!name&&name.toLowerCase()===auth.username?.toLowerCase();
  useFocusEffect(useCallback(()=>{
-  const request=++version.current;setProfile(null);setStatus(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
+  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
-  void Promise.allSettled([publicSportsProfile(name,auth.token),followStatus(name,auth.token)]).then(([p,s])=>{
+  void Promise.allSettled([publicSportsProfile(name,auth.token),followStatus(name,auth.token),profilePrivacyStatus(auth.token,name)]).then(([p,s,privacyResult])=>{
    if(request!==version.current)return;
    if(p.status==='fulfilled')setProfile(p.value);
    else setError('Não foi possível carregar este perfil.');
    if(s.status==='fulfilled')setStatus(s.value);
+   if(privacyResult.status==='fulfilled')setPrivacy(privacyResult.value);
   }).finally(()=>{if(request===version.current)setLoading(false);});
-  return()=>{version.current++;setProfile(null);setStatus(null);};
+  return()=>{version.current++;setProfile(null);setStatus(null);setPrivacy(null);};
  },[name,auth.token,auth.username]));
  async function toggle(){
   if(!name||own||!auth.token||!status||inFlight.current)return;
   const request=version.current,original=status.followedByMe;
+  const shouldFollow=!(original || status.requestPending);
   inFlight.current=true;setBusy(true);setError('');
   try{
-   const next=await changeFollow(name,!original,auth.token);
+   const next=await changeFollow(name,shouldFollow,auth.token);
    if(request===version.current)setStatus(next);
   }catch{
    if(request===version.current)setError('Não foi possível confirmar a alteração. Verifica o estado antes de repetir.');
@@ -64,11 +68,19 @@ export default function PublicSocialProfile(){
      <Text style={styles.metricNum}>{status.following}</Text><Text style={styles.sub}>A seguir</Text>
     </Pressable>
    </View>:null}
-   {!own&&status?<Pressable accessibilityRole="button" accessibilityLabel={status.followedByMe?'Deixar de seguir':'Seguir utilizador'} disabled={busy} onPress={()=>{void toggle();}} style={[styles.follow,status.followedByMe&&styles.unfollow,busy&&styles.disabled]}>
-    <Text style={[styles.followText,status.followedByMe&&styles.unfollowText]}>{busy?'A confirmar…':status.followedByMe?'A seguir ✓':'Seguir +'}</Text>
+   {!own&&status?<Pressable accessibilityRole="button"
+    accessibilityLabel={status.followedByMe?'Deixar de seguir':status.requestPending?'Cancelar pedido para seguir':status.privateProfile?'Pedir para seguir':'Seguir utilizador'}
+    disabled={busy} onPress={()=>{void toggle();}} style={[styles.follow,(status.followedByMe||status.requestPending)&&styles.unfollow,busy&&styles.disabled]}>
+    <Text style={[styles.followText,(status.followedByMe||status.requestPending)&&styles.unfollowText]}>
+     {busy?'A confirmar…':status.followedByMe?'A seguir ✓':status.requestPending?'Pedido enviado ✓':status.privateProfile?'Pedir para seguir +':'Seguir +'}
+    </Text>
    </Pressable>:!own?<Text style={styles.sub}>Não foi possível confirmar a relação de seguimento.</Text>:null}
   </View>:null}
-  {profile?<ProfilePosts username={name} token={auth.token}/>:null}
+  {privacy?.privateProfile&&!privacy.canViewContent?<View style={styles.hero}>
+    <Text style={styles.name}>Perfil privado</Text>
+    <Text style={styles.sub}>Segue esta pessoa e aguarda a aprovação para veres as suas publicações e stories.</Text>
+   </View>:null}
+  {profile&&privacy?.canViewContent?<ProfilePosts username={name} token={auth.token}/>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
