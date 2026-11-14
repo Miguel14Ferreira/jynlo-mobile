@@ -7,7 +7,7 @@ import {C} from '../../../../src/lib/theme';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {communityChampionships,getChampionshipTeams,type ChampionshipTeams} from '../../../../src/lib/championship-api';
 import {
- listOwnedEvents,createOwnedEvent,listOwnedEventTeams,registerOwnedEventTeam,
+ listOwnedEvents,createOwnedEvent,deleteOwnedEvent,listOwnedEventTeams,registerOwnedEventTeam,removeOwnedEventTeam,
  listOwnedFixtures,scheduleOwnedLeague,drawOwnedCup,advanceOwnedCup,getOwnedLeagueStandings,
  recordOwnedFixtureScore,finishOwnedLeague,
  type OwnedEvent,type OwnedEventTeam,type OwnedFixture,type OwnedEventFormat,type OwnedLeagueStandings,
@@ -156,9 +156,17 @@ export default function ChampionshipOwnedEventsScreen(){
   {activeEvent?<View style={styles.card}>
    <Text style={styles.title}>{activeEvent.name}</Text>
    <Text style={styles.note}>Equipas inscritas: {registrations.length}</Text>
-   {registrations.map(team=><Text key={team.id} style={styles.teamName}>• {team.name}</Text>)}
+   {registrations.map(team=><View key={team.id} style={styles.row}>
+    <Text style={styles.teamName}>• {team.name}</Text>
+    {canManage&&activeEvent.status==='DRAFT'?<Button secondary title="Remover inscrição" disabled={busy}
+     onPress={()=>confirm('Remover equipa?',team.name,()=>removeOwnedEventTeam(cid,chid,activeEvent.id,team.id,auth.token!))}/>:null}
+   </View>)}
    {canManage&&activeEvent.status==='DRAFT'?teams.filter(team=>!registeredIds.has(team.id)).map(team=><Button key={team.id} secondary title={'Inscrever '+team.name}
     disabled={busy} onPress={()=>confirm('Inscrever equipa?',team.name,()=>registerOwnedEventTeam(cid,chid,activeEvent.id,team.id,auth.token!))}/>):null}
+   {canManage&&activeEvent.status==='DRAFT'?<Button danger title="Eliminar prova em preparação" disabled={busy}
+    onPress={()=>confirm('Eliminar esta prova?', 'A eliminação da prova em preparação é definitiva.',async()=>{
+     await deleteOwnedEvent(cid,chid,activeEvent.id,auth.token!);setSelected(null);
+    })}/>:null}
    {canSchedule?<View style={styles.card}>
     <Text style={styles.title}>{activeEvent.format==='LEAGUE'?'Gerar calendário':'Sortear eliminatórias'}</Text>
     {activeEvent.format==='LEAGUE'?<><Button secondary title="Gerar 1 volta" disabled={busy} onPress={()=>confirm('Gerar calendário?', 'Os jogos serão criados pelo servidor.',()=>scheduleOwnedLeague(cid,chid,activeEvent.id,1,auth.token!))}/>
