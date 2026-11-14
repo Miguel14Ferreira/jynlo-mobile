@@ -1,6 +1,6 @@
 /** Extracted from the Jynlo FE sports catalog on develop (Nov 2026). */
 export const SPORTS: readonly string[] = [
-'Aeromodelismo','Aikido','Andebol','Apneia','Artes Marciais Chinesas','Atividades Subaquáticas',
+'Aeromodelismo','Aikido','Airsoft','Andebol','Apneia','Artes Marciais Chinesas','Atividades Subaquáticas',
 'Atletismo','Automobilismo','Badminton','Basebol','Basquetebol','Basquetebol 3x3','Bilhar','BMX',
 'Bodyboard','Bowling','Boxe','Breaking','Bridge','Calistenia','Caminhada','Campismo',
 'Canoagem','Canoagem Slalom','Canoagem Velocidade','Ciclismo','Ciclismo de Estrada',
