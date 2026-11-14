@@ -1,0 +1,181 @@
+import React,{useCallback,useRef,useState} from 'react';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
+import {useAuth} from '../../../../src/lib/auth';
+import {C} from '../../../../src/lib/theme';
+import {communityDetails} from '../../../../src/lib/community-api';
+import {communityChampionships} from '../../../../src/lib/championship-api';
+import {
+ listOwnedEvents,listOwnedFixtures,championshipTeamPlayers,
+ ownedFixtureGoals,addOwnedFixtureGoal,ownedFixtureCards,addOwnedFixtureCard,
+ ownedFixtureLineup,setOwnedFixtureLineup,ownedFixtureSubstitutions,addOwnedFixtureSubstitution,
+ type OwnedFixture,type ChampionshipTeamPlayer,type OwnedGoal,type OwnedCard,type OwnedLineup,type OwnedSubstitution
+} from '../../../../src/lib/championship-owned-events-api';
+
+type Mode='GOAL'|'CARD'|'LINEUP'|'SUB';
+const valid=(n:number)=>Number.isSafeInteger(n)&&n>0;
+
+export default function ChampionshipFixtureScreen(){
+ const {id,championshipId,eventId,fixtureId}=useLocalSearchParams<{id:string;championshipId:string;eventId:string;fixtureId:string}>();
+ const cid=Number(id),chid=Number(championshipId),eid=Number(eventId),fid=Number(fixtureId);
+ const auth=useAuth(),router=useRouter();
+ const [fixture,setFixture]=useState<OwnedFixture|null>(null),[canWrite,setCanWrite]=useState(false);
+ const [roster,setRoster]=useState<ChampionshipTeamPlayer[]>([]);
+ const [goals,setGoals]=useState<OwnedGoal[]>([]),[cards,setCards]=useState<OwnedCard[]>([]);
+ const [lineup,setLineup]=useState<OwnedLineup[]>([]),[subs,setSubs]=useState<OwnedSubstitution[]>([]);
+ const [selectedTeam,setSelectedTeam]=useState<number|null>(null),[player,setPlayer]=useState<number|null>(null),[other,setOther]=useState<number|null>(null);
+ const [minute,setMinute]=useState('0'),[cardType,setCardType]=useState<'YELLOW'|'RED'>('YELLOW');
+ const [selection,setSelection]=useState<'STARTER'|'BENCH'>('STARTER');
+ const [mode,setMode]=useState<Mode>('GOAL');
+ const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const generation=useRef(0),pending=useRef(false);
+ const reload=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username||![cid,chid,eid,fid].every(valid)){
+   if(version===generation.current){setError('Sessão ou jogo inválido.');setLoading(false);}return;
+  }
+  setLoading(true);setError('');
+  try{
+   const [championships,group,events,fixtures]=await Promise.all([
+    communityChampionships(cid,auth.token),communityDetails(cid,auth.token,auth.username),
+    listOwnedEvents(cid,chid,auth.token),listOwnedFixtures(cid,chid,eid,auth.token)
+   ]);
+   if(version!==generation.current)return;
+   const championship=championships.find(c=>c.id===chid);
+   const event=events.find(e=>e.id===eid);
+   const match=fixtures.find(f=>f.id===fid);
+   if(!championship||championship.communityId!==cid||group.id!==cid||!event||!match)throw Error('Jogo não encontrado neste campeonato.');
+   const role='myRole' in group?group.myRole:null;
+   if(!role)throw Error('É necessário pertencer à comunidade.');
+   const editable=(role==='OWNER'||role==='ADMIN')&&!championship.closedAt&&
+     (championship.sport==='Futebol'||championship.sport==='Futsal')&&
+     event.format==='LEAGUE'&&event.status==='SCHEDULED'&&match.homeScore!=null&&match.awayScore!=null;
+   setFixture(match);setCanWrite(editable);
+   const token=auth.token;
+   const [playersHome,playersAway,g,c,l,sub]=await Promise.all([
+    championshipTeamPlayers(cid,chid,match.homeTeamId,token),
+    championshipTeamPlayers(cid,chid,match.awayTeamId,token),
+    ownedFixtureGoals(cid,chid,eid,fid,token),
+    ownedFixtureCards(cid,chid,eid,fid,token),
+    ownedFixtureLineup(cid,chid,eid,fid,token),
+    ownedFixtureSubstitutions(cid,chid,eid,fid,token)
+   ]);
+   if(version!==generation.current)return;
+   // The two rosters are kept distinct: one player cannot be assigned to the opposing team.
+   setRoster([...playersHome.map(p=>({...p,teamId:match.homeTeamId})),
+              ...playersAway.map(p=>({...p,teamId:match.awayTeamId}))] as ChampionshipTeamPlayer[]);
+   setGoals(g);setCards(c);setLineup(l);setSubs(sub);
+   setSelectedTeam(current=>current===match.homeTeamId||current===match.awayTeamId?current:match.homeTeamId);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar os acontecimentos do jogo.');}
+  finally{if(version===generation.current)setLoading(false);}
+ },[cid,chid,eid,fid,auth.token,auth.username]);
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  setFixture(null);setCanWrite(false);setRoster([]);setError('');setLoading(true);
+  void reload(version);
+  return()=>{generation.current++;};
+ },[reload]));
+ const selectedRoster=roster.filter(p=>(p as ChampionshipTeamPlayer&{teamId:number}).teamId===selectedTeam);
+ const selectedPlayer=selectedRoster.find(p=>p.profileId===player);
+ const selectedOther=selectedRoster.find(p=>p.profileId===other);
+ const parsedMinute=Number(minute);
+ const validMinute=/^\d{1,3}$/.test(minute)&&Number.isSafeInteger(parsedMinute)&&parsedMinute<=200;
+ function chooseTeam(teamId:number){
+  setSelectedTeam(teamId);setPlayer(null);setOther(null);
+ }
+ async function perform(action:()=>Promise<unknown>){
+  if(!canWrite||pending.current||!fixture)return;
+  pending.current=true;setBusy(true);setError('');
+  const version=generation.current;
+  try{
+   await action();
+   if(version===generation.current){setPlayer(null);setOther(null);await reload(version);}
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível registar o acontecimento.')+' Verifica o histórico antes de repetir.');
+  }finally{pending.current=false;if(version===generation.current)setBusy(false);}
+ }
+ function confirm(){
+  if(!canWrite||!selectedTeam||!player||!selectedPlayer||pending.current)return;
+  if(mode!=='LINEUP'&&!validMinute){setError('Indica um minuto entre 0 e 200.');return;}
+  if(mode==='SUB'&&(!other||other===player||!selectedOther)){setError('Escolhe dois jogadores diferentes da mesma equipa.');return;}
+  const label=mode==='GOAL'?'Golo':mode==='CARD'?'Cartão':mode==='LINEUP'?'Convocatória':'Substituição';
+  Alert.alert('Confirmar '+label.toLowerCase()+'?',selectedPlayer.displayName+' · '+(mode==='LINEUP'?selection:minute+' min'),[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Registar',onPress:()=>{void perform(()=>{
+    switch(mode){
+     case 'GOAL':return addOwnedFixtureGoal(cid,chid,eid,fid,selectedTeam,player,parsedMinute,auth.token!);
+     case 'CARD':return addOwnedFixtureCard(cid,chid,eid,fid,selectedTeam,player,cardType,parsedMinute,auth.token!);
+     case 'LINEUP':return setOwnedFixtureLineup(cid,chid,eid,fid,selectedTeam,player,selection,auth.token!);
+     case 'SUB':return addOwnedFixtureSubstitution(cid,chid,eid,fid,selectedTeam,player,other!,parsedMinute,auth.token!);
+    }
+   });}}
+  ]);
+ }
+ return <Page><DemoBanner/><Eyebrow>CAMPEONATO · ACONTECIMENTOS</Eyebrow>
+  <Text style={styles.heading}>Detalhe do jogo</Text>
+  {loading?<Loader/>:null}
+  {!!error?<Message tone="error">{error}</Message>:null}
+  {error?<Button secondary title="Recarregar" onPress={()=>{void reload();}}/>:null}
+  {fixture?<View style={styles.card}>
+   <Text style={styles.name}>{fixture.homeTeamName} — {fixture.awayTeamName}</Text>
+   <Text style={styles.note}>Jornada {fixture.round} · Jogo {fixture.match}</Text>
+   <Text style={styles.result}>{fixture.homeScore==null?'–':fixture.homeScore} : {fixture.awayScore==null?'–':fixture.awayScore}</Text>
+  </View>:null}
+  {!loading&&fixture&&!canWrite?<Message>Os acontecimentos estão disponíveis para consulta. A edição exige um organizador, uma liga ativa de Futebol/Futsal e um resultado registado.</Message>:null}
+  {fixture?<View style={styles.card}>
+   <Text style={styles.title}>Golos ({goals.length})</Text>
+   {goals.map(g=><Text style={styles.note} key={g.id}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}</Text>)}
+   <Text style={styles.title}>Cartões ({cards.length})</Text>
+   {cards.map(c=><Text key={c.id} style={styles.note}>{c.cardType==='RED'?'🟥':'🟨'} {c.playerName} · {c.teamName}{c.minute==null?'':' · '+c.minute+"'"}</Text>)}
+   <Text style={styles.title}>Convocatória ({lineup.length})</Text>
+   {lineup.map(l=><Text key={l.id} style={styles.note}>{l.playerName} · {l.selection==='STARTER'?'Titular':'Suplente'}</Text>)}
+   <Text style={styles.title}>Substituições ({subs.length})</Text>
+   {subs.map(s=><Text key={s.id} style={styles.note}>{s.minute}' · {s.playerOutName} → {s.playerInName} · {s.teamName}</Text>)}
+  </View>:null}
+  {canWrite?<View style={styles.card}>
+   <Text style={styles.title}>Registar acontecimento</Text>
+   <View style={styles.row}>
+    {(['GOAL','CARD','LINEUP','SUB'] as const).map(m=><Pressable key={m} accessibilityRole="radio" accessibilityState={{selected:mode===m}}
+     disabled={busy} onPress={()=>{setMode(m);setPlayer(null);setOther(null);}} style={[styles.chip,mode===m&&styles.selected]}>
+     <Text style={styles.note}>{m==='GOAL'?'Golo':m==='CARD'?'Cartão':m==='LINEUP'?'Convocatória':'Substituição'}</Text>
+    </Pressable>)}
+   </View>
+   <Text style={styles.note}>Equipa</Text>
+   <View style={styles.row}>
+    {[{id:fixture!.homeTeamId,name:fixture!.homeTeamName},{id:fixture!.awayTeamId,name:fixture!.awayTeamName}].map(team=><Pressable key={team.id} disabled={busy} onPress={()=>chooseTeam(team.id)}
+     style={[styles.chip,selectedTeam===team.id&&styles.selected]} accessibilityRole="radio" accessibilityState={{selected:selectedTeam===team.id}}>
+     <Text style={styles.note}>{team.name}</Text>
+    </Pressable>)}
+   </View>
+   <Text style={styles.note}>{mode==='SUB'?'Jogador a sair':'Jogador'}</Text>
+   {selectedRoster.length===0?<Text style={styles.note}>Não existem jogadores confirmados no plantel desta equipa.</Text>:null}
+   {selectedRoster.map(p=><Pressable key={p.profileId} disabled={busy} onPress={()=>setPlayer(p.profileId)} accessibilityRole="radio"
+    accessibilityState={{selected:player===p.profileId}} style={[styles.chip,player===p.profileId&&styles.selected]}>
+    <Text style={styles.note}>{p.displayName||p.username}</Text></Pressable>)}
+   {mode==='SUB'?<><Text style={styles.note}>Jogador a entrar</Text>
+    {selectedRoster.filter(p=>p.profileId!==player).map(p=><Pressable key={p.profileId} disabled={busy} onPress={()=>setOther(p.profileId)} style={[styles.chip,other===p.profileId&&styles.selected]} accessibilityRole="radio" accessibilityState={{selected:other===p.profileId}}>
+     <Text style={styles.note}>{p.displayName||p.username}</Text></Pressable>)}
+   </>:null}
+   {mode==='CARD'?<View style={styles.row}>
+    {(['YELLOW','RED'] as const).map(c=><Pressable key={c} disabled={busy} onPress={()=>setCardType(c)} style={[styles.chip,cardType===c&&styles.selected]} accessibilityRole="radio" accessibilityState={{selected:cardType===c}}>
+     <Text style={styles.note}>{c==='YELLOW'?'Amarelo':'Vermelho'}</Text></Pressable>)}
+   </View>:null}
+   {mode==='LINEUP'?<View style={styles.row}>
+    {(['STARTER','BENCH'] as const).map(c=><Pressable key={c} disabled={busy} onPress={()=>setSelection(c)} style={[styles.chip,selection===c&&styles.selected]} accessibilityRole="radio" accessibilityState={{selected:selection===c}}>
+     <Text style={styles.note}>{c==='STARTER'?'Titular':'Suplente'}</Text></Pressable>)}
+   </View>:<TextInput value={minute} onChangeText={setMinute} editable={!busy} keyboardType="number-pad" maxLength={3} accessibilityLabel="Minuto do acontecimento"
+     style={styles.input} placeholder="Minuto (0 a 200)" placeholderTextColor={C.muted}/>}
+   <Button title={busy?'A registar…':'Confirmar acontecimento'}
+    disabled={busy||!player||!selectedPlayer||(mode==='SUB'&&(!other||!selectedOther||other===player))||(mode!=='LINEUP'&&!validMinute)} onPress={confirm}/>
+  </View>:null}
+  <Button secondary title="Voltar às provas" onPress={()=>router.back()}/>
+ </Page>;
+}
+const styles=StyleSheet.create({
+ heading:{fontSize:25,fontWeight:'900',color:C.white},name:{fontSize:15,fontWeight:'800',color:C.white},
+ title:{fontSize:17,fontWeight:'800',color:C.white},note:{fontSize:12,color:C.muted,lineHeight:19},
+ card:{gap:10,padding:14,borderRadius:13,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ row:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},
+ chip:{padding:10,borderRadius:10,borderWidth:1,borderColor:C.border},selected:{borderColor:C.mint,backgroundColor:C.surface2},
+ input:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:10,minHeight:45,color:C.white},result:{fontSize:24,color:C.mint,fontWeight:'900'}
+});
