@@ -15,7 +15,7 @@ test('photo preflight rejects oversized and unsupported formats, deferring missi
  assert.match(source,/JPG, PNG, WebP ou GIF/);
 });
 
-for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+for(const file of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx']){
  test(file+' refuses invalid photo immediately after picker selection',()=>{
   const screen=read(file);
   assert.match(screen,/import \{validateChatPhoto\} from /);
