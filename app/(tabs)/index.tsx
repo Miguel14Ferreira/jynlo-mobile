@@ -524,6 +524,17 @@ export default function JynloFeedHome(){
     }
   }
 
+  async function shareCancelledFeedSession(item:FeedItem){
+    const value=item.gameDate?new Date(item.gameDate):null;
+    const when=value&&Number.isFinite(value.getTime())?
+      value.toLocaleString('pt-PT',{timeZone:'Europe/Lisbon',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    const label=[item.sport||'desporto',when,item.city||''].filter(Boolean).join(' · ');
+    const message='⚠️ Sessão cancelada — '+label+
+      '. O organizador cancelou esta sessão e o jogo não se vai realizar. Por favor, não te desloques ao recinto.';
+    try{await Share.share({message});}
+    catch(e){Alert.alert('Partilhar cancelamento',e instanceof Error?e.message:'Não foi possível abrir a partilha.');}
+  }
+
   async function requestCancelFeedSession(item:FeedItem){
     const id=item.sessionId,actor=auth.token,username=auth.username,identity=currentFeedIdentity;
     if(item.type!=='SESSION_CREATED'||!Number.isSafeInteger(id)||!id||id<=0||
@@ -554,7 +565,11 @@ export default function JynloFeedHome(){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
             setPosts(current=>current.filter(entry=>!(entry.type==='SESSION_CREATED'&&entry.sessionId===id)));
-            Alert.alert('Sessão cancelada','A sessão foi cancelada para todos os participantes.');
+            Alert.alert('Sessão cancelada',
+              'A sessão foi cancelada. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.',[
+                {text:'Fechar',style:'cancel'},
+                {text:'Partilhar aviso',onPress:()=>{void shareCancelledFeedSession(item);}}
+              ]);
             void load();
           }).catch(e=>{
             if(feedIdentity.current===identity)
