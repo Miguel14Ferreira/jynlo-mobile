@@ -989,8 +989,7 @@ export default function JynloFeedHome(){
               storyTagsRef.current=updated;setStoryTags(updated);
              }catch(e){Alert.alert('Identificações',e instanceof Error?e.message:'Limite de identificações atingido.');}
             }}>
-            {friend.profilePicUrl?<Image source={mediaRequestSource(resolveJynloMedia(friend.profilePicUrl)||'',auth.token)} style={styles.storyFriendAvatar}/>:
-             <View style={styles.storyFriendAvatarPlaceholder}><Text style={{color:WHITE,fontWeight:'800'}}>{friend.username.slice(0,1).toUpperCase()}</Text></View>}
+            <CircleAvatar name={friend.nickname||friend.fullName||friend.username} image={friend.profilePicUrl} size={36}/>
             <View style={{flex:1}}><Text style={styles.storyFriendName}>{friend.nickname||friend.fullName||friend.username}</Text>
              <Text style={styles.storiesIntro}>@{friend.username}</Text></View>
             <Text style={styles.storyFriendName}>{selected?'✓':'+'}</Text>
