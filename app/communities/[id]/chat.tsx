@@ -41,6 +41,7 @@ export default function CommunityChatScreen(){
  const [attachmentCaption,setAttachmentCaption]=useState('');
  const focusedIdentity=useRef('');
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
+ const [attachmentsOpen,setAttachmentsOpen]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [muted,setMuted]=useState(false),[muteKnown,setMuteKnown]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const [muteError,setMuteError]=useState(''),[locationBusy,setLocationBusy]=useState(false);
@@ -79,7 +80,7 @@ export default function CommunityChatScreen(){
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
-     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);
+     revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);setAttachmentsOpen(false);
      historyError.current=null;
      setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
     }else{
@@ -105,7 +106,7 @@ export default function CommunityChatScreen(){
    if(changedAccountOrCommunity){
     // Keep local drafts when refocusing the same community, but never cross accounts.
     setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');
-    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
+    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);
    }
    // History requires fresh membership validation on every focus; local drafts do not.
    setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
@@ -349,10 +350,16 @@ export default function CommunityChatScreen(){
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}/>):null}
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>)}
-   {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
+   {auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
+     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
+     <Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'＋ Anexar ficheiro'}</Text>
+    </Pressable>:null}
+    {attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
+    {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&canSendPhoto&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{void choosePhoto();}}/>:null}
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void choosePhoto('camera');}}/>:null}
+   </View>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
      {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
@@ -389,6 +396,8 @@ const styles=StyleSheet.create({editPanel:{gap:9,padding:12,borderRadius:14,back
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  muteRow:{gap:8,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
+ attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
+ attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},attachmentOptions:{gap:8},
  gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},
  composer:{flexDirection:'row',alignItems:'flex-end',gap:9},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:MobileTheme.colors.surface,borderColor:MobileTheme.colors.border,borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:MobileTheme.radius.lg},
