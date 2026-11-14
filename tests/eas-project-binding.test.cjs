@@ -41,3 +41,13 @@ test('normal preview configuration validates with no EAS token or network',()=>{
   else process.env.EAS_PROJECT_ID=previous;
  }
 });
+
+test('local Windows preflight rejects mismatched project and incompatible Expo SDK before TypeScript',()=>{
+ const script=fs.readFileSync(path.join(__dirname,'..','scripts','validate-local.ps1'),'utf8');
+ const project=script.indexOf("'scripts/check-eas-project.cjs'");
+ const sdk=script.indexOf("'expo','install','--check'");
+ const types=script.indexOf("'run','typecheck'");
+ assert.ok(project>=0&&sdk>project&&types>sdk,'Expo project and SDK checks must precede typecheck');
+ assert.match(script,/\[switch\]\$BuildApk/);
+ assert.match(script,/CONSTRUIR_APK/);
+});
