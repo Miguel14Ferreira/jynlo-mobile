@@ -27,6 +27,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
+ const inlineNearBottom=useRef(true);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
@@ -111,6 +112,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   if(changedAccountOrSession){
    // Preserve unsent text, replies and selected media on ordinary refocus.
    // Clear everything only when the session or authenticated account changed.
+   inlineNearBottom.current=true;setHistoryLimit(40);
    setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');
    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
   }
@@ -341,8 +343,12 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
-  {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8,padding:8}}>
-    {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>setHistoryLimit(count=>count+40)} style={styles.olderMessages}>
+  {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+   onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;}}
+   onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+   contentContainerStyle={{gap:8,padding:8}}>
+    {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
       <Text style={styles.actionText}>Ver mensagens anteriores</Text>
     </Pressable>:null}{renderedMessages}
    </ScrollView>:renderedMessages}
