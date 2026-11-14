@@ -3,7 +3,7 @@
     "name": "Jynlo",
     "slug": "jynlo-mobile",
     "scheme": "jynlo",
-    "version": "0.16.1",
+    "version": "0.16.2",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/jynlo-icon.png",
@@ -21,7 +21,7 @@
         "foregroundImage": "./assets/jynlo-icon.png",
         "backgroundColor": "#07171D"
       },
-      "versionCode": 8,
+      "versionCode": 9,
       "intentFilters": [
         {
           "action": "VIEW",
