@@ -6,8 +6,8 @@ const path=require('node:path');
 const source=(file)=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
 const files=[
  'app/messages/[peer].tsx',
- 'app/communities/[id]/chat.tsx',
- 'app/sessions/[id]/chat.tsx'
+ 'src/components/CommunityChatPanel.tsx',
+ 'src/components/SessionChatPanel.tsx'
 ];
 test('all chat types use shared tokens and outgoing right-aligned bubbles',()=>{
  for(const file of files){
