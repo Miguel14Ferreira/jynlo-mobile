@@ -4,8 +4,8 @@ const fs=require('node:fs'),path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const screens={
  direct:read('app/messages/[peer].tsx'),
- community:read('app/communities/[id]/chat.tsx'),
- session:read('app/sessions/[id]/chat.tsx')
+ community:read('src/components/CommunityChatPanel.tsx'),
+ session:read('src/components/SessionChatPanel.tsx')
 };
 test('all three conversations offer message replies, edits, deletion and secure media',()=>{
  for(const [kind,s] of Object.entries(screens)){
@@ -54,18 +54,16 @@ test('group chat mute is persisted server-side and verified with readback',()=>{
  }
 });
 
-test('all chats expose the same collapsed attachment tray instead of long button stacks',()=>{
- for(const [kind,source] of Object.entries(screens)){
-  assert.match(source,/const \[attachmentsOpen,setAttachmentsOpen\]=useState\(false\)/,kind);
-  assert.match(source,/accessibilityState=\{\{expanded:attachmentsOpen\}\}/,kind);
-  assert.match(source,/attachmentsOpen\?'Fechar anexos':'＋ Anexar ficheiro'/,kind);
-  assert.match(source,/onPress=\{\(\)=>setAttachmentsOpen\(value=>!value\)\}/,kind);
-  assert.match(source,/styles\.attachmentOptions/,kind);
- }
+test('group chat has compact icon controls and standalone route keeps legacy tray',()=>{
  for(const kind of ['community','session']){
-  assert.match(screens[kind],/attachmentsOpen&&!/,kind);
-  assert.match(screens[kind],/setAttachmentsOpen\(false\)/,kind);
+  const source=screens[kind];
+  assert.match(source,/<ChatPdfComposer compact/);
+  assert.match(source,/accessibilityLabel="Abrir câmara"/);
+  assert.match(source,/accessibilityLabel="Selecionar fotografias ou vídeos"/);
+  assert.match(source,/embedded&&auth.token/);
+  assert.match(source,/!embedded&&attachmentsOpen/);
  }
+ assert.match(screens.direct,/attachmentsOpen\?'Fechar anexos':'＋ Anexar ficheiro'/);
 });
 
 test('PDF permission is independent of camera/photo availability in group conversations',()=>{
