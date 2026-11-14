@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import AdaptivePostPhoto from './AdaptivePostPhoto';
@@ -14,11 +14,14 @@ const uriFor=(url:string)=>(url.startsWith('file:')||url.startsWith('content:'))
  */
 export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
  const [width,setWidth]=useState(0),[active,setActive]=useState(0);
+ // Reset paging when a post's gallery is replaced, but not on ordinary feed refreshes.
+ const albumIdentity=items.map(entry=>entry.type+':'+entry.url).join('|');
+ useEffect(()=>{setActive(0);},[albumIdentity]);
  return <View style={styles.frame} onLayout={event=>{
   const next=Math.round(event.nativeEvent.layout.width);
   if(next>0&&next!==width){setWidth(next);setActive(0);}
  }}>
-  {width>0?<ScrollView key={width} horizontal pagingEnabled
+  {width>0?<ScrollView key={width+'-'+albumIdentity} horizontal pagingEnabled
    showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"
    onMomentumScrollEnd={event=>{
     const index=Math.round(event.nativeEvent.contentOffset.x/width);
