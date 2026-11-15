@@ -36,11 +36,11 @@ test('all three chat scopes use one private atomic batch contract',()=>{
  assert.doesNotMatch(source,/\/media\//);
  for(const [file,scope] of [
   ['app/messages/[peer].tsx','direct'],
-  ['app/communities/[id]/chat.tsx','community'],
-  ['app/sessions/[id]/chat.tsx','session']
+  ['src/components/CommunityChatPanel.tsx','community'],
+  ['src/components/SessionChatPanel.tsx','session']
  ]){
   const screen=read(file);
-  assert.match(screen,/allowsMultipleSelection:true,selectionLimit:4/);
+  assert.match(screen,/allowsMultipleSelection:true,selectionLimit:remaining/);
   assert.match(screen,/setExtraPhotos\(/);
   assert.match(screen,/chatAttachmentList\(m\)/);
   assert.ok(screen.includes("scope:'"+scope+"'"));
