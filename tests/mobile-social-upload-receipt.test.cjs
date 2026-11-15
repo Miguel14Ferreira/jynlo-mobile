@@ -30,7 +30,9 @@ test('real Story receipt requires expected media and type, not just an HTTP 2xx 
 test('feed uses authenticated API, native measured sizes and checked server receipts',()=>{
  const api=read('src/lib/social-feed-api.ts');
  assert.match(api,/if\(!DEMO_MODE\)\{\s*if\(!token\|\|!username\)throw Error/);
- assert.match(api,/return request<FeedItem\[\]>\('\/api\/feed',\{token\}\)/);
+ assert.match(api,/requireSocialCollection\(await request<unknown>\('\/api\/feed',\{token\}\),'feed'\)/);
+ // Bearer credentials must never be sent to redirect destinations.
+ assert.match(api,/credentials:'omit',redirect:'error'/);
  assert.match(api,/const actualSize=localFile.exists\?localFile.size:-1/);
  assert.match(api,/!Number.isSafeInteger\(actualSize\)\|\|actualSize<=0/);
  assert.match(api,/if\(!uri.startsWith\('file:\/\/'\)\)/);
