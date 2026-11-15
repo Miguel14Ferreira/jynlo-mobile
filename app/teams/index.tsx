@@ -17,12 +17,26 @@ export default function TeamsScreen(){
  const [submittedQuery,setSubmittedQuery]=useState('');
  const load=useCallback(async()=>{
    setLoading(true);setError('');
-   try{const [found,mine]=await Promise.all([discoverSportsTeams(submittedQuery,auth.token||undefined),auth.token?mySportsTeams(auth.token):Promise.resolve([])]);
-    setTeams(found);setOwned(mine);
-    if(auth.token){const [memberships,competitions]=await Promise.all([mySportsTeamInvitations(auth.token),myTeamCompetitionInvitations(auth.token)]);
-      setInvites(memberships);setCompetitionInvites(competitions.filter(x=>x.status==='PENDING'));}
-    else {setInvites([]);setCompetitionInvites([]);}}
-   catch(e){setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
+   try{
+    // Convites são secundários: um endpoint antigo/temporariamente indisponível
+    // não pode impedir o acesso às equipas, nem apagar resultados já carregados.
+    const [discovery,mine,memberships,competitions]=await Promise.allSettled([
+      discoverSportsTeams(submittedQuery,auth.token||undefined),
+      auth.token?mySportsTeams(auth.token):Promise.resolve([]),
+      auth.token?mySportsTeamInvitations(auth.token):Promise.resolve([]),
+      auth.token?myTeamCompetitionInvitations(auth.token):Promise.resolve([])
+    ]);
+    const failed:string[]=[];
+    if(discovery.status==='fulfilled')setTeams(discovery.value);
+    else {failed.push('pesquisa');setTeams([]);}
+    if(mine.status==='fulfilled')setOwned(mine.value);
+    else {failed.push('as tuas equipas');setOwned([]);}
+    if(memberships.status==='fulfilled')setInvites(memberships.value);
+    else {failed.push('convites de jogadores');setInvites([]);}
+    if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
+    else {failed.push('convites para competições');setCompetitionInvites([]);}
+    if(failed.length)setError('Não foi possível carregar '+failed.join(', ')+'. As restantes secções continuam disponíveis. Podes tentar novamente.');
+   }catch(e){setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
    finally{setLoading(false);}
  },[submittedQuery,auth.token]);
  const search=()=>{const next=query.trim();if(next===submittedQuery){void load();}else setSubmittedQuery(next);};
