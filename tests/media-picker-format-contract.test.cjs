@@ -44,7 +44,7 @@ test('media selection prevents duplicate pickers and stale cross-account uploads
  const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
  assert.match(screen,/mediaPickerInFlight\.current\)return/);
  assert.match(screen,/mediaPickerInFlight\.current=true/);
- assert.match(screen,/finally\{mediaPickerInFlight\.current=false;\}/);
+ assert.match(screen,/finally\{if\(activeStoryAccount\.current===actorToken\)mediaPickerInFlight\.current=false;\}/);
  assert.match(screen,/activeStoryAccount\.current!==actorToken/);
  assert.match(screen,/postComposerRevision\.current!==postRevision/);
  assert.match(screen,/storyComposerRevision\.current===storyRevision/);
