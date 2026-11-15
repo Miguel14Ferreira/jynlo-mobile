@@ -72,7 +72,8 @@ export async function deleteCommunityChatMessageForEveryone(id:number,messageId:
 export async function communityInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
  const groups=await myCommunities(token,username);
- if(DEMO_MODE)return groups.map(c=>{
+ if(!Array.isArray(groups))throw Error('Lista de comunidades inválida.');
+ if(DEMO_MODE)return groups.filter(c=>c&&Number.isSafeInteger(c.id)&&c.id>0).map(c=>{
   const last=threads.get(c.id)?.at(-1);
   return{kind:'community' as const,id:String(c.id),title:c.name?.trim()||'Comunidade',latestMessageId:last?.id??null,latestText:last?.body??null,
    latestSender:last?.username??null,latestAt:last?.createdAt??null,unreadCount:(threads.get(c.id)||[]).filter(m=>m.username!==username&&m.id>(demoRead.get(username+':'+c.id)||0)).length};
@@ -81,7 +82,7 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
  // Avoid duplicate conversations when membership lists contain repeated records.
  const seenIds=new Set<number>();
  const uniqueGroups=groups.filter(c=>{
-  if(!Number.isSafeInteger(c.id)||c.id<=0||seenIds.has(c.id))return false;
+  if(!c||!Number.isSafeInteger(c.id)||c.id<=0||seenIds.has(c.id))return false;
   seenIds.add(c.id);
   return true;
  });
@@ -105,9 +106,11 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
 export async function sessionInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para consultar as conversas de sessões.');
  const mine=await mySessions(token,username);
+ if(!mine||!Array.isArray(mine.created)||!Array.isArray(mine.joined))
+  throw Error('Lista de sessões inválida.');
  const allowed=new Map<string,string>();
  for(const session of [...mine.created,...mine.joined]){
-  if(!Number.isSafeInteger(session.id)||session.id<=0)continue;
+  if(!session||!Number.isSafeInteger(session.id)||session.id<=0)continue;
   if(['CANCELLED','COMPLETED'].includes(session.status))continue;
   const sport=typeof session.sport==='string'?session.sport.trim():'';
   const city=typeof session.city==='string'?session.city.trim():'';
