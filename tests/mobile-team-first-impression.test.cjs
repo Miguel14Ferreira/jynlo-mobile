@@ -197,3 +197,25 @@ test('team reactions persist one member choice and render server counts',()=>{
  assert.match(api,/method:'DELETE'/);
  assert.match(api,/ids\.length>100/);
 });
+
+test('team chat private media reuses authenticated viewer and verified native uploads',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ const album=read('src/lib/chat-photo-album.ts');
+ const pdf=read('src/lib/chat-pdf-attachment.ts');
+ const viewer=read('src/components/SecureChatAttachment.tsx');
+ assert.match(panel,/teamPrivateAttachmentsAvailable\(teamId,kind,token\)/);
+ assert.match(panel,/sendChatPhotoAlbum\(\{scope:'team',id:teamId,kind\},token,selection,replyTo,draft\)/);
+ assert.match(panel,/<ChatPdfComposer target=\{\{scope:'team',id:teamId,kind\}\}/);
+ assert.match(panel,/<SecureChatAttachment key=\{file\.index\} scope="team" kind=\{kind\}/);
+ assert.match(panel,/setMedia\(\[\]\)/);
+ assert.match(api,/\/attachments\/availability/);
+ assert.match(album,/target\.scope==='team'/);
+ assert.match(album,/\/attachments\/batch/);
+ assert.match(pdf,/target\.scope==='team'\?'files':'file'/);
+ assert.match(pdf,/target\.scope==='team'\?result\.attachments/);
+ assert.match(viewer,/if\(scope==='team'\)/);
+ assert.match(viewer,/\/attachments\/\+'?\+messageId/);
+ assert.match(viewer,/credentials:'omit'/);
+ assert.match(viewer,/redirect:'error'/);
+});
