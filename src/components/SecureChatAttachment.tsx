@@ -7,9 +7,10 @@ import {useFocusEffect} from 'expo-router';
 import {API_BASE,DEMO_MODE} from '../lib/api';
 import {C} from '../lib/theme';
 
-type Scope='direct'|'community'|'session';
+type Scope='direct'|'community'|'session'|'team';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
- name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean};
+ name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean;
+ kind?:'chat'|'feed'};
 const isVoice=(mime:string|null|undefined)=>typeof mime==='string'&&mime.startsWith('audio/');
 const isVideo=(mime:string|null|undefined)=>mime==='video/mp4'||mime==='video/webm';
 const ChatVideo=lazy(()=>import('./FeedVideo'));
@@ -20,7 +21,7 @@ const formats:Record<string,string>={
  'audio/webm':'webm','audio/ogg':'ogg','audio/mpeg':'mp3',
  'audio/mp4':'m4a','audio/x-m4a':'m4a','audio/aac':'aac'
 };
-function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0):string{
+function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0,kind:'chat'|'feed'='chat'):string{
  if(!Number.isSafeInteger(index)||index<0||index>3)throw Error('Índice de anexo inválido.');
  if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Anexo inválido.');
  if(scope==='direct'){
@@ -31,12 +32,13 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0):s
  const numeric=Number(id);
  if(!Number.isSafeInteger(numeric)||numeric<=0||String(numeric)!==String(id))
   throw Error('Conversa inválida.');
+ if(scope==='team')return '/api/teams/'+numeric+'/'+kind+'/attachments/'+messageId+'/'+index;
  return '/api/'+(scope==='community'?'communities':'sessions')+'/'+numeric+
   '/messages/attachments/'+messageId+(index?'/'+index:'');
 }
 
 /** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
-export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,index=0,autoPreview=false}:Props){
+export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,index=0,autoPreview=false,kind='chat'}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [expanded,setExpanded]=useState(false);
  const player=useAudioPlayer(null);
@@ -100,7 +102,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   const timeout=setTimeout(()=>controller.abort(),20000);
   let file:File|null=null;
   try{
-   const path=attachmentPath(scope,conversationId,messageId,index);
+   const path=attachmentPath(scope,conversationId,messageId,index,kind);
    const response=await expoFetch(API_BASE+path,{
     headers:{Authorization:'Bearer '+token,Accept:mime!},credentials:'omit',redirect:'error',
     signal:controller.signal
