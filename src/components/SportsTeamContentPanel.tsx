@@ -104,6 +104,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const clearSearch=()=>{
   searchVersion.current++;setSearchActive(false);setSearching(false);setSearchResults([]);
  };
+ const replyPreview=(id:number|null):string=>{
+  const original=[...searchResults,...entries].find(item=>item.id===id);
+  if(!original)return 'uma mensagem anterior';
+  if(original.deleted)return 'uma mensagem eliminada';
+  return '@'+original.username+': '+original.body.slice(0,110);
+ };
  const react=async(item:TeamContentEntry,emoji:string)=>{
   if(item.deleted||reactionBusyId!==null)return;
   setReactionBusyId(item.id);setError('');
@@ -177,7 +183,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   </Text>:null}
   {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
    <Text style={styles.author}>@{item.username} · {new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
-   {item.replyToId?<Text style={styles.sub}>↳ Resposta à mensagem #{item.replyToId}</Text>:null}
+   {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
    <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
@@ -200,7 +206,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     <Pressable onPress={()=>setEditingId(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable>
    </View>:null}
   </View>)}
-  {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder à mensagem #{replyTo}</Text>
+  {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
   <TextInput multiline style={styles.input} value={draft} onChangeText={setDraft}
    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
