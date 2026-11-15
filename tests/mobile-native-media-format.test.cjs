@@ -33,7 +33,9 @@ test('supported photo and video assets preserve correct MIME without inventing f
  }
  assert.equal(pickerMediaMime({uri:'file:///cache/abc',type:'video',mimeType:null}),null);
  assert.equal(pickerMediaMime({uri:'file:///cache/video.mp4',type:'image',mimeType:null}),null);
- assert.equal(pickerMediaMime({uri:'file:///cache/picture.jpg',type:'image',mimeType:'application/octet-stream'}),null);
+ // Generic MIME from Android is accepted only when the actual extension is supported.
+ assert.equal(pickerMediaMime({uri:'file:///cache/picture.jpg',type:'image',mimeType:'application/octet-stream'}),'image/jpeg');
+ assert.equal(pickerMediaMime({uri:'file:///cache/opaque',type:'image',mimeType:'application/octet-stream'}),null);
 });
 
 test('Story camera and picker share safe MIME checks, and post videos are uncropped',()=>{
