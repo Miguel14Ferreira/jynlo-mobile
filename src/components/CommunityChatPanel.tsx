@@ -35,6 +35,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
  const inlineNearBottom=useRef(false);
+ const historyViewportHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
  const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
@@ -403,7 +404,19 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
     }}}
-   onContentSizeChange={()=>{if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+   onLayout={event=>{historyViewportHeight.current=event.nativeEvent.layout.height;}}
+   onContentSizeChange={(_width,height)=>{
+    // A short conversation can change without firing onScroll. Its entire content must fit.
+    if(height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
+       AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
+     const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+     if(latest>lastAcknowledgedMessageId.current){
+      lastAcknowledgedMessageId.current=latest;
+      void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
+     }
+    }
+    if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+   }}
    contentContainerStyle={{gap:8,padding:8}}>
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
     <Text style={styles.quoteTitle}>Ver mensagens anteriores</Text>
