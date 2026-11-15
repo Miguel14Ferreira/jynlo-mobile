@@ -7,7 +7,7 @@ const api=read('src/lib/sports-teams-api.ts'),screen=read('app/teams/[id].tsx');
 const promotion=read('app/tournaments/[communityId]/[id]/teams/[teamId].tsx');
 test('team trophy tab uses official server history instead of manually entered claims',()=>{
  assert.match(api,/\/api\/teams\/.*\/history/);
- assert.match(screen,/history\.filter\(item=>item\.champion\)/);
+ assert.match(screen,/history\.filter\(item=>item\.champion&&/);
  assert.match(screen,/Troféus/);
  assert.match(screen,/Histórico de torneios/);
 });
@@ -26,4 +26,11 @@ test('championship trophies are linked to immutable verified League Cup and seas
  assert.match(screen,/item\.format==='CHAMPIONSHIP'\?'Campeonato'/);
  assert.match(screen,/seasonTournamentIds/);
  assert.match(screen,/!seasonTournamentIds\.has\(item\.tournamentId\)/);
+});
+
+test('team profile has dedicated navigation rather than mixing trophies into the overview',()=>{
+ assert.match(screen,/setActiveTab\('TROPHIES'\)/);
+ assert.match(screen,/activeTab==='TROPHIES'\?/);
+ assert.match(screen,/activeTab==='OVERVIEW'\?/);
+ assert.doesNotMatch(screen,/activeTab='(?:TROPHIES|OVERVIEW)'\?/);
 });
