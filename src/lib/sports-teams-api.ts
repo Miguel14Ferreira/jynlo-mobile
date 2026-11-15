@@ -35,7 +35,7 @@ export async function sportsTeamDetail(id: number, token?: string): Promise<Spor
 }
 export async function createSportsTeam(input: CreateSportsTeam, token: string): Promise<SportsTeam> {
   if (!token || DEMO_MODE) throw Error('Inicia sessão para criar uma equipa.');
-  const name = input.name.trim().replace(/\\s+/g, ' ');
+  const name = input.name.trim().replace(/\s+/g, ' ');
   if (!name || name.length > 100) throw Error('O nome da equipa deve ter até 100 caracteres.');
   return request<SportsTeam>('/api/teams', {token, method: 'POST', body: {...input, name}});
 }
