@@ -69,7 +69,7 @@ test('group chat has compact icon controls and standalone route keeps legacy tra
 test('PDF permission is independent of camera/photo availability in group conversations',()=>{
  for(const kind of ['community','session']){
   const source=screens[kind];
-  const pdf=source.match(/<ChatPdfComposer[^>]+enabled=\{([^}]+)\}/);
+  const pdf=source.match(/<ChatPdfComposer[\s\S]{0,450}?enabled=\{([^}]+)\}/);
   assert.ok(pdf,'PDF composer must exist: '+kind);
   assert.doesNotMatch(pdf[1],/canSendPhoto|photoReady/);
   assert.match(pdf[1],/!sending&&!uploading/);
