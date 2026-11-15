@@ -40,7 +40,6 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
-  if(!embedded)return;
   const showEvent=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
   const hideEvent=Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide';
   const shown=Keyboard.addListener(showEvent,()=>{
@@ -53,12 +52,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   return()=>{shown.remove();hidden.remove();};
  },[embedded]);
  useEffect(()=>{
-  if(!embedded)return;
   const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
   if(latest>previousLatestMessageId.current&&previousLatestMessageId.current>0&&!inlineNearBottom.current)
    setUnseenBelow(true);
   previousLatestMessageId.current=latest;
- },[embedded,messages]);
+ },[messages]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const generation=useRef(0),sendingNow=useRef(false),uploadingNow=useRef(false);
  // Keep in-flight writes locked across navigation; leaving the screen does not cancel the server request.
@@ -391,7 +389,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
-   {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
     if(inlineNearBottom.current){
@@ -407,12 +405,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
     <Text style={styles.quoteTitle}>Ver mensagens anteriores</Text>
    </Pressable>:null}{renderedMessages}
-  </ScrollView>:renderedMessages}
-  {embedded&&unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
+  </ScrollView>}
+  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
     onPress={()=>{inlineNearBottom.current=true;setUnseenBelow(false);inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
-   {embedded&&auth.token&&!accessRevoked?<View style={styles.quickActions}>
+   {auth.token&&!accessRevoked?<View style={styles.quickActions}>
     {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
       style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
       <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
@@ -426,11 +424,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual" disabled={locationBusy||sending||uploading}
      style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
    </View>:null}
-   {!embedded&&auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
+   {false&&auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
      onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
      <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
     </Pressable>:null}
-    {!embedded&&attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
+    {false&&attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
     {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
@@ -460,7 +458,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
-       onFocus={()=>{composerFocused.current=true;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
      <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
@@ -468,7 +466,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    </KeyboardAvoidingView>:null}
    {refreshWarning&&!accessRevoked?<Button secondary title="Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </>;
- return embedded?<View style={styles.inline}>{content}</View>:<Page autoScrollToEnd>{content}</Page>;
+ return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }
 const styles=StyleSheet.create({inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
  inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
