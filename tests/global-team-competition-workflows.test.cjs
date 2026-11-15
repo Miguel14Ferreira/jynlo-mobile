@@ -69,3 +69,26 @@ test('mobile diagnostics are preserved as artifacts when the runner actually sta
  assert.match(ci,/jynlo-contracts\.log/);
  assert.match(ci,/set -o pipefail/);
 });
+
+test('organizer can search teams even if community membership inventory fails',()=>{
+ const screen=read('src/components/CompetitionTeamSearch.tsx');
+ assert.match(screen,/Promise\.allSettled\(\[/);
+ assert.match(screen,/memberships\.status==='fulfilled'/);
+ assert.match(screen,/invitations\.status==='fulfilled'/);
+ assert.match(screen,/if\(teams\.status==='fulfilled'\)/);
+ assert.match(screen,/setInvitesVerified\(false\)/);
+ assert.match(screen,/if\(loading\|\|!invitesVerified\|\|existing\.some/);
+ assert.match(screen,/disabled=\{loading\|\|!invitesVerified\}/);
+ assert.match(screen,/searchVersion\.current\+\+/);
+});
+
+test('finalizing a team requires confirmed 404 rather than assuming every API error means absence',()=>{
+ const enrollment=read('src/components/GlobalTeamEnrollment.tsx');
+ assert.match(enrollment,/import \{ApiError\} from '\.\.\/lib\/api'/);
+ assert.match(enrollment,/e instanceof ApiError&&e\.status===404/);
+ assert.match(enrollment,/setEntryCheck\('failed'\)/);
+ assert.match(enrollment,/entryCheck!=='absent'/);
+ assert.match(enrollment,/disabled=\{busy\|\|entryCheck!=='absent'\}/);
+ assert.match(enrollment,/setEntryCheck\('present'\)/);
+ assert.doesNotMatch(enrollment,/\.catch\(\(\)=>\{ \/\* Team not yet enrolled/);
+});
