@@ -8,7 +8,7 @@ test('text-only posts remain available and use the real authenticated JSON API',
  assert.match(home,/!composerMedia.length&&!composerText.trim\(\)/);
  assert.match(api,/if\(!files\?\.length\)return createTextPost\(caption,token,username,place\)/);
  assert.match(api,/request<FeedItem>\('\/api\/feed\/posts',\{method:'POST',token,body:\{content:body,location:location\.trim\(\)\|\|null\}\}\)/);
- assert.match(api,/return request<FeedItem\[\]>\('\/api\/feed',\{token\}\)/);
+ assert.match(api,/requireSocialCollection\(await request<unknown>\('\/api\/feed',\{token\}\),'feed'\)/);
 });
 test('Stories and post selection use file-type and on-disk media validation',()=>{
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
