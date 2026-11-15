@@ -1,5 +1,5 @@
-import React,{useCallback,useState} from 'react';
-import {StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useRef,useState} from 'react';
+import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -17,34 +17,54 @@ export default function TeamDetail(){
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ const requestVersion=useRef(0),searchVersion=useRef(0);
  const load=useCallback(async()=>{
+  const version=++requestVersion.current;
   setLoading(true);setError('');
-  try{const [details,roster]=await Promise.all([
-   sportsTeamDetail(teamId,auth.token||undefined),sportsTeamMembers(teamId,auth.token||undefined)]);
-   setTeam(details);setMembers(roster);
-   const [pastEvents,awards]=await Promise.allSettled([
-    sportsTeamHistory(teamId,auth.token||undefined),
-    sportsTeamChampionshipHonours(teamId,auth.token||undefined)
-   ]);
-   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
-   else{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
-   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
-   else{setChampionshipHonours([]);setHonoursError('Não foi possível carregar os títulos dos campeonatos.');}
-   if(auth.token)setCommunities(await sportsTeamCommunities(teamId,auth.token));else setCommunities([]);}
-  catch(e){setError(e instanceof Error?e.message:'Equipa não encontrada.');}
-  finally{setLoading(false);}
+  if(!Number.isSafeInteger(teamId)||teamId<=0){
+   setError('Equipa inválida.');setLoading(false);return;
+  }
+  const [details,roster,pastEvents,awards,linked]=await Promise.allSettled([
+   sportsTeamDetail(teamId,auth.token||undefined),
+   sportsTeamMembers(teamId,auth.token||undefined),
+   sportsTeamHistory(teamId,auth.token||undefined),
+   sportsTeamChampionshipHonours(teamId,auth.token||undefined),
+   auth.token?sportsTeamCommunities(teamId,auth.token):Promise.resolve([])
+  ]);
+  if(version!==requestVersion.current)return;
+  const failed:string[]=[];
+  if(details.status==='fulfilled')setTeam(details.value);
+  else {setTeam(null);failed.push('o perfil da equipa');}
+  if(roster.status==='fulfilled')setMembers(roster.value);
+  else failed.push('o plantel');
+  if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
+  else setHistoryError('Não foi possível atualizar o histórico oficial.');
+  if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
+  else setHonoursError('Não foi possível atualizar os troféus.');
+  if(linked.status==='fulfilled')setCommunities(linked.value);
+  else failed.push('as comunidades');
+  if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
+  setLoading(false);
  },[teamId,auth.token]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  void load();
+  return ()=>{requestVersion.current++;searchVersion.current++;};
+ },[load]));
  const search=async()=>{
-  if(!auth.token||searchName.trim().length<2)return;
+  if(!auth.token||searchName.trim().length<2||saving)return;
+  const version=++searchVersion.current;
   setError('');
-  try{setCandidates(await findSportsTeamPlayers(searchName,auth.token));}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível pesquisar jogadores.');}
+  try{
+   const matches=await findSportsTeamPlayers(searchName.trim(),auth.token);
+   if(version===searchVersion.current)setCandidates(matches);
+  }catch(e){
+   if(version===searchVersion.current)setError(e instanceof Error?e.message:'Não foi possível pesquisar jogadores.');
+  }
  };
  const invite=async(profileId:number)=>{
-  if(!auth.token||!Number.isSafeInteger(profileId)||profileId<=0)return;
+  if(!auth.token||saving||!Number.isSafeInteger(profileId)||profileId<=0)return;
   setSaving(true);setError('');
-  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setCandidates([]);setSearchName('');}
+  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setCandidates([]);setSearchName('');searchVersion.current++;}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível convidar o jogador.');}
   finally{setSaving(false);}
  };
@@ -98,10 +118,10 @@ export default function TeamDetail(){
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
     {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
       placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted}/>
-    <Button title="Pesquisar jogadores" onPress={()=>void search()}/>
+    <Button title="Pesquisar jogadores" disabled={saving} onPress={()=>void search()}/>
     {candidates.map(p=><View key={p.profileId} style={styles.candidate}>
       <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
-      <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
+      <Button title="Convidar" disabled={saving} onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
    {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
