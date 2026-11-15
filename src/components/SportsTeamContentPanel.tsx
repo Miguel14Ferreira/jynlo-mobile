@@ -34,7 +34,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }catch{
    // Reaction counts are supplementary; never prevent reading the conversation.
   }
- },[teamId,kind,token,loadReactions]);
+ },[teamId,kind,token]);
  const version=useRef(0),reading=useRef(false),sendingNow=useRef(false);
  const refresh=useCallback(async(quiet=false,expected=version.current)=>{
   if(reading.current||sendingNow.current)return;
@@ -53,7 +53,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    reading.current=false;
    if(!quiet&&expected===version.current)setLoading(false);
   }
- },[teamId,kind,token]);
+ },[teamId,kind,token,loadReactions]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
