@@ -1159,7 +1159,7 @@ export default function JynloFeedHome(){
             onPress={()=>{const label=socialPlaceLabel(place);composerLocationRef.current=label;
               setComposerLocation(label);setVerifiedPostPlace(label);setPostPlaceOptions([]);}}
             style={styles.storyFriendOption}>
-            <JynloIcon name="map-pin" size={18} color={TEAL}/>
+            <JynloIcon name="location" size={18} color={TEAL}/>
             <View style={{flex:1}}><Text style={styles.storyFriendName}>{place.label}</Text>
               <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
           </Pressable>)}
@@ -1213,7 +1213,7 @@ export default function JynloFeedHome(){
             onPress={()=>{const label=socialPlaceLabel(place);storyLocationRef.current=label;
               setStoryLocation(label);setVerifiedStoryPlace(label);setStoryPlaceOptions([]);}}
             style={styles.storyFriendOption}>
-            <JynloIcon name="map-pin" size={18} color={TEAL}/>
+            <JynloIcon name="location" size={18} color={TEAL}/>
             <View style={{flex:1}}><Text style={styles.storyFriendName}>{place.label}</Text>
               <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
           </Pressable>)}
