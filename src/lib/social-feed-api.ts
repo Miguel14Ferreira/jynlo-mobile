@@ -9,6 +9,7 @@ import {verifiedPostLikeReceipt} from './social-like-receipt.cjs';
 import {verifiedCommentReceipt} from './social-comment-receipt.cjs';
 import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt} from './social-text-post-receipt.cjs';
 import {prepareStoryDetails} from './story-details.cjs';
+import {requireSocialCollection,safeDiscoveredPeople} from './social-response-guard.cjs';
 
 let nextDemoPostId=950001,nextDemoStoryId=960001,nextDemoCommentId=970001;
 const demoPosts:FeedItem[]=[];
@@ -28,7 +29,7 @@ export async function socialFeed(token:string|null,username:string|null):Promise
   // Real feed comes directly from the authenticated backend; seed data is demo-only.
   if(!DEMO_MODE){
     if(!token||!username)throw Error('Inicia sessão para veres o teu feed.');
-    return request<FeedItem[]>('/api/feed',{token});
+    return requireSocialCollection(await request<unknown>('/api/feed',{token}),'feed');
   }
   const defaults=await demoFeedSeed(token,username);
   return [...demoPosts,...defaults].map(p=>{
@@ -53,12 +54,12 @@ export async function socialPostById(postId:number,token:string|null):Promise<Fe
 }
 export async function storyFeed(token:string|null,username:string|null=null):Promise<SocialStory[]>{
   if(DEMO_MODE)return demoStories.filter(story=>Date.parse(story.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:Boolean(username&&demoStoryLikes.get(story.id)?.has(username))}));
-  return request<SocialStory[]>('/api/stories',{token});
+  return requireSocialCollection(await request<unknown>('/api/stories',{token}),'story');
 }
 export async function myStories(token:string|null,username:string|null):Promise<SocialStory[]>{
   requireViewer(token,username);
   if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username&&Date.parse(x.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));
-  return request<SocialStory[]>('/api/stories/mine',{token});
+  return requireSocialCollection(await request<unknown>('/api/stories/mine',{token}),'story');
 }
 export async function deleteStory(storyId:number,token:string|null):Promise<void>{
  if(!Number.isSafeInteger(storyId)||storyId<=0||!token)throw Error('Story inválida.');
@@ -188,7 +189,7 @@ export async function setPostLikerPrivacy(postId:number,hidden:boolean,token:str
 }
 export async function postComments(postId:number,token:string|null):Promise<SocialComment[]>{
   if(DEMO_MODE)return [...(demoComments.get(postId)||[])];
-  return request<SocialComment[]>(`/api/feed/posts/${postId}/comments`,{token});
+  return requireSocialCollection(await request<unknown>(`/api/feed/posts/${postId}/comments`,{token}),'comment');
 }
 export async function addPostComment(postId:number,content:string,token:string|null,username:string|null):Promise<SocialComment>{
   requireViewer(token,username);
@@ -372,7 +373,6 @@ export async function discoverPeople(token:string|null):Promise<FeedUserSuggesti
   if(DEMO_MODE)return [{username:'rita_demo',displayName:'Rita',photoUrl:null,sport:'Voleibol',city:'Odivelas'},
     {username:'jogador_demo',displayName:'Daniel',photoUrl:null,sport:'Futebol',city:'Lisboa'}];
   if(!token)return [];
-  const raw=await request<Array<Record<string,any>>>('/api/profile/discover',{token});
-  return raw.slice(0,12).map(p=>({username:String(p.username||''),displayName:String(p.nickname||p.fullName||p.username||''),photoUrl:p.profilePicUrl||p.photoUrl||null,
-    sport:p.sport||null,city:p.location||p.city||null})).filter(p=>p.username);
+  const raw=await request<unknown>('/api/profile/discover',{token});
+  return safeDiscoveredPeople(raw);
 }
