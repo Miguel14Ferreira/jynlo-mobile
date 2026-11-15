@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
-import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
+import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
@@ -20,6 +20,21 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [searchActive,setSearchActive]=useState(false);
  const [searching,setSearching]=useState(false);
  const searchVersion=useRef(0);
+ const reactionVersion=useRef(0);
+ const [reactions,setReactions]=useState<Record<number,TeamReactionState>>({});
+ const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
+ const emojis=['👍','❤️','😂','🔥','👏'];
+ const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
+  const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
+  if(!ids.length)return;
+  const current=++reactionVersion.current;
+  try{
+   const updated=await teamReactionSummaries(teamId,kind,ids,token);
+   if(current===reactionVersion.current)setReactions(previous=>({...previous,...updated}));
+  }catch{
+   // Reaction counts are supplementary; never prevent reading the conversation.
+  }
+ },[teamId,kind,token,loadReactions]);
  const version=useRef(0),reading=useRef(false),sendingNow=useRef(false);
  const refresh=useCallback(async(quiet=false,expected=version.current)=>{
   if(reading.current||sendingNow.current)return;
@@ -28,7 +43,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   try{
    const history=await teamContentHistory(teamId,kind,token);
    if(expected!==version.current)return;
-   setEntries(history);setSyncWarning('');
+   setEntries(history);setSyncWarning('');void loadReactions(history);
   }catch(e){
    if(expected!==version.current)return;
    const message=e instanceof Error?e.message:'Não foi possível carregar as mensagens.';
@@ -43,6 +58,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const current=++version.current;
   setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
+  reactionVersion.current++;setReactions({});
   void refresh(false,current);
   const timer=setInterval(()=>{
    if(AppState.currentState==='active')void refresh(true,current);
@@ -50,7 +66,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
   });
-  return()=>{clearInterval(timer);resume.remove();version.current++;searchVersion.current++;};
+  return()=>{clearInterval(timer);resume.remove();version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
  const send=async()=>{
   const message=draft.trim();
@@ -78,7 +94,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setSearchActive(true);setSearching(true);setError('');
   try{
    const results=await searchTeamContent(teamId,kind,term,token);
-   if(current===searchVersion.current)setSearchResults(results);
+   if(current===searchVersion.current){setSearchResults(results);void loadReactions(results);}
   }catch{
    if(current===searchVersion.current)setError('Não foi possível pesquisar as mensagens.');
   }finally{
@@ -87,6 +103,20 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const clearSearch=()=>{
   searchVersion.current++;setSearchActive(false);setSearching(false);setSearchResults([]);
+ };
+ const react=async(item:TeamContentEntry,emoji:string)=>{
+  if(item.deleted||reactionBusyId!==null)return;
+  setReactionBusyId(item.id);setError('');
+  const current=version.current;
+  try{
+   if(reactions[item.id]?.mine===emoji)
+    await removeTeamReaction(teamId,kind,item.id,token);
+   else await setTeamReaction(teamId,kind,item.id,emoji,token);
+  }catch{
+   if(current===version.current)setError('Reação não confirmada. Consulta o histórico antes de repetir.');
+  }finally{
+   if(current===version.current){setReactionBusyId(null);void loadReactions([item]);}
+  }
  };
  const update=async()=>{
   const body=editDraft.trim();
@@ -150,6 +180,15 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {item.replyToId?<Text style={styles.sub}>↳ Resposta à mensagem #{item.replyToId}</Text>:null}
    <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
+   {!item.deleted?<View style={styles.reactionRow}>
+    {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
+      accessibilityLabel={'Reagir com '+emoji}
+      accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
+      disabled={reactionBusyId===item.id} onPress={()=>void react(item,emoji)}
+      style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
+      <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
+    </Pressable>)}
+   </View>:null}
    {!item.deleted?<View style={styles.actions}>
     <Pressable disabled={sending} onPress={()=>setReplyTo(item.id)}><Text style={styles.actionText}>Responder</Text></Pressable>
     {item.canEdit?<Pressable disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><Text style={styles.actionText}>Editar</Text></Pressable>:null}
@@ -187,5 +226,9 @@ const styles=StyleSheet.create({
  editBox:{gap:10},
  searchRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  searchInput:{flexGrow:1,flexBasis:160,minWidth:0,borderWidth:1,borderColor:C.border,borderRadius:10,padding:9,color:C.white},
- searchButton:{padding:8,borderWidth:1,borderColor:C.border,borderRadius:9}
+ searchButton:{padding:8,borderWidth:1,borderColor:C.border,borderRadius:9},
+ reactionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},
+ reactionButton:{borderWidth:1,borderColor:C.border,borderRadius:20,paddingHorizontal:9,paddingVertical:6},
+ reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
+ reactionLabel:{color:C.white,fontSize:12}
 });
