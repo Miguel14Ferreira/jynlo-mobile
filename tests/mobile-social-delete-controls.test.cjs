@@ -28,7 +28,7 @@ test('permanent profile publications can be shared from their full detail',()=>{
  const source=read('app/posts/[postId]/index.tsx');
  assert.match(source,/import \{[^}]*Share[^}]*\} from 'react-native'/);
  assert.match(source,/async function sharePost\(\)/);
- assert.match(source,/resolveJynloMedia\(post\.imageUrl\|\|post\.videoUrl\)/);
+ assert.match(source,/sharedPostLink\(post\)/);
  assert.match(source,/await Share\.share\(\{message:contents\}\)/);
  assert.match(source,/accessibilityLabel="Partilhar publicação"/);
  assert.doesNotMatch(source,/https:\/\/d24sports\.com\/posts\/\$\{id\}/);
