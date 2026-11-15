@@ -40,8 +40,8 @@ test('chat pages scroll focused controls into view without blindly jumping past 
  assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
  assert.match(page,/else if\(autoScrollToEnd&&nearBottom\.current\)/);
  assert.match(page,/return\(\)=>subscription\.remove\(\)/);
- assert.match(community,/<Page autoScrollToEnd>/);
- assert.match(session,/<Page autoScrollToEnd>/);
+ assert.match(community,/<ScrollView ref=\{inlineHistoryRef\}/);
+ assert.match(session,/<ScrollView ref=\{inlineHistoryRef\}/);
 });
 
 test('private messages scroll to the latest conversation only when the message composer has focus',()=>{
@@ -49,7 +49,7 @@ test('private messages scroll to the latest conversation only when the message c
  assert.match(source,/const composerFocused=useRef\(false\)/);
  assert.match(source,/Keyboard\.addListener\(event,/);
  assert.match(source,/if\(!composerFocused\.current\)return/);
- assert.match(source,/onFocus=\{\(\)=>\{composerFocused\.current=true;nearBottom\.current=true;conversationScroll\.current\?\.scrollToEnd/);
+ assert.match(source,/onFocus=\{\(\)=>\{composerFocused\.current=true;if\(nearBottom\.current\)conversationScroll\.current\?\.scrollToEnd/);
  assert.match(source,/onBlur=\{\(\)=>\{composerFocused\.current=false;\}\}/);
  assert.match(source,/return\(\)=>subscription\.remove\(\)/);
 });
