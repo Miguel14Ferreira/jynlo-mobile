@@ -87,7 +87,7 @@ export default function TeamCompetitionDiscovery(){
 const styles=StyleSheet.create({
  title:{fontSize:28,fontWeight:'900',color:C.white},
  subtitle:{fontSize:17,fontWeight:'900',color:C.white},
- name:{fontSize:14,fontWeight:'750',color:C.white},
+ name:{fontSize:14,fontWeight:'700',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:19},
  input:{minHeight:48,padding:13,backgroundColor:C.surface,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:13},
  panel:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:17,padding:15,gap:10},
