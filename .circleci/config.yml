@@ -21,13 +21,8 @@ jobs:
       JYNLO_REQUIRE_REAL_API: "1"
     steps:
       - checkout
-      - run:
-          name: Require existing develop branch
-          command: |
-            test "$(git branch --show-current)" = "develop" || {
-              echo "Only existing develop is allowed for this validation."
-              exit 1
-            }
+      # Branch is restricted by the workflow filter below. CircleCI may
+      # check out a detached HEAD, so do not use git branch --show-current.
       - run:
           name: Install dependencies (without native builds)
           no_output_timeout: 12m
