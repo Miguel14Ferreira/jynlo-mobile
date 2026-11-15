@@ -16,9 +16,13 @@ const input={
  JYNLO_APK_FILENAME:'app-release.apk'
 };
 const bytes=Buffer.alloc(2048,42);
+const report={verified:true,package:'com.jynlo.app',version:app.version,
+ versionCode:app.android.versionCode,file:'app-release.apk',
+ apkSha256:crypto.createHash('sha256').update(bytes).digest('hex'),
+ signerCertificateSha256:'ab'.repeat(32),signingType:'debug',androidBuildTools:'35.0.0'};
 
 test('QA APK manifest identifies exact commit, version, file checksum and backend',()=>{
- const result=artifactMetadata(input,app,bytes);
+ const result=artifactMetadata(input,app,bytes,report);
  assert.equal(result.commit,input.CM_COMMIT);
  assert.equal(result.version,app.version);
  assert.equal(result.versionCode,app.android.versionCode);
@@ -26,31 +30,33 @@ test('QA APK manifest identifies exact commit, version, file checksum and backen
  assert.equal(result.backend,input.EXPO_PUBLIC_JYNLO_API_URL);
  assert.equal(result.pushConfigured,false);
  assert.equal(result.sha256,crypto.createHash('sha256').update(bytes).digest('hex'));
- assert.match(result.signing,/debug-keystore/);
+ assert.match(result.signing,/debug-key/);
+ assert.equal(result.binaryVerified,true);
+ assert.equal(result.signerCertificateSha256,report.signerCertificateSha256);
 });
 
 test('push is recorded only if native Firebase config was provided',()=>{
- assert.equal(artifactMetadata({...input,GOOGLE_SERVICES_JSON:'/private/firebase.json'},app,bytes).pushConfigured,true);
- assert.throws(()=>artifactMetadata({...input,JYNLO_REQUIRE_NATIVE_PUSH:'1'},app,bytes),/não inclui configuração Firebase/);
+ assert.equal(artifactMetadata({...input,GOOGLE_SERVICES_JSON:'/private/firebase.json'},app,bytes,report).pushConfigured,true);
+ assert.throws(()=>artifactMetadata({...input,JYNLO_REQUIRE_NATIVE_PUSH:'1'},app,bytes,report),/não inclui configuração Firebase/);
 });
 
 test('manifest refuses master, pull request, wrong API and unidentified commit',()=>{
- assert.throws(()=>artifactMetadata({...input,CM_BRANCH:'master'},app,bytes),/develop/);
- assert.throws(()=>artifactMetadata({...input,CM_PULL_REQUEST:'true'},app,bytes),/pull requests/);
- assert.throws(()=>artifactMetadata({...input,CM_COMMIT:'unknown'},app,bytes),/Commit Git/);
- assert.throws(()=>artifactMetadata({...input,EXPO_PUBLIC_JYNLO_API_URL:'https://evil.example'},app,bytes),/backend preview/);
+ assert.throws(()=>artifactMetadata({...input,CM_BRANCH:'master'},app,bytes,report),/develop/);
+ assert.throws(()=>artifactMetadata({...input,CM_PULL_REQUEST:'true'},app,bytes,report),/pull requests/);
+ assert.throws(()=>artifactMetadata({...input,CM_COMMIT:'unknown'},app,bytes,report),/Commit Git/);
+ assert.throws(()=>artifactMetadata({...input,EXPO_PUBLIC_JYNLO_API_URL:'https://evil.example'},app,bytes,report),/backend preview/);
 });
 
 test('manifest rejects non-Jynlo Android package even when version and branch match',()=>{
  assert.throws(()=>artifactMetadata(input,{
   ...app,android:{...app.android,package:'com.example.clone'}
- },bytes),/identidade Android oficial/);
+ },bytes,report),/identidade Android oficial/);
 });
 
 test('manifest refuses empty APK and unsafe file names',()=>{
- assert.throws(()=>artifactMetadata(input,app,Buffer.from('bad')),/APK ausente/);
- assert.throws(()=>artifactMetadata({...input,JYNLO_APK_FILENAME:'../private.apk'},app,bytes),/Nome de APK inválido/);
- assert.throws(()=>artifactMetadata({...input,JYNLO_APK_FILENAME:'app.aab'},app,bytes),/Nome de APK inválido/);
+ assert.throws(()=>artifactMetadata(input,app,Buffer.from('bad'),report),/APK ausente/);
+ assert.throws(()=>artifactMetadata({...input,JYNLO_APK_FILENAME:'../private.apk'},app,bytes,report),/Nome de APK inválido/);
+ assert.throws(()=>artifactMetadata({...input,JYNLO_APK_FILENAME:'app.aab'},app,bytes,report),/Nome de APK inválido/);
 });
 
 test('APK sidecar is generated from the real output folder without secrets',()=>{
@@ -60,6 +66,9 @@ test('APK sidecar is generated from the real output folder without secrets',()=>
   fs.mkdirSync(dir,{recursive:true});
   fs.copyFileSync(path.join(__dirname,'../app.json'),path.join(root,'app.json'));
   fs.writeFileSync(path.join(dir,'app-release.apk'),bytes);
+  const metadataDir=path.join(root,'build-metadata');
+  fs.mkdirSync(metadataDir,{recursive:true});
+  fs.writeFileSync(path.join(metadataDir,'jynlo-android-binary-verification.json'),JSON.stringify(report));
   const output=writeManifest({...input,CM_BUILD_DIR:root,GOOGLE_SERVICES_JSON:'/private/firebase.json'});
   const sidecar=JSON.parse(fs.readFileSync(path.join(root,'build-metadata/jynlo-android-qa.json'),'utf8'));
   assert.equal(sidecar.sha256,output.sha256);
@@ -67,6 +76,20 @@ test('APK sidecar is generated from the real output folder without secrets',()=>
   assert.equal(JSON.stringify(sidecar).includes('/private/firebase.json'),false);
   assert.equal(JSON.stringify(sidecar).includes('JYNLO_FIREBASE_ANDROID_JSON_B64'),false);
  }finally{fs.rmSync(root,{force:true,recursive:true});}
+});
+
+test('release manifest rejects missing, changed or unrelated binary verification',()=>{
+ assert.throws(()=>artifactMetadata(input,app,bytes),/sem verificação binária/);
+ assert.throws(()=>artifactMetadata(input,app,bytes,{...report,apkSha256:'0'.repeat(64)}),/divergente/);
+ assert.throws(()=>artifactMetadata(input,app,bytes,{...report,signerCertificateSha256:'invalid'}),/divergente/);
+ assert.throws(()=>artifactMetadata(input,app,bytes,{...report,file:'other.apk'}),/divergente/);
+ assert.throws(()=>artifactMetadata(input,app,bytes,{...report,verified:false}),/verificação binária/);
+});
+
+test('manifest declares custom signing accurately if a non-debug certificate signed it',()=>{
+ const result=artifactMetadata(input,app,bytes,{...report,signingType:'custom'});
+ assert.match(result.signing,/personalizada/);
+ assert.equal(result.signerCertificateSha256,report.signerCertificateSha256);
 });
 
 test('Codemagic generates the manifest after release Gradle, for both workflows',()=>{
