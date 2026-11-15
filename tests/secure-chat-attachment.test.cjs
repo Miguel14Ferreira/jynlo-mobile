@@ -32,7 +32,7 @@ test('preview only fetches on user action and removes private local files',()=>{
  assert.match(screen,/!active\.current\|\|controller\.signal\.aborted/);
 });
 test('all chat kinds only expose attachments from non-deleted messages',()=>{
- for(const file of ['app/messages/[peer].tsx','app/communities/[id]/chat.tsx','app/sessions/[id]/chat.tsx']){
+ for(const file of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx']){
   const screen=read(file);
   assert.match(screen,/SecureChatAttachment/);
   assert.match(screen,/!m\.deletedAt\?chatAttachmentList\(m\)\.map/);
