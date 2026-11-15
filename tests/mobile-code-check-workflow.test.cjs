@@ -7,7 +7,7 @@ const source=fs.readFileSync(path.join(__dirname,'../.github/workflows/mobile-co
 
 test('develop checks run code validation without generating a paid Android build',()=>{
  assert.match(source,/name: Jynlo Mobile - Code Checks/);
- assert.match(source,/push:\s*\n\s*branches: \[develop\]/);
+ assert.match(source,/^on:\s*\n  workflow_dispatch:/m);
  assert.match(source,/workflow_dispatch:/);
  assert.match(source,/npm run typecheck/);
  assert.match(source,/npm run test:all/);
@@ -32,10 +32,12 @@ test('Android bundle validates imports with the real Jynlo backend, without Grad
  assert.doesNotMatch(source,/npx eas build|\.\/gradlew|assembleRelease/);
 });
 
-test('APK signing and emulator workflow edits trigger the free code checks',()=>{
- assert.match(source,/\s+- '\.github\/workflows\/build-android-signed-apk\.yml'/);
- assert.match(source,/\s+- '\.github\/workflows\/android-launch-diagnostic\.yml'/);
- assert.match(source,/\s+- '\.github\/workflows\/mobile-code-checks\.yml'/);
- assert.match(source,/branches: \[develop\]/);
+test('local validation replaces automatic GitHub code checks while quota is exhausted',()=>{
+ const local=fs.readFileSync(path.join(__dirname,'../scripts/validate-local.ps1'),'utf8');
+ assert.doesNotMatch(source,/^  push:/m);
+ assert.match(source,/workflow_dispatch:/);
+ assert.match(local,/Invoke-Checked 'Verificar TypeScript'/);
+ assert.match(local,/Invoke-Checked 'Validar sintaxe e contratos Node'/);
+ assert.match(local,/JYNLO_REQUIRE_REAL_API/);
  assert.doesNotMatch(source,/gradlew|assembleRelease|eas build/);
 });
