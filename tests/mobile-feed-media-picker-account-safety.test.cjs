@@ -8,7 +8,7 @@ test('only one authenticated camera/gallery picker can mutate composers at a tim
  assert.match(home,/if\(!requireLogin\(\)\|\|mediaPickerInFlight.current\)return/);
  assert.match(home,/const actorToken=auth.token/);
  assert.match(home,/mediaPickerInFlight.current=true/);
- assert.match(home,/finally\{mediaPickerInFlight.current=false;\}/);
+ assert.match(home,/finally\{if\(activeStoryAccount\.current===actorToken\)mediaPickerInFlight\.current=false;\}/);
 });
 test('gallery results and camera captures from a previous session are never applied to the next account',()=>{
  const home=source('app/(tabs)/index.tsx');
