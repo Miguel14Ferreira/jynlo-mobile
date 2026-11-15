@@ -9,7 +9,9 @@ test('post editor uses authenticated backend edit endpoint without touching medi
  assert.match(api,/token,method:'PUT',body:\{content:description,location:place\|\|null\}/);
  assert.match(api,/description\.length>1000/);
  assert.match(api,/place\.length>160/);
- assert.match(api,/post\.authorUsername\.toLowerCase\(\)===username!\.toLowerCase\(\)/);
+ assert.match(api,/requireViewer\(token,username\)/);
+ assert.match(api,/item\.authorUsername\.toLowerCase\(\)===username!\.toLowerCase\(\)/);
+ assert.match(api,/confirmedTextPostReceipt\(updated,username!,description,place\)/);
 });
 test('post editing is exposed only to author, in feed and full post details',()=>{
  const feed=read('app/(tabs)/index.tsx');
