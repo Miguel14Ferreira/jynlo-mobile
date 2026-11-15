@@ -54,14 +54,18 @@ test('uploads preserve edits made during slow publishing without a second POST',
  assert.match(home,/onChangeText=\{value=>\{composerTextRef\.current=value;setComposerText\(value\);\}\}/);
 });
 
-test('Feed and post detail display full photos with responsive proportions',()=>{
+test('Feed albums and protected post details display complete photos with measured proportions',()=>{
  const home=read('app/(tabs)/index.tsx');
  const detail=read('app/posts/[postId]/index.tsx');
+ const album=read('src/components/PostAlbumCarousel.tsx');
+ const protectedMedia=read('src/components/ProtectedPostMedia.tsx');
  const photo=read('src/components/AdaptivePostPhoto.tsx');
- assert.match(home,/import FeedPostPhoto from '..\/..\/src\/components\/AdaptivePostPhoto'/);
- assert.match(home,/<FeedPostPhoto uri=\{uri\}/);
- assert.match(detail,/import AdaptivePostPhoto from '..\/..\/..\/src\/components\/AdaptivePostPhoto'/);
- assert.match(detail,/<AdaptivePostPhoto uri=\{uri\}/);
+ assert.match(home,/import PostAlbumCarousel from/);
+ assert.match(home,/<PostAlbumCarousel items=\{album\}/);
+ assert.match(album,/<AdaptivePostPhoto uri=\{uri\} width=\{width\}/);
+ assert.match(detail,/<ProtectedPostMedia src=\{media\.url\}/);
+ assert.match(protectedMedia,/<AdaptivePostPhoto uri=\{uri\} width=\{width\}/);
+ assert.match(protectedMedia,/downloadPrivateProfileMedia\(src,token\)/);
  assert.match(photo,/const source=event\.nativeEvent\.source/);
  assert.match(photo,/Math\.round\(width\*dimensions\.height\/dimensions\.width\)/);
  assert.match(photo,/Math\.min\(620,Math\.max\(180,/);
