@@ -37,7 +37,7 @@ test('Expo plugin and package dependencies are configured without pretending pus
  assert.equal(pkg.dependencies['expo-notifications'],'~58.1.8');
  assert.equal(pkg.dependencies['expo-crypto'],'~58.0.7');
  assert.ok(config.expo.plugins.some(p=>Array.isArray(p)&&p[0]==='expo-notifications'));
- assert.match(read('app/notifications.tsx'),/envio de notificações ainda depende/);
+ assert.match(read('app/notifications.tsx'),/A entrega depende também das credenciais e do serviço de envio/);
 });
 
 test('push taps navigate only to the authenticated notification inbox',()=>{
@@ -47,7 +47,7 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/data\?\.kind!=='notification'/);
  assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
- assert.match(layout,/lastHandled\.current===identifier/);
+ assert.match(layout,/lastHandled\.current===handledKey/);
  assert.match(layout,/pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}/);
  assert.doesNotMatch(layout,/router\.push\(data/);
 });
@@ -101,7 +101,7 @@ test('push tap resolves only an ID returned by the authenticated notification AP
  assert.match(screen,/account\.current!==auth\.username\+'\|'\+auth\.token/);
  assert.match(screen,/\^\[1-9\]\[0-9\]\{0,15\}\$/);
  assert.match(screen,/items\.find\(item=>String\(item\.id\)===notificationId\)/);
- assert.match(screen,/void open\(target\)/);
+ assert.match(screen,/if\(open\(target\)\)\{/);
  assert.match(screen,/router\.setParams\(\{notificationId:''\}\)/);
  assert.match(screen,/loading\|\|!historyReady/);
  assert.match(screen,/setHistoryReady\(true\)/);
@@ -117,7 +117,7 @@ test('native push responses are consumed once and cannot replay after logout',()
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
  assert.match(layout,/let active=true/);
  assert.match(layout,/active=false;\s*try\{listener\?\.remove\(\);\}catch\{/);
- assert.match(layout,/lastHandled\.current===identifier/);
+ assert.match(layout,/lastHandled\.current===handledKey/);
 });
 
 test('logout and token expiry clear previous account notification presentation',()=>{
