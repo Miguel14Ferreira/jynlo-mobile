@@ -5,16 +5,20 @@ const fs=require('node:fs');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
 
-test('embedded community chat does not acknowledge WebSocket delivery as reading',()=>{
- const socket=source.match(/onMessage:\(msg\)=>\{[\s\S]*?\n\s*\}\);/);
- assert.ok(socket,'community WebSocket message handler exists');
- assert.match(socket[0],/setMessages\(old=>mergeMessages\(old,\[msg\]\)\)/);
- assert.match(socket[0],/!embedded\s*&&\s*AppState\.currentState==='active'/);
- assert.doesNotMatch(socket[0],/if\(msg\.username!==auth\.username\)void markCommunityRead/);
+test('WebSocket delivery does not mark community messages as read',()=>{
+ const start=source.indexOf('onMessage:(msg)=>');
+ const end=source.indexOf('// A disconnected WebSocket',start);
+ assert.ok(start>=0&&end>start,'community WebSocket message handler exists');
+ const handler=source.slice(start,end);
+ assert.match(handler,/setMessages\(old=>mergeMessages\(old,\[msg\]\)\)/);
+ assert.doesNotMatch(handler,/markCommunityRead\(/);
 });
 
-test('embedded community read receipts require the reader to reach the end',()=>{
+test('embedded community read receipts require measured message visibility',()=>{
+ assert.match(source,/const inlineNearBottom=useRef\(false\)/);
  assert.match(source,/inlineNearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
- assert.match(source,/if\(inlineNearBottom\.current\)\{/);
+ assert.match(source,/const lastMessageVisible=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-4/);
+ assert.match(source,/lastMessageVisible&&AppState\.currentState==='active'/);
  assert.match(source,/lastAcknowledgedMessageId\.current=latest/);
+ assert.match(source,/markCommunityRead\(id,latest,auth\.token,auth\.username\)/);
 });
