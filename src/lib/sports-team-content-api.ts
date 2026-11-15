@@ -9,6 +9,13 @@ const endpoint=(teamId:number,kind:TeamContentKind)=>{
  if(!Number.isSafeInteger(teamId)||teamId<=0)throw Error('Equipa inválida.');
  return '/api/teams/'+teamId+'/'+kind;
 };
+export async function teamPrivateAttachmentsAvailable(teamId:number,kind:TeamContentKind,token:string):Promise<boolean>{
+ if(DEMO_MODE||!token)return false;
+ try{
+  const status=await request<{available:boolean}>(endpoint(teamId,kind)+'/attachments/availability',{token});
+  return status?.available===true;
+ }catch{return false;}
+}
 export async function teamContentHistory(teamId:number,kind:TeamContentKind,token:string):Promise<TeamContentEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar esta conversa.');
  return request<TeamContentEntry[]>(endpoint(teamId,kind),{token});
