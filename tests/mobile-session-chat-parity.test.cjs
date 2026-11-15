@@ -54,3 +54,14 @@ test('map links inside messages have bounded coordinates and safe HTTPS host',()
  assert.equal(chatLocationUrl('https://www.google.com/maps?q=38,-181'),null);
  assert.equal(chatLocationUrl(null),null);
 });
+
+test('cancelled sessions show an automatic notification status, never a manual share panel',()=>{
+ const screen=read('app/sessions/[id].tsx');
+ assert.match(screen,/cancelSession\(id,actorToken,actorUsername\|\|undefined\)/);
+ assert.match(screen,/detail\?\.status==='CANCELLED'\?<View style=\{styles\.panel\}>/);
+ assert.match(screen,/A Jynlo envia automaticamente o aviso aos participantes inscritos/);
+ assert.match(screen,/Convidados externos devem ser informados pelo canal utilizado/);
+ assert.match(screen,/×  Sessão cancelada/);
+ assert.doesNotMatch(screen,/cancelledShareText/);
+ assert.doesNotMatch(screen,/Partilhar aviso de cancelamento/);
+});
