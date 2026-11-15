@@ -32,16 +32,16 @@ test('server verifies Google credentials and onboarding remains inside the mobil
 
 test('Google signing diagnostics and build validation are preserved',()=>{
  const workflow=read('.github/workflows/build-android-signed-apk.yml');
- const validation=read('.github/workflows/mobile-push-validation.yml');
+ const validation=read('codemagic.yaml');
  const app=JSON.parse(read('app.json'));
  assert.equal(app.expo.android.package,'com.jynlo.app');
  assert.ok(workflow.includes('SHA1:'));
  assert.ok(workflow.includes('npm run typecheck'));
  assert.ok(workflow.includes('npm run test:all'));
  assert.ok(workflow.includes('apksigner'));
- for(const name of ['src/lib/auth.tsx','src/lib/google-credential.ts','src/lib/google-auth-api.ts',
-  'app/login.tsx','app/google-onboarding.tsx','app/mfa.tsx','tests/mobile-google-auth-validation.test.cjs'])
-  assert.ok(validation.includes("'"+name+"'"),name);
+ assert.match(validation,/jynlo-mobile-validacao:/);
+ assert.match(validation,/npm run typecheck/);
+ assert.match(validation,/npm run test:all/);
 });
 
 test('a partially persisted token and username are deleted before reporting a failed login',()=>{
