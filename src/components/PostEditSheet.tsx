@@ -81,12 +81,12 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
    <ScrollView ref={editorScrollRef} style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <Text style={styles.hint}>Podes alterar a descrição ou localização. As fotografias, vídeos, gostos e comentários mantêm-se.</Text>
     <Text style={styles.label}>Descrição (opcional com fotografias ou vídeos)</Text>
-    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target,28,true)} accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
      value={text} onChangeText={setText} editable={!busy} placeholder="O que queres partilhar?"
      placeholderTextColor={C.muted} style={[styles.input,styles.description]}/>
     <Text style={styles.counter}>{text.length}/1000</Text>
     <Text style={styles.label}>Localização opcional</Text>
-    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target,28,true)} accessibilityLabel="Editar localização da publicação" maxLength={160} editable={!busy}
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel="Editar localização da publicação" maxLength={160} editable={!busy}
      value={location} onChangeText={setLocation} placeholder="Ex.: Campo do Bairro, Lisboa"
      placeholderTextColor={C.muted} style={styles.input}/>
     <Text style={styles.counter}>{location.length}/160</Text>
