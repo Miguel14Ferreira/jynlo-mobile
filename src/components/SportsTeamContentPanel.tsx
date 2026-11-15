@@ -2,7 +2,12 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
-import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
+import type {ImagePickerAsset} from 'expo-image-picker';
+import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
+import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
+import SecureChatAttachment from './SecureChatAttachment';
+import ChatPdfComposer from './ChatPdfComposer';
+import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
@@ -15,6 +20,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const [editingId,setEditingId]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
+ const [attachmentsEnabled,setAttachmentsEnabled]=useState(false);
+ const [media,setMedia]=useState<ImagePickerAsset[]>([]);
+ const [uploading,setUploading]=useState(false);
+ const choosing=useRef(false);
  const [searchTerm,setSearchTerm]=useState('');
  const [searchResults,setSearchResults]=useState<TeamContentEntry[]>([]);
  const [searchActive,setSearchActive]=useState(false);
@@ -60,6 +69,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
+  setMedia([]);setAttachmentsEnabled(false);
+  void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
+   if(version.current===current)setAttachmentsEnabled(available);
+  });
   void refresh(false,current);
   const timer=setInterval(()=>{
    if(AppState.currentState==='active')void refresh(true,current);
@@ -69,6 +82,38 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   });
   return()=>{clearInterval(timer);resume.remove();version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
+ const chooseMedia=async()=>{
+  if(!attachmentsEnabled||choosing.current||sendingNow.current)return;
+  choosing.current=true;setError('');
+  try{
+   const ImagePicker=await import('expo-image-picker');
+   const chosen=await ImagePicker.launchImageLibraryAsync({
+    mediaTypes:['images','videos'],allowsMultipleSelection:true,
+    selectionLimit:Math.max(1,4-media.length),quality:.8,exif:false,base64:false
+   });
+   if(chosen.canceled||!chosen.assets?.length)return;
+   const next=appendChatMediaSelection(media,chosen.assets);
+   if(next.error)throw Error(next.error);
+   setMedia(next.items);
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
+  finally{choosing.current=false;}
+ };
+ const sendMedia=async()=>{
+  if(!media.length||sendingNow.current||!attachmentsEnabled)return;
+  sendingNow.current=true;setUploading(true);setSending(true);setError('');
+  const current=version.current,selection=[...media];
+  try{
+   await sendChatPhotoAlbum({scope:'team',id:teamId,kind},token,selection,replyTo,draft);
+   if(current!==version.current)return;
+   setMedia([]);setDraft('');setReplyTo(null);
+  }catch(e){
+   if(current===version.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+
+     ' Confirma o histórico antes de repetir.');
+  }finally{
+   sendingNow.current=false;
+   if(current===version.current){setUploading(false);setSending(false);void refresh(true,current);}
+  }
+ };
  const send=async()=>{
   const message=draft.trim();
   if(!message||sendingNow.current||!token)return;
@@ -187,6 +232,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    <Text style={styles.author}>@{item.username} · {new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
    {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
    <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
+   {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
+    <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
+      messageId={item.id} token={token} index={file.index} name={file.filename}
+      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}/>):null}
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
     {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
@@ -210,11 +259,31 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   </View>)}
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
+  {attachmentsEnabled?<View style={styles.attachmentActions}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Anexar fotografias ou vídeos"
+     disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
+     <Text style={styles.actionText}>📎 Fotos e vídeos</Text>
+   </Pressable>
+   <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
+     enabled={!sending&&!uploading} compact replyId={replyTo}
+     onSent={async()=>{await refresh(true,version.current);}}/>
+  </View>:null}
+  {media.length?<View style={styles.editBox}>
+   <Text style={styles.sub}>{media.length} anexo(s): {media.map(file=>file.fileName||file.uri.split('/').pop()).join(', ')}</Text>
+   <View style={styles.actions}>
+    <Pressable disabled={sending||uploading} onPress={()=>void sendMedia()} style={styles.attachmentButton}>
+     <Text style={styles.actionText}>{uploading?'A enviar…':'Enviar anexos'}</Text>
+    </Pressable>
+    <Pressable disabled={sending||uploading} onPress={()=>setMedia([])}>
+     <Text style={styles.actionText}>Retirar</Text>
+    </Pressable>
+   </View>
+  </View>:null}
   <TextInput multiline style={styles.input} value={draft} onChangeText={setDraft}
    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
-  <Pressable accessibilityRole="button" accessibilityState={{disabled:sending||!draft.trim()}}
-   disabled={sending||!draft.trim()} onPress={()=>void send()} style={styles.button}>
+  <Pressable accessibilityRole="button" accessibilityState={{disabled:sending||uploading||!!media.length||!draft.trim()}}
+   disabled={sending||uploading||!!media.length||!draft.trim()} onPress={()=>void send()} style={styles.button}>
    <Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar mensagem':'Publicar'}</Text>
   </Pressable>
  </View>;
@@ -238,5 +307,7 @@ const styles=StyleSheet.create({
  reactionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},
  reactionButton:{borderWidth:1,borderColor:C.border,borderRadius:20,paddingHorizontal:9,paddingVertical:6},
  reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
- reactionLabel:{color:C.white,fontSize:12}
+ reactionLabel:{color:C.white,fontSize:12},
+ attachmentActions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
+ attachmentButton:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10}
 });
