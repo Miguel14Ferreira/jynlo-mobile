@@ -15,7 +15,7 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
  messageIds:readonly number[],enabled=true):ReactionState{
  const [summaries,setSummaries]=useState<Record<number,ChatReactionSummary>>({});
  const [busyIds,setBusyIds]=useState<ReadonlySet<number>>(()=>new Set());
- const pending=useRef(new Set<number>());
+ const pending=useRef(new Set<string>());
  const identity=kind+'|'+conversationId+'|'+(token||'');
  const activeIdentity=useRef(identity);
  activeIdentity.current=identity;
