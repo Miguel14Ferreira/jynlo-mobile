@@ -7,11 +7,11 @@ const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'
 
 test('chat inbox refreshes on foreground push and on app resume',()=>{
  assert.match(source,/Notifications\.addNotificationReceivedListener\(notification=>/);
- assert.match(source,/notification\.request\.content\.data\?\.kind!=='notification'/);
+ assert.match(source,/notification\.request\?\.content\?\.data\?\.kind!=='notification'/);
  assert.match(source,/AppState\.addEventListener\('change',state=>/);
  assert.match(source,/state==='active'&&generation\.current===version/);
  assert.match(source,/AppState\.currentState==='active'/);
- assert.match(source,/received\.remove\(\)/);
+ assert.match(source,/received\?\.remove\(\)/);
  assert.match(source,/resume\.remove\(\)/);
 });
 test('in-flight requests queue exactly one additional inbox reload',()=>{
