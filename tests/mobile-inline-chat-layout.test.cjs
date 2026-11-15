@@ -70,7 +70,7 @@ test('readers get an explicit new-message shortcut without losing older scroll p
   assert.match(source,/latest>previousLatestMessageId\.current&&previousLatestMessageId\.current>0&&!inlineNearBottom\.current/);
   assert.match(source,/unseenBelow\?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"/);
   assert.match(source,/inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
-  assert.match(source,/if\(inlineNearBottom\.current\)setUnseenBelow\(false\)/);
+  assert.match(source,/if\(inlineNearBottom\.current\)\{[\s\S]*?setUnseenBelow\(false\)/);
   assert.match(source,/previousLatestMessageId\.current=0;setUnseenBelow\(false\)/);
  }
 });
