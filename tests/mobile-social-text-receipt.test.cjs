@@ -38,6 +38,9 @@ test('Story upload must confirm author and caption, including blank captions',()
  const valid={id:73,authorUsername:'Ana',caption:'Bora!',createdAt:'2026-11-13T13:00:00Z'};
  assert.equal(story(valid,'ana',' Bora! '),true);
  assert.equal(story({...valid,caption:null},'Ana',''),true);
+ assert.equal(story({...valid,caption:undefined},'Ana',''),false);
+ assert.equal(story({...valid,caption:null},'Ana','Texto que não foi guardado'),false);
+ assert.equal(story({...valid,caption:''},'Ana',''),true);
  assert.equal(story({...valid,authorUsername:'Outro'},'Ana','Bora!'),false);
  assert.equal(story({...valid,id:0},'Ana','Bora!'),false);
  assert.equal(story({...valid,caption:'Outro'},'Ana','Bora!'),false);
