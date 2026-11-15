@@ -33,7 +33,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
- const inlineNearBottom=useRef(true);
+ const inlineNearBottom=useRef(false);
  const previousLatestMessageId=useRef(0);
  const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
@@ -47,7 +47,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    setKeyboardVisible(true);
    // Keep the most recent messages nearby while typing, without jumping
    // when a caption or edit field (rather than the composer) has focus.
-   if(composerFocused.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+   if(composerFocused.current&&inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
   });
   const hidden=Keyboard.addListener(hideEvent,()=>setKeyboardVisible(false));
   return()=>{shown.remove();hidden.remove();};
@@ -109,11 +109,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     setRefreshWarning('');
     const previousHistoryError=historyError.current;historyError.current=null;
     if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
-    const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
-    if(embedded&&inlineNearBottom.current&&last>lastAcknowledgedMessageId.current){
-     lastAcknowledgedMessageId.current=last;
-     void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
-    }
+    // A server refresh does not prove that the newest messages were displayed.
+    // Only a measured viewport scroll may acknowledge the current history.
   }catch(e){if(version===generation.current){
     const forbidden=e instanceof ApiError&&[401,403,404,410].includes(e.status);
     if(forbidden){
@@ -147,7 +144,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setAttachmentsOpen(false);
    }
    // History requires fresh membership validation on every focus; local drafts do not.
-   inlineNearBottom.current=true;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
+   inlineNearBottom.current=false;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);setMessages([]);setName('Comunidade');setError('');setRefreshWarning('');historyError.current=null;setLoading(true);setAccessRevoked(false);revokedRef.current=false;
    setConnection('offline');connectionStatus.current='offline';queuedRefresh.current=false;
    activeChat.current=identity;
    const pending=pendingWrites.current.get(identity);
