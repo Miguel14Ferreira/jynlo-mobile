@@ -1,19 +1,11 @@
 name: Jynlo Mobile develop integration
 
+# Temporary manual-only gate: the private repository's hosted GitHub Actions
+# jobs are rejected before runner allocation (zero executed steps). Keep this
+# workflow available for an explicit run after the account budget is restored.
+# This avoids a stream of failed checks on each develop commit. The same checks
+# remain available under the manual Codemagic validation workflow.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - 'app/**'
-      - 'src/**'
-      - 'scripts/**'
-      - 'tests/**'
-      - 'package.json'
-      - 'app.config.js'
-      - 'app.json'
-      - 'tsconfig.json'
-      - 'codemagic.yaml'
-      - '.github/workflows/mobile-develop-integration.yml'
   workflow_dispatch:
 
 permissions:
