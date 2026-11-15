@@ -104,12 +104,12 @@ test('QA instructions identify build identity and required tester journey',()=>{
  assert.match(instructions,/APK: app-release\.apk/);
  assert.match(instructions,/SHA-256:/);
  assert.match(instructions,/Instalar a APK/);
- assert.match(instructions,/Criar publicacao com foto/);
+ assert.match(instructions,/Criar publicação com foto/);
  assert.match(instructions,/Cancelar sessao pelo feed/);
  assert.match(instructions,/Verificar equipas, torneios e campeonatos/);
  assert.match(instructions,/NÃO DISPONÍVEL nesta APK/);
  assert.doesNotMatch(instructions,/GOOGLE_SERVICES_JSON|EXPO_TOKEN|private\/firebase/);
- assert.ok(instructions.split('\\n').length>25);
+ assert.ok(instructions.split('\n').length>25);
  const push=qaTestInstructions(artifactMetadata({...input,GOOGLE_SERVICES_JSON:'/private/firebase.json'},app,bytes,report));
  assert.match(push,/confirmar receção real de uma notificação/);
  assert.doesNotMatch(push,/NÃO DISPONÍVEL nesta APK/);
