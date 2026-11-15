@@ -66,8 +66,8 @@ export default function ChampionshipTeamsScreen(){
      {text:'Cancelar',style:'cancel'},{text:'Criar',onPress:()=>{void update(()=>createChampionshipTeam(communityId,championshipId,name,auth.token!));}}
     ])}/>
    </View>:null}
-   {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>
-   {organizer&&!closed&&auth.token?<TeamCompetitionApplications communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}:null}
+   {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}
+   {organizer&&!closed&&auth.token?<TeamCompetitionApplications communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}
   </View>:null}
   {data?<View style={styles.card}>
    <Text style={styles.title}>Equipas das provas ({data.competitionTeams.length})</Text>
