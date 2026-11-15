@@ -21,7 +21,7 @@ test('direct conversation exposes server-synced notification preference controls
 
 test('mute controls do not interfere with message delivery or unread cursors',()=>{
  const direct=read('app/messages/[peer].tsx');
- assert.match(direct,/markDirectRead\(peer,last,auth\.token\)/);
+ assert.match(direct,/markDirectRead\(peer,latest,auth\.token\)/);
  assert.match(direct,/sendDirectChatReply\(peer,submittedText,auth\.token,originalReply\.id\)/);
  assert.match(direct,/As mensagens e os indicadores de não lidas continuam a funcionar normalmente/);
 });
