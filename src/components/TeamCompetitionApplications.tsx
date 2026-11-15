@@ -13,6 +13,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [applicationsVerified,setApplicationsVerified]=useState(false);
+ const [refreshKey,setRefreshKey]=useState(0);
  const generation=useRef(0),operationRef=useRef(false);
  useEffect(()=>{
   const version=++generation.current;
@@ -31,7 +32,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
    if(errors.length)setError('Não foi possível verificar '+errors.join(' e ')+'. Atualiza antes de tomar decisões.');
   });
   return()=>{generation.current++;};
- },[communityId,competitionId,type,token]);
+ },[communityId,competitionId,type,token,refreshKey]);
  const toggle=async()=>{
   if(!loaded||operationRef.current)return;
   const version=generation.current;
@@ -43,7 +44,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
   }catch(e){if(version===generation.current){
    setLoaded(false);
    setError((e instanceof Error?e.message:'Não foi possível alterar a configuração.')+
-    ' O estado pode ter mudado. Reabre a competição antes de repetir.');
+    ' O estado pode ter mudado. Atualiza os dados antes de repetir.');
   }}finally{operationRef.current=false;if(version===generation.current)setBusy(false);}
  };
  const decide=async(id:number,approve:boolean)=>{
@@ -58,7 +59,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
   }catch(e){if(version===generation.current){
    setApplicationsVerified(false);
    setError((e instanceof Error?e.message:'Não foi possível confirmar a decisão.')+
-    ' O pedido pode ter sido processado. Reabre a competição para verificar antes de repetir.');
+    ' O pedido pode ter sido processado. Atualiza os dados para verificar antes de repetir.');
   }}finally{operationRef.current=false;if(version===generation.current)setBusy(false);}
  };
  return <View style={styles.panel}>
@@ -66,10 +67,12 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
   <Text style={styles.note}>Permite que equipas encontrem esta competição e peçam participação.</Text>
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
-  {!loaded?<Text style={styles.note}>Configuração indisponível. Reabre a competição para atualizar.</Text>:<>
+  <Button title="Atualizar estado das candidaturas" secondary disabled={busy} onPress={()=>setRefreshKey(key=>key+1)}/>
+  {!loaded?<Text style={styles.note}>Configuração indisponível. Atualiza os dados para verificar.</Text>:<>
    <Text style={styles.note}>Pesquisa pública: {open?'Ativada':'Desativada'}</Text>
    <Button title={open?'Fechar candidaturas':'Abrir candidaturas'} disabled={busy} onPress={()=>void toggle()}/>
-   <Text style={styles.heading}>Pedidos recebidos ({applications.length})</Text>
+  </>}
+  <Text style={styles.heading}>Pedidos recebidos ({applicationsVerified?applications.length:'—'})</Text>
    {!applicationsVerified?<Text style={styles.note}>Não foi possível confirmar os pedidos. As decisões estão temporariamente bloqueadas.</Text>:null}
    {applications.map(a=><View key={a.id} style={styles.item}>
     <Text style={styles.name}>{a.teamName}</Text>
@@ -82,8 +85,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
       competitionId={competitionId} type={type} globalTeamId={a.teamId} token={token}/>:null}
    </View>)}
    {applicationsVerified&&applications.length===0?<Text style={styles.note}>Ainda não existem pedidos.</Text>:null}
-   <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>
-  </>}
+   <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>}
  </View>;
 }
 const styles=StyleSheet.create({
