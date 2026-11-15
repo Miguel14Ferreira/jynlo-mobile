@@ -129,18 +129,20 @@ export default function CreateSessionScreen(){
  const [venueError,setVenueError]=useState('');
  const [locationMode,setLocationMode]=useState<'saved'|'link'|'gps'>('saved');
  const [mapsLink,setMapsLink]=useState('');
+ const [verifiedMapsLink,setVerifiedMapsLink]=useState('');
  const [locationLoading,setLocationLoading]=useState(false);
  const [locationMessage,setLocationMessage]=useState('');
  const locationRequest=useRef(0);
  const [locationAccuracy,setLocationAccuracy]=useState<number|null>(null);
  function clearMappedLocation(){
+  setVerifiedMapsLink('');
   locationRequest.current++;
   setLocationAccuracy(null);setLocationMessage('');
   setForm(prev=>({...prev,latitude:null,longitude:null,locationConfirmed:false}));
  }
  function selectLocationMode(mode:'saved'|'link'|'gps'){
   if(busy||locationLoading)return;
-  setLocationMode(mode);setMapsLink('');setVenueChosen(null);clearVenueSearch();
+  setLocationMode(mode);setMapsLink('');setVerifiedMapsLink('');setVenueChosen(null);clearVenueSearch();
   locationRequest.current++;setLocationAccuracy(null);setLocationMessage('');
   setForm(prev=>({...prev,venueId:null,latitude:null,longitude:null,locationConfirmed:false}));
  }
@@ -168,9 +170,14 @@ export default function CreateSessionScreen(){
  }
  async function useMapsLink(){
   if(busy||locationLoading)return;
+  const requestedUrl=mapsLink.trim();
   const requestId=++locationRequest.current;
-  setLocationLoading(true);setLocationMessage('');
-  try{await useMappedPoint(await resolveSessionMapLink(mapsLink,auth.token||''),requestId);}
+  setVerifiedMapsLink('');setLocationLoading(true);setLocationMessage('');
+  try{
+   const point=await resolveSessionMapLink(requestedUrl,auth.token||'');
+   await useMappedPoint(point,requestId);
+   if(locationRequest.current===requestId)setVerifiedMapsLink(requestedUrl);
+  }
   catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível resolver a ligação.');}
   finally{if(locationRequest.current===requestId)setLocationLoading(false);}
  }
@@ -371,7 +378,10 @@ export default function CreateSessionScreen(){
    if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
     throw Error('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.');
    if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error('Confirma a localização escolhida antes de criar.');
-   payload=createSessionPayload(form,SPORTS);setError('');
+   if(locationMode==='link'&&(!verifiedMapsLink||verifiedMapsLink!==mapsLink.trim()))
+    throw Error('Confirma novamente a ligação Google Maps antes de criar a sessão.');
+   payload={...createSessionPayload(form,SPORTS),
+    googleMapsUrl:locationMode==='link'?verifiedMapsLink:null};setError('');
   }
   catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
   const identity=communityLoadIdentity.current;
