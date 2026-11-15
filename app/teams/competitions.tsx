@@ -1,6 +1,6 @@
 import React,{useCallback,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {mySportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
@@ -9,7 +9,7 @@ import {applyTeamToCompetition,discoverTeamCompetitions,myTeamApplications,
 import {C} from '../../src/lib/theme';
 
 export default function TeamCompetitionDiscovery(){
- const auth=useAuth(),router=useRouter();
+ const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
  const [query,setQuery]=useState(''),[sport,setSport]=useState('');
  const [rows,setRows]=useState<OpenTeamCompetition[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]);
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
@@ -25,9 +25,11 @@ export default function TeamCompetitionDiscovery(){
     auth.token?myTeamApplications(auth.token):Promise.resolve([])
    ]);
    setRows(competitions);setTeams(owned);setApplications(requests);
+   const wanted=Number(teamId);
+   if(Number.isSafeInteger(wanted)&&owned.some(t=>t.id===wanted))setChosen(wanted);
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível encontrar competições.');}
   finally{setLoading(false);}
- },[query,sport,auth.token]);
+ },[query,sport,auth.token,teamId]);
  useFocusEffect(useCallback(()=>{void search();},[search]));
  const applied=(competition:OpenTeamCompetition,teamId:number|null)=>
   teamId!==null&&applications.some(a=>a.teamId===teamId&&a.competitionId===competition.id
