@@ -99,11 +99,8 @@ export default function DirectConversation(){
    setMessages(results);setSyncWarning('');
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
-   const last=results.reduce((n,m)=>m.id>n?m.id:n,0);
-   if(last>lastAcknowledgedMessageId.current&&nearBottom.current&&historyViewportMeasured.current){
-    lastAcknowledgedMessageId.current=last;
-    void markDirectRead(peer,last,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
-   }
+   // A history refresh does not prove that newly received messages were visible.
+   // Read receipts are sent only after the scroll viewport confirms visibility.
   }catch(e){
    if(version===generation.current){
     const accessRevoked=e instanceof ApiError&&[401,403,404,410].includes(e.status);
@@ -452,7 +449,7 @@ export default function DirectConversation(){
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
       historyViewportMeasured.current=layoutMeasurement.height>0&&contentSize.height>0;
       nearBottom.current=historyViewportMeasured.current&&contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
-      if(nearBottom.current&&auth.token){
+      if(nearBottom.current&&auth.token&&AppState.currentState==='active'){
        const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
        if(latest>lastAcknowledgedMessageId.current){
         lastAcknowledgedMessageId.current=latest;
