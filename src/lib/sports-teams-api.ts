@@ -12,6 +12,24 @@ export interface SportsTeam {
   feedEnabled: boolean;
   chatEnabled: boolean;
 }
+export interface TeamChampionshipHonour {
+  championshipId:number;
+  championshipName:string;
+  seasonLabel:string;
+  communityId:number;
+  communityName:string;
+  tournamentId:number|null;
+  ownedEventId:number|null;
+  competitionName:string;
+  format:string;
+  sport:string;
+  awardedAt:string;
+}
+export async function sportsTeamChampionshipHonours(id:number,token?:string):Promise<TeamChampionshipHonour[]>{
+  if(DEMO_MODE)return [];
+  return request<TeamChampionshipHonour[]>('/api/teams/'+validId(id)+'/honours',{token});
+}
+
 export interface TeamCompetitionHistory {
   tournamentId:number;
   tournamentName:string;
