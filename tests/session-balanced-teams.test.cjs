@@ -11,7 +11,7 @@ test('team endpoints are authenticated and random confirmation sends exact team 
 });
 test('organizer can preview and persist server random teams without classification',()=>{
  const screen=read('app/sessions/[id].tsx');
- for(const term of ['detail.communityId?','title="Equipas aleatórias"',
+ for(const term of ['detail.communityId || (','title="Equipas aleatórias"',
  "suggestSessionTeams(id,actorToken,mode)",
  "confirmSessionTeams(id,actorToken,mode,selectedPreview)",
  'title="Sortear novamente"','Confirmar distribuição de equipas','p.teamCode'])
