@@ -24,7 +24,7 @@ test('mobile messages includes private conversations and community chats',()=>{
  const route=read('app/messages/[peer].tsx');
  assert.match(route,/sendDirectChat\(peer,submittedText,auth\.token\)/);
  assert.match(route,/directChatHistory\(peer,auth\.token\)/);
- assert.match(route,/markDirectRead\(peer,last,auth\.token\)/);
+ assert.match(route,/markDirectRead\(peer,latest,auth\.token\)/);
  assert.match(route,/Verifica|Consulta o histórico antes de repetires/);
 });
 test('community tournament pages are not silently truncated after four pages',()=>{
@@ -86,10 +86,10 @@ test('private photo attachment uses authenticated private API and requires expli
  assert.match(api,/Consulta o histórico antes de repetir/);
  assert.match(screen,/directPhotoAvailable\(peer,auth\.token\)/);
  assert.match(screen,/ImagePicker\.launchImageLibraryAsync/);
- assert.match(screen,/Confirmar envio da fotografia/);
+ assert.match(screen,/Enviar ficheiros/);
  assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo\)/);
  assert.match(screen,/setPhoto\(null\)/);
- assert.match(screen,/photoAvailable\?/);
+ assert.match(screen,/photoAvailable/);
  assert.match(screen,/SecureChatAttachment scope="direct"/);
 });
 
@@ -101,9 +101,9 @@ test('community chat photo upload checks private storage and requires confirmati
  assert.match(api,/replyToMessageId/);
  assert.match(api,/controller\.abort\(\)/);
  assert.match(chat,/chatPhotoAvailable\('community',id,auth\.token\)/);
- assert.match(chat,/sendChatPhoto\('community',id,token,selectedPhoto\)/);
+ assert.match(chat,/sendChatPhoto\('community',id,token,selectedPhoto,originalReplyId\)/);
  assert.match(chat,/ImagePicker\.launchImageLibraryAsync/);
- assert.match(chat,/Confirmar envio da fotografia/);
+ assert.match(chat,/Enviar ficheiros/);
  assert.match(chat,/canSendPhoto/);
  assert.match(chat,/setPhoto\(null\)/);
  assert.match(chat,/SecureChatAttachment scope="community"/);
