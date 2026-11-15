@@ -30,32 +30,30 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollView|null>(null);
- const inlineNearBottom=useRef(true);
+ const inlineNearBottom=useRef(false);
  const previousLatestMessageId=useRef(0);
  const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
  const composerFocused=useRef(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  useEffect(()=>{
-  if(!embedded)return;
   const showEvent=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
   const hideEvent=Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide';
   const shown=Keyboard.addListener(showEvent,()=>{
    setKeyboardVisible(true);
    // Keep the most recent messages nearby while typing, without jumping
    // when a caption or edit field (rather than the composer) has focus.
-   if(composerFocused.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+   if(composerFocused.current&&inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
   });
   const hidden=Keyboard.addListener(hideEvent,()=>setKeyboardVisible(false));
   return()=>{shown.remove();hidden.remove();};
  },[embedded]);
  useEffect(()=>{
-  if(!embedded)return;
   const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
   if(latest>previousLatestMessageId.current&&previousLatestMessageId.current>0&&!inlineNearBottom.current)
    setUnseenBelow(true);
   previousLatestMessageId.current=latest;
- },[embedded,entries]);
+ },[entries]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
  const [editing,setEditing]=useState<SessionChatEntry|null>(null),[editText,setEditText]=useState('');
@@ -88,13 +86,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    setEntries(history);setClosed(false);setSyncWarning('');
    const previousHistoryError=historyError.current;historyError.current=null;
    if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
-   const latest=history.reduce((n,m)=>Math.max(n,m.id),0);
-   // Embedded chats acknowledge only after the history viewport reports a real bottom position.
-    // A refresh response alone does not prove that newly arrived messages were visible.
-    if(latest>lastAcknowledgedMessageId.current&&!embedded){
-    lastAcknowledgedMessageId.current=latest;
-    void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
-   }
+   // Server refresh does not prove that new messages were visible in either view.
   }catch(e){
    if(version!==generation.current)return;
    const accessRevoked=e instanceof ApiError&&[401,403,404,409,410].includes(e.status);
@@ -131,7 +123,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    lastAcknowledgedMessageId.current=0;
    // Preserve unsent text, replies and selected media on ordinary refocus.
    // Clear everything only when the session or authenticated account changed.
-   inlineNearBottom.current=true;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);
+   inlineNearBottom.current=false;setHistoryLimit(40);previousLatestMessageId.current=0;setUnseenBelow(false);
    setEntries([]);setDraft('');setReply(null);setEditing(null);setEditText('');
    setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');
   }
@@ -352,8 +344,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   }
  }
  const recentPhotoIds=new Set(recentPreviewMessageIds(entries));
- const reactions=useChatReactions('session',String(id),auth.token,(embedded?entries.slice(-historyLimit):entries).map(m=>m.id),!closed);
- const renderedMessages=(embedded?entries.slice(-historyLimit):entries).map(m=><View key={m.id} style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
+ const reactions=useChatReactions('session',String(id),auth.token,entries.slice(-historyLimit).map(m=>m.id),!closed);
+ const renderedMessages=entries.slice(-historyLimit).map(m=><View key={m.id} style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
      <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · Convidado':''}</Text>
      <View style={{flexDirection:'row',gap:5}}>
@@ -386,7 +378,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
-  {embedded?<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+  {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
     if(inlineNearBottom.current){
@@ -402,12 +394,12 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     {entries.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
       <Text style={styles.actionText}>Ver mensagens anteriores</Text>
     </Pressable>:null}{renderedMessages}
-   </ScrollView>:renderedMessages}
-  {embedded&&unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
+   </ScrollView>}
+  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
     onPress={()=>{inlineNearBottom.current=true;setUnseenBelow(false);inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
-  {embedded&&auth.token&&!closed?<View style={styles.quickActions}>
+  {auth.token&&!closed?<View style={styles.quickActions}>
     {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
       style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
       <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
@@ -421,11 +413,11 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual" disabled={locationBusy||sending||uploading}
       style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
    </View>:null}
-  {!embedded&&auth.token&&!closed?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
+  {false&&auth.token&&!closed?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
    </Pressable>:null}
-   {!embedded&&attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
+   {false&&attachmentsOpen&&!closed?<View style={styles.attachmentOptions}>
    {auth.token&&!closed?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
   <ChatPdfComposer target={{scope:'session',id}} token={auth.token} onPermissionError={()=>{void refresh(true,generation.current);}} enabled={!closed&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{
    // Only clear the reply actually attached to this PDF, not a new choice
@@ -462,7 +454,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     <View style={styles.composer}>
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel="Mensagem da sessão" placeholder="Escreve uma mensagem"
-       onFocus={()=>{composerFocused.current=true;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
      <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem'} style={styles.sendAction}
@@ -473,7 +465,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {syncWarning&&!closed?<Button title="Tentar novamente" secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
   {!embedded?<Button title="Voltar à sessão" secondary onPress={()=>router.back()}/>:null}
  </>;
- return embedded?<View style={styles.inline}>{content}</View>:<Page autoScrollToEnd>{content}</Page>;
+ return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }
 const styles=StyleSheet.create({
  inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
