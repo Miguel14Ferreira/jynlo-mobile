@@ -41,6 +41,7 @@ export default function TeamDetail(){
   catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a configuração.');}
   finally{setSaving(false);}
  };
+ const isOwner=!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username===auth.username);
  return <Page>
   <Button title="← Equipas" onPress={()=>router.push('/teams')}/>
   {loading?<Loader/>:null}
