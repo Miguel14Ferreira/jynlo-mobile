@@ -384,7 +384,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     if(inlineNearBottom.current){
      setUnseenBelow(false);
      const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
-     if(auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
+     if(AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
       void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
