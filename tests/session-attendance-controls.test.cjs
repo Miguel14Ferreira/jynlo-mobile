@@ -17,8 +17,8 @@ test('attendance actions are creator-only after kickoff, with explicit confirmat
  assert.match(screen,/auth\.token&&!DEMO_MODE&&owner&&detail\.status!=='CANCELLED'/);
  assert.match(screen,/Date\.parse\(detail\.gameDate\)<=Date\.now\(\)/);
  assert.match(screen,/Alert\.alert\(present\?'Confirmar presença\?'\:'Registar falta\?'/);
- assert.match(screen,/recordSessionAttendance\(id,participant\.id,auth\.token,status\)/);
- assert.match(screen,/attendanceInFlight\.current=true/);
+ assert.match(screen,/recordSessionAttendance\(id,participant\.id,actorToken,status\)/);
+ assert.match(screen,/attendanceInFlight\.current=true;[\s\S]*?const actorToken=auth\.token/);
  assert.match(screen,/attendanceInFlight\.current=false/);
  assert.match(screen,/await load\(\)/);
  assert.match(screen,/Registar falta/);
