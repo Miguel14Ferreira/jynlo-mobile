@@ -166,8 +166,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     onMessage:(msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
       setMessages(old=>mergeMessages(old,[msg]));
       // Delivery alone never proves visibility. The embedded viewport acknowledges
-      // messages only after its measured scroll reaches the bottom.}
-   });
+      // messages only after its measured scroll reaches the bottom.
+    }});
    // A disconnected WebSocket must not leave the conversation frozen until a manual refresh.
    const timer=setInterval(()=>{
     if(active&&generation.current===version&&connectionStatus.current!=='online'&&AppState.currentState==='active')
