@@ -38,3 +38,20 @@ export async function deleteTeamContent(teamId:number,kind:TeamContentKind,id:nu
  if(!Number.isSafeInteger(id)||id<=0)throw Error('Mensagem inválida.');
  return request<void>(endpoint(teamId,kind)+'/'+id,{token,method:'DELETE'});
 }
+
+export interface TeamReactionState { counts:Record<string,number>;mine:string|null }
+export async function teamReactionSummaries(teamId:number,kind:TeamContentKind,ids:number[],token:string):Promise<Record<number,TeamReactionState>>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar reações.');
+ if(ids.length===0)return {};
+ if(ids.length>100||ids.some(id=>!Number.isSafeInteger(id)||id<=0))throw Error('Lista de mensagens inválida.');
+ return request<Record<number,TeamReactionState>>(endpoint(teamId,kind)+'/reactions?ids='+ids.join(','),{token});
+}
+export async function setTeamReaction(teamId:number,kind:TeamContentKind,id:number,emoji:string,token:string):Promise<void>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para reagir.');
+ if(!['👍','❤️','😂','🔥','👏'].includes(emoji))throw Error('Reação inválida.');
+ return request<void>(endpoint(teamId,kind)+'/'+id+'/reaction',{token,method:'PUT',body:{emoji}});
+}
+export async function removeTeamReaction(teamId:number,kind:TeamContentKind,id:number,token:string):Promise<void>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para reagir.');
+ return request<void>(endpoint(teamId,kind)+'/'+id+'/reaction',{token,method:'DELETE'});
+}
