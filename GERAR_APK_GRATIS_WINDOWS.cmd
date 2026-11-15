@@ -13,12 +13,12 @@ echo.
 echo JYNLO MOBILE: validacao e APK Android local
 echo Esta operacao usa o teu computador. Nao usa GitHub Actions, Codemagic nem EAS.
 echo.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\validate-local.ps1" -LocalApk
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\build-with-portable-node.ps1"
 set "RESULTADO=%ERRORLEVEL%"
 if not "%RESULTADO%"=="0" (
   echo.
   echo A compilacao falhou. Verifica o erro acima.
-  echo Se faltarem Node 22, JDK 17 ou Android SDK, instala-os e repete.
+  echo Node 22 portatil e preparado automaticamente. Confirma Java JDK 17 e Android SDK se necessário.
 ) else (
   echo.
   echo A APK foi gerada em dist\android-local\jynlo-preview-local.apk
