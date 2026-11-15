@@ -16,6 +16,7 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
  const [entryCheck,setEntryCheck]=useState<'checking'|'absent'|'present'|'failed'>('checking');
  const [rosterLoaded,setRosterLoaded]=useState(false);
  const [sentIds,setSentIds]=useState<number[]>([]);
+ const [refreshKey,setRefreshKey]=useState(0);
  const generation=useRef(0),operationRef=useRef(false);
  useEffect(()=>{
   let active=true;
@@ -28,7 +29,7 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
      else {setEntryCheck('failed');setError('Não foi possível confirmar o estado da inscrição. Atualiza antes de finalizar.');}
    });
   return()=>{active=false;generation.current++;};
- },[communityId,type,competitionId,globalTeamId,token]);
+ },[communityId,type,competitionId,globalTeamId,token,refreshKey]);
  const load=async()=>{
   if(operationRef.current||entryCheck!=='present')return;
   const version=generation.current;
@@ -52,7 +53,7 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
   }catch(e){if(version===generation.current){
    setEntryCheck('failed');
    setError((e instanceof Error?e.message:'Não foi possível finalizar.')+
-    ' Estado incerto: reabre o ecrã para confirmar a inscrição antes de repetir.');
+    ' Estado incerto: verifica novamente a inscrição antes de repetir.');
   }}finally{operationRef.current=false;if(version===generation.current)setBusy(false);}
  };
  const toggle=(id:number)=>{
@@ -86,7 +87,8 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
   {!entry?<><Button title={entryCheck==='checking'?'A verificar inscrição…':'Finalizar inscrição da equipa'} disabled={busy||entryCheck!=='absent'} onPress={()=>void finalize()}/>
-   <Text style={styles.note}>{entryCheck==='failed'?'O estado da inscrição é desconhecido. Reabre este ecrã para voltar a verificar.':'Inscreve a equipa nesta prova. Os jogadores não são adicionados automaticamente.'}</Text>
+   <Text style={styles.note}>{entryCheck==='failed'?'O estado da inscrição é desconhecido. Atualiza antes de tentar novamente.':'Inscreve a equipa nesta prova. Os jogadores não são adicionados automaticamente.'}</Text>
+   {entryCheck==='failed'?<Button secondary title="Verificar novamente a inscrição" disabled={busy} onPress={()=>setRefreshKey(key=>key+1)}/>:null}
   </>:<>
    <Text style={styles.heading}>{entry.name} · Equipa inscrita</Text>
    <Text style={styles.note}>Plantel global confirmado: {entry.confirmedGlobalPlayers} jogadores.</Text>
