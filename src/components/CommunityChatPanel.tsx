@@ -6,6 +6,7 @@ import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} fro
 import {confirmedCommunityChatSend} from '../lib/chat-send-receipt.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from './UI';
@@ -32,7 +33,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
- const inlineHistoryRef=useRef<ScrollView|null>(null);
+ const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
  const inlineNearBottom=useRef(false);
  const previousLatestMessageId=useRef(0);
  const lastAcknowledgedMessageId=useRef(0);
