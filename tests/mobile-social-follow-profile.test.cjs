@@ -26,7 +26,7 @@ test('public profile is guarded against stale responses and repeated writes',()=
  assert.match(screen,/await changeFollow\(name,shouldFollow,auth\.token\)/);
  assert.match(screen,/if\(request===version\.current\)setStatus\(next\)/);
  assert.match(screen,/Não foi possível confirmar a alteração/);
- assert.match(screen,/accessibilityLabel=\{status\.followedByMe\?'Deixar de seguir':'Seguir utilizador'\}/);
+ assert.match(screen,/accessibilityLabel=\{status\.followedByMe\?'Deixar de seguir':status\.requestPending\?'Cancelar pedido para seguir':status\.privateProfile\?'Pedir para seguir':'Seguir utilizador'\}/);
 });
 test('users can open public profiles from social lists and feed',()=>{
  assert.match(lists,/accessibilityLabel=\{\x60Abrir perfil de \$\{person\.username\}\x60\}/);
