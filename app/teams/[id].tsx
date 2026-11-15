@@ -5,18 +5,21 @@ import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
+import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
+ const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
   setLoading(true);setError('');
   try{const [details,roster]=await Promise.all([
    sportsTeamDetail(teamId,auth.token||undefined),sportsTeamMembers(teamId,auth.token||undefined)]);
-   setTeam(details);setMembers(roster);}
+   setTeam(details);setMembers(roster);
+   if(auth.token)setCommunities(await sportsTeamCommunities(teamId,auth.token));else setCommunities([]);}
   catch(e){setError(e instanceof Error?e.message:'Equipa não encontrada.');}
   finally{setLoading(false);}
  },[teamId,auth.token]);
@@ -32,6 +35,26 @@ export default function TeamDetail(){
   setSaving(true);setError('');
   try{await inviteSportsTeamMember(teamId,profileId,auth.token);setCandidates([]);setSearchName('');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível convidar o jogador.');}
+  finally{setSaving(false);}
+ };
+ const decideMembership=async(id:number,accept:boolean)=>{
+  if(!auth.token||saving)return;
+  setSaving(true);setError('');setMembershipNote('');
+  try{
+   await answerTeamCommunityMembership(id,accept,auth.token);
+   setCommunities(await sportsTeamCommunities(teamId,auth.token));
+   setMembershipNote(accept?'Convite aceite.':'Convite recusado.');
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível responder.');}
+  finally{setSaving(false);}
+ };
+ const removeMembership=async(id:number)=>{
+  if(!auth.token||saving)return;
+  setSaving(true);setError('');setMembershipNote('');
+  try{
+   await removeTeamCommunityMembership(id,auth.token);
+   setCommunities(await sportsTeamCommunities(teamId,auth.token));
+   setMembershipNote('Equipa removida da comunidade.');
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível remover a equipa.');}
   finally{setSaving(false);}
  };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
@@ -65,6 +88,22 @@ export default function TeamDetail(){
    <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Button title="Encontrar competições para a equipa" onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}/>
     <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
+   <View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
+    {communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
+      <Text style={styles.note}>{m.communityName}</Text>
+      {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>void removeMembership(m.id)}/>:null}
+    </View>)}
+    {!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>Ainda não pertence a comunidades.</Text>:null}
+    {isOwner?communities.filter(m=>m.status==='PENDING_TEAM').map(m=><View key={m.id} style={styles.candidate}>
+      <Text style={styles.note}>Convite de {m.communityName}</Text>
+      <Button title="Aceitar convite" disabled={saving} onPress={()=>void decideMembership(m.id,true)}/>
+      <Button title="Recusar convite" secondary disabled={saving} onPress={()=>void decideMembership(m.id,false)}/>
+    </View>):null}
+    {isOwner?communities.filter(m=>m.status==='PENDING_COMMUNITY').map(m=>
+      <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
+    {membershipNote?<Message>{membershipNote}</Message>:null}
+    {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
+   </View>
    <View style={styles.panel}><Text style={styles.heading}>Feed</Text>
     <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
     {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>:null}
