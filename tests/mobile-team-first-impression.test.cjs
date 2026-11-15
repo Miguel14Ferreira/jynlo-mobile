@@ -135,3 +135,22 @@ test('team directory keeps invitations updated when returning to the app without
  assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
  assert.doesNotMatch(screen.slice(screen.indexOf('const timer=setInterval('),screen.indexOf('const resume=AppState.addEventListener(')),/respondSportsTeamInvitation/);
 });
+
+test('permanent team chat and feed use authorized, feature-gated server timelines',()=>{
+ const team=read('app/teams/[id].tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(team,/team\.feedEnabled&&isMember&&auth\.token&&auth\.username/);
+ assert.match(team,/team\.chatEnabled&&isMember&&auth\.token&&auth\.username/);
+ assert.match(team,/<SportsTeamContentPanel teamId=\{teamId\} kind="feed"/);
+ assert.match(team,/<SportsTeamContentPanel teamId=\{teamId\} kind="chat"/);
+ assert.doesNotMatch(team,/Mensagens de equipa ainda indisponíveis/);
+ assert.doesNotMatch(team,/Publicações de equipa ainda indisponíveis/);
+ assert.match(api,/\/api\/teams\//);
+ assert.match(api,/method:'POST',body:\{body:message\}/);
+ assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token\)/);
+ assert.match(panel,/AppState\.addEventListener\('change',state=>/);
+ assert.match(panel,/clearInterval\(timer\);resume\.remove\(\)/);
+ assert.match(panel,/Consulta o histórico antes de repetires/);
+});
