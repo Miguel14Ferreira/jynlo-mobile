@@ -41,6 +41,26 @@ test('certificate fingerprint is extracted without private signing data',()=>{
  assert.throws(()=>parseApkSignature(SIGNED+SIGNED.replaceAll('#1','#2')),/exatamente uma assinatura/);
 });
 
+test('modern apksigner V3.0 and V2 labels identify the same verified debug certificate',()=>{
+ const modern='Verifies\\nVerified using v2 scheme (APK Signature Scheme v2): true\\n'+
+  'V2 Signer: certificate DN: CN=Android Debug,O=Android,C=US\\n'+
+  'V2 Signer: certificate SHA-256 digest: '+DIGEST+'\\n'+
+  'V3.0 Signer: certificate DN: CN=Android Debug,O=Android,C=US\\n'+
+  'V3.0 Signer: certificate SHA-256 digest: '+DIGEST+'\\n';
+ assert.deepEqual(parseApkSignature(modern),{
+  signerCertificateSha256:DIGEST,signingType:'debug'
+ });
+ const modernCustom=modern.replaceAll('CN=Android Debug','CN=Jynlo Signing');
+ assert.equal(parseApkSignature(modernCustom).signingType,'custom');
+});
+
+test('versioned signers with different fingerprints are rejected',()=>{
+ const modern='V2 Signer: certificate SHA-256 digest: '+DIGEST+'\\n'+
+  'V3.0 Signer: certificate SHA-256 digest: '+'cd'.repeat(32)+'\\n';
+ assert.throws(()=>parseApkSignature(modern),/exatamente uma identidade/);
+ assert.throws(()=>parseApkSignature('V3.0 Signer: certificate SHA-256 digest: not-a-digest\\n'),/assinatura inválidos/);
+});
+
 test('real APK verification checks package, version and verified signing certificate',()=>{
  const report=verifyAndroidApk('/workspace/android/app-release.apk',expected,env,io,exec);
  assert.equal(report.verified,true);
