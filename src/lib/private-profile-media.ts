@@ -15,6 +15,7 @@ export async function downloadPrivateProfileMedia(path:string,token:string):Prom
  try{
   const response=await expoFetch(API_BASE+path,{
    headers:{Authorization:`Bearer ${token}`,Accept:'image/*, video/*'},
+   credentials:'omit',redirect:'error',
   });
   if(!response.ok)throw Error('Não tens autorização para ver este conteúdo.');
   const mime=response.headers.get('content-type')||'';
