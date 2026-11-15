@@ -17,6 +17,8 @@ function artifactMetadata(input,config,apkBytes){
  if(!SHA.test(input.CM_COMMIT||''))throw Error('Commit Git inválido ou indisponível.');
  if((input.EXPO_PUBLIC_JYNLO_API_URL||'')!==API)
   throw Error('A APK de testes deve usar exclusivamente o backend preview.');
+ if(config.android?.package!=='com.jynlo.app')
+  throw Error('A APK não corresponde à identidade Android oficial Jynlo.');
  if(!Number.isInteger(config.android?.versionCode)||config.android.versionCode<=0||
     typeof config.version!=='string'||!/^\d+\.\d+\.\d+$/.test(config.version))
   throw Error('Versão Android inválida.');
