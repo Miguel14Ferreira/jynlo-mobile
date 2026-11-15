@@ -49,3 +49,37 @@ export async function setSportsTeamFeatures(
     token, method: 'PATCH', body: features
   });
 }
+
+export interface SportsTeamMember {
+  profileId: number;
+  username: string;
+  role: 'OWNER' | 'PLAYER';
+}
+export interface SportsTeamInvitation {
+  teamId: number;
+  teamName: string;
+  status: 'INVITED';
+}
+export async function sportsTeamMembers(teamId: number, token?: string): Promise<SportsTeamMember[]> {
+  return request<SportsTeamMember[]>('/api/teams/' + validId(teamId) + '/members', {token});
+}
+export async function mySportsTeamInvitations(token: string): Promise<SportsTeamInvitation[]> {
+  if (!token || DEMO_MODE) return [];
+  return request<SportsTeamInvitation[]>('/api/teams/invitations/mine', {token});
+}
+export async function inviteSportsTeamMember(teamId: number, profileId: number, token: string): Promise<void> {
+  if (!token || DEMO_MODE) throw Error('Inicia sessão para convidar jogadores.');
+  return request<void>('/api/teams/' + validId(teamId) + '/invitations', {
+    token,method:'POST',body:{profileId:validId(profileId)}
+  });
+}
+export async function respondSportsTeamInvitation(teamId: number, accept: boolean, token: string): Promise<void> {
+  if (!token || DEMO_MODE) throw Error('Inicia sessão para responder ao convite.');
+  return request<void>('/api/teams/' + validId(teamId) + '/invitations/' +
+    (accept ? 'accept' : 'decline'),{token,method:'POST',body:{}});
+}
+export async function removeSportsTeamMember(teamId: number, profileId: number, token: string): Promise<void> {
+  if (!token || DEMO_MODE) throw Error('Inicia sessão para gerir jogadores.');
+  return request<void>('/api/teams/' + validId(teamId) + '/members/' + validId(profileId),
+    {token,method:'DELETE'});
+}
