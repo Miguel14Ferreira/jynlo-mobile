@@ -86,3 +86,26 @@ test('competition selection stays within owned teams and anonymous users cannot 
  assert.match(screen,/disabled=\{!auth\.token\|\|!chosen\|\|busy\|\|applied\(item,chosen\)\}/);
  assert.match(screen,/setApplications\(current=>\[next,\.\.\.current\.filter\(item=>item\.id!==next\.id\)\]\)/);
 });
+
+test('team profile displays an identity hero with verified roster and competition stats',()=>{
+ const screen=read('app/teams/[id].tsx');
+ for(const text of ['JYNLO · EQUIPA DESPORTIVA','heroCrest','heroIdentity','statsRow','Jogadores',
+  'Comunidades','Troféus','Explorar competições','playerCard','Responsável'])
+   assert.ok(screen.includes(text),text);
+ assert.match(screen,/communities\.filter\(m=>m\.status==='ACTIVE'\)\.length/);
+ assert.match(screen,/standaloneTrophies\.length\+championshipHonours\.length/);
+});
+
+test('team profile survives partial API failures and ignores late results after navigation',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/Promise\.allSettled\(\[/);
+ assert.match(screen,/if\(version!==requestVersion\.current\)return/);
+ assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;searchVersion\.current\+\+;\}/);
+ assert.match(screen,/details\.status==='fulfilled'/);
+ assert.match(screen,/roster\.status==='fulfilled'/);
+ assert.match(screen,/pastEvents\.status==='fulfilled'/);
+ assert.match(screen,/awards\.status==='fulfilled'/);
+ assert.match(screen,/linked\.status==='fulfilled'/);
+ assert.match(screen,/version===searchVersion\.current/);
+ assert.match(screen,/if\(!auth\.token\|\|saving\|\|!Number\.isSafeInteger\(profileId\)/);
+});
