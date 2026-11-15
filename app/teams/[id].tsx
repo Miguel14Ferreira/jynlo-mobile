@@ -103,9 +103,25 @@ export default function TeamDetail(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {team?<><View style={styles.header}>
-    <Text style={styles.title}>{team.name}</Text>
-    <Text style={styles.note}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text>
-    {team.description?<Text style={styles.note}>{team.description}</Text>:null}
+    <Text style={styles.eyebrow}>JYNLO · EQUIPA DESPORTIVA</Text>
+    <View style={styles.heroIdentity}>
+      <View style={styles.heroCrest}><Text style={styles.heroCrestText}>{(team.name||'E').charAt(0).toUpperCase()}</Text></View>
+      <View style={styles.heroCopy}>
+        <Text style={styles.title}>{team.name}</Text>
+        <Text style={styles.heroSubtitle}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text>
+      </View>
+    </View>
+    {team.description?<Text style={styles.description}>{team.description}</Text>:null}
+    <View style={styles.statsRow}>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{members.length}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{communities.filter(m=>m.status==='ACTIVE').length}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{standaloneTrophies.length+championshipHonours.length}</Text><Text style={styles.statLabel}>Troféus</Text></View>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityLabel="Encontrar competições para esta equipa"
+      style={styles.heroAction}
+      onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}>
+      <Text style={styles.heroActionLabel}>Explorar competições  →</Text>
+    </Pressable>
    </View>
    <View style={styles.tabBar}>
     <Button title="Visão geral" secondary={activeTab!=='OVERVIEW'}
@@ -114,7 +130,14 @@ export default function TeamDetail(){
       secondary={activeTab!=='TROPHIES'} onPress={()=>setActiveTab('TROPHIES')}/>
    </View>
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
-    {members.map(m=><Text key={m.profileId} style={styles.note}>{m.username} · {m.role==='OWNER'?'Responsável':'Jogador'}</Text>)}
+    {members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
+    <View style={styles.roster}>
+    {members.map(m=><View key={m.profileId} style={styles.playerCard}>
+      <View style={styles.playerAvatar}><Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text></View>
+      <View style={styles.playerInfo}><Text style={styles.playerName}>@{m.username}</Text>
+      <Text style={styles.note}>{m.role==='OWNER'?'Responsável':'Jogador'}</Text></View>
+    </View>)}
+    </View>
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
     {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
       placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted}/>
@@ -178,7 +201,27 @@ export default function TeamDetail(){
  </Page>;
 }
 const styles=StyleSheet.create({
- header:{padding:20,backgroundColor:C.surface,borderRadius:16,gap:8},
+ header:{padding:20,backgroundColor:'#0A3340',borderColor:'#2A7A79',borderWidth:1,borderRadius:22,gap:13},
+ eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:C.mint},
+ heroIdentity:{flexDirection:'row',alignItems:'center',gap:14},
+ heroCrest:{width:74,height:74,borderRadius:19,backgroundColor:'#168D86',alignItems:'center',justifyContent:'center'},
+ heroCrestText:{color:'#052C32',fontSize:32,fontWeight:'900'},
+ heroCopy:{flex:1,gap:5},
+ heroSubtitle:{color:'#A4EDDE',fontWeight:'700',fontSize:13},
+ description:{color:'#D1E4E8',fontSize:13,lineHeight:20},
+ statsRow:{flexDirection:'row',gap:8},
+ statCard:{flex:1,alignItems:'center',paddingVertical:12,paddingHorizontal:5,backgroundColor:'#104655',borderWidth:1,borderColor:'#347C84',borderRadius:12,gap:3},
+ statNumber:{color:C.white,fontSize:22,fontWeight:'900'},
+ statLabel:{color:'#B5D7DB',fontSize:10,fontWeight:'700'},
+ heroAction:{backgroundColor:C.mint,padding:13,borderRadius:12,alignItems:'center'},
+ heroActionLabel:{color:'#053039',fontWeight:'900'},
+ roster:{gap:8},
+ playerCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,flexDirection:'row',alignItems:'center',gap:11},
+ playerAvatar:{height:42,width:42,borderRadius:21,backgroundColor:'#167A7D',alignItems:'center',justifyContent:'center'},
+ playerAvatarText:{color:C.white,fontWeight:'900',fontSize:17},
+ playerInfo:{flex:1,gap:2},
+ playerName:{color:C.white,fontSize:14,fontWeight:'800'},
+ empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
  tabBar:{flexDirection:'row',flexWrap:'wrap',gap:10},
  title:{fontSize:27,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:20},
