@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const os=require('node:os');
-const {artifactMetadata,writeManifest}=require('../scripts/android-qa-artifact-manifest.cjs');
+const {artifactMetadata,writeManifest,qaTestInstructions}=require('../scripts/android-qa-artifact-manifest.cjs');
 const app=JSON.parse(fs.readFileSync(path.join(__dirname,'..','app.json'),'utf8')).expo;
 const input={
  CM_BRANCH:'develop',
@@ -73,6 +73,12 @@ test('APK sidecar is generated from the real output folder without secrets',()=>
   const sidecar=JSON.parse(fs.readFileSync(path.join(root,'build-metadata/jynlo-android-qa.json'),'utf8'));
   assert.equal(sidecar.sha256,output.sha256);
   assert.equal(sidecar.pushConfigured,true);
+  assert.equal(sidecar.binaryVerified,true);
+  assert.equal(sidecar.signerCertificateSha256,report.signerCertificateSha256);
+  const guide=fs.readFileSync(path.join(root,'build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt'),'utf8');
+  assert.match(guide,/JYNLO — PLANO DE TESTES DA APK ANDROID/);
+  assert.match(guide,/SHA-256:/);
+  assert.match(guide,/confirmar receção real de uma notificação/);
   assert.equal(JSON.stringify(sidecar).includes('/private/firebase.json'),false);
   assert.equal(JSON.stringify(sidecar).includes('JYNLO_FIREBASE_ANDROID_JSON_B64'),false);
  }finally{fs.rmSync(root,{force:true,recursive:true});}
@@ -92,10 +98,28 @@ test('manifest declares custom signing accurately if a non-debug certificate sig
  assert.equal(result.signerCertificateSha256,report.signerCertificateSha256);
 });
 
+test('QA instructions identify build identity and required tester journey',()=>{
+ const instructions=qaTestInstructions(artifactMetadata(input,app,bytes,report));
+ assert.match(instructions,/Versão: 0\.16\.6 \(build 13\)/);
+ assert.match(instructions,/APK: app-release\.apk/);
+ assert.match(instructions,/SHA-256:/);
+ assert.match(instructions,/Instalar a APK/);
+ assert.match(instructions,/Criar publicacao com foto/);
+ assert.match(instructions,/Cancelar sessao pelo feed/);
+ assert.match(instructions,/Verificar equipas, torneios e campeonatos/);
+ assert.match(instructions,/NÃO DISPONÍVEL nesta APK/);
+ assert.doesNotMatch(instructions,/GOOGLE_SERVICES_JSON|EXPO_TOKEN|private\/firebase/);
+ assert.ok(instructions.split('\\n').length>25);
+ const push=qaTestInstructions(artifactMetadata({...input,GOOGLE_SERVICES_JSON:'/private/firebase.json'},app,bytes,report));
+ assert.match(push,/confirmar receção real de uma notificação/);
+ assert.doesNotMatch(push,/NÃO DISPONÍVEL nesta APK/);
+});
+
 test('Codemagic generates the manifest after release Gradle, for both workflows',()=>{
  const yaml=fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8');
  assert.equal((yaml.match(/node scripts\/android-qa-artifact-manifest\.cjs/g)||[]).length,2);
  assert.equal((yaml.match(/build-metadata\/jynlo-android-qa\.json/g)||[]).length,2);
+ assert.equal((yaml.match(/build-metadata\/LEIA-ME-JYNLO-ANDROID-QA\.txt/g)||[]).length,2);
  const flows=yaml.split(/^  jynlo-android-(?:push-)?qa:/m).slice(1);
  assert.equal(flows.length,2);
  for(const flow of flows)
