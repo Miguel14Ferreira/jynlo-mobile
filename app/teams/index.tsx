@@ -5,6 +5,7 @@ import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/
 import {useAuth} from '../../src/lib/auth';
 import {createSportsTeam,discoverSportsTeams,mySportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
 
 export default function TeamsScreen(){
@@ -12,6 +13,7 @@ export default function TeamsScreen(){
  const [owned,setOwned]=useState<SportsTeam[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ const [createOpen,setCreateOpen]=useState(false);
  const load=useCallback(async()=>{
    setLoading(true);setError('');
    try{const [found,mine]=await Promise.all([discoverSportsTeams(query,auth.token||undefined),auth.token?mySportsTeams(auth.token):Promise.resolve([])]);
@@ -48,22 +50,26 @@ export default function TeamsScreen(){
   finally{setSaving(false);}
  };
  return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
-  <Text style={styles.title}>Equipas</Text>
-  <Button title="Encontrar torneios e campeonatos" secondary onPress={()=>router.push('/teams/competitions')}/>
-  <Text style={styles.note}>Cria uma equipa independente para participar em várias comunidades e competições.</Text>
-  <TextInput style={styles.input} value={query} onChangeText={setQuery}
-    placeholder="Pesquisar equipas" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"/>
-  <Button title="Pesquisar" onPress={()=>void load()}/>
-  {auth.token?<View style={styles.section}>
-   <Text style={styles.heading}>Criar equipa</Text>
+  <View style={styles.hero}>
+   <View style={styles.heroEmblem}><JynloIcon name="community" size={29} color={C.mint}/></View>
+   <Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text>
+   <Text style={styles.title}>O teu clube. A tua história.</Text>
+   <Text style={styles.heroSub}>Junta a malta, entra em competições e leva a equipa contigo para todas as épocas.</Text>
+   <Button title="Encontrar torneios e campeonatos" onPress={()=>router.push('/teams/competitions')}/>
+  </View>
+  {auth.token?<Button title={createOpen?'Fechar criação de equipa':'+ Criar nova equipa'} secondary onPress={()=>setCreateOpen(open=>!open)}/>
+   :<Button title="Iniciar sessão para criar equipa" onPress={()=>router.push('/login')}/>}
+  {auth.token&&createOpen?<View style={styles.section}>
+   <Text style={styles.heading}>Dá identidade à tua equipa</Text>
+   <Text style={styles.note}>Depois de criares a equipa, podes convidar jogadores.</Text>
    <TextInput style={styles.input} value={name} onChangeText={setName} maxLength={100}
-    placeholder="Nome da equipa" placeholderTextColor={C.muted}/>
+    placeholder="Nome da equipa" placeholderTextColor={C.muted} accessibilityLabel="Nome da nova equipa"/>
    <TextInput style={styles.input} value={sport} onChangeText={setSport} maxLength={100}
-    placeholder="Modalidade" placeholderTextColor={C.muted}/>
+    placeholder="Modalidade" placeholderTextColor={C.muted} accessibilityLabel="Modalidade da equipa"/>
    <TextInput style={styles.input} value={location} onChangeText={setLocation} maxLength={100}
-    placeholder="Localização" placeholderTextColor={C.muted}/>
-   <Button title={saving?'A criar…':'Criar equipa'} onPress={()=>void create()}/>
-  </View>:<Button title="Iniciar sessão para criar equipa" onPress={()=>router.push('/login')}/>}
+    placeholder="Localização" placeholderTextColor={C.muted} accessibilityLabel="Localização da equipa"/>
+   <Button title={saving?'A criar…':'Criar equipa'} disabled={saving||name.trim().length<2} onPress={()=>void create()}/>
+  </View>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {invites.length>0?<View style={styles.section}>
    <Text style={styles.heading}>Convites para equipas</Text>
@@ -84,29 +90,58 @@ export default function TeamsScreen(){
    </View>)}
   </View>:null}
   {auth.token?<View style={styles.section}>
-   <Text style={styles.heading}>As minhas equipas ({owned.length})</Text>
-   {!loading&&owned.length===0?<Text style={styles.note}>Ainda não administras nenhuma equipa.</Text>:null}
-   {owned.map(team=><Pressable key={team.id} style={styles.card} accessibilityRole="button"
-     onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
-     <Text style={styles.heading}>{team.name} ›</Text>
-     <Text style={styles.note}>{team.sport||'Várias modalidades'}</Text>
-   </Pressable>)}
-  </View>:null}
-  <Text style={styles.heading}>Descobrir equipas</Text>
-  {loading?<Loader/>:teams.length===0?<Message>Não foram encontradas equipas.</Message>:
-    teams.map(team=><Pressable key={team.id} style={styles.card}
-      onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
-      <Text style={styles.heading}>{team.name} ›</Text>
-      <Text style={styles.note}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text>
+    <View style={styles.sectionHeader}><Text style={styles.heading}>As minhas equipas</Text><Text style={styles.count}>{owned.length}</Text></View>
+    {!loading&&owned.length===0?<View style={styles.empty}>
+      <JynloIcon name="community" size={27} color={C.mint}/>
+      <Text style={styles.heading}>A tua primeira equipa começa aqui</Text>
+      <Text style={styles.note}>Cria uma equipa e mantém os teus jogadores e o histórico unidos.</Text>
+      <Button title="Criar equipa" secondary onPress={()=>setCreateOpen(true)}/>
+    </View>:null}
+    {owned.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
+       accessibilityRole="button" accessibilityLabel={'Abrir equipa '+team.name}
+       onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
+       <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
+       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+       <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text></View>
+       <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
+  </View>:null}
+  <View style={styles.section}>
+    <View style={styles.sectionHeader}><Text style={styles.heading}>Descobrir equipas</Text><JynloIcon name="search" color={C.mint} size={20}/></View>
+    <TextInput style={styles.input} value={query} onChangeText={setQuery}
+       placeholder="Nome, modalidade ou cidade" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"
+       returnKeyType="search" onSubmitEditing={()=>void load()}/>
+    <Button title="Pesquisar" secondary onPress={()=>void load()}/>
+    {loading?<Loader/>:teams.length===0?<View style={styles.empty}><Text style={styles.note}>Não encontrámos equipas. Experimenta outra pesquisa.</Text></View>:
+      teams.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
+        accessibilityRole="button" accessibilityLabel={'Ver equipa '+team.name}
+        onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
+        <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
+        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+        <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text></View>
+        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
+      </Pressable>)}
+  </View>
  </Page>;
 }
 const styles=StyleSheet.create({
- title:{fontSize:30,fontWeight:'900',color:C.white},
+ title:{fontSize:31,fontWeight:'900',color:C.white,lineHeight:37,letterSpacing:-.7},
  note:{fontSize:13,color:C.muted,lineHeight:20},
- heading:{fontSize:17,fontWeight:'800',color:C.white},
- input:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,
-  color:C.white,paddingHorizontal:15,paddingVertical:13,minHeight:48},
- section:{gap:10,padding:15,backgroundColor:C.surface,borderRadius:16},
- card:{padding:16,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,gap:7}
+ heading:{fontSize:17,fontWeight:'800',color:C.white,flexShrink:1},
+ hero:{backgroundColor:'#12352C',borderWidth:1,borderColor:'#2A6754',borderRadius:24,padding:21,gap:13},
+ heroEmblem:{backgroundColor:'#225342',borderRadius:17,width:56,height:56,alignItems:'center',justifyContent:'center'},
+ heroEyebrow:{fontSize:10,color:C.mint,fontWeight:'900',letterSpacing:1.5},
+ heroSub:{fontSize:14,color:'#D5E6DD',lineHeight:22},
+ input:{backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:14,
+  color:C.white,paddingHorizontal:15,paddingVertical:13,minHeight:50},
+ section:{gap:12,padding:16,backgroundColor:C.surface,borderRadius:20,borderWidth:1,borderColor:C.border},
+ sectionHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},
+ count:{backgroundColor:'#17483A',color:C.mint,fontWeight:'900',fontSize:12,borderRadius:15,
+  paddingHorizontal:11,paddingVertical:5,overflow:'hidden'},
+ card:{padding:14,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2,gap:7},
+ teamRow:{flexDirection:'row',alignItems:'center',gap:12},
+ teamIcon:{width:48,height:48,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:'#204639'},
+ teamCopy:{flex:1,minWidth:0,gap:3},
+ empty:{borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:16,padding:19,gap:12,alignItems:'center'},
+ pressed:{opacity:.76}
 });
