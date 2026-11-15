@@ -15,10 +15,18 @@ function confirmedStoryAuthorReceipt(reply,username,caption){
   (typeof reply.caption==='string'?reply.caption.trim():reply.caption===null?'':null)===caption.trim()&&
   typeof reply.createdAt==='string'&&Number.isFinite(Date.parse(reply.createdAt)));
 }
+function confirmedStoryDestinationReceipt(reply,communityId){
+ if(!reply||typeof reply!=='object')return false;
+ if(communityId!==null&&(!Number.isSafeInteger(communityId)||communityId<=0))return false;
+ // The backend must explicitly confirm the selected destination, including
+ // null for a personal Story. Never assume it from the submitted form.
+ return communityId===null?reply.communityId===null:
+  Number.isSafeInteger(reply.communityId)&&reply.communityId===communityId;
+}
 function confirmedStoryDetailsReceipt(reply,details){
  if(!reply||typeof reply!=='object'||!details)return false;
  const location=typeof reply.locationLabel==='string'?reply.locationLabel.trim():'';
  const tags=typeof reply.taggedUsernames==='string'?reply.taggedUsernames.trim().toLowerCase():'';
  return location===details.locationLabel&&tags===details.taggedUsernames;
 }
-module.exports={confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt};
+module.exports={confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt,confirmedStoryDestinationReceipt};
