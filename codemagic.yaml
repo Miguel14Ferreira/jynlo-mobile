@@ -218,3 +218,68 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+# Diagnostic-only: verify native iOS compilation without weakening the
+# regular TestFlight gate, which still requires the complete test suite.
+  jynlo-ios-native-diagnostic:
+    name: Jynlo iOS - IPA de diagnóstico (develop)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      node: v22.23.1
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.jynlo.app
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+    scripts:
+      - name: Confirmar branch e ferramentas
+        script: |
+          set -eu
+          if [ "${CM_BRANCH:-}" != "develop" ]; then
+            echo "Build iOS bloqueada: usar exclusivamente a branch develop."
+            exit 1
+          fi
+          node --version
+          xcodebuild -version
+      - name: Instalar dependencias e validar app
+        script: |
+          set -eu
+          npm install --no-audit --no-fund
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          npm run typecheck
+          # Diagnostic IPA only. The strict TestFlight workflow still runs
+          # the full suite; do not publish this build without resolving it.
+          npm run test:syntax
+          node --test tests/api-origin-security.test.cjs tests/security-api-transport.test.cjs tests/response-body.test.cjs tests/post-album.test.cjs tests/story-sticker-bounds.test.cjs tests/picker-media-content-uri.test.cjs
+      - name: Gerar projeto nativo iOS
+        script: |
+          set -eu
+          bash scripts/prepare-jynlo-icon.sh
+          npx --no-install expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Aplicar assinatura Apple (App Store/TestFlight)
+        script: |
+          set -eu
+          xcode-project use-profiles
+      - name: Gerar IPA assinada
+        script: |
+          set -eu
+          WORKSPACE="$(find "$CM_BUILD_DIR/ios" -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          if [ -z "$WORKSPACE" ]; then
+            echo "Nao foi encontrado o workspace Xcode."
+            exit 1
+          fi
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          xcode-project build-ipa --workspace "$WORKSPACE" --scheme "$SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
