@@ -18,7 +18,7 @@ test('Story location stickers keep the label with a vector pin',()=>{
 });
 test('post editor has an icon close control and preserves native accessibility label',()=>{
  const s=read('src/components/PostEditSheet.tsx');
- assert.match(s,/name="close"/);
- assert.match(s,/accessibilityLabel="Fechar edição da publicação"/);
+ assert.match(s,/<CloseIconButton onPress=\{close\} label="Fechar edição da publicação"/);
+ assert.match(s,/<CloseIconButton onPress=\{close\} label="Fechar edição da publicação"/);
  assert.doesNotMatch(s,/style=\{styles.closeText\}>✕/);
 });
