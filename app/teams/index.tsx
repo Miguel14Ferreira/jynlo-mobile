@@ -14,16 +14,18 @@ export default function TeamsScreen(){
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
+ const [submittedQuery,setSubmittedQuery]=useState('');
  const load=useCallback(async()=>{
    setLoading(true);setError('');
-   try{const [found,mine]=await Promise.all([discoverSportsTeams(query,auth.token||undefined),auth.token?mySportsTeams(auth.token):Promise.resolve([])]);
+   try{const [found,mine]=await Promise.all([discoverSportsTeams(submittedQuery,auth.token||undefined),auth.token?mySportsTeams(auth.token):Promise.resolve([])]);
     setTeams(found);setOwned(mine);
     if(auth.token){const [memberships,competitions]=await Promise.all([mySportsTeamInvitations(auth.token),myTeamCompetitionInvitations(auth.token)]);
       setInvites(memberships);setCompetitionInvites(competitions.filter(x=>x.status==='PENDING'));}
     else {setInvites([]);setCompetitionInvites([]);}}
    catch(e){setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
    finally{setLoading(false);}
- },[query,auth.token]);
+ },[submittedQuery,auth.token]);
+ const search=()=>{const next=query.trim();if(next===submittedQuery){void load();}else setSubmittedQuery(next);};
  useFocusEffect(useCallback(()=>{void load();},[load]));
  const respond=async(teamId:number,accept:boolean)=>{
   if(!auth.token)return;
@@ -110,8 +112,8 @@ export default function TeamsScreen(){
     <View style={styles.sectionHeader}><Text style={styles.heading}>Descobrir equipas</Text><JynloIcon name="search" color={C.mint} size={20}/></View>
     <TextInput style={styles.input} value={query} onChangeText={setQuery}
        placeholder="Nome, modalidade ou cidade" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"
-       returnKeyType="search" onSubmitEditing={()=>void load()}/>
-    <Button title="Pesquisar" secondary onPress={()=>void load()}/>
+       returnKeyType="search" onSubmitEditing={search}/>
+    <Button title="Pesquisar" secondary onPress={search}/>
     {loading?<Loader/>:teams.length===0?<View style={styles.empty}><Text style={styles.note}>Não encontrámos equipas. Experimenta outra pesquisa.</Text></View>:
       teams.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
         accessibilityRole="button" accessibilityLabel={'Ver equipa '+team.name}
