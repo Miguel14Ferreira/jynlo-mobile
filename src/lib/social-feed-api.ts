@@ -353,6 +353,10 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
 export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
+  // A selected community must be a real numeric resource, never an invalid
+  // negative/NaN ID that silently changes the publishing destination.
+  if(communityId!=null&&(!Number.isSafeInteger(communityId)||communityId<=0))
+    throw new Error('Comunidade de destino inválida. Escolhe-a novamente.');
   if(geometry&&(![geometry.x,geometry.y,geometry.rotation,geometry.zoom].every(Number.isFinite)||
      geometry.x<0||geometry.x>100||geometry.y<0||geometry.y>100||
      geometry.rotation < -3600||geometry.rotation > 3600||geometry.zoom<.5||geometry.zoom>3))
