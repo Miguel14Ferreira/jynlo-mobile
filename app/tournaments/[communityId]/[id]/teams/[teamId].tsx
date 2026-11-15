@@ -87,7 +87,7 @@ export default function TournamentTeamProfileScreen(){
   try{
    const permanent=await promoteTournamentTeam(cid,tid,teamId,token);
    if(version!==generation.current)return;
-   setPromotion({globalTeamId:permanent.id,canPromote:false});
+   setPromotion({globalTeamId:permanent.id,canPromote:false,archived:false});
    setMessage('Equipa guardada na Jynlo. O histórico do torneio foi preservado.');
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível guardar a equipa.');}
   finally{promotionLock.current=false;if(version===generation.current)setPromoting(false);}
@@ -130,6 +130,10 @@ export default function TournamentTeamProfileScreen(){
       'A equipa ficará no teu perfil Jynlo e poderá participar noutras comunidades. O torneio e o seu histórico serão mantidos.',
       [{text:'Agora não',style:'cancel'},{text:'Criar equipa permanente',onPress:()=>{void promote();}}])}/>
     <Text style={styles.subtitle}>Se não converteres, esta equipa permanece apenas no torneio.</Text>
+   </View>:null}
+   {promotion?.archived&&!promotion.globalTeamId?<View style={styles.panel}>
+    <Text style={styles.heading}>Equipa temporária arquivada</Text>
+    <Text style={styles.subtitle}>O torneio terminou. Esta equipa já não pode ser convertida, mas os resultados e o plantel histórico continuam preservados.</Text>
    </View>:null}
    {promotion?.globalTeamId?<View style={styles.panel}>
     <Text style={styles.heading}>Equipa permanente Jynlo</Text>
