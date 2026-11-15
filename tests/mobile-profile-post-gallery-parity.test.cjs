@@ -18,8 +18,8 @@ test('post detail has device-width album pager, full-screen image and safe route
  assert.match(s,/Math.max\(220,screenWidth-64\)/);
  assert.match(s,/<ScrollView horizontal pagingEnabled/);
  assert.match(s,/resizeMode="contain"/);
- assert.match(s,/label=\{'Ampliar fotografia '\+\(index\+1\)/);
- assert.match(s,/setExpandedImage\(uri\)/);
+ assert.match(read('src/components/PostAlbumCarousel.tsx'),/label=\{'Ampliar fotografia '\+\(index\+1\)/);
+ assert.match(s,/onExpand=\{setExpandedImage\}/);
  assert.match(s,/visible=\{!!expandedImage&&!!post&&!!auth.token\}/);
  assert.match(s,/onRequestClose=\{\(\)=>setExpandedImage\(null\)\}/);
  assert.match(s,/accessibilityLabel="Fechar fotografia ampliada"/);
