@@ -32,8 +32,9 @@ test('malformed key fails build configuration instead of shipping broken map',()
 test('explore screen prevents Android native MapView mount in unconfigured builds',()=>{
  const screen=source('app/(tabs)/explore.tsx');
  assert.match(screen,/nativeGoogleMapsConfigured===true/);
- assert.match(screen,/\{NATIVE_MAP_READY\?<MapView/);
- assert.match(screen,/!NATIVE_MAP_READY\?mappedSessions\.map/);
+ assert.match(screen,/\{NATIVE_MAP_READY\?<Suspense/);
+ assert.match(screen,/SessionNativeMap initialRegion=\{PORTUGAL\} sessions=\{mappedSessions\}/);
+ assert.match(screen,/<OfflineSessionMap sessions=\{mappedSessions\}/);
  assert.match(screen,/Pesquisar nesta zona/);
  assert.match(screen,/OpenStreetMap/);
 });
