@@ -17,6 +17,7 @@ export interface CreateSessionPayload{
  registrationOpensAt:string|null;additionalWeeklyGameDates:string[];recurrenceTimeZone:string|null;playFormat:null;
  communityShareIds:number[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
  meetingPointInstructions:string|null;minParticipants:number;
+ googleMapsUrl?:string|null;
 }
 export function formatLocalDateInput(value:string):string;
 export function formatLocalTimeInput(value:string):string;
