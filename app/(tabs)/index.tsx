@@ -563,7 +563,7 @@ export default function JynloFeedHome(){
             Alert.alert('Sessão cancelada',
               'A sessão foi cancelada. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.',[
                 {text:'Fechar',style:'cancel'},
-                {text:'Partilhar aviso',onPress:()=>{void shareCancelledFeedSession(item);}}
+                {text:'Partilhar aviso',onPress:()=>{void shareCancelledFeedSession(detail);}}
               ]);
             void load();
           }).catch(e=>{
