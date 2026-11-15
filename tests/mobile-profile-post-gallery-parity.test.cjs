@@ -23,7 +23,7 @@ test('post detail has device-width album pager, full-screen image and safe route
  assert.match(s,/visible=\{!!expandedImage&&!!post&&!!auth.token\}/);
  assert.match(s,/onRequestClose=\{\(\)=>setExpandedImage\(null\)\}/);
  assert.match(s,/accessibilityLabel="Fechar fotografia ampliada"/);
- assert.match(s,/return\(\)=>\{generation.current\+\+;setPost\(null\);setComments\(\[\]\);setExpandedImage\(null\);\}/);
+ assert.match(s,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);setExpandedImage\(null\);setEditingPost\(null\);\}/);
 });
 test('all three entry points use shared server album metadata rather than separate media copies',()=>{
  const feed=read('app/(tabs)/index.tsx');
