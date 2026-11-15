@@ -16,3 +16,14 @@ test('completed temporary teams are archived without deleting results',()=>{
  assert.match(promotion,/Equipa temporária arquivada/);
  assert.match(promotion,/resultados e o plantel histórico continuam preservados/);
 });
+
+test('championship trophies are linked to immutable verified League Cup and season awards',()=>{
+ assert.match(api,/export async function sportsTeamChampionshipHonours/);
+ assert.match(api,/\/api\/teams\/.*\/honours/);
+ assert.match(screen,/championshipHonours\.map\(item=>/);
+ assert.match(screen,/item\.format==='LEAGUE'\?'Liga'/);
+ assert.match(screen,/item\.format==='KNOCKOUT'\?'Taça'/);
+ assert.match(screen,/item\.format==='CHAMPIONSHIP'\?'Campeonato'/);
+ assert.match(screen,/seasonTournamentIds/);
+ assert.match(screen,/!seasonTournamentIds\.has\(item\.tournamentId\)/);
+});
