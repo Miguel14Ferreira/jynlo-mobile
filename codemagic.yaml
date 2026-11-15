@@ -242,8 +242,7 @@ workflows:
           set -eu
           test "${CM_BRANCH:-}" = "develop" || { echo "Usar exclusivamente develop."; exit 1; }
           for variable in EXPO_PUBLIC_JYNLO_API_URL JYNLO_GOOGLE_MAPS_ANDROID_API_KEY JYNLO_FIREBASE_ANDROID_JSON_B64 JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 JYNLO_PLAY_UPLOAD_STORE_PASSWORD JYNLO_PLAY_UPLOAD_KEY_ALIAS JYNLO_PLAY_UPLOAD_KEY_PASSWORD; do
-            eval "set_value=\${$variable:-}"
-            test -n "$set_value" || { echo "Falta configurar variavel protegida: $variable"; exit 1; }
+            test -n "$(printenv "$variable" 2>/dev/null || true)" || { echo "Falta configurar variavel protegida: $variable"; exit 1; }
           done
           test "${JYNLO_ANDROID_DIAGNOSTIC_NO_R8:-0}" != "1" || { echo "Minificacao nao pode ser desativada."; exit 1; }
           node --version
@@ -276,7 +275,7 @@ workflows:
           expected_sha256="7A55D817C089ECC41AEFC411DF1AE56F9E23B0A4E9CBB958FAA90F733999491A"
           keyfile="$(mktemp "${TMPDIR:-/tmp}/jynlo-play-upload.XXXXXX")"
           chmod 600 "$keyfile"
-          printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$keyfile"
+          printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 -D > "$keyfile"
           test -s "$keyfile"
           export JYNLO_PLAY_UPLOAD_KEYSTORE_PATH="$keyfile"
           keytool -list -keystore "$keyfile" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1 || { echo "Chave upload/alias/password invalidos."; exit 1; }
