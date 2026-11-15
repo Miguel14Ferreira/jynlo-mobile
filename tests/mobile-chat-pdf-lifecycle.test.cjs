@@ -24,7 +24,7 @@ test('PDF send completion cannot mutate the next chat or clear its PDF',()=>{
 });
 
 test('uncertain PDF upload remains blocked against immediate duplicate sends',()=>{
- assert.match(source,/busyRef\.current\|\|blocked\.current\)return/);
+ assert.match(source,/busyRef\.current\|\|pickerRef\.current\|\|blocked\.current\)return/);
  assert.match(source,/blocked\.current=true/);
  assert.match(source,/Verifica o histórico antes de escolher novamente o documento/);
 });
