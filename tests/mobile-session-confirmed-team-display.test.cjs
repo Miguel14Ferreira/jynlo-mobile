@@ -33,7 +33,7 @@ test('only authorized session detail viewers see persisted teams, never an uncon
  assert.match(screen,/EQUIPAS CONFIRMADAS/);
  assert.match(screen,/confirmedTeams\[team\]\.map\(player=>/);
  assert.match(screen,/confirmedTeams.unassigned.length/);
- assert.match(screen,/sessionParticipationLabel\(\{\.\.\.s,joined:/);
+ assert.match(screen,/sessionParticipationLabel\(\{\.\.\.s,status:s\.status\|\|'UNKNOWN',joined:/);
  assert.match(screen,/setParticipants\(\[\]\)/);
  assert.match(screen,/if\(!rosterAllowed\)setTeamPreview\(null\)/);
  assert.match(read('src/lib/session-teams-presentation.d.cts'),/confirmedSessionTeams/);
