@@ -23,14 +23,23 @@ function parseApkBadging(output){
 }
 function parseApkSignature(output){
  if(typeof output!=='string')throw Error('Android apksigner: resultado ausente.');
- const match=output.match(/Signer #1 certificate SHA-256 digest:\s*([a-f0-9:]+)/i);
- const digest=match?.[1]?.replace(/:/g,'').toLowerCase()||'';
- if(!HEX64.test(digest))throw Error('Android apksigner: certificado ou assinatura inválidos.');
- const signerCount=[...output.matchAll(/Signer #(\d+) certificate SHA-256 digest:/gi)].length;
- if(signerCount!==1)throw Error('Android apksigner: esperada exatamente uma assinatura.');
+ // Android build-tools output formats include 'Signer #1 certificate ...'
+ // and 'V3.0 Signer: certificate ...'. The same certificate can appear under
+ // more than one signature scheme; distinct signer certificates must not.
+ const certificateLines=[...output.matchAll(
+  /(?:^|\n)\s*((?:Signer #\d+|V[1-4](?:\.\d+)? Signer):?)\s+certificate SHA-256 digest:\s*([a-f0-9:]+)\s*(?=\r?\n|$)/gi
+ )];
+ const fingerprints=certificateLines.map(m=>m[2].replace(/:/g,'').toLowerCase());
+ if(!fingerprints.length||fingerprints.some(v=>!HEX64.test(v)))
+  throw Error('Android apksigner: certificado ou assinatura inválidos.');
+ const distinct=[...new Set(fingerprints)];
+ if(distinct.length!==1)
+  throw Error('Android apksigner: esperada exatamente uma identidade de assinatura.');
+ // The external apksigner verifier must return exit code 0 before parsing.
+ const debugDn=/(?:Signer #\d+|V[1-4](?:\.\d+)? Signer):?\s+certificate DN:.*CN=Android Debug/i;
  return {
-  signerCertificateSha256:digest,
-  signingType:/Signer #1 certificate DN:.*CN=Android Debug/i.test(output)?'debug':'custom'
+  signerCertificateSha256:distinct[0],
+  signingType:debugDn.test(output)?'debug':'custom'
  };
 }
 function sdkTools(environment=process.env,io=fs){
