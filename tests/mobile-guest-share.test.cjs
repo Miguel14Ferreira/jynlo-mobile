@@ -14,7 +14,7 @@ test('organizer must request signed guest link from backend, never invent it',()
 });
 test('sharing warns that new guest link invalidates older invitations',()=>{
  assert.match(screen,/issueSessionGuestLink\(id,auth.token!\)/);
- assert.match(screen,/invalida as ligações de convite anteriores/);
- assert.match(screen,/Criar e partilhar/);
+ assert.match(screen,/criar um novo invalida os convites anteriores/);
+ assert.match(screen,/text:'Convite sem conta'/);
  assert.match(screen,/Confirma a presença|confirma a presença/);
 });
