@@ -49,6 +49,7 @@ export default function TeamsScreen(){
  };
  return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
   <Text style={styles.title}>Equipas</Text>
+  <Button title="Encontrar torneios e campeonatos" secondary onPress={()=>router.push('/teams/competitions')}/>
   <Text style={styles.note}>Cria uma equipa independente para participar em várias comunidades e competições.</Text>
   <TextInput style={styles.input} value={query} onChangeText={setQuery}
     placeholder="Pesquisar equipas" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"/>
