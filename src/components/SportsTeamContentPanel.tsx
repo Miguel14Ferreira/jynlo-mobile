@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
-import {teamContentHistory,sendTeamContent,editTeamContent,deleteTeamContent,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
+import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
@@ -15,6 +15,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const [editingId,setEditingId]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
+ const [searchTerm,setSearchTerm]=useState('');
+ const [searchResults,setSearchResults]=useState<TeamContentEntry[]>([]);
+ const [searchActive,setSearchActive]=useState(false);
+ const [searching,setSearching]=useState(false);
+ const searchVersion=useRef(0);
  const version=useRef(0),reading=useRef(false),sendingNow=useRef(false);
  const refresh=useCallback(async(quiet=false,expected=version.current)=>{
   if(reading.current||sendingNow.current)return;
@@ -37,6 +42,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
+  searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   void refresh(false,current);
   const timer=setInterval(()=>{
    if(AppState.currentState==='active')void refresh(true,current);
@@ -44,7 +50,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
   });
-  return()=>{clearInterval(timer);resume.remove();version.current++;};
+  return()=>{clearInterval(timer);resume.remove();version.current++;searchVersion.current++;};
  },[refresh]));
  const send=async()=>{
   const message=draft.trim();
@@ -64,6 +70,23 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    sendingNow.current=false;
    if(current===version.current){setSending(false);void refresh(true,current);}
   }
+ };
+ const search=async()=>{
+  const term=searchTerm.trim();
+  if(term.length<2||term.length>80||searching)return;
+  const current=++searchVersion.current;
+  setSearchActive(true);setSearching(true);setError('');
+  try{
+   const results=await searchTeamContent(teamId,kind,term,token);
+   if(current===searchVersion.current)setSearchResults(results);
+  }catch{
+   if(current===searchVersion.current)setError('Não foi possível pesquisar as mensagens.');
+  }finally{
+   if(current===searchVersion.current)setSearching(false);
+  }
+ };
+ const clearSearch=()=>{
+  searchVersion.current++;setSearchActive(false);setSearching(false);setSearchResults([]);
  };
  const update=async()=>{
   const body=editDraft.trim();
@@ -106,13 +129,23 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  return <View style={styles.panel}>
   <Text style={styles.title}>{kind==='chat'?'Conversa da equipa':'Publicações da equipa'}</Text>
   <Text style={styles.sub}>Apenas o responsável e membros confirmados podem participar.</Text>
-  {loading?<Text style={styles.sub}>A carregar…</Text>:null}
+  <View style={styles.searchRow}>
+   <TextInput style={styles.searchInput} value={searchTerm} onChangeText={setSearchTerm}
+    maxLength={80} placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
+    accessibilityLabel="Pesquisar mensagens da equipa"/>
+   <Pressable disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
+    style={styles.searchButton}><Text style={styles.actionText}>Pesquisar</Text></Pressable>
+   {searchActive?<Pressable onPress={clearSearch} style={styles.searchButton}>
+    <Text style={styles.actionText}>Voltar</Text></Pressable>:null}
+  </View>
+  {searchActive?<Text style={styles.sub}>{searching?'A pesquisar…':searchResults.length+' resultados encontrados'}</Text>:null}
+  {loading&&!searchActive?<Text style={styles.sub}>A carregar…</Text>:null}
   {error?<Text style={styles.error} accessibilityRole="alert">{error}</Text>:null}
   {syncWarning?<Text style={styles.sub}>{syncWarning}</Text>:null}
-  {!loading&&!entries.length?<Text style={styles.empty}>
+  {!searchActive&&!loading&&!entries.length?<Text style={styles.empty}>
    {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
   </Text>:null}
-  {entries.map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
+  {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
    <Text style={styles.author}>@{item.username} · {new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
    {item.replyToId?<Text style={styles.sub}>↳ Resposta à mensagem #{item.replyToId}</Text>:null}
    <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
@@ -151,5 +184,8 @@ const styles=StyleSheet.create({
  buttonText:{color:'#062A30',fontWeight:'800'},
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
  actionText:{color:C.mint,fontSize:12,fontWeight:'800'},
- editBox:{gap:10}
+ editBox:{gap:10},
+ searchRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
+ searchInput:{flexGrow:1,flexBasis:160,minWidth:0,borderWidth:1,borderColor:C.border,borderRadius:10,padding:9,color:C.white},
+ searchButton:{padding:8,borderWidth:1,borderColor:C.border,borderRadius:9}
 });
