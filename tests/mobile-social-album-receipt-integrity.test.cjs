@@ -36,3 +36,27 @@ test('a single image, a single video and a Story still follow the existing recei
  assert.equal(confirmedSocialMediaReceipt({id:3,mediaUrl:'/story',video:false},['image/jpeg'],true),true);
  assert.equal(confirmedSocialMediaReceipt({id:4,mediaUrl:'/story',video:true},['video/mp4'],true),true);
 });
+
+test('receipt media references reject schemes, redirect-like URLs and traversal',()=>{
+ const unsafe=[
+  'javascript:alert(1)','data:image/png;base64,aGVsbG8=',
+  'http://unsecured.example.com/asset','//outside.example.com/file.png',
+  'https://user@outside.example.com/file.png',
+  'media/../private/other-account',
+  '/api/media/\\\\secret','/api/media/\nredirect',
+  'https://example.org/\ninvalid'
+ ];
+ for(const media of unsafe){
+  assert.equal(confirmedSocialMediaReceipt({postId:1,imageUrl:media},['image/jpeg'],false),false,media);
+  assert.equal(confirmedSocialMediaReceipt({id:1,mediaUrl:media,video:false},['image/jpeg'],true),false,media);
+ }
+});
+test('receipt media URLs accept protected API paths and normal HTTPS storage',()=>{
+ for(const media of [
+  '/api/profile-media/posts/42/image',
+  'https://static.jynlo.example/assets/post-42.webp?signature=abcd',
+  'media/post-42.jpg'
+ ]){
+  assert.equal(confirmedSocialMediaReceipt({postId:42,imageUrl:media},['image/jpeg'],false),true,media);
+ }
+});
