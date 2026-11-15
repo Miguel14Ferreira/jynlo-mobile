@@ -10,7 +10,11 @@ test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',(
 test('Feed mobile centra-se em stories e publicações sem caixa de texto no início',()=>{
   const feed=read('app/(tabs)/index.tsx');
   for(const fragment of ['Stories','Publicações','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker','composerOpen','Nova publicação'])assert.ok(feed.includes(fragment),fragment);
-  for(const removed of ['A minha semana desportiva','Jogos com vagas','Pessoas para conhecer','discoverSessions','mySessions','myCommunities'])assert.ok(!feed.includes(removed),removed);
+  for(const removed of ['A minha semana desportiva','Jogos com vagas','Pessoas para conhecer','discoverSessions','mySessions'])assert.ok(!feed.includes(removed),removed);
+  // myCommunities is intentionally used for authorizing community Story destinations,
+  // not for restoring an unrelated community-discovery panel in the Feed.
+  assert.match(feed,/myCommunities\(auth\.token,auth\.username\)/);
+  assert.match(feed,/storyManagedCommunities/);
   assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)\{[\s\S]*?setPosts\(edits\.posts\)/);
   assert.doesNotMatch(feed,/setPosts\([^\n]*\.filter\(item=>item\.type==='POST'\)/);
 });
