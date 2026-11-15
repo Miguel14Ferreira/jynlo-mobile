@@ -44,7 +44,7 @@ test('session detail ignores delayed responses after navigation or account chang
 
 test('private chat keeps the editor visible while safety lookup is pending',()=>{
  const code=source('app/messages/[peer].tsx');
- assert.match(code,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token\|\|!draft\.trim\(\)/);
+ assert.match(code,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token\|\|!draft\.trim\(\)/);
  assert.match(code,/auth\.token&&!blocked\?<View style=\{styles\.composer\}>/);
  assert.match(code,/Verificar novamente/);
 });
