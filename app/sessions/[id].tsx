@@ -519,7 +519,7 @@ export default function SessionScreen(){
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
         <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
-          <Badge text={sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
+          <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||'Local a confirmar'}</Text></View>
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
@@ -532,7 +532,7 @@ export default function SessionScreen(){
         <View style={styles.info}><Text style={styles.label}>DATA E HORA</Text><Text style={styles.value}>{formatDate(s.gameDate)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>VALOR</Text><Text style={styles.value}>{money(s.priceAmount)}</Text></View>
         <View style={styles.info}><Text style={styles.label}>PARTICIPANTES</Text><Text style={styles.value}>{s.participantCount??'—'}/{s.maxParticipants??'—'}</Text></View>
-        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{sessionParticipationLabel({status:s.status,gameDate:s.gameDate,joined:false,waitlisted:false})}</Text></View>
+        <View style={styles.info}><Text style={styles.label}>ESTADO</Text><Text style={styles.value}>{sessionParticipationLabel({status:s.status||'UNKNOWN',gameDate:s.gameDate,joined:false,waitlisted:false})}</Text></View>
       </View>
       {minimum?<View style={styles.panel}>
         <View style={styles.minimumHeading}>
