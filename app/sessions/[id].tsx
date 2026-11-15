@@ -615,7 +615,17 @@ export default function SessionScreen(){
           <Button title="Guardar número de jogadores" disabled={busy} onPress={saveExternalCount}/>
           <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
-        {<View style={styles.editor}>
+        {(detail.communityId || (
+          detail.playFormat !== 'INDIVIDUAL' &&
+          ['Andebol','Basebol','Basquetebol','Basquetebol 3x3','Corfebol','Cricket','Curling',
+           'Flag Football','Futebol','Futebol Americano','Futsal','Hóquei','Hóquei em Campo',
+           'Hóquei em Patins','Hóquei no Gelo','Lacrosse','Polo Aquático','Rugby',
+           'Rugby Sevens','Softbol','Voleibol','Voleibol de Praia'].includes(detail.sport) &&
+          detail.maxParticipants >= 4 && detail.maxParticipants % 2 === 0 &&
+          (detail.sport !== 'Basquetebol 3x3' || detail.maxParticipants === 6) &&
+          (detail.sport !== 'Rugby Sevens' || detail.maxParticipants === 14) &&
+          (detail.sport !== 'Voleibol de Praia' || detail.maxParticipants === 4)
+        ))?<View style={styles.editor}>
           <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
           <Text style={styles.hint}>As equipas equilibradas usam automaticamente a classificação da época ativa da comunidade. Se só existir classificação importada, será reutilizada sem pedir outro Excel.</Text>
           {detail.teamBalanceSupported?
