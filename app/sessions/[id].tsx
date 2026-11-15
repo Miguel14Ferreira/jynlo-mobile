@@ -615,7 +615,7 @@ export default function SessionScreen(){
           <Button title="Guardar número de jogadores" disabled={busy} onPress={saveExternalCount}/>
           <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
-        {detail.communityId?<View style={styles.editor}>
+        {<View style={styles.editor}>
           <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
           <Text style={styles.hint}>As equipas equilibradas usam automaticamente a classificação da época ativa da comunidade. Se só existir classificação importada, será reutilizada sem pedir outro Excel.</Text>
           {detail.teamBalanceSupported?
