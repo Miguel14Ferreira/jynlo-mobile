@@ -19,15 +19,15 @@ test('user reporting and blocking use authenticated backend endpoints',()=>{
 
 test('direct chat exposes reporting and blocking without allowing blocked sends',()=>{
  const screen=read('app/messages/[peer].tsx');
- assert.match(screen,/SEGURANÇA DA CONVERSA/);
+ assert.match(screen,/Segurança da conversa/);
  assert.match(screen,/Denunciar utilizador/);
  assert.match(screen,/Bloquear utilizador/);
  assert.match(screen,/Desbloquear utilizador/);
- assert.match(screen,/await reportUser\(peer,reportReason,auth\.token\)/);
- assert.match(screen,/await blockUser\(peer,auth\.token\)/);
- assert.match(screen,/await unblockUser\(peer,auth\.token\)/);
+ assert.match(screen,/await reportUser\(peer,submittedReason,actorToken\)/);
+ assert.match(screen,/await blockUser\(peer,actorToken\)/);
+ assert.match(screen,/await unblockUser\(peer,actorToken\)/);
  assert.match(screen,/userBlockStatus\(peer,auth\.token\)/);
- assert.match(screen,/if\(sending\|\|sendingNow\.current\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
- assert.match(screen,/enabled=\{!blocked&&blockStatusKnown&&photoAvailable/);
- assert.match(screen,/auth\.token&&!blocked&&blockStatusKnown\?<View style=\{styles\.composer\}>/);
+ assert.match(screen,/if\(mutationLock\.current\|\|sending\|\|sendingNow\.current\|\|pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
+ assert.match(screen,/enabled=\{!blocked&&blockStatusKnown&&!sending&&!photoBusy\}/);
+ assert.match(screen,/auth\.token&&!blocked\?<View style=\{styles\.composer\}>/);
 });
