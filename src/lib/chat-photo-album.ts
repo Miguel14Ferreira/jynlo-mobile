@@ -5,7 +5,7 @@ import {API_BASE,DEMO_MODE} from './api';
 import {prepareChatMedia} from './chat-photo-source';
 import {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES,confirmedChatAlbumReply} from './chat-attachments-core.cjs';
 
-export type AlbumChatTarget={scope:'direct'|'community'|'session';id:string|number};
+export type AlbumChatTarget={scope:'direct'|'community'|'session'|'team';id:string|number;kind?:'chat'|'feed'};
 
 function albumEndpoint(target:AlbumChatTarget):string{
  if(target.scope==='direct'){
@@ -16,6 +16,10 @@ function albumEndpoint(target:AlbumChatTarget):string{
  const id=Number(target.id);
  if(!Number.isSafeInteger(id)||id<=0||String(id)!==String(target.id))
   throw Error('Identificador de conversa inválido.');
+ if(target.scope==='team'){
+  if(target.kind!=='chat'&&target.kind!=='feed')throw Error('Tipo de conversa inválido.');
+  return '/api/teams/'+id+'/'+target.kind+'/attachments/batch';
+ }
  if(target.scope!=='community'&&target.scope!=='session')throw Error('Conversa inválida.');
  return '/api/'+(target.scope==='community'?'communities':'sessions')+'/'+id+'/messages/attachments/batch';
 }
