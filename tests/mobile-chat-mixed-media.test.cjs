@@ -31,7 +31,8 @@ test('all three screens select videos and use the protected batch endpoint',()=>
   assert.match(s,/mediaTypes:\['images','videos'\]/,file);
   assert.ok(s.includes(`extraPhotos.length||${identifier}.type==='video'`),file);
   assert.match(s,/appendChatMediaSelection\(current,(?:chosen|selected)\.assets\)/,file);
-  assert.match(s,/▶ Vídeo/,file);
+  assert.match(s,/name="video"/,file);
+  assert.match(s,/>Vídeo<\/Text>/,file);
  }
  const uploader=read('src/lib/chat-photo-album.ts');
  assert.match(uploader,/prepareChatMedia/);
@@ -52,12 +53,13 @@ test('prepared video uses local measured file size and cleans copied content URI
 
 test('successful batch with unreadable JSON preserves uncertain delivery warning',()=>{
  const uploader=read('src/lib/chat-photo-album.ts');
- const success=uploader.indexOf('const response=await fetch(API_BASE+path');
+ const success=uploader.indexOf('const response=await expoFetch(API_BASE+path');
  const parse=uploader.indexOf('reply=await response.json()');
  const warning=uploader.indexOf("throw Error('O envio não foi confirmado. Consulta o histórico antes de repetir.');",parse);
  const transport=uploader.indexOf("throw Error('Falha de ligação. Consulta o histórico antes de repetir.');");
  assert.ok(success>=0&&parse>success&&warning>parse&&transport>warning);
  assert.match(uploader,/try\{\s*reply=await response\.json\(\) as typeof reply;\s*\}catch\{\s*throw Error\('O envio não foi confirmado\. Consulta o histórico antes de repetir\.'\);/);
+ assert.match(uploader,/credentials:'omit',body:form,signal:controller\.signal/);
  assert.match(uploader,/\^\(A sessão\|Já não tens\|O álbum\|O armazenamento\|O servidor\|O envio\)/);
 });
 
