@@ -27,7 +27,7 @@ test('voice playback is stopped when attachment is released',()=>{
  // Videos use an inline authenticated player and PDFs open through the native viewer.
  assert.match(component,/Modal visible=\{expanded&&!!uri&&!isVoice\(mime\)&&!isVideo\(mime\)&&mime!=='application\/pdf'\}/);
  assert.match(component,/onPress=\{\(\)=>setExpanded\(true\)\}/);
- assert.match(component,/if\(!auto&&!isVoice\(mime\)\)setExpanded\(true\)/);
+ assert.match(component,/if\(uri&&!isVoice\(mime\)\)\{if\(!auto\)setExpanded\(true\);return;\}/);
 });
 
 test('private audio cache is detached before deletion and pauses on background',()=>{
