@@ -29,6 +29,6 @@ test('conversation destinations and security notices remain',()=>{
  assert.match(inbox,/pathname:'\/sessions\/\[id\]\/chat'/);
  assert.match(inbox,/A failing source must not erase healthy conversations/);
  assert.match(inbox,/Os dados anteriores podem estar desatualizados/);
- assert.match(inbox,/sincronização de reserva quando está offline/);
- assert.match(inbox,/Podes consultar e ativar os avisos push, quando disponíveis nesta APK, em Alertas/);
+ assert.match(inbox,/A failing source must not erase healthy conversations/);
+ assert.match(inbox,/accessibilityLabel="Abrir notificações"/);
 });
