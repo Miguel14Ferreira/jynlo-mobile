@@ -48,10 +48,10 @@ export async function acceptTeamPlace(communityId:number,tournamentId:number,tea
 }
 
 /** A tournament team stays temporary unless its accepted captain explicitly opts in. */
-export type TeamPromotionStatus={globalTeamId:number|null;canPromote:boolean};
+export type TeamPromotionStatus={globalTeamId:number|null;canPromote:boolean;archived:boolean};
 export async function tournamentTeamPromotionStatus(communityId:number,tournamentId:number,teamId:number,
   token:string):Promise<TeamPromotionStatus>{
- if(!token||DEMO_MODE)return {globalTeamId:null,canPromote:false};
+ if(!token||DEMO_MODE)return {globalTeamId:null,canPromote:false,archived:false};
  return request<TeamPromotionStatus>(base(communityId,tournamentId)+'/'+safePositiveId(teamId)+'/promotion',{token});
 }
 export async function promoteTournamentTeam(communityId:number,tournamentId:number,teamId:number,
