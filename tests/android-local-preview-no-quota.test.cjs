@@ -37,3 +37,11 @@ test('one-command local APK route cannot accidentally consume cloud build quota'
  assert.doesNotMatch(script,/Invoke-Checked 'Validar configuracao API real' 'npm\.cmd' @\('run','check:release'\)/);
  assert.match(script,/if \(\$BuildApk\)/);
 });
+
+test('Windows double-click launcher invokes only the quota-free local APK workflow',()=>{
+ const launcher=read('GERAR_APK_GRATIS_WINDOWS.cmd');
+ assert.match(launcher,/validate-local\.ps1" -LocalApk/);
+ assert.match(launcher,/dist\\android-local\\jynlo-preview-local\.apk/);
+ assert.doesNotMatch(launcher,/\s(?:-BuildApk|eas build|codemagic build)\b/i);
+ assert.match(launcher,/pause/);
+});
