@@ -16,12 +16,11 @@ test('Play signing refuses unknown gradle templates',()=>{
 test('Internal Play AAB workflow accepts guarded versioned requests and requires secrets',()=>{
  const y=fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8');
  assert.match(y,/workflow_dispatch:/);
-  // Accept only versioned AAB requests on develop, never a store auto-publish.
-  assert.ok(y.includes("  push:"));
-  assert.ok(y.includes("    branches: [develop]"));
-  assert.ok(y.includes(".github/jynlo-play-aab.request"));
-  assert.ok(y.includes("PREPARAR_BETA_REAL 0.16.0"));
-  assert.ok(y.includes("github.event_name == 'push'"));
+  // Confirmation is manual and restricted to develop; never trigger on push.
+  assert.doesNotMatch(y,/^  push:/m);
+  assert.ok(y.includes("github.ref == 'refs/heads/develop'"));
+  assert.ok(y.includes("inputs.confirm == 'PREPARAR_BETA_REAL'"));
+  assert.ok(y.includes('Confirmar branch e identidade de versão da Jynlo'));
  assert.match(y,/PREPARAR_BETA_REAL/);
  assert.match(y,/secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64/);
  assert.match(y,/check:release/);
