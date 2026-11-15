@@ -8,6 +8,8 @@ const {filterAuthorizedSummaries}=require('../src/lib/authorized-inbox-summaries
 
 test('community inbox only uses authenticated membership for visibility and titles',()=>{
  assert.match(source,/const groups=await myCommunities\(token,username\)/);
+ assert.match(source,/if\(!Array\.isArray\(groups\)\)throw Error\(/);
+ assert.match(source,/if\(!c\|\|!Number\.isSafeInteger\(c\.id\)/);
  assert.match(source,/const allowed=new Map\(uniqueGroups\.map\(/);
  assert.match(source,/filterAuthorizedSummaries\('community',allowed,summaries,'Comunidade'\)/);
  assert.match(source,/if\(!Array\.isArray\(batch\)\)throw Error\(/);
