@@ -28,7 +28,7 @@ import StoryDetailsView from '../../src/components/StoryDetailsView';
 import {storyMetadataReservedHeight} from '../../src/lib/story-sticker-bounds.cjs';
 import PostAlbumCarousel from '../../src/components/PostAlbumCarousel';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
-import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
+import {storyMentionFriends,searchStoryMentionProfiles,type StoryFriend} from '../../src/lib/social-relations-api';
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
@@ -248,6 +248,7 @@ export default function JynloFeedHome(){
   const [storyManagedCommunitiesError,setStoryManagedCommunitiesError]=useState('');
   const [storyFriends,setStoryFriends]=useState<StoryFriend[]>([]);
   const [storyFriendsBusy,setStoryFriendsBusy]=useState(false),[storyFriendsError,setStoryFriendsError]=useState('');
+  const [storySearchedProfiles,setStorySearchedProfiles]=useState<StoryFriend[]>([]),[storyProfileSearchBusy,setStoryProfileSearchBusy]=useState(false);
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
   const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const storyGeometryRef=useRef<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
@@ -329,6 +330,21 @@ export default function JynloFeedHome(){
     }).finally(()=>{if(active)setStoryManagedCommunitiesLoading(false);});
     return()=>{active=false;};
   },[storyComposer,auth.token,auth.username]);
+  useEffect(()=>{
+    const term=storyFriendSearch.trim().replace(/^@/,'');
+    if(!storyComposer||!auth.token||term.length<3){
+      setStorySearchedProfiles([]);setStoryProfileSearchBusy(false);return;
+    }
+    let active=true;
+    const timer=setTimeout(()=>{
+      setStoryProfileSearchBusy(true);
+      void searchStoryMentionProfiles(term,auth.token).then(profiles=>{
+        if(active)setStorySearchedProfiles(profiles);
+      }).catch(()=>{if(active)setStorySearchedProfiles([]);})
+        .finally(()=>{if(active)setStoryProfileSearchBusy(false);});
+    },350);
+    return()=>{active=false;clearTimeout(timer);};
+  },[storyComposer,storyFriendSearch,auth.token]);
   storyGeometryRef.current=storyTextGeometry;
   // Full-screen editors are scrollable, but Android resizing does not always
   // bring the focused lower input above the keyboard. Keep both composers
@@ -661,7 +677,7 @@ export default function JynloFeedHome(){
     storyComposerRef.current=true;setStoryComposer(true);
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
     setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-    setStoryFriendSearch('');
+    setStoryFriendSearch('');setStorySearchedProfiles([]);
   }
   function closeStoryComposer(){
     if(storyInFlight.current)return;
@@ -1268,16 +1284,20 @@ export default function JynloFeedHome(){
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyTags} onChangeText={value=>{storyTagsRef.current=value;setStoryTags(value);}}
             placeholder="Identificar amigos: @ana, @joao" accessibilityLabel="Identificar amigos na Story"
             maxLength={500} autoCapitalize="none" autoCorrect={false} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
-          <Text style={styles.storiesIntro}>Podes identificar até 5 amigos com ligação aceite. Separa os perfis por vírgulas.</Text>
+          <Text style={styles.storiesIntro}>Podes identificar até 5 perfis. Pesquisa pelo nome de utilizador ou seleciona uma sugestão.</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyFriendSearch} onChangeText={setStoryFriendSearch}
            placeholder="Procurar amigos para identificar" accessibilityLabel="Procurar amigos na Story"
            autoCapitalize="none" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           {storyFriendsBusy?<Text style={styles.storiesIntro}>A carregar amigos…</Text>:null}
+          {storyProfileSearchBusy?<Text style={styles.storiesIntro}>A procurar perfis…</Text>:null}
           {storyFriendsError?<Text style={styles.storiesIntro}>{storyFriendsError}</Text>:null}
-          {storyFriends.filter(friend=>storyFriendSearch.trim()
-           ?[friend.username,friend.nickname||'',friend.fullName||''].some(value=>
-             value.toLocaleLowerCase('pt-PT').includes(storyFriendSearch.trim().toLocaleLowerCase('pt-PT')))
-           :storyMentionUsernames(storyTags).includes(friend.username.toLowerCase())).slice(0,15).map(friend=>{
+          {(storyFriendSearch.trim().length>=3
+           ?[...storySearchedProfiles,...storyFriends.filter(friend=>
+              [friend.username,friend.nickname||'',friend.fullName||''].some(value=>
+               value.toLocaleLowerCase('pt-PT').includes(storyFriendSearch.trim().replace(/^@/,'').toLocaleLowerCase('pt-PT'))))]
+             .filter((friend,index,all)=>all.findIndex(other=>other.username.toLowerCase()===friend.username.toLowerCase())===index)
+           :storyFriends.filter(friend=>storyMentionUsernames(storyTags).includes(friend.username.toLowerCase())))
+             .slice(0,15).map(friend=>{
            const selected=storyMentionUsernames(storyTags).includes(friend.username.toLowerCase());
            return <Pressable key={friend.username} accessibilityRole="button" disabled={storyPublishing}
             accessibilityLabel={(selected?'Remover identificação de ':'Identificar ')+friend.username}
