@@ -23,6 +23,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const reactionVersion=useRef(0);
  const [reactions,setReactions]=useState<Record<number,TeamReactionState>>({});
  const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
+ const reactionBusyRef=useRef(false);
  const emojis=['👍','❤️','😂','🔥','👏'];
  const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
   const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
@@ -111,8 +112,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return '@'+original.username+': '+original.body.slice(0,110);
  };
  const react=async(item:TeamContentEntry,emoji:string)=>{
-  if(item.deleted||reactionBusyId!==null)return;
-  setReactionBusyId(item.id);setError('');
+  if(item.deleted||reactionBusyRef.current)return;
+  reactionBusyRef.current=true;setReactionBusyId(item.id);setError('');
   const current=version.current;
   try{
    if(reactions[item.id]?.mine===emoji)
@@ -121,6 +122,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }catch{
    if(current===version.current)setError('Reação não confirmada. Consulta o histórico antes de repetir.');
   }finally{
+   reactionBusyRef.current=false;
    if(current===version.current){setReactionBusyId(null);void loadReactions([item]);}
   }
  };
@@ -190,7 +192,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
       accessibilityLabel={'Reagir com '+emoji}
       accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
-      disabled={reactionBusyId===item.id} onPress={()=>void react(item,emoji)}
+      disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
       style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
       <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
     </Pressable>)}
