@@ -9,19 +9,19 @@ const screens=['src/components/SessionChatPanel.tsx','src/components/CommunityCh
 test('both embedded chats follow the keyboard only while typing',()=>{
  for(const file of screens){
   const s=read(file);
-  assert.match(s,/useRef<ScrollView\|null>\(null\)/,file);
+  assert.match(s,/useRef<ScrollViewInstance\|null>\(null\)/,file);
   assert.match(s,/Keyboard\.addListener\(showEvent/,file);
   assert.match(s,/Keyboard\.addListener\(hideEvent/,file);
   assert.match(s,/setKeyboardVisible\(true\)/,file);
   assert.match(s,/setKeyboardVisible\(false\)/,file);
-  assert.match(s,/if\(composerFocused\.current\)inlineHistoryRef\.current\?\.scrollToEnd/,file);
+  assert.match(s,/composerFocused\.current&&inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/,file);
   assert.match(s,/shown\.remove\(\);hidden\.remove\(\)/,file);
   assert.match(s,/inlineHistoryKeyboard:\{height:168\}/,file);
   assert.match(s,/keyboardVisible&&styles\.inlineHistoryKeyboard/,file);
   assert.match(s,/<ScrollView ref=\{inlineHistoryRef\}/,file);
   assert.match(s,/onFocus=\{\(\)=>\{composerFocused\.current=true/,file);
   assert.match(s,/onBlur=\{\(\)=>\{composerFocused\.current=false/,file);
-  assert.match(s,/if\(!embedded\)return;/,file);
+  assert.match(s,/embedded=false/,file);
  }
 });
 test('embedded chat messages use shared vectors rather than glyph placeholders',()=>{
