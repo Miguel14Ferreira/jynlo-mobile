@@ -49,8 +49,8 @@ test('uploads preserve edits made during slow publishing without a second POST',
  assert.match(home,/composerMediaRef\.current\.every\(\(file,index\)=>file\.uri===media\[index\]\?\.uri\)/);
  assert.match(home,/storyCaptionRef\.current===body&&storyMediaRef\.current\?\.uri===media\.uri/);
  assert.match(home,/As alterações feitas durante o envio ficaram guardadas no editor/);
- assert.match(home,/finally\{postInFlight\.current=false;setPublishing\(false\);\}/);
- assert.match(home,/finally\{storyInFlight\.current=false;setStoryPublishing\(false\);\}/);
+ assert.match(home,/finally\{if\(feedIdentity\.current===`\$\{username\}:\$\{actor\}`\)\{postInFlight\.current=false;setPublishing\(false\);\}\}/);
+ assert.match(home,/finally\{if\(feedIdentity\.current===`\$\{username\}:\$\{actor\}`\)\{storyInFlight\.current=false;setStoryPublishing\(false\);\}\}/);
  assert.match(home,/onChangeText=\{value=>\{composerTextRef\.current=value;setComposerText\(value\);\}\}/);
 });
 
