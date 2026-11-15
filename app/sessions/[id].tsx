@@ -6,7 +6,6 @@ import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,lea
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
-import {cancellationNotice} from '../../src/lib/session-cancellation-notice.cjs';
 import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -61,10 +60,6 @@ export default function SessionScreen(){
   const teamsInFlight=useRef(false),teamsOperation=useRef(0);
   const [teamsMessage,setTeamsMessage]=useState('');
   const owner=isOrganizer(detail,auth.username);
-  // Derived from the currently authorized session. Still available if the
-  // organiser reopens the cancelled session days after the original POST.
-  const cancelledShareText=owner&&detail?.status==='CANCELLED'&&detail.id===id?
-    cancellationNotice(detail):null;
 
   const load=useCallback(async():Promise<SessionDetail|null>=>{
     const version=++detailRequestGeneration.current;
@@ -550,14 +545,10 @@ export default function SessionScreen(){
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
       {feedback?<Message>{feedback}</Message>:null}
-      {cancelledShareText?<View style={styles.panel}>
-        <Eyebrow>AVISAR CONVIDADOS EXTERNOS</Eyebrow>
-        <Text style={styles.hint}>Os participantes com conta Jynlo recebem um aviso interno, sujeito às preferências. Se convidaste pessoas pelo WhatsApp, partilha também esta mensagem.</Text>
-        <Text selectable style={styles.hint}>{cancelledShareText}</Text>
-        <Button title="Partilhar aviso de cancelamento" onPress={()=>{
-          void Share.share({message:cancelledShareText}).catch(e=>
-            Alert.alert('Partilhar aviso',e instanceof Error?e.message:'Não foi possível abrir a partilha.'));
-        }}/>
+      {detail?.status==='CANCELLED'?<View style={styles.panel}>
+        <Text style={styles.cancelledHeading}>×  Sessão cancelada</Text>
+        <Text style={styles.hint}>A sessão foi cancelada e já não aceita novas inscrições.</Text>
+        {owner?<Text style={styles.hint}>A Jynlo envia automaticamente o aviso aos participantes inscritos e em lista de espera, conforme as suas preferências. Convidados externos devem ser informados pelo canal utilizado.</Text>:null}
       </View>:null}
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
@@ -716,6 +707,7 @@ export default function SessionScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+ cancelledHeading:{color:'#ffb2bf',fontSize:17,fontWeight:'800'},
   guestInvitePanel:{gap:10,padding:16,borderRadius:16,borderWidth:1,borderColor:C.mint,backgroundColor:C.surface},
    hero:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:24,padding:20,gap:10},
   sessionPhoto:{width:'100%',height:185,borderRadius:16,marginBottom:7},
