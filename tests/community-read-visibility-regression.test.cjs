@@ -5,9 +5,13 @@ const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, '../src/components/CommunityChatPanel.tsx'), 'utf8');
 
-test('community refresh acknowledges only when the embedded viewport is at the bottom', () => {
-  assert.match(source, /if\(embedded&&inlineNearBottom\.current&&last>lastAcknowledgedMessageId\.current\)/);
-  assert.doesNotMatch(source, /!embedded\|\|inlineNearBottom\.current/);
+test('community refresh never acknowledges history without a measured viewport', () => {
+  const start = source.indexOf('const refresh=useCallback(');
+  const end = source.indexOf('useFocusEffect(', start);
+  assert.ok(start >= 0 && end > start, 'history refresh must exist');
+  assert.doesNotMatch(source.slice(start, end), /markCommunityRead\(/);
+  assert.match(source, /const inlineNearBottom=useRef\(false\)/);
+  assert.match(source, /inlineNearBottom\.current=false;setHistoryLimit\(40\)/);
 });
 
 test('community WebSocket delivery never acknowledges unseen messages', () => {
