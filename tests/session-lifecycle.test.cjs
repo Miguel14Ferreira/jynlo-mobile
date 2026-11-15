@@ -19,7 +19,7 @@ test('Vista de sessão pública respeita o estado e mostra ícones próprios por
  assert.ok(view.includes('sportIcon(s.sport)'));
  assert.ok(view.includes("['OPEN','FULL'].includes(s.status||'')"));
  assert.ok(view.includes("['CANCELLED','COMPLETED'].includes(s.status||'')"));
- assert.ok(view.includes("s.status==='COMPLETED'?'Concluída'"));
+ assert.ok(view.includes("sessionParticipationLabel({status:s.status||'UNKNOWN'"));
 });
 
 // Contract: the session screen continues to obtain the roster only after authorization.
