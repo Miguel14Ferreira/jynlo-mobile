@@ -111,7 +111,7 @@ test('global roster never silently retries uncertain POST and rechecks after suc
  assert.match(screen,/Convites enviados, mas não foi possível atualizar o plantel/);
  assert.match(screen,/Confirma o estado dos jogadores antes de repetir/);
  assert.match(screen,/setEntryCheck\('failed'\)/);
- assert.match(screen,/Estado incerto: reabre o ecrã/);
+ assert.match(screen,/Estado incerto: verifica novamente a inscrição/);
 });
 
 test('organizer application settings and submissions fail independently',()=>{
@@ -133,4 +133,25 @@ test('competition decisions require verified pending requests and guard uncertai
  assert.match(panel,/disabled=\{busy\|\|!applicationsVerified\}/);
  assert.match(panel,/applicationsVerified&&a\.status==='APPROVED'\?<GlobalTeamEnrollment/);
  assert.match(panel,/setLoaded\(false\)/);
+});
+
+test('organizer can refresh applications without leaving competition or performing a mutation',()=>{
+ const panel=read('src/components/TeamCompetitionApplications.tsx');
+ assert.match(panel,/const \[refreshKey,setRefreshKey\]=useState\(0\)/);
+ assert.match(panel,/\[communityId,competitionId,type,token,refreshKey\]/);
+ assert.match(panel,/title="Atualizar estado das candidaturas"/);
+ assert.match(panel,/onPress=\{\(\)=>setRefreshKey\(key=>key\+1\)\}/);
+ assert.match(panel,/applicationsVerified\?applications\.length:'—'/);
+ assert.match(panel,/!loaded\?<Text/);
+ assert.match(panel,/applications\.map\(a=>/);
+});
+
+test('unknown global entry is rechecked with GET before another finalize is allowed',()=>{
+ const panel=read('src/components/GlobalTeamEnrollment.tsx');
+ assert.match(panel,/const \[refreshKey,setRefreshKey\]=useState\(0\)/);
+ assert.match(panel,/\[communityId,type,competitionId,globalTeamId,token,refreshKey\]/);
+ assert.match(panel,/title="Verificar novamente a inscrição"/);
+ assert.match(panel,/entryCheck==='failed'\?<Button/);
+ assert.match(panel,/entryCheck!=='absent'/);
+ assert.match(panel,/onPress=\{\(\)=>setRefreshKey\(key=>key\+1\)\}/);
 });
