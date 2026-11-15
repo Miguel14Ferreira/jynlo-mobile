@@ -84,9 +84,11 @@ workflows:
           npx --no-install expo install --check
       - name: Testar TypeScript e contratos
         script: |
-          set -eu
-          npm run typecheck
-          npm run test:all
+          set -euo pipefail
+          mkdir -p build-metadata/ci-mobile
+          npm run typecheck 2>&1 | tee build-metadata/ci-mobile/typescript.log
+          trap 'node scripts/summarize-node-tests.cjs build-metadata/ci-mobile/tests.log build-metadata/ci-mobile/test-failures.txt || true' EXIT
+          npm run test:all 2>&1 | tee build-metadata/ci-mobile/tests.log
       - name: Validar configuração nativa Android e Firebase opcional
         script: |
           set -eu
@@ -116,6 +118,8 @@ workflows:
           set -eu
           node scripts/android-qa-artifact-manifest.cjs
     artifacts:
+      - build-metadata/ci-mobile/*.log
+      - build-metadata/ci-mobile/test-failures.txt
       - build-metadata/jynlo-android-binary-verification.json
       - build-metadata/jynlo-android-qa.json
       - build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt
