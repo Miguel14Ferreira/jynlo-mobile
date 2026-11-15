@@ -5,6 +5,7 @@ import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,sportsTeamHistory,sportsTeamChampionshipHonours,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
+import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
@@ -113,6 +114,7 @@ export default function TeamDetail(){
   finally{setSaving(false);}
  };
  const isOwner=!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username===auth.username);
+ const isMember=!!auth.token&&!!auth.username&&members.some(m=>m.username===auth.username);
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
@@ -207,12 +209,18 @@ export default function TeamDetail(){
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Feed</Text>
-    <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
-    {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>:null}
+    {!team.feedEnabled?<Text style={styles.note}>O feed da equipa está desativado.</Text>:null}
+    {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} disabled={saving} onPress={()=>void feature('feedEnabled')}/>:null}
+    {team.feedEnabled&&isMember&&auth.token&&auth.username?
+     <SportsTeamContentPanel teamId={teamId} kind="feed" token={auth.token} username={auth.username}/>:null}
+    {team.feedEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Chat</Text>
-    <Text style={styles.note}>{team.chatEnabled?'Ativado. Mensagens de equipa ainda indisponíveis.':'Desativado'}</Text>
-    {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} onPress={()=>void feature('chatEnabled')}/>:null}
+    {!team.chatEnabled?<Text style={styles.note}>O chat da equipa está desativado.</Text>:null}
+    {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} disabled={saving} onPress={()=>void feature('chatEnabled')}/>:null}
+    {team.chatEnabled&&isMember&&auth.token&&auth.username?
+     <SportsTeamContentPanel teamId={teamId} kind="chat" token={auth.token} username={auth.username}/>:null}
+    {team.chatEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
    </View>:null}
   </>:null}
  </Page>;
