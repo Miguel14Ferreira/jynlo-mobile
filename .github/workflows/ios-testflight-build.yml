@@ -1,0 +1,54 @@
+name: Jynlo iOS TestFlight build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jynlo-ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Queue signed iOS build in Expo EAS
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Jynlo Mobile develop
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check Expo token is configured
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        shell: bash
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Configure EXPO_TOKEN in repository Actions secrets. Do not commit or print the token."
+            exit 1
+          fi
+
+      - name: Verify Expo account identity
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx --yes eas-cli@27.10.0 whoami
+
+      - name: Queue iOS TestFlight build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          CI: '1'
+        run: |
+          npx --yes eas-cli@27.10.0 build \
+            --platform ios \
+            --profile ios-testflight \
+            --non-interactive \
+            --no-wait
