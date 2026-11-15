@@ -45,3 +45,23 @@ test('an unavailable invitation endpoint does not hide owned or discovered teams
  assert.match(screen,/As restantes secções continuam disponíveis/);
  assert.doesNotMatch(screen,/await Promise\.all\(\[mySportsTeamInvitations/);
 });
+
+test('team requests ignore stale results and navigation-away responses',()=>{
+ const screen=read('app/teams/index.tsx');
+ assert.match(screen,/const requestVersion=useRef\(0\)/);
+ assert.match(screen,/const version=\+\+requestVersion\.current/);
+ assert.match(screen,/if\(version!==requestVersion\.current\)return/);
+ assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;\}/);
+ assert.match(screen,/if\(version===requestVersion\.current\)setLoading\(false\)/);
+ assert.doesNotMatch(screen,/failed\.push\('pesquisa'\);setTeams\(\[\]\)/);
+ assert.doesNotMatch(screen,/failed\.push\('as tuas equipas'\);setOwned\(\[\]\)/);
+});
+
+test('membership invitations cannot be submitted repeatedly while saving',()=>{
+ const screen=read('app/teams/index.tsx');
+ assert.match(screen,/if\(!auth\.token\|\|saving\)return;/);
+ assert.match(screen,/try\{await respondSportsTeamInvitation\(teamId,accept,auth\.token\);await load\(\);\}/);
+ assert.match(screen,/finally\{setSaving\(false\);\}/);
+ assert.match(screen,/title="Aceitar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,true\)\}/);
+ assert.match(screen,/title="Recusar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,false\)\}/);
+});
