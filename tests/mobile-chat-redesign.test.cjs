@@ -23,7 +23,7 @@ test('message delivery remains explicit with no optimistic duplicate sends',()=>
  const direct=source(files[0]),community=source(files[1]),session=source(files[2]);
  assert.match(direct,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
  assert.match(direct,/pendingWrites\.current\.set\(identity,'text'\)/);
- assert.match(community,/await sendCommunityMessage\(id,message,token,username\)/);
+ assert.match(community,/await sendCommunityMessage\(id,message,token,username,originalReplyId\)/);
  assert.match(community,/sendingNow\.current=true/);
  assert.match(session,/await postSessionChat\(id,originalDraft,auth\.token,originalReplyId\)/);
  assert.match(session,/pendingWrites\.current\.set\(identity,'text'\)/);
