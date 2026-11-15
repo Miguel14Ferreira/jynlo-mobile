@@ -31,7 +31,9 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
     exif:false,base64:false
    });
    if(!alive.current||result.canceled||!result.assets?.length)return;
-   const asset=result.assets[0],kind=asset.type==='video'?'video':'image';
+   const asset=result.assets[0];
+   if(!asset)return;
+   const kind=asset.type==='video'?'video':'image';
    const mime=pickerMediaMime(asset);
    if(!mime){setError('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.');return;}
    let size=asset.fileSize||0;
