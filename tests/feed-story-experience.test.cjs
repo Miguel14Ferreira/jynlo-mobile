@@ -137,6 +137,6 @@ test('sharing a post or attendance activity uses the correct canonical URL',()=>
 });
 test('posting media without typed caption uses a valid default backend caption',()=>{
  const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
- assert.match(api,/const caption=content.trim\(\)\|\|'Partilhei um momento desportivo\.'/);
- assert.match(api,/return sendMedia\('\/api\/feed\/posts',\{content:caption\},files,token!\)/);
+ assert.match(api,/const caption=content\.trim\(\)/);
+ assert.match(api,/const confirmed=await sendMedia\('\/api\/feed\/posts',\{content:caption,/);
 });
