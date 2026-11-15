@@ -1,5 +1,5 @@
-import React,{useCallback,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -18,10 +18,15 @@ export default function TeamDetail(){
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const requestVersion=useRef(0),searchVersion=useRef(0);
- const load=useCallback(async()=>{
+ const reading=useRef<number|null>(null),savingRef=useRef(false);
+ useEffect(()=>{savingRef.current=saving;},[saving]);
+ const load=useCallback(async(silent=false)=>{
+  if(reading.current===requestVersion.current||savingRef.current)return;
   const version=++requestVersion.current;
-  setLoading(true);setError('');
+  reading.current=version;
+  if(!silent){setLoading(true);setError('');}
   if(!Number.isSafeInteger(teamId)||teamId<=0){
+   if(reading.current===version)reading.current=null;
    setError('Equipa inválida.');setLoading(false);return;
   }
   const [details,roster,pastEvents,awards,linked]=await Promise.allSettled([
@@ -31,10 +36,11 @@ export default function TeamDetail(){
    sportsTeamChampionshipHonours(teamId,auth.token||undefined),
    auth.token?sportsTeamCommunities(teamId,auth.token):Promise.resolve([])
   ]);
+  if(reading.current===version)reading.current=null;
   if(version!==requestVersion.current)return;
   const failed:string[]=[];
   if(details.status==='fulfilled')setTeam(details.value);
-  else {setTeam(null);failed.push('o perfil da equipa');}
+  else {if(!silent)setTeam(null);failed.push('o perfil da equipa');}
   if(roster.status==='fulfilled')setMembers(roster.value);
   else failed.push('o plantel');
   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
@@ -43,12 +49,23 @@ export default function TeamDetail(){
   else setHonoursError('Não foi possível atualizar os troféus.');
   if(linked.status==='fulfilled')setCommunities(linked.value);
   else failed.push('as comunidades');
-  if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
-  setLoading(false);
+  if(failed.length){
+   if(!silent)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
+  }else if(!silent)setError('');
+  if(!silent)setLoading(false);
  },[teamId,auth.token]);
  useFocusEffect(useCallback(()=>{
   void load();
-  return ()=>{requestVersion.current++;searchVersion.current++;};
+  const timer=setInterval(()=>{
+   if(AppState.currentState==='active'&&!savingRef.current)void load(true);
+  },60000);
+  const resume=AppState.addEventListener('change',state=>{
+   if(state==='active'&&!savingRef.current)void load(true);
+  });
+  return ()=>{
+   clearInterval(timer);resume.remove();
+   requestVersion.current++;searchVersion.current++;
+  };
  },[load]));
  const search=async()=>{
   if(!auth.token||searchName.trim().length<2||saving)return;
