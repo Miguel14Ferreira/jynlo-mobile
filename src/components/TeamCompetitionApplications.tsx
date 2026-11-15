@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
@@ -11,16 +11,6 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
  const [open,setOpen]=useState(false),[loaded,setLoaded]=useState(false);
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const load=useCallback(async()=>{
-  setLoaded(false);setError('');
-  try{
-   const [settings,rows]=await Promise.all([
-    teamCompetitionApplicationSettings(communityId,type,competitionId,token),
-    teamCompetitionApplications(communityId,type,competitionId,token)
-   ]);
-   setOpen(settings.applicationsOpen);setApplications(rows);setLoaded(true);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível consultar as candidaturas.');}
- },[communityId,competitionId,type,token]);
  useEffect(()=>{
   let active=true;
   setLoaded(false);
@@ -73,7 +63,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
 }
 const styles=StyleSheet.create({
  panel:{padding:15,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,gap:10},
- heading:{fontSize:17,fontWeight:'850',color:C.white},name:{fontSize:14,fontWeight:'750',color:C.white},
+ heading:{fontSize:17,fontWeight:'800',color:C.white},name:{fontSize:14,fontWeight:'700',color:C.white},
  note:{fontSize:12,lineHeight:19,color:C.muted},
  item:{padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,gap:8}
 });
