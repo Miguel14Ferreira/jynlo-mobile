@@ -188,7 +188,6 @@ export default function MessagesScreen(){
   {chatWarning?<Message>{chatWarning}</Message>:null}
   {muteError?<Message tone="error">{muteError}</Message>:null}
   {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
-  {auth.token?<Button secondary title="Atualizar conversas" disabled={loading} onPress={()=>{void load(false);}}/>:null}
   {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
   {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
   {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>Conversas recentes</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
