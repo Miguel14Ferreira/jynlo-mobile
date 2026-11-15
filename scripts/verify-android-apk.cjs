@@ -6,6 +6,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const child=require('node:child_process');
+const crypto=require('node:crypto');
 
 const HEX64=/^[0-9a-f]{64}$/i;
 function parseApkBadging(output){
@@ -66,7 +67,9 @@ function verifyOutput(environment=process.env,io=fs){
  const folder=path.join(root,'android/app/build/outputs/apk/release');
  const candidates=io.readdirSync(folder).filter(n=>/^[a-zA-Z0-9_.-]+\.apk$/.test(n));
  if(candidates.length!==1)throw Error('Esperada exatamente uma APK release.');
- const report=verifyAndroidApk(path.join(folder,candidates[0]),expected,environment,io);
+ const apk=path.join(folder,candidates[0]);
+ const report={...verifyAndroidApk(apk,expected,environment,io),
+  file:candidates[0],apkSha256:crypto.createHash('sha256').update(io.readFileSync(apk)).digest('hex')};
  const metadata=path.join(root,'build-metadata');
  io.mkdirSync(metadata,{recursive:true});
  io.writeFileSync(path.join(metadata,'jynlo-android-binary-verification.json'),
