@@ -29,6 +29,8 @@ import {storyMetadataReservedHeight} from '../../src/lib/story-sticker-bounds.cj
 import PostAlbumCarousel from '../../src/components/PostAlbumCarousel';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {storyMentionFriends,type StoryFriend} from '../../src/lib/social-relations-api';
+import {myCommunities} from '../../src/lib/community-api';
+import type {CommunityGroup} from '../../src/lib/types';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import {searchSocialPlaces,socialPlaceLabel,type SocialPlace} from '../../src/lib/social-place-search';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails} from '../../src/lib/types';
@@ -240,6 +242,10 @@ export default function JynloFeedHome(){
   const [storyLocation,setStoryLocation]=useState(''),[storyTags,setStoryTags]=useState('');
   const [storyPlaceOptions,setStoryPlaceOptions]=useState<SocialPlace[]>([]),[verifiedStoryPlace,setVerifiedStoryPlace]=useState(''),[storyPlaceLoading,setStoryPlaceLoading]=useState(false);
   const [storyFriendSearch,setStoryFriendSearch]=useState('');
+  const [storyPublishCommunityId,setStoryPublishCommunityId]=useState<number|null>(null);
+  const [storyManagedCommunities,setStoryManagedCommunities]=useState<CommunityGroup[]>([]);
+  const [storyManagedCommunitiesLoading,setStoryManagedCommunitiesLoading]=useState(false);
+  const [storyManagedCommunitiesError,setStoryManagedCommunitiesError]=useState('');
   const [storyFriends,setStoryFriends]=useState<StoryFriend[]>([]);
   const [storyFriendsBusy,setStoryFriendsBusy]=useState(false),[storyFriendsError,setStoryFriendsError]=useState('');
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
@@ -307,6 +313,22 @@ export default function JynloFeedHome(){
     },350);
     return()=>{active=false;clearTimeout(timer);};
   },[storyComposer,storyLocation,verifiedStoryPlace,auth.token]);
+  useEffect(()=>{
+    if(!storyComposer||!auth.token||!auth.username){
+      setStoryManagedCommunities([]);setStoryManagedCommunitiesLoading(false);
+      setStoryManagedCommunitiesError('');return;
+    }
+    let active=true;
+    setStoryManagedCommunitiesLoading(true);setStoryManagedCommunitiesError('');
+    void myCommunities(auth.token,auth.username).then(groups=>{
+      if(!active)return;
+      setStoryManagedCommunities(groups.filter(group=>group.visibility==='PUBLIC'&&
+        (group.myRole==='OWNER'||group.myRole==='ADMIN')));
+    }).catch(()=>{
+      if(active){setStoryManagedCommunities([]);setStoryManagedCommunitiesError('Não foi possível carregar as comunidades disponíveis.');}
+    }).finally(()=>{if(active)setStoryManagedCommunitiesLoading(false);});
+    return()=>{active=false;};
+  },[storyComposer,auth.token,auth.username]);
   storyGeometryRef.current=storyTextGeometry;
   // Full-screen editors are scrollable, but Android resizing does not always
   // bring the focused lower input above the keyboard. Keep both composers
@@ -634,6 +656,7 @@ export default function JynloFeedHome(){
   }
   function openStoryComposer(){
     setPublishNotice(null);setStoryPublishError('');setVerifiedStoryPlace('');setStoryPlaceOptions([]);
+    setStoryPublishCommunityId(null);
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
@@ -779,10 +802,14 @@ export default function JynloFeedHome(){
     const tagsDraft=storyTags,locationDraft=storyLocation;
     let details:StoryDetails;
     try{details=prepareStoryDetails(locationDraft,tagsDraft);}catch(e){Alert.alert('Story',e instanceof Error?e.message:'Verifica a localização e as identificações.');return;}
+    const selectedCommunityId=storyPublishCommunityId;
+    if(selectedCommunityId!==null&&!storyManagedCommunities.some(group=>group.id===selectedCommunityId)){
+      setStoryPublishError('Já não tens permissão para publicar Stories nesta comunidade.');return;
+    }
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
-      const created=await publishStory(body,media,actor,username,null,geometry,details);
+      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details);
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
@@ -794,6 +821,7 @@ export default function JynloFeedHome(){
         const currentGeometry=storyGeometryRef.current;
         const unchanged=storyCaptionRef.current===body&&storyMediaRef.current?.uri===media.uri&&
           storyLocationRef.current===locationDraft&&storyTagsRef.current===tagsDraft&&
+          storyPublishCommunityId===selectedCommunityId&&
           currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
           currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom;
         if(unchanged){
@@ -802,6 +830,7 @@ export default function JynloFeedHome(){
           setStoryMedia(null);storyMediaRef.current=null;setStoryComposer(false);
           setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
           setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
+          setStoryPublishCommunityId(null);
         }else{
           Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
         }
@@ -1202,6 +1231,22 @@ export default function JynloFeedHome(){
             </Pressable>
            </View>:null}
           <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
+          <Text style={styles.storiesIntro}>Publicar como</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
+            disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(null)}
+            style={styles.storyFriendOption}>
+            <JynloIcon name="profile" size={19} color={TEAL}/>
+            <Text style={styles.storyFriendName}>{storyPublishCommunityId===null?'✓  ':''}O meu perfil</Text>
+          </Pressable>
+          {storyManagedCommunitiesLoading?<Text style={styles.storiesIntro}>A carregar comunidades…</Text>:null}
+          {storyManagedCommunitiesError?<Text style={styles.storiesIntro}>{storyManagedCommunitiesError}</Text>:null}
+          {storyManagedCommunities.map(group=><Pressable key={group.id} accessibilityRole="button"
+            accessibilityLabel={'Publicar Story na comunidade '+group.name}
+            disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(group.id)}
+            style={styles.storyFriendOption}>
+            <JynloIcon name="community" size={19} color={TEAL}/>
+            <Text style={styles.storyFriendName}>{storyPublishCommunityId===group.id?'✓  ':''}{group.name}</Text>
+          </Pressable>)}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyCaption.length}/180</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyLocation} onChangeText={value=>{storyLocationRef.current=value;setStoryLocation(value);setVerifiedStoryPlace('');setStoryPlaceOptions([]);}}
