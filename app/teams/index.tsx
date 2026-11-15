@@ -3,18 +3,19 @@ import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {createSportsTeam,discoverSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
+import {createSportsTeam,discoverSportsTeams,mySportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
 
 export default function TeamsScreen(){
  const auth=useAuth(),router=useRouter();
- const [teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
+ const [owned,setOwned]=useState<SportsTeam[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
    setLoading(true);setError('');
-   try{setTeams(await discoverSportsTeams(query,auth.token||undefined));
+   try{const [found,mine]=await Promise.all([discoverSportsTeams(query,auth.token||undefined),auth.token?mySportsTeams(auth.token):Promise.resolve([])]);
+    setTeams(found);setOwned(mine);
     if(auth.token){const [memberships,competitions]=await Promise.all([mySportsTeamInvitations(auth.token),myTeamCompetitionInvitations(auth.token)]);
       setInvites(memberships);setCompetitionInvites(competitions.filter(x=>x.status==='PENDING'));}
     else {setInvites([]);setCompetitionInvites([]);}}
@@ -81,6 +82,16 @@ export default function TeamsScreen(){
     <Button title="Recusar convite" disabled={saving} onPress={()=>void respondCompetition(x.id,false)}/>
    </View>)}
   </View>:null}
+  {auth.token?<View style={styles.section}>
+   <Text style={styles.heading}>As minhas equipas ({owned.length})</Text>
+   {!loading&&owned.length===0?<Text style={styles.note}>Ainda não administras nenhuma equipa.</Text>:null}
+   {owned.map(team=><Pressable key={team.id} style={styles.card} accessibilityRole="button"
+     onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
+     <Text style={styles.heading}>{team.name} ›</Text>
+     <Text style={styles.note}>{team.sport||'Várias modalidades'}</Text>
+   </Pressable>)}
+  </View>:null}
+  <Text style={styles.heading}>Descobrir equipas</Text>
   {loading?<Loader/>:teams.length===0?<Message>Não foram encontradas equipas.</Message>:
     teams.map(team=><Pressable key={team.id} style={styles.card}
       onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
