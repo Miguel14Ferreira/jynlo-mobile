@@ -337,6 +337,7 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
       demoPosts.unshift(item);
     }
     const [first,...extra]=files;
+    if(!first)throw new Error('Não foi selecionado nenhum ficheiro.');
     if(first.type==='image')item.imageUrl=first.uri;else item.videoUrl=first.uri;
     item.extraMedia=extra.map(file=>({url:file.uri,mimeType:file.mimeType}));
     return item;
