@@ -4,6 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
 import {useAuth} from '../../../../src/lib/auth';
 import {C} from '../../../../src/lib/theme';
+import {CompetitionTeamSearch} from '../../../../src/components/CompetitionTeamSearch';
 import {DEMO_MODE} from '../../../../src/lib/api';
 import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {createTournamentTeam,tournamentTeams} from '../../../../src/lib/team-api';
@@ -76,6 +77,7 @@ export default function TeamsScreen(){
    <Button title={busy?'A guardar…':'Criar equipa'} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
    <Text style={styles.note}>A criação exige permissões de organizador e é validada pelo backend.</Text>
   </View>:null}
+  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<CompetitionTeamSearch communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token}/>:null}
   {DEMO_MODE?<Message>Modo de demonstração: as equipas são apenas locais e não ficam gravadas na Jynlo real.</Message>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
