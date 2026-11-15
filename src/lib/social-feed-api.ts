@@ -43,7 +43,7 @@ export async function profilePosts(username:string,token:string|null,page=0):Pro
  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(username))throw Error('Perfil inválido.');
  if(!token)throw Error('Inicia sessão para consultar as publicações.');
  if(DEMO_MODE)return demoPosts.filter(item=>item.authorUsername.toLowerCase()===username.toLowerCase()).slice(page*20,(page+1)*20);
- return request<FeedItem[]>('/api/feed/users/'+encodeURIComponent(username)+'/posts?page='+page,{token});
+ return requireSocialCollection(await request<unknown>('/api/feed/users/'+encodeURIComponent(username)+'/posts?page='+page,{token}),'feed');
 }
 
 export async function socialPostById(postId:number,token:string|null):Promise<FeedItem>{
@@ -147,7 +147,7 @@ export async function myStoryReplies(token:string|null,page=0,username:string|nu
   return demoStoryReplies.filter(reply=>reply.recipientUsername.toLowerCase()===username.toLowerCase())
     .slice(page*20,(page+1)*20).map(({recipientUsername:_,...reply})=>reply);
  }
- return request<PrivateStoryReply[]>('/api/stories/me/replies?page='+page,{token});
+ return requireSocialCollection(await request<unknown>('/api/stories/me/replies?page='+page,{token}),'reply');
 }
 
 export async function replyToStory(storyId:number,content:string,token:string|null,username:string|null):Promise<void>{
