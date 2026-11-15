@@ -2,6 +2,10 @@ name: Jynlo iOS TestFlight build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/ios-testflight-build.yml'
 
 permissions:
   contents: read
@@ -12,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Queue signed iOS build in Expo EAS
+    name: Verify Expo token; queue iOS build only if manually requested
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -43,6 +47,7 @@ jobs:
         run: npx --yes eas-cli@27.10.0 whoami
 
       - name: Queue iOS TestFlight build
+        if: github.event_name == 'workflow_dispatch'
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           CI: '1'
