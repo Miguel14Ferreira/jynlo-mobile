@@ -1,0 +1,65 @@
+# Free GitHub Actions alternative for Jynlo Mobile.
+# Connect the existing PRIVATE GitHub repository to a CircleCI Free account.
+# Intentionally OFF on ordinary pushes: start a pipeline manually and set
+# run_validation=true to avoid consuming credits on the many develop commits.
+version: 2.1
+
+parameters:
+  run_validation:
+    type: boolean
+    default: false
+
+jobs:
+  mobile-validation:
+    docker:
+      - image: cimg/node:22.16
+    resource_class: small
+    working_directory: ~/jynlo-mobile
+    environment:
+      CI: "true"
+      EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+      JYNLO_REQUIRE_REAL_API: "1"
+    steps:
+      - checkout
+      - run:
+          name: Require existing develop branch
+          command: |
+            test "$(git branch --show-current)" = "develop" || {
+              echo "Only existing develop is allowed for this validation."
+              exit 1
+            }
+      - run:
+          name: Install dependencies (without native builds)
+          no_output_timeout: 12m
+          command: |
+            npm install --no-audit --no-fund --ignore-scripts
+      - run:
+          name: TypeScript
+          command: |
+            mkdir -p /tmp/jynlo-validation
+            set -o pipefail
+            npm run typecheck 2>&1 | tee /tmp/jynlo-validation/typescript.log
+      - run:
+          name: Expo syntax and full regression suite
+          no_output_timeout: 15m
+          command: |
+            set -o pipefail
+            npm run test:all 2>&1 | tee /tmp/jynlo-validation/tests.log
+      - run:
+          name: Verify release configuration
+          command: |
+            set -o pipefail
+            node scripts/verify-release.cjs 2>&1 | tee /tmp/jynlo-validation/release.log
+            node scripts/check-eas-project.cjs 2>&1 | tee /tmp/jynlo-validation/expo.log
+      - store_artifacts:
+          path: /tmp/jynlo-validation
+          destination: validation-logs
+
+workflows:
+  validate-on-demand:
+    when: << pipeline.parameters.run_validation >>
+    jobs:
+      - mobile-validation:
+          filters:
+            branches:
+              only: develop
