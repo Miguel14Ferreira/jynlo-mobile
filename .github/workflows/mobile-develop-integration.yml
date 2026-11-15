@@ -1,0 +1,70 @@
+name: Jynlo Mobile develop integration
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'app/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'app.config.js'
+      - 'app.json'
+      - 'tsconfig.json'
+      - 'codemagic.yaml'
+      - '.github/workflows/mobile-develop-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-develop-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    name: Validate source syntax, social contracts and Android build guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run every dependency-free regression contract
+        run: node --test tests/*.test.cjs
+      - name: Validate Android release guard and Expo project
+        env:
+          JYNLO_REQUIRE_REAL_API: '1'
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+        run: |
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          node scripts/prepare-android-native-config.cjs
+
+  typescript:
+    name: TypeScript, Expo configuration and full mobile test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package.json
+      - name: Install dependencies without lifecycle execution
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Check TypeScript and syntax
+        run: |
+          npm run typecheck
+          npm run test:all
+      - name: Confirm Expo SDK dependencies and config
+        env:
+          JYNLO_REQUIRE_REAL_API: '1'
+          EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+        run: |
+          npx --no-install expo install --check
+          node scripts/check-eas-project.cjs
