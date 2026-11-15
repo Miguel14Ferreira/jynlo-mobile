@@ -88,19 +88,19 @@ export default function SessionLocationPanel({session,token,canEdit,onSaved}:Pro
   </View>;
 }
 const styles=StyleSheet.create({
- panel:{backgroundColor:C.card,borderColor:C.border,borderWidth:1,borderRadius:17,padding:16,gap:10},
+ panel:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:17,padding:16,gap:10},
  heading:{flexDirection:'row',alignItems:'center',gap:8},
  title:{color:C.mint,fontWeight:'800',fontSize:12,letterSpacing:1},
- address:{fontSize:16,color:C.text,fontWeight:'750'},
+ address:{fontSize:16,color:C.white,fontWeight:'750'},
  hint:{color:C.muted,fontSize:12,lineHeight:18},
  mapContainer:{gap:8,overflow:'hidden',borderRadius:13},
  map:{width:'100%',height:225,borderRadius:13},
  mapButton:{backgroundColor:C.mint,borderRadius:11,minHeight:42,paddingHorizontal:13,paddingVertical:10,alignItems:'center',justifyContent:'center'},
  mapButtonText:{color:'#062b30',fontWeight:'800'},
  secondary:{borderColor:C.border,borderWidth:1,borderRadius:11,minHeight:40,padding:10,alignItems:'center',justifyContent:'center'},
- secondaryText:{color:C.text,fontWeight:'700'},
+ secondaryText:{color:C.white,fontWeight:'700'},
  editor:{gap:9},
- input:{borderColor:C.border,borderWidth:1,borderRadius:10,padding:11,color:C.text,backgroundColor:C.bg},
+ input:{borderColor:C.border,borderWidth:1,borderRadius:10,padding:11,color:C.white,backgroundColor:C.background},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:9},
  error:{color:'#ffa2ad',fontSize:12}
 });
