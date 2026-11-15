@@ -23,7 +23,11 @@ test('voice playback does not use unauthenticated media URLs',()=>{
 test('voice playback is stopped when attachment is released',()=>{
  assert.match(component,/player\.pause\(\)/);
  assert.match(component,/if\(!pdfPreview\.current\)cleanup\(\)/);
- assert.match(component,/Modal visible=\{!!uri&&!isVoice\(mime\)/);
+ // Full-screen image viewer now opens explicitly, rather than on every media download.
+ // Videos use an inline authenticated player and PDFs open through the native viewer.
+ assert.match(component,/Modal visible=\{expanded&&!!uri&&!isVoice\(mime\)&&!isVideo\(mime\)&&mime!=='application\/pdf'\}/);
+ assert.match(component,/onPress=\{\(\)=>setExpanded\(true\)\}/);
+ assert.match(component,/if\(!auto&&!isVoice\(mime\)\)setExpanded\(true\)/);
 });
 
 test('private audio cache is detached before deletion and pauses on background',()=>{
