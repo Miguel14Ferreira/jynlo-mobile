@@ -109,6 +109,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]/competitions" options={{title:'Competições da comunidade'}}/>
     <Stack.Screen name="communities/[id]/championships/create" options={{title:'Criar campeonato'}}/>
     <Stack.Screen name="communities/[id]/championships/[championshipId]" options={{title:'Campeonato'}}/>
+    <Stack.Screen name="communities/[id]/championships/events" options={{title:"Provas do campeonato"}}/>
     <Stack.Screen name="communities/[id]/championships/teams" options={{title:'Equipas do campeonato'}}/>
     <Stack.Screen name="communities/[id]/championships/honours" options={{title:'Palmarés do campeonato'}}/>
     <Stack.Screen name="communities/[id]/championships/events" options={{title:"Provas do campeonato"}}/>
