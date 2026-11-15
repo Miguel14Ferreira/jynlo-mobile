@@ -41,6 +41,12 @@ test('manifest refuses master, pull request, wrong API and unidentified commit',
  assert.throws(()=>artifactMetadata({...input,EXPO_PUBLIC_JYNLO_API_URL:'https://evil.example'},app,bytes),/backend preview/);
 });
 
+test('manifest rejects non-Jynlo Android package even when version and branch match',()=>{
+ assert.throws(()=>artifactMetadata(input,{
+  ...app,android:{...app.android,package:'com.example.clone'}
+ },bytes),/identidade Android oficial/);
+});
+
 test('manifest refuses empty APK and unsafe file names',()=>{
  assert.throws(()=>artifactMetadata(input,app,Buffer.from('bad')),/APK ausente/);
  assert.throws(()=>artifactMetadata({...input,JYNLO_APK_FILENAME:'../private.apk'},app,bytes),/Nome de APK inválido/);
