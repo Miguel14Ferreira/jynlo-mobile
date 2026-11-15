@@ -60,8 +60,8 @@ test('group chat has compact icon controls and standalone route keeps legacy tra
   assert.match(source,/<ChatPdfComposer compact/);
   assert.match(source,/accessibilityLabel="Abrir câmara"/);
   assert.match(source,/accessibilityLabel="Selecionar fotografias ou vídeos"/);
-  assert.match(source,/embedded&&auth.token/);
-  assert.match(source,/!embedded&&attachmentsOpen/);
+  assert.match(source,/auth\.token&&!(?:closed|accessRevoked)\?<View style=\{styles\.quickActions\}>/);
+  assert.match(source,/<ChatPdfComposer compact/);
  }
  assert.match(screens.direct,/accessibilityLabel=\{attachmentsOpen\?'Fechar anexos':'Abrir anexos'\}/);
 });
@@ -73,5 +73,6 @@ test('PDF permission is independent of camera/photo availability in group conver
   assert.ok(pdf,'PDF composer must exist: '+kind);
   assert.doesNotMatch(pdf[1],/canSendPhoto|photoReady/);
   assert.match(pdf[1],/!sending&&!uploading/);
+  assert.match(pdf[1],/!pendingWrites\.current\.has/);
  }
 });
