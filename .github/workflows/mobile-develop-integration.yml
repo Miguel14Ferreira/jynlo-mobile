@@ -53,8 +53,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: package.json
+      # The repository intentionally has no package-lock.json. setup-node's
+      # npm cache requires a lockfile and fails even before npm install.
       - name: Install dependencies without lifecycle execution
         run: npm install --no-audit --no-fund --ignore-scripts
       - name: Check TypeScript and syntax
