@@ -110,7 +110,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     const previousHistoryError=historyError.current;historyError.current=null;
     if(previousHistoryError)setError(current=>current===previousHistoryError?'':current);
     const last=chat.reduce((max,m)=>Number.isSafeInteger(m.id)&&m.id>max?m.id:max,0);
-    if(last>lastAcknowledgedMessageId.current&&(!embedded||inlineNearBottom.current)){
+    if(embedded&&inlineNearBottom.current&&last>lastAcknowledgedMessageId.current){
      lastAcknowledgedMessageId.current=last;
      void markCommunityRead(id,last,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===last)lastAcknowledgedMessageId.current=0;});
     }
@@ -170,9 +170,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    }}, 
     onMessage:(msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
       setMessages(old=>mergeMessages(old,[msg]));
-      // WebSocket delivery is not proof an embedded reader saw an off-screen message.
-       if(!embedded&&AppState.currentState==='active'&&msg.username!==auth.username)
-        void markCommunityRead(id,msg.id,auth.token!,auth.username!).catch(()=>{});}
+      // Delivery alone never proves visibility. The embedded viewport acknowledges
+      // messages only after its measured scroll reaches the bottom.}
    });
    // A disconnected WebSocket must not leave the conversation frozen until a manual refresh.
    const timer=setInterval(()=>{
