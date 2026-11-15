@@ -13,6 +13,12 @@ export async function teamContentHistory(teamId:number,kind:TeamContentKind,toke
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar esta conversa.');
  return request<TeamContentEntry[]>(endpoint(teamId,kind),{token});
 }
+export async function searchTeamContent(teamId:number,kind:TeamContentKind,query:string,token:string):Promise<TeamContentEntry[]>{
+ const term=query.trim();
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para pesquisar.');
+ if(term.length<2||term.length>80)throw Error('Pesquisa entre 2 e 80 caracteres.');
+ return request<TeamContentEntry[]>(endpoint(teamId,kind)+'/search?q='+encodeURIComponent(term),{token});
+}
 export async function sendTeamContent(teamId:number,kind:TeamContentKind,body:string,token:string,replyToId:number|null=null):Promise<TeamContentEntry>{
  const message=body.trim();
  if(!token||DEMO_MODE)throw Error('Inicia sessão para publicar.');
