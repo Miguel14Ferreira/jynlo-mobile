@@ -25,7 +25,21 @@ test('Codemagic targets authenticated preview backend and blocks production or m
  assert.match(yaml,/node scripts\/check-eas-project\.cjs/);
  assert.match(yaml,/npm run typecheck/);
  assert.match(yaml,/npm run test:all/);
- assert.doesNotMatch(yaml,/eas build|bundleRelease|publish --|play-internal/);
+ // The store AAB workflow is intentionally allowed to use bundleRelease.
+ // Only the preview/QA workflows must remain APK-only.
+ const qa=yaml.split('  jynlo-android-qa:')[1]?.split('  jynlo-android-push-qa:')[0];
+ const push=yaml.split('  jynlo-android-push-qa:')[1]?.split('  jynlo-android-google-play-closed:')[0];
+ assert.ok(qa&&push,'Expected both APK-only Codemagic QA workflows');
+ for(const snippet of [qa,push]){
+  assert.doesNotMatch(snippet,/eas build|bundleRelease|publish --|play-internal/);
+  assert.match(snippet,/assembleRelease/);
+ }
+ const play=yaml.split('  jynlo-android-google-play-closed:')[1]?.split('  jynlo-ios-testflight:')[0];
+ assert.ok(play,'Expected a separate Play Store AAB workflow');
+ assert.match(play,/\.\/gradlew :app:bundleRelease/);
+ assert.match(play,/jynlo_play_release/);
+ assert.match(play,/node scripts\/verify-release\.cjs --production/);
+ assert.doesNotMatch(play,/publishing:|submit_to_app_store:|submit_to_testflight:/);
 });
 test('Jynlo official icon step is cross-platform for Codemagic macOS',()=>{
  const script=read('scripts/prepare-jynlo-icon.sh');
