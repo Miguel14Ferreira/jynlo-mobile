@@ -109,3 +109,17 @@ test('team profile survives partial API failures and ignores late results after 
  assert.match(screen,/version===searchVersion\.current/);
  assert.match(screen,/if\(!auth\.token\|\|saving\|\|!Number\.isSafeInteger\(profileId\)/);
 });
+
+test('team rosters and competition data refresh on foreground resume without flashing skeletons',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const load=useCallback\(async\(silent=false\)=>/);
+ assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
+ assert.match(screen,/if\(reading\.current===requestVersion\.current\|\|savingRef\.current\)return/);
+ assert.match(screen,/setInterval\(\(\)=>\{/);
+ assert.match(screen,/AppState\.currentState==='active'&&!savingRef\.current/);
+ assert.match(screen,/AppState\.addEventListener\('change',state=>/);
+ assert.match(screen,/state==='active'&&!savingRef\.current/);
+ assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
+ assert.match(screen,/requestVersion\.current\+\+;searchVersion\.current\+\+;/);
+ assert.match(screen,/if\(!silent\)setTeam\(null\)/);
+});
