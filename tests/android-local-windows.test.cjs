@@ -15,7 +15,7 @@ test('local Windows APK build uses Gradle and never consumes EAS build quota',()
  assert.match(s,/apksigner\.bat/);
  assert.match(s,/Push-Location \(Join-Path \$root 'android'\)/);
  assert.match(s,/dist\\android-local/);
- assert.doesNotMatch(s,/Run '[^']+' 'npx\\.cmd' @\\([^\\n]*eas/i);
+ assert.doesNotMatch(s,/Run '[^']+' 'npx\.cmd' @\([^\n]*eas/i);
 });
 
 test('local Android build cannot accidentally commit Firebase credentials',()=>{
