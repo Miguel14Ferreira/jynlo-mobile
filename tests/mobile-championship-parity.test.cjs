@@ -112,11 +112,14 @@ test('season team selection blocks duplicate mappings within one tournament only
  for(const token of ['conflictingTeamIds','other.tournamentId===entry.tournamentId','other.id!==entry.id','conflictingTeamIds.has(team.id)','conflictingTeamIds.has(picked)','Já utilizada nesta prova'])
   assert.ok(screen.includes(token),token);
 });
-test('championship edits and tests trigger mobile validation workflow',()=>{
- const workflow=read('.github/workflows/mobile-push-validation.yml');
- assert.ok(workflow.includes("'src/lib/championship-api.ts'"));
- assert.ok(workflow.includes("'tests/mobile-championship-parity.test.cjs'"));
- assert.ok(workflow.includes("'app/communities/**'"));
+test('championships remain covered by manual mobile validation without consuming GitHub quota',()=>{
+ const workflow=read('codemagic.yaml');
+ const github=read('.github/workflows/mobile-push-validation.yml');
+ assert.match(workflow,/jynlo-mobile-validacao:/);
+ assert.match(workflow,/npm run typecheck/);
+ assert.match(workflow,/npm run test:all/);
+ assert.match(github,/workflow_dispatch:/);
+ assert.doesNotMatch(github,/^  push:/m);
 });
 
 test('community championship list labels archived seasons and official champion',()=>{
