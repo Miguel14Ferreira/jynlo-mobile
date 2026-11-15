@@ -109,7 +109,7 @@ function qaTestInstructions(metadata){
   'captura de ecra e o commit indicado no cabecalho. Nao enviar passwords nem tokens.',
   'Este documento descreve o que deve ser TESTADO, nao funcionalidades aprovadas.',
   ''
- ].join('\\n');
+ ].join('\n');
 }
 
 function writeManifest(environment=process.env,io=fs){
