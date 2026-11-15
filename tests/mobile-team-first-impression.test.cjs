@@ -51,8 +51,8 @@ test('team requests ignore stale results and navigation-away responses',()=>{
  assert.match(screen,/const requestVersion=useRef\(0\)/);
  assert.match(screen,/const version=\+\+requestVersion\.current/);
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
- assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;\}/);
- assert.match(screen,/if\(version===requestVersion\.current\)setLoading\(false\)/);
+ assert.match(screen,/return \(\)=>\{clearInterval\(timer\);resume\.remove\(\);requestVersion\.current\+\+;\}/);
+ assert.match(screen,/if\(!silent&&version===requestVersion\.current\)setLoading\(false\)/);
  assert.doesNotMatch(screen,/failed\.push\('pesquisa'\);setTeams\(\[\]\)/);
  assert.doesNotMatch(screen,/failed\.push\('as tuas equipas'\);setOwned\(\[\]\)/);
 });
@@ -122,4 +122,16 @@ test('team rosters and competition data refresh on foreground resume without fla
  assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
  assert.match(screen,/requestVersion\.current\+\+;searchVersion\.current\+\+;/);
  assert.match(screen,/if\(!silent\)setTeam\(null\)/);
+});
+
+test('team directory keeps invitations updated when returning to the app without manual refresh',()=>{
+ const screen=read('app/teams/index.tsx');
+ assert.match(screen,/const load=useCallback\(async\(silent=false\)=>/);
+ assert.match(screen,/AppState\.addEventListener\('change',state=>/);
+ assert.match(screen,/state==='active'&&!savingRef\.current/);
+ assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
+ assert.match(screen,/reading\.current===requestVersion\.current\|\|savingRef\.current/);
+ assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
+ assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
+ assert.doesNotMatch(screen.slice(screen.indexOf('const timer=setInterval('),screen.indexOf('const resume=AppState.addEventListener(')),/respondSportsTeamInvitation/);
 });
