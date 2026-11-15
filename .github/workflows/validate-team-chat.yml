@@ -1,0 +1,32 @@
+name: Validate Jynlo Mobile team chat
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'src/components/SportsTeamContentPanel.tsx'
+      - 'src/components/SecureChatAttachment.tsx'
+      - 'src/lib/sports-team-content-api.ts'
+      - 'src/lib/chat-photo-album.ts'
+      - 'src/lib/chat-pdf-attachment.ts'
+      - 'tests/mobile-team-first-impression.test.cjs'
+      - '.github/workflows/validate-team-chat.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-team-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript compilation
+        run: npm run typecheck
+      - name: Mobile teams contract checks
+        run: node --test tests/mobile-team-first-impression.test.cjs
