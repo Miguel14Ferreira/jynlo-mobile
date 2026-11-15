@@ -395,7 +395,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     if(inlineNearBottom.current){
      setUnseenBelow(false);
      const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
-     if(auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
+     if(AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
       void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
