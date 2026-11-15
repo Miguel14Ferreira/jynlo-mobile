@@ -3,13 +3,14 @@ import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,SportsTeam,SportsTeamMember} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
- const [members,setMembers]=useState<SportsTeamMember[]>([]),[inviteId,setInviteId]=useState('');
+ const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
+ const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
   setLoading(true);setError('');
@@ -20,11 +21,16 @@ export default function TeamDetail(){
   finally{setLoading(false);}
  },[teamId,auth.token]);
  useFocusEffect(useCallback(()=>{void load();},[load]));
- const invite=async()=>{
-  const profileId=Number(inviteId);
-  if(!auth.token||!Number.isSafeInteger(profileId)||profileId<=0){setError('Indica um identificador de jogador válido.');return;}
+ const search=async()=>{
+  if(!auth.token||searchName.trim().length<2)return;
+  setError('');
+  try{setCandidates(await findSportsTeamPlayers(searchName,auth.token));}
+  catch(e){setError(e instanceof Error?e.message:'Não foi possível pesquisar jogadores.');}
+ };
+ const invite=async(profileId:number)=>{
+  if(!auth.token||!Number.isSafeInteger(profileId)||profileId<=0)return;
   setSaving(true);setError('');
-  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setInviteId('');}
+  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setCandidates([]);setSearchName('');}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível convidar o jogador.');}
   finally{setSaving(false);}
  };
@@ -47,20 +53,23 @@ export default function TeamDetail(){
    <View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
     {members.map(m=><Text key={m.profileId} style={styles.note}>{m.username} · {m.role==='OWNER'?'Responsável':'Jogador'}</Text>)}
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
-    <TextInput style={styles.input} keyboardType="number-pad" value={inviteId} onChangeText={setInviteId}
-      placeholder="ID do jogador a convidar" placeholderTextColor={C.muted}/>
-    <Button title="Convidar jogador" onPress={()=>void invite()}/>
+    {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
+      placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted}/>
+    <Button title="Pesquisar jogadores" onPress={()=>void search()}/>
+    {candidates.map(p=><View key={p.profileId} style={styles.candidate}>
+      <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
+      <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
+    </View>)}</>:null}
    </View>
    <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
    <View style={styles.panel}><Text style={styles.heading}>Feed</Text>
     <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
-    {auth.username&&auth.token?<Text style={styles.note}>Apenas o responsável pode alterar esta opção.</Text>:null}
-    <Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>
+    {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>:null}
    </View>
    <View style={styles.panel}><Text style={styles.heading}>Chat</Text>
     <Text style={styles.note}>{team.chatEnabled?'Ativado. Mensagens de equipa ainda indisponíveis.':'Desativado'}</Text>
-    <Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} onPress={()=>void feature('chatEnabled')}/>
+    {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} onPress={()=>void feature('chatEnabled')}/>:null}
    </View>
   </>:null}
  </Page>;
@@ -71,5 +80,6 @@ const styles=StyleSheet.create({
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
  panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:16,gap:10},
- input:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,color:C.white,padding:12}
+ input:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,color:C.white,padding:12},
+ candidate:{padding:10,borderColor:C.border,borderWidth:1,borderRadius:10,gap:5}
 });
