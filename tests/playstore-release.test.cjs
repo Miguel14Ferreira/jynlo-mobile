@@ -19,4 +19,4 @@ test('only real HTTPS release with matching Firebase app config passes',()=>{
   },stdio:'pipe'}));
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 });
-test('release explicitly has Expo signing hook and stable Android identifier',()=>{assert.equal(pkg.scripts['eas-build-pre-install'],'node scripts/verify-release.cjs');assert.match(app.expo.android.package,/^com\.[a-z0-9.]+$/);});
+test('release explicitly has Expo signing hook and stable Android identifier',()=>{assert.match(pkg.scripts['eas-build-pre-install'],/^node scripts\/verify-release\.cjs(?: && bash scripts\/prepare-jynlo-icon\.sh)?$/);assert.match(app.expo.android.package,/^com\.[a-z0-9.]+$/);});
