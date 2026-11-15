@@ -1,4 +1,5 @@
 import CommunityChatPanel from '../../src/components/CommunityChatPanel';
+import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
 import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -162,6 +163,8 @@ export default function CommunityDetailScreen(){
             <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · Organizador':m.role==='ADMIN'?' · Administrador':''}</Text></View>
         </View>)}
       </View>:null}
+      {auth.token && (role || community.visibility==='PUBLIC')?
+        <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
       {owner?<View style={styles.section}>
         <Eyebrow>FAZ A COMUNIDADE CRESCER</Eyebrow>
         <Text style={styles.sectionTitle}>Convidar pessoas</Text>
