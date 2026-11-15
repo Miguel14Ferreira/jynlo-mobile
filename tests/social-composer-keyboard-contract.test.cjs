@@ -6,8 +6,8 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
 
 test('separate post and Story editors scroll their focused fields above keyboard',()=>{
- assert.match(source,/const postComposerScrollRef=useRef<ScrollView\|null>\(null\)/);
- assert.match(source,/const storyComposerScrollRef=useRef<ScrollView\|null>\(null\)/);
+ assert.match(source,/const postComposerScrollRef=useRef<ScrollViewInstance\|null>\(null\)/);
+ assert.match(source,/const storyComposerScrollRef=useRef<ScrollViewInstance\|null>\(null\)/);
  assert.match(source,/Keyboard\.addListener\(showEvent/);
  assert.match(source,/return\(\)=>subscription\.remove\(\)/);
  assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,28,true\)/);
