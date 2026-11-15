@@ -7,6 +7,7 @@ import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} fro
 import {confirmedDirectChatSend} from '../../src/lib/chat-send-receipt.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
@@ -33,7 +34,7 @@ export default function DirectConversation(){
  const peer=typeof params.peer==='string'?params.peer:'';
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
- const conversationScroll=useRef<ScrollView|null>(null);
+ const conversationScroll=useRef<ScrollViewInstance|null>(null);
  const nearBottom=useRef(false);
  const historyViewportMeasured=useRef(false);
  const lastAcknowledgedMessageId=useRef(0);
