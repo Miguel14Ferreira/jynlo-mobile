@@ -3,8 +3,8 @@ import {File} from 'expo-file-system';
 import type {DocumentPickerAsset} from 'expo-document-picker';
 import {API_BASE,DEMO_MODE} from './api';
 
-export type PdfChatScope='direct'|'community'|'session';
-export type PdfChatTarget={scope:PdfChatScope;id:string|number};
+export type PdfChatScope='direct'|'community'|'session'|'team';
+export type PdfChatTarget={scope:PdfChatScope;id:string|number;kind?:'chat'|'feed'};
 const MAX_BYTES=5*1024*1024;
 export function privatePdfEndpoint(target:PdfChatTarget):string{
  const {scope,id}=target;
@@ -16,6 +16,10 @@ export function privatePdfEndpoint(target:PdfChatTarget):string{
  const numeric=Number(id);
  if(!Number.isSafeInteger(numeric)||numeric<=0||String(numeric)!==String(id))
   throw Error('Conversa inválida.');
+ if(scope==='team'){
+  if(target.kind!=='chat'&&target.kind!=='feed')throw Error('Tipo de conversa inválido.');
+  return '/api/teams/'+numeric+'/'+target.kind+'/attachments/batch';
+ }
  if(scope!=='community'&&scope!=='session')throw Error('Tipo de conversa inválido.');
  return '/api/'+(scope==='community'?'communities':'sessions')+'/'+numeric+'/messages/attachments';
 }
@@ -42,7 +46,7 @@ export async function sendChatPdf(
   throw Error('O ficheiro selecionado não é um PDF válido.');
  const form=new FormData();
  const safeName=asset.name.replace(/[\\/\x00-\x1f\x7f]/g,'_').slice(-140);
- form.append('file',file as unknown as Blob,safeName);
+ form.append(target.scope==='team'?'files':'file',file as unknown as Blob,safeName);
  if(replyId!=null)form.append('replyToMessageId',String(replyId));
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),30000);
@@ -60,8 +64,10 @@ export async function sendChatPdf(
    if(response.status===503)throw Error('Armazenamento privado indisponível.');
    throw Error('O servidor não aceitou o PDF.');
   }
-  const result=await response.json() as {id?:number;attachmentMimeType?:string|null};
-  if(!Number.isSafeInteger(result.id)||result.attachmentMimeType!=='application/pdf')
+  const result=await response.json() as {id?:number;attachmentMimeType?:string|null;attachments?:Array<{mimeType:string}>};
+  if(!Number.isSafeInteger(result.id)||
+    (target.scope==='team'?result.attachments?.[0]?.mimeType!=='application/pdf'
+      :result.attachmentMimeType!=='application/pdf'))
    throw Error('Não foi possível confirmar o envio. Consulta o histórico antes de repetir.');
  }catch(e){
   if(controller.signal.aborted)
