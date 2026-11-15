@@ -7,7 +7,7 @@ import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
 import {verifiedPostLikeReceipt} from './social-like-receipt.cjs';
 import {verifiedCommentReceipt} from './social-comment-receipt.cjs';
-import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt} from './social-text-post-receipt.cjs';
+import {confirmedTextPostReceipt,confirmedStoryAuthorReceipt,confirmedStoryDetailsReceipt,confirmedStoryDestinationReceipt} from './social-text-post-receipt.cjs';
 import {prepareStoryDetails} from './story-details.cjs';
 import {requireSocialCollection,safeDiscoveredPeople} from './social-response-guard.cjs';
 
@@ -371,8 +371,9 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
     ...(safeDetails.locationLabel?{locationLabel:safeDetails.locationLabel}:{}),
     ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
   if(!confirmedStoryAuthorReceipt(confirmed,username!,caption)||
-     !confirmedStoryDetailsReceipt(confirmed,safeDetails))
-    throw Error('O servidor não confirmou o conteúdo, localização ou identificações da Story. Verifica o teu perfil antes de repetir.');
+     !confirmedStoryDetailsReceipt(confirmed,safeDetails)||
+     !confirmedStoryDestinationReceipt(confirmed,communityId??null))
+    throw Error('O servidor não confirmou o destino ou conteúdo da Story. Verifica o teu perfil ou comunidade antes de repetir.');
   return confirmed;
 }
 export async function discoverPeople(token:string|null):Promise<FeedUserSuggestion[]>{
