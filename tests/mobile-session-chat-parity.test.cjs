@@ -79,5 +79,6 @@ test('session chat syncs on foreground resume and never re-sends messages automa
  assert.match(session,/if\(state==='active'&&active&&version===generation\.current&&!sendingNow\.current\)/);
  assert.match(session,/void refresh\(true,version\)/);
  assert.match(session,/const timer=setInterval/);
- assert.doesNotMatch(session,/setInterval\([^]*?postSessionChat\(/);
+ const intervalBlock=session.slice(session.indexOf('const timer=setInterval('),session.indexOf('const resume=AppState.addEventListener('));
+ assert.doesNotMatch(intervalBlock,/postSessionChat|sendChatPhotoAlbum|editSessionChatMessage/);
 });
