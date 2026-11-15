@@ -1,17 +1,27 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {Button,Message} from './UI';
 import {discoverSportsTeams,type SportsTeam} from '../lib/sports-teams-api';
 import {teamCompetitionInvitations,inviteTeamToCompetition,
  type TeamCompetitionInvitation,type TeamCompetitionType} from '../lib/team-competition-invitations-api';
 import {C} from '../lib/theme';
+import {communityTeamMemberships,type TeamCommunityMembership} from '../lib/team-community-memberships-api';
 
 interface Props{communityId:number;competitionId:number;type:TeamCompetitionType;token:string;}
 export function CompetitionTeamSearch({communityId,competitionId,type,token}:Props){
  const [open,setOpen]=useState(false),[query,setQuery]=useState(''),[rows,setRows]=useState<SportsTeam[]>([]);
  const [existing,setExisting]=useState<TeamCompetitionInvitation[]>([]);
+ const [associated,setAssociated]=useState<TeamCommunityMembership[]>([]);
  const [loading,setLoading]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [searched,setSearched]=useState(false);
+ useEffect(()=>{
+  if(!open)return;
+  let active=true;
+  void Promise.all([communityTeamMemberships(communityId,token),teamCompetitionInvitations(communityId,type,competitionId,token)])
+   .then(([memberships,invitations])=>{if(active){setAssociated(memberships.filter(m=>m.status==='ACTIVE'));setExisting(invitations);}})
+   .catch(()=>{if(active)setAssociated([]);});
+  return()=>{active=false;};
+ },[open,communityId,competitionId,type,token]);
  const search=async()=>{
   if(loading||query.trim().length<1)return;
   setLoading(true);setError('');setNotice('');
@@ -39,6 +49,16 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
    <Button title={open?'Fechar pesquisa':'Pesquisar equipa'} secondary onPress={()=>setOpen(v=>!v)}/>
    {open?<View style={styles.content}>
     <Text style={styles.hint}>Pesquisa equipas existentes na Jynlo e convida o responsável.</Text>
+    <Text style={styles.name}>Equipas da comunidade ({associated.length})</Text>
+    {associated.map(team=>{
+      const invitation=existing.find(x=>x.teamId===team.teamId);
+      return <View key={team.id} style={styles.result}>
+        <Text style={styles.name}>{team.teamName}</Text>
+        {invitation?<Text style={styles.hint}>Convite: {invitation.status}</Text>:
+         <Button title="Convidar para a competição" disabled={loading} onPress={()=>void invite(team.teamId)}/>}
+      </View>;
+    })}
+    <Text style={styles.name}>Outras equipas da Jynlo</Text>
     <TextInput style={styles.input} value={query} onChangeText={setQuery}
       placeholder="Nome da equipa" placeholderTextColor={C.muted} maxLength={100}
       accessibilityLabel="Nome da equipa a pesquisar"/>
