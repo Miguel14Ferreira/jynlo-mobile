@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build-internal-aab:
     name: Gerar AAB assinado para testes internos
-    if: ${{ github.event_name == 'push' || inputs.confirm == 'PREPARAR_BETA_REAL' }}
+    if: ${{ github.ref == 'refs/heads/develop' && inputs.confirm == 'PREPARAR_BETA_REAL' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -28,15 +28,14 @@ jobs:
     steps:
       - name: Obter código
         uses: actions/checkout@v4
-      - name: Validar pedido versionado de AAB 0.16.0
-        if: ${{ github.event_name == 'push' }}
+      - name: Confirmar branch e identidade de versão da Jynlo
         shell: bash
         run: |
           set -euo pipefail
-          test "$(cat .github/jynlo-play-aab.request)" = "PREPARAR_BETA_REAL 0.16.0"
-          test "$(node -p "require('./package.json').version")" = "0.16.0"
-          test "$(node -p "require('./app.json').expo.version")" = "0.16.0"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "7"
+          test "$GITHUB_REF" = "refs/heads/develop"
+          test "$(node -p "require('./package.json').version")" = "$(node -p "require('./app.json').expo.version")"
+          test "$(node -p "require('./app.json').expo.android.package")" = "com.jynlo.app"
+          node -e "const c=require('./app.json').expo.android.versionCode;if(!Number.isSafeInteger(c)||c<1)process.exit(1)"
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
