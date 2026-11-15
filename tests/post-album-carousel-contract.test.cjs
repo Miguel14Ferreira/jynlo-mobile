@@ -10,7 +10,7 @@ test('feed carousels measure their own cards rather than assuming device width',
  const feed=read('app/(tabs)/index.tsx');
  assert.match(carousel,/onLayout=\{event=>\{/);
  assert.match(carousel,/layout\.width/);
- assert.match(carousel,/<ScrollView key=\{width\} horizontal pagingEnabled/);
+ assert.match(carousel,/<ScrollView key=\{width\+'-'\+albumIdentity\} horizontal pagingEnabled/);
  assert.match(carousel,/style=\{\{width\}\}/);
  assert.match(carousel,/contentOffset\.x\/width/);
  assert.match(carousel,/Math\.min\(items\.length-1,Math\.max\(0,index\)\)/);
@@ -52,7 +52,7 @@ test('fullscreen gallery keeps images uncropped with visible close and album con
  const feed=read('app/(tabs)/index.tsx');
  assert.match(lightbox,/presentationStyle="fullScreen"/);
  assert.match(lightbox,/resizeMode="contain"/);
- assert.match(lightbox,/accessibilityLabel="Fechar fotografia ampliada"/);
+ assert.match(lightbox,/<CloseIconButton onPress=\{onClose\} label="Fechar fotografia ampliada"/);
  assert.match(lightbox,/accessibilityLabel="Fotografia anterior"/);
  assert.match(lightbox,/accessibilityLabel="Fotografia seguinte"/);
  assert.match(feed,/<PostImageLightbox key=\{expandedPostImage\?\.uris\[expandedPostImage\.index\]/);
