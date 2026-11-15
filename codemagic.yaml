@@ -10,7 +10,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 25
     environment:
-      node: v22.13.1
+      node: v22.23.1
       vars:
         CI: "1"
         EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
@@ -54,7 +54,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 90
     environment:
-      node: v22.13.1
+      node: v22.23.1
       java: 17
       vars:
         CI: "1"
@@ -138,7 +138,7 @@ workflows:
       # the push workflow. A plain QA workflow remains available without it.
       groups:
         - jynlo_android_native
-      node: v22.13.1
+      node: v22.23.1
       java: 17
       vars:
         CI: "1"
