@@ -11,7 +11,7 @@ test('Feed mobile centra-se em stories e publicações sem caixa de texto no in�
   const feed=read('app/(tabs)/index.tsx');
   for(const fragment of ['Stories','Publicações','publishPost','publishStory','likePost','postComments','addPostComment','expo-image-picker','composerOpen','Nova publicação'])assert.ok(feed.includes(fragment),fragment);
   for(const removed of ['A minha semana desportiva','Jogos com vagas','Pessoas para conhecer','discoverSessions','mySessions','myCommunities'])assert.ok(!feed.includes(removed),removed);
-  assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)setPosts\(value\(0,\[\] as FeedItem\[\]\)\)/);
+  assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)\{[\s\S]*?setPosts\(edits\.posts\)/);
   assert.doesNotMatch(feed,/setPosts\([^\n]*\.filter\(item=>item\.type==='POST'\)/);
 });
 test('contratos do Feed correspondem à API Jynlo e não têm troca rápida de conta',()=>{
@@ -62,7 +62,7 @@ test('Feed mobile presents server session attendance and creation events alongsi
  const feed=read('app/(tabs)/index.tsx');
  const types=read('src/lib/types.ts');
  assert.match(types,/type:'POST'\|'SESSION_CREATED'\|'SESSION_ATTENDED'/);
- assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)setPosts\(value\(0,\[\] as FeedItem\[\]\)\)/);
+ assert.match(feed,/if\(fetches\[0\]\.status==='fulfilled'\)\{[\s\S]*?setPosts\(edits\.posts\)/);
  assert.match(feed,/<SessionPostAttachment item=\{item\}\/>/);
  assert.match(feed,/function SessionPostAttachment\(/);
  assert.match(feed,/router\.push\(\{pathname:'\/sessions\/\[id\]'/);
