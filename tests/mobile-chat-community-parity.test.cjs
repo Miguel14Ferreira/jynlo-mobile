@@ -70,7 +70,7 @@ test('messages inbox refreshes while focused, keeps unread counts, and isolates 
  assert.match(screen,/previous\.filter\(i=>i\.kind==='direct'\)/);
  assert.match(screen,/previous\.filter\(i=>i\.kind==='community'\)/);
  assert.match(screen,/item\.unreadCount/);
- assert.match(screen,/avisos push, quando disponíveis nesta APK/);
+ assert.match(screen,/accessibilityLabel="Abrir notificações"/);
 });
 
 test('private photo attachment uses authenticated private API and requires explicit confirmation',()=>{
@@ -87,7 +87,7 @@ test('private photo attachment uses authenticated private API and requires expli
  assert.match(screen,/directPhotoAvailable\(peer,auth\.token\)/);
  assert.match(screen,/ImagePicker\.launchImageLibraryAsync/);
  assert.match(screen,/Enviar ficheiros/);
- assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo\)/);
+ assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo,originalReplyId\)/);
  assert.match(screen,/setPhoto\(null\)/);
  assert.match(screen,/photoAvailable/);
  assert.match(screen,/SecureChatAttachment scope="direct"/);
