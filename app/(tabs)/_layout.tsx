@@ -45,7 +45,7 @@ export default function TabsLayout(){
   close();
   router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}});
  };
- const action=(destination:'session'|'post'|'community'|'tournament'|'venue')=>{
+ const action=(destination:'session'|'post'|'community'|'team'|'tournament'|'venue')=>{
   close();
   if(!auth.token||!auth.username){
    router.push({pathname:'/login',params:{redirect:'/'}});
@@ -53,6 +53,7 @@ export default function TabsLayout(){
   }
   if(destination==='session')router.push('/sessions/create');
   else if(destination==='community')router.push('/communities/create');
+  else if(destination==='team')router.push('/teams');
   else if(destination==='venue')router.push('/venues/create');
   else if(destination==='tournament')router.push('/tournaments/create');
   else router.push({pathname:'/(tabs)',params:{compose:destination}});
@@ -98,6 +99,9 @@ export default function TabsLayout(){
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
+       </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel="Criar uma equipa" style={styles.actionCard} onPress={()=>action('team')}>
+        <JynloIcon name="tournament" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Equipa</Text><Text style={styles.actionHint}>Cria a tua equipa e gere o plantel</Text>
        </Pressable>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel="Mostrar outras ferramentas de criação"
