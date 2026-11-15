@@ -36,6 +36,7 @@ export default function TabsLayout(){
   if(checking||checkError||eligible.length===0||!auth.token||!auth.username)return;
   if(eligible.length===1){
    const community=eligible[0];
+   if(!community)return;
    close();
    router.push({pathname:'/communities/[id]/championships/create',params:{id:String(community.id)}});
   }else setChooseChampionship(true);
