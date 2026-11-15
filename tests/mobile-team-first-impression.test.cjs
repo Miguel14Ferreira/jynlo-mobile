@@ -34,3 +34,14 @@ test('tournament rosters have structured cards, a bounded progress indicator and
  assert.match(screen,/CompetitionTeamSearch/);
  assert.match(screen,/TeamCompetitionApplications/);
 });
+
+test('an unavailable invitation endpoint does not hide owned or discovered teams',()=>{
+ const screen=read('app/teams/index.tsx');
+ assert.match(screen,/Promise\.allSettled\(\[/);
+ assert.match(screen,/if\(discovery\.status==='fulfilled'\)setTeams\(discovery\.value\)/);
+ assert.match(screen,/if\(mine\.status==='fulfilled'\)setOwned\(mine\.value\)/);
+ assert.match(screen,/if\(memberships\.status==='fulfilled'\)setInvites\(memberships\.value\)/);
+ assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
+ assert.match(screen,/As restantes secções continuam disponíveis/);
+ assert.doesNotMatch(screen,/await Promise\.all\(\[mySportsTeamInvitations/);
+});
