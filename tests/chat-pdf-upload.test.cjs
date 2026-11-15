@@ -34,18 +34,18 @@ test('PDF API uses private authenticated scoped endpoints and signed PDF bytes',
 test('PDF sending integrated in private, community and session chats only when permitted',()=>{
  const cases=[
   ['app/messages/[peer].tsx',"scope:'direct'"],
-  ['app/communities/[id]/chat.tsx',"scope:'community'"],
-  ['app/sessions/[id]/chat.tsx',"scope:'session'"]
+  ['src/components/CommunityChatPanel.tsx',"scope:'community'"],
+  ['src/components/SessionChatPanel.tsx',"scope:'session'"]
  ];
  for(const [file,scope] of cases){
   const src=read(file);
   assert.match(src,/ChatPdfComposer/);
   assert.ok(src.includes(scope));
   assert.match(src,/token=\{auth\.token\}/);
-  assert.match(src,/onSent=\{async\(\)=>\{/);
+  assert.match(src,/onSent=\{async\(sentReplyId\)=>\{/);
  }
- const session=read('app/sessions/[id]/chat.tsx');
- assert.match(session,/enabled=\{!closed&&photoReady&&!sending&&!uploading\}/);
+ const session=read('src/components/SessionChatPanel.tsx');
+ assert.match(session,/enabled=\{!closed&&!sending&&!uploading&&!pendingWrites\.current\.has\(id\+'\|'\+auth\.token\)\}/);
  assert.match(session,/replyId=\{reply\?\.id\}/);
  const pkg=JSON.parse(read('package.json'));
  assert.equal(pkg.dependencies['expo-document-picker'],'~58.0.4');
