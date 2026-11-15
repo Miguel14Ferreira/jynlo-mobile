@@ -43,6 +43,7 @@ test('receipt media references reject schemes, redirect-like URLs and traversal'
   'http://unsecured.example.com/asset','//outside.example.com/file.png',
   'https://user@outside.example.com/file.png',
   'media/../private/other-account',
+  '/api/media/../private/other-account',
   '/api/media/\\\\secret','/api/media/\nredirect',
   'https://example.org/\ninvalid'
  ];
@@ -56,7 +57,15 @@ test('receipt media URLs accept protected API paths and normal HTTPS storage',()
   '/api/profile-media/posts/42/image',
   'https://static.jynlo.example/assets/post-42.webp?signature=abcd',
   'media/post-42.jpg'
+  ,'media/post-43.jpg?size=small'
  ]){
   assert.equal(confirmedSocialMediaReceipt({postId:42,imageUrl:media},['image/jpeg'],false),true,media);
  }
+});
+test('Story success requires an explicit boolean media kind',()=>{
+ const base={id:3,mediaUrl:'/api/profile-media/stories/3'};
+ for(const video of [undefined,null,0,1,'false','true'])
+  assert.equal(confirmedSocialMediaReceipt({...base,video},['image/jpeg'],true),false);
+ assert.equal(confirmedSocialMediaReceipt({...base,video:false},['image/jpeg'],true),true);
+ assert.equal(confirmedSocialMediaReceipt({...base,video:true},['video/mp4'],true),true);
 });
