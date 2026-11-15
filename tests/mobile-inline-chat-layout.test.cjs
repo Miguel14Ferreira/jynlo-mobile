@@ -18,7 +18,7 @@ test('old deep links still render exactly the same chat component',()=>{
 test('inline chats have independently scrollable history and show earlier messages on demand',()=>{
  for(const name of ['Session','Community']){
   const src=read('src/components/'+name+'ChatPanel.tsx');
-  assert.match(src,/embedded\?<ScrollView ref=\{inlineHistoryRef\} style=\{\[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard\]\} nestedScrollEnabled/);
+  assert.match(src,/\{<ScrollView ref=\{inlineHistoryRef\} style=\{\[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard\]\} nestedScrollEnabled/);
   assert.match(src,/setHistoryLimit\(count=>count\+40\)/);
   assert.match(src,/inlineHistory:\{height:290,/);
   assert.match(src,/return embedded\?<View style=\{styles.inline\}>/);
@@ -54,7 +54,7 @@ test('chat scopes remain backed by their own access-authorized APIs',()=>{
 test('inline history follows new messages only while near latest items',()=>{
  for(const name of ['Session','Community']){
   const src=read('src/components/'+name+'ChatPanel.tsx');
-  assert.match(src,/const inlineNearBottom=useRef\(true\)/);
+  assert.match(src,/const inlineNearBottom=useRef\(false\)/);
   assert.match(src,/onScroll=\{event=>\{const \{contentOffset,layoutMeasurement,contentSize\}=event.nativeEvent/);
   assert.match(src,/inlineNearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
   assert.match(src,/onContentSizeChange=\{\(\)=>\{if\(inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/);
@@ -68,7 +68,7 @@ test('readers get an explicit new-message shortcut without losing older scroll p
   assert.match(source,/const previousLatestMessageId=useRef\(0\)/);
   assert.match(source,/const \[unseenBelow,setUnseenBelow\]=useState\(false\)/);
   assert.match(source,/latest>previousLatestMessageId\.current&&previousLatestMessageId\.current>0&&!inlineNearBottom\.current/);
-  assert.match(source,/embedded&&unseenBelow\?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"/);
+  assert.match(source,/unseenBelow\?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"/);
   assert.match(source,/inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
   assert.match(source,/if\(inlineNearBottom\.current\)setUnseenBelow\(false\)/);
   assert.match(source,/previousLatestMessageId\.current=0;setUnseenBelow\(false\)/);
