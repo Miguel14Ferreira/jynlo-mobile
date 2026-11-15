@@ -1,7 +1,17 @@
 'use strict';
 // Server responses are authoritative only if the expected media references
 // survived persistence. Never silently discard a composer on a partial 2xx.
-const hasMedia=x=>typeof x==='string'&&x.trim().length>0;
+const hasMedia=x=>{
+ if(typeof x!=='string')return false;
+ const path=x.trim();
+ if(!path||path.length>2048||/[\\\x00-\x1f\x7f]/.test(path)||path.startsWith('//'))return false;
+ // Backend-owned relative resources and HTTPS object storage are allowed.
+ // Never confirm a social upload pointing to an executable/non-HTTPS scheme.
+ if(/^https:\/\//i.test(path))return /^https:\/\/[^/@\\s?#]+(?:[/?#]|$)/i.test(path);
+ if(path.startsWith('/'))return true;
+ return /^[a-z0-9][a-z0-9._/~?&=%-]*$/i.test(path)&&
+   !path.split(/[/?]/).includes('..');
+};
 function confirmedSocialMediaReceipt(reply,mediaTypes,isStory){
  if(!reply||typeof reply!=='object'||!Array.isArray(mediaTypes)||
     mediaTypes.length<1||mediaTypes.length>(isStory?1:6)||
