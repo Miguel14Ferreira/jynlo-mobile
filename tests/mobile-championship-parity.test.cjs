@@ -71,7 +71,7 @@ test('championship finalization is explicit, organizer-only and archives become 
   assert.ok(api.includes(token),token);
  for(const token of ['Encerrar definitivamente','style:\'destructive\'','closeCommunityChampionship','!championship.closedAt','Campeonato encerrado','item.status===\'DRAFT\''])
   assert.ok(screen.includes(token),token);
- assert.ok(screen.includes('championship?.closedAt'),'closed championship must reject local mutation attempts');
+ assert.match(screen,/if\(savingRef\.current\|\|saving\|\|!auth\.token\|\|!organizer\|\|!championship\|\|championship\.closedAt\)return;/,'closed championship must reject local mutation attempts');
  assert.ok(!screen.includes('Linking.openURL'));
 });
 
