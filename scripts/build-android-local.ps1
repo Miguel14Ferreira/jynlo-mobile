@@ -51,6 +51,9 @@ try {
   $env:ANDROID_HOME = $sdk
   $env:ANDROID_SDK_ROOT = $sdk
 
+  if ($env:GOOGLE_SERVICES_JSON -and -not (Test-Path $env:GOOGLE_SERVICES_JSON)) {
+    throw 'GOOGLE_SERVICES_JSON aponta para um ficheiro inexistente. Corrige o caminho ou remove a variavel para uma APK sem push.'
+  }
   $firebase = if($env:GOOGLE_SERVICES_JSON -and (Test-Path $env:GOOGLE_SERVICES_JSON)) {
     (Resolve-Path $env:GOOGLE_SERVICES_JSON).Path
   } elseif(Test-Path (Join-Path $root 'google-services.json')) {
