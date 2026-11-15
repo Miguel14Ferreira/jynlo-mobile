@@ -15,6 +15,7 @@ import {SessionOfficialResultCard} from '../../src/components/SessionOfficialRes
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
+import SessionLocationPanel from '../../src/components/SessionLocationPanel';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -543,13 +544,8 @@ export default function SessionScreen(){
         <Text style={styles.hint}>{minimum.missing===0?'Mínimo de jogadores atingido.':`Faltam ${minimum.missing} ${minimum.missing===1?'inscrição':'inscrições'} para atingir o mínimo.`}</Text>
         <Text style={styles.subtleHint}>O estado efetivo da sessão continua a ser determinado pelo servidor.</Text>
       </View>:null}
-      <View style={styles.panel}>
-        <Eyebrow>RECINTO E ENCONTRO</Eyebrow>
-        {preview?.venueName?<Text style={styles.venueName}>{preview.venueName}</Text>:null}
-        <Text style={styles.panelHeading}>{safeExactAddress(detail,auth.username)||'Morada exata reservada aos participantes autorizados'}</Text>
-        {safeMeetingPoint(detail,auth.username)?<Text style={styles.hint}>{safeMeetingPoint(detail,auth.username)}</Text>:null}
-        <Text style={styles.hint}>Os detalhes de localização são mostrados apenas quando a API autoriza.</Text>
-      </View>
+      {detail?<SessionLocationPanel session={detail} token={auth.token}
+         canEdit={owner} onSaved={updated=>{setDetail(updated);setFeedback('Localização Google Maps atualizada.');}}/>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
