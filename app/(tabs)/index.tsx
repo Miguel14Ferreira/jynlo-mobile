@@ -525,7 +525,7 @@ export default function JynloFeedHome(){
     }
   }
 
-  async function shareCancelledFeedSession(item:FeedItem){
+  async function shareCancelledFeedSession(item:Parameters<typeof cancellationNotice>[0]){
     try{await Share.share({message:cancellationNotice(item)});}
     catch(e){Alert.alert('Partilhar cancelamento',e instanceof Error?e.message:'Não foi possível abrir a partilha.');}
   }
