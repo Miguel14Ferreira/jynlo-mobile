@@ -272,7 +272,7 @@ workflows:
         script: |
           set -eu
           # Certificado usado no AAB 0.16.0/versionCode 7, conforme auditoria do projeto.
-          expected_sha256="7A55D817C089ECC41AEFC411DF1AE56F9E23B0A4E9CBB958FAA90F733999491A"
+          expected_sha256="7A55D817C089ECC4910761DFC1AE565F9E23B0A4E9CBB958FAA90F733999491A"
           keyfile="$(mktemp "${TMPDIR:-/tmp}/jynlo-play-upload.XXXXXX")"
           chmod 600 "$keyfile"
           printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 -D > "$keyfile"
@@ -301,7 +301,7 @@ workflows:
           unzip -Z1 "$aab" | grep -q "^base/manifest/AndroidManifest.xml$"
           jarsigner -verify "$aab"
           actual_sha256="$(LC_ALL=C keytool -printcert -jarfile "$aab" | grep -m1 SHA256 | sed "s/.*SHA256: //" | tr -d ":" | tr "[:lower:]" "[:upper:]" | tr -d "[:space:]")"
-          test "$actual_sha256" = "7A55D817C089ECC41AEFC411DF1AE56F9E23B0A4E9CBB958FAA90F733999491A" || { echo "AAB assinado com certificado errado."; exit 1; }
+          test "$actual_sha256" = "7A55D817C089ECC4910761DFC1AE565F9E23B0A4E9CBB958FAA90F733999491A" || { echo "AAB assinado com certificado errado."; exit 1; }
           node scripts/write-android-build-info.cjs aab
           shasum -a 256 "$aab" > build-metadata-jynlo-aab-sha256.txt
           echo "AAB validado: upload MANUAL apenas para closed testing."
