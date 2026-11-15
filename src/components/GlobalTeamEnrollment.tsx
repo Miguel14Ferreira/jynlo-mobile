@@ -1,8 +1,8 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
-import {eligibleGlobalRoster,finalizeGlobalTeamEntry,inviteGlobalRoster,
+import {eligibleGlobalRoster,existingGlobalTeamEntry,finalizeGlobalTeamEntry,inviteGlobalRoster,
  type EnrollmentType,type GlobalCompetitionEntry,type GlobalRosterCandidate}
  from '../lib/team-competition-enrollments-api';
 
@@ -12,6 +12,14 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
  const [roster,setRoster]=useState<GlobalRosterCandidate[]>([]);
  const [selected,setSelected]=useState<number[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ useEffect(()=>{
+  let active=true;
+  setEntry(null);setRoster([]);setSelected([]);setError('');setNotice('');
+  void existingGlobalTeamEntry(communityId,type,competitionId,globalTeamId,token)
+   .then(result=>{if(active)setEntry(result);})
+   .catch(()=>{ /* Team not yet enrolled: the finalization action remains available. */ });
+  return()=>{active=false;};
+ },[communityId,type,competitionId,globalTeamId,token]);
  const load=async()=>{
   if(busy)return;
   setBusy(true);setError('');
