@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Button,Message} from './UI';
+import {ApiError} from '../lib/api';
 import {C} from '../lib/theme';
 import {eligibleGlobalRoster,existingGlobalTeamEntry,finalizeGlobalTeamEntry,inviteGlobalRoster,
  type EnrollmentType,type GlobalCompetitionEntry,type GlobalRosterCandidate}
@@ -12,12 +13,16 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
  const [roster,setRoster]=useState<GlobalRosterCandidate[]>([]);
  const [selected,setSelected]=useState<number[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [entryCheck,setEntryCheck]=useState<'checking'|'absent'|'present'|'failed'>('checking');
  useEffect(()=>{
   let active=true;
-  setEntry(null);setRoster([]);setSelected([]);setError('');setNotice('');
+  setEntry(null);setRoster([]);setSelected([]);setError('');setNotice('');setEntryCheck('checking');
   void existingGlobalTeamEntry(communityId,type,competitionId,globalTeamId,token)
-   .then(result=>{if(active)setEntry(result);})
-   .catch(()=>{ /* Team not yet enrolled: the finalization action remains available. */ });
+   .then(result=>{if(active){setEntry(result);setEntryCheck('present');}})
+   .catch(e=>{if(!active)return;
+     if(e instanceof ApiError&&e.status===404)setEntryCheck('absent');
+     else {setEntryCheck('failed');setError('Não foi possível confirmar o estado da inscrição. Atualiza antes de finalizar.');}
+   });
   return()=>{active=false;};
  },[communityId,type,competitionId,globalTeamId,token]);
  const load=async()=>{
@@ -28,10 +33,10 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
   finally{setBusy(false);}
  };
  const finalize=async()=>{
-  if(busy||entry)return;setBusy(true);setError('');setNotice('');
+  if(busy||entry||entryCheck!=='absent')return;setBusy(true);setError('');setNotice('');
   try{
    const next=await finalizeGlobalTeamEntry(communityId,type,competitionId,globalTeamId,token);
-   setEntry(next);setNotice('Equipa inscrita. Seleciona jogadores para convidar.');
+   setEntry(next);setEntryCheck('present');setNotice('Equipa inscrita. Seleciona jogadores para convidar.');
   }catch(e){setError((e instanceof Error?e.message:'Não foi possível finalizar.')+
     ' Confirma se a equipa já está inscrita antes de repetir.');}
   finally{setBusy(false);}
@@ -52,8 +57,8 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
  return <View style={styles.panel}>
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
-  {!entry?<><Button title="Finalizar inscrição da equipa" disabled={busy} onPress={()=>void finalize()}/>
-   <Text style={styles.note}>Inscreve a equipa nesta prova. Os jogadores não são adicionados automaticamente.</Text>
+  {!entry?<><Button title={entryCheck==='checking'?'A verificar inscrição…':'Finalizar inscrição da equipa'} disabled={busy||entryCheck!=='absent'} onPress={()=>void finalize()}/>
+   <Text style={styles.note}>{entryCheck==='failed'?'O estado da inscrição é desconhecido. Reabre este ecrã para voltar a verificar.':'Inscreve a equipa nesta prova. Os jogadores não são adicionados automaticamente.'}</Text>
   </>:<>
    <Text style={styles.heading}>{entry.name} · Equipa inscrita</Text>
    <Text style={styles.note}>Plantel global confirmado: {entry.confirmedGlobalPlayers} jogadores.</Text>
