@@ -10,6 +10,7 @@ import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityM
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
+ const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
@@ -86,7 +87,13 @@ export default function TeamDetail(){
     <Text style={styles.note}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text>
     {team.description?<Text style={styles.note}>{team.description}</Text>:null}
    </View>
-   <View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
+   <View style={styles.tabBar}>
+    <Button title="Visão geral" secondary={activeTab!=='OVERVIEW'}
+      onPress={()=>setActiveTab('OVERVIEW')}/>
+    <Button title={'🏆 Troféus ('+(standaloneTrophies.length+championshipHonours.length)+')'}
+      secondary={activeTab!=='TROPHIES'} onPress={()=>setActiveTab('TROPHIES')}/>
+   </View>:null}
+   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
     {members.map(m=><Text key={m.profileId} style={styles.note}>{m.username} · {m.role==='OWNER'?'Responsável':'Jogador'}</Text>)}
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
     {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
@@ -96,8 +103,8 @@ export default function TeamDetail(){
       <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
       <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
-   </View>
-   <View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
+   </View>:null}
+   {activeTab='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
     {historyError?<Text style={styles.note}>{historyError}</Text>:null}
     {honoursError?<Text style={styles.note}>{honoursError}</Text>:null}
     {!historyError&&!honoursError&&!standaloneTrophies.length&&!championshipHonours.length?
@@ -113,17 +120,17 @@ export default function TeamDetail(){
       <Text style={styles.note}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
     </View>)}
-   </View>
-   <View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
+   </View>:null}
+   {activeTab='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
     {!historyError&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
     {history.map(item=><Text key={item.tournamentId} style={styles.note}>
       {item.tournamentName} · {item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'}
     </Text>)}
-   </View>
-   <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
+   </View>:null}
+   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Button title="Encontrar competições para a equipa" onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}/>
     <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
-   <View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
     {communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
       <Text style={styles.note}>{m.communityName}</Text>
       {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>void removeMembership(m.id)}/>:null}
@@ -138,20 +145,21 @@ export default function TeamDetail(){
       <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
     {membershipNote?<Message>{membershipNote}</Message>:null}
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
-   </View>
-   <View style={styles.panel}><Text style={styles.heading}>Feed</Text>
+   </View>:null}
+   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Feed</Text>
     <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
     {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>:null}
-   </View>
-   <View style={styles.panel}><Text style={styles.heading}>Chat</Text>
+   </View>:null}
+   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Chat</Text>
     <Text style={styles.note}>{team.chatEnabled?'Ativado. Mensagens de equipa ainda indisponíveis.':'Desativado'}</Text>
     {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} onPress={()=>void feature('chatEnabled')}/>:null}
-   </View>
+   </View>:null}
   </>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
  header:{padding:20,backgroundColor:C.surface,borderRadius:16,gap:8},
+ tabBar:{flexDirection:'row',flexWrap:'wrap',gap:10},
  title:{fontSize:27,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
