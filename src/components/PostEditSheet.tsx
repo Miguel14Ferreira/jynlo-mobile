@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {Alert,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import type {FeedItem} from '../lib/types';
 import {editPost} from '../lib/social-feed-api';
 import {postMediaItems} from '../lib/post-album.cjs';
@@ -21,7 +22,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const lock=useRef(false);
- const editorScrollRef=useRef<ScrollView|null>(null);
+ const editorScrollRef=useRef<ScrollViewInstance|null>(null);
  const generation=useRef(0);
  const currentIdentity=post&&token&&username&&post.authorUsername.toLowerCase()===username.toLowerCase()?
    String(post.postId)+'|'+username.toLowerCase()+'|'+token:null;
