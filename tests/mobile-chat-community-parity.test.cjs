@@ -90,7 +90,7 @@ test('private photo attachment uses authenticated private API and requires expli
  assert.match(screen,/sendDirectPhoto\(peer,auth\.token,photo,originalReplyId\)/);
  assert.match(screen,/setPhoto\(null\)/);
  assert.match(screen,/photoAvailable/);
- assert.match(screen,/SecureChatAttachment scope="direct"/);
+ assert.match(screen,/<SecureChatAttachment key=\{attachment\.index\} index=\{attachment\.index\} scope="direct"/);
 });
 
 test('community chat photo upload checks private storage and requires confirmation',()=>{
@@ -106,7 +106,7 @@ test('community chat photo upload checks private storage and requires confirmati
  assert.match(chat,/Enviar ficheiros/);
  assert.match(chat,/canSendPhoto/);
  assert.match(chat,/setPhoto\(null\)/);
- assert.match(chat,/SecureChatAttachment scope="community"/);
+ assert.match(chat,/<SecureChatAttachment key=\{attachment\.index\} index=\{attachment\.index\} scope="community"/);
 });
 
 test('session chat discards stale responses after navigation and never auto-retries sends',()=>{
