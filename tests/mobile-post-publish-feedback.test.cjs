@@ -37,3 +37,9 @@ test('failed uploads keep drafts and show a persistent error on post and story e
  assert.match(feed,/postInFlight\.current=true;setPublishing\(true\);setPostPublishError\(''\)/);
  assert.match(feed,/storyInFlight\.current=true;setStoryPublishing\(true\);setStoryPublishError\(''\)/);
 });
+
+test('new stories remain visible in the public feed until the server listing catches up',()=>{
+ assert.match(feed,/setStories\(current=>\[created,\.\.\.current\.filter\(item=>item\.id!==created\.id\)\]\)/);
+ assert.match(feed,/const fresh=recentlyConfirmedStories\.current\.filter\(entry=>/);
+ assert.match(feed,/setStories\(\[\.\.\.fresh\.map\(entry=>entry\.item\),\.\.\.received\.filter\(story=>!ids\.has\(story\.id\)\)\]\)/);
+});
