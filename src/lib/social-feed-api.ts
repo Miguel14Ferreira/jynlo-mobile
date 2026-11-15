@@ -287,7 +287,9 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    const timeout=setTimeout(()=>controller.abort(),90000);
    try{
      const response=await expoFetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
-       credentials:'omit',
+       // Never follow redirects with an authenticated multipart upload.
+       // Expo's native fetch supports redirect:'error' but not web-only cache options.
+       credentials:'omit',redirect:'error',
        headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
      if(!response.ok){
        const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
