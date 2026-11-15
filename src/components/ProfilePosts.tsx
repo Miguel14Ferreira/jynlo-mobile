@@ -54,7 +54,7 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     style={styles.post}>
     {(()=>{const album=postMediaItems(item),first=album[0],preview=first?resolveJynloMedia(first.url):null;
       return <View>
-       {preview&&first.type==='image'?<ProtectedProfileImage src={first.url} token={token} style={styles.image} resizeMode="contain"/>:
+       {preview&&first?.type==='image'?<ProtectedProfileImage src={first.url} token={token} style={styles.image} resizeMode="contain"/>:
         first?.type==='video'?<View style={styles.placeholder}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={23} color={T.accent}/><Text style={styles.metaText}>Vídeo</Text></View><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
         <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
        {album.length>1?<View style={styles.albumMark}><View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="gallery" size={15} color="#fff"/><Text style={styles.albumMarkText}>{album.length}</Text></View></View>:null}
