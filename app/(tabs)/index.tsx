@@ -417,6 +417,7 @@ export default function JynloFeedHome(){
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
+      setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
