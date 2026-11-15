@@ -4,6 +4,7 @@ import {communityDetails,myCommunities} from './community-api';
 import {mySessions} from './parity-api';
 import type {CommunityChatEntry,JynloInboxSummary} from './types';
 import {safeId} from './community-core.cjs';
+import {filterAuthorizedSummaries} from './authorized-inbox-summaries.cjs';
 const threads=new Map<number,CommunityChatEntry[]>();let nextId=950000;
 const base=(id:number)=>`/api/communities/${safeId(id)}/messages`;
 async function member(id:number,token:string,username:string){
@@ -90,17 +91,12 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
   const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
    token,method:'POST',body:{conversations:uniqueGroups.slice(i,i+100).map(c=>({kind:'community',id:String(c.id)}))}
   });
+  if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
   summaries.push(...batch);
  }
- // Only render summaries for communities confirmed by the membership list.
- // A malformed or overbroad summaries response must not introduce other chats.
+ // Only the authenticated membership list determines visible communities.
  const allowed=new Map(uniqueGroups.map(group=>[String(group.id),group.name?.trim()||'Comunidade']));
- const returned=new Set<string>();
- return summaries.filter(summary=>{
-  if(summary?.kind!=='community'||typeof summary.id!=='string'||!allowed.has(summary.id)||returned.has(summary.id))return false;
-  returned.add(summary.id);
-  return true;
- }).map(summary=>({...summary,title:allowed.get(summary.id)||'Comunidade'}));
+ return filterAuthorizedSummaries('community',allowed,summaries,'Comunidade');
 }
 
 /** Build the session inbox only from sessions the logged-in account created or joined.
@@ -126,17 +122,11 @@ export async function sessionInbox(token:string,username:string):Promise<JynloIn
   const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
    token,method:'POST',body:{conversations:ids.slice(i,i+100).map(id=>({kind:'session',id}))}
   });
+  if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
   summaries.push(...batch);
  }
- // The backend explicitly omits closed/revoked chats. Never synthesize
- // sessions absent from its authorized response, even if /sessions/mine listed them.
- const returned=new Set<string>();
- const visible=summaries.filter(item=>{
-  if(item?.kind!=='session'||typeof item.id!=='string'||!allowed.has(item.id)||returned.has(item.id))return false;
-  returned.add(item.id);
-  return true;
- });
- return visible.map(item=>({...item,title:allowed.get(item.id)||'Sessão desportiva'}))
+ // The server omits closed/revoked chats; never synthesize those entries.
+ return filterAuthorizedSummaries('session',allowed,summaries,'Sessão desportiva')
   .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 
@@ -181,6 +171,7 @@ export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
   const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
    token,method:'POST',body:{conversations:peers.slice(i,i+100).map(id=>({kind:'direct',id}))}
   });
+  if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
   summaries.push(...batch);
  }
  // The peers endpoint is authoritative for accessible conversations. The
