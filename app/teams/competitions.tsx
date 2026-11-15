@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
@@ -11,26 +11,46 @@ import {C} from '../../src/lib/theme';
 export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
  const [query,setQuery]=useState(''),[sport,setSport]=useState('');
+ const [filters,setFilters]=useState({query:'',sport:''});
+ const requestVersion=useRef(0);
  const [rows,setRows]=useState<OpenTeamCompetition[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]);
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
  const [chosen,setChosen]=useState<number|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
- const search=useCallback(async()=>{
+ const load=useCallback(async()=>{
+  const version=++requestVersion.current;
   setLoading(true);setError('');
-  try{
-   const [competitions,owned,requests]=await Promise.all([
-    discoverTeamCompetitions(query,sport,auth.token||undefined),
+  const [competitions,owned,requests]=await Promise.allSettled([
+    discoverTeamCompetitions(filters.query,filters.sport,auth.token||undefined),
     auth.token?mySportsTeams(auth.token):Promise.resolve([]),
     auth.token?myTeamApplications(auth.token):Promise.resolve([])
-   ]);
-   setRows(competitions);setTeams(owned);setApplications(requests);
-   const wanted=Number(teamId);
-   if(Number.isSafeInteger(wanted)&&owned.some(t=>t.id===wanted))setChosen(wanted);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível encontrar competições.');}
-  finally{setLoading(false);}
- },[query,sport,auth.token,teamId]);
- useFocusEffect(useCallback(()=>{void search();},[search]));
+  ]);
+  if(version!==requestVersion.current)return;
+  const failed:string[]=[];
+  if(competitions.status==='fulfilled')setRows(competitions.value);
+  else failed.push('competições');
+  if(owned.status==='fulfilled'){
+    setTeams(owned.value);
+    const wanted=Number(teamId);
+    setChosen(current=>{
+      if(Number.isSafeInteger(wanted)&&owned.value.some(t=>t.id===wanted))return wanted;
+      return current!==null&&owned.value.some(t=>t.id===current)?current:null;
+    });
+  }else failed.push('as tuas equipas');
+  if(requests.status==='fulfilled')setApplications(requests.value);
+  else failed.push('candidaturas anteriores');
+  if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. Podes continuar a consultar as restantes secções.');
+  setLoading(false);
+ },[filters,auth.token,teamId]);
+ const search=()=>{const next={query:query.trim(),sport:sport.trim()};
+  if(next.query===filters.query&&next.sport===filters.sport)void load();
+  else setFilters(next);
+ };
+ useFocusEffect(useCallback(()=>{
+  void load();
+  return ()=>{requestVersion.current++;};
+ },[load]));
  const applied=(competition:OpenTeamCompetition,teamId:number|null)=>
   teamId!==null&&applications.some(a=>a.teamId===teamId&&a.competitionId===competition.id
    &&a.competitionType===competition.type);
@@ -40,7 +60,7 @@ export default function TeamCompetitionDiscovery(){
   try{
    const next=await applyTeamToCompetition(competition.communityId,competition.type,
      competition.id,chosen,auth.token);
-   setApplications(current=>[next,...current]);
+   setApplications(current=>[next,...current.filter(item=>item.id!==next.id)]);
    setNotice('Candidatura enviada. O organizador poderá aceitar ou recusar.');
   }catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar o pedido.')+
     ' Verifica o estado antes de tentar novamente.');}
@@ -49,17 +69,17 @@ export default function TeamCompetitionDiscovery(){
  return <Page>
   <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
   <Button secondary title="← Equipas" onPress={()=>router.push('/teams')}/>
-  <Text style={styles.title}>Encontrar torneios</Text>
+  <Text style={styles.title}>Encontrar competições</Text>
   <Text style={styles.note}>Torneios e campeonatos de comunidades públicas que aceitam candidaturas de equipas.</Text>
   <TextInput style={styles.input} placeholder="Nome da competição ou comunidade" placeholderTextColor={C.muted}
-    value={query} onChangeText={setQuery} maxLength={80}/>
+    value={query} onChangeText={setQuery} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
   <TextInput style={styles.input} placeholder="Modalidade" placeholderTextColor={C.muted}
-    value={sport} onChangeText={setSport} maxLength={80}/>
-  <Button title="Pesquisar competições" onPress={()=>void search()} disabled={loading}/>
+    value={sport} onChangeText={setSport} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
+  <Button title="Pesquisar competições" onPress={search} disabled={loading}/>
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<Loader/>:null}
-  {!loading&&teams.length===0?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
+  {!loading&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
   {teams.length>0?<View style={styles.panel}>
    <Text style={styles.subtitle}>Escolher a minha equipa</Text>
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
@@ -72,13 +92,13 @@ export default function TeamCompetitionDiscovery(){
    <Text style={styles.subtitle}>Pedidos já enviados</Text>
    {applications.map(a=><Text key={a.id} style={styles.note}>{a.teamName} · {a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado':'Recusado'}</Text>)}
   </View>:null}
-  {!loading&&rows.length===0?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
+  {!loading&&rows.length===0&&!error?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
   {rows.map(item=><View key={item.type+'-'+item.id} style={styles.panel}>
     <Text style={styles.note}>{item.type==='TOURNAMENT'?'Torneio':'Campeonato'} · {item.communityName}</Text>
     <Text style={styles.subtitle}>{item.name}</Text>
     <Text style={styles.note}>{item.sport||'Modalidade não indicada'}</Text>
     <Button title={applied(item,chosen)?'Pedido já enviado':busy?'A enviar…':'Pedir participação'}
-      disabled={!chosen||busy||applied(item,chosen)}
+      disabled={!auth.token||!chosen||busy||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
    </View>)}
   <Text style={styles.note}>A aprovação não inscreve automaticamente o plantel; os jogadores são confirmados pelas regras da competição.</Text>
