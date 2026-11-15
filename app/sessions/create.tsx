@@ -703,7 +703,7 @@ export default function CreateSessionScreen(){
      disabled={busy} onPress={()=>setShowRegistrationCalendar(value=>!value)} style={styles.option}>
      <Text style={styles.optionText}>📅 {form.registrationDay||'Escolher data de abertura'} {showRegistrationCalendar?'▴':'▾'}</Text>
     </Pressable>
-    {showRegistrationCalendar?<SessionDateCalendar value={form.registrationDay} disabled={busy}
+    {showRegistrationCalendar?<SessionDateCalendar value={form.registrationDay||''} disabled={busy}
      onSelect={date=>{patch('registrationDay',date);setShowRegistrationCalendar(false);}}/>:null}
     {field('Hora de abertura','registrationTime','HH:mm (24h)','numeric')}
    </>:null}
