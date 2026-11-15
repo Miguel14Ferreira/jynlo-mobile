@@ -5,16 +5,19 @@ import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/
 import {useAuth} from '../../src/lib/auth';
 import {createSportsTeam,discoverSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
+import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
 
 export default function TeamsScreen(){
  const auth=useAuth(),router=useRouter();
- const [teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[query,setQuery]=useState('');
+ const [teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
    setLoading(true);setError('');
    try{setTeams(await discoverSportsTeams(query,auth.token||undefined));
-    if(auth.token)setInvites(await mySportsTeamInvitations(auth.token));else setInvites([]);}
+    if(auth.token){const [memberships,competitions]=await Promise.all([mySportsTeamInvitations(auth.token),myTeamCompetitionInvitations(auth.token)]);
+      setInvites(memberships);setCompetitionInvites(competitions.filter(x=>x.status==='PENDING'));}
+    else {setInvites([]);setCompetitionInvites([]);}}
    catch(e){setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
    finally{setLoading(false);}
  },[query,auth.token]);
@@ -24,6 +27,13 @@ export default function TeamsScreen(){
   setError('');
   try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load();}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível responder ao convite.');}
+ };
+ const respondCompetition=async(id:number,accept:boolean)=>{
+  if(!auth.token||saving)return;
+  setSaving(true);setError('');
+  try{await answerTeamCompetitionInvitation(id,accept,auth.token);await load();}
+  catch(e){setError((e instanceof Error?e.message:'Erro ao responder.')+' Verifica o convite antes de repetir.');}
+  finally{setSaving(false);}
  };
  const create=async()=>{
   if(!auth.token){router.push('/login');return;}
@@ -59,6 +69,16 @@ export default function TeamsScreen(){
      <Text style={styles.heading}>{x.teamName}</Text>
      <Button title="Aceitar convite" onPress={()=>void respond(x.teamId,true)}/>
      <Button title="Recusar convite" onPress={()=>void respond(x.teamId,false)}/>
+   </View>)}
+  </View>:null}
+  {competitionInvites.length>0?<View style={styles.section}>
+   <Text style={styles.heading}>Convites para competições</Text>
+   {competitionInvites.map(x=><View key={x.id} style={styles.card}>
+    <Text style={styles.heading}>{x.teamName}</Text>
+    <Text style={styles.note}>{x.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · Convite pendente</Text>
+    <Text style={styles.note}>Aceitar confirma o interesse da equipa; a inscrição competitiva é concluída pelo organizador.</Text>
+    <Button title="Aceitar convite" disabled={saving} onPress={()=>void respondCompetition(x.id,true)}/>
+    <Button title="Recusar convite" disabled={saving} onPress={()=>void respondCompetition(x.id,false)}/>
    </View>)}
   </View>:null}
   {loading?<Loader/>:teams.length===0?<Message>Não foram encontradas equipas.</Message>:
