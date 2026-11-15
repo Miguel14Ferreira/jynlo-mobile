@@ -22,7 +22,7 @@ test('stories support left/right taps and hold-to-pause without timing out video
 
 test('image-led posts show caption after engagement controls; session activities retain context',()=>{
  assert.ok(post,'post card must exist');
- const image=post.indexOf('style={styles.postImage}');
+ const image=post.indexOf('<PostAlbumCarousel items={album}');
  const actions=post.indexOf('style={styles.postActions}');
  const caption=post.indexOf("item.content?<Text style={styles.postBody}>",actions);
  assert.ok(image>=0&&actions>image&&caption>actions,'post image, actions, then caption');
@@ -61,7 +61,7 @@ test('story caption overlay is shown in preview and playback using the existing 
  assert.match(viewer,/story\.caption\?\.trim\(\)/);
  assert.match(viewer,/styles\.storyCaptionLayer/);
  assert.match(composer,/storyCaption\.trim\(\)/);
- assert.match(composer,/styles\.storyCaptionOverlay/);
+ assert.match(composer,/<StoryTextPlacement caption=\{storyCaption\.trim\(\)\}/);
  assert.match(composer,/maxLength=\{180\}/);
  assert.match(composer,/MediaVideo uri=\{storyMedia\.uri\} story paused/);
  assert.doesNotMatch(composer,/burn|flatten|renderToFile/);
@@ -109,7 +109,7 @@ test('feed comments use a dismissible bottom sheet instead of expanding under th
  assert.match(sheet,/accessibilityLabel="Enviar comentário"/);
  assert.match(sheet,/submitComment\(expandedComments\)/);
  assert.match(feed,/function closeComments\(\)\{commentsRequest\.current\+\+/);
- assert.match(feed,/if\(requestId===commentsRequest\.current\)\{setComments/);
+ assert.match(feed,/if\(requestId===commentsRequest\.current\)setComments\(next\)/);
 });
 
 test('social feed links only to a real session id and uses backend-provided metadata',()=>{
