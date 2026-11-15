@@ -4,7 +4,8 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\scripts\build-android-local.ps1
 .NOTES
-  Requer Node.js 22+, JDK 17, Android SDK (Android Studio), Firebase google-services.json.
+  Requer Node.js 22+, JDK 17 e Android SDK (Android Studio).
+  Firebase e a chave de mapas sao opcionais nesta APK de testes (push/mapa podem ficar inativos).
   APK local e apenas de diagnostico. Nao substitui credenciais de assinatura Play.
 #>
 [CmdletBinding()]
@@ -15,7 +16,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $names = @('EXPO_PUBLIC_JYNLO_API_URL','JYNLO_REQUIRE_REAL_API',
-  'JYNLO_ANDROID_DIAGNOSTIC_NO_R8','GOOGLE_SERVICES_JSON')
+  'JYNLO_ANDROID_DIAGNOSTIC_NO_R8','GOOGLE_SERVICES_JSON','ANDROID_HOME','ANDROID_SDK_ROOT')
 $saved = @{}
 foreach ($n in $names) { $saved[$n] = [Environment]::GetEnvironmentVariable($n,'Process') }
 $pushed = $false
@@ -55,10 +56,13 @@ try {
   } elseif(Test-Path (Join-Path $root 'google-services.json')) {
     (Resolve-Path (Join-Path $root 'google-services.json')).Path
   } else { $null }
-  if (-not $firebase) {
-    throw 'Falta google-services.json: coloca o ficheiro Android Firebase na raiz do repositorio (ignorado pelo Git), ou define GOOGLE_SERVICES_JSON com o caminho.'
+  if ($firebase) {
+    $env:GOOGLE_SERVICES_JSON = $firebase
+    Run 'Validar configuracao Firebase Android' 'node.exe' @('scripts/prepare-android-native-config.cjs')
+  } else {
+    Remove-Item Env:GOOGLE_SERVICES_JSON -ErrorAction SilentlyContinue
+    Write-Warning 'Sem Firebase Android: a APK de testes nao tera push remoto; os alertas internos continuam disponiveis.'
   }
-  $env:GOOGLE_SERVICES_JSON = $firebase
   $env:EXPO_PUBLIC_JYNLO_API_URL = 'https://desporto24-preview-api.onrender.com'
   $env:JYNLO_REQUIRE_REAL_API = '1'
   $env:JYNLO_ANDROID_DIAGNOSTIC_NO_R8 = '1'
@@ -71,10 +75,11 @@ try {
     throw 'Dependencias em falta: remove -SkipInstall.'
   }
   if (-not $SkipChecks) {
-    Run 'Validar API real' 'npm.cmd' @('run','check:release')
+    Run 'Validar API de testes HTTPS' 'node.exe' @('scripts/verify-release.cjs')
     Run 'Validar TypeScript' 'npm.cmd' @('run','typecheck')
     Run 'Executar testes' 'npm.cmd' @('run','test:all')
   }
+  Run 'Validar identidade Expo' 'node.exe' @('scripts/check-eas-project.cjs')
   Run 'Gerar Android nativo' 'npx.cmd' @('--no-install','expo','prebuild','--platform','android','--no-install','--clean')
   $gradle = Join-Path $root 'android\gradlew.bat'
   if (-not (Test-Path $gradle)) { throw 'Gradle wrapper nao foi gerado.' }
