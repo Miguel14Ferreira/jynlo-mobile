@@ -35,11 +35,11 @@ test('temporary PDF stays present until its original upload settles, including a
  assert.match(source,/busyRef\.current=true;uploadingRef\.current=asset/);
  assert.match(source,/uploadingRef\.current=null;\s*cleanup\(asset\);\s*busyRef\.current=false/);
  assert.match(source,/setBusy\(busyRef\.current\);setError\(''\)/);
- assert.match(source,/disabled=\{busy\|\|busyRef\.current\}/);
+ assert.match(source,/disabled=\{busy\|\|busyRef\.current\|\|pickerRef\.current\}/);
 });
 
 test('a pending upload explains why another PDF cannot be selected',()=>{
  assert.match(source,/busyRef\.current&&!selected\?<Text/);
  assert.match(source,/Existe um PDF em envio noutra conversa/);
- assert.match(source,/disabled=\{busy\|\|busyRef\.current\}/);
+ assert.match(source,/disabled=\{busy\|\|busyRef\.current\|\|pickerRef\.current\}/);
 });
