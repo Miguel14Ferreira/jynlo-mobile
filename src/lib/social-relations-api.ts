@@ -48,3 +48,24 @@ export async function storyMentionFriends(token:string|null):Promise<StoryFriend
  return result.filter(person=>person&&typeof person.username==='string'&&
   /^[a-zA-Z0-9_.-]{2,45}$/.test(person.username)&&!person.chatBlocked&&!person.blockedByMe);
 }
+
+/** Stories can mention discoverable profiles, not only existing friendships.
+ * The backend verifies profile identity and block rules on publication. */
+export async function searchStoryMentionProfiles(query:string,token:string|null):Promise<StoryFriend[]>{
+ const term=query.trim().replace(/^@/,'').slice(0,60);
+ if(!token||term.length<3||DEMO_MODE)return [];
+ const response=await request<Array<{username:string;fullName?:string|null;nickname?:string|null;
+   profilePicUrl?:string|null}>>('/api/profile/name/'+encodeURIComponent(term),{token});
+ if(!Array.isArray(response))return [];
+ const seen=new Set<string>();
+ return response.filter(profile=>{
+   if(!profile||typeof profile.username!=='string'||!/^[a-zA-Z0-9_.-]{2,45}$/.test(profile.username))return false;
+   const name=profile.username.toLowerCase();
+   if(seen.has(name))return false;
+   seen.add(name);
+   return true;
+ }).slice(0,12).map(profile=>({
+   username:profile.username,fullName:profile.fullName||null,nickname:profile.nickname||null,
+   profilePicUrl:profile.profilePicUrl||null,chatBlocked:false,blockedByMe:false
+ }));
+}
