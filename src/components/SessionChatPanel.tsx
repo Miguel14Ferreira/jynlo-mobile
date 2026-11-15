@@ -142,8 +142,17 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   }
   void refresh(false,version);
   // Read-only polling while focused; a send is never retried automatically.
-  const timer=setInterval(()=>{if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);},15000);
-  return ()=>{active=false;clearInterval(timer);pendingRefresh.current=false;generation.current++;
+  const timer=setInterval(()=>{
+   if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current)
+    void refresh(true,version);
+  },15000);
+  // Mirror the Messages and Community chats: reconcile immediately on app resume.
+  // The refresh guard coalesces concurrent reads and cannot retry an outbound POST.
+  const resume=AppState.addEventListener('change',state=>{
+   if(state==='active'&&active&&version===generation.current&&!sendingNow.current)
+    void refresh(true,version);
+  });
+  return ()=>{active=false;clearInterval(timer);resume.remove();pendingRefresh.current=false;generation.current++;
    if(activeChat.current===identity)activeChat.current='';
   };
  },[refresh,auth.token,id]));
