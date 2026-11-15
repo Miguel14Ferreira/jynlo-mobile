@@ -6,9 +6,12 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\scripts\validate-local.ps1 -NoInstall -Bundle
 .EXAMPLE
+  powershell -ExecutionPolicy Bypass -File .\scripts\validate-local.ps1 -LocalApk
+.EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\scripts\validate-local.ps1 -NoInstall -BuildApk
 .NOTES
   -Bundle produces JavaScript assets, not an APK.
+  -LocalApk builds directly with Android Studio/Gradle, without cloud build quota.
   -BuildApk explicitly opts in to an Expo EAS cloud build (subject to EAS quota).
   No APK build occurs during normal validation.
 #>
@@ -16,7 +19,8 @@
 param(
     [switch]$NoInstall,
     [switch]$Bundle,
-    [switch]$BuildApk
+    [switch]$BuildApk,
+    [switch]$LocalApk
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,6 +42,7 @@ function Invoke-Checked {
 try {
     Push-Location $repoRoot
     Write-Host "Jynlo Mobile - Validacao local sem GitHub Actions" -ForegroundColor Green
+    if ($LocalApk -and $BuildApk) { throw 'Escolhe apenas -LocalApk (sem quota) ou -BuildApk (EAS cloud).' }
 
     $node = (& node --version)
     if ($LASTEXITCODE -ne 0 -or -not $node -or $node -notmatch '^v(\d+)\.') {
@@ -58,7 +63,7 @@ try {
     $env:EXPO_PUBLIC_JYNLO_API_URL = $api
     $env:JYNLO_REQUIRE_REAL_API = '1'
 
-    Invoke-Checked 'Validar configuracao API real' 'npm.cmd' @('run','check:release')
+    Invoke-Checked 'Validar configuracao API de testes' 'node.exe' @('scripts/verify-release.cjs')
     Invoke-Checked 'Verificar identidade do projeto Expo' 'node.exe' @('scripts/check-eas-project.cjs')
     Invoke-Checked 'Verificar compatibilidade Expo SDK sem alterar dependencias' 'npx.cmd' @('--no-install','expo','install','--check')
     Invoke-Checked 'Verificar TypeScript' 'npm.cmd' @('run','typecheck')
@@ -70,6 +75,11 @@ try {
 
     Write-Host ""
     Write-Host 'Validacao concluida com sucesso.' -ForegroundColor Green
+
+    if ($LocalApk) {
+        Write-Host 'Compilacao local: sem EAS, Codemagic ou GitHub Actions.' -ForegroundColor Green
+        & (Join-Path $PSScriptRoot 'build-android-local.ps1') -SkipInstall -SkipChecks
+    }
 
     if ($BuildApk) {
         Write-Warning 'O EAS Build utiliza quota da conta Expo e pode ter custos se nao estiveres no plano gratuito.'
