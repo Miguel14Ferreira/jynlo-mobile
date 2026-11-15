@@ -66,7 +66,7 @@ test('older post write cannot clear the in-flight lock of a newly opened account
  const privacy=post.slice(post.indexOf('async function toggleLikerPrivacy()'),post.indexOf('async function comment()'));
  assert.match(privacy,/finally\s*\{\s*if\(version===generation\.current\)\{writing\.current=false;setBusy\(false\);\}\s*\}/);
  assert.ok(!post.includes('finally{writing.current=false;if(version===generation.current)setBusy(false);}'));
- assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);\}/);
+ assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);setExpandedImage\(null\);setEditingPost\(null\);\}/);
 });
 
 test('post owner can change liker visibility only after server confirmation',()=>{
