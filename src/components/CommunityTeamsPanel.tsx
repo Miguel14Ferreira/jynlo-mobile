@@ -39,7 +39,7 @@ export default function CommunityTeamsPanel({communityId,isOrganizer,token}:Prop
   catch(e){setError((e instanceof Error?e.message:'Não foi possível concluir.')+' Verifica o estado antes de repetir.');}
   finally{setBusy(false);}
  };
- const existing=(teamId:number)=>rows.some(r=>r.teamId===teamId);
+ const existing=(teamId:number)=>rows.some(r=>r.teamId===teamId&&r.status!=='DECLINED');
  const active=rows.filter(r=>r.status==='ACTIVE');
  const pending=rows.filter(r=>r.status==='PENDING_TEAM'||r.status==='PENDING_COMMUNITY');
  return <View style={styles.panel}>
