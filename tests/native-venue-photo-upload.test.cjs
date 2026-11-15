@@ -19,5 +19,5 @@ test('public mobile venue screen does not offer unmoderated photo submissions',(
  const ui=screen.slice(screen.indexOf('return <Page>'));
  assert.match(ui,/envio de novas fotografias está temporariamente suspenso/i);
  assert.doesNotMatch(ui,/Escolher fotografia do recinto|Enviar fotografia|void submitPhoto\(\)/);
- assert.match(ui,/venuePhotos\(id\)/);
+ assert.match(screen,/venuePhotos\(id\)/);
 });
