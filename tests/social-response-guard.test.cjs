@@ -34,3 +34,17 @@ test('discovery rejects unexpected response shapes and limits valid results',()=
  for(const value of [null,{},'bad'])assert.throws(()=>safeDiscoveredPeople(value));
  assert.equal(safeDiscoveredPeople(Array.from({length:50},(_,i)=>({username:'player'+i})),12).length,12);
 });
+
+test('private Story replies reject wrong audience payload shape',()=>{
+ const valid=[{id:5,storyId:42,senderUsername:'ana',content:'Olá',createdAt:'2026-11-15T12:00:00Z'}];
+ assert.strictEqual(requireSocialCollection(valid,'reply'),valid);
+ for(const invalid of [
+  [{...valid[0],storyId:-3}],
+  [{...valid[0],senderUsername:{malformed:true}}],
+  [{...valid[0],createdAt:'invalid'}],
+  [{...valid[0],id:null}]
+ ])assert.throws(()=>requireSocialCollection(invalid,'reply'));
+});
+test('invalid content kind never silently accepts empty arrays',()=>{
+ assert.throws(()=>requireSocialCollection([],'unknown'));
+});
