@@ -35,14 +35,21 @@ test('cancellation text tolerates legacy null or invalid date values',()=>{
 test('both session detail and feed use the same public-only notice generator',()=>{
  assert.match(detail,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
  assert.match(feed,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
- assert.match(detail,/setCancelledShare\(\{id,actor:actorUsername,text:cancellationNotice\(sessionAtPrompt\)\}\)/);
+ assert.match(detail,/cancellationNotice\(detail\):null/);
  assert.match(feed,/Share\.share\(\{message:cancellationNotice\(item\)\}\)/);
 });
 test('detail share follows a verified cancellation response, not a pending action',()=>{
  const cancel=detail.slice(detail.indexOf('const cancel=()=>'),detail.indexOf('function confirmRemoveParticipant('));
- assert.match(cancel,/void perform\(\(\)=>cancelSession\(id,actorToken,actorUsername\|\|undefined\),\(\)=>\{/);
- assert.match(detail,/owner&&detail\?\.status==='CANCELLED'&&cancelledShare\?\.id===id/);
- assert.match(detail,/cancelledShare\.actor===auth\.username/);
- assert.match(detail,/Share\.share\(\{message:cancelledShare\.text\}\)/);
+ assert.match(cancel,/void perform\(\(\)=>cancelSession\(id,actorToken,actorUsername\|\|undefined\),/);
+ assert.match(detail,/owner&&detail\?\.status==='CANCELLED'&&detail\.id===id/);
+ assert.match(detail,/const owner=isOrganizer\(detail,auth\.username\)/);
+ assert.match(detail,/Share\.share\(\{message:cancelledShareText\}\)/);
  assert.match(cancel,/style:'destructive'/);
+});
+
+test('already cancelled session offers a re-share action on later visits',()=>{
+ assert.match(detail,/const cancelledShareText=owner&&detail\?\.status==='CANCELLED'&&detail\.id===id\?/);
+ assert.match(detail,/\{cancelledShareText\?<View style=\{styles\.panel\}>/);
+ assert.match(detail,/<Text selectable style=\{styles\.hint\}>\{cancelledShareText\}<\/Text>/);
+ assert.doesNotMatch(detail,/setCancelledShare\(/);
 });
