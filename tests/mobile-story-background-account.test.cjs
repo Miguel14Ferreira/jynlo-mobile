@@ -12,7 +12,7 @@ test('inactive mobile app pauses story photo timer and native video, and prevent
  assert.match(viewer,/AppState\.addEventListener\('change',state=>\{/);
  assert.match(viewer,/setAppActive\(state==='active'\)/);
  assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\|\|!appActive\)return/);
- assert.match(viewer,/story paused=\{paused\|\|replyFocused\|\|storyBusy\|\|!appActive\}/);
+ assert.match(viewer,/story muted=\{storyMuted\} paused=\{paused\|\|replyFocused\|\|storyBusy\|\|!appActive\}/);
  assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\|\|!appActive\)return/);
 });
 test('viewer retains photo progress while sharing, replying or returning from background',()=>{
@@ -34,7 +34,7 @@ test('account switch immediately prevents old viewer and old groups rendering',(
 test('account changes gate public feed cards, Story rail and private composers during render',()=>{
  assert.match(source,/const visiblePosts=identityMatches&&hiddenReady\?posts\.filter\(item=>\{/);
  assert.match(source,/return !key\|\|!hiddenKeys\.includes\(key\)/);
- assert.match(source,/<FlatList data=\{visiblePosts\}/);
+ assert.match(source,/const normalPosts=visiblePosts\.filter\(item=>!isDigestAttendance\(item\)\)/);
  assert.match(source,/\{visibleStoryGroups\.length\?<ScrollView/);
  assert.match(source,/\{visibleStoryGroups\.map\(group=>/);
  assert.match(source,/<Modal visible=\{identityMatches&&expandedComments!==null\}/);
