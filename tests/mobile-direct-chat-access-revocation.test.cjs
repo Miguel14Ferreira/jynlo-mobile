@@ -15,11 +15,11 @@ test('verified direct-chat authorization failures hide cached private history an
  assert.match(refresh,/Já não tens acesso a esta conversa/);
 });
 
-test('ordinary direct-chat networking failures keep the cached history available',()=>{
+test('ordinary direct-chat failures are distinguished from access revocation',()=>{
  const catchBody=refresh.slice(refresh.indexOf('}catch(e){'));
  assert.match(catchBody,/\}else if\(silent\)\{/);
  assert.match(catchBody,/histórico apresentado pode estar desatualizado/);
- assert.match(catchBody,/\}else\{\s*setError\(/);
+ assert.match(catchBody,/\}else\{\s*setSyncWarning\('Não foi possível sincronizar a conversa/);
  const revoke=catchBody.slice(catchBody.indexOf('if(accessRevoked){'),catchBody.indexOf('}else if(silent){'));
  assert.match(revoke,/setMessages\(\[\]\)/);
  assert.doesNotMatch(catchBody.slice(catchBody.indexOf('}else if(silent){')),/setMessages\(\[\]\)/);
