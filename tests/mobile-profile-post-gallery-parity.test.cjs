@@ -7,7 +7,7 @@ test('profile gallery renders complete images, labels videos and preserves album
  assert.match(s,/postMediaItems\(item\)/);
  assert.match(s,/resizeMode="contain"/);
  assert.doesNotMatch(s,/resizeMode="cover"/);
- assert.match(s,/▶ Vídeo/);
+ assert.match(s,/name="video"[\s\S]*?>Vídeo<\/Text>/);
  assert.match(s,/album.length>1\?<View style=\{styles.albumMark\}>/);
  assert.match(s,/router.push\(\{pathname:'\/posts\/\[postId\]'/);
  assert.match(s,/const visibleItems=sameProfile\?items:\[\]/);
@@ -18,7 +18,7 @@ test('post detail has device-width album pager, full-screen image and safe route
  assert.match(s,/Math.max\(220,screenWidth-64\)/);
  assert.match(s,/<ScrollView horizontal pagingEnabled/);
  assert.match(s,/resizeMode="contain"/);
- assert.match(s,/accessibilityLabel=\{'Ampliar fotografia '\+\(index\+1\)/);
+ assert.match(s,/label=\{'Ampliar fotografia '\+\(index\+1\)/);
  assert.match(s,/setExpandedImage\(uri\)/);
  assert.match(s,/visible=\{!!expandedImage&&!!post&&!!auth.token\}/);
  assert.match(s,/onRequestClose=\{\(\)=>setExpandedImage\(null\)\}/);
