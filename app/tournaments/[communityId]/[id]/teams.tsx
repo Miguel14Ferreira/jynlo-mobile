@@ -4,6 +4,7 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
 import {useAuth} from '../../../../src/lib/auth';
 import {C} from '../../../../src/lib/theme';
+import {JynloIcon} from '../../../../src/components/JynloIcon';
 import {CompetitionTeamSearch} from '../../../../src/components/CompetitionTeamSearch';
 import {TeamCompetitionApplications} from '../../../../src/components/TeamCompetitionApplications';
 import {DEMO_MODE} from '../../../../src/lib/api';
@@ -61,15 +62,35 @@ export default function TeamsScreen(){
   }
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · EQUIPAS</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Equipas'}</Text>
-  <Text style={styles.note}>Abre uma equipa para veres o plantel, os jogos e os convites. Assim evitamos uma lista interminável de jogadores neste ecrã.</Text>
+  <View style={styles.hero}>
+   <View style={styles.heroHead}><View style={styles.heroIcon}><JynloIcon name="tournament" color={C.mint} size={26}/></View>
+     <Text style={styles.heroTag}>TORNEIO POR EQUIPAS</Text></View>
+   <Text style={styles.title}>{tournament?.name||'Equipas do torneio'}</Text>
+   <Text style={styles.heroSub}>Acompanha os plantéis, aceita convites e vê os jogos da competição.</Text>
+   {tournament?.entryType==='TEAM'?<View style={styles.summary}>
+    <Text style={styles.summaryCount}>{items.length}</Text>
+    <Text style={styles.summaryLabel}>{items.length===1?'equipa inscrita':'equipas inscritas'}</Text>
+   </View>:null}
+  </View>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}{!!message?<Message>{message}</Message>:null}
   {tournament?.entryType!=='TEAM'&&tournament?<Message>Este torneio não é uma competição por equipas.</Message>:null}
+  {!loading&&tournament?.entryType==='TEAM'&&items.length===0?<View style={styles.empty}>
+    <JynloIcon name="community" color={C.mint} size={26}/>
+    <Text style={styles.teamName}>Ainda sem equipas</Text>
+    <Text style={styles.note}>Cria a primeira equipa ou convida uma já existente na Jynlo.</Text>
+   </View>:null}
   {items.map(t=><View key={t.id} style={styles.team}>
-   <Text style={styles.teamName}>{t.name}</Text>
-   <Text style={styles.note}>{t.players.length}/{t.playersPerTeam??'Sem limite'} jogadores · Plantel e jogos na página da equipa</Text>
-   <Button title="Abrir página da equipa" secondary onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(t.id)}})}/>
+   <View style={styles.teamTop}>
+     <View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={25}/></View>
+     <View style={styles.teamCopy}><Text style={styles.teamName} numberOfLines={2}>{t.name}</Text>
+       <Text style={styles.note}>{t.players.length} {t.players.length===1?'jogador confirmado':'jogadores confirmados'}{t.playersPerTeam!=null?' · limite '+t.playersPerTeam:''}</Text>
+     </View>
+   </View>
+   {t.playersPerTeam!=null&&t.playersPerTeam>0?<View style={styles.progressTrack}>
+      <View style={[styles.progressFill,{width:`${Math.min(100,Math.round(t.players.length/t.playersPerTeam*100))}%` as `${number}%`}]}/>
+    </View>:null}
+   <Button title="Ver plantel e jogos" secondary onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(t.id)}})}/>
   </View>)}
   {tournament?.entryType==='TEAM'&&tournament.status!=='DRAFT'?<Message>Este torneio já começou ou terminou. As equipas estão disponíveis apenas para consulta.</Message>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'?<View style={styles.team}>
@@ -84,4 +105,24 @@ export default function TeamsScreen(){
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
 }
-const styles=StyleSheet.create({title:{color:C.white,fontSize:28,fontWeight:'900'},note:{color:C.muted,fontSize:12,lineHeight:18},team:{padding:17,borderRadius:18,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,gap:10},teamName:{color:C.white,fontSize:18,fontWeight:'900'},players:{color:C.mint,fontSize:13},input:{backgroundColor:C.surface2,color:C.white,padding:14,borderRadius:12,borderWidth:1,borderColor:C.border}});
+const styles=StyleSheet.create({
+ title:{color:C.white,fontSize:28,fontWeight:'900',letterSpacing:-.5,lineHeight:35},
+ note:{color:C.muted,fontSize:12,lineHeight:19},
+ hero:{backgroundColor:'#153A30',borderWidth:1,borderColor:'#326653',padding:21,borderRadius:23,gap:13},
+ heroHead:{flexDirection:'row',alignItems:'center',gap:11},
+ heroIcon:{width:48,height:48,borderRadius:15,backgroundColor:'#225243',alignItems:'center',justifyContent:'center'},
+ heroTag:{fontSize:11,fontWeight:'900',letterSpacing:1.1,color:C.mint,flexShrink:1},
+ heroSub:{fontSize:14,color:'#D6E6DD',lineHeight:21},
+ summary:{flexDirection:'row',alignItems:'baseline',gap:8,paddingTop:6},
+ summaryCount:{color:C.mint,fontSize:30,fontWeight:'900'},
+ summaryLabel:{color:'#D6E6DD',fontSize:13,fontWeight:'700'},
+ team:{padding:16,borderRadius:18,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,gap:13},
+ teamTop:{flexDirection:'row',alignItems:'center',gap:12},
+ teamIcon:{width:49,height:49,backgroundColor:'#1D4538',borderRadius:14,alignItems:'center',justifyContent:'center'},
+ teamCopy:{flex:1,gap:5},
+ teamName:{color:C.white,fontSize:18,fontWeight:'900'},
+ progressTrack:{height:5,backgroundColor:C.surface2,borderRadius:9,overflow:'hidden'},
+ progressFill:{height:'100%',backgroundColor:C.mint,borderRadius:9},
+ empty:{padding:24,borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:20,alignItems:'center',gap:12},
+ input:{backgroundColor:C.surface2,color:C.white,padding:14,borderRadius:12,borderWidth:1,borderColor:C.border,minHeight:50}
+});
