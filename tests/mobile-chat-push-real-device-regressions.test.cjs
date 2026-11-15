@@ -19,8 +19,8 @@ test('text draft stays available while auxiliary block-status check is unresolve
  const s=read('app/messages/[peer].tsx');
  assert.match(s,/\{auth\.token&&!blocked\?<View style=\{styles\.composer\}>/);
  assert.match(s,/disabled=\{mutationBusy\|\|sending\|\|photoBusy\|\|sendingNow\.current\|\|pendingWrites\.current\.has/);
- assert.match(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!auth\.token/);
- assert.doesNotMatch(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
+ assert.match(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown\|\|!auth\.token/);
+ assert.match(s,/pendingWrites\.current\.has\(identity\)\|\|blocked\|\|!blockStatusKnown/);
  assert.match(s,/await sendDirectChat\(peer,submittedText,auth\.token\)/);
 });
 
