@@ -3,7 +3,7 @@ import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,sportsTeamHistory,type TeamCompetitionHistory} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,sportsTeamHistory,sportsTeamChampionshipHonours,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
@@ -14,14 +14,21 @@ export default function TeamDetail(){
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
+ const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
   setLoading(true);setError('');
   try{const [details,roster]=await Promise.all([
    sportsTeamDetail(teamId,auth.token||undefined),sportsTeamMembers(teamId,auth.token||undefined)]);
    setTeam(details);setMembers(roster);
-   try{setHistory(await sportsTeamHistory(teamId,auth.token||undefined));setHistoryError('');}
-   catch{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
+   const [pastEvents,awards]=await Promise.allSettled([
+    sportsTeamHistory(teamId,auth.token||undefined),
+    sportsTeamChampionshipHonours(teamId,auth.token||undefined)
+   ]);
+   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
+   else{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
+   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
+   else{setChampionshipHonours([]);setHonoursError('Não foi possível carregar os títulos dos campeonatos.');}
    if(auth.token)setCommunities(await sportsTeamCommunities(teamId,auth.token));else setCommunities([]);}
   catch(e){setError(e instanceof Error?e.message:'Equipa não encontrada.');}
   finally{setLoading(false);}
@@ -68,6 +75,8 @@ export default function TeamDetail(){
   finally{setSaving(false);}
  };
  const isOwner=!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username===auth.username);
+ const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
+ const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
   <Button title="← Equipas" onPress={()=>router.push('/teams')}/>
   {loading?<Loader/>:null}
@@ -88,10 +97,18 @@ export default function TeamDetail(){
       <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>
-   <View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({history.filter(item=>item.champion).length})</Text>
+   <View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
     {historyError?<Text style={styles.note}>{historyError}</Text>:null}
-    {!historyError&&!history.some(item=>item.champion)?<Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
-    {history.filter(item=>item.champion).map(item=><View key={item.tournamentId} style={styles.candidate}>
+    {honoursError?<Text style={styles.note}>{honoursError}</Text>:null}
+    {!historyError&&!honoursError&&!standaloneTrophies.length&&!championshipHonours.length?
+      <Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
+    {championshipHonours.map(item=><View key={'season:'+item.championshipId+':'+(item.ownedEventId?'event:'+item.ownedEventId:'tournament:'+item.tournamentId)} style={styles.candidate}>
+      <Text style={styles.heading}>🏆 {item.competitionName}</Text>
+      <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':item.format==='KNOCKOUT'?'Taça':item.format} · {item.championshipName} · {item.seasonLabel}</Text>
+      <Text style={styles.note}>{item.communityName} · {item.sport}</Text>
+      <Text style={styles.note}>{new Date(item.awardedAt).toLocaleDateString('pt-PT')}</Text>
+    </View>)}
+    {standaloneTrophies.map(item=><View key={item.tournamentId} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.tournamentName}</Text>
       <Text style={styles.note}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
