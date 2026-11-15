@@ -10,9 +10,9 @@ test('the mobile inbox displays real community and session names, not raw IDs',(
  const screen=read('app/(tabs)/messages.tsx');
  const types=read('src/lib/types.ts');
  assert.match(types,/interface JynloInboxSummary \{[^\n]*title\?:string/);
- assert.match(api,/title:c\.name\?\.trim\(\)\|\|'Comunidade'/);
- assert.match(api,/title:allowed\.get\(summary\.id\)/);
- assert.match(api,/title:allowed\.get\(item\.id\)/);
+ assert.match(api,/title:typeof c\.name==='string'&&c\.name\.trim\(\)\?c\.name\.trim\(\):'Comunidade'/);
+ assert.match(api,/filterAuthorizedSummaries\('community',allowed,summaries,'Comunidade'\)/);
+ assert.match(api,/filterAuthorizedSummaries\('session',allowed,summaries,'Sessão desportiva'\)/);
  assert.match(api,/session\.sport/);
  assert.match(api,/session\.city/);
  assert.match(screen,/item\.title\|\|\(item\.kind==='community'\?'Comunidade':'Sessão desportiva'\)/);
@@ -22,8 +22,11 @@ test('the mobile inbox displays real community and session names, not raw IDs',(
 
 test('inbox titles are derived only from authenticated, authorized membership lists',()=>{
  const api=read('src/lib/chat-api.ts');
+ const guard=read('src/lib/authorized-inbox-summaries.cjs');
+ assert.match(guard,/!allowed\.has\(item\.id\)\|\|seen\.has\(item\.id\)/);
+ assert.match(guard,/result\.push\(\{\.\.\.item,title:/);
  assert.match(api,/const groups=await myCommunities\(token,username\)/);
  assert.match(api,/const mine=await mySessions\(token,username\)/);
- assert.match(api,/!allowed\.has\(item\.id\)\|\|returned\.has\(item\.id\)/);
- assert.match(api,/allowed\.get\(item\.id\)/);
+ assert.match(api,/filterAuthorizedSummaries\(/);
+ assert.match(api,/filterAuthorizedSummaries\(/);
 });
