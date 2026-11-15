@@ -154,3 +154,18 @@ test('permanent team chat and feed use authorized, feature-gated server timeline
  assert.match(panel,/clearInterval\(timer\);resume\.remove\(\)/);
  assert.match(panel,/Consulta o histórico antes de repetires/);
 });
+
+test('team conversations support replies, author edits and owner moderated deletion',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ assert.match(panel,/replyTo/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token,replyTo\)/);
+ assert.match(panel,/item\.canEdit/);
+ assert.match(panel,/item\.canManage/);
+ assert.match(panel,/editTeamContent\(teamId,kind,editingId,body,token\)/);
+ assert.match(panel,/deleteTeamContent\(teamId,kind,item\.id,token\)/);
+ assert.match(panel,/Alert\.alert\('Eliminar conteúdo'/);
+ assert.match(panel,/Consulta o histórico antes de repetires/);
+ assert.match(api,/method:'PATCH',body:\{body:message\}/);
+ assert.match(api,/method:'DELETE'/);
+});
