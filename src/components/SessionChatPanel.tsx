@@ -381,10 +381,12 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+    // Near-bottom is for auto-follow; a read receipt requires the actual end to be visible.
+    const lastMessageVisible=contentOffset.y+layoutMeasurement.height>=contentSize.height-4;
     if(inlineNearBottom.current){
      setUnseenBelow(false);
      const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
-     if(AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
+     if(lastMessageVisible&&AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
       void markSessionChatRead(id,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
