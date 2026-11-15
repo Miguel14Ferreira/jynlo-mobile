@@ -23,7 +23,7 @@ test('public profile is guarded against stale responses and repeated writes',()=
  assert.match(screen,/request!==version\.current/);
  assert.match(screen,/inFlight\.current\)return/);
  assert.match(screen,/!name\|\|own\|\|!auth\.token\|\|!status/);
- assert.match(screen,/await changeFollow\(name,!original,auth\.token\)/);
+ assert.match(screen,/await changeFollow\(name,shouldFollow,auth\.token\)/);
  assert.match(screen,/if\(request===version\.current\)setStatus\(next\)/);
  assert.match(screen,/Não foi possível confirmar a alteração/);
  assert.match(screen,/accessibilityLabel=\{status\.followedByMe\?'Deixar de seguir':'Seguir utilizador'\}/);
@@ -40,6 +40,6 @@ test('users can open public profiles from social lists and feed',()=>{
 test('stale follow writes cannot release the lock for a different profile or login',()=>{
  assert.match(screen,/finally\{if\(request===version\.current\)\{inFlight\.current=false;setBusy\(false\);\}\}/);
  assert.doesNotMatch(screen,/finally\{inFlight\.current=false;if\(request===version\.current\)setBusy\(false\);\}/);
- assert.match(screen,/const request=\+\+version\.current;/);
- assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);\}/);
+ assert.match(screen,/const request=version\.current,original=status\.followedByMe/);
+ assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);\}/);
 });
