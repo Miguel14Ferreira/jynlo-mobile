@@ -46,3 +46,17 @@ export async function acceptTeamPlace(communityId:number,tournamentId:number,tea
  // Backend rechecks membership, roster and invite eligibility.
  return request<JynloTournamentTeam>(base(communityId,tournamentId)+`/${safePositiveId(teamId)}/players/me`,{token,method:'PUT',body:null});
 }
+
+/** A tournament team stays temporary unless its accepted captain explicitly opts in. */
+export type TeamPromotionStatus={globalTeamId:number|null;canPromote:boolean};
+export async function tournamentTeamPromotionStatus(communityId:number,tournamentId:number,teamId:number,
+  token:string):Promise<TeamPromotionStatus>{
+ if(!token||DEMO_MODE)return {globalTeamId:null,canPromote:false};
+ return request<TeamPromotionStatus>(base(communityId,tournamentId)+'/'+safePositiveId(teamId)+'/promotion',{token});
+}
+export async function promoteTournamentTeam(communityId:number,tournamentId:number,teamId:number,
+  token:string):Promise<{id:number;name:string;slug:string}>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para guardar a equipa na Jynlo.');
+ return request<{id:number;name:string;slug:string}>(base(communityId,tournamentId)+'/'+safePositiveId(teamId)+'/promote',
+  {token,method:'POST',body:null});
+}
