@@ -4,15 +4,20 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8');
+const {filterAuthorizedSummaries}=require('../src/lib/authorized-inbox-summaries.cjs');
 
-test('community inbox filters summaries against verified memberships and deduplicates',()=>{
- const start=source.indexOf(' const allowed=new Map(uniqueGroups.map(group=>[String(group.id),group.name?.trim()||\'Comunidade\']));');
- const end=source.indexOf('\n}',start);
- assert.ok(start>=0&&end>start,'community inbox must have a membership filter');
- const code=source.slice(start,end).replace('new Set<string>()','new Set()');
- const filter=new Function('uniqueGroups','summaries',code);
- const valid={kind:'community',id:'42',latestText:'hello'};
- const results=filter([{id:42,name:' Equipa 42 '}],[{kind:'community',id:'99',latestText:'private'},valid,{...valid,latestText:'duplicate'},{kind:'direct',id:'42'},null]);
- assert.deepEqual(results,[{...valid,title:'Equipa 42'}]);
- assert.deepEqual(filter([],[valid]),[]);
+test('community inbox only uses authenticated membership for visibility and titles',()=>{
+ assert.match(source,/const groups=await myCommunities\(token,username\)/);
+ assert.match(source,/const allowed=new Map\(uniqueGroups\.map\(/);
+ assert.match(source,/filterAuthorizedSummaries\('community',allowed,summaries,'Comunidade'\)/);
+ assert.match(source,/if\(!Array\.isArray\(batch\)\)throw Error\(/);
+ const valid={kind:'community',id:'42',title:'untrusted',latestMessageId:3,latestText:'hello',
+  latestSender:'alice',latestAt:'2026-11-15T12:00:00Z',unreadCount:2};
+ const allowed=new Map([['42','Equipa 42']]);
+ const result=filterAuthorizedSummaries('community',allowed,[
+  {...valid,id:'99',latestText:'private'},valid,{...valid,latestText:'duplicate'},
+  {...valid,kind:'direct'},null
+ ],'Comunidade');
+ assert.deepEqual(result,[{...valid,title:'Equipa 42'}]);
+ assert.deepEqual(filterAuthorizedSummaries('community',new Map(),[valid],'Comunidade'),[]);
 });
