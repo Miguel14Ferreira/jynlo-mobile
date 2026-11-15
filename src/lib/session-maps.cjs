@@ -20,11 +20,20 @@ function usableVenueCoordinates(venue){
  return {latitude:lat,longitude:lon};
 }
 
+function exactSessionMapPin(detail){
+ if(!detail||detail.canSeeExactAddress!==true)return null;
+ const pin=usableVenueCoordinates({latitude:detail.pinLatitude,longitude:detail.pinLongitude});
+ if(pin)return pin;
+ // A manually saved link might point elsewhere than the catalogue venue.
+ if(trustedGoogleMapsUrl(detail.googleMapsUrl))return null;
+ return usableVenueCoordinates(detail.venue);
+}
+
 function exactSessionMapsDestination(detail){
  if(!detail||detail.canSeeExactAddress!==true)return null;
  const chosen=trustedGoogleMapsUrl(detail.googleMapsUrl);
  if(chosen)return chosen;
- const coords=usableVenueCoordinates(detail.venue);
+ const coords=exactSessionMapPin(detail);
  if(coords)return 'https://www.google.com/maps/search/?api=1&query='+
    encodeURIComponent(coords.latitude+','+coords.longitude);
  const address=typeof detail.address==='string'?detail.address.trim():'';
@@ -33,4 +42,4 @@ function exactSessionMapsDestination(detail){
    encodeURIComponent(address+(detail.city?', '+detail.city:''));
 }
 
-module.exports={trustedGoogleMapsUrl,usableVenueCoordinates,exactSessionMapsDestination};
+module.exports={trustedGoogleMapsUrl,usableVenueCoordinates,exactSessionMapPin,exactSessionMapsDestination};
