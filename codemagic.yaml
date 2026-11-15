@@ -72,6 +72,7 @@ workflows:
     artifacts:
       - build-metadata/jynlo-android-binary-verification.json
       - build-metadata/jynlo-android-qa.json
+      - build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt
       - android/app/build/outputs/apk/release/*.apk
       - android/app/build/outputs/mapping/release/mapping.txt
 
@@ -152,6 +153,7 @@ workflows:
     artifacts:
       - build-metadata/jynlo-android-binary-verification.json
       - build-metadata/jynlo-android-qa.json
+      - build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt
       - android/app/build/outputs/apk/release/*.apk
       - android/app/build/outputs/mapping/release/mapping.txt
 
