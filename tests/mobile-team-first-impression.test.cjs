@@ -147,9 +147,9 @@ test('permanent team chat and feed use authorized, feature-gated server timeline
  assert.doesNotMatch(team,/Mensagens de equipa ainda indisponíveis/);
  assert.doesNotMatch(team,/Publicações de equipa ainda indisponíveis/);
  assert.match(api,/\/api\/teams\//);
- assert.match(api,/method:'POST',body:\{body:message\}/);
+ assert.match(api,/method:'POST',body:\{body:message,replyToId\}/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
- assert.match(panel,/sendTeamContent\(teamId,kind,message,token\)/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token,replyTo\)/);
  assert.match(panel,/AppState\.addEventListener\('change',state=>/);
  assert.match(panel,/clearInterval\(timer\);resume\.remove\(\)/);
  assert.match(panel,/Consulta o histórico antes de repetires/);
@@ -168,4 +168,17 @@ test('team conversations support replies, author edits and owner moderated delet
  assert.match(panel,/Consulta o histórico antes de repetires/);
  assert.match(api,/method:'PATCH',body:\{body:message\}/);
  assert.match(api,/method:'DELETE'/);
+});
+
+test('team chat search is on-demand and does not replace live conversation state',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ assert.match(panel,/searchTeamContent\(teamId,kind,term,token\)/);
+ assert.match(panel,/searchVersion\.current/);
+ assert.match(panel,/searchActive\?searchResults:entries/);
+ assert.match(panel,/setSearchActive\(false\)/);
+ assert.match(panel,/maxLength=\{80\}/);
+ assert.match(api,/encodeURIComponent\(term\)/);
+ assert.match(api,/term\.length<2\|\|term\.length>80/);
+ assert.match(api,/endpoint\(teamId,kind\)\+'\/search\?q='/);
 });
