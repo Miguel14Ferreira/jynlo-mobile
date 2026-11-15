@@ -12,7 +12,7 @@ test('Google Play Android identity stays fixed to registered app',()=>{
   assert.ok(config.expo.android.versionCode>0);
   // A signed AAB from an older commit must not silently impersonate a newer app release.
   assert.equal(config.expo.version,require('../package.json').version);
-  assert.equal(config.expo.android.versionCode,7);
+  assert.ok(config.expo.android.versionCode>=13,'Android builds must not reuse older version codes');
 });
 
 test('internal Play workflow uses real HTTPS API, private upload key and no auto publishing',()=>{
