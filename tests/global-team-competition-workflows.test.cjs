@@ -1,0 +1,71 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.join(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+
+test('existing teams can be discovered, created and viewed without creating tournament-specific identities',()=>{
+ const api=read('src/lib/sports-teams-api.ts');
+ const screen=read('app/teams/index.tsx');
+ assert.match(api,/\bdiscoverSportsTeams\b/);
+ assert.match(api,/\bmySportsTeams\b/);
+ assert.match(api,/\bcreateSportsTeam\b/);
+ assert.match(screen,/Criar equipa/);
+ assert.match(screen,/Descobrir equipas/);
+ assert.match(screen,/Convites para competições/);
+});
+test('teams are independent of communities and two-sided membership requires approval',()=>{
+ const api=read('src/lib/team-community-memberships-api.ts');
+ const panel=read('src/components/CommunityTeamsPanel.tsx');
+ assert.match(api,/inviteTeamToCommunity/);
+ assert.match(api,/requestTeamCommunityMembership/);
+ assert.match(api,/answerTeamCommunityMembership/);
+ assert.match(panel,/Equipas da comunidade/);
+ assert.match(panel,/Pedir adesão/);
+ assert.match(panel,/Convidar/);
+ assert.match(panel,/não adiciona jogadores individualmente/);
+});
+test('competition discovery sends an explicit application for selected owned team',()=>{
+ const api=read('src/lib/team-competition-applications-api.ts');
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(api,/discoverTeamCompetitions/);
+ assert.match(api,/applyTeamToCompetition/);
+ assert.match(screen,/mySportsTeams/);
+ assert.match(screen,/applyTeamToCompetition\(competition\.communityId,competition\.type,/);
+ assert.match(screen,/Pedir participação/);
+ assert.match(screen,/applied\(item,chosen\)/);
+});
+test('competition admin must approve an application or have an accepted team invite before finalization',()=>{
+ const applicants=read('src/components/TeamCompetitionApplications.tsx');
+ const invitations=read('src/components/CompetitionTeamSearch.tsx');
+ assert.match(applicants,/a\.status==='APPROVED'\?<GlobalTeamEnrollment/);
+ assert.match(invitations,/invitation\.status==='ACCEPTED'\?<GlobalTeamEnrollment/);
+});
+test('global roster is only selected by organizer and players receive individual invitations',()=>{
+ const enrollment=read('src/components/GlobalTeamEnrollment.tsx');
+ const api=read('src/lib/team-competition-enrollments-api.ts');
+ assert.match(enrollment,/finalizeGlobalTeamEntry/);
+ assert.match(enrollment,/eligibleGlobalRoster/);
+ assert.match(enrollment,/!person\.communityMember/);
+ assert.match(enrollment,/inviteGlobalRoster/);
+ assert.match(enrollment,/Cada jogador tem de aceitar/);
+ assert.match(api,/profileIds:\s*number\[\]/);
+ assert.doesNotMatch(api,/registerAllPlayers|autoEnrollPlayers|forceMembership/);
+});
+test('organizer reloading competition sees previous entry instead of silently duplicating',()=>{
+ const enrollment=read('src/components/GlobalTeamEnrollment.tsx');
+ const api=read('src/lib/team-competition-enrollments-api.ts');
+ assert.match(enrollment,/existingGlobalTeamEntry/);
+ assert.match(api,/\/entry/);
+ assert.match(enrollment,/if\(busy\|\|entry\)return/);
+});
+test('mobile diagnostics are preserved as artifacts when the runner actually starts',()=>{
+ const ci=read('.github/workflows/mobile-develop-integration.yml');
+ assert.match(ci,/upload-artifact@v4/);
+ assert.match(ci,/if: always\(\)/);
+ assert.match(ci,/jynlo-typescript\.log/);
+ assert.match(ci,/jynlo-contracts\.log/);
+ assert.match(ci,/set -o pipefail/);
+});
