@@ -14,7 +14,7 @@ test('Map fallback never embeds blocked OpenStreetMap volunteer tiles',()=>{
 
 test('uploaded stories use filename extension and explicit server errors',()=>{
  const api=read('src/lib/social-feed-api.ts');
- assert.match(api,/uploadName/);
+ assert.match(api,/form\.append\(files\.length>1\?'files':file\.type==='video'\?'video':'image'/);
  assert.match(api,/jynlo-media\.'\+extension/);
  assert.match(api,/response\.status===413/);
  assert.match(api,/controller\.signal\.aborted/);
