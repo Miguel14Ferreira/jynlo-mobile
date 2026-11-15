@@ -1,22 +1,33 @@
 import React,{useCallback,useState} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,SportsTeam} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,SportsTeam,SportsTeamMember} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
+ const [members,setMembers]=useState<SportsTeamMember[]>([]),[inviteId,setInviteId]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
   setLoading(true);setError('');
-  try{setTeam(await sportsTeamDetail(teamId,auth.token||undefined));}
+  try{const [details,roster]=await Promise.all([
+   sportsTeamDetail(teamId,auth.token||undefined),sportsTeamMembers(teamId,auth.token||undefined)]);
+   setTeam(details);setMembers(roster);}
   catch(e){setError(e instanceof Error?e.message:'Equipa não encontrada.');}
   finally{setLoading(false);}
  },[teamId,auth.token]);
  useFocusEffect(useCallback(()=>{void load();},[load]));
+ const invite=async()=>{
+  const profileId=Number(inviteId);
+  if(!auth.token||!Number.isSafeInteger(profileId)||profileId<=0){setError('Indica um identificador de jogador válido.');return;}
+  setSaving(true);setError('');
+  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setInviteId('');}
+  catch(e){setError(e instanceof Error?e.message:'Não foi possível convidar o jogador.');}
+  finally{setSaving(false);}
+ };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
   if(!team||!auth.token||saving)return;
   setSaving(true);setError('');
@@ -33,8 +44,13 @@ export default function TeamDetail(){
     <Text style={styles.note}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text>
     {team.description?<Text style={styles.note}>{team.description}</Text>:null}
    </View>
-   <View style={styles.panel}><Text style={styles.heading}>Plantel</Text>
-    <Text style={styles.note}>A gestão de jogadores e convites está em desenvolvimento.</Text></View>
+   <View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
+    {members.map(m=><Text key={m.profileId} style={styles.note}>{m.username} · {m.role==='OWNER'?'Responsável':'Jogador'}</Text>)}
+    <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
+    <TextInput style={styles.input} keyboardType="number-pad" value={inviteId} onChangeText={setInviteId}
+      placeholder="ID do jogador a convidar" placeholderTextColor={C.muted}/>
+    <Button title="Convidar jogador" onPress={()=>void invite()}/>
+   </View>
    <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
    <View style={styles.panel}><Text style={styles.heading}>Feed</Text>
@@ -54,5 +70,6 @@ const styles=StyleSheet.create({
  title:{fontSize:27,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
- panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:16,gap:10}
+ panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:16,gap:10},
+ input:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,color:C.white,padding:12}
 });
