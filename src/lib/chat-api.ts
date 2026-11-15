@@ -75,7 +75,7 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
  if(!Array.isArray(groups))throw Error('Lista de comunidades inválida.');
  if(DEMO_MODE)return groups.filter(c=>c&&Number.isSafeInteger(c.id)&&c.id>0).map(c=>{
   const last=threads.get(c.id)?.at(-1);
-  return{kind:'community' as const,id:String(c.id),title:c.name?.trim()||'Comunidade',latestMessageId:last?.id??null,latestText:last?.body??null,
+  return{kind:'community' as const,id:String(c.id),title:typeof c.name==='string'&&c.name.trim()?c.name.trim():'Comunidade',latestMessageId:last?.id??null,latestText:last?.body??null,
    latestSender:last?.username??null,latestAt:last?.createdAt??null,unreadCount:(threads.get(c.id)||[]).filter(m=>m.username!==username&&m.id>(demoRead.get(username+':'+c.id)||0)).length};
  });
  if(groups.length===0)return [];
@@ -96,7 +96,7 @@ export async function communityInbox(token:string,username:string):Promise<Jynlo
   summaries.push(...batch);
  }
  // Only the authenticated membership list determines visible communities.
- const allowed=new Map(uniqueGroups.map(group=>[String(group.id),group.name?.trim()||'Comunidade']));
+ const allowed=new Map(uniqueGroups.map(group=>[String(group.id),typeof group.name==='string'&&group.name.trim()?group.name.trim():'Comunidade']));
  return filterAuthorizedSummaries('community',allowed,summaries,'Comunidade');
 }
 
