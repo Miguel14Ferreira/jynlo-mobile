@@ -19,7 +19,7 @@ test('organizer only can remove non-creator from active session after destructiv
  assert.match(screen,/p\.username\.toLowerCase\(\)!==auth\.username\?\.toLowerCase\(\)/);
  assert.match(screen,/Alert\.alert\('Remover jogador da sessão\?'/);
  assert.match(screen,/style:'destructive'/);
- assert.match(screen,/removeSessionParticipant\(id,participant\.id,auth\.token\)/);
+ assert.match(screen,/removeSessionParticipant\(id,participant\.id,actorToken\)/);
  assert.match(screen,/removalInFlight\.current=true/);
  assert.match(screen,/await load\(\)/);
  assert.match(screen,/Não foi possível confirmar a remoção/);
