@@ -54,7 +54,7 @@ export default function SessionScreen(){
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const [adminToolsOpen,setAdminToolsOpen]=useState(false);
-  const [teamSource,setTeamSource]=useState<'FORM'|'EXCEL_POINTS'|'RANDOM'>('FORM');
+  const [teamSource,setTeamSource]=useState<'AUTO'|'RANDOM'>('AUTO');
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
   const teamsInFlight=useRef(false),teamsOperation=useRef(0);
@@ -617,15 +617,10 @@ export default function SessionScreen(){
          </View>}
         {detail.communityId?<View style={styles.editor}>
           <Eyebrow>FORMAR DUAS EQUIPAS</Eyebrow>
-          <Text style={styles.hint}>Escolhe uma classificação para equilibrar equipas no servidor ou sorteia duas equipas sem classificação.</Text>
-          {detail.teamBalanceSupported?<>
-          <View style={styles.top}>
-            <Button title="Classificação da comunidade" secondary={teamSource!=='FORM'} disabled={teamsBusy}
-              onPress={()=>{setTeamSource('FORM');setTeamPreview(null);setTeamsMessage('');}}/>
-          </View>
-          <Button title="Classificação Excel" secondary={teamSource!=='EXCEL_POINTS'} disabled={teamsBusy}
-            onPress={()=>{setTeamSource('EXCEL_POINTS');setTeamPreview(null);setTeamsMessage('');}}/>
-          </>:null}
+          <Text style={styles.hint}>As equipas equilibradas usam automaticamente a classificação da época ativa da comunidade. Se só existir classificação importada, será reutilizada sem pedir outro Excel.</Text>
+          {detail.teamBalanceSupported?
+          <Button title="Equipas equilibradas" secondary={teamSource!=='AUTO'} disabled={teamsBusy}
+            onPress={()=>{setTeamSource('AUTO');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>:null}
           <Button title="Equipas aleatórias" secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
           <Button title={teamsBusy?'A calcular…':(!detail.teamBalanceSupported||teamSource==='RANDOM')?'Sortear equipas':'Pré-visualizar equipas'} disabled={teamsBusy||busy}
