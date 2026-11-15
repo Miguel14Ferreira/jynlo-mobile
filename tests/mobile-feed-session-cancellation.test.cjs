@@ -72,7 +72,7 @@ test('successful cancellation offers an optional native share sheet for external
  const share=feed.slice(shareStart,cancelStart);
  assert.match(share,/Share\.share\(\{message:cancellationNotice\(item\)\}\)/);
  assert.match(feed,/import \{cancellationNotice\} from '\.\.\/\.\.\/src\/lib\/session-cancellation-notice\.cjs'/);
- assert.match(cancel,/\{text:'Partilhar aviso',onPress:\(\)=>\{void shareCancelledFeedSession\(item\);\}\}/);
+ assert.match(cancel,/\{text:'Partilhar aviso',onPress:\(\)=>\{void shareCancelledFeedSession\(detail\);\}\}/);
  assert.match(cancel,/cancelSession\(id,actor,username\)\.then\(\(\)=>\{/);
  assert.doesNotMatch(share,/request<|cancelSession\(/);
 });
@@ -83,4 +83,12 @@ test('the app never shares a guest cancellation warning on a failed POST',()=>{
  const sharePrompt=cancel.indexOf("'Partilhar aviso'",success);
  assert.ok(success>=0&&failure>success&&sharePrompt>success&&sharePrompt<failure);
  assert.match(cancel.slice(failure),/Cancelamento não confirmado/);
+});
+
+test('cancelled-session sharing uses a newly fetched detail, not the outdated feed entry',()=>{
+ assert.match(cancel,/const detail=await sessionDetail\(id,actor,username\)/);
+ assert.match(cancel,/cancelSession\(id,actor,username\)\.then\(\(\)=>\{/);
+ assert.match(cancel,/shareCancelledFeedSession\(detail\)/);
+ assert.doesNotMatch(cancel,/shareCancelledFeedSession\(item\)/);
+ assert.match(feed,/async function shareCancelledFeedSession\(item:Parameters<typeof cancellationNotice>\[0\]\)/);
 });
