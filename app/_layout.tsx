@@ -85,6 +85,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
     <Stack.Screen name="tournaments/create" options={{title:"Criar torneio"}}/>
     <Stack.Screen name="teams/index" options={{title:"Equipas"}}/>
+    <Stack.Screen name="teams/competitions" options={{title:"Encontrar competições"}}/>
     <Stack.Screen name="teams/[id]" options={{title:"Perfil da equipa"}}/>
     <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
