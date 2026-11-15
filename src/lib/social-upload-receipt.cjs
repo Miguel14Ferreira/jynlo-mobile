@@ -8,9 +8,9 @@ const hasMedia=x=>{
  // Backend-owned relative resources and HTTPS object storage are allowed.
  // Never confirm a social upload pointing to an executable/non-HTTPS scheme.
  if(/^https:\/\//i.test(path))return /^https:\/\/[^/@\s?#]+(?:[/?#]|$)/i.test(path);
- if(path.startsWith('/'))return true;
+ if(path.startsWith('/'))return !path.split(/[/?#]/).includes('..');
  return /^[a-z0-9][a-z0-9._/~?&=%-]*$/i.test(path)&&
-   !path.split(/[/?]/).includes('..');
+   !path.split(/[/?#]/).includes('..');
 };
 function confirmedSocialMediaReceipt(reply,mediaTypes,isStory){
  if(!reply||typeof reply!=='object'||!Array.isArray(mediaTypes)||
@@ -19,8 +19,8 @@ function confirmedSocialMediaReceipt(reply,mediaTypes,isStory){
       !['image/jpeg','image/png','image/webp','video/mp4','video/webm'].includes(type)))return false;
  const id=isStory?reply.id:reply.postId;
  if(!Number.isSafeInteger(id)||id<=0)return false;
- if(isStory)return hasMedia(reply.mediaUrl)&&
-   Boolean(reply.video)===mediaTypes[0].startsWith('video/');
+ if(isStory)return hasMedia(reply.mediaUrl)&&typeof reply.video==='boolean'&&
+   reply.video===mediaTypes[0].startsWith('video/');
  const first=mediaTypes[0].startsWith('video/')?reply.videoUrl:reply.imageUrl;
  if(!hasMedia(first))return false;
  if(mediaTypes.length===1)return true;
