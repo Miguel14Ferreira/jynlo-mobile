@@ -83,3 +83,14 @@ export async function removeSportsTeamMember(teamId: number, profileId: number, 
   return request<void>('/api/teams/' + validId(teamId) + '/members/' + validId(profileId),
     {token,method:'DELETE'});
 }
+
+export interface SportsTeamPlayerCandidate {
+  profileId: number;
+  username: string;
+  fullName: string | null;
+}
+export async function findSportsTeamPlayers(query: string, token: string): Promise<SportsTeamPlayerCandidate[]> {
+  const q = query.trim();
+  if (!token || DEMO_MODE || q.length < 2 || q.length > 80) return [];
+  return request<SportsTeamPlayerCandidate[]>('/api/teams/players/search?q=' + encodeURIComponent(q), {token});
+}
