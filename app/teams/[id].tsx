@@ -3,7 +3,7 @@ import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,sportsTeamHistory,type TeamCompetitionHistory} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
@@ -13,12 +13,15 @@ export default function TeamDetail(){
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
+ const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const load=useCallback(async()=>{
   setLoading(true);setError('');
   try{const [details,roster]=await Promise.all([
    sportsTeamDetail(teamId,auth.token||undefined),sportsTeamMembers(teamId,auth.token||undefined)]);
    setTeam(details);setMembers(roster);
+   try{setHistory(await sportsTeamHistory(teamId,auth.token||undefined));setHistoryError('');}
+   catch{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
    if(auth.token)setCommunities(await sportsTeamCommunities(teamId,auth.token));else setCommunities([]);}
   catch(e){setError(e instanceof Error?e.message:'Equipa não encontrada.');}
   finally{setLoading(false);}
@@ -84,6 +87,21 @@ export default function TeamDetail(){
       <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
       <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
+   </View>
+   <View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({history.filter(item=>item.champion).length})</Text>
+    {historyError?<Text style={styles.note}>{historyError}</Text>:null}
+    {!historyError&&!history.some(item=>item.champion)?<Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
+    {history.filter(item=>item.champion).map(item=><View key={item.tournamentId} style={styles.candidate}>
+      <Text style={styles.heading}>🏆 {item.tournamentName}</Text>
+      <Text style={styles.note}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
+      {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
+    </View>)}
+   </View>
+   <View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
+    {!historyError&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
+    {history.map(item=><Text key={item.tournamentId} style={styles.note}>
+      {item.tournamentName} · {item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'}
+    </Text>)}
    </View>
    <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Button title="Encontrar competições para a equipa" onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}/>
