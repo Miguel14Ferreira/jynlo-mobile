@@ -72,7 +72,7 @@ test('invalid APK signatures fail the build even when the package matches',()=>{
 test('unconfigured Android SDK and suspiciously small APK fail closed',()=>{
  assert.throws(()=>verifyAndroidApk('/workspace/app.apk',expected,{},io,exec),/SDK não configurado/);
  const tiny={...io,statSync:()=>({isFile:()=>true,size:512})};
- assert.throws(()=>verifyAndroidApk('/workspace/app.apk',expected,env,tiny,exec),/demasiado pequena/);
+ assert.throws(()=>verifyAndroidApk('/workspace/app.apk',expected,env,tiny,exec),/invulgarmente pequena/);
 });
 
 test('both Codemagic Android workflows verify real binary BEFORE generating manifest',()=>{
