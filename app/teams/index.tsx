@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
@@ -15,7 +15,9 @@ export default function TeamsScreen(){
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
+ const requestVersion=useRef(0);
  const load=useCallback(async()=>{
+   const version=++requestVersion.current;
    setLoading(true);setError('');
    try{
     // Convites são secundários: um endpoint antigo/temporariamente indisponível
@@ -26,26 +28,31 @@ export default function TeamsScreen(){
       auth.token?mySportsTeamInvitations(auth.token):Promise.resolve([]),
       auth.token?myTeamCompetitionInvitations(auth.token):Promise.resolve([])
     ]);
+    if(version!==requestVersion.current)return;
     const failed:string[]=[];
     if(discovery.status==='fulfilled')setTeams(discovery.value);
-    else {failed.push('pesquisa');setTeams([]);}
+    else failed.push('pesquisa');
     if(mine.status==='fulfilled')setOwned(mine.value);
-    else {failed.push('as tuas equipas');setOwned([]);}
+    else failed.push('as tuas equipas');
     if(memberships.status==='fulfilled')setInvites(memberships.value);
-    else {failed.push('convites de jogadores');setInvites([]);}
+    else failed.push('convites de jogadores');
     if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
-    else {failed.push('convites para competições');setCompetitionInvites([]);}
+    else failed.push('convites para competições');
     if(failed.length)setError('Não foi possível carregar '+failed.join(', ')+'. As restantes secções continuam disponíveis. Podes tentar novamente.');
-   }catch(e){setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
-   finally{setLoading(false);}
+   }catch(e){if(version===requestVersion.current)setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
+   finally{if(version===requestVersion.current)setLoading(false);}
  },[submittedQuery,auth.token]);
  const search=()=>{const next=query.trim();if(next===submittedQuery){void load();}else setSubmittedQuery(next);};
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+   void load();
+   return ()=>{requestVersion.current++;};
+ },[load]));
  const respond=async(teamId:number,accept:boolean)=>{
-  if(!auth.token)return;
-  setError('');
+  if(!auth.token||saving)return;
+  setSaving(true);setError('');
   try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load();}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível responder ao convite.');}
+  finally{setSaving(false);}
  };
  const respondCompetition=async(id:number,accept:boolean)=>{
   if(!auth.token||saving)return;
@@ -91,8 +98,8 @@ export default function TeamsScreen(){
    <Text style={styles.heading}>Convites para equipas</Text>
    {invites.map(x=><View key={x.teamId} style={styles.card}>
      <Text style={styles.heading}>{x.teamName}</Text>
-     <Button title="Aceitar convite" onPress={()=>void respond(x.teamId,true)}/>
-     <Button title="Recusar convite" onPress={()=>void respond(x.teamId,false)}/>
+     <Button title="Aceitar convite" disabled={saving} onPress={()=>void respond(x.teamId,true)}/>
+     <Button title="Recusar convite" disabled={saving} onPress={()=>void respond(x.teamId,false)}/>
    </View>)}
   </View>:null}
   {competitionInvites.length>0?<View style={styles.section}>
@@ -107,7 +114,7 @@ export default function TeamsScreen(){
   </View>:null}
   {auth.token?<View style={styles.section}>
     <View style={styles.sectionHeader}><Text style={styles.heading}>As minhas equipas</Text><Text style={styles.count}>{owned.length}</Text></View>
-    {!loading&&owned.length===0?<View style={styles.empty}>
+    {!loading&&!error&&owned.length===0?<View style={styles.empty}>
       <JynloIcon name="community" size={27} color={C.mint}/>
       <Text style={styles.heading}>A tua primeira equipa começa aqui</Text>
       <Text style={styles.note}>Cria uma equipa e mantém os teus jogadores e o histórico unidos.</Text>
