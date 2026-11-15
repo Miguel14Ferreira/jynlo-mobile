@@ -670,6 +670,7 @@ export default function JynloFeedHome(){
       setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
+      setStoryPublishCommunityId(null);
     };
     if(storyMedia||storyCaption.trim()||storyLocation.trim()||storyTags.trim()){
       Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
