@@ -21,7 +21,7 @@ test('community-scoped tournament creation does not show other communities',()=>
 test('session organizer detail is fetched before optional anonymous preview',()=>{
  const code=source('app/sessions/[id].tsx');
  const detail=code.indexOf('const full=await sessionDetail(');
- const preview=code.indexOf('setPreview(await sessionPreview(id))');
+ const preview=code.indexOf('const publicPreview=await sessionPreview(id)');
  assert.ok(detail>=0&&preview>detail);
 });
 
@@ -38,7 +38,7 @@ test('session detail ignores delayed responses after navigation or account chang
  assert.match(code,/const version=\+\+detailRequestGeneration\.current/);
  assert.match(code,/if\(version!==detailRequestGeneration\.current\)return/);
  assert.match(code,/useFocusEffect\(useCallback\(\(\)=>\{/);
- assert.match(code,/return \(\)=>\{detailRequestGeneration\.current\+\+;\}/);
+ assert.match(code,/detailRequestGeneration\.current\+\+;actionEpoch\.current\+\+;/);
  assert.match(code,/setPreview\(null\);setParticipants\(\[\]\)/);
 });
 
