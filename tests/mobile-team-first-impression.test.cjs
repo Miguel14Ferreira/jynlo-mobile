@@ -215,7 +215,7 @@ test('team chat private media reuses authenticated viewer and verified native up
  assert.match(pdf,/target\.scope==='team'\?'files':'file'/);
  assert.match(pdf,/target\.scope==='team'\?result\.attachments/);
  assert.match(viewer,/if\(scope==='team'\)/);
- assert.match(viewer,/\/attachments\/\+'?\+messageId/);
+ assert.match(viewer,/if\(scope==='team'\)return '\/api\/teams\//);
  assert.match(viewer,/credentials:'omit'/);
  assert.match(viewer,/redirect:'error'/);
 });
