@@ -44,8 +44,9 @@ test('Story camera and picker share safe MIME checks, and post videos are uncrop
  const player=read('src/components/FeedVideo.tsx');
  assert.match(feed,/const mime=pickerMediaMime\(asset\)/);
  assert.match(feed,/Os formatos MOV e HEIC ainda não são aceites/);
- assert.match(camera,/if\(isUnsupportedMediaContainer\(result.uri\)\)/);
- assert.match(camera,/O iPhone gravou em MOV/);
+ // The native camera uses the same MIME whitelist as the picker: MOV/HEIC are rejected there.
+ assert.match(camera,/const mime=pickerMediaMime\(asset\)/);
+ assert.match(camera,/if\(!mime\)\{setError\('Formato não suportado/);
  assert.match(player,/contentFit=\{story\?'cover':'contain'\}/);
  assert.match(player,/nativeControls=\{!story\}/);
 });
