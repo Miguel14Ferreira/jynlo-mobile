@@ -91,7 +91,7 @@ const styles=StyleSheet.create({
  panel:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:17,padding:16,gap:10},
  heading:{flexDirection:'row',alignItems:'center',gap:8},
  title:{color:C.mint,fontWeight:'800',fontSize:12,letterSpacing:1},
- address:{fontSize:16,color:C.white,fontWeight:'750'},
+ address:{fontSize:16,color:C.white,fontWeight:'700'},
  hint:{color:C.muted,fontSize:12,lineHeight:18},
  mapContainer:{gap:8,overflow:'hidden',borderRadius:13},
  map:{width:'100%',height:225,borderRadius:13},
