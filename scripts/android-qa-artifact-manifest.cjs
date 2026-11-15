@@ -11,7 +11,7 @@ const API='https://desporto24-preview-api.onrender.com';
 const SHA=/^[0-9a-f]{40}$/i;
 const SAFE_FILE=/^[a-zA-Z0-9_.-]+\.apk$/;
 
-function artifactMetadata(input,config,apkBytes){
+function artifactMetadata(input,config,apkBytes,verifiedBinary){
  if(input.CM_BRANCH!=='develop')throw Error('A APK Jynlo só pode ser criada da develop.');
  if(input.CM_PULL_REQUEST==='true')throw Error('Não distribuir builds de pull requests.');
  if(!SHA.test(input.CM_COMMIT||''))throw Error('Commit Git inválido ou indisponível.');
@@ -29,6 +29,18 @@ function artifactMetadata(input,config,apkBytes){
   throw Error('A build anunciada com push não inclui configuração Firebase.');
  if(!Buffer.isBuffer(apkBytes)||apkBytes.length<1024)
   throw Error('APK ausente ou demasiado pequena para distribuir.');
+ // The report must originate from aapt and apksigner on this exact APK.
+ // A matching package in app.json is not sufficient release provenance.
+ const checksum=crypto.createHash('sha256').update(apkBytes).digest('hex');
+ if(!verifiedBinary||verifiedBinary.verified!==true||
+    verifiedBinary.package!==config.android.package||
+    verifiedBinary.version!==config.version||
+    verifiedBinary.versionCode!==config.android.versionCode||
+    verifiedBinary.file!==name||
+    verifiedBinary.apkSha256!==checksum||
+    !/^[a-f0-9]{64}$/i.test(verifiedBinary.signerCertificateSha256||'')||
+    !['debug','custom'].includes(verifiedBinary.signingType))
+  throw Error('APK sem verificação binária válida ou com checksum/assinatura divergente.');
  return {
   artifact:'Jynlo Android QA',
   version:config.version,
@@ -40,8 +52,11 @@ function artifactMetadata(input,config,apkBytes){
   workflow:typeof input.CM_WORKFLOW_NAME==='string'?input.CM_WORKFLOW_NAME:'',
   backend:API,
   pushConfigured:withPush,
-  signing:'debug-keystore (QA only; cannot update differently signed APKs)',
-  sha256:crypto.createHash('sha256').update(apkBytes).digest('hex'),
+  signing:verifiedBinary.signingType==='debug'?'Android debug-key (QA; assinatura diferente pode exigir desinstalação)':'Assinatura personalizada (verificar compatibilidade ao atualizar)',
+  signerCertificateSha256:verifiedBinary.signerCertificateSha256.toLowerCase(),
+  androidBuildTools:verifiedBinary.androidBuildTools||null,
+  binaryVerified:true,
+  sha256:checksum,
   file:name
  };
 }
@@ -54,8 +69,9 @@ function writeManifest(environment=process.env,io=fs){
  if(found.length!==1)throw Error('Esperada exatamente uma APK release para distribuição.');
  const file=found[0];
  const bytes=io.readFileSync(path.join(apkDir,file));
- const metadata=artifactMetadata({...environment,JYNLO_APK_FILENAME:file},application,bytes);
  const out=path.join(root,'build-metadata');
+ const audit=JSON.parse(io.readFileSync(path.join(out,'jynlo-android-binary-verification.json'),'utf8'));
+ const metadata=artifactMetadata({...environment,JYNLO_APK_FILENAME:file},application,bytes,audit);
  io.mkdirSync(out,{recursive:true});
  io.writeFileSync(path.join(out,'jynlo-android-qa.json'),JSON.stringify(metadata,null,2)+'\n');
  return metadata;
