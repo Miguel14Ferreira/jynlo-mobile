@@ -13,7 +13,9 @@ test('Codemagic uses a manual develop-only Mac M2 Android standalone build',()=>
  assert.match(yaml,/npx --no-install expo prebuild --platform android --no-install/);
  assert.match(yaml,/\.\/gradlew assembleRelease --no-daemon/);
  assert.match(yaml,/android\/app\/build\/outputs\/apk\/release\/\*\.apk/);
- assert.doesNotMatch(yaml,/\b(publishing|autoSubmit|triggering):/);
+ const androidQa=yaml.split('  jynlo-android-qa:')[1]?.split('  jynlo-android-push-qa:')[0];
+ assert.ok(androidQa,'Android QA workflow must be defined');
+ assert.doesNotMatch(androidQa,/\b(publishing|autoSubmit|triggering):/);
 });
 test('Codemagic targets authenticated preview backend and blocks production or master',()=>{
  const yaml=read('codemagic.yaml');
