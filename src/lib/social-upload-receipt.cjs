@@ -7,7 +7,7 @@ const hasMedia=x=>{
  if(!path||path.length>2048||/[\\\x00-\x1f\x7f]/.test(path)||path.startsWith('//'))return false;
  // Backend-owned relative resources and HTTPS object storage are allowed.
  // Never confirm a social upload pointing to an executable/non-HTTPS scheme.
- if(/^https:\/\//i.test(path))return /^https:\/\/[^/@\\s?#]+(?:[/?#]|$)/i.test(path);
+ if(/^https:\/\//i.test(path))return /^https:\/\/[^/@\s?#]+(?:[/?#]|$)/i.test(path);
  if(path.startsWith('/'))return true;
  return /^[a-z0-9][a-z0-9._/~?&=%-]*$/i.test(path)&&
    !path.split(/[/?]/).includes('..');
