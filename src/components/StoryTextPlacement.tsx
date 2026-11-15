@@ -43,7 +43,7 @@ export default function StoryTextPlacement({caption,geometry,onChange,disabled=f
   onChange(clampStickerPosition(next,area,sticker,reservedTopPx));
  }
  const position=clampStickerPosition(geometry,area,sticker,reservedTopPx);
- return <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}
+ return <View pointerEvents="box-none" style={StyleSheet.absoluteFill}
   onLayout={event=>{const {width,height}=event.nativeEvent.layout;if(width>0&&height>0)setArea({width,height});}}>
   <View accessible accessibilityLabel={onChange?'Texto da Story: arrasta com um dedo, roda ou amplia com dois dedos':'Texto da Story'}
    style={[styles.caption,{
