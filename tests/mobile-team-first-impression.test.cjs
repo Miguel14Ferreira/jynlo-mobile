@@ -182,3 +182,18 @@ test('team chat search is on-demand and does not replace live conversation state
  assert.match(api,/term\.length<2\|\|term\.length>80/);
  assert.match(api,/endpoint\(teamId,kind\)\+'\/search\?q='/);
 });
+
+test('team reactions persist one member choice and render server counts',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ assert.match(panel,/teamReactionSummaries\(teamId,kind,ids,token\)/);
+ assert.match(panel,/setTeamReaction\(teamId,kind,item\.id,emoji,token\)/);
+ assert.match(panel,/removeTeamReaction\(teamId,kind,item\.id,token\)/);
+ assert.match(panel,/emojis\.map\(emoji=>/);
+ assert.match(panel,/reactions\[item\.id\]\?\.mine===emoji/);
+ assert.match(panel,/reactionVersion\.current\+\+/);
+ assert.match(panel,/setReactions\(previous=>\(\{\.\.\.previous,\.\.\.updated\}\)\)/);
+ assert.match(api,/method:'PUT',body:\{emoji\}/);
+ assert.match(api,/method:'DELETE'/);
+ assert.match(api,/ids\.length>100/);
+});
