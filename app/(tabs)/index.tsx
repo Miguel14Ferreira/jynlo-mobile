@@ -379,7 +379,15 @@ export default function JynloFeedHome(){
       confirmedPostEdits.current=edits.edits;
       setPosts(edits.posts);
     }
-    if(fetches[1].status==='fulfilled')setStories(value(1,[] as SocialStory[]));
+    if(fetches[1].status==='fulfilled'){
+      const received=value(1,[] as SocialStory[]);
+      // The public Story endpoint can lag behind the confirmed POST. Keep the
+      // author's newly created Story visible while the listing catches up.
+      const fresh=recentlyConfirmedStories.current.filter(entry=>
+        entry.until>Date.now()&&!received.some(story=>story.id===entry.item.id));
+      const ids=new Set(fresh.map(entry=>entry.item.id));
+      setStories([...fresh.map(entry=>entry.item),...received.filter(story=>!ids.has(story.id))]);
+    }
     if(fetches[2].status==='fulfilled'){
       const received=value(2,[] as SocialStory[]);
       recentlyConfirmedStories.current=recentlyConfirmedStories.current.filter(entry=>entry.until>Date.now()&&!received.some(item=>item.id===entry.item.id));
@@ -740,6 +748,7 @@ export default function JynloFeedHome(){
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
+        setStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
         setPublishNotice('story');
       }
       if(feedIdentity.current===`${username}:${actor}`&&
