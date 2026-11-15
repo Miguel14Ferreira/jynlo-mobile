@@ -12,7 +12,7 @@ function confirmedStoryAuthorReceipt(reply,username,caption){
  return Boolean(reply&&typeof reply==='object'&&
   Number.isSafeInteger(reply.id)&&reply.id>0&&
   sameUser(reply.authorUsername,username)&&
-  (typeof reply.caption==='string'?reply.caption.trim():'')===caption.trim()&&
+  (typeof reply.caption==='string'?reply.caption.trim():reply.caption===null?'':null)===caption.trim()&&
   typeof reply.createdAt==='string'&&Number.isFinite(Date.parse(reply.createdAt)));
 }
 function confirmedStoryDetailsReceipt(reply,details){
