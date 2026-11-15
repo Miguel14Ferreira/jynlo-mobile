@@ -85,7 +85,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
       competitionId={competitionId} type={type} globalTeamId={a.teamId} token={token}/>:null}
    </View>)}
    {applicationsVerified&&applications.length===0?<Text style={styles.note}>Ainda não existem pedidos.</Text>:null}
-   <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>}
+   <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>
  </View>;
 }
 const styles=StyleSheet.create({
