@@ -92,8 +92,8 @@ export default function TeamDetail(){
       onPress={()=>setActiveTab('OVERVIEW')}/>
     <Button title={'🏆 Troféus ('+(standaloneTrophies.length+championshipHonours.length)+')'}
       secondary={activeTab!=='TROPHIES'} onPress={()=>setActiveTab('TROPHIES')}/>
-   </View>:null}
-   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
+   </View>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
     {members.map(m=><Text key={m.profileId} style={styles.note}>{m.username} · {m.role==='OWNER'?'Responsável':'Jogador'}</Text>)}
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
     {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
@@ -104,7 +104,7 @@ export default function TeamDetail(){
       <Button title="Convidar" onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
-   {activeTab='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
     {historyError?<Text style={styles.note}>{historyError}</Text>:null}
     {honoursError?<Text style={styles.note}>{honoursError}</Text>:null}
     {!historyError&&!honoursError&&!standaloneTrophies.length&&!championshipHonours.length?
@@ -121,15 +121,15 @@ export default function TeamDetail(){
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
     </View>)}
    </View>:null}
-   {activeTab='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
     {!historyError&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
     {history.map(item=><Text key={item.tournamentId} style={styles.note}>
       {item.tournamentName} · {item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'}
     </Text>)}
    </View>:null}
-   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições</Text>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições</Text>
     <Button title="Encontrar competições para a equipa" onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}/>
-    <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
+    <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
     {communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
       <Text style={styles.note}>{m.communityName}</Text>
@@ -146,11 +146,11 @@ export default function TeamDetail(){
     {membershipNote?<Message>{membershipNote}</Message>:null}
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
    </View>:null}
-   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Feed</Text>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Feed</Text>
     <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
     {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} onPress={()=>void feature('feedEnabled')}/>:null}
    </View>:null}
-   {activeTab='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Chat</Text>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Chat</Text>
     <Text style={styles.note}>{team.chatEnabled?'Ativado. Mensagens de equipa ainda indisponíveis.':'Desativado'}</Text>
     {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} onPress={()=>void feature('chatEnabled')}/>:null}
    </View>:null}
