@@ -1153,6 +1153,18 @@ export default function JynloFeedHome(){
           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder="O que queres partilhar?" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
           <Text style={styles.countText}>{composerText.length}/{maxPostLength}</Text>
           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);setVerifiedPostPlace('');setPostPlaceOptions([]);}} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
+          {postPlaceLoading?<Text style={styles.storiesIntro}>A procurar localizações…</Text>:null}
+          {postPlaceOptions.map(place=><Pressable key={place.id} accessibilityRole="button"
+            accessibilityLabel={'Escolher localização '+socialPlaceLabel(place)} disabled={publishing}
+            onPress={()=>{const label=socialPlaceLabel(place);composerLocationRef.current=label;
+              setComposerLocation(label);setVerifiedPostPlace(label);setPostPlaceOptions([]);}}
+            style={styles.storyFriendOption}>
+            <JynloIcon name="map-pin" size={18} color={TEAL}/>
+            <View style={{flex:1}}><Text style={styles.storyFriendName}>{place.label}</Text>
+              <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
+          </Pressable>)}
+          {composerLocation.trim()&&!verifiedPostPlace&&!postPlaceLoading&&postPlaceOptions.length===0?
+            <Text style={styles.storiesIntro}>Seleciona uma localização real nas sugestões para publicar.</Text>:null}
         </ScrollView>
         {postPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{postPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Confirma primeiro se já apareceu no teu perfil antes de repetires o envio.</Text></View>:null}
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar fotografia ou vídeo" disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}><Text style={styles.primaryButtonText}>{publishing?'A publicar…':'Partilhar publicação'}</Text></Pressable>
@@ -1195,6 +1207,18 @@ export default function JynloFeedHome(){
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyLocation} onChangeText={value=>{storyLocationRef.current=value;setStoryLocation(value);setVerifiedStoryPlace('');setStoryPlaceOptions([]);}}
             placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da Story"
             maxLength={160} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
+          {storyPlaceLoading?<Text style={styles.storiesIntro}>A procurar localizações…</Text>:null}
+          {storyPlaceOptions.map(place=><Pressable key={place.id} accessibilityRole="button"
+            accessibilityLabel={'Escolher localização da Story '+socialPlaceLabel(place)} disabled={storyPublishing}
+            onPress={()=>{const label=socialPlaceLabel(place);storyLocationRef.current=label;
+              setStoryLocation(label);setVerifiedStoryPlace(label);setStoryPlaceOptions([]);}}
+            style={styles.storyFriendOption}>
+            <JynloIcon name="map-pin" size={18} color={TEAL}/>
+            <View style={{flex:1}}><Text style={styles.storyFriendName}>{place.label}</Text>
+              <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
+          </Pressable>)}
+          {storyLocation.trim()&&!verifiedStoryPlace&&!storyPlaceLoading&&storyPlaceOptions.length===0?
+            <Text style={styles.storiesIntro}>Seleciona uma localização real nas sugestões para publicar a Story.</Text>:null}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyTags} onChangeText={value=>{storyTagsRef.current=value;setStoryTags(value);}}
             placeholder="Identificar amigos: @ana, @joao" accessibilityLabel="Identificar amigos na Story"
             maxLength={500} autoCapitalize="none" autoCorrect={false} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
