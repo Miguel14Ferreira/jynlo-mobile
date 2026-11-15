@@ -6,7 +6,11 @@ test('protected mobile downloads are restricted to authenticated Jynlo endpoints
  assert.match(source,/API_BASE\+path/);
  assert.match(source,/Authorization:/);
  assert.match(source,/protectedPath\.test\(path\)/);
- assert.match(source,/cache:'no-store'/);
+ // expo/fetch does not accept the web-only cache property. Prevent credential
+ // leakage via redirects instead of supplying an unsupported option.
+ assert.match(source,/credentials:'omit'/);
+ assert.match(source,/redirect:'error'/);
+ assert.doesNotMatch(source,/cache:'no-store'/);
 });
 test('downloaded private media must be deleted after its viewer closes',()=>{
  assert.match(source,/releasePrivateProfileMedia/);
