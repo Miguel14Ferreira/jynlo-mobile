@@ -45,6 +45,11 @@ export interface SessionDetail extends SessionSummary {
   waitlistPosition: number | null;
   gamePhoto: string | null;
   meetingPointInstructions?: string | null;
+  /** Server-gated exact place, distinct from the venue catalogue coordinates. */
+  googleMapsUrl?: string | null;
+  pinLatitude?: number | null;
+  pinLongitude?: number | null;
+  venue?: {latitude?:number|null;longitude?:number|null;name?:string|null} | null;
   minParticipants?: number;
   externalConfirmedParticipants?: number;
   teamBalanceSupported?: boolean;
