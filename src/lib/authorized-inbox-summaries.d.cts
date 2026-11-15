@@ -5,3 +5,8 @@ export function filterAuthorizedSummaries(
  raw:unknown,
  fallbackTitle:string
 ):JynloInboxSummary[];
+
+export function filterAuthorizedDirectSummaries(
+ allowed:ReadonlyMap<string,string>,
+ raw:unknown
+):JynloInboxSummary[];
