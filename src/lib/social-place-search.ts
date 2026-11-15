@@ -49,7 +49,7 @@ export async function searchSocialPlaces(text:string,token:string|null):Promise<
  ]);
  const seen=new Set<string>();
  return [...cities,...places].filter(place=>{
-  const label=socialPlaceLabel(place).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();
+  const label=socialPlaceLabel(place).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   if(seen.has(label))return false;
   seen.add(label);
   return true;
