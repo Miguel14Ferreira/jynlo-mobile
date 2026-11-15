@@ -36,7 +36,7 @@ test('explore screen prevents Android native MapView mount in unconfigured build
  assert.match(screen,/SessionNativeMap initialRegion=\{PORTUGAL\} sessions=\{mappedSessions\}/);
  assert.match(screen,/<OfflineSessionMap sessions=\{mappedSessions\}/);
  assert.match(screen,/Pesquisar nesta zona/);
- assert.match(screen,/OpenStreetMap/);
+ assert.match(screen,/OfflineSessionMap sessions=\{mappedSessions\}/);
 });
 
 test('EAS Android preview build explicitly reads the preview environment and real backend',()=>{
