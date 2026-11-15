@@ -47,6 +47,7 @@ workflows:
           } 2>&1 | tee build-metadata/ci-mobile/expo.log
     artifacts:
       - build-metadata/ci-mobile/*.log
+      - build-metadata/ci-mobile/test-failures.txt
 
   jynlo-android-qa:
     name: Jynlo Android - APK de testes (develop)
