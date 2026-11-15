@@ -104,6 +104,7 @@ export default function ProfileScreen(){
     <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
     <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
     <Button title="As minhas sessões" secondary onPress={()=>router.push('/my-sessions')}/>
+    <Button title="As minhas equipas" secondary onPress={()=>router.push('/teams')}/>
     {!auth.username?<><Button title={DEMO_MODE?'Experimentar conta de demonstração':'Iniciar sessão'} onPress={()=>router.push('/login')}/><Button title="Voltar às boas-vindas" secondary onPress={()=>router.push('/welcome')}/></>:
       <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(
         ()=>router.replace('/welcome'),
