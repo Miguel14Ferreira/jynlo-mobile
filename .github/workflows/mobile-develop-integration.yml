@@ -34,15 +34,33 @@ jobs:
         with:
           node-version: '22'
       - name: Run every dependency-free regression contract
-        run: node --test tests/*.test.cjs
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/*.test.cjs 2>&1 | tee "$RUNNER_TEMP/jynlo-contracts.log"
       - name: Validate Android release guard and Expo project
+        shell: bash
         env:
           JYNLO_REQUIRE_REAL_API: '1'
           EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
         run: |
-          node scripts/verify-release.cjs
-          node scripts/check-eas-project.cjs
-          node scripts/prepare-android-native-config.cjs
+          set -o pipefail
+          {
+            node scripts/verify-release.cjs
+            node scripts/check-eas-project.cjs
+            node scripts/prepare-android-native-config.cjs
+          } 2>&1 | tee "$RUNNER_TEMP/jynlo-release.log"
+
+      - name: Archive source-contract diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-develop-contracts
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/jynlo-contracts.log
+            ${{ runner.temp }}/jynlo-release.log
 
   typescript:
     name: TypeScript, Expo configuration and full mobile test suite
@@ -56,15 +74,36 @@ jobs:
       # The repository intentionally has no package-lock.json. setup-node's
       # npm cache requires a lockfile and fails even before npm install.
       - name: Install dependencies without lifecycle execution
-        run: npm install --no-audit --no-fund --ignore-scripts
-      - name: Check TypeScript and syntax
+        shell: bash
         run: |
-          npm run typecheck
-          npm run test:all
+          set -o pipefail
+          npm install --no-audit --no-fund --ignore-scripts 2>&1 | tee "$RUNNER_TEMP/jynlo-install.log"
+      - name: Check TypeScript and syntax
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee "$RUNNER_TEMP/jynlo-typescript.log"
+          npm run test:all 2>&1 | tee "$RUNNER_TEMP/jynlo-tests.log"
       - name: Confirm Expo SDK dependencies and config
+        shell: bash
         env:
           JYNLO_REQUIRE_REAL_API: '1'
           EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
         run: |
-          npx --no-install expo install --check
-          node scripts/check-eas-project.cjs
+          set -o pipefail
+          {
+            npx --no-install expo install --check
+            node scripts/check-eas-project.cjs
+          } 2>&1 | tee "$RUNNER_TEMP/jynlo-expo.log"
+      - name: Archive mobile integration diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-develop-typescript-and-tests
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/jynlo-install.log
+            ${{ runner.temp }}/jynlo-typescript.log
+            ${{ runner.temp }}/jynlo-tests.log
+            ${{ runner.temp }}/jynlo-expo.log
