@@ -4,7 +4,7 @@ import {communityDetails,myCommunities} from './community-api';
 import {mySessions} from './parity-api';
 import type {CommunityChatEntry,JynloInboxSummary} from './types';
 import {safeId} from './community-core.cjs';
-import {filterAuthorizedSummaries} from './authorized-inbox-summaries.cjs';
+import {filterAuthorizedSummaries,filterAuthorizedDirectSummaries} from './authorized-inbox-summaries.cjs';
 const threads=new Map<number,CommunityChatEntry[]>();let nextId=950000;
 const base=(id:number)=>`/api/communities/${safeId(id)}/messages`;
 async function member(id:number,token:string,username:string){
@@ -155,6 +155,7 @@ export async function directConversationPeers(token:string):Promise<string[]>{
 }
 export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
  const rawPeers=await directConversationPeers(token);
+ if(!Array.isArray(rawPeers))throw Error('Lista de conversas privadas inválida.');
  // The backend can return duplicate peers with different letter casing.
  // Never let a malformed peer invalidate the entire inbox request.
  const seen=new Set<string>();
@@ -174,22 +175,11 @@ export async function directInbox(token:string):Promise<JynloInboxSummary[]>{
   if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
   summaries.push(...batch);
  }
- // The peers endpoint is authoritative for accessible conversations. The
- // summaries endpoint may omit a conversation that has no messages yet.
+ // Only the verified peer list grants access. Invalid or unlisted summaries
+ // cannot create conversations or alter the display of authorized peers.
  const authorized=new Map(peers.map(peer=>[peer.toLowerCase(),peer]));
- const returned=new Set<string>();
- const visible=summaries.filter(s=>{
-  if(s?.kind!=='direct'||typeof s.id!=='string')return false;
-  const key=s.id.toLowerCase();
-  if(!authorized.has(key)||returned.has(key))return false;
-  returned.add(key);
-  return true;
- });
- for(const [key,peer] of authorized){
-  if(!returned.has(key))visible.push({kind:'direct',id:peer,latestMessageId:null,
-   latestText:null,latestSender:null,latestAt:null,unreadCount:0});
- }
- return visible.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
+ return filterAuthorizedDirectSummaries(authorized,summaries)
+  .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 export async function directChatHistory(peer:string,token:string):Promise<DirectChatEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para ver as mensagens privadas.');
