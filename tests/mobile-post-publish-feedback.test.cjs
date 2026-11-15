@@ -14,7 +14,7 @@ test('a server-confirmed post is inserted immediately and gets visible feedback'
 });
 
 test('a server-confirmed story is inserted immediately and gets visible feedback',()=>{
- assert.match(feed,/const created=await publishStory\(body,media,actor,username,null,geometry,details\)/);
+ assert.match(feed,/const created=await publishStory\(body,media,actor,username,selectedCommunityId,geometry,details\)/);
  assert.match(feed,/setOwnStories\(current=>\[created,\.\.\.current\.filter\(item=>item\.id!==created\.id\)\]\)/);
  assert.match(feed,/setPublishNotice\('story'\)/);
  assert.match(feed,/Story confirmada! Já aparece nas tuas Stories/);
