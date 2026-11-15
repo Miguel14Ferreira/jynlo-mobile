@@ -1,5 +1,6 @@
 import React,{useEffect,useRef} from 'react';
 import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
@@ -10,7 +11,7 @@ import {sessionCardStatus,participationProgress} from '../lib/session-card-core.
 import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
-  const scrollRef=useRef<ScrollView|null>(null);
+  const scrollRef=useRef<ScrollViewInstance|null>(null);
   const nearBottom=useRef(true);
   // Measure the actual focused field instead of blindly jumping to the bottom.
   // A caption, reply or edit box can be above the last message in long chats.
