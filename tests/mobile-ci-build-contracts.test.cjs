@@ -10,7 +10,12 @@ const workflow=read('codemagic.yaml');
 const packageJson=JSON.parse(read('package.json'));
 
 test('CI exercises all mobile regressions in develop without using master',()=>{
- assert.match(ci,/branches: \[develop\]/);
+ // Hosted GitHub Actions have exhausted their quota: the workflow stays
+ // dispatch-only until runners are available, rather than failing on pushes.
+ assert.match(ci,/workflow_dispatch:/);
+ assert.doesNotMatch(ci,/^\s+push:/m);
+ assert.match(read('.circleci/config.yml'),/only: develop/);
+ assert.match(read('.circleci/config.yml'),/run_validation/);
  assert.match(ci,/node --test tests\/\*\.test\.cjs/);
  assert.match(ci,/npm run typecheck/);
  assert.match(ci,/npm run test:all/);
