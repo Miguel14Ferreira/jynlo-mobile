@@ -148,6 +148,18 @@ export async function updateSessionExternalConfirmations(id:number,token:string,
  });
 }
 
+/** Actual stored ranking sources, checked by the backend for the current organizer. */
+export interface SessionTeamOptions {
+ randomAvailable:boolean;
+ communityRankingAvailable:boolean;
+ excelRankingAvailable:boolean;
+}
+export async function sessionTeamOptions(id:number,token:string):Promise<SessionTeamOptions>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)
+  throw Error('Inicia sessão para verificar as classificações.');
+ return request<SessionTeamOptions>(`/api/sessions/${id}/teams/options`,{token});
+}
+
 /** Only organizers are authorized by the backend. GET is a preview; POST persists team assignment. */
 export async function suggestSessionTeams(id:number,token:string,source:'FORM'|'EXCEL_POINTS'|'RANDOM'):Promise<SessionTeamSuggestion>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para consultar equipas.');
