@@ -40,7 +40,15 @@ test('one-command local APK route cannot accidentally consume cloud build quota'
 
 test('Windows double-click launcher invokes only the quota-free local APK workflow',()=>{
  const launcher=read('GERAR_APK_GRATIS_WINDOWS.cmd');
- assert.match(launcher,/validate-local\.ps1" -LocalApk/);
+ assert.match(launcher,/build-with-portable-node\.ps1"/);
+ const bootstrap=read('scripts/build-with-portable-node.ps1');
+ assert.match(bootstrap,/https:\/\/nodejs\.org\/dist\/v\$version/);
+ assert.match(bootstrap,/SHASUMS256\.txt/);
+ assert.match(bootstrap,/Get-FileHash -Path \$zipFile -Algorithm SHA256/);
+ assert.match(bootstrap,/if\(\$actual -ne \$expected\)/);
+ assert.match(bootstrap,/\$env:PATH="\$nodeHome;\$previousPath"/);
+ assert.match(bootstrap,/validate-local\.ps1'\) -LocalApk/);
+ assert.doesNotMatch(bootstrap,/SetEnvironmentVariable\([^\n]*,'Machine'/);
  assert.match(launcher,/dist\\android-local\\jynlo-preview-local\.apk/);
  assert.doesNotMatch(launcher,/\s(?:-BuildApk|eas build|codemagic build)\b/i);
  assert.match(launcher,/pause/);
