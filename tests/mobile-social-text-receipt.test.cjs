@@ -53,3 +53,18 @@ test('multipart posts and stories verify author/content after confirming uploade
  assert.match(api,/const confirmed=await sendMedia\('\/api\/stories'/);
  assert.match(api,/confirmedStoryAuthorReceipt\(confirmed,username!,caption\)/);
 });
+
+test('Story publishing confirms the exact personal or community destination',()=>{
+ const {confirmedStoryDestinationReceipt:target}=require('../src/lib/social-text-post-receipt.cjs');
+ assert.equal(target({communityId:null},null),true);
+ assert.equal(target({communityId:42},42),true);
+ assert.equal(target({communityId:47},42),false);
+ assert.equal(target({communityId:null},42),false);
+ assert.equal(target({communityId:42},null),false);
+ assert.equal(target({},null),false);
+ for(const invalid of [undefined,0,-1,1.5,'42'])assert.equal(target({communityId:invalid},42),false);
+ assert.equal(target({communityId:42},NaN),false);
+ const fs=require('node:fs'),path=require('node:path');
+ const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ assert.match(api,/confirmedStoryDestinationReceipt\(confirmed,communityId\?\?null\)/);
+});
