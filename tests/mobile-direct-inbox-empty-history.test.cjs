@@ -7,7 +7,9 @@ const source=fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8
 
 test('direct inbox retains server-authorized conversations with no latest message',()=>{
  assert.match(source,/const rawPeers=await directConversationPeers\(token\)/);
- assert.match(source,/if\(!returned\.has\(key\)\)visible\.push\(\{kind:'direct',id:peer,latestMessageId:null/);
+ assert.match(source,/filterAuthorizedDirectSummaries\(authorized,summaries\)/);
+ const helper=fs.readFileSync(path.join(__dirname,'../src/lib/authorized-inbox-summaries.cjs'),'utf8');
+ assert.match(helper,/if\(!returned\.has\(key\)\&\&typeof peer==='string'\&\&peer\)/);
  assert.doesNotMatch(source,/summaries\.filter\(s=>s\.kind==='direct'&&s\.latestMessageId!=null\)/);
 });
 test('private inbox still rejects unknown or malformed peers',()=>{
