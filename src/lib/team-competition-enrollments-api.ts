@@ -15,6 +15,11 @@ const valid=(id:number)=>{
 const competitionPath=(communityId:number,type:EnrollmentType,competitionId:number)=>
  base+'/communities/'+valid(communityId)+'/'+type+'/'+valid(competitionId);
 
+export async function existingGlobalTeamEntry(communityId:number,type:EnrollmentType,
+ competitionId:number,globalTeamId:number,token:string):Promise<GlobalCompetitionEntry>{
+ return request<GlobalCompetitionEntry>(competitionPath(communityId,type,competitionId)+
+  '/teams/'+valid(globalTeamId)+'/entry',{token});
+}
 export async function finalizeGlobalTeamEntry(communityId:number,type:EnrollmentType,
  competitionId:number,globalTeamId:number,token:string):Promise<GlobalCompetitionEntry>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para finalizar a inscrição.');
