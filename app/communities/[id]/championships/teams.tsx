@@ -6,6 +6,7 @@ import {useAuth} from '../../../../src/lib/auth';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {communityChampionships,getChampionshipTeams,createChampionshipTeam,linkChampionshipTeam,type ChampionshipTeams} from '../../../../src/lib/championship-api';
 import {C} from '../../../../src/lib/theme';
+import {CompetitionTeamSearch} from '../../../../src/components/CompetitionTeamSearch';
 
 export default function ChampionshipTeamsScreen(){
  const params=useLocalSearchParams<{id:string;championshipId:string}>();
@@ -64,6 +65,7 @@ export default function ChampionshipTeamsScreen(){
      {text:'Cancelar',style:'cancel'},{text:'Criar',onPress:()=>{void update(()=>createChampionshipTeam(communityId,championshipId,name,auth.token!));}}
     ])}/>
    </View>:null}
+   {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}
   </View>:null}
   {data?<View style={styles.card}>
    <Text style={styles.title}>Equipas das provas ({data.competitionTeams.length})</Text>
