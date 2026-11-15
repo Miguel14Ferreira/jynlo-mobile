@@ -63,6 +63,7 @@ export default function TeamDetail(){
     </View>)}</>:null}
    </View>
    <View style={styles.panel}><Text style={styles.heading}>Competições</Text>
+    <Button title="Encontrar competições para a equipa" onPress={()=>router.push('/teams/competitions')}/>
     <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>
    <View style={styles.panel}><Text style={styles.heading}>Feed</Text>
     <Text style={styles.note}>{team.feedEnabled?'Ativado. Publicações de equipa ainda indisponíveis.':'Desativado'}</Text>
