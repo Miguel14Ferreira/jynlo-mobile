@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {Button,Message} from './UI';
 import {discoverSportsTeams,type SportsTeam} from '../lib/sports-teams-api';
@@ -15,32 +15,47 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
  const [associated,setAssociated]=useState<TeamCommunityMembership[]>([]);
  const [loading,setLoading]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [searched,setSearched]=useState(false);
+ const searchVersion=useRef(0);
+ const [invitesVerified,setInvitesVerified]=useState(false);
  useEffect(()=>{
   if(!open)return;
   let active=true;
-  void Promise.all([communityTeamMemberships(communityId,token),teamCompetitionInvitations(communityId,type,competitionId,token)])
-   .then(([memberships,invitations])=>{if(active){setAssociated(memberships.filter(m=>m.status==='ACTIVE'));setExisting(invitations);}})
-   .catch(()=>{if(active)setAssociated([]);});
-  return()=>{active=false;};
+  setError('');setInvitesVerified(false);
+  void Promise.allSettled([
+    communityTeamMemberships(communityId,token),
+    teamCompetitionInvitations(communityId,type,competitionId,token)
+  ]).then(([memberships,invitations])=>{
+    if(!active)return;
+    if(memberships.status==='fulfilled')setAssociated(memberships.value.filter(m=>m.status==='ACTIVE'));
+    if(invitations.status==='fulfilled'){setExisting(invitations.value);setInvitesVerified(true);}
+    const missing=[];
+    if(memberships.status==='rejected')missing.push('equipas da comunidade');
+    if(invitations.status==='rejected')missing.push('convites anteriores');
+    if(missing.length)setError('Não foi possível atualizar '+missing.join(' e ')+'. Confirma o estado antes de enviar novos convites.');
+  });
+  return()=>{active=false;searchVersion.current++;};
  },[open,communityId,competitionId,type,token]);
  const search=async()=>{
   if(loading||query.trim().length<1)return;
+  const version=++searchVersion.current;
   setLoading(true);setError('');setNotice('');
-  try{
-   const [teams,invitations]=await Promise.all([
-    discoverSportsTeams(query,token),
+  const [teams,invitations]=await Promise.allSettled([
+    discoverSportsTeams(query.trim(),token),
     teamCompetitionInvitations(communityId,type,competitionId,token)
-   ]);
-   setRows(teams);setExisting(invitations);setSearched(true);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível pesquisar equipas.');}
-  finally{setLoading(false);}
+  ]);
+  if(version!==searchVersion.current)return;
+  if(teams.status==='fulfilled'){setRows(teams.value);setSearched(true);}
+  else setError('Não foi possível pesquisar equipas. Experimenta novamente.');
+  if(invitations.status==='fulfilled'){setExisting(invitations.value);setInvitesVerified(true);}
+  else {setInvitesVerified(false);setError(previous=>[previous,'Não foi possível confirmar os convites existentes. Não envies novos convites até atualizar o estado.'].filter(Boolean).join(' '));}
+  setLoading(false);
  };
  const invite=async(teamId:number)=>{
-  if(loading||existing.some(x=>x.teamId===teamId))return;
+  if(loading||!invitesVerified||existing.some(x=>x.teamId===teamId))return;
   setLoading(true);setError('');setNotice('');
   try{
    const invitation=await inviteTeamToCompetition(communityId,type,competitionId,teamId,token);
-   setExisting(items=>[...items,invitation]);
+   setExisting(items=>[...items.filter(item=>item.teamId!==teamId),invitation]);
    setNotice('Convite enviado. A equipa só participa após confirmação da inscrição.');
   }catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar o convite.')+
      ' Confirma o estado antes de repetir.');}
@@ -58,13 +73,13 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
         {invitation?<><Text style={styles.hint}>Convite: {invitation.status}</Text>
          {invitation.status==='ACCEPTED'?<GlobalTeamEnrollment communityId={communityId}
            competitionId={competitionId} type={type} globalTeamId={team.teamId} token={token}/>:null}</>:
-         <Button title="Convidar para a competição" disabled={loading} onPress={()=>void invite(team.teamId)}/>}
+         <Button title="Convidar para a competição" disabled={loading||!invitesVerified} onPress={()=>void invite(team.teamId)}/>}
       </View>;
     })}
     <Text style={styles.name}>Outras equipas da Jynlo</Text>
     <TextInput style={styles.input} value={query} onChangeText={setQuery}
       placeholder="Nome da equipa" placeholderTextColor={C.muted} maxLength={100}
-      accessibilityLabel="Nome da equipa a pesquisar"/>
+      accessibilityLabel="Nome da equipa a pesquisar" returnKeyType="search" onSubmitEditing={()=>void search()}/>
     <Button title={loading?'A pesquisar…':'Pesquisar'} disabled={loading||!query.trim()} onPress={()=>void search()}/>
     {error?<Message tone="error">{error}</Message>:null}
     {notice?<Message>{notice}</Message>:null}
@@ -76,7 +91,7 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
       {invitation?<><Text style={styles.hint}>Convite: {invitation.status==='PENDING'?'pendente':invitation.status==='ACCEPTED'?'aceite':'recusado'}</Text>
        {invitation.status==='ACCEPTED'?<GlobalTeamEnrollment communityId={communityId}
          competitionId={competitionId} type={type} globalTeamId={team.id} token={token}/>:null}</>:
-       <Button title="Convidar equipa" disabled={loading} onPress={()=>void invite(team.id)}/>}
+       <Button title="Convidar equipa" disabled={loading||!invitesVerified} onPress={()=>void invite(team.id)}/>}
      </View>;
     })}
     {searched&&!rows.length?<Message>Não foram encontradas equipas.</Message>:null}
