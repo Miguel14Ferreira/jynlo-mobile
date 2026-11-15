@@ -104,7 +104,7 @@ export default function TeamDetail(){
       <Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
     {championshipHonours.map(item=><View key={'season:'+item.championshipId+':'+(item.ownedEventId?'event:'+item.ownedEventId:'tournament:'+item.tournamentId)} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.competitionName}</Text>
-      <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':item.format==='KNOCKOUT'?'Taça':item.format} · {item.championshipName} · {item.seasonLabel}</Text>
+      <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':item.format==='KNOCKOUT'?'Taça':item.format==='CHAMPIONSHIP'?'Campeonato':item.format} · {item.championshipName} · {item.seasonLabel}</Text>
       <Text style={styles.note}>{item.communityName} · {item.sport}</Text>
       <Text style={styles.note}>{new Date(item.awardedAt).toLocaleDateString('pt-PT')}</Text>
     </View>)}
