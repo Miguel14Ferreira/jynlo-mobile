@@ -1,5 +1,6 @@
 import React,{useRef,useState} from 'react';
 import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {JynloIcon} from './JynloIcon';
 import {CloseIconButton} from './CloseIconButton';
@@ -16,7 +17,7 @@ export default function PostImageLightbox({photos,onClose}:Props){
  const initial=Math.max(0,Math.min(entries.length-1,photos?.index??0));
  const [index,setIndex]=useState(initial);
  const [viewport,setViewport]=useState({width:0,height:0});
- const scroll=useRef<ScrollView|null>(null);
+ const scroll=useRef<ScrollViewInstance|null>(null);
  const moveTo=(next:number)=>{
   const selected=Math.max(0,Math.min(entries.length-1,next));
   setIndex(selected);
