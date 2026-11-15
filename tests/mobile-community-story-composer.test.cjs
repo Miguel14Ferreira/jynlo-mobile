@@ -20,3 +20,18 @@ test('Story composer resets the community on a new or discarded draft',()=>{
  assert.match(source,/setStoryPublishCommunityId\(null\)/);
  assert.match(source,/storyPublishCommunityId===selectedCommunityId&&/);
 });
+
+test('Story targeting and profile suggestions cannot survive an account switch',()=>{
+ assert.match(source,/setStoryPublishCommunityId\(null\);setStoryManagedCommunities\(\[\]\);setStorySearchedProfiles\(\[\]\);setStoryFriendSearch\(''\)/);
+ assert.match(source,/let active=true;/);
+ assert.match(source,/if\(active\)setStorySearchedProfiles\(profiles\)/);
+ assert.match(source,/if\(active\)setStoryManagedCommunitiesLoading\(false\)/);
+});
+test('Mobile searches existing discoverable profiles for Story mentions',()=>{
+ const relation=fs.readFileSync(path.join(__dirname,'../src/lib/social-relations-api.ts'),'utf8');
+ assert.match(relation,/export async function searchStoryMentionProfiles/);
+ assert.match(relation,/\/api\/profile\/name\//);
+ assert.match(source,/searchStoryMentionProfiles\(term,auth\.token\)/);
+ assert.match(source,/storySearchedProfiles/);
+ assert.match(source,/toggleStoryMention\(storyTagsRef\.current,friend\.username\)/);
+});
