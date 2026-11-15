@@ -40,7 +40,7 @@ test('competition discovery sends an explicit application for selected owned tea
 test('competition admin must approve an application or have an accepted team invite before finalization',()=>{
  const applicants=read('src/components/TeamCompetitionApplications.tsx');
  const invitations=read('src/components/CompetitionTeamSearch.tsx');
- assert.match(applicants,/a\.status==='APPROVED'\?<GlobalTeamEnrollment/);
+ assert.match(applicants,/applicationsVerified&&a\.status==='APPROVED'\?<GlobalTeamEnrollment/);
  assert.match(invitations,/invitation\.status==='ACCEPTED'\?<GlobalTeamEnrollment/);
 });
 test('global roster is only selected by organizer and players receive individual invitations',()=>{
@@ -112,4 +112,25 @@ test('global roster never silently retries uncertain POST and rechecks after suc
  assert.match(screen,/Confirma o estado dos jogadores antes de repetir/);
  assert.match(screen,/setEntryCheck\('failed'\)/);
  assert.match(screen,/Estado incerto: reabre o ecrã/);
+});
+
+test('organizer application settings and submissions fail independently',()=>{
+ const panel=read('src/components/TeamCompetitionApplications.tsx');
+ assert.match(panel,/Promise\.allSettled\(\[/);
+ assert.match(panel,/settings\.status==='fulfilled'/);
+ assert.match(panel,/rows\.status==='fulfilled'/);
+ assert.match(panel,/setApplicationsVerified\(false\)/);
+ assert.match(panel,/if\(version!==generation\.current\)return/);
+ assert.match(panel,/return\(\)=>\{generation\.current\+\+;\}/);
+});
+
+test('competition decisions require verified pending requests and guard uncertain responses',()=>{
+ const panel=read('src/components/TeamCompetitionApplications.tsx');
+ assert.match(panel,/!applicationsVerified\|\|!applications\.some\(a=>a\.id===id&&a\.status==='PENDING'\)/);
+ assert.match(panel,/operationRef\.current=true/);
+ assert.match(panel,/setApplicationsVerified\(false\)/);
+ assert.match(panel,/O pedido pode ter sido processado/);
+ assert.match(panel,/disabled=\{busy\|\|!applicationsVerified\}/);
+ assert.match(panel,/applicationsVerified&&a\.status==='APPROVED'\?<GlobalTeamEnrollment/);
+ assert.match(panel,/setLoaded\(false\)/);
 });
