@@ -60,7 +60,7 @@ test('team requests ignore stale results and navigation-away responses',()=>{
 test('membership invitations cannot be submitted repeatedly while saving',()=>{
  const screen=read('app/teams/index.tsx');
  assert.match(screen,/if\(!auth\.token\|\|saving\)return;/);
- assert.match(screen,/try\{await respondSportsTeamInvitation\(teamId,accept,auth\.token\);await load\(\);\}/);
+ assert.match(screen,/try\{await respondSportsTeamInvitation\(teamId,accept,auth\.token\);await load\(false,true\);\}/);
  assert.match(screen,/finally\{setSaving\(false\);\}/);
  assert.match(screen,/title="Aceitar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,true\)\}/);
  assert.match(screen,/title="Recusar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,false\)\}/);
@@ -112,7 +112,7 @@ test('team profile survives partial API failures and ignores late results after 
 
 test('team rosters and competition data refresh on foreground resume without flashing skeletons',()=>{
  const screen=read('app/teams/[id].tsx');
- assert.match(screen,/const load=useCallback\(async\(silent=false\)=>/);
+ assert.match(screen,/const load=useCallback\(async\(silent=false,force=false\)=>/);
  assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
  assert.match(screen,/if\(reading\.current===requestVersion\.current\|\|savingRef\.current\)return/);
  assert.match(screen,/setInterval\(\(\)=>\{/);
@@ -130,7 +130,7 @@ test('team directory keeps invitations updated when returning to the app without
  assert.match(screen,/AppState\.addEventListener\('change',state=>/);
  assert.match(screen,/state==='active'&&!savingRef\.current/);
  assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
- assert.match(screen,/reading\.current===requestVersion\.current\|\|savingRef\.current/);
+ assert.match(screen,/!force&&\(reading\.current===requestVersion\.current\|\|savingRef\.current\)/);
  assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
  assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
  assert.doesNotMatch(screen.slice(screen.indexOf('const timer=setInterval('),screen.indexOf('const resume=AppState.addEventListener(')),/respondSportsTeamInvitation/);
