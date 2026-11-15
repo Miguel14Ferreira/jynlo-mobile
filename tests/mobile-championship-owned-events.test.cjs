@@ -29,10 +29,10 @@ test('all league and cup actions map to backend-controlled scoped endpoints',()=
  assert.match(api,/if\(DEMO_MODE\|\|!token\)/);
 });
 test('managers cannot edit completed competitions, inactive leagues or unsupported sports',()=>{
- assert.match(list,/const canManage=organizer&&!closed&&Boolean\(auth\.token\)/);
+ assert.match(list,/const canManage=organizer&&!closed&&!loading&&Boolean\(auth\.token\)/);
  assert.match(list,/const football=sport==='Futebol'\|\|sport==='Futsal'/);
- assert.match(list,/const canSchedule=canManage&&football&&activeEvent\?\.status==='DRAFT'/);
- assert.match(list,/const canScore=canManage&&football&&activeEvent\?\.status==='SCHEDULED'/);
+ assert.match(list,/const canSchedule=canManage&&detailsReady&&football&&activeEvent\?\.status==='DRAFT'/);
+ assert.match(list,/const canScore=canManage&&detailsReady&&football&&activeEvent\?\.status==='SCHEDULED'/);
  assert.match(fixture,/event\.format==='LEAGUE'&&event\.status==='SCHEDULED'&&match\.homeScore!=null&&match\.awayScore!=null/);
 });
 test('fixture controls use confirmed team rosters and server validated events',()=>{
@@ -55,7 +55,7 @@ test('scores, cup progression, league closure, and deletion require confirmation
  assert.match(list,/confirm\('Finalizar liga\?'/);
  assert.match(list,/confirm\('Avançar Taça\?'/);
  assert.match(list,/confirm\('Eliminar esta prova\?'/);
- assert.match(fixture,/if\(!canWrite\|\|pending\.current\|\|!fixture\)return/);
+ assert.match(fixture,/if\(!canWrite\|\|loading\|\|pending\.current\|\|!fixture\)return/);
  assert.match(fixture,/Alert\.alert\('Confirmar '/);
 });
 test('league classification uses the actual backend DTO and retains tied-place warning',()=>{
