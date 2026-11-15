@@ -1,5 +1,5 @@
-import React,{useCallback,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -16,9 +16,13 @@ export default function TeamsScreen(){
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
  const requestVersion=useRef(0);
- const load=useCallback(async()=>{
+ const reading=useRef<number|null>(null),savingRef=useRef(false);
+ useEffect(()=>{savingRef.current=saving;},[saving]);
+ const load=useCallback(async(silent=false)=>{
+   if(reading.current===requestVersion.current||savingRef.current)return;
    const version=++requestVersion.current;
-   setLoading(true);setError('');
+   reading.current=version;
+   if(!silent){setLoading(true);setError('');}
    try{
     // Convites são secundários: um endpoint antigo/temporariamente indisponível
     // não pode impedir o acesso às equipas, nem apagar resultados já carregados.
@@ -28,6 +32,7 @@ export default function TeamsScreen(){
       auth.token?mySportsTeamInvitations(auth.token):Promise.resolve([]),
       auth.token?myTeamCompetitionInvitations(auth.token):Promise.resolve([])
     ]);
+    if(reading.current===version)reading.current=null;
     if(version!==requestVersion.current)return;
     const failed:string[]=[];
     if(discovery.status==='fulfilled')setTeams(discovery.value);
@@ -38,14 +43,23 @@ export default function TeamsScreen(){
     else failed.push('convites de jogadores');
     if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
     else failed.push('convites para competições');
-    if(failed.length)setError('Não foi possível carregar '+failed.join(', ')+'. As restantes secções continuam disponíveis. Podes tentar novamente.');
-   }catch(e){if(version===requestVersion.current)setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
-   finally{if(version===requestVersion.current)setLoading(false);}
+    if(failed.length&&!silent)setError('Não foi possível carregar '+failed.join(', ')+'. As restantes secções continuam disponíveis. Podes tentar novamente.');
+   }catch(e){if(!silent&&version===requestVersion.current)setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
+   finally{
+    if(reading.current===version)reading.current=null;
+    if(!silent&&version===requestVersion.current)setLoading(false);
+   }
  },[submittedQuery,auth.token]);
  const search=()=>{const next=query.trim();if(next===submittedQuery){void load();}else setSubmittedQuery(next);};
  useFocusEffect(useCallback(()=>{
    void load();
-   return ()=>{requestVersion.current++;};
+   const timer=setInterval(()=>{
+    if(AppState.currentState==='active'&&!savingRef.current)void load(true);
+   },60000);
+   const resume=AppState.addEventListener('change',state=>{
+    if(state==='active'&&!savingRef.current)void load(true);
+   });
+   return ()=>{clearInterval(timer);resume.remove();requestVersion.current++;};
  },[load]));
  const respond=async(teamId:number,accept:boolean)=>{
   if(!auth.token||saving)return;
