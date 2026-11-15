@@ -3,6 +3,50 @@
 # Default Expo prebuild signs assembleRelease with a DEBUG keystore.
 # This APK is for testing only and will not upgrade the EAS-signed APK in place.
 workflows:
+  jynlo-mobile-validacao:
+    name: Jynlo Mobile - Validar TypeScript e testes (develop, sem APK)
+    # Manual only: no automatic triggers and no Android native compilation.
+    # The macOS M2 instance is eligible for the Codemagic personal free allocation.
+    instance_type: mac_mini_m2
+    max_build_duration: 25
+    environment:
+      node: v22.13.1
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+    cache:
+      cache_paths:
+        - $HOME/.npm
+    scripts:
+      - name: Garantir que a branch é develop
+        script: |
+          set -eu
+          test "${CM_BRANCH:-}" = "develop" || { echo "Selecionar apenas develop."; exit 1; }
+          mkdir -p build-metadata/ci-mobile
+          echo "Branch: $CM_BRANCH"
+          node --version
+          npm --version
+      - name: Instalar dependências sem executar scripts nativos
+        script: |
+          set -o pipefail
+          npm install --no-audit --no-fund --ignore-scripts 2>&1 | tee build-metadata/ci-mobile/install.log
+      - name: Verificar TypeScript e testes da Jynlo
+        script: |
+          set -o pipefail
+          npm run typecheck 2>&1 | tee build-metadata/ci-mobile/typescript.log
+          npm run test:all 2>&1 | tee build-metadata/ci-mobile/tests.log
+      - name: Verificar Expo e configuração de release
+        script: |
+          set -o pipefail
+          {
+            node scripts/verify-release.cjs
+            node scripts/check-eas-project.cjs
+            npx --no-install expo install --check
+          } 2>&1 | tee build-metadata/ci-mobile/expo.log
+    artifacts:
+      - build-metadata/ci-mobile/*.log
+
   jynlo-android-qa:
     name: Jynlo Android - APK de testes (develop)
     instance_type: mac_mini_m2
