@@ -65,3 +65,19 @@ test('cancelled sessions show an automatic notification status, never a manual s
  assert.doesNotMatch(screen,/cancelledShareText/);
  assert.doesNotMatch(screen,/Partilhar aviso de cancelamento/);
 });
+
+test('session chat syncs on foreground resume and never re-sends messages automatically',()=>{
+ const session=read('src/components/SessionChatPanel.tsx');
+ const community=read('src/components/CommunityChatPanel.tsx');
+ const inbox=read('app/(tabs)/messages.tsx');
+ for(const screen of [session,community,inbox]){
+  assert.match(screen,/AppState\.addEventListener\('change',state=>/);
+  assert.match(screen,/state==='active'/);
+  assert.match(screen,/resume\.remove\(\)/);
+  assert.match(screen,/clearInterval\(timer\)/);
+ }
+ assert.match(session,/if\(state==='active'&&active&&version===generation\.current&&!sendingNow\.current\)/);
+ assert.match(session,/void refresh\(true,version\)/);
+ assert.match(session,/const timer=setInterval/);
+ assert.doesNotMatch(session,/setInterval\([^]*?postSessionChat\(/);
+});
