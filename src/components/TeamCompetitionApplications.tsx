@@ -2,6 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
+import {GlobalTeamEnrollment} from './GlobalTeamEnrollment';
 import {configureTeamApplications,decideTeamApplication,teamCompetitionApplicationSettings,
  teamCompetitionApplications,type TeamCompetitionApplication,type TeamCompetitionKind}
  from '../lib/team-competition-applications-api';
@@ -55,6 +56,8 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
      <Button title="Aprovar pedido" disabled={busy} onPress={()=>void decide(a.id,true)}/>
      <Button title="Recusar pedido" secondary disabled={busy} onPress={()=>void decide(a.id,false)}/>
     </>:null}
+    {a.status==='APPROVED'?<GlobalTeamEnrollment communityId={communityId}
+      competitionId={competitionId} type={type} globalTeamId={a.teamId} token={token}/>:null}
    </View>)}
    {applications.length===0?<Text style={styles.note}>Ainda não existem pedidos.</Text>:null}
    <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>
