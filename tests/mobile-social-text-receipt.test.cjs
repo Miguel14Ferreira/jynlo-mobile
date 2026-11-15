@@ -10,6 +10,16 @@ test('text post must carry exact persisted identity, author and content',()=>{
  }
  assert.equal(confirmed(null,'joao','Vamos jogar','Benfica'),false);
 });
+test('captionless media posts may be persisted with a null caption',()=>{
+ const media={...valid,content:null,imageUrl:'/api/profile-media/posts/42/image'};
+ assert.equal(confirmed(media,'joao','','Benfica'),true);
+ assert.equal(confirmed({...media,content:''},'joao','','Benfica'),true);
+ assert.equal(confirmed({...media,content:'Legendas alteradas'},'joao','','Benfica'),false);
+ // A null receipt must never confirm text that the user actually wrote.
+ assert.equal(confirmed(media,'joao','Texto perdido','Benfica'),false);
+ assert.equal(confirmed({...media,content:undefined},'joao','','Benfica'),false);
+});
+
 test('optional location is normalized without requiring location on simple posts',()=>{
  assert.equal(confirmed({...valid,location:null},'joao','Vamos jogar',''),true);
  assert.equal(confirmed({...valid,location:''},'joao','Vamos jogar',''),true);
