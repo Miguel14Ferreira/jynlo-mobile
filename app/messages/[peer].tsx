@@ -338,7 +338,7 @@ export default function DirectConversation(){
  }
  async function send(){
   const identity=peer+'|'+auth.token;
-  if(mutationLock.current||sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!auth.token||!draft.trim())return;
+  if(mutationLock.current||sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
   const originalDraft=draft;
   const originalReply=replyTarget;
   const submittedText=originalDraft.trim();
@@ -605,7 +605,7 @@ export default function DirectConversation(){
     onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem privada'} style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!blockStatusKnown||!draft.trim()} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
