@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Share,StyleSheet,Text,View} from 'react-native';
+import {Alert,Share,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../../src/components/UI';
 import {TournamentMatchCard} from '../../../../../src/components/TournamentMatchUI';
@@ -8,24 +8,26 @@ import {tournamentDetails} from '../../../../../src/lib/competition-api';
 import {communityDetails} from '../../../../../src/lib/community-api';
 import {teamProfileMatches} from '../../../../../src/lib/tournament-fixtures-api';
 import {canListMatches} from '../../../../../src/lib/tournament-fixtures-core.cjs';
-import {acceptTeamPlace,shareableTeamInvite,tournamentTeams} from '../../../../../src/lib/team-api';
+import {acceptTeamPlace,shareableTeamInvite,tournamentTeams,tournamentTeamPromotionStatus,promoteTournamentTeam,type TeamPromotionStatus} from '../../../../../src/lib/team-api';
 import {C} from '../../../../../src/lib/theme';
 import type {JynloTournament,JynloTournamentTeam,TournamentTeamMatch} from '../../../../../src/lib/types';
 export default function TournamentTeamProfileScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string;teamId:string}>();
  const cid=Number(params.communityId),tid=Number(params.id),teamId=Number(params.teamId),router=useRouter(),auth=useAuth();
  const [needsCommunity,setNeedsCommunity]=useState(false);
+ const [promotion,setPromotion]=useState<TeamPromotionStatus|null>(null);
+ const [promoting,setPromoting]=useState(false);
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[team,setTeam]=useState<JynloTournamentTeam|null>(null);
  const [matches,setMatches]=useState<TournamentTeamMatch[]>([]),[page,setPage]=useState(0),[hasMore,setHasMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- const generation=useRef(0),joining=useRef(false),paging=useRef(false);
+ const generation=useRef(0),joining=useRef(false),paging=useRef(false),promotionLock=useRef(false);
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   if(![cid,tid,teamId].every(n=>Number.isSafeInteger(n)&&n>0)){
    if(version===generation.current){setError('Identificador de equipa inválido.');setLoading(false);}
    return;
   }
-  setLoading(true);setError('');setNeedsCommunity(false);setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);
+  setLoading(true);setError('');setNeedsCommunity(false);setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);setPromotion(null);
   try{
    const community=await communityDetails(cid,auth.token,auth.username);
    if(version!==generation.current)return;
@@ -41,6 +43,12 @@ export default function TournamentTeamProfileScreen(){
    const selected=teams.find(x=>x.id===teamId);
    if(!selected)throw Error('Equipa não encontrada ou sem acesso.');
    setTeam(selected);
+   try{
+    const status=await tournamentTeamPromotionStatus(cid,tid,teamId,auth.token);
+    if(version===generation.current)setPromotion(status);
+   }catch{
+    if(version===generation.current)setPromotion(null);
+   }
    if(canListMatches(t)){
     const response=await teamProfileMatches(cid,tid,teamId,0,auth.token,auth.username);
     if(version===generation.current){setMatches(response.matches);setHasMore(response.hasMore);}
@@ -72,6 +80,18 @@ export default function TournamentTeamProfileScreen(){
    await Share.share({message:`🏆 ${team.name} — ${tournament?.name||'Torneio Jynlo'}\nPara participar, entra na comunidade e aguarda a validação do servidor.\n${url}`});
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível partilhar.');}
  }
+ async function promote(){
+  if(!auth.token||!promotion?.canPromote||promotionLock.current||loading)return;
+  const token=auth.token,version=generation.current;
+  promotionLock.current=true;setPromoting(true);setError('');
+  try{
+   const permanent=await promoteTournamentTeam(cid,tid,teamId,token);
+   if(version!==generation.current)return;
+   setPromotion({globalTeamId:permanent.id,canPromote:false});
+   setMessage('Equipa guardada na Jynlo. O histórico do torneio foi preservado.');
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível guardar a equipa.');}
+  finally{promotionLock.current=false;if(version===generation.current)setPromoting(false);}
+ }
  async function more(){if(!auth.token||!auth.username||paging.current||loading||!hasMore)return;
   const version=generation.current;
   paging.current=true;setLoadingMore(true);setError('');
@@ -102,6 +122,20 @@ export default function TournamentTeamProfileScreen(){
      <Text style={styles.playerName}>{player.displayName}</Text><Text style={styles.subtitle}>@{player.username}</Text>
     </View>):<Text style={styles.subtitle}>Ainda não há jogadores inscritos.</Text>}
    </View>
+   {promotion?.canPromote?<View style={styles.panel}>
+    <Text style={styles.heading}>O futuro desta equipa é contigo</Text>
+    <Text style={styles.subtitle}>Podes continuar a usá-la apenas neste torneio, ou criar uma equipa permanente da Jynlo. A escolha não altera os resultados nem inscreve jogadores automaticamente noutras competições.</Text>
+    <Button title={promoting?'A guardar…':'Tornar equipa permanente'}
+     disabled={promoting||loading} onPress={()=>Alert.alert('Criar equipa permanente?',
+      'A equipa ficará no teu perfil Jynlo e poderá participar noutras comunidades. O torneio e o seu histórico serão mantidos.',
+      [{text:'Agora não',style:'cancel'},{text:'Criar equipa permanente',onPress:()=>{void promote();}}])}/>
+    <Text style={styles.subtitle}>Se não converteres, esta equipa permanece apenas no torneio.</Text>
+   </View>:null}
+   {promotion?.globalTeamId?<View style={styles.panel}>
+    <Text style={styles.heading}>Equipa permanente Jynlo</Text>
+    <Text style={styles.subtitle}>Esta equipa já tem uma identidade própria, independente do torneio.</Text>
+    <Button title="Abrir equipa na Jynlo" secondary onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(promotion.globalTeamId)}})}/>
+   </View>:null}
    <Button title="Partilhar convite da equipa" onPress={()=>{void share();}} secondary/>
    {isMember?<Message>Já fazes parte desta equipa.</Message>:
     !accepting?<Message>As inscrições nesta equipa estão encerradas.</Message>:
