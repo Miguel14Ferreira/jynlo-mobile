@@ -65,3 +65,24 @@ test('membership invitations cannot be submitted repeatedly while saving',()=>{
  assert.match(screen,/title="Aceitar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,true\)\}/);
  assert.match(screen,/title="Recusar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,false\)\}/);
 });
+
+test('competition discovery submits filters explicitly and survives partial API failure',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/const \[filters,setFilters\]=useState\(\{query:'',sport:''\}\)/);
+ assert.match(screen,/discoverTeamCompetitions\(filters\.query,filters\.sport,/);
+ assert.match(screen,/Promise\.allSettled\(\[/);
+ assert.match(screen,/if\(competitions\.status==='fulfilled'\)setRows\(competitions\.value\)/);
+ assert.match(screen,/if\(requests\.status==='fulfilled'\)setApplications\(requests\.value\)/);
+ assert.match(screen,/if\(version!==requestVersion\.current\)return/);
+ assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;\}/);
+ assert.match(screen,/onSubmitEditing=\{search\}/);
+ assert.match(screen,/onPress=\{search\}/);
+ assert.doesNotMatch(screen,/\},\[query,sport,auth\.token,teamId\]\)/);
+});
+
+test('competition selection stays within owned teams and anonymous users cannot apply',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/owned\.value\.some\(t=>t\.id===current\)\?current:null/);
+ assert.match(screen,/disabled=\{!auth\.token\|\|!chosen\|\|busy\|\|applied\(item,chosen\)\}/);
+ assert.match(screen,/setApplications\(current=>\[next,\.\.\.current\.filter\(item=>item\.id!==next\.id\)\]\)/);
+});
