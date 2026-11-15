@@ -65,15 +65,15 @@ export default function TabsLayout(){
    tabBarLabelStyle:{fontSize:MobileTheme.typography.label,fontWeight:'800'},
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
-   <Tabs.Screen name="index" options={{title:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={color} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="index" options={{title:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:'Criar',tabBarButton:()=>(
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu de criação" onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
      <Text style={styles.createLabel}>Criar</Text>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={color} focused={focused}/>}}/>
-   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={color} focused={focused}/>}}/>
+   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="communities" options={{href:null,title:'Comunidades'}}/>
    <Tabs.Screen name="tournaments" options={{href:null,title:'Torneios'}}/>
   </Tabs>
@@ -143,7 +143,7 @@ const styles=StyleSheet.create({
  createPlus:{fontSize:32,fontWeight:'800',color:colors.background,includeFontPadding:false},
  createLabel:{fontSize:11,fontWeight:'800',color:colors.accent},
  overlay:{flex:1,justifyContent:'flex-end'},
- scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.70)'},
+ scrim:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,.70)'},
  sheet:{maxHeight:'86%',backgroundColor:colors.background,borderTopLeftRadius:28,borderTopRightRadius:28,borderTopWidth:1,borderColor:colors.border,padding:18,gap:15},
  handle:{height:4,width:42,alignSelf:'center',borderRadius:4,backgroundColor:colors.border},
  sheetHeader:{flexDirection:'row',alignItems:'center',gap:12},
