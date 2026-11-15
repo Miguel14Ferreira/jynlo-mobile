@@ -15,7 +15,11 @@ test('ordinary develop commits do not start unavailable GitHub-hosted contract r
 });
 test('local Windows validation covers release guard, TypeScript and all contracts without an APK',()=>{
  const ps=read('scripts/validate-local.ps1');
- for(const stage of ['check:release','typecheck','test:all'])
+ // Local validation calls the same release guard directly, rather than the
+ // stricter production-store npm alias that rejects the preview environment.
+ assert.match(ps,/scripts\/verify-release\.cjs/);
+ assert.match(ps,/scripts\/check-eas-project\.cjs/);
+ for(const stage of ['typecheck','test:all'])
   assert.ok(ps.includes(stage),stage+' missing from offline fallback');
  assert.match(ps,/\[switch\]\$NoInstall/);
  assert.match(ps,/\[switch\]\$Bundle/);
