@@ -25,6 +25,6 @@ test('session details have no redundant refresh action while background synchron
 
 test('expired session status is consistent between the badge and detail information',()=>{
  const view=read('app/sessions/[id].tsx');
- assert.match(view,/sessionParticipationLabel\(\{status:s\.status,gameDate:s\.gameDate,joined:false,waitlisted:false\}\)/);
+ assert.match(view,/sessionParticipationLabel\(\{status:s\.status\|\|'UNKNOWN',gameDate:s\.gameDate,joined:false,waitlisted:false\}\)/);
  assert.doesNotMatch(view,/s\.status==='OPEN'\?'Aberta':s\.status==='FULL'\?'Completa'/);
 });
