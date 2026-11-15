@@ -18,8 +18,8 @@ export default function TeamsScreen(){
  const requestVersion=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
- const load=useCallback(async(silent=false)=>{
-   if(reading.current===requestVersion.current||savingRef.current)return;
+ const load=useCallback(async(silent=false,force=false)=>{
+   if(!force&&(reading.current===requestVersion.current||savingRef.current))return;
    const version=++requestVersion.current;
    reading.current=version;
    if(!silent){setLoading(true);setError('');}
@@ -64,14 +64,14 @@ export default function TeamsScreen(){
  const respond=async(teamId:number,accept:boolean)=>{
   if(!auth.token||saving)return;
   setSaving(true);setError('');
-  try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load();}
+  try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load(false,true);}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível responder ao convite.');}
   finally{setSaving(false);}
  };
  const respondCompetition=async(id:number,accept:boolean)=>{
   if(!auth.token||saving)return;
   setSaving(true);setError('');
-  try{await answerTeamCompetitionInvitation(id,accept,auth.token);await load();}
+  try{await answerTeamCompetitionInvitation(id,accept,auth.token);await load(false,true);}
   catch(e){setError((e instanceof Error?e.message:'Erro ao responder.')+' Verifica o convite antes de repetir.');}
   finally{setSaving(false);}
  };
