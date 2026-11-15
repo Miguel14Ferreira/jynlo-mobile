@@ -5,7 +5,8 @@
  * callers retain their last confirmed state and display a refresh warning.
  */
 function requireSocialCollection(raw,kind){
- if(!Array.isArray(raw))throw Error('Resposta de conteúdo social inválida.');
+ if(!['feed','story','comment','reply'].includes(kind)||!Array.isArray(raw))
+  throw Error('Resposta de conteúdo social inválida.');
  for(const item of raw){
   if(!item||typeof item!=='object'||Array.isArray(item))
    throw Error('O servidor devolveu um elemento social inválido.');
@@ -20,6 +21,13 @@ function requireSocialCollection(raw,kind){
       typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt))||
       (item.postId!==null&&(!Number.isSafeInteger(item.postId)||item.postId<=0)))
     throw Error('O servidor devolveu uma publicação inválida.');
+  }else if(kind==='reply'){
+   if(!Number.isSafeInteger(item.id)||item.id<=0||
+      !Number.isSafeInteger(item.storyId)||item.storyId<=0||
+      typeof item.senderUsername!=='string'||!item.senderUsername.trim()||
+      typeof item.content!=='string'||
+      typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt)))
+    throw Error('O servidor devolveu uma resposta privada inválida.');
   }else if(kind==='comment'){
    if(!Number.isSafeInteger(item.id)||item.id<=0||
       typeof item.authorUsername!=='string'||!item.authorUsername.trim()||
