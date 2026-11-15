@@ -5,6 +5,7 @@ import {discoverSportsTeams,type SportsTeam} from '../lib/sports-teams-api';
 import {teamCompetitionInvitations,inviteTeamToCompetition,
  type TeamCompetitionInvitation,type TeamCompetitionType} from '../lib/team-competition-invitations-api';
 import {C} from '../lib/theme';
+import {GlobalTeamEnrollment} from './GlobalTeamEnrollment';
 import {communityTeamMemberships,type TeamCommunityMembership} from '../lib/team-community-memberships-api';
 
 interface Props{communityId:number;competitionId:number;type:TeamCompetitionType;token:string;}
@@ -54,7 +55,9 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
       const invitation=existing.find(x=>x.teamId===team.teamId);
       return <View key={team.id} style={styles.result}>
         <Text style={styles.name}>{team.teamName}</Text>
-        {invitation?<Text style={styles.hint}>Convite: {invitation.status}</Text>:
+        {invitation?<><Text style={styles.hint}>Convite: {invitation.status}</Text>
+         {invitation.status==='ACCEPTED'?<GlobalTeamEnrollment communityId={communityId}
+           competitionId={competitionId} type={type} globalTeamId={team.teamId} token={token}/>:null}</>:
          <Button title="Convidar para a competição" disabled={loading} onPress={()=>void invite(team.teamId)}/>}
       </View>;
     })}
@@ -70,7 +73,9 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token}:Pro
      return <View key={team.id} style={styles.result}>
       <Text style={styles.name}>{team.name}</Text>
       <Text style={styles.hint}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text>
-      {invitation?<Text style={styles.hint}>Convite: {invitation.status==='PENDING'?'pendente':invitation.status==='ACCEPTED'?'aceite':'recusado'}</Text>:
+      {invitation?<><Text style={styles.hint}>Convite: {invitation.status==='PENDING'?'pendente':invitation.status==='ACCEPTED'?'aceite':'recusado'}</Text>
+       {invitation.status==='ACCEPTED'?<GlobalTeamEnrollment communityId={communityId}
+         competitionId={competitionId} type={type} globalTeamId={team.id} token={token}/>:null}</>:
        <Button title="Convidar equipa" disabled={loading} onPress={()=>void invite(team.id)}/>}
      </View>;
     })}
