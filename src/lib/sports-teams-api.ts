@@ -12,6 +12,22 @@ export interface SportsTeam {
   feedEnabled: boolean;
   chatEnabled: boolean;
 }
+export interface TeamCompetitionHistory {
+  tournamentId:number;
+  tournamentName:string;
+  communityId:number;
+  communityName:string;
+  sport:string|null;
+  status:string;
+  completedAt:string|null;
+  champion:boolean;
+  archived:boolean;
+}
+export async function sportsTeamHistory(id:number,token?:string):Promise<TeamCompetitionHistory[]>{
+  if(DEMO_MODE)return [];
+  return request<TeamCompetitionHistory[]>('/api/teams/'+validId(id)+'/history',{token});
+}
+
 export interface CreateSportsTeam {
   name: string;
   sport?: string | null;
