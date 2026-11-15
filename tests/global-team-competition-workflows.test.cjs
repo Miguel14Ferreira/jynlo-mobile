@@ -59,7 +59,7 @@ test('organizer reloading competition sees previous entry instead of silently du
  const api=read('src/lib/team-competition-enrollments-api.ts');
  assert.match(enrollment,/existingGlobalTeamEntry/);
  assert.match(api,/\/entry/);
- assert.match(enrollment,/if\(busy\|\|entry\)return/);
+ assert.match(enrollment,/operationRef\.current\|\|entry\|\|entryCheck!=='absent'/);
 });
 test('mobile diagnostics are preserved as artifacts when the runner actually starts',()=>{
  const ci=read('.github/workflows/mobile-develop-integration.yml');
@@ -91,4 +91,25 @@ test('finalizing a team requires confirmed 404 rather than assuming every API er
  assert.match(enrollment,/disabled=\{busy\|\|entryCheck!=='absent'\}/);
  assert.match(enrollment,/setEntryCheck\('present'\)/);
  assert.doesNotMatch(enrollment,/\.catch\(\(\)=>\{ \/\* Team not yet enrolled/);
+});
+
+test('global roster selection is limited to 30 eligible players and excludes sent invitations',()=>{
+ const screen=read('src/components/GlobalTeamEnrollment.tsx');
+ assert.match(screen,/previous\.length<30\?\[\.\.\.previous,id\]:previous/);
+ assert.match(screen,/!person\.communityMember\|\|sentIds\.includes\(person\.profileId\)/);
+ assert.match(screen,/eligible\.length>30/);
+ assert.match(screen,/setSentIds\(current=>\[\.\.\.new Set\(\[\.\.\.current,\.\.\.eligible\]\)\]\)/);
+ assert.match(screen,/setRosterLoaded\(false\)/);
+ assert.match(screen,/Convite enviado nesta sessão/);
+});
+
+test('global roster never silently retries uncertain POST and rechecks after successful invitation',()=>{
+ const screen=read('src/components/GlobalTeamEnrollment.tsx');
+ assert.match(screen,/const generation=useRef\(0\),operationRef=useRef\(false\)/);
+ assert.match(screen,/if\(version!==generation\.current\)return/);
+ assert.match(screen,/const refreshed=await eligibleGlobalRoster/);
+ assert.match(screen,/Convites enviados, mas não foi possível atualizar o plantel/);
+ assert.match(screen,/Confirma o estado dos jogadores antes de repetir/);
+ assert.match(screen,/setEntryCheck\('failed'\)/);
+ assert.match(screen,/Estado incerto: reabre o ecrã/);
 });
