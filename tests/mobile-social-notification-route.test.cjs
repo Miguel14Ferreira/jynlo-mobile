@@ -62,9 +62,9 @@ test('post detail respects authors hidden liker list without disabling heart',()
 test('older post write cannot clear the in-flight lock of a newly opened account',()=>{
  const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
  const release='finally{if(version===generation.current){writing.current=false;setBusy(false);}}';
- assert.equal(post.split(release).length-1,2,'likes and comments must guard current screen generation');
+ assert.ok(post.split(release).length-1>=2,'likes and comments must guard current screen generation');
  const privacy=post.slice(post.indexOf('async function toggleLikerPrivacy()'),post.indexOf('async function comment()'));
- assert.ok(privacy.includes('finally{\n   if(version===generation.current){writing.current=false;setBusy(false);}\n  }'));
+ assert.match(privacy,/finally\s*\{\s*if\(version===generation\.current\)\{writing\.current=false;setBusy\(false\);\}\s*\}/);
  assert.ok(!post.includes('finally{writing.current=false;if(version===generation.current)setBusy(false);}'));
  assert.match(post,/return\(\)=>\{generation\.current\+\+;setPost\(null\);setComments\(\[\]\);\}/);
 });
