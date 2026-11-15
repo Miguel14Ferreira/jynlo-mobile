@@ -61,6 +61,57 @@ function artifactMetadata(input,config,apkBytes,verifiedBinary){
  };
 }
 
+function qaTestInstructions(metadata){
+ const push=metadata.pushConfigured
+  ?'Push Android: configuração Firebase incorporada; confirmar receção real de uma notificação no dispositivo.'
+  :'Push Android: NÃO DISPONÍVEL nesta APK. Usar apenas as notificações dentro da Jynlo.';
+ return [
+  'JYNLO — PLANO DE TESTES DA APK ANDROID',
+  '',
+  'Versão: '+metadata.version+' (build '+metadata.versionCode+')',
+  'Commit: '+metadata.commit,
+  'Branch: '+metadata.branch,
+  'Pacote: '+metadata.package,
+  'Backend de testes: '+metadata.backend,
+  'APK: '+metadata.file,
+  'SHA-256: '+metadata.sha256,
+  'Certificado de assinatura (SHA-256): '+metadata.signerCertificateSha256,
+  'Assinatura: '+metadata.signing,
+  push,
+  '',
+  'INSTALAÇÃO',
+  '1. Confirmar que a APK foi descarregada do artefacto desta build Codemagic.',
+  '2. Instalar a APK e confirmar que abre sem fechar imediatamente.',
+  '3. Se o Android apresentar conflito de assinatura com uma APK anterior,',
+  '   poderá ser necessário desinstalar a versão antiga antes desta instalação.',
+  '   IMPORTANTE: desinstalar pode eliminar dados guardados apenas no dispositivo.',
+  '4. Confirmar que o login funciona e que os dados pertencem à conta correta.',
+  '',
+  'TESTES PRIORITÁRIOS (usar duas contas ou dois dispositivos quando indicado)',
+  '[ ] Iniciar sessão, terminar sessão e voltar a iniciar com outra conta.',
+  '[ ] Abrir Explorar em vista mapa e lista sem crash.',
+  '[ ] Criar publicação com foto e sem texto; confirmar que aparece no feed.',
+  '[ ] Criar publicação com varias fotos ou video e consultar o resultado.',
+  '[ ] Criar Story pela camara, selecionar galeria e visualizar apos publicar.',
+  '[ ] Gostar, comentar e editar uma publicacao; confirmar contagens apos atualizar.',
+  '[ ] Enviar mensagens e anexos num chat direto e num chat de sessao.',
+  '[ ] Criar sessao, partilhar link e inscrever um segundo jogador.',
+  '[ ] Cancelar sessao pelo feed: confirmar que nao volta a aparecer no feed.',
+  '[ ] Confirmar que o jogador inscrito recebe aviso dentro da Jynlo.',
+  '[ ] Reabrir detalhe de sessao cancelada e partilhar aviso com convidados externos.',
+  '[ ] Verificar equipas, torneios e campeonatos nas comunidades.',
+  '[ ] '+(metadata.pushConfigured
+    ?'Com notificacoes autorizadas, confirmar o push de cancelamento com app fechada.'
+    :'Nao testar push nesta APK (falta configuracao Firebase).'),
+  '',
+  'RELATAR PROBLEMAS',
+  'Anotar modelo do telemovel, versao Android, passos para reproduzir,',
+  'captura de ecra e o commit indicado no cabecalho. Nao enviar passwords nem tokens.',
+  'Este documento descreve o que deve ser TESTADO, nao funcionalidades aprovadas.',
+  ''
+ ].join('\\n');
+}
+
 function writeManifest(environment=process.env,io=fs){
  const root=environment.CM_BUILD_DIR||path.resolve(__dirname,'..');
  const application=JSON.parse(io.readFileSync(path.join(root,'app.json'),'utf8')).expo;
@@ -74,6 +125,7 @@ function writeManifest(environment=process.env,io=fs){
  const metadata=artifactMetadata({...environment,JYNLO_APK_FILENAME:file},application,bytes,audit);
  io.mkdirSync(out,{recursive:true});
  io.writeFileSync(path.join(out,'jynlo-android-qa.json'),JSON.stringify(metadata,null,2)+'\n');
+ io.writeFileSync(path.join(out,'LEIA-ME-JYNLO-ANDROID-QA.txt'),qaTestInstructions(metadata));
  return metadata;
 }
 if(require.main===module){
@@ -88,4 +140,4 @@ if(require.main===module){
   process.exitCode=1;
  }
 }
-module.exports={artifactMetadata,writeManifest};
+module.exports={artifactMetadata,writeManifest,qaTestInstructions};
