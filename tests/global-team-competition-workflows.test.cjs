@@ -163,6 +163,8 @@ test('mobile competition applications fail closed until owned teams and prior re
  assert.match(screen,/setApplicationsVerified\(false\)/);
  assert.match(screen,/!ownedVerified\|\|!applicationsVerified/);
  assert.match(screen,/!competition\.applicationsOpen/);
+ assert.match(screen,/\|\|!rows\.some\(item=>item\.id===competition\.id/);
+ assert.match(screen,/busy\|\|loading\|\|!ownedVerified/);
  assert.match(screen,/!item\.applicationsOpen\|\|applied\(item,chosen\)/);
  assert.match(screen,/title="Verificar novamente candidaturas e equipas"/);
  assert.match(screen,/O pedido pode ter sido recebido/);
