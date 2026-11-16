@@ -172,3 +172,15 @@ test('mobile competition applications fail closed until owned teams and prior re
  assert.match(screen,/const current=requestVersion\.current,selectedTeamId=chosen/);
  assert.match(screen,/if\(current!==requestVersion\.current\)return/);
 });
+
+
+test('competition team invitations cannot be resent after an uncertain server response',()=>{
+ const panel=read('src/components/CompetitionTeamSearch.tsx');
+ assert.match(panel,/setInvitesVerified\(false\);\s*setError\(\(e instanceof Error/);
+ assert.match(panel,/O convite pode ter sido entregue/);
+ assert.match(panel,/!invitesVerified\|\|\s*!\[\.\.\.associated\.map/);
+ assert.match(panel,/title="Verificar convites anteriores"/);
+ assert.match(panel,/onPress=\{\(\)=>setRefreshKey\(key=>key\+1\)\}/);
+ assert.match(panel,/\[open,communityId,competitionId,type,token,refreshKey\]/);
+ assert.match(panel,/disabled=\{loading\|\|!invitesVerified\}/);
+});
