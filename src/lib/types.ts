@@ -124,6 +124,8 @@ export interface JynloTournament {
   scoringMode?:string|null;format:'LEAGUE'|'KNOCKOUT'|'GROUP_KNOCKOUT';
   status:'DRAFT'|'IN_PROGRESS'|'COMPLETED';createdAt:string;
   championTeamName?:string|null;championDisplayName?:string|null;
+  championTeamId?:number|null;championProfileId?:number|null;
+  championTied?:boolean;championPoints?:number|null;completedAt?:string|null;
 }
 export interface JynloTournamentPage {tournaments:JynloTournament[];page:number;hasMore:boolean;}
 export interface TeamStandingRow {position:number;teamId:number;teamName:string;played:number;won:number;drawn:number;lost:number;points:number;}
