@@ -194,6 +194,7 @@ export default function TeamDetail(){
      setMembers(rows=>rows.filter(item=>item.profileId!==player.profileId));
      setActiveTab('OVERVIEW');
      setNotice('Saíste da equipa. O acesso às mensagens privadas foi retirado.');
+     setSaving(false);
      void load(true,true);
     }).catch(e=>{
      if(current===requestVersion.current){
