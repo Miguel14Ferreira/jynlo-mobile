@@ -131,3 +131,9 @@ test('editor explains backend-locked group and knockout matches without offering
  assert.match(screen,/writeGuard=\{organizerMatchWriteGuard\(tournament,m,matches,groups,groups!==null\)\}/);
  assert.match(screen,/if\(!guard\.allowed\)\{setError\(/);
 });
+
+test('organizer calendar distinguishes group stage, knockout round and league match day',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ for(const label of ['Jornada ${m.roundNumber}','Grupo ${m.groupNumber} · Jornada ${m.roundNumber}','Eliminatória · Ronda ${m.roundNumber}'])
+  assert.ok(screen.includes(label),label);
+});
