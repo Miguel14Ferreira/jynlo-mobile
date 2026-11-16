@@ -5,3 +5,4 @@ export function reconcileVisibleFixtures<T extends {id:number}>(
  isCurrent:()=>boolean,
  maxPages?:number
 ):Promise<OrganizerFixturePage<T>|null>;
+export function validateNextFixturePage<T extends {id:number}>(response:OrganizerFixturePage<T>,expectedPage:number):OrganizerFixturePage<T>;
