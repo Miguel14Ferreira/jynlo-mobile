@@ -182,6 +182,7 @@ export default function TournamentManagerScreen(){
    <View style={styles.row}><Badge text={tournament.sport||'Modalidade'}/><Badge text={tournament.status==='DRAFT'?'Em preparação':tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}/></View>
    {DEMO_MODE?<Message>Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.</Message>:null}
    {standingsError?<Message tone="error">{standingsError}</Message>:null}
+   {!loading&&!syncing&&!fixturesVerified&&tournament.status==='IN_PROGRESS'?<Message tone="error">Os jogos apresentados não estão confirmados pelo servidor. Para proteger a competição, o registo de resultados e o encerramento ficam bloqueados até uma nova sincronização.</Message>:null}
    {standings?<View style={styles.panel}>
     <Text style={styles.heading}>Classificação oficial</Text>
     {standings.rows.length===0?<Text style={styles.helper}>Ainda não existem resultados classificados.</Text>:null}
