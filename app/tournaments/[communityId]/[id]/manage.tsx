@@ -11,6 +11,7 @@ import {individualTournamentMatches} from '../../../../src/lib/performance-api';
 import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentMatchScore} from '../../../../src/lib/tournament-organizer-core.cjs';
 import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
+import {officialTournamentOutcome} from '../../../../src/lib/tournament-outcome-core.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,TournamentTable,TournamentTeamGroups} from '../../../../src/lib/types';
 
@@ -105,6 +106,7 @@ export default function TournamentManagerScreen(){
   return ()=>{generation.current++;readVersion.current++;};
  },[load]));
  const type=tournament?organizerFixtureType(tournament):null;
+ const officialOutcome=officialTournamentOutcome(tournament);
  const canPublish=canGenerateSchedule(role,tournament)&&!DEMO_MODE;
  const canRecord=canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
  const canFinish=canCompleteTournament(role,tournament)&&!DEMO_MODE;
@@ -216,7 +218,11 @@ export default function TournamentManagerScreen(){
     <Button danger title={busy?'A processar…':'Encerrar liga'} disabled={busy||syncing||!allVisibleFinished} onPress={finish}/>
     {!allVisibleFinished?<Text style={styles.helper}>Conclui os jogos pendentes e carrega todas as páginas para desbloquear esta ação.</Text>:null}
    </View>:null}
-   {tournament.status==='COMPLETED'?<Message>Torneio concluído. Os resultados estão disponíveis apenas para consulta.</Message>:null}
+   {officialOutcome?<View style={styles.panel}>
+    <Text style={styles.heading}>{officialOutcome.title}</Text>
+    <Text style={styles.helper}>{officialOutcome.detail}</Text>
+    <Text style={styles.helper}>Os resultados finais estão disponíveis apenas para consulta.</Text>
+   </View>:null}
   </>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
