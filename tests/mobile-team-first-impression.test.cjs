@@ -100,7 +100,7 @@ test('team profile survives partial API failures and ignores late results after 
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/Promise\.allSettled\(\[/);
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
- assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;searchVersion\.current\+\+;\}/);
+ assert.match(screen,/return \(\)=>\{\s*clearInterval\(timer\);resume\.remove\(\);\s*requestVersion\.current\+\+;searchVersion\.current\+\+;\s*\}/);
  assert.match(screen,/details\.status==='fulfilled'/);
  assert.match(screen,/roster\.status==='fulfilled'/);
  assert.match(screen,/pastEvents\.status==='fulfilled'/);
@@ -114,7 +114,7 @@ test('team rosters and competition data refresh on foreground resume without fla
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/const load=useCallback\(async\(silent=false,force=false\)=>/);
  assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
- assert.match(screen,/if\(reading\.current===requestVersion\.current\|\|savingRef\.current\)return/);
+ assert.match(screen,/if\(!force&&\(reading\.current===requestVersion\.current\|\|savingRef\.current\)\)return/);
  assert.match(screen,/setInterval\(\(\)=>\{/);
  assert.match(screen,/AppState\.currentState==='active'&&!savingRef\.current/);
  assert.match(screen,/AppState\.addEventListener\('change',state=>/);
