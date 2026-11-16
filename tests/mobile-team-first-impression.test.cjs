@@ -282,3 +282,17 @@ test('team chat clears private content when membership is revoked during backgro
  assert.match(panel,/accessRevokedRef\.current=false;setAccessRevoked\(false\)/);
  assert.doesNotMatch(panel,/\[teamId,kind,token,loadReactions,accessRevoked\]/);
 });
+
+
+test('confirmed mobile players may leave a squad without owner permissions',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const leaveTeam=\(\)=>\{/);
+ assert.match(screen,/!rosterVerified\|\|isOwner\|\|!isMember/);
+ assert.match(screen,/item\.role==='PLAYER'/);
+ assert.match(screen,/removeSportsTeamMember\(teamId,player\.profileId,auth\.token!\)/);
+ assert.match(screen,/setActiveTab\('OVERVIEW'\)/);
+ assert.match(screen,/setSaving\(false\);\s*void load\(true,true\)/);
+ assert.match(screen,/accessibilityLabel="Sair desta equipa"/);
+ assert.match(screen,/rosterVerified&&isMember&&!isOwner/);
+ assert.match(screen,/Verifica o plantel antes de repetir/);
+});
