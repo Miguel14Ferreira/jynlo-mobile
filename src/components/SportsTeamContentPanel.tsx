@@ -101,8 +101,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current);},
    onStatus:status=>{socketOnline=status==='online';}
   });
+  let pollTicks=0;
   const timer=setInterval(()=>{
-   if(AppState.currentState==='active'&&!socketOnline)void refresh(true,current);
+   // Even a connected socket can miss a server event: reconcile once every
+   // 30 seconds online, and every 5 seconds while disconnected.
+   if(AppState.currentState!=='active')return;
+   pollTicks++;
+   if(!socketOnline||pollTicks%6===0)void refresh(true,current);
   },5000);
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
