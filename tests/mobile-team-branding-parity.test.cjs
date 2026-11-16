@@ -1,0 +1,51 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+
+test('all mobile team directory surfaces reuse real club crest and palette',()=>{
+ const index=read('app/teams/index.tsx');
+ const avatar=read('src/components/TeamBrandAvatar.tsx');
+ assert.match(index,/import TeamBrandAvatar/);
+ assert.equal((index.match(/<TeamBrandAvatar team=\{team\}/g)||[]).length,3);
+ assert.match(avatar,/teamLogoUri\(team\.logoUrl\)/);
+ assert.match(avatar,/safeTeamKitColor\(team\.kitPrimary/);
+ assert.match(avatar,/safeTeamKitColor\(team\.kitSecondary/);
+ assert.match(avatar,/\(team\.name\|\|'E'\)\.charAt\(0\)\.toUpperCase\(\)/);
+});
+
+test('owner-only kit editing requires verified roster and current team identity',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const isOwner=rosterVerified&&/);
+ assert.match(screen,/!isOwner\|\|!brandingVerified\|\|saving\|\|actionRef\.current/);
+ assert.match(screen,/if\(version!==requestVersion\.current\)return/);
+ assert.match(screen,/setBrandingVerified\(false\)/);
+ assert.match(screen,/setSportsTeamKit\(teamId,kitPrimary,kitSecondary,auth\.token\)/);
+ assert.match(screen,/Guardar equipamento/);
+ assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
+ assert.match(screen,/accessibilityState=\{\{selected:kitSecondary===color\}\}/);
+});
+
+test('logo upload uses validated gallery media, proper MIME, bearer and no JSON header',()=>{
+ const api=read('src/lib/sports-teams-api.ts');
+ const screen=read('app/teams/[id].tsx');
+ assert.match(api,/export async function uploadSportsTeamLogo/);
+ assert.match(api,/5\*1024\*1024/);
+ assert.match(api,/form\.append\('logo',/);
+ assert.match(api,/method:'PUT',credentials:'omit',redirect:'error',cache:'no-store'/);
+ assert.match(api,/headers:\{Authorization:'Bearer '\+token,Accept:'application\/json'\}/);
+ assert.doesNotMatch(api,/headers:\{Authorization:'Bearer '\+token,'Content-Type':'multipart\/form-data'/);
+ assert.match(api,/controller\.signal\.aborted/);
+ assert.match(api,/finally\{clearTimeout\(timer\);\}/);
+ assert.match(screen,/ImagePicker\.launchImageLibraryAsync/);
+ assert.match(screen,/uploadSportsTeamLogo\(teamId,asset!,auth\.token\)/);
+ assert.match(screen,/removeSportsTeamLogo\(teamId,auth\.token\)/);
+});
+
+test('client never renders untrusted schemes or unscoped relative team media paths',()=>{
+ const api=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/export function teamLogoUri/);
+ assert.match(api,/\/media\\\/teams/);
+ assert.match(api,/return null;/);
+ assert.match(api,/export function safeTeamKitColor/);
+});
