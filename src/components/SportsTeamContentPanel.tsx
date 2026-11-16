@@ -46,18 +46,25 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  },[teamId,kind,token]);
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
+ const mutationVersion=useRef(0);
+ const invalidatePendingRead=()=>{
+  // Reads started before a write must not overwrite newly saved messages.
+  mutationVersion.current++;
+  reading.current=null;
+ };
  const refresh=useCallback(async(quiet=false,expected=version.current)=>{
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
   if(reading.current===expected||sendingNow.current)return;
   reading.current=expected;
+  const writeVersion=mutationVersion.current;
   if(!quiet){setLoading(true);setError('');}
   try{
    const history=await teamContentHistory(teamId,kind,token);
-   if(expected!==version.current)return;
+   if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    setEntries(history);setSyncWarning('');void loadReactions(history);
   }catch(e){
-   if(expected!==version.current)return;
+   if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    const message=e instanceof Error?e.message:'Não foi possível carregar as mensagens.';
    if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
    else setError(message);
@@ -78,7 +85,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   void refresh(false,current);
   const timer=setInterval(()=>{
    if(AppState.currentState==='active')void refresh(true,current);
-  },10000);
+  },5000);
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
   });
@@ -102,7 +109,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const sendMedia=async()=>{
   if(!media.length||sendingNow.current||!attachmentsEnabled)return;
-  sendingNow.current=true;setUploading(true);setSending(true);setError('');
+  sendingNow.current=true;invalidatePendingRead();setUploading(true);setSending(true);setError('');
   const current=version.current,selection=[...media];
   try{
    await sendChatPhotoAlbum({scope:'team',id:teamId,kind},token,selection,replyTo,draft);
@@ -119,7 +126,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const send=async()=>{
   const message=draft.trim();
   if(!message||sendingNow.current||!token)return;
-  sendingNow.current=true;setSending(true);setError('');
+  sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
   const current=version.current;
   try{
    const saved=await sendTeamContent(teamId,kind,message,token,replyTo);
@@ -176,7 +183,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const update=async()=>{
   const body=editDraft.trim();
   if(!editingId||!body||sendingNow.current)return;
-  sendingNow.current=true;setSending(true);setError('');
+  sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
   const current=version.current;
   try{
    const updated=await editTeamContent(teamId,kind,editingId,body,token);
@@ -196,7 +203,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   Alert.alert('Eliminar conteúdo','Queres eliminar esta mensagem da equipa?',[
    {text:'Cancelar',style:'cancel'},
    {text:'Eliminar',style:'destructive',onPress:()=>{void (async()=>{
-    sendingNow.current=true;setSending(true);setError('');
+    sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
     const current=version.current;
     try{
      await deleteTeamContent(teamId,kind,item.id,token);
