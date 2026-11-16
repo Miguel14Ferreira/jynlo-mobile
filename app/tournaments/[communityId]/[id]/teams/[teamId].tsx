@@ -51,13 +51,14 @@ export default function TournamentTeamProfileScreen(){
    }
    if(canListMatches(t)){
     const response=await teamProfileMatches(cid,tid,teamId,0,auth.token,auth.username);
-    if(version===generation.current){setMatches(response.matches);setHasMore(response.hasMore);}
+    if(version===generation.current){setMatches(response.matches);setPage(response.page);setHasMore(response.hasMore);}
    }
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a equipa.');}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,teamId,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
+  paging.current=false;
   setLoadingMore(false);
   setTournament(null);setTeam(null);setMatches([]);setPage(0);setHasMore(false);setNeedsCommunity(false);setError('');setMessage('');setLoading(true);
   void load(version);
@@ -100,7 +101,7 @@ export default function TournamentTeamProfileScreen(){
    const part=await teamProfileMatches(cid,tid,teamId,next,auth.token,auth.username);
    if(version!==generation.current)return;
    setMatches(prev=>[...prev,...part.matches.filter(m=>!prev.some(x=>x.id===m.id))]);
-   setPage(next);setHasMore(part.hasMore);
+   setPage(part.page);setHasMore(part.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
   finally{paging.current=false;if(version===generation.current)setLoadingMore(false);}
  }
