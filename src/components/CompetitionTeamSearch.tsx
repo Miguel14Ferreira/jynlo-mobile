@@ -51,14 +51,21 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
   setLoading(false);
  };
  const invite=async(teamId:number)=>{
-  if(loading||!invitesVerified||existing.some(x=>x.teamId===teamId))return;
+  if(loading||!invitesVerified||
+   ![...associated.map(item=>item.teamId),...rows.map(item=>item.id)].includes(teamId)||
+   existing.some(x=>x.teamId===teamId))return;
   setLoading(true);setError('');setNotice('');
   try{
    const invitation=await inviteTeamToCompetition(communityId,type,competitionId,teamId,token);
    setExisting(items=>[...items.filter(item=>item.teamId!==teamId),invitation]);
    setNotice('Convite enviado. A equipa só participa após confirmação da inscrição.');
-  }catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar o convite.')+
-     ' Confirma o estado antes de repetir.');}
+  }catch(e){
+   // An invitation may have been committed before a timeout. Do not rely on
+   // the stale list or offer another POST until the server confirms its state.
+   setInvitesVerified(false);
+   setError((e instanceof Error?e.message:'Não foi possível enviar o convite.')+
+     ' O convite pode ter sido entregue. Pesquisa novamente para confirmar antes de repetir.');
+  }
   finally{setLoading(false);}
  };
  return <View style={styles.box}>
