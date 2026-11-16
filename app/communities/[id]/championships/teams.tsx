@@ -16,9 +16,10 @@ export default function ChampionshipTeamsScreen(){
  const [organizer,setOrganizer]=useState(false),[closed,setClosed]=useState(false);
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [name,setName]=useState(''),[selected,setSelected]=useState<Record<number,number>>({}),[retry,setRetry]=useState(0);
- const savingRef=useRef(false);
+ const savingRef=useRef(false),viewGeneration=useRef(0);
  useFocusEffect(useCallback(()=>{
   let active=true;
+  const version=++viewGeneration.current;
   setLoading(true);setError('');setData(null);setOrganizer(false);setClosed(false);
   async function load(){
    try{
@@ -39,14 +40,22 @@ export default function ChampionshipTeamsScreen(){
    }catch(e){if(active)setError(e instanceof Error?e.message:'Não foi possível consultar equipas.');}
    finally{if(active)setLoading(false);}
   }
-  void load();return()=>{active=false;};
+  void load();return()=>{active=false;if(viewGeneration.current===version)viewGeneration.current++;};
  },[communityId,championshipId,auth.token,auth.username,retry]));
  async function update(action:()=>Promise<ChampionshipTeams>){
   if(savingRef.current||saving||closed||!organizer||!auth.token||!data)return;
+  const version=viewGeneration.current;
   savingRef.current=true;setSaving(true);setError('');
-  try{const next=await action();setData(next);setName('');setSelected({});}
-  catch(e){setError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');}
-  finally{savingRef.current=false;setSaving(false);}
+  try{
+   const next=await action();
+   if(version!==viewGeneration.current)return;
+   setData(next);setName('');setSelected({});
+  }catch(e){
+   if(version===viewGeneration.current)setError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');
+  }finally{
+   savingRef.current=false;
+   if(version===viewGeneration.current)setSaving(false);
+  }
  }
  return <Page><DemoBanner/><Eyebrow>EQUIPAS DA ÉPOCA</Eyebrow>
   <Text style={styles.heading}>Equipas do campeonato</Text>
@@ -66,8 +75,8 @@ export default function ChampionshipTeamsScreen(){
      {text:'Cancelar',style:'cancel'},{text:'Criar',onPress:()=>{void update(()=>createChampionshipTeam(communityId,championshipId,name,auth.token!));}}
     ])}/>
    </View>:null}
-   {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}
-   {organizer&&!closed&&auth.token?<TeamCompetitionApplications communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token}/>:null}
+   {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token} onEnrolled={()=>setRetry(x=>x+1)}/>:null}
+   {organizer&&!closed&&auth.token?<TeamCompetitionApplications communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token} onEnrolled={()=>setRetry(x=>x+1)}/>:null}
   </View>:null}
   {data?<View style={styles.card}>
    <Text style={styles.title}>Equipas das provas ({data.competitionTeams.length})</Text>
