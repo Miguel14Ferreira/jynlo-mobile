@@ -115,7 +115,7 @@ export default function TournamentManagerScreen(){
   readVersion.current++;
   setTournament(null);setRole(null);setMatches([]);setPage(0);visiblePage.current=0;setHasMore(false);
   setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);setFixturesVerified(false);setSnapshotVerified(false);
-  setNotice('');setError('');setLoading(true);
+  setNotice('');setError('');setBusy(false);setLoading(true);
   void load(version);
   return ()=>{generation.current++;readVersion.current++;};
  },[load]));
@@ -125,8 +125,8 @@ export default function TournamentManagerScreen(){
  const canRecord=fixturesVerified&&canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
  const canFinish=canCompleteTournament(role,tournament)&&!DEMO_MODE;
  const allVisibleFinished=fixturesVerified&&matches.length>0&&!hasMore&&matches.every(m=>m.status==='COMPLETED');
- async function act(run:()=>Promise<unknown>,success:string,expectedVersion:number){
-  if(expectedVersion!==generation.current||busy||syncing||loading||pendingWrite.current)return;
+ async function act(run:()=>Promise<unknown>,success:string,expectedVersion:number,expectedReadVersion:number){
+  if(expectedVersion!==generation.current||expectedReadVersion!==readVersion.current||busy||syncing||loading||pendingWrite.current)return;
   const version=generation.current;
   pendingWrite.current=true;setBusy(true);setError('');setNotice('');
   try{
@@ -139,26 +139,26 @@ export default function TournamentManagerScreen(){
   finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
  function publish(){if(!tournament||!canPublish||!auth.token||!auth.username)return;
-  const confirmationVersion=generation.current;
+  const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
   Alert.alert('Publicar calendário?','Esta ação inicia o torneio e fecha as inscrições. Confirma primeiro as equipas ou os participantes.',[
    {text:'Voltar',style:'cancel'},
-   {text:'Publicar calendário',onPress:()=>{void act(()=>publishTournamentSchedule(cid,tournament,auth.token!,auth.username!),'Calendário publicado pelo servidor.',confirmationVersion);}}
+   {text:'Publicar calendário',onPress:()=>{void act(()=>publishTournamentSchedule(cid,tournament,auth.token!,auth.username!),'Calendário publicado pelo servidor.',confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  function save(id:number,home:string,away:string){if(!tournament||!canRecord||!auth.token||!auth.username)return;
   const match=matches.find(item=>item.id===id);
   try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
-  const confirmationVersion=generation.current;
+  const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
   Alert.alert('Confirmar resultado?',`Registar ${home} — ${away}? A classificação será calculada pelo servidor.`,[
    {text:'Cancelar',style:'cancel'},
-   {text:'Guardar',onPress:()=>{void act(()=>saveTournamentMatchResult(cid,tournament,id,home,away,auth.token!,auth.username!),'Resultado registado pelo servidor.',confirmationVersion);}}
+   {text:'Guardar',onPress:()=>{void act(()=>saveTournamentMatchResult(cid,tournament,id,home,away,auth.token!,auth.username!),'Resultado registado pelo servidor.',confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  function finish(){if(!tournament||!canFinish||!allVisibleFinished||!auth.token||!auth.username)return;
-  const confirmationVersion=generation.current;
+  const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
   Alert.alert('Encerrar a liga?','Esta ação fecha a competição e fixa o resultado oficial. Depois de concluída, não poderás alterar os jogos.',[
    {text:'Manter aberta',style:'cancel'},
-   {text:'Encerrar liga',style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),'Liga encerrada pelo servidor.',confirmationVersion);}}
+   {text:'Encerrar liga',style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),'Liga encerrada pelo servidor.',confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  async function more(){if(!tournament||!type||!fixturesVerified||!auth.token||!auth.username||busy||syncing||pendingWrite.current||!hasMore)return;
@@ -173,7 +173,7 @@ export default function TournamentManagerScreen(){
    setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);
    visiblePage.current=checked.page;setPage(checked.page);setHasMore(checked.hasMore);
   }catch(e){if(version===generation.current&&reading===readVersion.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{if(version===generation.current&&reading===readVersion.current){pendingWrite.current=false;setBusy(false);}}
+  finally{pendingWrite.current=false;if(version===generation.current&&reading===readVersion.current)setBusy(false);}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Gestão do torneio'}</Text>
