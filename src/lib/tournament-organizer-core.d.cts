@@ -7,3 +7,10 @@ export function canRecordTournamentResult(role:string|null|undefined,tournament:
 export function canCompleteTournament(role:string|null|undefined,tournament:JynloTournament|null):boolean;
 export function validateTournamentScore(home:string,away:string):{homeScore:number;awayScore:number};
 export function validateTournamentMatchScore(tournament:JynloTournament,match:{id:number;groupNumber?:number|null},home:string,away:string):{homeScore:number;awayScore:number};
+export function organizerMatchWriteGuard(
+ tournament:JynloTournament|null,
+ match:{id:number;roundNumber:number;groupNumber?:number|null}|null,
+ matches:ReadonlyArray<{roundNumber:number;groupNumber?:number|null}>,
+ groupState:{knockoutStarted:boolean}|null,
+ groupsConfirmed:boolean
+):{allowed:boolean;reason:string|null};
