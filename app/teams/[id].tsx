@@ -106,6 +106,7 @@ export default function TeamDetail(){
      if(version!==requestVersion.current)return;
      setMembers(current=>current.filter(item=>item.profileId!==member.profileId));
      setNotice('Jogador removido do plantel.');
+     actionRef.current=false;setSaving(false);
      void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
