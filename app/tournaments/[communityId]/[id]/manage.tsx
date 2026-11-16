@@ -45,7 +45,7 @@ export default function TournamentManagerScreen(){
  const [standings,setStandings]=useState<TournamentTable|null>(null);
  const [groups,setGroups]=useState<TournamentTeamGroups|null>(null);
  const [standingsError,setStandingsError]=useState(''),[syncing,setSyncing]=useState(false);
- const [fixturesVerified,setFixturesVerified]=useState(false);
+ const [fixturesVerified,setFixturesVerified]=useState(false),[snapshotVerified,setSnapshotVerified]=useState(false);
  const generation=useRef(0),readVersion=useRef(0),pendingWrite=useRef(false),visiblePage=useRef(0);
  const load=useCallback(async(version=generation.current,silent=false):Promise<boolean>=>{
   const request=++readVersion.current;
@@ -53,7 +53,7 @@ export default function TournamentManagerScreen(){
    if(version===generation.current){setLoading(false);setTournament(null);setRole(null);}
    return false;
   }
-  setFixturesVerified(false);
+  setFixturesVerified(false);setSnapshotVerified(false);
   setStandings(null);setGroups(null);
   setError('');
   if(silent)setSyncing(true);
@@ -71,6 +71,7 @@ export default function TournamentManagerScreen(){
    const kind=organizerFixtureType(info);
    if(!isOrganizer(currentRole)||!kind||info.status==='DRAFT'){
     setStandings(null);setGroups(null);
+    setSnapshotVerified(true);
     return true;
    }
    const [fixtures,table,groupState]=await Promise.allSettled([
@@ -90,7 +91,7 @@ export default function TournamentManagerScreen(){
    const response=fixtures.value;
    if(!response)return false;
    visiblePage.current=response.page;
-   setFixturesVerified(true);
+   setFixturesVerified(true);setSnapshotVerified(true);
    setMatches(response.matches.map(m=>kind==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch)));
    setPage(response.page);setHasMore(response.hasMore);
    if(table.status==='fulfilled'){setStandings(table.value);}
@@ -113,14 +114,14 @@ export default function TournamentManagerScreen(){
   const version=++generation.current;
   readVersion.current++;
   setTournament(null);setRole(null);setMatches([]);setPage(0);visiblePage.current=0;setHasMore(false);
-  setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);setFixturesVerified(false);
+  setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);setFixturesVerified(false);setSnapshotVerified(false);
   setNotice('');setError('');setLoading(true);
   void load(version);
   return ()=>{generation.current++;readVersion.current++;};
  },[load]));
  const type=tournament?organizerFixtureType(tournament):null;
  const officialOutcome=officialTournamentOutcome(tournament);
- const canPublish=canGenerateSchedule(role,tournament)&&!DEMO_MODE;
+ const canPublish=snapshotVerified&&canGenerateSchedule(role,tournament)&&!DEMO_MODE;
  const canRecord=fixturesVerified&&canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
  const canFinish=canCompleteTournament(role,tournament)&&!DEMO_MODE;
  const allVisibleFinished=fixturesVerified&&matches.length>0&&!hasMore&&matches.every(m=>m.status==='COMPLETED');
