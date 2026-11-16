@@ -20,7 +20,7 @@ test('owner-only kit editing requires verified roster and current team identity'
  assert.match(screen,/!isOwner\|\|!brandingVerified\|\|saving\|\|actionRef\.current/);
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
  assert.match(screen,/setBrandingVerified\(false\)/);
- assert.match(screen,/setSportsTeamKit\(teamId,kitPrimary,kitSecondary,auth\.token\)/);
+ assert.match(screen,/setSportsTeamKit\(teamId,kitPrimary,kitSecondary,auth\.token,kitPattern\)/);
  assert.match(screen,/Guardar equipamento/);
  assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
  assert.match(screen,/accessibilityState=\{\{selected:kitSecondary===color\}\}/);
@@ -73,4 +73,21 @@ test('team detail paints public identity before slow honours or membership finis
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
  assert.match(screen,/if\(!silent\)setLoading\(false\)/);
  assert.match(screen,/Promise\.allSettled\(\[\s*detailsRequest,/);
+});
+
+
+test('official plain, striped and diagonal kit choices have visible mobile previews',()=>{
+ const screen=read('app/teams/[id].tsx');
+ const api=read('src/lib/sports-teams-api.ts');
+ const preview=read('src/components/TeamKitPreview.tsx');
+ for(const pattern of ['PLAIN','STRIPES','DIAGONAL']){
+  assert.ok(screen.includes("id:'"+pattern+"'"),pattern);
+  assert.ok(preview.includes("'"+pattern+"'"),pattern);
+ }
+ assert.match(api,/kitPattern\?: TeamKitPattern \| null/);
+ assert.match(api,/token,method:'PUT',body:\{primary,secondary,pattern\}/);
+ assert.match(screen,/setKitPattern\(identity\.kitPattern\|\|'PLAIN'\)/);
+ assert.match(screen,/kitEditedRef\.current=true;setKitPattern\(option\.id\)/);
+ assert.match(screen,/accessibilityState=\{\{selected:kitPattern===option\.id\}\}/);
+ assert.match(screen,/TeamKitPreview primary=\{kitPrimary\} secondary=\{kitSecondary\} pattern=\{option\.id\}/);
 });
