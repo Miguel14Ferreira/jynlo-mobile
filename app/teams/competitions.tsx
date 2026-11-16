@@ -33,7 +33,7 @@ export default function TeamCompetitionDiscovery(){
   if(version!==requestVersion.current)return;
   const failed:string[]=[];
   if(competitions.status==='fulfilled')setRows(competitions.value);
-  else failed.push('competições');
+  else{setRows([]);failed.push('competições');}
   if(owned.status==='fulfilled'){
     setOwnedVerified(true);setTeams(owned.value);
     const wanted=Number(teamId);
@@ -41,9 +41,9 @@ export default function TeamCompetitionDiscovery(){
       if(Number.isSafeInteger(wanted)&&owned.value.some(t=>t.id===wanted))return wanted;
       return current!==null&&owned.value.some(t=>t.id===current)?current:null;
     });
-  }else{setOwnedVerified(false);setChosen(null);failed.push('as tuas equipas');}
+  }else{setOwnedVerified(false);setTeams([]);setChosen(null);failed.push('as tuas equipas');}
   if(requests.status==='fulfilled'){setApplications(requests.value);setApplicationsVerified(true);}
-  else{setApplicationsVerified(false);failed.push('candidaturas anteriores');}
+  else{setApplications([]);setApplicationsVerified(false);failed.push('candidaturas anteriores');}
   if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. Podes continuar a consultar as restantes secções.');
   setLoading(false);
  },[filters,auth.token,teamId]);
