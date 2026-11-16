@@ -66,12 +66,12 @@ test('finalized cups retain read-only match results and official outcome',()=>{
 test('failed post-result refresh blocks stale scores and premature league closure',()=>{
  const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
  assert.match(screen,/\[fixturesVerified,setFixturesVerified\]=useState\(false\)/);
- assert.match(screen,/setFixturesVerified\(false\);\s*if\(silent\)setSyncing\(true\)/);
- assert.match(screen,/setFixturesVerified\(true\);\s*setMatches\(response\.matches\.map/);
+ assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);/);
+ assert.match(screen,/setFixturesVerified\(true\);setSnapshotVerified\(true\);\s*setMatches\(response\.matches\.map/);
  assert.match(screen,/const canRecord=fixturesVerified&&canRecordTournamentResult/);
  assert.match(screen,/const allVisibleFinished=fixturesVerified&&matches\.length>0/);
  assert.match(screen,/!type\|\|!fixturesVerified\|\|!auth\.token/);
- assert.match(screen,/Resultado guardado, mas o calendário não foi atualizado/);
+ assert.match(screen,/Não foi possível confirmar os dados atuais:/);
  assert.match(screen,/Os jogos apresentados não estão confirmados pelo servidor/);
  assert.match(screen,/!loading&&!syncing&&!fixturesVerified&&tournament\.status==='IN_PROGRESS'/);
 });
@@ -80,7 +80,7 @@ test('organizer can recover from an uncertain server result without replaying th
  const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
  assert.match(screen,/title="Voltar a sincronizar dados"/);
  assert.match(screen,/onPress=\{\(\)=>\{void load\(generation\.current,!!tournament\);\}\}/);
- assert.match(screen,/setFixturesVerified\(false\);\s*setError\(''\)/);
+ assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);/);
  assert.match(screen,/!loading&&!syncing&&!busy&&auth\.token/);
  assert.match(screen,/!fixturesVerified/);
  assert.match(screen,/Não foi possível confirmar os dados atuais:/);
@@ -90,7 +90,7 @@ test('organizer can recover from an uncertain server result without replaying th
 
 test('unconfirmed results and tables are never presented as current during recovery',()=>{
  const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
- assert.match(screen,/setFixturesVerified\(false\);\s*setStandings\(null\);setGroups\(null\)/);
+ assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);\s*setStandings\(null\);setGroups\(null\)/);
  assert.match(screen,/fixturesVerified&&standings\?<View/);
  assert.match(screen,/fixturesVerified&&tournament\.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups/);
  assert.match(screen,/fixturesVerified\?matches\.map\(m=><View/);
