@@ -17,13 +17,14 @@ export default function TeamsScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null),[items,setItems]=useState<JynloTournamentTeam[]>([]);
  const [newName,setNewName]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  const generation=useRef(0),creatingRef=useRef(false);
- const load=useCallback(async(version=generation.current)=>{
+ const load=useCallback(async(version=generation.current,silent=false)=>{
   if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
    if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
    return;
   }
-  setLoading(true);setError('');
+  if(!silent)setLoading(true);
+  setError('');
   try{
    const [details,teams]=await Promise.all([
     tournamentDetails(cid,tid,auth.token,auth.username),
@@ -35,7 +36,7 @@ export default function TeamsScreen(){
    }
    setTournament(details);setItems(teams);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as equipas.');}
-  finally{if(version===generation.current)setLoading(false);}
+  finally{if(version===generation.current&&!silent)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
@@ -99,8 +100,8 @@ export default function TeamsScreen(){
    <Button title={busy?'A guardar…':'Criar equipa'} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
    <Text style={styles.note}>A criação exige permissões de organizador e é validada pelo backend.</Text>
   </View>:null}
-  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<CompetitionTeamSearch communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token}/>:null}
-  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<TeamCompetitionApplications communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token}/>:null}
+  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<CompetitionTeamSearch communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}
+  {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<TeamCompetitionApplications communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}
   {DEMO_MODE?<Message>Modo de demonstração: as equipas são apenas locais e não ficam gravadas na Jynlo real.</Message>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
