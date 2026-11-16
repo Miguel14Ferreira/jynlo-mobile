@@ -45,6 +45,7 @@ export default function TournamentManagerScreen(){
  const [standings,setStandings]=useState<TournamentTable|null>(null);
  const [groups,setGroups]=useState<TournamentTeamGroups|null>(null);
  const [standingsError,setStandingsError]=useState(''),[syncing,setSyncing]=useState(false);
+ const [fixturesVerified,setFixturesVerified]=useState(false);
  const generation=useRef(0),readVersion=useRef(0),pendingWrite=useRef(false),visiblePage=useRef(0);
  const load=useCallback(async(version=generation.current,silent=false):Promise<boolean>=>{
   const request=++readVersion.current;
@@ -52,6 +53,7 @@ export default function TournamentManagerScreen(){
    if(version===generation.current){setLoading(false);setTournament(null);setRole(null);}
    return false;
   }
+  setFixturesVerified(false);
   if(silent)setSyncing(true);
   else{setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);visiblePage.current=0;}
   setStandingsError('');
@@ -86,6 +88,7 @@ export default function TournamentManagerScreen(){
    const response=fixtures.value;
    if(!response)return false;
    visiblePage.current=response.page;
+   setFixturesVerified(true);
    setMatches(response.matches.map(m=>kind==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch)));
    setPage(response.page);setHasMore(response.hasMore);
    if(table.status==='fulfilled'){setStandings(table.value);}
@@ -108,7 +111,7 @@ export default function TournamentManagerScreen(){
   const version=++generation.current;
   readVersion.current++;
   setTournament(null);setRole(null);setMatches([]);setPage(0);visiblePage.current=0;setHasMore(false);
-  setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);
+  setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);setFixturesVerified(false);
   setNotice('');setError('');setLoading(true);
   void load(version);
   return ()=>{generation.current++;readVersion.current++;};
@@ -116,9 +119,9 @@ export default function TournamentManagerScreen(){
  const type=tournament?organizerFixtureType(tournament):null;
  const officialOutcome=officialTournamentOutcome(tournament);
  const canPublish=canGenerateSchedule(role,tournament)&&!DEMO_MODE;
- const canRecord=canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
+ const canRecord=fixturesVerified&&canRecordTournamentResult(role,tournament)&&!DEMO_MODE;
  const canFinish=canCompleteTournament(role,tournament)&&!DEMO_MODE;
- const allVisibleFinished=matches.length>0&&!hasMore&&matches.every(m=>m.status==='COMPLETED');
+ const allVisibleFinished=fixturesVerified&&matches.length>0&&!hasMore&&matches.every(m=>m.status==='COMPLETED');
  async function act(run:()=>Promise<unknown>,success:string){
   if(busy||pendingWrite.current)return;
   const version=generation.current;
@@ -152,7 +155,7 @@ export default function TournamentManagerScreen(){
    {text:'Encerrar liga',style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),'Liga encerrada pelo servidor.');}}
   ]);
  }
- async function more(){if(!tournament||!type||!auth.token||!auth.username||busy||syncing||pendingWrite.current||!hasMore)return;
+ async function more(){if(!tournament||!type||!fixturesVerified||!auth.token||!auth.username||busy||syncing||pendingWrite.current||!hasMore)return;
   const version=generation.current;
   pendingWrite.current=true;setBusy(true);setError('');
   try{const next=page+1;
