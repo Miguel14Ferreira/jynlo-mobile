@@ -246,7 +246,8 @@ test('team chat uses member-scoped WebSocket hints with polling only as fallback
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  const realtime=read('src/lib/team-content-realtime.ts');
  assert.match(panel,/observeTeamContent\(\{teamId,kind,token/);
- assert.match(panel,/if\(AppState\.currentState==='active'&&!socketOnline\)void refresh\(true,current\)/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current\)/);
+ assert.match(panel,/if\(AppState\.currentState!=='active'\)return/);
  assert.match(panel,/stopObserving\(\)/);
  assert.match(panel,/pendingRefresh\.current=true/);
  assert.match(panel,/if\(pendingRefresh\.current&&expected===version\.current&&!sendingNow\.current\)/);
