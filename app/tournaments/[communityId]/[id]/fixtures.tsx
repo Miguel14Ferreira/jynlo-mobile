@@ -1,4 +1,4 @@
-import React,{useCallback,useMemo,useState} from 'react';
+import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -16,29 +16,40 @@ export default function TeamFixturesScreen(){
  const [groups,setGroups]=useState<TournamentTeamGroups|null>(null),[matches,setMatches]=useState<TournamentTeamMatch[]>([]);
  const [page,setPage]=useState(0),[hasMore,setHasMore]=useState(false),[active,setActive]=useState<'GROUP'|'KNOCKOUT'>('GROUP');
  const [loading,setLoading]=useState(true),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);return;}
+ const generation=useRef(0),paging=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   setLoading(true);setError('');setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setPage(0);
   try{
-   const t=await tournamentDetails(cid,tid,auth.token,auth.username);setTournament(t);
+   const t=await tournamentDetails(cid,tid,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setTournament(t);
    if(!canListMatches(t))return;
    const [groupData,matchData]=await Promise.all([
     t.format==='GROUP_KNOCKOUT'?teamTournamentGroups(cid,tid,auth.token,auth.username):Promise.resolve(null),
     teamTournamentMatches(cid,tid,0,auth.token,auth.username)
    ]);
-   setGroups(groupData);setMatches(matchData.matches);setPage(0);setHasMore(matchData.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar os jogos do torneio.');}
-  finally{setLoading(false);}
+   if(version!==generation.current)return;
+   setGroups(groupData);setMatches(matchData.matches);setPage(matchData.page);setHasMore(matchData.hasMore);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos do torneio.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  paging.current=false;
+  void load(version);
+  return()=>{generation.current++;};
+ },[load]));
  const split=useMemo(()=>splitTeamMatches(matches,tournament?.format||'LEAGUE'),[matches,tournament?.format]);
  const isGroups=tournament?.format==='GROUP_KNOCKOUT';
- async function more(){if(!auth.token||!auth.username||loadingMore||!hasMore)return;
-  setLoadingMore(true);setError('');
+ async function more(){if(!auth.token||!auth.username||paging.current||loadingMore||!hasMore||loading)return;
+  const version=generation.current;
+  paging.current=true;setLoadingMore(true);setError('');
   try{const next=page+1,part=await teamTournamentMatches(cid,tid,next,auth.token,auth.username);
-   setMatches(previous=>[...previous,...part.matches.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(next);setHasMore(part.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{setLoadingMore(false);}
+   if(version!==generation.current)return;
+   setMatches(previous=>[...previous,...part.matches.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(part.page);setHasMore(part.hasMore);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  finally{paging.current=false;setLoadingMore(false);}
  }
  const teamPage=(teamId:number)=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(teamId)}});
  const renderMatches=(entries:TournamentTeamMatch[])=>entries.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>);
