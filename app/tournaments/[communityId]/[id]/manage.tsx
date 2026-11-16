@@ -54,6 +54,7 @@ export default function TournamentManagerScreen(){
    return false;
   }
   setFixturesVerified(false);
+  setError('');
   if(silent)setSyncing(true);
   else{setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);visiblePage.current=0;}
   setStandingsError('');
@@ -98,7 +99,7 @@ export default function TournamentManagerScreen(){
    return true;
   }catch(e){
    if(version===generation.current&&request===readVersion.current)
-    setError((silent?'Resultado guardado, mas o calendário não foi atualizado: ':'')+(e instanceof Error?e.message:'Não foi possível carregar a gestão do torneio.'));
+    setError((silent?'Não foi possível confirmar os dados atuais: ':'')+(e instanceof Error?e.message:'Não foi possível carregar a gestão do torneio.'));
    return false;
   }finally{
    if(version===generation.current&&request===readVersion.current){
@@ -172,6 +173,8 @@ export default function TournamentManagerScreen(){
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{syncing?<Message>A sincronizar resultados e classificações oficiais…</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}{notice?<Message>{notice}</Message>:null}
+  {!loading&&!syncing&&!busy&&auth.token&&(error||!!tournament&&isOrganizer(role)&&type&&!fixturesVerified)?
+   <Button secondary title="Voltar a sincronizar dados" onPress={()=>{void load(generation.current,!!tournament);}}/>:null}
   {!loading&&tournament&&!isOrganizer(role)?<Message>Este painel é exclusivo para proprietários e administradores da comunidade.</Message>:null}
   {!loading&&tournament&&isOrganizer(role)&&!type?<><Message>Esta modalidade utiliza regras próprias de resultados. Não aplicamos uma tabela de jogos genérica.</Message>
     {managedKind(tournament)?<Button secondary title="Gerir jornadas da competição"
