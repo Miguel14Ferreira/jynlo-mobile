@@ -93,3 +93,13 @@ test('failed team data shows a contextual retry without inventing member or comm
  assert.match(screen,/rosterVerified\?members\.length:'—'/);
  assert.match(screen,/communitiesVerified\?communities\.filter\(m=>m\.status==='ACTIVE'\)\.length:'—'/);
 });
+
+test('competition application buttons display actual backend state instead of a generic sent label',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/const applicationStatus=\(competition:OpenTeamCompetition,teamId:number\|null\)=>/);
+ assert.match(screen,/status==='APPROVED'\?'Candidatura aprovada'/);
+ assert.match(screen,/status==='DECLINED'\?'Candidatura recusada'/);
+ assert.match(screen,/status==='PENDING'\?'Pedido em análise'/);
+ assert.match(screen,/applicationLabel\(item,chosen\)/);
+ assert.match(screen,/disabled=\{!auth\.token\|\|!chosen\|\|busy\|\|applied\(item,chosen\)\}/);
+});
