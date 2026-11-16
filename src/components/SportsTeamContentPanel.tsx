@@ -20,6 +20,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
  const [accessRevoked,setAccessRevoked]=useState(false);
+ const accessRevokedRef=useRef(false);
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const [editingId,setEditingId]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
@@ -60,7 +61,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
   if(reading.current===expected){pendingRefresh.current=true;return;}
-  if(sendingNow.current||accessRevoked)return;
+  if(sendingNow.current||accessRevokedRef.current)return;
   reading.current=expected;
   const readRequest=++readRequestVersion.current;
   const writeVersion=mutationVersion.current;
@@ -73,7 +74,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    if(e instanceof ApiError&&(e.status===403||e.status===401)){
     // Membership or authentication was revoked. Never retain private history on screen.
-    setAccessRevoked(true);setEntries([]);setSearchResults([]);setSearchActive(false);
+    accessRevokedRef.current=true;setAccessRevoked(true);setEntries([]);setSearchResults([]);setSearchActive(false);
     searchVersion.current++;reactionVersion.current++;setReactions({});
     setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
     setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
@@ -93,11 +94,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
    if(!quiet&&expected===version.current)setLoading(false);
   }
- },[teamId,kind,token,loadReactions,accessRevoked]);
+ },[teamId,kind,token,loadReactions]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   pendingRefresh.current=false;
-  setAccessRevoked(false);setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
+  accessRevokedRef.current=false;setAccessRevoked(false);setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
   setMedia([]);setAttachmentsEnabled(false);
