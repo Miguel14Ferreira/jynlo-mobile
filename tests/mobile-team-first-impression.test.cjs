@@ -223,7 +223,7 @@ test('team chat private media reuses authenticated viewer and verified native up
 test('switching team chats cannot be blocked by an in-flight request from the previous chat',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/reading=useRef<number\|null>\(null\)/);
- assert.match(panel,/if\(reading\.current===expected\|\|sendingNow\.current\)return/);
+ assert.match(panel,/if\(reading\.current===expected\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(panel,/reading\.current=expected/);
  assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)reading\.current=null/);
  assert.match(panel,/if\(expected!==version\.current\)return/);
@@ -240,4 +240,19 @@ test('team chat drops history fetched before a write and avoids overlapping refr
  assert.equal((panel.match(/sendingNow\.current=true;invalidatePendingRead\(\)/g)||[]).length,4);
  assert.match(panel,/if\(AppState\.currentState==='active'\)void refresh\(true,current\)/);
  assert.match(panel,/\},5000\)/);
+});
+
+test('team chat uses member-scoped WebSocket hints with polling only as fallback',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const realtime=read('src/lib/team-content-realtime.ts');
+ assert.match(panel,/observeTeamContent\(\{teamId,kind,token/);
+ assert.match(panel,/if\(AppState\.currentState==='active'&&!socketOnline\)void refresh\(true,current\)/);
+ assert.match(panel,/stopObserving\(\)/);
+ assert.match(panel,/pendingRefresh\.current=true/);
+ assert.match(panel,/if\(pendingRefresh\.current&&expected===version\.current&&!sendingNow\.current\)/);
+ assert.match(realtime,/type:'AUTH',token/);
+ assert.match(realtime,/envelope\.type==='AUTHENTICATED'/);
+ assert.match(realtime,/if\(!authenticated\|\|envelope\.type!=='TEAM_CONTENT_INVALIDATED'\)return/);
+ assert.match(realtime,/envelope\.teamId!==teamId\|\|envelope\.kind!==kind/);
+ assert.match(realtime,/if\(e\.code===1003\)\{active=false;return;\}/);
 });
