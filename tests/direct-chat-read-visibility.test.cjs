@@ -24,3 +24,12 @@ test('near-bottom tolerance is not used for read receipts',()=>{
  assert.match(source,/contentSize\.height-2/);
  assert.match(source,/generation\.current===version/);
 });
+
+test('read measurements are bound to the rendered message history',()=>{
+ assert.match(source,/const measuredHistoryKey=useRef\(''\)/);
+ assert.match(source,/const historyKey=messages\.map\(item=>item\.id\)\.join\(','\)/);
+ assert.match(source,/if\(measuredHistoryKey\.current!==historyKey\)return/);
+ assert.match(source,/measuredHistoryKey\.current=historyKey/g);
+ assert.match(source,/measuredHistoryKey\.current=''/);
+ assert.match(source,/historyContentHeight\.current<=historyViewportHeight\.current&&measuredHistoryKey\.current===historyKey/);
+});
