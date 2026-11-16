@@ -63,3 +63,13 @@ test('background team refresh cannot overwrite unsaved kit palette and failed cr
  assert.match(crest,/onError=\{\(\)=>setImageFailed\(true\)\}/);
  assert.match(crest,/useEffect\(\(\)=>\{setImageFailed\(false\);\},\[source\]\)/);
 });
+
+
+test('team detail paints public identity before slow honours or membership finish',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const detailsRequest=sportsTeamDetail\(teamId,auth\.token\|\|undefined\)/);
+ assert.match(screen,/void detailsRequest\.then\(identity=>/);
+ assert.match(screen,/if\(version!==requestVersion\.current\)return/);
+ assert.match(screen,/if\(!silent\)setLoading\(false\)/);
+ assert.match(screen,/Promise\.allSettled\(\[\s*detailsRequest,/);
+});
