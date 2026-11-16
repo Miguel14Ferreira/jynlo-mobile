@@ -59,6 +59,9 @@ export default function TeamCompetitionDiscovery(){
   else setFilters(next);
  };
  useFocusEffect(useCallback(()=>{
+  // A previous screen or account may still have a timed-out application pending.
+  // Restore the new screen's controls before checking current server state.
+  setBusy(false);
   void load();
   return ()=>{requestVersion.current++;applyGeneration.current++;applyingRef.current=false;};
  },[load]));
