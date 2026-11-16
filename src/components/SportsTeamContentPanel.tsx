@@ -39,19 +39,6 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
  const reactionBusyRef=useRef(false);
  const emojis=['👍','❤️','😂','🔥','👏'];
- const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
-  const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
-  if(!ids.length)return;
-  const current=++reactionVersion.current;
-  const conversation=version.current;
-  try{
-   const updated=await teamReactionSummaries(teamId,kind,ids,token);
-   if(current===reactionVersion.current&&conversation===version.current)
-    setReactions(previous=>({...previous,...updated}));
-  }catch{
-   // Reaction counts are supplementary; never prevent reading the conversation.
-  }
- },[teamId,kind,token]);
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
@@ -76,6 +63,22 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(!/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
   return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
  };
+ const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
+  const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
+  if(!ids.length)return;
+  const current=++reactionVersion.current;
+  const conversation=version.current;
+  try{
+   const updated=await teamReactionSummaries(teamId,kind,ids,token);
+   if(current===reactionVersion.current&&conversation===version.current)
+    setReactions(previous=>({...previous,...updated}));
+  }catch(e){
+   // Reading private reaction totals must enforce the same membership rules
+   // as history and message mutations.
+   if(current===reactionVersion.current&&conversation===version.current)
+    revokeIfUnauthorized(e);
+  }
+ },[teamId,kind,token,revokeIfUnauthorized]);
  const invalidatePendingRead=()=>{
   // Reads started before a write must not overwrite newly saved messages.
   mutationVersion.current++;
