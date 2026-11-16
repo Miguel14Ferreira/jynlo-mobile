@@ -33,6 +33,19 @@ export default function TeamDetail(){
  const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
+ // A new account or team must not inherit the previous team's private roster,
+ // pending invitations, memberships, messages, or unsaved kit edits.
+ useEffect(()=>{
+  requestVersion.current++;searchVersion.current++;
+  reading.current=null;kitEditedRef.current=false;
+  setTeam(null);setMembers([]);setPendingPlayers([]);setCommunities([]);
+  setCandidates([]);setSearchName('');setSearchComplete(false);setSearching(false);
+  setHistory([]);setChampionshipHonours([]);setHistoryError('');setHonoursError('');
+  setRosterVerified(false);setPendingVerified(false);setCommunitiesVerified(false);
+  setBrandingVerified(false);setActiveTab('OVERVIEW');
+  setKitPrimary('#19CBB6');setKitSecondary('#F0FAFB');setKitPattern('PLAIN');
+  setNotice('');setMembershipNote('');setError('');setLoading(true);
+ },[teamId,auth.token]);
  const load=useCallback(async(silent=false,force=false)=>{
   if(!force&&(reading.current===requestVersion.current||savingRef.current))return;
   const version=++requestVersion.current;
@@ -85,13 +98,13 @@ export default function TeamDetail(){
      if(version===requestVersion.current){setPendingPlayers([]);setPendingVerified(false);}
     });
    }else{setPendingPlayers([]);setPendingVerified(false);}
-  }else{setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push('o plantel');}
+  }else{setMembers([]);setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push('o plantel');}
   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
-  else setHistoryError('Não foi possível atualizar o histórico oficial.');
+  else{setHistory([]);setHistoryError('Não foi possível atualizar o histórico oficial.');}
   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
-  else setHonoursError('Não foi possível atualizar os troféus.');
+  else{setChampionshipHonours([]);setHonoursError('Não foi possível atualizar os troféus.');}
   if(linked.status==='fulfilled'){setCommunities(linked.value);setCommunitiesVerified(true);}
-  else{setCommunitiesVerified(false);failed.push('as comunidades');}
+  else{setCommunities([]);setCommunitiesVerified(false);failed.push('as comunidades');}
   if(failed.length){
    if(!silent)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
   }else if(!silent)setError('');
