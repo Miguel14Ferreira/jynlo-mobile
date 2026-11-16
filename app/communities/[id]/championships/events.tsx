@@ -46,7 +46,8 @@ export default function ChampionshipOwnedEventsScreen(){
  const [detailsRefresh,setDetailsRefresh]=useState(0);
  const [loadedEventId,setLoadedEventId]=useState<number|null>(null);
  const [detailsFailed,setDetailsFailed]=useState(false);
- const generation=useRef(0),pending=useRef(false);
+ const generation=useRef(0),pending=useRef(false),selectedRef=useRef<number|null>(null);
+ selectedRef.current=selected;
  const activeEvent=events.find(item=>item.id===selected);
  const groupedFixtures=Array.from(new Set(fixtures.map(f=>f.round))).sort((a,b)=>a-b)
   .map(round=>({round,matches:fixtures.filter(f=>f.round===round)}));
@@ -126,7 +127,14 @@ export default function ChampionshipOwnedEventsScreen(){
    await load(version);
    if(version===generation.current)setDetailsRefresh(value=>value+1);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'A operação não foi concluída.')+' Confirma os resultados antes de repetir.');
+   if(version===generation.current){
+    // A POST may have committed despite timeout. Invalidate organizer rights
+    // and match data until both the season and its selected event are refetched.
+    setOrganizer(false);setDetailsFailed(true);setLoadedEventId(null);
+    setFixtures([]);setRegistrations([]);setStandings(null);
+    setError((e instanceof Error?e.message:'A operação não foi concluída.')+
+     ' O servidor pode ter guardado a alteração. Recarrega a prova antes de repetir.');
+   }
   }finally{
    pending.current=false;
    if(version===generation.current)setBusy(false);
@@ -134,9 +142,13 @@ export default function ChampionshipOwnedEventsScreen(){
  }
  function confirm(titleText:string,details:string,action:()=>Promise<unknown>){
   if(!canManage||pending.current)return;
+  const version=generation.current,confirmedEventId=selected;
   Alert.alert(titleText,details,[
    {text:'Cancelar',style:'cancel'},
-   {text:'Confirmar',onPress:()=>{void mutate(action);}}
+   {text:'Confirmar',onPress:()=>{
+    if(version!==generation.current||confirmedEventId!==selectedRef.current)return;
+    void mutate(action);
+   }}
   ]);
  }
  function saveScore(fixture:OwnedFixture,home:number,away:number){
@@ -154,7 +166,9 @@ export default function ChampionshipOwnedEventsScreen(){
   <Text style={styles.note}>Ligas e taças do campeonato. Resultados e classificações oficiais são calculados pelo servidor.</Text>
   {loading?<Loader/>:null}
   {!!error?<Message tone="error">{error}</Message>:null}
-  {!!error?<Button secondary title="Voltar a carregar" onPress={()=>{void load();}}/>:null}
+  {!!error?<Button secondary title="Voltar a carregar" onPress={()=>{
+    setDetailsRefresh(value=>value+1);void load();
+   }}/>:null}
   {!loading&&canManage?<View style={styles.card}>
    <Text style={styles.title}>Criar prova</Text>
    <TextInput style={styles.input} value={name} onChangeText={setName} maxLength={120} placeholder="Nome da prova" placeholderTextColor={C.muted} editable={!busy}/>
@@ -167,7 +181,7 @@ export default function ChampionshipOwnedEventsScreen(){
     confirm('Criar prova?',name,async()=>{const created=await createOwnedEvent(cid,chid,auth.token!,name,format);setName('');setSelected(created.id);})}/>
   </View>:null}
   {!loading&&events.length===0?<Message>Este campeonato ainda não tem ligas nem taças próprias.</Message>:null}
-  {events.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:selected===item.id}} disabled={busy||pending.current} onPress={()=>setSelected(item.id)}
+  {events.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:selected===item.id}} disabled={busy||pending.current} onPress={()=>{selectedRef.current=item.id;setSelected(item.id);}}
    style={[styles.event,selected===item.id&&styles.eventActive]}>
    <Text style={styles.teamName}>{item.name}</Text>
    <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':'Taça'} · {item.status==='DRAFT'?'Em preparação':item.status==='SCHEDULED'?'Em curso':'Concluída'}{item.winnerTeamName?' · Campeão: '+item.winnerTeamName:''}</Text>
