@@ -105,7 +105,8 @@ export default function TeamDetail(){
    if(version!==requestVersion.current)return;
    setCandidates([]);setSearchName('');setSearchComplete(false);searchVersion.current++;
    setNotice('Convite enviado. O jogador entra no plantel depois de aceitar.');
-   setPendingVerified(false);void load(true,true);
+   actionRef.current=false;setSaving(false);setPendingVerified(false);
+   void load(true,true);
   }catch(e){
    if(version===requestVersion.current){
     setPendingVerified(false);setCandidates([]);setSearchComplete(false);
@@ -127,7 +128,7 @@ export default function TeamDetail(){
      if(version!==requestVersion.current)return;
      setPendingVerified(false);
      setNotice('Convite cancelado.');
-     setSaving(false);void load(true,true);
+     actionRef.current=false;setSaving(false);void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
       setPendingVerified(false);setPendingPlayers([]);
