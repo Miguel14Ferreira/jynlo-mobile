@@ -39,7 +39,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
    if(generation.current===version)generation.current++;
    active.current=false;reset();
   };
- },[reset,target.scope,target.id,token]));
+ },[reset,target.scope,target.id,target.kind,token]));
  async function choose(){
   if(!enabled||!token||busyRef.current||pickerRef.current)return;
   const version=generation.current;
