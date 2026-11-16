@@ -32,19 +32,20 @@ export default function ChampionshipFixtureScreen(){
  const [selection,setSelection]=useState<'STARTER'|'BENCH'>('STARTER');
  const [mode,setMode]=useState<Mode>('GOAL');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const generation=useRef(0),pending=useRef(false);
+ const generation=useRef(0),pending=useRef(false),reloadRequest=useRef(0);
  const reload=useCallback(async(version=generation.current)=>{
+  const request=++reloadRequest.current;
   if(!auth.token||!auth.username||![cid,chid,eid,fid].every(valid)){
-   if(version===generation.current){setError('Sessão ou jogo inválido.');setLoading(false);}return;
+   if(version===generation.current&&request===reloadRequest.current){setError('Sessão ou jogo inválido.');setLoading(false);}return;
   }
   // Fail closed: a failed refresh must never leave the previous match editable.
-  if(version===generation.current){setLoading(true);setError('');setCanWrite(false);setFixture(null);setRoster([]);}
+  if(version===generation.current&&request===reloadRequest.current){setLoading(true);setError('');setCanWrite(false);setFixture(null);setRoster([]);}
   try{
    const [championships,group,events,fixtures]=await Promise.all([
     communityChampionships(cid,auth.token),communityDetails(cid,auth.token,auth.username),
     listOwnedEvents(cid,chid,auth.token),listOwnedFixtures(cid,chid,eid,auth.token)
    ]);
-   if(version!==generation.current)return;
+   if(version!==generation.current||request!==reloadRequest.current)return;
    const championship=championships.find(c=>c.id===chid);
    const event=events.find(e=>e.id===eid);
    const match=fixtures.find(f=>f.id===fid);
@@ -63,21 +64,21 @@ export default function ChampionshipFixtureScreen(){
     ownedFixtureLineup(cid,chid,eid,fid,token),
     ownedFixtureSubstitutions(cid,chid,eid,fid,token)
    ]);
-   if(version!==generation.current)return;
+   if(version!==generation.current||request!==reloadRequest.current)return;
    // The two rosters are kept distinct: one player cannot be assigned to the opposing team.
    setFixture(match);setCanWrite(editable);
    setRoster([...playersHome.map(p=>({...p,teamId:match.homeTeamId})),
               ...playersAway.map(p=>({...p,teamId:match.awayTeamId}))]);
    setGoals(g);setCards(c);setLineup(l);setSubs(sub);
    setSelectedTeam(current=>current===match.homeTeamId||current===match.awayTeamId?current:match.homeTeamId);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar os acontecimentos do jogo.');}
-  finally{if(version===generation.current)setLoading(false);}
+  }catch(e){if(version===generation.current&&request===reloadRequest.current)setError(e instanceof Error?e.message:'Não foi possível consultar os acontecimentos do jogo.');}
+  finally{if(version===generation.current&&request===reloadRequest.current)setLoading(false);}
  },[cid,chid,eid,fid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
   setFixture(null);setCanWrite(false);setRoster([]);setError('');setLoading(true);
   void reload(version);
-  return()=>{generation.current++;};
+  return()=>{generation.current++;reloadRequest.current++;};
  },[reload]));
  const selectedRoster=roster.filter(p=>p.teamId===selectedTeam);
  const selectedPlayer=selectedRoster.find(p=>p.profileId===player);
