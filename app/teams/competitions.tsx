@@ -1,4 +1,4 @@
-import React,{useCallback,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
@@ -22,6 +22,13 @@ export default function TeamCompetitionDiscovery(){
  const [chosen,setChosen]=useState<number|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
+ // Clear private records before loading under another account, including on logout.
+ useEffect(()=>{
+  requestVersion.current++;applyingRef.current=false;
+  setApplications([]);setTeams([]);setChosen(null);
+  setApplicationsVerified(false);setOwnedVerified(false);
+  setRows([]);setNotice('');setError('');setBusy(false);setLoading(true);
+ },[auth.token]);
  const load=useCallback(async()=>{
   const version=++requestVersion.current;
   setLoading(true);setError('');
