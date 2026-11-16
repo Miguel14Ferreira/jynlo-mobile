@@ -98,3 +98,13 @@ test('unconfirmed results and tables are never presented as current during recov
  assert.match(screen,/fixturesVerified&&hasMore\?<Button/);
  assert.match(screen,/fixturesVerified\?matches\.length:0/);
 });
+
+test('unconfirmed schedule publishing cannot be repeated after stale status',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/\[snapshotVerified,setSnapshotVerified\]=useState\(false\)/);
+ assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\)/);
+ assert.match(screen,/setStandings\(null\);setGroups\(null\);\s*setSnapshotVerified\(true\);\s*return true/);
+ assert.match(screen,/setFixturesVerified\(true\);setSnapshotVerified\(true\)/);
+ assert.match(screen,/const canPublish=snapshotVerified&&canGenerateSchedule/);
+ assert.match(screen,/setSyncing\(false\);setFixturesVerified\(false\);setSnapshotVerified\(false\)/);
+});
