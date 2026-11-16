@@ -6,6 +6,7 @@ import {useAuth} from '../../src/lib/auth';
 import {createSportsTeam,discoverSportsTeams,mySportsTeams,joinedSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import {JynloIcon} from '../../src/components/JynloIcon';
+import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
 
 export default function TeamsScreen(){
@@ -141,8 +142,8 @@ export default function TeamsScreen(){
     {owned.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
        accessibilityRole="button" accessibilityLabel={'Abrir equipa '+team.name}
        onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
-       <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
-       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+       <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
+       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
        <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text></View>
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
@@ -154,8 +155,8 @@ export default function TeamsScreen(){
     {joined.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
       accessibilityRole="button" accessibilityLabel={'Abrir equipa onde és jogador '+team.name}
       onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
-      <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
-       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+      <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
+       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
         <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · Jogador confirmado</Text></View>
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
@@ -170,8 +171,8 @@ export default function TeamsScreen(){
       teams.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
         accessibilityRole="button" accessibilityLabel={'Ver equipa '+team.name}
         onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
-        <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
-        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+        <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
+        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
         <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · {team.location||'Localização não indicada'}</Text></View>
         <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
       </Pressable>)}
