@@ -47,16 +47,18 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  },[teamId,kind,token]);
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
- const mutationVersion=useRef(0),readRequestVersion=useRef(0);
+ const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const invalidatePendingRead=()=>{
   // Reads started before a write must not overwrite newly saved messages.
   mutationVersion.current++;
   reading.current=null;
+  pendingRefresh.current=false;
  };
  const refresh=useCallback(async(quiet=false,expected=version.current)=>{
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
-  if(reading.current===expected||sendingNow.current)return;
+  if(reading.current===expected){pendingRefresh.current=true;return;}
+  if(sendingNow.current)return;
   reading.current=expected;
   const readRequest=++readRequestVersion.current;
   const writeVersion=mutationVersion.current;
@@ -71,12 +73,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
    else setError(message);
   }finally{
-   if(reading.current===expected&&readRequestVersion.current===readRequest)reading.current=null;
+   if(reading.current===expected&&readRequestVersion.current===readRequest){
+    reading.current=null;
+    if(pendingRefresh.current&&expected===version.current&&!sendingNow.current){
+     pendingRefresh.current=false;
+     void refresh(true,expected);
+    }
+   }
    if(!quiet&&expected===version.current)setLoading(false);
   }
  },[teamId,kind,token,loadReactions]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
+  pendingRefresh.current=false;
   setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
@@ -98,7 +107,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
   });
-  return()=>{clearInterval(timer);resume.remove();stopObserving();version.current++;searchVersion.current++;reactionVersion.current++;};
+  return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
  const chooseMedia=async()=>{
   if(!attachmentsEnabled||choosing.current||sendingNow.current)return;
