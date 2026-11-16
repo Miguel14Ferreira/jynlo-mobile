@@ -62,3 +62,14 @@ test('finalized cups retain read-only match results and official outcome',()=>{
  assert.match(screen,/officialTournamentOutcome\(tournament\)/);
  assert.match(screen,/allVisibleFinished/);
 });
+
+test('failed post-result refresh blocks stale scores and premature league closure',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/\[fixturesVerified,setFixturesVerified\]=useState\(false\)/);
+ assert.match(screen,/setFixturesVerified\(false\);\s*if\(silent\)setSyncing\(true\)/);
+ assert.match(screen,/setFixturesVerified\(true\);\s*setMatches\(response\.matches\.map/);
+ assert.match(screen,/const canRecord=fixturesVerified&&canRecordTournamentResult/);
+ assert.match(screen,/const allVisibleFinished=fixturesVerified&&matches\.length>0/);
+ assert.match(screen,/!type\|\|!fixturesVerified\|\|!auth\.token/);
+ assert.match(screen,/Resultado guardado, mas o calendário não foi atualizado/);
+});
