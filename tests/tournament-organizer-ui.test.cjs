@@ -44,7 +44,7 @@ test('guardar um marcador atualiza calendário, classificação e fases da compe
   'const refreshed=await load(version,true)'
  ]) assert.ok(screen.includes(token),token);
  assert.match(screen,/if\(version!==generation\.current\|\|request!==readVersion\.current\)return false/);
- assert.match(screen,/return\(\)=>\{generation\.current\+\+;readVersion\.current\+\+;\}/);
+ assert.match(screen,/return \(\)=>\{generation\.current\+\+;readVersion\.current\+\+;\}/);
  assert.match(screen,/if\(fixtures\.status==='rejected'\)throw fixtures\.reason/);
  assert.match(screen,/if\(table\.status==='fulfilled'\)\{setStandings\(table\.value\);\}/);
  assert.match(screen,/else\{setStandings\(null\);setStandingsError\(/);
