@@ -39,8 +39,20 @@ export default function TeamDetail(){
    if(reading.current===version)reading.current=null;
    setError('Equipa inválida.');setLoading(false);return;
   }
+  // The team identity is public. Render it as soon as the detail request
+  // succeeds, rather than waiting for history, honours and memberships.
+  const detailsRequest=sportsTeamDetail(teamId,auth.token||undefined);
+  void detailsRequest.then(identity=>{
+   if(version!==requestVersion.current)return;
+   setTeam(identity);setBrandingVerified(true);
+   if(!kitEditedRef.current){
+    setKitPrimary(safeTeamKitColor(identity.kitPrimary,'#19CBB6'));
+    setKitSecondary(safeTeamKitColor(identity.kitSecondary,'#F0FAFB'));
+   }
+   if(!silent)setLoading(false);
+  }).catch(()=>{});
   const [details,roster,pastEvents,awards,linked]=await Promise.allSettled([
-   sportsTeamDetail(teamId,auth.token||undefined),
+   detailsRequest,
    sportsTeamMembers(teamId,auth.token||undefined),
    sportsTeamHistory(teamId,auth.token||undefined),
    sportsTeamChampionshipHonours(teamId,auth.token||undefined),
