@@ -171,7 +171,7 @@ export default function TournamentManagerScreen(){
    {standings?<View style={styles.panel}>
     <Text style={styles.heading}>Classificação oficial</Text>
     {standings.rows.length===0?<Text style={styles.helper}>Ainda não existem resultados classificados.</Text>:null}
-    {standings.rows.map((row,index)=>{
+    {standings.rows.map(row=>{
      const name='teamName' in row?row.teamName:(row.displayName||row.username);
      return <View key={'teamId' in row?'team-'+row.teamId:'player-'+row.profileId} style={styles.standing}>
       <Text style={styles.rank}>{row.position}.</Text>
