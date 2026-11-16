@@ -269,3 +269,16 @@ test('confirmed joined squads are listed separately from owned team identities',
  assert.match(screen,/joined\.map\(team=><Pressable/);
  assert.match(screen,/params:\{id:String\(team\.id\)\}/);
 });
+
+
+test('team chat clears private content when membership is revoked during background refresh',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/import \{ApiError\} from '\.\.\/lib\/api'/);
+ assert.match(panel,/e instanceof ApiError&&\(e\.status===403\|\|e\.status===401\)/);
+ assert.match(panel,/accessRevokedRef\.current=true;setAccessRevoked\(true\);setEntries\(\[\]\)/);
+ assert.match(panel,/setSearchResults\(\[\]\);setSearchActive\(false\)/);
+ assert.match(panel,/setMedia\(\[\]\);setAttachmentsEnabled\(false\)/);
+ assert.match(panel,/if\(accessRevoked\)return <View/);
+ assert.match(panel,/accessRevokedRef\.current=false;setAccessRevoked\(false\)/);
+ assert.doesNotMatch(panel,/\[teamId,kind,token,loadReactions,accessRevoked\]/);
+});
