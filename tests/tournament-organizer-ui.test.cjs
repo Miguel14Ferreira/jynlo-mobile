@@ -108,3 +108,16 @@ test('unconfirmed schedule publishing cannot be repeated after stale status',()=
  assert.match(screen,/const canPublish=snapshotVerified&&canGenerateSchedule/);
  assert.match(screen,/setSyncing\(false\);setFixturesVerified\(false\);setSnapshotVerified\(false\)/);
 });
+
+test('stale confirmation dialogs cannot publish, score or close a competition',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/expectedVersion!==generation\.current\|\|expectedReadVersion!==readVersion\.current/);
+ assert.match(screen,/confirmationVersion=generation\.current,confirmationReadVersion=readVersion\.current/g);
+ for(const action of [
+  "'Calendário publicado pelo servidor.'",
+  "'Resultado registado pelo servidor.'",
+  "'Liga encerrada pelo servidor.'"
+ ])assert.ok(screen.includes(action+',confirmationVersion,confirmationReadVersion)'),action);
+ assert.match(screen,/setNotice\(''\);setError\(''\);setBusy\(false\);setLoading\(true\)/);
+ assert.match(screen,/pendingWrite\.current=false;if\(version===generation\.current&&reading===readVersion\.current\)setBusy\(false\)/);
+});
