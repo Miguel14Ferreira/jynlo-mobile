@@ -45,4 +45,18 @@ function validateTournamentMatchScore(tournament,match,home,away){
   throw Error('Uma eliminatória exige vencedor. Regista o resultado após desempate.');
  return scores;
 }
-module.exports={isOrganizer,organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore};
+/** Read-only UI guard for the backend's immutable group and published-round rules. */
+function organizerMatchWriteGuard(tournament,match,matches,groupState,groupsConfirmed){
+ if(!tournament||!match)return {allowed:false,reason:'Jogo não encontrado. Atualiza o calendário.'};
+ if(tournament.status!=='IN_PROGRESS')return {allowed:false,reason:'Competição concluída ou por iniciar.'};
+ if(tournament.entryType!=='TEAM')return {allowed:true,reason:null};
+ if(tournament.format==='GROUP_KNOCKOUT'&&match.groupNumber!=null){
+  if(!groupsConfirmed)return {allowed:false,reason:'Não foi possível confirmar se a fase de grupos está aberta. Atualiza os dados.'};
+  if(groupState?.knockoutStarted)return {allowed:false,reason:'Os resultados dos grupos estão fechados porque as eliminatórias já começaram.'};
+ }
+ const elimination=tournament.format==='KNOCKOUT'||(tournament.format==='GROUP_KNOCKOUT'&&match.groupNumber==null);
+ if(elimination&&Array.isArray(matches)&&matches.some(item=>item&&item.groupNumber==null&&item.roundNumber>match.roundNumber))
+  return {allowed:false,reason:'A ronda seguinte já foi publicada. Este resultado não pode ser alterado.'};
+ return {allowed:true,reason:null};
+}
+module.exports={isOrganizer,organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore,organizerMatchWriteGuard};
