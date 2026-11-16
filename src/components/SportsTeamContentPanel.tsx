@@ -46,7 +46,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  },[teamId,kind,token]);
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
- const mutationVersion=useRef(0);
+ const mutationVersion=useRef(0),readRequestVersion=useRef(0);
  const invalidatePendingRead=()=>{
   // Reads started before a write must not overwrite newly saved messages.
   mutationVersion.current++;
@@ -57,6 +57,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // An old request must never block loading a newly focused team.
   if(reading.current===expected||sendingNow.current)return;
   reading.current=expected;
+  const readRequest=++readRequestVersion.current;
   const writeVersion=mutationVersion.current;
   if(!quiet){setLoading(true);setError('');}
   try{
@@ -69,7 +70,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
    else setError(message);
   }finally{
-   if(reading.current===expected)reading.current=null;
+   if(reading.current===expected&&readRequestVersion.current===readRequest)reading.current=null;
    if(!quiet&&expected===version.current)setLoading(false);
   }
  },[teamId,kind,token,loadReactions]);
