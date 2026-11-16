@@ -65,6 +65,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setError('Já não tens acesso a esta conversa.');
   return true;
  },[]);
+ const rejectPrivateUpload=(failure:unknown):boolean=>{
+  // Multipart uploads use expo/fetch and raise a user-facing Error, rather
+  // than ApiError. Only explicit authorization failures revoke local access.
+  if(!(failure instanceof Error)||
+     !/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
+  return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
+ };
  const invalidatePendingRead=()=>{
   // Reads started before a write must not overwrite newly saved messages.
   mutationVersion.current++;
@@ -159,7 +166,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current!==version.current)return;
    setMedia([]);setDraft('');setReplyTo(null);
   }catch(e){
-   if(current===version.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+
+   if(current===version.current&&!rejectPrivateUpload(e))
+    setError((e instanceof Error?e.message:'Envio não confirmado.')+
      ' Confirma o histórico antes de repetir.');
   }finally{
    sendingNow.current=false;
@@ -332,6 +340,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </Pressable>
    <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
      enabled={!sending&&!uploading} compact replyId={replyTo}
+     onPermissionError={()=>{revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));}}
      onSent={async()=>{await refresh(true,version.current);}}/>
   </View>:null}
   {media.length?<View style={styles.editBox}>
