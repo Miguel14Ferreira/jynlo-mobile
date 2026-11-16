@@ -3,7 +3,7 @@ import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-nat
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
@@ -14,6 +14,7 @@ export default function TeamDetail(){
  const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
+ const [pendingPlayers,setPendingPlayers]=useState<TeamPendingPlayerInvitation[]>([]),[pendingVerified,setPendingVerified]=useState(false);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
  const [communitiesVerified,setCommunitiesVerified]=useState(false);
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
@@ -45,8 +46,19 @@ export default function TeamDetail(){
   const failed:string[]=[];
   if(details.status==='fulfilled')setTeam(details.value);
   else {if(!silent)setTeam(null);failed.push('o perfil da equipa');}
-  if(roster.status==='fulfilled'){setMembers(roster.value);setRosterVerified(true);}
-  else{setRosterVerified(false);failed.push('o plantel');}
+  if(roster.status==='fulfilled'){
+   setMembers(roster.value);setRosterVerified(true);
+   const isOwnerNow=!!auth.token&&!!auth.username&&roster.value.some(m=>
+    m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
+   if(isOwnerNow){
+    setPendingVerified(false);
+    void pendingSportsTeamPlayers(teamId,auth.token!).then(rows=>{
+     if(version===requestVersion.current){setPendingPlayers(rows);setPendingVerified(true);}
+    }).catch(()=>{
+     if(version===requestVersion.current){setPendingPlayers([]);setPendingVerified(false);}
+    });
+   }else{setPendingPlayers([]);setPendingVerified(false);}
+  }else{setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push('o plantel');}
   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
   else setHistoryError('Não foi possível atualizar o histórico oficial.');
   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
@@ -57,7 +69,7 @@ export default function TeamDetail(){
    if(!silent)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
   }else if(!silent)setError('');
   if(!silent)setLoading(false);
- },[teamId,auth.token]);
+ },[teamId,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   void load();
   const timer=setInterval(()=>{
@@ -83,7 +95,9 @@ export default function TeamDetail(){
   }finally{if(version===searchVersion.current)setSearching(false);}
  };
  const invite=async(profileId:number)=>{
-  if(!auth.token||saving||actionRef.current||!rosterVerified||!Number.isSafeInteger(profileId)||profileId<=0)return;
+  if(!auth.token||saving||actionRef.current||!rosterVerified||!pendingVerified||!isOwner||
+    pendingPlayers.some(p=>p.profileId===profileId)||!candidates.some(p=>p.profileId===profileId)||
+    !Number.isSafeInteger(profileId)||profileId<=0)return;
   actionRef.current=true;setSaving(true);setError('');setNotice('');
   const version=requestVersion.current;
   try{
@@ -91,9 +105,38 @@ export default function TeamDetail(){
    if(version!==requestVersion.current)return;
    setCandidates([]);setSearchName('');setSearchComplete(false);searchVersion.current++;
    setNotice('Convite enviado. O jogador entra no plantel depois de aceitar.');
+   setPendingVerified(false);void load(true,true);
   }catch(e){
-   if(version===requestVersion.current)setError((e instanceof Error?e.message:'Não foi possível confirmar o convite.')+' Verifica o estado antes de repetir.');
+   if(version===requestVersion.current){
+    setPendingVerified(false);setCandidates([]);setSearchComplete(false);
+    setError((e instanceof Error?e.message:'Não foi possível confirmar o convite.')+
+     ' Verifica os convites pendentes antes de repetir.');
+   }
   }finally{actionRef.current=false;if(version===requestVersion.current)setSaving(false);}
+ };
+ const cancelPendingInvite=(invite:TeamPendingPlayerInvitation)=>{
+  if(!auth.token||!isOwner||!pendingVerified||saving||actionRef.current||
+   !pendingPlayers.some(item=>item.profileId===invite.profileId))return;
+  const version=requestVersion.current;
+  Alert.alert('Cancelar convite?',`Cancelar o convite para @${invite.username}?`,[
+   {text:'Manter',style:'cancel'},
+   {text:'Cancelar convite',style:'destructive',onPress:()=>{
+    if(version!==requestVersion.current||actionRef.current)return;
+    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    void removeSportsTeamMember(teamId,invite.profileId,auth.token!).then(()=>{
+     if(version!==requestVersion.current)return;
+     setPendingVerified(false);
+     setNotice('Convite cancelado.');
+     setSaving(false);void load(true,true);
+    }).catch(e=>{
+     if(version===requestVersion.current){
+      setPendingVerified(false);setPendingPlayers([]);
+      setError((e instanceof Error?e.message:'Não foi possível confirmar o cancelamento.')+
+       ' Verifica os convites antes de tentar novamente.');
+     }
+    }).finally(()=>{actionRef.current=false;if(version===requestVersion.current)setSaving(false);});
+   }}
+  ]);
  };
  const removePlayer=(member:SportsTeamMember)=>{
   if(!auth.token||saving||actionRef.current||!isOwner||!rosterVerified||member.role==='OWNER')return;
@@ -218,7 +261,8 @@ export default function TeamDetail(){
  };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
  const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
- const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId));
+ const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId)&&
+   !pendingPlayers.some(invite=>invite.profileId===p.profileId));
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
@@ -277,7 +321,15 @@ export default function TeamDetail(){
      accessibilityLabel="Sair desta equipa" disabled={saving} style={styles.removeAction}
      onPress={leaveTeam}><Text style={styles.removeText}>Sair da equipa</Text></Pressable>:null}
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
-    {isOwner?<><TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
+    {isOwner?<><Text style={styles.heading}>Convites pendentes ({pendingVerified?pendingPlayers.length:'—'})</Text>
+    {!pendingVerified?<Text style={styles.note}>Convites por confirmar. Novos envios bloqueados até à verificação.</Text>:null}
+    <Button title="Verificar convites" secondary disabled={saving} onPress={()=>void load(false,true)}/>
+    {pendingVerified?pendingPlayers.map(invite=><View key={invite.profileId} style={styles.candidate}>
+     <Text style={styles.playerName}>@{invite.username} · A aguardar resposta</Text>
+     <Button title="Cancelar convite" secondary disabled={saving}
+      onPress={()=>cancelPendingInvite(invite)}/>
+    </View>):null}
+    <TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
       placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
     <Button title={searching?'A procurar…':'Pesquisar jogadores'} disabled={saving||searching||searchName.trim().length<2} onPress={()=>void search()}/>
     {searchComplete&&inviteCandidates.length===0?<Text style={styles.note}>Não encontrámos novos jogadores com essa pesquisa.</Text>:null}
@@ -286,7 +338,7 @@ export default function TeamDetail(){
        <Text style={styles.playerName}>{p.fullName||p.username}</Text>
        <Text style={styles.note}>@{p.username} · Ver perfil →</Text>
       </Pressable>
-      <Button title="Convidar" disabled={saving} onPress={()=>void invite(p.profileId)}/>
+      <Button title="Convidar" disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
    {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
