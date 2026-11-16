@@ -313,4 +313,6 @@ test('team owners see verified pending invitations and can cancel them safely',(
  assert.match(screen,/title="Verificar convites"/);
  assert.match(screen,/title="Cancelar convite"/);
  assert.match(screen,/disabled=\{saving\|\|!pendingVerified\}/);
+ assert.match(screen,/actionRef\.current=false;setSaving\(false\);setPendingVerified\(false\);\s*void load\(true,true\)/);
+ assert.match(screen,/actionRef\.current=false;setSaving\(false\);void load\(true,true\)/);
 });
