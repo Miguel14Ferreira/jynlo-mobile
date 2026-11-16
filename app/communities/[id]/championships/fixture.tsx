@@ -95,14 +95,24 @@ export default function ChampionshipFixtureScreen(){
    await action();
    if(version===generation.current){setPlayer(null);setOther(null);setAssist(null);await reload(version);}
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível registar o acontecimento.')+' Verifica o histórico antes de repetir.');
+   if(version===generation.current){
+    // The request may have committed before the network failure. Revoke edit
+    // permission until a fresh, authoritative fixture history is loaded.
+    setCanWrite(false);setFixture(null);setRoster([]);setGoals([]);setCards([]);setLineup([]);setSubs([]);
+    setError((e instanceof Error?e.message:'Não foi possível registar o acontecimento.')+
+     ' O acontecimento pode ter sido guardado. Recarrega o jogo para confirmar antes de repetir.');
+   }
   }finally{pending.current=false;if(version===generation.current)setBusy(false);}
  }
  function removeEvent(description:string,action:()=>Promise<void>){
   if(!canWrite||loading||pending.current)return;
+  const version=generation.current;
   Alert.alert('Remover acontecimento?',description+' Esta alteração será guardada no servidor.',[
    {text:'Cancelar',style:'cancel'},
-   {text:'Remover',style:'destructive',onPress:()=>{void perform(action);}}
+   {text:'Remover',style:'destructive',onPress:()=>{
+    if(version!==generation.current)return;
+    void perform(action);
+   }}
   ]);
  }
  function confirm(){
@@ -113,9 +123,12 @@ export default function ChampionshipFixtureScreen(){
    setError('A assistência deve ser de outro jogador da mesma equipa.');return;
   }
   const label=mode==='GOAL'?'Golo':mode==='CARD'?'Cartão':mode==='LINEUP'?'Convocatória':'Substituição';
+  const version=generation.current;
   Alert.alert('Confirmar '+label.toLowerCase()+'?',selectedPlayer.displayName+' · '+(mode==='LINEUP'?selection:minute+' min'),[
    {text:'Cancelar',style:'cancel'},
-   {text:'Registar',onPress:()=>{void perform(()=>{
+   {text:'Registar',onPress:()=>{
+    if(version!==generation.current)return;
+    void perform(()=>{
     switch(mode){
      case 'GOAL':return addOwnedFixtureGoal(cid,chid,eid,fid,selectedTeam,player,parsedMinute,auth.token!,assist);
      case 'CARD':return addOwnedFixtureCard(cid,chid,eid,fid,selectedTeam,player,cardType,parsedMinute,auth.token!);
