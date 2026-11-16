@@ -15,3 +15,16 @@ test('integra só as rotas reais e preserva bloqueio de publicação na demonstr
  assert.match(screen,/!DEMO_MODE/);
  assert.match(screen,/resultados nunca são calculados/);
 });
+
+test('organizer editor validates the actual match and explains special scoring rules',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const types=fs.readFileSync(path.join(root,'src/lib/tournament-organizer-core.d.cts'),'utf8');
+ assert.match(screen,/validateTournamentMatchScore\(tournament,match,home,away\)/);
+ assert.match(screen,/const match=matches\.find\(item=>item\.id===id\)/);
+ assert.match(screen,/groupNumber:m\.groupNumber/);
+ assert.match(screen,/groupNumber:null/);
+ assert.match(screen,/tournament\.scoringMode==='CHESS_HALF_POINTS'/);
+ assert.match(screen,/Eliminatória: indica o resultado após desempate/);
+ assert.match(screen,/match=\{m\} tournament=\{tournament\}/);
+ assert.match(types,/export function validateTournamentMatchScore\(/);
+});
