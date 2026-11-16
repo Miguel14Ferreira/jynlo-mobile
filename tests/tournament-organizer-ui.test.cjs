@@ -53,3 +53,12 @@ test('guardar um marcador atualiza calendário, classificação e fases da compe
  assert.match(screen,/if\(silent\)setSyncing\(false\)/);
  assert.doesNotMatch(screen,/setStandings\(.*\.reduce\(/);
 });
+
+test('finalized cups retain read-only match results and official outcome',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/tournament\.status!=='DRAFT'\?<View style=\{styles\.panel\}>/);
+ assert.match(screen,/tournament\.status==='COMPLETED'\?'Jogos e resultados finais'/);
+ assert.match(screen,/canRecord\?<ScoreEditor/);
+ assert.match(screen,/officialTournamentOutcome\(tournament\)/);
+ assert.match(screen,/allVisibleFinished/);
+});
