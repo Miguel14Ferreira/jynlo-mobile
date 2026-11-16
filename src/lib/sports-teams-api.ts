@@ -1,4 +1,5 @@
-import {DEMO_MODE, request} from './api';
+import {API_BASE,DEMO_MODE,request} from './api';
+import type {ImagePickerAsset} from 'expo-image-picker';
 
 /** Independent team; tournament teams remain competition-specific. */
 export interface SportsTeam {
@@ -11,6 +12,9 @@ export interface SportsTeam {
   ownerProfileId: number;
   feedEnabled: boolean;
   chatEnabled: boolean;
+  logoUrl?: string | null;
+  kitPrimary?: string | null;
+  kitSecondary?: string | null;
 }
 export interface TeamChampionshipHonour {
   championshipId:number;
@@ -86,6 +90,73 @@ export async function setSportsTeamFeatures(
   return request<SportsTeam>('/api/teams/' + validId(id) + '/features', {
     token, method: 'PATCH', body: features
   });
+}
+
+const HEX_COLOR=/^#[0-9a-fA-F]{6}$/;
+export function safeTeamKitColor(input:string|null|undefined,fallback:string):string {
+ return input&&HEX_COLOR.test(input)?input:fallback;
+}
+export function teamLogoUri(input:string|null|undefined):string|null {
+ if(!input)return null;
+ if(/^https:\/\/[^\s]+$/i.test(input))return input;
+ if(/^\/media\/teams\/[1-9]\d*\/[A-Za-z0-9_-]+\.(?:png|jpg|jpeg|webp|gif)$/i.test(input))
+  return API_BASE+input;
+ return null;
+}
+export async function setSportsTeamKit(
+ id:number,primary:string,secondary:string,token:string
+):Promise<SportsTeam>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para personalizar a equipa.');
+ if(!HEX_COLOR.test(primary)||!HEX_COLOR.test(secondary))
+  throw Error('Escolhe duas cores válidas.');
+ return request<SportsTeam>('/api/teams/'+validId(id)+'/kit',{
+  token,method:'PUT',body:{primary,secondary}
+ });
+}
+/** Uses the shared validated image storage. A timeout is uncertain: never auto-retry. */
+export async function uploadSportsTeamLogo(
+ id:number,asset:ImagePickerAsset,token:string
+):Promise<SportsTeam>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar o logótipo.');
+ validId(id);
+ if(!asset.uri||asset.type!=='image')throw Error('Seleciona uma imagem válida.');
+ if(asset.fileSize!=null&&(asset.fileSize<1||asset.fileSize>5*1024*1024))
+  throw Error('O logótipo deve ter até 5 MB.');
+ const mime=asset.mimeType||'image/jpeg';
+ if(!['image/jpeg','image/png','image/webp','image/gif'].includes(mime))
+  throw Error('Seleciona uma imagem JPG, PNG, WebP ou GIF.');
+ const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':mime==='image/gif'?'gif':'jpg';
+ const form=new FormData();
+ form.append('logo',{uri:asset.uri,name:'jynlo-team.'+ext,type:mime} as unknown as Blob);
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),30000);
+ try{
+  const response=await fetch(API_BASE+'/api/teams/'+id+'/logo',{
+   method:'PUT',credentials:'omit',redirect:'error',cache:'no-store',
+   headers:{Authorization:'Bearer '+token,Accept:'application/json'},
+   body:form,signal:controller.signal
+  });
+  if(!response.ok){
+   if(response.status===401)throw Error('Sessão expirada.');
+   if(response.status===403)throw Error('Só o responsável pode alterar o logótipo.');
+   if(response.status===413)throw Error('O ficheiro ultrapassa o limite permitido.');
+   throw Error('O servidor não aceitou o logótipo.');
+  }
+  const updated=await response.json() as SportsTeam;
+  if(updated.id!==id||!teamLogoUri(updated.logoUrl))
+   throw Error('O servidor não confirmou o logótipo. Consulta a equipa antes de repetir.');
+  return updated;
+ }catch(error){
+  if(controller.signal.aborted)
+   throw Error('A ligação expirou. Confirma o logótipo antes de repetir.');
+  if(error instanceof Error&&/^(Sessão expirada|Só o responsável|O ficheiro|O servidor|O servidor não confirmou)/.test(error.message))
+   throw error;
+  throw Error('Não foi possível confirmar o envio. Consulta o logótipo antes de repetir.');
+ }finally{clearTimeout(timer);}
+}
+export async function removeSportsTeamLogo(id:number,token:string):Promise<SportsTeam>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para gerir o logótipo.');
+ return request<SportsTeam>('/api/teams/'+validId(id)+'/logo',{token,method:'DELETE'});
 }
 
 export interface SportsTeamMember {
