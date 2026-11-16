@@ -1,9 +1,9 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,sportsTeamHistory,sportsTeamChampionshipHonours,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
@@ -11,18 +11,20 @@ import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityM
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
- const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'>('OVERVIEW');
+ const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
- const requestVersion=useRef(0),searchVersion=useRef(0);
+ const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
+ const [searchComplete,setSearchComplete]=useState(false),[searching,setSearching]=useState(false);
+ const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
- const load=useCallback(async(silent=false)=>{
-  if(reading.current===requestVersion.current||savingRef.current)return;
+ const load=useCallback(async(silent=false,force=false)=>{
+  if(!force&&(reading.current===requestVersion.current||savingRef.current))return;
   const version=++requestVersion.current;
   reading.current=version;
   if(!silent){setLoading(true);setError('');}
@@ -42,8 +44,8 @@ export default function TeamDetail(){
   const failed:string[]=[];
   if(details.status==='fulfilled')setTeam(details.value);
   else {if(!silent)setTeam(null);failed.push('o perfil da equipa');}
-  if(roster.status==='fulfilled')setMembers(roster.value);
-  else failed.push('o plantel');
+  if(roster.status==='fulfilled'){setMembers(roster.value);setRosterVerified(true);}
+  else{setRosterVerified(false);failed.push('o plantel');}
   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
   else setHistoryError('Não foi possível atualizar o histórico oficial.');
   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
@@ -69,22 +71,50 @@ export default function TeamDetail(){
   };
  },[load]));
  const search=async()=>{
-  if(!auth.token||searchName.trim().length<2||saving)return;
+  if(!auth.token||searchName.trim().length<2||searchName.trim().length>80||saving||searching)return;
   const version=++searchVersion.current;
-  setError('');
+  setError('');setSearchComplete(false);setSearching(true);setCandidates([]);
   try{
    const matches=await findSportsTeamPlayers(searchName.trim(),auth.token);
-   if(version===searchVersion.current)setCandidates(matches);
+   if(version===searchVersion.current){setCandidates(matches);setSearchComplete(true);}
   }catch(e){
    if(version===searchVersion.current)setError(e instanceof Error?e.message:'Não foi possível pesquisar jogadores.');
-  }
+  }finally{if(version===searchVersion.current)setSearching(false);}
  };
  const invite=async(profileId:number)=>{
-  if(!auth.token||saving||!Number.isSafeInteger(profileId)||profileId<=0)return;
-  setSaving(true);setError('');
-  try{await inviteSportsTeamMember(teamId,profileId,auth.token);setCandidates([]);setSearchName('');searchVersion.current++;}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível convidar o jogador.');}
-  finally{setSaving(false);}
+  if(!auth.token||saving||actionRef.current||!rosterVerified||!Number.isSafeInteger(profileId)||profileId<=0)return;
+  actionRef.current=true;setSaving(true);setError('');setNotice('');
+  const version=requestVersion.current;
+  try{
+   await inviteSportsTeamMember(teamId,profileId,auth.token);
+   if(version!==requestVersion.current)return;
+   setCandidates([]);setSearchName('');setSearchComplete(false);searchVersion.current++;
+   setNotice('Convite enviado. O jogador entra no plantel depois de aceitar.');
+  }catch(e){
+   if(version===requestVersion.current)setError((e instanceof Error?e.message:'Não foi possível confirmar o convite.')+' Verifica o estado antes de repetir.');
+  }finally{actionRef.current=false;if(version===requestVersion.current)setSaving(false);}
+ };
+ const removePlayer=(member:SportsTeamMember)=>{
+  if(!auth.token||saving||actionRef.current||!isOwner||!rosterVerified||member.role==='OWNER')return;
+  const version=requestVersion.current;
+  Alert.alert('Remover jogador?',`Remover @${member.username} do plantel? Esta ação não elimina o perfil do jogador.`,[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Remover',style:'destructive',onPress:()=>{
+    if(version!==requestVersion.current||actionRef.current)return;
+    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    void removeSportsTeamMember(teamId,member.profileId,auth.token!).then(()=>{
+     if(version!==requestVersion.current)return;
+     setMembers(current=>current.filter(item=>item.profileId!==member.profileId));
+     setNotice('Jogador removido do plantel.');
+     void load(true,true);
+    }).catch(e=>{
+     if(version===requestVersion.current){
+      setRosterVerified(false);
+      setError((e instanceof Error?e.message:'Não foi possível confirmar a remoção.')+' Atualiza o plantel antes de repetir.');
+     }
+    }).finally(()=>{actionRef.current=false;if(version===requestVersion.current)setSaving(false);});
+   }}
+  ]);
  };
  const decideMembership=async(id:number,accept:boolean)=>{
   if(!auth.token||saving)return;
@@ -113,14 +143,16 @@ export default function TeamDetail(){
   catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a configuração.');}
   finally{setSaving(false);}
  };
- const isOwner=!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username===auth.username);
- const isMember=!!auth.token&&!!auth.username&&members.some(m=>m.username===auth.username);
+ const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
+ const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
   <Button title="← Equipas" onPress={()=>router.push('/teams')}/>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {notice?<Message>{notice}</Message>:null}
+  {!loading&&!team?<Message>Não foi possível confirmar esta equipa. Volta à lista e tenta novamente.</Message>:null}
   {team?<><View style={styles.header}>
     <Text style={styles.eyebrow}>JYNLO · EQUIPA DESPORTIVA</Text>
     <View style={styles.heroIdentity}>
@@ -143,24 +175,34 @@ export default function TeamDetail(){
     </Pressable>
    </View>
    <View style={styles.tabBar}>
-    <Button title="Visão geral" secondary={activeTab!=='OVERVIEW'}
-      onPress={()=>setActiveTab('OVERVIEW')}/>
-    <Button title={'🏆 Troféus ('+(standaloneTrophies.length+championshipHonours.length)+')'}
-      secondary={activeTab!=='TROPHIES'} onPress={()=>setActiveTab('TROPHIES')}/>
+    {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'}] as const).map(tab=>
+     <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
+      onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
+      <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
+     </Pressable>)}
    </View>
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({members.length})</Text>
-    {members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({rosterVerified?members.length:'—'})</Text>
+    {!rosterVerified?<Text style={styles.note}>Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.</Text>:null}
+    {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
     <View style={styles.roster}>
-    {members.map(m=><View key={m.profileId} style={styles.playerCard}>
+    {rosterVerified?members.map(m=><View key={m.profileId} style={styles.playerCard}>
       <View style={styles.playerAvatar}><Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text></View>
-      <View style={styles.playerInfo}><Text style={styles.playerName}>@{m.username}</Text>
-      <Text style={styles.note}>{m.role==='OWNER'?'Responsável':'Jogador'}</Text></View>
-    </View>)}
+      <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`} style={styles.playerInfo}
+       onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
+       <Text style={styles.playerName}>@{m.username}</Text>
+       <Text style={styles.note}>{m.role==='OWNER'?'Responsável':'Jogador'} · Ver perfil</Text>
+      </Pressable>
+      {isOwner&&m.role!=='OWNER'?<Pressable accessibilityRole="button" accessibilityLabel={`Remover @${m.username} da equipa`}
+       disabled={saving} onPress={()=>removePlayer(m)} style={styles.removeAction}>
+       <Text style={styles.removeText}>Remover</Text>
+      </Pressable>:null}
+    </View>):null}
     </View>
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
-    {isOwner?<><TextInput style={styles.input} value={searchName} onChangeText={setSearchName}
-      placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted}/>
-    <Button title="Pesquisar jogadores" disabled={saving} onPress={()=>void search()}/>
+    {isOwner?<><TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
+      placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
+    <Button title={searching?'A procurar…':'Pesquisar jogadores'} disabled={saving||searching||searchName.trim().length<2} onPress={()=>void search()}/>
+    {searchComplete&&candidates.length===0?<Text style={styles.note}>Não encontrámos jogadores com essa pesquisa.</Text>:null}
     {candidates.map(p=><View key={p.profileId} style={styles.candidate}>
       <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
       <Button title="Convidar" disabled={saving} onPress={()=>void invite(p.profileId)}/>
@@ -208,14 +250,14 @@ export default function TeamDetail(){
     {membershipNote?<Message>{membershipNote}</Message>:null}
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Feed</Text>
+   {activeTab==='FEED'?<View style={styles.panel}><Text style={styles.heading}>Publicações da equipa</Text>
     {!team.feedEnabled?<Text style={styles.note}>O feed da equipa está desativado.</Text>:null}
     {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} disabled={saving} onPress={()=>void feature('feedEnabled')}/>:null}
     {team.feedEnabled&&isMember&&auth.token&&auth.username?
      <SportsTeamContentPanel teamId={teamId} kind="feed" token={auth.token} username={auth.username}/>:null}
     {team.feedEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Chat</Text>
+   {activeTab==='CHAT'?<View style={styles.panel}><Text style={styles.heading}>Mensagens da equipa</Text>
     {!team.chatEnabled?<Text style={styles.note}>O chat da equipa está desativado.</Text>:null}
     {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} disabled={saving} onPress={()=>void feature('chatEnabled')}/>:null}
     {team.chatEnabled&&isMember&&auth.token&&auth.username?
@@ -247,7 +289,10 @@ const styles=StyleSheet.create({
  playerInfo:{flex:1,gap:2},
  playerName:{color:C.white,fontSize:14,fontWeight:'800'},
  empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
- tabBar:{flexDirection:'row',flexWrap:'wrap',gap:10},
+ tabBar:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ tab:{minHeight:45,minWidth:'47%',flexGrow:1,paddingHorizontal:10,paddingVertical:11,borderWidth:1,borderColor:C.border,borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
+ tabSelected:{borderColor:C.mint,backgroundColor:'#123C42'},tabText:{fontSize:12,fontWeight:'800',color:C.muted},tabTextSelected:{color:C.mint},
+ removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:11,fontWeight:'800',color:C.white},
  title:{fontSize:27,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
