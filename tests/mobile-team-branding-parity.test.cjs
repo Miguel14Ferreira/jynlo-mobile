@@ -59,6 +59,7 @@ test('background team refresh cannot overwrite unsaved kit palette and failed cr
  assert.match(screen,/kitEditedRef\.current=true;setKitPrimary\(color\)/);
  assert.match(screen,/kitEditedRef\.current=true;setKitSecondary\(color\)/);
  assert.match(screen,/kitEditedRef\.current=false/);
+ assert.match(screen,/if\(mode==='KIT'\|\|!kitEditedRef\.current\)/);
  assert.match(screen,/Não foi possível abrir a galeria do dispositivo/);
  assert.match(crest,/onError=\{\(\)=>setImageFailed\(true\)\}/);
  assert.match(crest,/useEffect\(\(\)=>\{setImageFailed\(false\);\},\[source\]\)/);
