@@ -20,6 +20,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
  const [accessRevoked,setAccessRevoked]=useState(false);
+ const [blockReason,setBlockReason]=useState('Já não tens acesso a esta conversa.');
  const accessRevokedRef=useRef(false);
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const [editingId,setEditingId]=useState<number|null>(null);
@@ -54,7 +55,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
-  if(!(failure instanceof ApiError)||(failure.status!==401&&failure.status!==403))return false;
+  if(!(failure instanceof ApiError)||![401,403,409].includes(failure.status))return false;
   // A revoked membership must immediately hide cached private content,
   // even when the rejection occurs during a write rather than a history GET.
   accessRevokedRef.current=true;setAccessRevoked(true);
@@ -62,14 +63,17 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   searchVersion.current++;reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
-  setError('Já não tens acesso a esta conversa.');
+  const message=failure.status===409?'O chat ou feed da equipa foi desativado pelo responsável.':'Já não tens acesso a esta conversa.';
+  setBlockReason(message);setError(message);
   return true;
  },[]);
  const rejectPrivateUpload=(failure:unknown):boolean=>{
   // Multipart uploads use expo/fetch and raise a user-facing Error, rather
   // than ApiError. Only explicit authorization failures revoke local access.
-  if(!(failure instanceof Error)||
-     !/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
+  if(!(failure instanceof Error))return false;
+  if(/^O chat da equipa está desativado/i.test(failure.message))
+   return revokeIfUnauthorized(new ApiError(409,'Conversa desativada.'));
+  if(!/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
   return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
  };
  const invalidatePendingRead=()=>{
@@ -111,7 +115,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   pendingRefresh.current=false;
-  accessRevokedRef.current=false;setAccessRevoked(false);setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
+  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
   setMedia([]);setAttachmentsEnabled(false);setSearching(false);
@@ -280,8 +284,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   ]);
  };
  if(accessRevoked)return <View style={styles.panel}>
-  <Text style={styles.title}>Acesso à equipa indisponível</Text>
-  <Text style={styles.error} accessibilityRole="alert">Já não tens acesso a esta conversa.</Text>
+  <Text style={styles.title}>Conversa indisponível</Text>
+  <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
  </View>;
  return <View style={styles.panel}>
   <Text style={styles.title}>{kind==='chat'?'Conversa da equipa':'Publicações da equipa'}</Text>
@@ -340,7 +344,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </Pressable>
    <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
      enabled={!sending&&!uploading} compact replyId={replyTo}
-     onPermissionError={()=>{revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));}}
+     onPermissionError={reason=>{revokeIfUnauthorized(new ApiError(reason==='disabled'?409:403,'Conversa indisponível.'));}}
      onSent={async()=>{await refresh(true,version.current);}}/>
   </View>:null}
   {media.length?<View style={styles.editBox}>
