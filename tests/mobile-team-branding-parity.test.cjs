@@ -49,3 +49,17 @@ test('client never renders untrusted schemes or unscoped relative team media pat
  assert.match(api,/return null;/);
  assert.match(api,/export function safeTeamKitColor/);
 });
+
+
+test('background team refresh cannot overwrite unsaved kit palette and failed crest uses initials',()=>{
+ const screen=read('app/teams/[id].tsx');
+ const crest=read('src/components/TeamBrandAvatar.tsx');
+ assert.match(screen,/const kitEditedRef=useRef\(false\)/);
+ assert.match(screen,/if\(!kitEditedRef\.current\)/);
+ assert.match(screen,/kitEditedRef\.current=true;setKitPrimary\(color\)/);
+ assert.match(screen,/kitEditedRef\.current=true;setKitSecondary\(color\)/);
+ assert.match(screen,/kitEditedRef\.current=false/);
+ assert.match(screen,/Não foi possível abrir a galeria do dispositivo/);
+ assert.match(crest,/onError=\{\(\)=>setImageFailed\(true\)\}/);
+ assert.match(crest,/useEffect\(\(\)=>\{setImageFailed\(false\);\},\[source\]\)/);
+});
