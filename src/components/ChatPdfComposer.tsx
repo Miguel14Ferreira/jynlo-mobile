@@ -81,7 +81,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
    // The POST may have completed even if its result was lost. Never retry this file automatically.
    if(!active.current||generation.current!==version)return;
    blocked.current=true;
-   if(target.scope==='session'&&e instanceof Error&&/chat da sessão está encerrado|permissão para enviar|Sessão expirada/i.test(e.message))
+   if(e instanceof Error&&/chat da sessão está encerrado|(?:sem|não tens) permissão para enviar|sessão expirada/i.test(e.message))
     onPermissionError?.();
    setError((e instanceof Error?e.message:'Envio incerto.')+
      ' Verifica o histórico antes de escolher novamente o documento.');
