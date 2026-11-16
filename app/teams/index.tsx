@@ -20,6 +20,13 @@ export default function TeamsScreen(){
  const requestVersion=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
+ // A different authenticated account must never inherit the previous account's private team lists.
+ useEffect(()=>{
+   requestVersion.current++;reading.current=null;
+   setOwned([]);setJoined([]);setInvites([]);setCompetitionInvites([]);
+   setTeams([]);setJoinedError('');setError('');setLoading(true);
+   setCreateOpen(false);setName('');setSport('');setLocation('');
+ },[auth.token]);
  const load=useCallback(async(silent=false,force=false)=>{
    if(!force&&(reading.current===requestVersion.current||savingRef.current))return;
    const version=++requestVersion.current;
@@ -67,29 +74,29 @@ export default function TeamsScreen(){
    return ()=>{clearInterval(timer);resume.remove();requestVersion.current++;};
  },[load]));
  const respond=async(teamId:number,accept:boolean)=>{
-  if(!auth.token||saving)return;
-  setSaving(true);setError('');
+  if(!auth.token||savingRef.current)return;
+  savingRef.current=true;setSaving(true);setError('');
   try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load(false,true);}
   catch(e){setError(e instanceof Error?e.message:'Não foi possível responder ao convite.');}
-  finally{setSaving(false);}
+  finally{savingRef.current=false;setSaving(false);}
  };
  const respondCompetition=async(id:number,accept:boolean)=>{
-  if(!auth.token||saving)return;
-  setSaving(true);setError('');
+  if(!auth.token||savingRef.current)return;
+  savingRef.current=true;setSaving(true);setError('');
   try{await answerTeamCompetitionInvitation(id,accept,auth.token);await load(false,true);}
   catch(e){setError((e instanceof Error?e.message:'Erro ao responder.')+' Verifica o convite antes de repetir.');}
-  finally{setSaving(false);}
+  finally{savingRef.current=false;setSaving(false);}
  };
  const create=async()=>{
   if(!auth.token){router.push('/login');return;}
-  if(saving||!name.trim())return;
-  setSaving(true);setError('');
+  if(savingRef.current||name.trim().length<2)return;
+  savingRef.current=true;setSaving(true);setError('');
   try{
    const team=await createSportsTeam({name,sport,location},auth.token);
    setName('');setSport('');setLocation('');
    router.push({pathname:'/teams/[id]',params:{id:String(team.id)}});
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a equipa.');}
-  finally{setSaving(false);}
+  finally{savingRef.current=false;setSaving(false);}
  };
  return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
   <View style={styles.hero}>
