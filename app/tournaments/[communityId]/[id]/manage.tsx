@@ -8,21 +8,24 @@ import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {teamTournamentMatches} from '../../../../src/lib/tournament-fixtures-api';
 import {individualTournamentMatches} from '../../../../src/lib/performance-api';
-import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentScore} from '../../../../src/lib/tournament-organizer-core.cjs';
+import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentMatchScore} from '../../../../src/lib/tournament-organizer-core.cjs';
 import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch} from '../../../../src/lib/types';
 
-type OrganizerMatch={id:number;roundNumber:number;home:string;away:string;status:'COMPLETED'|'SCHEDULED';homeScore:number|null;awayScore:number|null};
-function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore};}
-function mapIndividual(m:TournamentIndividualMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeUsername,away:m.awayUsername,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore};}
-function ScoreEditor({match,busy,onSave}:{match:OrganizerMatch;busy:boolean;onSave:(matchId:number,home:string,away:string)=>void}){
+type OrganizerMatch={id:number;roundNumber:number;home:string;away:string;status:'COMPLETED'|'SCHEDULED';homeScore:number|null;awayScore:number|null;groupNumber:number|null};
+function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:m.groupNumber};}
+function mapIndividual(m:TournamentIndividualMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeUsername,away:m.awayUsername,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:null};}
+function ScoreEditor({match,tournament,busy,onSave}:{match:OrganizerMatch;tournament:JynloTournament;busy:boolean;onSave:(matchId:number,home:string,away:string)=>void}){
  const [home,setHome]=useState(match.homeScore==null?'':String(match.homeScore));
  const [away,setAway]=useState(match.awayScore==null?'':String(match.awayScore));
- let valid=true;try{validateTournamentScore(home,away);}catch{valid=false;}
+ let valid=true;try{validateTournamentMatchScore(tournament,match,home,away);}catch{valid=false;}
  return <View style={styles.editor}>
   <Text style={styles.helper}>Resultado · {match.home} / {match.away}</Text>
+  {tournament.scoringMode==='CHESS_HALF_POINTS'?<Text style={styles.helper}>Xadrez: 1–0, 0–1 ou 0–0 (empate).</Text>:null}
+  {tournament.entryType==='TEAM'&&(tournament.format==='KNOCKOUT'||(tournament.format==='GROUP_KNOCKOUT'&&match.groupNumber==null))?
+   <Text style={styles.helper}>Eliminatória: indica o resultado após desempate. Não pode haver empate.</Text>:null}
   <View style={styles.scoreRow}>
    <TextInput style={styles.scoreInput} value={home} onChangeText={setHome} keyboardType="number-pad" maxLength={3} accessibilityLabel={`Pontos de ${match.home}`}/>
    <Text style={styles.dash}>—</Text>
@@ -85,7 +88,8 @@ export default function TournamentManagerScreen(){
   ]);
  }
  function save(id:number,home:string,away:string){if(!tournament||!canRecord||!auth.token||!auth.username)return;
-  try{validateTournamentScore(home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
+  const match=matches.find(item=>item.id===id);
+  try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
   Alert.alert('Confirmar resultado?',`Registar ${home} — ${away}? A classificação será calculada pelo servidor.`,[
    {text:'Cancelar',style:'cancel'},
    {text:'Guardar',onPress:()=>{void act(()=>saveTournamentMatchResult(cid,tournament,id,home,away,auth.token!,auth.username!),'Resultado registado pelo servidor.');}}
@@ -134,7 +138,7 @@ export default function TournamentManagerScreen(){
       <View style={styles.row}><Text style={styles.round}>Jornada {m.roundNumber}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
       <Text style={styles.matchName}>{m.home}  ·  {m.away}</Text>
       {m.status==='COMPLETED'?<Text style={styles.result}>{m.homeScore} — {m.awayScore}</Text>:null}
-      {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} busy={busy} onSave={save}/>:null}
+      {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy} onSave={save}/>:null}
     </View>)}
     {hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy} onPress={()=>{void more();}}/>:null}
    </View>:null}
