@@ -60,3 +60,13 @@ test('championship organizer privileges are revoked before every membership rech
  assert.match(source,/setTeams\(seasonTeams\);setOrganizer\(organizerRole\)/);
  assert.ok(source.indexOf('setTeams(seasonTeams);setOrganizer(organizerRole)')>source.indexOf('await getChampionshipTeams(cid,chid,auth.token)'));
 });
+
+
+test('overlapping fixture refreshes cannot restore an earlier match snapshot',()=>{
+ const source=read('app/communities/[id]/championships/fixture.tsx');
+ assert.match(source,/const generation=useRef\(0\),pending=useRef\(false\),reloadRequest=useRef\(0\)/);
+ assert.match(source,/const request=\+\+reloadRequest\.current/);
+ assert.match(source,/if\(version!==generation\.current\|\|request!==reloadRequest\.current\)return/);
+ assert.match(source,/if\(version===generation\.current&&request===reloadRequest\.current\)setLoading\(false\)/);
+ assert.match(source,/return\(\)=>\{generation\.current\+\+;reloadRequest\.current\+\+;\}/);
+});
