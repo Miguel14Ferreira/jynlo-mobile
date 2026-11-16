@@ -257,3 +257,15 @@ test('team chat uses member-scoped WebSocket hints with polling only as fallback
  assert.match(realtime,/envelope\.teamId!==teamId\|\|envelope\.kind!==kind/);
  assert.match(realtime,/if\(e\.code===1003\)\{active=false;return;\}/);
 });
+
+test('confirmed joined squads are listed separately from owned team identities',()=>{
+ const screen=read('app/teams/index.tsx');
+ const api=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/export async function joinedSportsTeams\(token:string\)/);
+ assert.match(api,/\/api\/teams\/joined/);
+ assert.match(screen,/auth\.token\?joinedSportsTeams\(auth\.token\):Promise\.resolve\(\[\]\)/);
+ assert.match(screen,/memberTeams\.status==='fulfilled'/);
+ assert.match(screen,/Equipas onde és jogador/);
+ assert.match(screen,/joined\.map\(team=><Pressable/);
+ assert.match(screen,/params:\{id:String\(team\.id\)\}/);
+});
