@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const {organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore}=require('../src/lib/tournament-organizer-core.cjs');
+const {organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore,organizerMatchWriteGuard}=require('../src/lib/tournament-organizer-core.cjs');
 const team={id:1,sport:'Futebol',entryType:'TEAM',format:'GROUP_KNOCKOUT',status:'DRAFT'};
 const individual={id:2,sport:'Xadrez',entryType:'INDIVIDUAL',scoringMode:'CHESS_HALF_POINTS',format:'LEAGUE',status:'DRAFT'};
 test('só OWNER/ADMIN publicam calendários DRAFT de modalidades suportadas',()=>{
@@ -55,4 +55,24 @@ test('eliminatórias por equipas exigem vencedor, mas os grupos e ligas aceitam 
 test('não aceita jogo inexistente para registo de resultado',()=>{
  assert.throws(()=>validateTournamentMatchScore(team,null,'1','0'),/Jogo não encontrado/);
  assert.throws(()=>validateTournamentMatchScore(team,{id:0},'1','0'),/Jogo não encontrado/);
+});
+
+test('grupos fechados e rondas anteriores não podem ser corrigidos',()=>{
+ const cup={...team,status:'IN_PROGRESS'};
+ const groupMatch={id:10,roundNumber:1,groupNumber:1};
+ assert.equal(organizerMatchWriteGuard(cup,groupMatch,[groupMatch],{knockoutStarted:false},true).allowed,true);
+ assert.equal(organizerMatchWriteGuard(cup,groupMatch,[groupMatch],{knockoutStarted:true},true).allowed,false);
+ assert.equal(organizerMatchWriteGuard(cup,groupMatch,[groupMatch],null,false).allowed,false);
+ const semifinal={id:11,roundNumber:2,groupNumber:null};
+ const final={id:12,roundNumber:3,groupNumber:null};
+ assert.equal(organizerMatchWriteGuard(cup,semifinal,[semifinal,final],{knockoutStarted:true},true).allowed,false);
+ assert.equal(organizerMatchWriteGuard(cup,final,[semifinal,final],{knockoutStarted:true},true).allowed,true);
+ assert.equal(organizerMatchWriteGuard(cup,final,[final],null,false).allowed,true);
+});
+test('ligas permitem correção durante a prova mas não após o fecho',()=>{
+ const league={...team,format:'LEAGUE',status:'IN_PROGRESS'};
+ const game={id:1,roundNumber:1,groupNumber:null};
+ assert.equal(organizerMatchWriteGuard(league,game,[game],null,false).allowed,true);
+ assert.equal(organizerMatchWriteGuard({...league,status:'COMPLETED'},game,[game],null,false).allowed,false);
+ assert.equal(organizerMatchWriteGuard(league,null,[game],null,false).allowed,false);
 });
