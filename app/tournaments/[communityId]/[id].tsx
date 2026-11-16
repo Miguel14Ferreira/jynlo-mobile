@@ -7,6 +7,7 @@ import {tournamentDetails,tournamentTable} from '../../../src/lib/competition-ap
 import {communityDetails} from '../../../src/lib/community-api';
 import {classificationKind,label,standingsColumns,isPerformanceKind} from '../../../src/lib/competition-core.cjs';
 import {formatChessPoints} from '../../../src/lib/performance-core.cjs';
+import {officialTournamentOutcome} from '../../../src/lib/tournament-outcome-core.cjs';
 import {C} from '../../../src/lib/theme';
 import type {JynloTournament,TournamentTable} from '../../../src/lib/types';
 export default function TournamentDetailScreen(){
@@ -58,12 +59,17 @@ export default function TournamentDetailScreen(){
   return ()=>{generation.current++;};
  },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
+ const officialOutcome=officialTournamentOutcome(tournament);
  return <Page><DemoBanner/><Eyebrow>COMPETIÇÃO JYNLO</Eyebrow>
    {!auth.token?<Button title="Entrar para ver torneio" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
    {tournament?<><Text style={styles.title}>{tournament.name}</Text>
      <View style={styles.line}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={tournament.status==='IN_PROGRESS'?'A decorrer':tournament.status==='DRAFT'?'Em preparação':'Concluído'}/></View>
      <Text style={styles.heading}>{label(kind)}</Text>
+     {officialOutcome?<View style={styles.panel}>
+      <Text style={styles.heading}>{officialOutcome.title}</Text>
+      <Text style={styles.meta}>{officialOutcome.detail}</Text>
+     </View>:null}
      {tableError?<Message tone="error">A classificação não está disponível: {tableError}</Message>:null}
      {tableError?<Button secondary title="Tentar carregar novamente" onPress={()=>{void load();}}/>:null}
      {table?<View style={styles.panel}>
