@@ -74,5 +74,5 @@ test('organizer checks the server page before updating its pagination cursor',()
  const screen=read('app/tournaments/[communityId]/[id]/manage.tsx');
  assert.match(screen,/const checked=validateNextFixturePage\(response,next\)/);
  assert.match(screen,/visiblePage\.current=checked\.page;setPage\(checked\.page\);setHasMore\(checked\.hasMore\)/);
- assert.match(screen,/if\(version!==generation\.current\)return;\s*const items=checked\.matches\.map/);
+ assert.match(screen,/if\(version!==generation\.current\|\|reading!==readVersion\.current\)return;\s*const items=checked\.matches\.map/);
 });
