@@ -77,3 +77,11 @@ test('invitation results exclude current squad members and link to public profil
  assert.match(screen,/params:\{username:p\.username\}/);
  assert.match(screen,/Não encontrámos novos jogadores com essa pesquisa/);
 });
+
+test('community invitations cannot be repeated if mutation succeeded but refresh failed',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const decided=await answerTeamCommunityMembership\(id,accept,auth\.token\)/);
+ assert.match(screen,/setCommunities\(current=>current\.map\(item=>item\.id===id\?decided:item\)\)/);
+ assert.match(screen,/O convite foi tratado, mas não foi possível confirmar as associações/);
+ assert.match(screen,/setCommunitiesVerified\(false\)/);
+});
