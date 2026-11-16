@@ -134,8 +134,8 @@ export default function TeamsScreen(){
     <View style={styles.sectionHeader}><Text style={styles.heading}>As minhas equipas</Text><Text style={styles.count}>{owned.length}</Text></View>
     {!loading&&!error&&owned.length===0?<View style={styles.empty}>
       <JynloIcon name="community" size={27} color={C.mint}/>
-      <Text style={styles.heading}>A tua primeira equipa começa aqui</Text>
-      <Text style={styles.note}>Cria uma equipa e mantém os teus jogadores e o histórico unidos.</Text>
+      <Text style={styles.heading}>{joined.length?'Ainda não administras uma equipa':'A tua primeira equipa começa aqui'}</Text>
+      <Text style={styles.note}>{joined.length?'Já fazes parte de um plantel. Também podes criar a tua própria equipa.':'Cria uma equipa e mantém os teus jogadores e o histórico unidos.'}</Text>
       <Button title="Criar equipa" secondary onPress={()=>setCreateOpen(true)}/>
     </View>:null}
     {owned.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
