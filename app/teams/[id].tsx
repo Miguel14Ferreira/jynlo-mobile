@@ -15,6 +15,7 @@ export default function TeamDetail(){
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
+ const [communitiesVerified,setCommunitiesVerified]=useState(false);
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
@@ -50,8 +51,8 @@ export default function TeamDetail(){
   else setHistoryError('Não foi possível atualizar o histórico oficial.');
   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
   else setHonoursError('Não foi possível atualizar os troféus.');
-  if(linked.status==='fulfilled')setCommunities(linked.value);
-  else failed.push('as comunidades');
+  if(linked.status==='fulfilled'){setCommunities(linked.value);setCommunitiesVerified(true);}
+  else{setCommunitiesVerified(false);failed.push('as comunidades');}
   if(failed.length){
    if(!silent)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
   }else if(!silent)setError('');
@@ -128,14 +129,39 @@ export default function TeamDetail(){
   finally{setSaving(false);}
  };
  const removeMembership=async(id:number)=>{
-  if(!auth.token||saving)return;
+  if(!auth.token||saving||!communitiesVerified)return;
   setSaving(true);setError('');setMembershipNote('');
+  const version=requestVersion.current;
   try{
    await removeTeamCommunityMembership(id,auth.token);
-   setCommunities(await sportsTeamCommunities(teamId,auth.token));
+   if(version!==requestVersion.current)return;
+   setCommunities(current=>current.filter(item=>item.id!==id));
    setMembershipNote('Equipa removida da comunidade.');
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível remover a equipa.');}
-  finally{setSaving(false);}
+   try{
+    const updated=await sportsTeamCommunities(teamId,auth.token);
+    if(version===requestVersion.current)setCommunities(updated);
+   }catch{
+    if(version===requestVersion.current){
+     setCommunitiesVerified(false);
+     setError('A saída foi enviada, mas não foi possível confirmar a lista atual. Atualiza antes de repetir.');
+    }
+   }
+  }catch(e){
+   if(version===requestVersion.current){
+    setCommunitiesVerified(false);
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a saída.')+' Consulta as comunidades antes de repetir.');
+   }
+  }finally{if(version===requestVersion.current)setSaving(false);}
+ };
+ const confirmLeaveCommunity=(membership:TeamCommunityMembership)=>{
+  if(saving||!communitiesVerified)return;
+  const version=requestVersion.current;
+  Alert.alert('Sair da comunidade?',`A equipa deixa de estar associada a ${membership.communityName}. Continuar?`,[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Sair da comunidade',style:'destructive',onPress:()=>{
+    if(version===requestVersion.current)void removeMembership(membership.id);
+   }}
+  ]);
  };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
   if(!team||!auth.token||saving)return;
@@ -239,21 +265,22 @@ export default function TeamDetail(){
     <Button secondary title="Ver histórico e troféus" onPress={()=>setActiveTab('TROPHIES')}/>
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
-    {communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
+    {!communitiesVerified?<Text style={styles.note}>Associações por confirmar. Atualiza os dados para gerir comunidades.</Text>:null}
+    {communitiesVerified?communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
       <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(m.communityId)}})}
        style={styles.communityLink}>
        <Text style={styles.playerName}>{m.communityName}</Text>
        <Text style={styles.note}>Ver comunidade →</Text>
       </Pressable>
-      {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>void removeMembership(m.id)}/>:null}
-    </View>)}
-    {!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>Ainda não pertence a comunidades.</Text>:null}
-    {isOwner?communities.filter(m=>m.status==='PENDING_TEAM').map(m=><View key={m.id} style={styles.candidate}>
+      {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>confirmLeaveCommunity(m)}/>:null}
+    </View>):null}
+    {communitiesVerified&&!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>Ainda não pertence a comunidades.</Text>:null}
+    {isOwner&&communitiesVerified?communities.filter(m=>m.status==='PENDING_TEAM').map(m=><View key={m.id} style={styles.candidate}>
       <Text style={styles.note}>Convite de {m.communityName}</Text>
       <Button title="Aceitar convite" disabled={saving} onPress={()=>void decideMembership(m.id,true)}/>
       <Button title="Recusar convite" secondary disabled={saving} onPress={()=>void decideMembership(m.id,false)}/>
     </View>):null}
-    {isOwner?communities.filter(m=>m.status==='PENDING_COMMUNITY').map(m=>
+    {isOwner&&communitiesVerified?communities.filter(m=>m.status==='PENDING_COMMUNITY').map(m=>
       <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
     {membershipNote?<Message>{membershipNote}</Message>:null}
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
