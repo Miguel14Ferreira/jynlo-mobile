@@ -31,4 +31,16 @@ async function reconcileVisibleFixtures(fetchPage,previousPage,isCurrent,maxPage
  }
  return {matches,page:lastPage,hasMore};
 }
-module.exports={reconcileVisibleFixtures};
+/** Refuse a broken next-page cursor before enabling the league close action. */
+function validateNextFixturePage(response,expectedPage){
+ if(!Number.isSafeInteger(expectedPage)||expectedPage<1||expectedPage>9999
+  ||!response||response.page!==expectedPage||!Array.isArray(response.matches)
+  ||typeof response.hasMore!=='boolean')
+  throw Error('O servidor devolveu uma página de jogos inválida. Volta a sincronizar.');
+ if(response.hasMore&&response.matches.length===0)
+  throw Error('A paginação dos jogos não avançou. Volta a sincronizar.');
+ if(response.matches.some(match=>!match||!Number.isSafeInteger(match.id)||match.id<=0))
+  throw Error('O servidor devolveu um jogo inválido. Volta a sincronizar.');
+ return response;
+}
+module.exports={reconcileVisibleFixtures,validateNextFixturePage};
