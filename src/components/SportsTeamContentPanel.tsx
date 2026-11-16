@@ -2,6 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
+import {ApiError} from '../lib/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
 import {observeTeamContent} from '../lib/team-content-realtime';
@@ -18,6 +19,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [sending,setSending]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
+ const [accessRevoked,setAccessRevoked]=useState(false);
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const [editingId,setEditingId]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
@@ -58,7 +60,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
   if(reading.current===expected){pendingRefresh.current=true;return;}
-  if(sendingNow.current)return;
+  if(sendingNow.current||accessRevoked)return;
   reading.current=expected;
   const readRequest=++readRequestVersion.current;
   const writeVersion=mutationVersion.current;
@@ -69,6 +71,15 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    setEntries(history);setSyncWarning('');void loadReactions(history);
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
+   if(e instanceof ApiError&&(e.status===403||e.status===401)){
+    // Membership or authentication was revoked. Never retain private history on screen.
+    setAccessRevoked(true);setEntries([]);setSearchResults([]);setSearchActive(false);
+    searchVersion.current++;reactionVersion.current++;setReactions({});
+    setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+    setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
+    setError('Já não tens acesso a esta conversa.');
+    return;
+   }
    const message=e instanceof Error?e.message:'Não foi possível carregar as mensagens.';
    if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
    else setError(message);
@@ -82,11 +93,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
    if(!quiet&&expected===version.current)setLoading(false);
   }
- },[teamId,kind,token,loadReactions]);
+ },[teamId,kind,token,loadReactions,accessRevoked]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   pendingRefresh.current=false;
-  setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
+  setAccessRevoked(false);setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
   setMedia([]);setAttachmentsEnabled(false);
@@ -241,6 +252,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    })();}}
   ]);
  };
+ if(accessRevoked)return <View style={styles.panel}>
+  <Text style={styles.title}>Acesso à equipa indisponível</Text>
+  <Text style={styles.error} accessibilityRole="alert">Já não tens acesso a esta conversa.</Text>
+ </View>;
  return <View style={styles.panel}>
   <Text style={styles.title}>{kind==='chat'?'Conversa da equipa':'Publicações da equipa'}</Text>
   <Text style={styles.sub}>Apenas o responsável e membros confirmados podem participar.</Text>
