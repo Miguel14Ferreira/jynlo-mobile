@@ -209,8 +209,8 @@ export default function TournamentManagerScreen(){
     <Text style={styles.helper}>Confirma primeiro as inscrições e os plantéis. Publicar o calendário inicia o torneio.</Text>
     <Button title={busy?'A guardar…':'Publicar calendário e iniciar torneio'} disabled={busy||syncing} onPress={publish}/>
    </View>:null}
-   {tournament.status==='IN_PROGRESS'?<View style={styles.panel}>
-    <Text style={styles.heading}>Jogos e resultados</Text>
+   {tournament.status!=='DRAFT'?<View style={styles.panel}>
+    <Text style={styles.heading}>{tournament.status==='COMPLETED'?'Jogos e resultados finais':'Jogos e resultados'}</Text>
     <Text style={styles.helper}>{matches.length} jogos carregados{hasMore?' · existem mais páginas':''}. Os resultados nunca são calculados pelo telemóvel.</Text>
     {matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
     {matches.map(m=><View key={m.id} style={styles.match}>
