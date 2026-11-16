@@ -4,6 +4,7 @@ import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
+import {observeTeamContent} from '../lib/team-content-realtime';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -84,13 +85,20 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(version.current===current)setAttachmentsEnabled(available);
   });
   void refresh(false,current);
+  // Authenticated WebSocket signals trigger immediate HTTP refresh. Polling
+  // remains a fallback for disconnected devices and missed events.
+  let socketOnline=false;
+  const stopObserving=observeTeamContent({teamId,kind,token,
+   onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current);},
+   onStatus:status=>{socketOnline=status==='online';}
+  });
   const timer=setInterval(()=>{
-   if(AppState.currentState==='active')void refresh(true,current);
+   if(AppState.currentState==='active'&&!socketOnline)void refresh(true,current);
   },5000);
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current);
   });
-  return()=>{clearInterval(timer);resume.remove();version.current++;searchVersion.current++;reactionVersion.current++;};
+  return()=>{clearInterval(timer);resume.remove();stopObserving();version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
  const chooseMedia=async()=>{
   if(!attachmentsEnabled||choosing.current||sendingNow.current)return;
