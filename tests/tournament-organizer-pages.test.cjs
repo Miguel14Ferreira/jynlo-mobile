@@ -50,7 +50,7 @@ test('discard asynchronous replies if user navigated away',async()=>{
 test('organizer uses server pagination for visible pages on refresh and after saves',()=>{
  const screen=read('app/tournaments/[communityId]/[id]/manage.tsx');
  for(const token of [
-  'reconcileVisibleFixtures(',
+  'reconcileVisibleFixtures<TournamentTeamMatch|TournamentIndividualMatch>(',
   'silent?visiblePage.current:0',
   'visiblePage.current=response.page',
   'if(!response)return false',
