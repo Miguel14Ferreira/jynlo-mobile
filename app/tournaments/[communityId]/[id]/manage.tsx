@@ -70,7 +70,7 @@ export default function TournamentManagerScreen(){
     return true;
    }
    const [fixtures,table,groupState]=await Promise.allSettled([
-    reconcileVisibleFixtures(
+    reconcileVisibleFixtures<TournamentTeamMatch|TournamentIndividualMatch>(
      requestedPage=>kind==='TEAM'?
       teamTournamentMatches(cid,tid,requestedPage,auth.token!,auth.username!):
       individualTournamentMatches(cid,tid,requestedPage,auth.token!,auth.username!),
