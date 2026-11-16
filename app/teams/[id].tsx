@@ -8,6 +8,8 @@ import {setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitCo
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
+import TeamKitPreview from '../../src/components/TeamKitPreview';
+import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
@@ -23,6 +25,7 @@ export default function TeamDetail(){
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [kitPrimary,setKitPrimary]=useState('#19CBB6'),[kitSecondary,setKitSecondary]=useState('#F0FAFB');
+ const [kitPattern,setKitPattern]=useState<TeamKitPattern>('PLAIN');
  const [brandingVerified,setBrandingVerified]=useState(false);
  const kitEditedRef=useRef(false);
  const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
@@ -48,6 +51,7 @@ export default function TeamDetail(){
    if(!kitEditedRef.current){
     setKitPrimary(safeTeamKitColor(identity.kitPrimary,'#19CBB6'));
     setKitSecondary(safeTeamKitColor(identity.kitSecondary,'#F0FAFB'));
+    setKitPattern(identity.kitPattern||'PLAIN');
    }
    if(!silent)setLoading(false);
   }).catch(()=>{});
@@ -66,6 +70,7 @@ export default function TeamDetail(){
    if(!kitEditedRef.current){
     setKitPrimary(safeTeamKitColor(details.value.kitPrimary,'#19CBB6'));
     setKitSecondary(safeTeamKitColor(details.value.kitSecondary,'#F0FAFB'));
+    setKitPattern(details.value.kitPattern||'PLAIN');
    }
   }else {setBrandingVerified(false);if(!silent)setTeam(null);failed.push('o perfil da equipa');}
   if(roster.status==='fulfilled'){
@@ -282,6 +287,9 @@ export default function TeamDetail(){
   catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a configuração.');}
   finally{setSaving(false);}
  };
+ const kitPatterns:ReadonlyArray<{id:TeamKitPattern;label:string}>=[
+   {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas'},{id:'DIAGONAL',label:'Faixa diagonal'}
+  ];
  const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
  const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset)=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
@@ -289,7 +297,7 @@ export default function TeamDetail(){
   actionRef.current=true;setSaving(true);setError('');setNotice('');
   try{
    const result=mode==='KIT'
-    ?await setSportsTeamKit(teamId,kitPrimary,kitSecondary,auth.token)
+    ?await setSportsTeamKit(teamId,kitPrimary,kitSecondary,auth.token,kitPattern)
     :mode==='REMOVE'
     ?await removeSportsTeamLogo(teamId,auth.token)
     :await uploadSportsTeamLogo(teamId,asset!,auth.token);
@@ -300,6 +308,7 @@ export default function TeamDetail(){
     kitEditedRef.current=false;
     setKitPrimary(safeTeamKitColor(result.kitPrimary,'#19CBB6'));
     setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
+    setKitPattern(result.kitPattern||'PLAIN');
    }
    setNotice(mode==='KIT'?'Equipamento guardado.':mode==='REMOVE'?'Logótipo removido.':'Logótipo atualizado.');
   }catch(e){
@@ -347,8 +356,8 @@ export default function TeamDetail(){
     </View>
     {team.description?<Text style={styles.description}>{team.description}</Text>:null}
     <View style={styles.kitPreview}>
-      <View style={[styles.kitCircle,{backgroundColor:safeTeamKitColor(team.kitPrimary,'#19CBB6'),borderColor:safeTeamKitColor(team.kitSecondary,'#F0FAFB')}]}/>
-      <Text style={styles.heroSubtitle}>Equipamento da equipa</Text>
+      <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary} pattern={team.kitPattern} size={48}/>
+      <Text style={styles.heroSubtitle}>Equipamento · {kitPatterns.find(p=>p.id===(team.kitPattern||'PLAIN'))?.label||'Lisa'}</Text>
     </View>
     <View style={styles.statsRow}>
       <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
@@ -371,6 +380,16 @@ export default function TeamDetail(){
        {text:'Cancelar',style:'cancel'},
        {text:'Remover',style:'destructive',onPress:()=>void updateBranding('REMOVE')}
       ])}/>:null}
+    <Text style={styles.kitLabel}>Desenho da camisola</Text>
+    <View style={styles.kitPatternRow}>{kitPatterns.map(option=><Pressable key={option.id}
+      accessibilityRole="button" accessibilityLabel={'Modelo '+option.label}
+      accessibilityState={{selected:kitPattern===option.id}}
+      disabled={saving||!brandingVerified}
+      onPress={()=>{kitEditedRef.current=true;setKitPattern(option.id);}}
+      style={[styles.kitPatternCard,kitPattern===option.id&&styles.kitPatternSelected]}>
+      <TeamKitPreview primary={kitPrimary} secondary={kitSecondary} pattern={option.id} size={56}/>
+      <Text style={styles.kitPatternText}>{option.label}</Text>
+    </Pressable>)}</View>
     <Text style={styles.kitLabel}>Cor principal</Text>
     <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'primary'+color}
       accessibilityRole="button" accessibilityLabel={'Cor principal '+color}
@@ -504,6 +523,11 @@ export default function TeamDetail(){
 const styles=StyleSheet.create({
  header:{padding:20,backgroundColor:'#0A3340',borderColor:'#2A7A79',borderWidth:1,borderRadius:22,gap:13},
  kitPreview:{flexDirection:'row',alignItems:'center',gap:9},
+ kitPatternRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ kitPatternCard:{flex:1,minWidth:90,alignItems:'center',padding:8,gap:7,borderWidth:1,
+  borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
+ kitPatternSelected:{borderColor:C.mint,borderWidth:2,backgroundColor:'#123C42'},
+ kitPatternText:{fontSize:11,fontWeight:'800',color:C.white,textAlign:'center'},
  kitCircle:{height:19,width:19,borderWidth:4,borderRadius:10},
  kitLabel:{fontSize:13,fontWeight:'800',color:C.white,marginTop:4},
  swatchRow:{flexDirection:'row',flexWrap:'wrap',gap:10},
