@@ -60,6 +60,10 @@ export async function discoverSportsTeams(query: string, token?: string): Promis
   if (DEMO_MODE) return [];
   return request<SportsTeam[]>('/api/teams?q=' + encodeURIComponent(query.trim()), {token});
 }
+export async function joinedSportsTeams(token:string):Promise<SportsTeam[]> {
+  if(!token||DEMO_MODE)return [];
+  return request<SportsTeam[]>('/api/teams/joined',{token});
+}
 export async function mySportsTeams(token: string): Promise<SportsTeam[]> {
   if (!token || DEMO_MODE) return [];
   return request<SportsTeam[]>('/api/teams/mine', {token});
