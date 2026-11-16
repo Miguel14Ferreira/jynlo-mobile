@@ -7,8 +7,8 @@ import {configureTeamApplications,decideTeamApplication,teamCompetitionApplicati
  teamCompetitionApplications,type TeamCompetitionApplication,type TeamCompetitionKind}
  from '../lib/team-competition-applications-api';
 
-interface Props {communityId:number;competitionId:number;type:TeamCompetitionKind;token:string;}
-export function TeamCompetitionApplications({communityId,competitionId,type,token}:Props){
+interface Props {communityId:number;competitionId:number;type:TeamCompetitionKind;token:string;onEnrolled?:()=>void;}
+export function TeamCompetitionApplications({communityId,competitionId,type,token,onEnrolled}:Props){
  const [open,setOpen]=useState(false),[loaded,setLoaded]=useState(false);
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -82,7 +82,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
      <Button title="Recusar pedido" secondary disabled={busy||!applicationsVerified} onPress={()=>void decide(a.id,false)}/>
     </>:null}
     {applicationsVerified&&a.status==='APPROVED'?<GlobalTeamEnrollment communityId={communityId}
-      competitionId={competitionId} type={type} globalTeamId={a.teamId} token={token}/>:null}
+      competitionId={competitionId} type={type} globalTeamId={a.teamId} token={token} onEnrolled={onEnrolled}/>:null}
    </View>)}
    {applicationsVerified&&applications.length===0?<Text style={styles.note}>Ainda não existem pedidos.</Text>:null}
    <Text style={styles.note}>A aprovação não adiciona jogadores à competição automaticamente.</Text>
