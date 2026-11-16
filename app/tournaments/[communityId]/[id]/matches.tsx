@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -16,26 +16,37 @@ export default function IndividualMatchesScreen(){
  const [matches,setMatches]=useState<TournamentIndividualMatch[]>([]);
  const [page,setPage]=useState(0),[more,setMore]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setLoading(false);setTournament(null);setMatches([]);return;}
+ const generation=useRef(0),paging=useRef(false);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current){setLoading(false);setTournament(null);setMatches([]);}return;}
   setLoading(true);setError('');setTournament(null);setMatches([]);setMore(false);setPage(0);
   try{
-   const info=await tournamentDetails(cid,tid,auth.token,auth.username);setTournament(info);
+   const info=await tournamentDetails(cid,tid,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setTournament(info);
    if(['INDIVIDUAL','CHESS'].includes(classificationKind(info))){
     const result=await individualTournamentMatches(cid,tid,0,auth.token,auth.username);
+    if(version!==generation.current)return;
     setMatches(result.matches);setPage(result.page);setMore(result.hasMore);
    }
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar os jogos.');}
-  finally{setLoading(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  paging.current=false;
+  void load(version);
+  return()=>{generation.current++;};
+ },[load]));
  const supported=tournament&&['INDIVIDUAL','CHESS'].includes(classificationKind(tournament));
- async function next(){if(!auth.token||!auth.username||busy||!more)return;
-  setBusy(true);setError('');
+ async function next(){if(!auth.token||!auth.username||paging.current||busy||!more||loading)return;
+  const version=generation.current;
+  paging.current=true;setBusy(true);setError('');
   try{const p=validPage(page+1),data=await individualTournamentMatches(cid,tid,p,auth.token,auth.username);
+   if(version!==generation.current)return;
    setMatches(existing=>[...existing,...data.matches.filter(m=>!existing.some(x=>x.id===m.id))]);setPage(data.page);setMore(data.hasMore);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{setBusy(false);}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  finally{paging.current=false;setBusy(false);}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIO · INDIVIDUAL</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
