@@ -7,8 +7,8 @@ import {eligibleGlobalRoster,existingGlobalTeamEntry,finalizeGlobalTeamEntry,inv
  type EnrollmentType,type GlobalCompetitionEntry,type GlobalRosterCandidate}
  from '../lib/team-competition-enrollments-api';
 
-interface Props{communityId:number;competitionId:number;type:EnrollmentType;globalTeamId:number;token:string;}
-export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamId,token}:Props){
+interface Props{communityId:number;competitionId:number;type:EnrollmentType;globalTeamId:number;token:string;onEnrolled?:()=>void;}
+export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamId,token,onEnrolled}:Props){
  const [entry,setEntry]=useState<GlobalCompetitionEntry|null>(null);
  const [roster,setRoster]=useState<GlobalRosterCandidate[]>([]);
  const [selected,setSelected]=useState<number[]>([]);
@@ -50,6 +50,7 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
    const next=await finalizeGlobalTeamEntry(communityId,type,competitionId,globalTeamId,token);
    if(version!==generation.current)return;
    setEntry(next);setEntryCheck('present');setNotice('Equipa inscrita. Seleciona jogadores para convidar.');
+   onEnrolled?.();
   }catch(e){if(version===generation.current){
    setEntryCheck('failed');
    setError((e instanceof Error?e.message:'Não foi possível finalizar.')+
