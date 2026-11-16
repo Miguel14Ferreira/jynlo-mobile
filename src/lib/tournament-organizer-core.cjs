@@ -27,4 +27,22 @@ function validateTournamentScore(home,away){
  };
  return {homeScore:parse(home),awayScore:parse(away)};
 }
-module.exports={isOrganizer,organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore};
+/** Mirrors server match-specific constraints; server still owns authorization and state. */
+function validateTournamentMatchScore(tournament,match,home,away){
+ const scores=validateTournamentScore(home,away);
+ if(!tournament||!match||!Number.isSafeInteger(match.id)||match.id<=0)
+  throw Error('Jogo não encontrado. Atualiza o calendário.');
+ if(tournament.scoringMode==='CHESS_HALF_POINTS'||
+   (tournament.entryType!=='TEAM'&&classificationKind(tournament)==='CHESS')){
+  const a=scores.homeScore,b=scores.awayScore;
+  if(!((a===1&&b===0)||(a===0&&b===1)||(a===0&&b===0)))
+   throw Error('Xadrez: usa 1–0, 0–1 ou 0–0 para empate.');
+ }
+ const elimination=tournament.entryType==='TEAM'&&(
+  tournament.format==='KNOCKOUT'||
+  (tournament.format==='GROUP_KNOCKOUT'&&match.groupNumber==null));
+ if(elimination&&scores.homeScore===scores.awayScore)
+  throw Error('Uma eliminatória exige vencedor. Regista o resultado após desempate.');
+ return scores;
+}
+module.exports={isOrganizer,organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore};
