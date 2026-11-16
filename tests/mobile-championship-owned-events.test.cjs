@@ -117,3 +117,12 @@ test('confirmation dialogs cannot write to a previously selected championship ev
  assert.match(fixture,/const version=generation\.current;\s*Alert\.alert\('Confirmar '/);
  assert.match(fixture,/if\(version!==generation\.current\)return;\s*void perform/);
 });
+
+
+test('score form cannot resend unchanged, invalid, or stale fixture results',()=>{
+ assert.match(list,/const unchanged=valid&&Number\(home\)===fixture\.homeScore&&Number\(away\)===fixture\.awayScore/);
+ assert.match(list,/title="Guardar resultado" disabled=\{!valid\|\|busy\|\|unchanged\}/);
+ assert.match(list,/!fixtures\.some\(item=>item\.id===fixture\.id&&item\.homeTeamId===fixture\.homeTeamId/);
+ assert.match(list,/Number\.isSafeInteger\(home\).*Number\.isSafeInteger\(away\)/);
+ assert.match(list,/if\(home===fixture\.homeScore&&away===fixture\.awayScore\)return/);
+});
