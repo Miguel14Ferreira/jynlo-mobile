@@ -33,3 +33,13 @@ test('team fixtures follow the backend page cursor, never guess it',()=>{
  assert.match(source,/setPage\(part\.page\)/);
  assert.doesNotMatch(source,/setPage\(next\)/);
 });
+
+test('performance results cannot mix old and new tournament responses',()=>{
+ const source=read('app/tournaments/[communityId]/[id]/results.tsx');
+ assert.match(source,/generation=useRef\(0\)/);
+ assert.match(source,/const version=\+\+generation\.current/);
+ assert.match(source,/return\(\)=>\{generation\.current\+\+;\}/);
+ assert.match(source,/if\(version!==generation\.current\)return/);
+ assert.match(source,/if\(version===generation\.current\)setOverview\(result\)/);
+ assert.match(source,/if\(version===generation\.current\)setLoading\(false\)/);
+});
