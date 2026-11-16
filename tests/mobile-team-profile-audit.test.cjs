@@ -57,3 +57,15 @@ test('owner permissions work with normalized handles and fail closed on unreadab
  assert.match(screen,/m\.username\.toLowerCase\(\)===auth\.username!\.toLowerCase\(\)/);
  assert.match(screen,/else\{setRosterVerified\(false\);failed\.push\('o plantel'\);\}/);
 });
+
+test('community exits require confirmation and verified membership, with safe reconciliation',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/Alert\.alert\('Sair da comunidade\?'/);
+ assert.match(screen,/onPress=\{\(\)=>confirmLeaveCommunity\(m\)\}/);
+ assert.match(screen,/if\(!auth\.token\|\|saving\|\|!communitiesVerified\)return/);
+ assert.match(screen,/setCommunitiesVerified\(false\)/);
+ assert.match(screen,/communitiesVerified\?communities\.filter/);
+ assert.match(screen,/isOwner&&communitiesVerified\?communities\.filter/);
+ assert.match(screen,/setCommunities\(current=>current\.filter\(item=>item\.id!==id\)\)/);
+ assert.match(screen,/A saída foi enviada, mas não foi possível confirmar a lista atual/);
+});
