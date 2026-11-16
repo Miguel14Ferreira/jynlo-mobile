@@ -294,9 +294,13 @@ export default function TeamDetail(){
     ?await removeSportsTeamLogo(teamId,auth.token)
     :await uploadSportsTeamLogo(teamId,asset!,auth.token);
    if(version!==requestVersion.current)return;
-   setTeam(result);setBrandingVerified(true);kitEditedRef.current=false;
-   setKitPrimary(safeTeamKitColor(result.kitPrimary,'#19CBB6'));
-   setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
+   setTeam(result);setBrandingVerified(true);
+   // Changing the crest must not silently discard unsaved kit choices.
+   if(mode==='KIT'||!kitEditedRef.current){
+    kitEditedRef.current=false;
+    setKitPrimary(safeTeamKitColor(result.kitPrimary,'#19CBB6'));
+    setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
+   }
    setNotice(mode==='KIT'?'Equipamento guardado.':mode==='REMOVE'?'Logótipo removido.':'Logótipo atualizado.');
   }catch(e){
    if(version===requestVersion.current){
