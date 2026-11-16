@@ -8,7 +8,7 @@ import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentDetails,tournamentTable} from '../../../../src/lib/competition-api';
 import {teamTournamentMatches,teamTournamentGroups} from '../../../../src/lib/tournament-fixtures-api';
 import {individualTournamentMatches} from '../../../../src/lib/performance-api';
-import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentMatchScore} from '../../../../src/lib/tournament-organizer-core.cjs';
+import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOrganizer,organizerFixtureType,validateTournamentMatchScore,organizerMatchWriteGuard} from '../../../../src/lib/tournament-organizer-core.cjs';
 import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
 import {officialTournamentOutcome} from '../../../../src/lib/tournament-outcome-core.cjs';
@@ -19,7 +19,7 @@ import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,Tourn
 type OrganizerMatch={id:number;roundNumber:number;home:string;away:string;status:'COMPLETED'|'SCHEDULED';homeScore:number|null;awayScore:number|null;groupNumber:number|null};
 function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:m.groupNumber};}
 function mapIndividual(m:TournamentIndividualMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeUsername,away:m.awayUsername,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:null};}
-function ScoreEditor({match,tournament,busy,onSave}:{match:OrganizerMatch;tournament:JynloTournament;busy:boolean;onSave:(matchId:number,home:string,away:string)=>void}){
+function ScoreEditor({match,tournament,busy,writeGuard,onSave}:{match:OrganizerMatch;tournament:JynloTournament;busy:boolean;writeGuard:{allowed:boolean;reason:string|null};onSave:(matchId:number,home:string,away:string)=>void}){
  const [home,setHome]=useState(match.homeScore==null?'':String(match.homeScore));
  const [away,setAway]=useState(match.awayScore==null?'':String(match.awayScore));
  let valid=true;try{validateTournamentMatchScore(tournament,match,home,away);}catch{valid=false;}
@@ -33,7 +33,8 @@ function ScoreEditor({match,tournament,busy,onSave}:{match:OrganizerMatch;tourna
    <Text style={styles.dash}>—</Text>
    <TextInput style={styles.scoreInput} value={away} onChangeText={setAway} keyboardType="number-pad" maxLength={3} accessibilityLabel={`Pontos de ${match.away}`}/>
   </View>
-  <Button secondary disabled={busy||!valid} title={match.status==='COMPLETED'?'Corrigir resultado':'Registar resultado'} onPress={()=>onSave(match.id,home,away)}/>
+  {!writeGuard.allowed?<Text style={styles.helper}>{writeGuard.reason}</Text>:null}
+  <Button secondary disabled={busy||!valid||!writeGuard.allowed} title={match.status==='COMPLETED'?'Corrigir resultado':'Registar resultado'} onPress={()=>onSave(match.id,home,away)}/>
  </View>;
 }
 export default function TournamentManagerScreen(){
@@ -147,6 +148,8 @@ export default function TournamentManagerScreen(){
  }
  function save(id:number,home:string,away:string){if(!tournament||!canRecord||!auth.token||!auth.username)return;
   const match=matches.find(item=>item.id===id);
+  const guard=organizerMatchWriteGuard(tournament,match,matches,groups,groups!==null);
+  if(!guard.allowed){setError(guard.reason||'Este resultado já não pode ser alterado.');return;}
   try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
   const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
   Alert.alert('Confirmar resultado?',`Registar ${home} — ${away}? A classificação será calculada pelo servidor.`,[
@@ -231,7 +234,7 @@ export default function TournamentManagerScreen(){
       <View style={styles.row}><Text style={styles.round}>Jornada {m.roundNumber}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
       <Text style={styles.matchName}>{m.home}  ·  {m.away}</Text>
       {m.status==='COMPLETED'?<Text style={styles.result}>{m.homeScore} — {m.awayScore}</Text>:null}
-      {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} onSave={save}/>:null}
+      {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} writeGuard={organizerMatchWriteGuard(tournament,m,matches,groups,groups!==null)} onSave={save}/>:null}
     </View>):null}
     {fixturesVerified&&hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
    </View>:null}
