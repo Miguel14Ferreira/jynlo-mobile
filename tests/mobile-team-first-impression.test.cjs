@@ -225,7 +225,19 @@ test('switching team chats cannot be blocked by an in-flight request from the pr
  assert.match(panel,/reading=useRef<number\|null>\(null\)/);
  assert.match(panel,/if\(reading\.current===expected\|\|sendingNow\.current\)return/);
  assert.match(panel,/reading\.current=expected/);
- assert.match(panel,/if\(reading\.current===expected\)reading\.current=null/);
+ assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)reading\.current=null/);
  assert.match(panel,/if\(expected!==version\.current\)return/);
  assert.doesNotMatch(panel,/if\(reading\.current\|\|sendingNow\.current\)return/);
+});
+
+test('team chat drops history fetched before a write and avoids overlapping refresh cleanup',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const mutationVersion=useRef\(0\),readRequestVersion=useRef\(0\)/);
+ assert.match(panel,/const writeVersion=mutationVersion\.current/);
+ assert.match(panel,/expected!==version\.current\|\|writeVersion!==mutationVersion\.current/);
+ assert.match(panel,/const readRequest=\+\+readRequestVersion\.current/);
+ assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)reading\.current=null/);
+ assert.equal((panel.match(/sendingNow\.current=true;invalidatePendingRead\(\)/g)||[]).length,4);
+ assert.match(panel,/if\(AppState\.currentState==='active'\)void refresh\(true,current\)/);
+ assert.match(panel,/\},5000\)/);
 });
