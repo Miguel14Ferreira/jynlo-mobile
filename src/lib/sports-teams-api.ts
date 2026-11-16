@@ -2,6 +2,7 @@ import {API_BASE,DEMO_MODE,request} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 
 /** Independent team; tournament teams remain competition-specific. */
+export type TeamKitPattern='PLAIN'|'STRIPES'|'DIAGONAL';
 export interface SportsTeam {
   id: number;
   slug: string;
@@ -15,6 +16,7 @@ export interface SportsTeam {
   logoUrl?: string | null;
   kitPrimary?: string | null;
   kitSecondary?: string | null;
+  kitPattern?: TeamKitPattern | null;
 }
 export interface TeamChampionshipHonour {
   championshipId:number;
@@ -104,13 +106,13 @@ export function teamLogoUri(input:string|null|undefined):string|null {
  return null;
 }
 export async function setSportsTeamKit(
- id:number,primary:string,secondary:string,token:string
+ id:number,primary:string,secondary:string,token:string,pattern:TeamKitPattern='PLAIN'
 ):Promise<SportsTeam>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para personalizar a equipa.');
  if(!HEX_COLOR.test(primary)||!HEX_COLOR.test(secondary))
   throw Error('Escolhe duas cores válidas.');
  return request<SportsTeam>('/api/teams/'+validId(id)+'/kit',{
-  token,method:'PUT',body:{primary,secondary}
+  token,method:'PUT',body:{primary,secondary,pattern}
  });
 }
 /** Uses the shared validated image storage. A timeout is uncertain: never auto-retry. */
