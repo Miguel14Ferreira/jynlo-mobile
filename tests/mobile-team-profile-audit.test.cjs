@@ -34,7 +34,7 @@ test('owner search has a clear no-result state and invite has confirmation',()=>
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/returnKeyType="search" onSubmitEditing=\{\(\)=>void search\(\)\}/);
  assert.match(screen,/setSearchComplete\(true\)/);
- assert.match(screen,/searchComplete&&candidates\.length===0/);
+ assert.match(screen,/searchComplete&&inviteCandidates\.length===0/);
  assert.match(screen,/Convite enviado\. O jogador entra no plantel depois de aceitar/);
  assert.match(screen,/searchVersion\.current\+\+/);
  assert.match(screen,/setCandidates\(\[\]\)/);
@@ -68,4 +68,12 @@ test('community exits require confirmation and verified membership, with safe re
  assert.match(screen,/isOwner&&communitiesVerified\?communities\.filter/);
  assert.match(screen,/setCommunities\(current=>current\.filter\(item=>item\.id!==id\)\)/);
  assert.match(screen,/A saída foi enviada, mas não foi possível confirmar a lista atual/);
+});
+
+test('invitation results exclude current squad members and link to public profiles',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/const inviteCandidates=candidates\.filter\(p=>!members\.some\(m=>m\.profileId===p\.profileId\)\)/);
+ assert.match(screen,/inviteCandidates\.map\(p=><View/);
+ assert.match(screen,/params:\{username:p\.username\}/);
+ assert.match(screen,/Não encontrámos novos jogadores com essa pesquisa/);
 });
