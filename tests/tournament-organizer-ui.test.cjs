@@ -87,3 +87,14 @@ test('organizer can recover from an uncertain server result without replaying th
  assert.match(screen,/const canRecord=fixturesVerified&&canRecordTournamentResult/);
  assert.match(screen,/const allVisibleFinished=fixturesVerified&&matches\.length>0/);
 });
+
+test('unconfirmed results and tables are never presented as current during recovery',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/setFixturesVerified\(false\);\s*setStandings\(null\);setGroups\(null\)/);
+ assert.match(screen,/fixturesVerified&&standings\?<View/);
+ assert.match(screen,/fixturesVerified&&tournament\.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups/);
+ assert.match(screen,/fixturesVerified\?matches\.map\(m=><View/);
+ assert.match(screen,/fixturesVerified&&matches\.length===0/);
+ assert.match(screen,/fixturesVerified&&hasMore\?<Button/);
+ assert.match(screen,/fixturesVerified\?matches\.length:0/);
+});
