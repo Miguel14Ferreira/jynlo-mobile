@@ -43,3 +43,11 @@ test('performance results cannot mix old and new tournament responses',()=>{
  assert.match(source,/if\(version===generation\.current\)setOverview\(result\)/);
  assert.match(source,/if\(version===generation\.current\)setLoading\(false\)/);
 });
+
+test('team profile match history uses server pagination cursor on initial and later pages',()=>{
+ const source=read('app/tournaments/[communityId]/[id]/teams/[teamId].tsx');
+ assert.match(source,/setMatches\(response\.matches\);setPage\(response\.page\);setHasMore\(response\.hasMore\)/);
+ assert.match(source,/setPage\(part\.page\);setHasMore\(part\.hasMore\)/);
+ assert.doesNotMatch(source,/setPage\(next\)/);
+ assert.match(source,/paging\.current=false;\s*setLoadingMore\(false\)/);
+});
