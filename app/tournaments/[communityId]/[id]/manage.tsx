@@ -12,7 +12,7 @@ import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOr
 import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
 import {officialTournamentOutcome} from '../../../../src/lib/tournament-outcome-core.cjs';
-import {reconcileVisibleFixtures} from '../../../../src/lib/tournament-organizer-pages.cjs';
+import {reconcileVisibleFixtures,validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,TournamentTable,TournamentTeamGroups} from '../../../../src/lib/types';
 
@@ -163,10 +163,12 @@ export default function TournamentManagerScreen(){
   pendingWrite.current=true;setBusy(true);setError('');
   try{const next=page+1;
    const response=type==='TEAM'?await teamTournamentMatches(cid,tid,next,auth.token,auth.username):await individualTournamentMatches(cid,tid,next,auth.token,auth.username);
-   const items=response.matches.map(m=>type==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch));
+   const checked=validateNextFixturePage(response,next);
+   if(version!==generation.current)return;
+   const items=checked.matches.map(m=>type==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch));
    if(version!==generation.current)return;
    setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);
-   visiblePage.current=response.page;setPage(response.page);setHasMore(response.hasMore);
+   visiblePage.current=checked.page;setPage(checked.page);setHasMore(checked.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
   finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
