@@ -28,3 +28,28 @@ test('organizer editor validates the actual match and explains special scoring r
  assert.match(screen,/match=\{m\} tournament=\{tournament\}/);
  assert.match(types,/export function validateTournamentMatchScore\(/);
 });
+
+test('guardar um marcador atualiza calendário, classificação e fases da competição',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ for(const token of [
+  'tournamentTable(cid,info,auth.token,auth.username)',
+  'teamTournamentGroups(cid,tid,auth.token,auth.username)',
+  'Promise.allSettled([',
+  'setMatches(response.matches.map',
+  'setStandings(table.value)',
+  'setGroups(groupState.value)',
+  'Classificação oficial',
+  'Fases da competição',
+  'groups.knockoutStarted',
+  'const refreshed=await load(version,true)'
+ ]) assert.ok(screen.includes(token),token);
+ assert.match(screen,/if\(version!==generation\.current\|\|request!==readVersion\.current\)return false/);
+ assert.match(screen,/return\(\)=>\{generation\.current\+\+;readVersion\.current\+\+;\}/);
+ assert.match(screen,/if\(fixtures\.status==='rejected'\)throw fixtures\.reason/);
+ assert.match(screen,/if\(table\.status==='fulfilled'\)\{setStandings\(table\.value\);\}/);
+ assert.match(screen,/else\{setStandings\(null\);setStandingsError\(/);
+ assert.match(screen,/setNotice\(refreshed\?success:/);
+ assert.match(screen,/if\(silent\)setSyncing\(true\)/);
+ assert.match(screen,/if\(silent\)setSyncing\(false\)/);
+ assert.doesNotMatch(screen,/setStandings\(.*\.reduce\(/);
+});
