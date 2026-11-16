@@ -99,3 +99,21 @@ test('fixtures are grouped by collapsible rounds rather than rendering an endles
  assert.match(list,/Expandir todas as jornadas/);
  assert.match(list,/Recolher todas as jornadas/);
 });
+
+
+test('uncertain league, cup, and fixture writes revoke editing until verified reload',()=>{
+ assert.match(list,/setOrganizer\(false\);setDetailsFailed\(true\);setLoadedEventId\(null\)/);
+ assert.match(list,/setFixtures\(\[\]\);setRegistrations\(\[\]\);setStandings\(null\)/);
+ assert.match(list,/O servidor pode ter guardado a alteração/);
+ assert.match(list,/setDetailsRefresh\(value=>value\+1\);void load\(\)/);
+ assert.match(fixture,/setCanWrite\(false\);setFixture\(null\);setRoster\(\[\]\);setGoals\(\[\]\)/);
+ assert.match(fixture,/O acontecimento pode ter sido guardado/);
+ assert.match(fixture,/if\(version!==generation\.current\)return;/);
+});
+test('confirmation dialogs cannot write to a previously selected championship event',()=>{
+ assert.match(list,/const version=generation\.current,confirmedEventId=selected/);
+ assert.match(list,/confirmedEventId!==selectedRef\.current/);
+ assert.match(list,/selectedRef\.current=item\.id;setSelected\(item\.id\)/);
+ assert.match(fixture,/const version=generation\.current;\s*Alert\.alert\('Confirmar '/);
+ assert.match(fixture,/if\(version!==generation\.current\)return;\s*void perform/);
+});
