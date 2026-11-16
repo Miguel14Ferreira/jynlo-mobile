@@ -489,7 +489,8 @@ export default function DirectConversation(){
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
       historyViewportHeight.current=layoutMeasurement.height;
       historyContentHeight.current=contentSize.height;
-      measuredHistoryKey.current=historyKey;
+      // Scroll events can carry the old native content size during a refresh.
+      // Only onContentSizeChange establishes measurement for a new history.
       historyViewportMeasured.current=layoutMeasurement.height>0&&contentSize.height>0;
       nearBottom.current=historyViewportMeasured.current&&contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
       // A 90px proximity tolerance is for auto-scroll only, not read receipts.
