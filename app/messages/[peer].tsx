@@ -37,6 +37,9 @@ export default function DirectConversation(){
  const conversationScroll=useRef<ScrollViewInstance|null>(null);
  const nearBottom=useRef(false);
  const historyViewportMeasured=useRef(false);
+ const historyViewportHeight=useRef(0);
+ const historyContentHeight=useRef(0);
+ const latestVisibleAtBottom=useRef(false);
  const lastAcknowledgedMessageId=useRef(0);
  const composerFocused=useRef(false);
  useEffect(()=>{
@@ -140,6 +143,9 @@ export default function DirectConversation(){
    lastAcknowledgedMessageId.current=0;
    nearBottom.current=false;
    historyViewportMeasured.current=false;
+   historyViewportHeight.current=0;
+   historyContentHeight.current=0;
+   latestVisibleAtBottom.current=false;
    setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
@@ -440,6 +446,25 @@ export default function DirectConversation(){
    }
   }
  }
+ const acknowledgeVisibleHistory=useCallback((fullyVisible:boolean)=>{
+  if(!fullyVisible||!auth.token||!blockStatusKnown||blocked||loading||syncWarning||
+     AppState.currentState!=='active'||DEMO_MODE)return;
+  const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+  if(latest<=lastAcknowledgedMessageId.current)return;
+  const identity=peer+'|'+auth.token,version=generation.current;
+  lastAcknowledgedMessageId.current=latest;
+  void markDirectRead(peer,latest,auth.token).catch(()=>{
+   if(conversation.current===identity&&generation.current===version&&lastAcknowledgedMessageId.current===latest)
+    lastAcknowledgedMessageId.current=0;
+  });
+ },[auth.token,blockStatusKnown,blocked,loading,syncWarning,messages,peer]);
+ useEffect(()=>{
+  // Short histories may become visible without a native scroll event.
+  if(historyViewportHeight.current>0&&historyContentHeight.current>0&&
+     historyContentHeight.current<=historyViewportHeight.current)
+   acknowledgeVisibleHistory(true);
+  else if(latestVisibleAtBottom.current)acknowledgeVisibleHistory(true);
+ },[acknowledgeVisibleHistory]);
  // Only preview the most recent images automatically; all attachments remain
  // authenticated and subject to the secure 5 MB cache limit.
  const recentPhotoIds=new Set(recentPreviewMessageIds(messages));
@@ -447,18 +472,35 @@ export default function DirectConversation(){
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
+    onLayout={event=>{
+      historyViewportHeight.current=event.nativeEvent.layout.height;
+      historyViewportMeasured.current=historyViewportHeight.current>0;
+      if(historyViewportHeight.current>0&&historyContentHeight.current>0&&
+         historyContentHeight.current<=historyViewportHeight.current){
+        nearBottom.current=true;latestVisibleAtBottom.current=true;
+        acknowledgeVisibleHistory(true);
+      }
+    }}
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
+      historyViewportHeight.current=layoutMeasurement.height;
+      historyContentHeight.current=contentSize.height;
       historyViewportMeasured.current=layoutMeasurement.height>0&&contentSize.height>0;
       nearBottom.current=historyViewportMeasured.current&&contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
-      if(nearBottom.current&&auth.token&&AppState.currentState==='active'){
-       const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
-       if(latest>lastAcknowledgedMessageId.current){
-        lastAcknowledgedMessageId.current=latest;
-        void markDirectRead(peer,latest,auth.token).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
-       }
-      }}}
+      // A 90px proximity tolerance is for auto-scroll only, not read receipts.
+      latestVisibleAtBottom.current=historyViewportMeasured.current&&
+       contentOffset.y+layoutMeasurement.height>=contentSize.height-2;
+      acknowledgeVisibleHistory(latestVisibleAtBottom.current);
+    }}
     scrollEventThrottle={100}
-    onContentSizeChange={()=>{if(nearBottom.current&&historyViewportMeasured.current)conversationScroll.current?.scrollToEnd({animated:false});}}>
+    onContentSizeChange={(_,height)=>{
+      historyContentHeight.current=height;
+      if(historyViewportHeight.current>0&&height>0&&height<=historyViewportHeight.current){
+       nearBottom.current=true;latestVisibleAtBottom.current=true;
+       acknowledgeVisibleHistory(true);
+      }else if(nearBottom.current&&historyViewportMeasured.current){
+       conversationScroll.current?.scrollToEnd({animated:false});
+      }
+    }}>
   <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
   <Text style={styles.title}>{peer}</Text>
   <ChatSearchPanel kind="direct" conversationId={peer} token={auth.token} enabled={blockStatusKnown&&!blocked}/>
