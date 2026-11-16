@@ -73,8 +73,8 @@ export default function TeamCompetitionDiscovery(){
   return ()=>{requestVersion.current++;applyGeneration.current++;applyingRef.current=false;};
  },[load]));
  const applicationStatus=(competition:OpenTeamCompetition,teamId:number|null)=>
-  teamId===null?null:applications.find(a=>a.teamId===teamId&&a.competitionId===competition.id
-   &&a.competitionType===competition.type)?.status||null;
+  teamId===null?null:applications.find(a=>a.teamId===teamId&&a.communityId===competition.communityId
+   &&a.competitionId===competition.id&&a.competitionType===competition.type)?.status||null;
  const applied=(competition:OpenTeamCompetition,teamId:number|null)=>
   applicationStatus(competition,teamId)!==null;
  const applicationLabel=(competition:OpenTeamCompetition,teamId:number|null)=>{
