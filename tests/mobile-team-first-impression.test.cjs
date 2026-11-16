@@ -219,3 +219,13 @@ test('team chat private media reuses authenticated viewer and verified native up
  assert.match(viewer,/credentials:'omit'/);
  assert.match(viewer,/redirect:'error'/);
 });
+
+test('switching team chats cannot be blocked by an in-flight request from the previous chat',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/reading=useRef<number\|null>\(null\)/);
+ assert.match(panel,/if\(reading\.current===expected\|\|sendingNow\.current\)return/);
+ assert.match(panel,/reading\.current=expected/);
+ assert.match(panel,/if\(reading\.current===expected\)reading\.current=null/);
+ assert.match(panel,/if\(expected!==version\.current\)return/);
+ assert.doesNotMatch(panel,/if\(reading\.current\|\|sendingNow\.current\)return/);
+});
