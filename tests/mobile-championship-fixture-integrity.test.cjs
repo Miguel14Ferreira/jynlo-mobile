@@ -12,7 +12,8 @@ test('switching league/cup never renders the fixtures from a previously selected
  assert.match(source,/setLoadedEventId\(null\);setDetailsFailed\(false\);setFixtures\(\[\]\);setRegistrations\(\[\]\);setStandings\(null\)/);
  assert.match(source,/setLoadedEventId\(complete\?eventId:null\)/);
  assert.match(source,/activeEvent&&detailsReady\?<View style=\{styles\.card\}>/);
- assert.match(source,/disabled=\{busy\|\|pending\.current\} onPress=\{\(\)=>setSelected\(item\.id\)\}/);
+ assert.match(source,/disabled=\{busy\|\|pending\.current\} onPress=\{\(\)=>\{selectedRef\.current=item\.id;setSelected\(item\.id\);\}\}/);
+ assert.match(source,/confirmedEventId!==selectedRef\.current/);
 });
 
 test('a server score update resets the fixture editor instead of leaving stale values',()=>{
