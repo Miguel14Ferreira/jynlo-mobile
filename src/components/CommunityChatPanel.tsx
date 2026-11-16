@@ -36,6 +36,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
  const inlineNearBottom=useRef(false);
  const historyViewportHeight=useRef(0);
+ const historyContentHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
  const lastAcknowledgedMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
@@ -404,8 +405,19 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
     }}}
-   onLayout={event=>{historyViewportHeight.current=event.nativeEvent.layout.height;}}
+   onLayout={event=>{
+    historyViewportHeight.current=event.nativeEvent.layout.height;
+    // Content size can be reported before the viewport layout; acknowledge only when fully visible.
+    if(historyContentHeight.current>0&&historyContentHeight.current<=historyViewportHeight.current&&AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
+     const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+    if(latest>lastAcknowledgedMessageId.current){
+     lastAcknowledgedMessageId.current=latest;
+     void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
+    }
+    }
+   }}
    onContentSizeChange={(_width,height)=>{
+    historyContentHeight.current=height;
     // A short conversation can change without firing onScroll. Its entire content must fit.
     if(height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
        AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
