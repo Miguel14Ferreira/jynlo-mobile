@@ -7,6 +7,8 @@ import {mySportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
 import {applyTeamToCompetition,discoverTeamCompetitions,myTeamApplications,
  type OpenTeamCompetition,type TeamCompetitionApplication} from '../../src/lib/team-competition-applications-api';
 import {C} from '../../src/lib/theme';
+import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
+import TeamKitPreview from '../../src/components/TeamKitPreview';
 
 export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
@@ -107,7 +109,15 @@ export default function TeamCompetitionDiscovery(){
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
      accessibilityState={{selected:chosen===team.id}} onPress={()=>setChosen(team.id)}
      style={[styles.choice,chosen===team.id&&styles.chosen]}>
-    <Text style={styles.name}>{chosen===team.id?'●':'○'} {team.name}</Text>
+    <View style={styles.teamIdentity}>
+     <TeamBrandAvatar team={team} size={44}/>
+     <View style={styles.teamNameBlock}>
+      <Text style={styles.name} numberOfLines={2}>{chosen===team.id?'● ':'○ '}{team.name}</Text>
+      <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'}</Text>
+     </View>
+     <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary}
+       pattern={team.kitPattern} size={44}/>
+    </View>
    </Pressable>)}
   </View>:null}
   {applications.length>0?<View style={styles.panel}>
@@ -135,5 +145,7 @@ const styles=StyleSheet.create({
  input:{minHeight:48,padding:13,backgroundColor:C.surface,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:13},
  panel:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:17,padding:15,gap:10},
  choice:{borderRadius:10,borderWidth:1,borderColor:C.border,padding:10},
+ teamIdentity:{flexDirection:'row',gap:11,alignItems:'center'},
+ teamNameBlock:{flex:1,minWidth:0,gap:3},
  chosen:{borderColor:C.mint}
 });
