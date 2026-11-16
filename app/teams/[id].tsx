@@ -119,14 +119,29 @@ export default function TeamDetail(){
   ]);
  };
  const decideMembership=async(id:number,accept:boolean)=>{
-  if(!auth.token||saving)return;
+  if(!auth.token||saving||!communitiesVerified)return;
+  const version=requestVersion.current;
   setSaving(true);setError('');setMembershipNote('');
   try{
-   await answerTeamCommunityMembership(id,accept,auth.token);
-   setCommunities(await sportsTeamCommunities(teamId,auth.token));
+   const decided=await answerTeamCommunityMembership(id,accept,auth.token);
+   if(version!==requestVersion.current)return;
+   setCommunities(current=>current.map(item=>item.id===id?decided:item));
    setMembershipNote(accept?'Convite aceite.':'Convite recusado.');
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível responder.');}
-  finally{setSaving(false);}
+   try{
+    const updated=await sportsTeamCommunities(teamId,auth.token);
+    if(version===requestVersion.current)setCommunities(updated);
+   }catch{
+    if(version===requestVersion.current){
+     setCommunitiesVerified(false);
+     setError('O convite foi tratado, mas não foi possível confirmar as associações. Consulta os dados antes de repetir.');
+    }
+   }
+  }catch(e){
+   if(version===requestVersion.current){
+    setCommunitiesVerified(false);
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+' Atualiza antes de tentar novamente.');
+   }
+  }finally{if(version===requestVersion.current)setSaving(false);}
  };
  const removeMembership=async(id:number)=>{
   if(!auth.token||saving||!communitiesVerified)return;
