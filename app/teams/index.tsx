@@ -47,16 +47,24 @@ export default function TeamsScreen(){
     if(version!==requestVersion.current)return;
     const failed:string[]=[];
     if(discovery.status==='fulfilled')setTeams(discovery.value);
-    else failed.push('pesquisa');
+    else{setTeams([]);failed.push('pesquisa');}
+    // Membership and ownership may have been revoked since the last poll.
+    // Unverified private lists must never remain actionable on screen.
     if(mine.status==='fulfilled')setOwned(mine.value);
-    else failed.push('as tuas equipas');
+    else{setOwned([]);failed.push('as tuas equipas');}
     if(memberTeams.status==='fulfilled'){setJoined(memberTeams.value);setJoinedError('');}
-    else setJoinedError('Não foi possível confirmar as equipas onde participas.');
+    else{
+     setJoined([]);
+     setJoinedError('Não foi possível confirmar as equipas onde participas.');
+     failed.push('as tuas participações');
+    }
     if(memberships.status==='fulfilled')setInvites(memberships.value);
-    else failed.push('convites de jogadores');
+    else{setInvites([]);failed.push('convites de jogadores');}
     if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
-    else failed.push('convites para competições');
-    if(failed.length&&!silent)setError('Não foi possível carregar '+failed.join(', ')+'. As restantes secções continuam disponíveis. Podes tentar novamente.');
+    else{setCompetitionInvites([]);failed.push('convites para competições');}
+    if(failed.length)
+     setError('Não foi possível confirmar '+failed.join(', ')+'. As secções afetadas foram ocultadas até uma nova verificação.');
+    else setError('');
    }catch(e){if(!silent&&version===requestVersion.current)setError(e instanceof Error?e.message:'Erro a carregar equipas.');}
    finally{
     if(reading.current===version)reading.current=null;
