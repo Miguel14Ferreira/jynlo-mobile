@@ -194,6 +194,7 @@ export default function TeamDetail(){
   <Button title="← Equipas" onPress={()=>router.push('/teams')}/>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {error&&!loading&&!saving?<Button secondary title="Tentar novamente" onPress={()=>void load(false,true)}/>:null}
   {notice?<Message>{notice}</Message>:null}
   {!loading&&!team?<Message>Não foi possível confirmar esta equipa. Volta à lista e tenta novamente.</Message>:null}
   {team?<><View style={styles.header}>
@@ -207,8 +208,8 @@ export default function TeamDetail(){
     </View>
     {team.description?<Text style={styles.description}>{team.description}</Text>:null}
     <View style={styles.statsRow}>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{members.length}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{communities.filter(m=>m.status==='ACTIVE').length}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
       <View style={styles.statCard}><Text style={styles.statNumber}>{standaloneTrophies.length+championshipHonours.length}</Text><Text style={styles.statLabel}>Troféus</Text></View>
     </View>
     <Pressable accessibilityRole="button" accessibilityLabel="Encontrar competições para esta equipa"
