@@ -178,6 +178,36 @@ export default function TeamDetail(){
    }}
   ]);
  };
+ const leaveTeam=()=>{
+  if(!auth.token||saving||actionRef.current||!rosterVerified||isOwner||!isMember)return;
+  const player=members.find(item=>item.role==='PLAYER'&&
+   item.username.toLowerCase()===auth.username?.toLowerCase());
+  if(!player)return;
+  const current=requestVersion.current;
+  Alert.alert('Sair da equipa?','Deixarás de ter acesso ao chat e às publicações privadas.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Sair da equipa',style:'destructive',onPress:()=>{
+    if(current!==requestVersion.current||actionRef.current)return;
+    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    void removeSportsTeamMember(teamId,player.profileId,auth.token!).then(()=>{
+     if(current!==requestVersion.current)return;
+     setMembers(rows=>rows.filter(item=>item.profileId!==player.profileId));
+     setActiveTab('OVERVIEW');
+     setNotice('Saíste da equipa. O acesso às mensagens privadas foi retirado.');
+     void load(true,true);
+    }).catch(e=>{
+     if(current===requestVersion.current){
+      setRosterVerified(false);setActiveTab('OVERVIEW');
+      setError((e instanceof Error?e.message:'Saída não confirmada.')+
+       ' Verifica o plantel antes de repetir.');
+     }
+    }).finally(()=>{
+     actionRef.current=false;
+     if(current===requestVersion.current)setSaving(false);
+    });
+   }}
+  ]);
+ };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
   if(!team||!auth.token||saving)return;
   setSaving(true);setError('');
@@ -242,6 +272,9 @@ export default function TeamDetail(){
       </Pressable>:null}
     </View>):null}
     </View>
+    {rosterVerified&&isMember&&!isOwner?<Pressable accessibilityRole="button"
+     accessibilityLabel="Sair desta equipa" disabled={saving} style={styles.removeAction}
+     onPress={leaveTeam}><Text style={styles.removeText}>Sair da equipa</Text></Pressable>:null}
     <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
     {isOwner?<><TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
       placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
