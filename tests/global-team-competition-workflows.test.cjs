@@ -155,3 +155,18 @@ test('unknown global entry is rechecked with GET before another finalize is allo
  assert.match(panel,/entryCheck!=='absent'/);
  assert.match(panel,/onPress=\{\(\)=>setRefreshKey\(key=>key\+1\)\}/);
 });
+
+
+test('mobile competition applications fail closed until owned teams and prior requests are verified',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/setOwnedVerified\(false\);setChosen\(null\)/);
+ assert.match(screen,/setApplicationsVerified\(false\)/);
+ assert.match(screen,/!ownedVerified\|\|!applicationsVerified/);
+ assert.match(screen,/!competition\.applicationsOpen/);
+ assert.match(screen,/!item\.applicationsOpen\|\|applied\(item,chosen\)/);
+ assert.match(screen,/title="Verificar novamente candidaturas e equipas"/);
+ assert.match(screen,/O pedido pode ter sido recebido/);
+ assert.match(screen,/applyingRef\.current=true/);
+ assert.match(screen,/const current=requestVersion\.current,selectedTeamId=chosen/);
+ assert.match(screen,/if\(current!==requestVersion\.current\)return/);
+});
