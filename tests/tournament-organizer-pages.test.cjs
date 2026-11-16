@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const {reconcileVisibleFixtures}=require('../src/lib/tournament-organizer-pages.cjs');
+const {reconcileVisibleFixtures,validateNextFixturePage}=require('../src/lib/tournament-organizer-pages.cjs');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
 test('reconciles all previously opened match pages and uses server pagination',async()=>{
@@ -56,4 +56,23 @@ test('organizer uses server pagination for visible pages on refresh and after sa
   'if(!response)return false',
   'requestedPage,auth.token!,auth.username!'
  ])assert.ok(screen.includes(token),token);
+});
+
+test('next-page guards reject invalid cursor, broken empty pages and corrupt matches',()=>{
+ const good={page:1,hasMore:false,matches:[{id:12}]};
+ assert.equal(validateNextFixturePage(good,1),good);
+ for(const response of [
+  {page:0,hasMore:false,matches:[{id:12}]},
+  {page:1,hasMore:'yes',matches:[{id:12}]},
+  {page:1,hasMore:true,matches:[]},
+  {page:1,hasMore:false,matches:[{id:0}]},
+  {page:1,hasMore:false,matches:null}
+ ])assert.throws(()=>validateNextFixturePage(response,1));
+ assert.throws(()=>validateNextFixturePage(good,-1));
+});
+test('organizer checks the server page before updating its pagination cursor',()=>{
+ const screen=read('app/tournaments/[communityId]/[id]/manage.tsx');
+ assert.match(screen,/const checked=validateNextFixturePage\(response,next\)/);
+ assert.match(screen,/visiblePage\.current=checked\.page;setPage\(checked\.page\);setHasMore\(checked\.hasMore\)/);
+ assert.match(screen,/if\(version!==generation\.current\)return;\s*const items=checked\.matches\.map/);
 });
