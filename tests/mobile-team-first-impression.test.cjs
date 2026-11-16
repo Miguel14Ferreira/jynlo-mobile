@@ -296,3 +296,21 @@ test('confirmed mobile players may leave a squad without owner permissions',()=>
  assert.match(screen,/rosterVerified&&isMember&&!isOwner/);
  assert.match(screen,/Verifica o plantel antes de repetir/);
 });
+
+
+test('team owners see verified pending invitations and can cancel them safely',()=>{
+ const screen=read('app/teams/[id].tsx');
+ const api=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/export async function pendingSportsTeamPlayers\(teamId:number,token:string\)/);
+ assert.match(api,/\/api\/teams\/'\+validId\(teamId\)\+'\/invitations'/);
+ assert.match(screen,/setPendingVerified\(false\)/);
+ assert.match(screen,/pendingSportsTeamPlayers\(teamId,auth\.token!\)/);
+ assert.match(screen,/if\(version===requestVersion\.current\)\{setPendingPlayers\(rows\);setPendingVerified\(true\);\}/);
+ assert.match(screen,/!pendingVerified\|\|!isOwner/);
+ assert.match(screen,/pendingPlayers\.some\(p=>p\.profileId===profileId\)/);
+ assert.match(screen,/const cancelPendingInvite=\(invite:TeamPendingPlayerInvitation\)=>/);
+ assert.match(screen,/Verifica os convites pendentes antes de repetir/);
+ assert.match(screen,/title="Verificar convites"/);
+ assert.match(screen,/title="Cancelar convite"/);
+ assert.match(screen,/disabled=\{saving\|\|!pendingVerified\}/);
+});
