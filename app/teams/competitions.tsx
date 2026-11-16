@@ -14,7 +14,7 @@ export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
  const [query,setQuery]=useState(''),[sport,setSport]=useState('');
  const [filters,setFilters]=useState({query:'',sport:''});
- const requestVersion=useRef(0),applyingRef=useRef(false);
+ const requestVersion=useRef(0),applyingRef=useRef(false),applyGeneration=useRef(0);
  const [applicationsVerified,setApplicationsVerified]=useState(false);
  const [ownedVerified,setOwnedVerified]=useState(false);
  const [rows,setRows]=useState<OpenTeamCompetition[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]);
@@ -24,7 +24,7 @@ export default function TeamCompetitionDiscovery(){
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  // Clear private records before loading under another account, including on logout.
  useEffect(()=>{
-  requestVersion.current++;applyingRef.current=false;
+  requestVersion.current++;applyGeneration.current++;applyingRef.current=false;
   setApplications([]);setTeams([]);setChosen(null);
   setApplicationsVerified(false);setOwnedVerified(false);
   setRows([]);setNotice('');setError('');setBusy(false);setLoading(true);
@@ -60,7 +60,7 @@ export default function TeamCompetitionDiscovery(){
  };
  useFocusEffect(useCallback(()=>{
   void load();
-  return ()=>{requestVersion.current++;};
+  return ()=>{requestVersion.current++;applyGeneration.current++;applyingRef.current=false;};
  },[load]));
  const applicationStatus=(competition:OpenTeamCompetition,teamId:number|null)=>
   teamId===null?null:applications.find(a=>a.teamId===teamId&&a.competitionId===competition.id
@@ -69,7 +69,7 @@ export default function TeamCompetitionDiscovery(){
   applicationStatus(competition,teamId)!==null;
  const applicationLabel=(competition:OpenTeamCompetition,teamId:number|null)=>{
   const status=applicationStatus(competition,teamId);
-  return status==='APPROVED'?'Candidatura aprovada':
+  return status==='APPROVED'?'Aprovada · inscrição por confirmar':
    status==='DECLINED'?'Candidatura recusada':status==='PENDING'?'Pedido em análise':null;
  };
  const apply=async(competition:OpenTeamCompetition)=>{
@@ -78,7 +78,7 @@ export default function TeamCompetitionDiscovery(){
        &&item.communityId===competition.communityId&&item.applicationsOpen)
      ||!teams.some(team=>team.id===chosen)
      ||applied(competition,chosen))return;
-  const current=requestVersion.current,selectedTeamId=chosen;
+  const current=requestVersion.current,selectedTeamId=chosen,action=++applyGeneration.current;
   applyingRef.current=true;setBusy(true);setError('');setNotice('');
   try{
    const next=await applyTeamToCompetition(competition.communityId,competition.type,
@@ -93,7 +93,13 @@ export default function TeamCompetitionDiscovery(){
     setError((e instanceof Error?e.message:'Não foi possível enviar o pedido.')+
      ' O pedido pode ter sido recebido. Verifica novamente as candidaturas antes de repetir.');
    }
-  }finally{applyingRef.current=false;if(current===requestVersion.current)setBusy(false);}
+  }finally{
+   // An old account's pending POST must not unlock a new account's request.
+   if(action===applyGeneration.current){
+    applyingRef.current=false;
+    if(current===requestVersion.current)setBusy(false);
+   }
+  }
  };
  return <Page>
   <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
@@ -129,7 +135,7 @@ export default function TeamCompetitionDiscovery(){
   </View>:null}
   {applications.length>0?<View style={styles.panel}>
    <Text style={styles.subtitle}>Pedidos já enviados</Text>
-   {applications.map(a=><Text key={a.id} style={styles.note}>{a.teamName} · {a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado':'Recusado'}</Text>)}
+   {applications.map(a=><Text key={a.id} style={styles.note}>{a.teamName} · {a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado · inscrição por confirmar':'Recusado'}</Text>)}
   </View>:null}
   {!loading&&rows.length===0&&!error?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
   {rows.map(item=><View key={item.type+'-'+item.id} style={styles.panel}>
