@@ -179,7 +179,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const search=async()=>{
   const term=searchTerm.trim();
-  if(term.length<2||term.length>80||searching)return;
+  if(term.length<2||term.length>80||searching||accessRevokedRef.current)return;
   const current=++searchVersion.current;
   setSearchActive(true);setSearching(true);setError('');
   try{
@@ -193,6 +193,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const clearSearch=()=>{
   searchVersion.current++;setSearchActive(false);setSearching(false);setSearchResults([]);
+ };
+ const changeSearchTerm=(term:string)=>{
+  // Never display an obsolete response after editing a search.
+  searchVersion.current++;setSearchTerm(term);setSearchResults([]);
+  setSearchActive(false);setSearching(false);
  };
  const replyPreview=(id:number|null):string=>{
   const original=[...searchResults,...entries].find(item=>item.id===id);
@@ -229,8 +234,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }catch(e){
    if(current===version.current)setError('Edição não confirmada. Consulta o histórico antes de repetir.');
   }finally{
-   sendingNow.current=false;setSending(false);
-   if(current===version.current)void refresh(true,current);
+   sendingNow.current=false;
+   if(current===version.current){setSending(false);void refresh(true,current);}
   }
  };
  const remove=(item:TeamContentEntry)=>{
@@ -247,8 +252,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     }catch{
      if(current===version.current)setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
     }finally{
-     sendingNow.current=false;setSending(false);
-     if(current===version.current)void refresh(true,current);
+     sendingNow.current=false;
+     if(current===version.current){setSending(false);void refresh(true,current);}
     }
    })();}}
   ]);
@@ -261,7 +266,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   <Text style={styles.title}>{kind==='chat'?'Conversa da equipa':'Publicações da equipa'}</Text>
   <Text style={styles.sub}>Apenas o responsável e membros confirmados podem participar.</Text>
   <View style={styles.searchRow}>
-   <TextInput style={styles.searchInput} value={searchTerm} onChangeText={setSearchTerm}
+   <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
     maxLength={80} placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
     accessibilityLabel="Pesquisar mensagens da equipa"/>
    <Pressable disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
