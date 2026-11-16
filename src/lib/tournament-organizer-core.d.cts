@@ -6,3 +6,4 @@ export function canGenerateSchedule(role:string|null|undefined,tournament:JynloT
 export function canRecordTournamentResult(role:string|null|undefined,tournament:JynloTournament|null):boolean;
 export function canCompleteTournament(role:string|null|undefined,tournament:JynloTournament|null):boolean;
 export function validateTournamentScore(home:string,away:string):{homeScore:number;awayScore:number};
+export function validateTournamentMatchScore(tournament:JynloTournament,match:{id:number;groupNumber?:number|null},home:string,away:string):{homeScore:number;awayScore:number};
