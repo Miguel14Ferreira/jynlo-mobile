@@ -3,16 +3,17 @@ import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {createSportsTeam,discoverSportsTeams,mySportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
+import {createSportsTeam,discoverSportsTeams,mySportsTeams,joinedSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
 
 export default function TeamsScreen(){
  const auth=useAuth(),router=useRouter();
- const [owned,setOwned]=useState<SportsTeam[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
+ const [owned,setOwned]=useState<SportsTeam[]>([]),[joined,setJoined]=useState<SportsTeam[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ const [joinedError,setJoinedError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
  const requestVersion=useRef(0);
@@ -26,9 +27,10 @@ export default function TeamsScreen(){
    try{
     // Convites são secundários: um endpoint antigo/temporariamente indisponível
     // não pode impedir o acesso às equipas, nem apagar resultados já carregados.
-    const [discovery,mine,memberships,competitions]=await Promise.allSettled([
+    const [discovery,mine,memberTeams,memberships,competitions]=await Promise.allSettled([
       discoverSportsTeams(submittedQuery,auth.token||undefined),
       auth.token?mySportsTeams(auth.token):Promise.resolve([]),
+      auth.token?joinedSportsTeams(auth.token):Promise.resolve([]),
       auth.token?mySportsTeamInvitations(auth.token):Promise.resolve([]),
       auth.token?myTeamCompetitionInvitations(auth.token):Promise.resolve([])
     ]);
@@ -39,6 +41,8 @@ export default function TeamsScreen(){
     else failed.push('pesquisa');
     if(mine.status==='fulfilled')setOwned(mine.value);
     else failed.push('as tuas equipas');
+    if(memberTeams.status==='fulfilled'){setJoined(memberTeams.value);setJoinedError('');}
+    else setJoinedError('Não foi possível confirmar as equipas onde participas.');
     if(memberships.status==='fulfilled')setInvites(memberships.value);
     else failed.push('convites de jogadores');
     if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
@@ -140,6 +144,19 @@ export default function TeamsScreen(){
        <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
        <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text></View>
+       <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
+    </Pressable>)}
+  </View>:null}
+  {auth.token?<View style={styles.section}>
+    <View style={styles.sectionHeader}><Text style={styles.heading}>Equipas onde és jogador</Text><Text style={styles.count}>{joined.length}</Text></View>
+    <Text style={styles.note}>Acede às mensagens, às publicações e ao plantel das equipas onde aceitaste um convite.</Text>
+    {joinedError?<Message tone="error">{joinedError}</Message>:null}
+    {joined.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
+      accessibilityRole="button" accessibilityLabel={'Abrir equipa onde és jogador '+team.name}
+      onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
+      <View style={styles.teamRow}><View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={23}/></View>
+       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={1}>{team.name}</Text>
+        <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'} · Jogador confirmado</Text></View>
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
   </View>:null}
