@@ -42,9 +42,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
   if(!ids.length)return;
   const current=++reactionVersion.current;
+  const conversation=version.current;
   try{
    const updated=await teamReactionSummaries(teamId,kind,ids,token);
-   if(current===reactionVersion.current)setReactions(previous=>({...previous,...updated}));
+   if(current===reactionVersion.current&&conversation===version.current)
+    setReactions(previous=>({...previous,...updated}));
   }catch{
    // Reaction counts are supplementary; never prevent reading the conversation.
   }
@@ -101,7 +103,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   accessRevokedRef.current=false;setAccessRevoked(false);setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
-  setMedia([]);setAttachmentsEnabled(false);
+  setMedia([]);setAttachmentsEnabled(false);setSearching(false);
   void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
    if(version.current===current)setAttachmentsEnabled(available);
   });
@@ -127,7 +129,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
  const chooseMedia=async()=>{
-  if(!attachmentsEnabled||choosing.current||sendingNow.current)return;
+  if(!attachmentsEnabled||choosing.current||sendingNow.current||accessRevokedRef.current)return;
+  const current=version.current;
   choosing.current=true;setError('');
   try{
    const ImagePicker=await import('expo-image-picker');
@@ -135,11 +138,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     mediaTypes:['images','videos'],allowsMultipleSelection:true,
     selectionLimit:Math.max(1,4-media.length),quality:.8,exif:false,base64:false
    });
-   if(chosen.canceled||!chosen.assets?.length)return;
+   if(chosen.canceled||!chosen.assets?.length||current!==version.current||accessRevokedRef.current)return;
    const next=appendChatMediaSelection(media,chosen.assets);
    if(next.error)throw Error(next.error);
    setMedia(next.items);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
+  }catch(e){if(current===version.current)
+    setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
   finally{choosing.current=false;}
  };
  const sendMedia=async()=>{
@@ -243,6 +247,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   Alert.alert('Eliminar conteúdo','Queres eliminar esta mensagem da equipa?',[
    {text:'Cancelar',style:'cancel'},
    {text:'Eliminar',style:'destructive',onPress:()=>{void (async()=>{
+    if(sendingNow.current||accessRevokedRef.current)return;
     sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
     const current=version.current;
     try{
