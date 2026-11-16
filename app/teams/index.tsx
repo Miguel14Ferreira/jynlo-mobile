@@ -17,12 +17,13 @@ export default function TeamsScreen(){
  const [joinedError,setJoinedError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
- const requestVersion=useRef(0);
+ const requestVersion=useRef(0),actionVersion=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
  // A different authenticated account must never inherit the previous account's private team lists.
  useEffect(()=>{
-   requestVersion.current++;reading.current=null;
+   requestVersion.current++;actionVersion.current++;reading.current=null;
+   savingRef.current=false;setSaving(false);
    setOwned([]);setJoined([]);setInvites([]);setCompetitionInvites([]);
    setTeams([]);setJoinedError('');setError('');setLoading(true);
    setCreateOpen(false);setName('');setSport('');setLocation('');
@@ -74,29 +75,54 @@ export default function TeamsScreen(){
    return ()=>{clearInterval(timer);resume.remove();requestVersion.current++;};
  },[load]));
  const respond=async(teamId:number,accept:boolean)=>{
-  if(!auth.token||savingRef.current)return;
+  if(!auth.token||savingRef.current||!invites.some(item=>item.teamId===teamId))return;
+  const action=++actionVersion.current;
   savingRef.current=true;setSaving(true);setError('');
-  try{await respondSportsTeamInvitation(teamId,accept,auth.token);await load(false,true);}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível responder ao convite.');}
-  finally{savingRef.current=false;setSaving(false);}
+  try{
+   await respondSportsTeamInvitation(teamId,accept,auth.token);
+   if(action!==actionVersion.current)return;
+   await load(false,true);
+  }catch(e){
+   if(action===actionVersion.current)
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+
+      ' Confirma o estado do convite antes de repetir.');
+  }finally{
+   if(action===actionVersion.current){savingRef.current=false;setSaving(false);}
+  }
  };
  const respondCompetition=async(id:number,accept:boolean)=>{
-  if(!auth.token||savingRef.current)return;
+  if(!auth.token||savingRef.current||!competitionInvites.some(item=>item.id===id))return;
+  const action=++actionVersion.current;
   savingRef.current=true;setSaving(true);setError('');
-  try{await answerTeamCompetitionInvitation(id,accept,auth.token);await load(false,true);}
-  catch(e){setError((e instanceof Error?e.message:'Erro ao responder.')+' Verifica o convite antes de repetir.');}
-  finally{savingRef.current=false;setSaving(false);}
+  try{
+   await answerTeamCompetitionInvitation(id,accept,auth.token);
+   if(action!==actionVersion.current)return;
+   await load(false,true);
+  }catch(e){
+   if(action===actionVersion.current)
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+
+      ' Verifica o convite antes de repetir.');
+  }finally{
+   if(action===actionVersion.current){savingRef.current=false;setSaving(false);}
+  }
  };
  const create=async()=>{
   if(!auth.token){router.push('/login');return;}
   if(savingRef.current||name.trim().length<2)return;
+  const action=++actionVersion.current;
   savingRef.current=true;setSaving(true);setError('');
   try{
    const team=await createSportsTeam({name,sport,location},auth.token);
+   if(action!==actionVersion.current)return;
    setName('');setSport('');setLocation('');
    router.push({pathname:'/teams/[id]',params:{id:String(team.id)}});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a equipa.');}
-  finally{savingRef.current=false;setSaving(false);}
+  }catch(e){
+   if(action===actionVersion.current)
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a criação.')+
+      ' Consulta as tuas equipas antes de repetir.');
+  }finally{
+   if(action===actionVersion.current){savingRef.current=false;setSaving(false);}
+  }
  };
  return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
   <View style={styles.hero}>
