@@ -51,9 +51,16 @@ export default function TeamCompetitionDiscovery(){
   void load();
   return ()=>{requestVersion.current++;};
  },[load]));
+ const applicationStatus=(competition:OpenTeamCompetition,teamId:number|null)=>
+  teamId===null?null:applications.find(a=>a.teamId===teamId&&a.competitionId===competition.id
+   &&a.competitionType===competition.type)?.status||null;
  const applied=(competition:OpenTeamCompetition,teamId:number|null)=>
-  teamId!==null&&applications.some(a=>a.teamId===teamId&&a.competitionId===competition.id
-   &&a.competitionType===competition.type);
+  applicationStatus(competition,teamId)!==null;
+ const applicationLabel=(competition:OpenTeamCompetition,teamId:number|null)=>{
+  const status=applicationStatus(competition,teamId);
+  return status==='APPROVED'?'Candidatura aprovada':
+   status==='DECLINED'?'Candidatura recusada':status==='PENDING'?'Pedido em análise':null;
+ };
  const apply=async(competition:OpenTeamCompetition)=>{
   if(!auth.token||!chosen||busy||applied(competition,chosen))return;
   setBusy(true);setError('');setNotice('');
@@ -97,7 +104,7 @@ export default function TeamCompetitionDiscovery(){
     <Text style={styles.note}>{item.type==='TOURNAMENT'?'Torneio':'Campeonato'} · {item.communityName}</Text>
     <Text style={styles.subtitle}>{item.name}</Text>
     <Text style={styles.note}>{item.sport||'Modalidade não indicada'}</Text>
-    <Button title={applied(item,chosen)?'Pedido já enviado':busy?'A enviar…':'Pedir participação'}
+    <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
       disabled={!auth.token||!chosen||busy||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
    </View>)}
