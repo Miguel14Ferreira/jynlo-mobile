@@ -1,11 +1,13 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
+import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
@@ -20,6 +22,8 @@ export default function TeamDetail(){
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
+ const [kitPrimary,setKitPrimary]=useState('#19CBB6'),[kitSecondary,setKitSecondary]=useState('#F0FAFB');
+ const [brandingVerified,setBrandingVerified]=useState(false);
  const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
  const [searchComplete,setSearchComplete]=useState(false),[searching,setSearching]=useState(false);
  const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false);
@@ -44,8 +48,11 @@ export default function TeamDetail(){
   if(reading.current===version)reading.current=null;
   if(version!==requestVersion.current)return;
   const failed:string[]=[];
-  if(details.status==='fulfilled')setTeam(details.value);
-  else {if(!silent)setTeam(null);failed.push('o perfil da equipa');}
+  if(details.status==='fulfilled'){
+   setTeam(details.value);setBrandingVerified(true);
+   setKitPrimary(safeTeamKitColor(details.value.kitPrimary,'#19CBB6'));
+   setKitSecondary(safeTeamKitColor(details.value.kitSecondary,'#F0FAFB'));
+  }else {setBrandingVerified(false);if(!silent)setTeam(null);failed.push('o perfil da equipa');}
   if(roster.status==='fulfilled'){
    setMembers(roster.value);setRosterVerified(true);
    const isOwnerNow=!!auth.token&&!!auth.username&&roster.value.some(m=>
@@ -260,6 +267,39 @@ export default function TeamDetail(){
   catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a configuração.');}
   finally{setSaving(false);}
  };
+ const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
+ const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset)=>{
+  if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
+  const version=requestVersion.current;
+  actionRef.current=true;setSaving(true);setError('');setNotice('');
+  try{
+   const result=mode==='KIT'
+    ?await setSportsTeamKit(teamId,kitPrimary,kitSecondary,auth.token)
+    :mode==='REMOVE'
+    ?await removeSportsTeamLogo(teamId,auth.token)
+    :await uploadSportsTeamLogo(teamId,asset!,auth.token);
+   if(version!==requestVersion.current)return;
+   setTeam(result);setBrandingVerified(true);
+   setKitPrimary(safeTeamKitColor(result.kitPrimary,'#19CBB6'));
+   setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
+   setNotice(mode==='KIT'?'Equipamento guardado.':mode==='REMOVE'?'Logótipo removido.':'Logótipo atualizado.');
+  }catch(e){
+   if(version===requestVersion.current){
+    setBrandingVerified(false);
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a alteração.')+
+     ' Volta a carregar a equipa antes de repetir.');
+   }
+  }finally{actionRef.current=false;if(version===requestVersion.current)setSaving(false);}
+ };
+ const pickLogo=async()=>{
+  if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
+  const version=requestVersion.current;
+  const result=await ImagePicker.launchImageLibraryAsync({
+   mediaTypes:['images'],allowsEditing:false,quality:1
+  });
+  if(result.canceled||version!==requestVersion.current)return;
+  if(result.assets?.[0])void updateBranding('LOGO',result.assets[0]);
+ };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
  const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
  const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId)&&
@@ -276,13 +316,17 @@ export default function TeamDetail(){
   {team?<><View style={styles.header}>
     <Text style={styles.eyebrow}>JYNLO · EQUIPA DESPORTIVA</Text>
     <View style={styles.heroIdentity}>
-      <View style={styles.heroCrest}><Text style={styles.heroCrestText}>{(team.name||'E').charAt(0).toUpperCase()}</Text></View>
+      <TeamBrandAvatar team={team} size={78}/>
       <View style={styles.heroCopy}>
         <Text style={styles.title}>{team.name}</Text>
         <Text style={styles.heroSubtitle}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text>
       </View>
     </View>
     {team.description?<Text style={styles.description}>{team.description}</Text>:null}
+    <View style={styles.kitPreview}>
+      <View style={[styles.kitCircle,{backgroundColor:safeTeamKitColor(team.kitPrimary,'#19CBB6'),borderColor:safeTeamKitColor(team.kitSecondary,'#F0FAFB')}]}/>
+      <Text style={styles.heroSubtitle}>Equipamento da equipa</Text>
+    </View>
     <View style={styles.statsRow}>
       <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
       <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
@@ -294,6 +338,31 @@ export default function TeamDetail(){
       <Text style={styles.heroActionLabel}>Explorar competições  →</Text>
     </Pressable>
    </View>
+   {isOwner&&activeTab==='OVERVIEW'?<View style={styles.panel}>
+    <Text style={styles.heading}>Identidade da equipa</Text>
+    <Text style={styles.note}>Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.</Text>
+    {!brandingVerified?<Text style={styles.note}>Identidade por confirmar. Recarrega os dados antes de editar.</Text>:null}
+    <Button title="Escolher logótipo da galeria" secondary disabled={saving||!brandingVerified} onPress={()=>void pickLogo()}/>
+    {team.logoUrl?<Button title="Remover logótipo" secondary disabled={saving||!brandingVerified}
+      onPress={()=>Alert.alert('Remover logótipo?','O emblema atual será removido da equipa.',[
+       {text:'Cancelar',style:'cancel'},
+       {text:'Remover',style:'destructive',onPress:()=>void updateBranding('REMOVE')}
+      ])}/>:null}
+    <Text style={styles.kitLabel}>Cor principal</Text>
+    <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'primary'+color}
+      accessibilityRole="button" accessibilityLabel={'Cor principal '+color}
+      accessibilityState={{selected:kitPrimary===color}}
+      disabled={saving||!brandingVerified} onPress={()=>setKitPrimary(color)}
+      style={[styles.swatch,{backgroundColor:color},kitPrimary===color&&styles.swatchSelected]}/>)}</View>
+    <Text style={styles.kitLabel}>Cor secundária</Text>
+    <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'secondary'+color}
+      accessibilityRole="button" accessibilityLabel={'Cor secundária '+color}
+      accessibilityState={{selected:kitSecondary===color}}
+      disabled={saving||!brandingVerified} onPress={()=>setKitSecondary(color)}
+      style={[styles.swatch,{backgroundColor:color},kitSecondary===color&&styles.swatchSelected]}/>)}</View>
+    <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
+      onPress={()=>void updateBranding('KIT')}/>
+   </View>:null}
    <View style={styles.tabBar}>
     {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'}] as const).map(tab=>
      <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
@@ -411,6 +480,13 @@ export default function TeamDetail(){
 }
 const styles=StyleSheet.create({
  header:{padding:20,backgroundColor:'#0A3340',borderColor:'#2A7A79',borderWidth:1,borderRadius:22,gap:13},
+ kitPreview:{flexDirection:'row',alignItems:'center',gap:9},
+ kitCircle:{height:19,width:19,borderWidth:4,borderRadius:10},
+ kitLabel:{fontSize:13,fontWeight:'800',color:C.white,marginTop:4},
+ swatchRow:{flexDirection:'row',flexWrap:'wrap',gap:10},
+ swatch:{width:37,height:37,borderWidth:2,borderColor:'#578891',borderRadius:11},
+ swatchSelected:{borderWidth:4,borderColor:C.mint},
+
  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:1.4,color:C.mint},
  heroIdentity:{flexDirection:'row',alignItems:'center',gap:14},
  heroCrest:{width:74,height:74,borderRadius:19,backgroundColor:'#168D86',alignItems:'center',justifyContent:'center'},
