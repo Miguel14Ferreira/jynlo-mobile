@@ -75,3 +75,15 @@ test('failed post-result refresh blocks stale scores and premature league closur
  assert.match(screen,/Os jogos apresentados não estão confirmados pelo servidor/);
  assert.match(screen,/!loading&&!syncing&&!fixturesVerified&&tournament\.status==='IN_PROGRESS'/);
 });
+
+test('organizer can recover from an uncertain server result without replaying the write',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/title="Voltar a sincronizar dados"/);
+ assert.match(screen,/onPress=\{\(\)=>\{void load\(generation\.current,!!tournament\);\}\}/);
+ assert.match(screen,/setFixturesVerified\(false\);\s*setError\(''\)/);
+ assert.match(screen,/!loading&&!syncing&&!busy&&auth\.token/);
+ assert.match(screen,/!fixturesVerified/);
+ assert.match(screen,/Não foi possível confirmar os dados atuais:/);
+ assert.match(screen,/const canRecord=fixturesVerified&&canRecordTournamentResult/);
+ assert.match(screen,/const allVisibleFinished=fixturesVerified&&matches\.length>0/);
+});
