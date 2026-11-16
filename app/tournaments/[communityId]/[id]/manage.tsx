@@ -12,6 +12,7 @@ import {canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,isOr
 import {managedKind} from '../../../../src/lib/tournament-events-core.cjs';
 import {finishTournamentLeague,publishTournamentSchedule,saveTournamentMatchResult} from '../../../../src/lib/tournament-organizer-api';
 import {officialTournamentOutcome} from '../../../../src/lib/tournament-outcome-core.cjs';
+import {reconcileVisibleFixtures} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,TournamentTable,TournamentTeamGroups} from '../../../../src/lib/types';
 
@@ -44,7 +45,7 @@ export default function TournamentManagerScreen(){
  const [standings,setStandings]=useState<TournamentTable|null>(null);
  const [groups,setGroups]=useState<TournamentTeamGroups|null>(null);
  const [standingsError,setStandingsError]=useState(''),[syncing,setSyncing]=useState(false);
- const generation=useRef(0),readVersion=useRef(0),pendingWrite=useRef(false);
+ const generation=useRef(0),readVersion=useRef(0),pendingWrite=useRef(false),visiblePage=useRef(0);
  const load=useCallback(async(version=generation.current,silent=false):Promise<boolean>=>{
   const request=++readVersion.current;
   if(!auth.token||!auth.username){
@@ -52,7 +53,7 @@ export default function TournamentManagerScreen(){
    return false;
   }
   if(silent)setSyncing(true);
-  else{setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);}
+  else{setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);visiblePage.current=0;}
   setStandingsError('');
   try{
    const [info,community]=await Promise.all([
@@ -69,8 +70,13 @@ export default function TournamentManagerScreen(){
     return true;
    }
    const [fixtures,table,groupState]=await Promise.allSettled([
-    kind==='TEAM'?teamTournamentMatches(cid,tid,0,auth.token,auth.username):
-     individualTournamentMatches(cid,tid,0,auth.token,auth.username),
+    reconcileVisibleFixtures(
+     requestedPage=>kind==='TEAM'?
+      teamTournamentMatches(cid,tid,requestedPage,auth.token!,auth.username!):
+      individualTournamentMatches(cid,tid,requestedPage,auth.token!,auth.username!),
+     silent?visiblePage.current:0,
+     ()=>version===generation.current&&request===readVersion.current
+    ),
     tournamentTable(cid,info,auth.token,auth.username),
     kind==='TEAM'&&info.format==='GROUP_KNOCKOUT'?
      teamTournamentGroups(cid,tid,auth.token,auth.username):Promise.resolve(null)
@@ -78,6 +84,8 @@ export default function TournamentManagerScreen(){
    if(version!==generation.current||request!==readVersion.current)return false;
    if(fixtures.status==='rejected')throw fixtures.reason;
    const response=fixtures.value;
+   if(!response)return false;
+   visiblePage.current=response.page;
    setMatches(response.matches.map(m=>kind==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch)));
    setPage(response.page);setHasMore(response.hasMore);
    if(table.status==='fulfilled'){setStandings(table.value);}
@@ -99,7 +107,7 @@ export default function TournamentManagerScreen(){
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
   readVersion.current++;
-  setTournament(null);setRole(null);setMatches([]);setPage(0);setHasMore(false);
+  setTournament(null);setRole(null);setMatches([]);setPage(0);visiblePage.current=0;setHasMore(false);
   setStandings(null);setGroups(null);setStandingsError('');setSyncing(false);
   setNotice('');setError('');setLoading(true);
   void load(version);
@@ -151,7 +159,8 @@ export default function TournamentManagerScreen(){
    const response=type==='TEAM'?await teamTournamentMatches(cid,tid,next,auth.token,auth.username):await individualTournamentMatches(cid,tid,next,auth.token,auth.username);
    const items=response.matches.map(m=>type==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch));
    if(version!==generation.current)return;
-   setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(response.page);setHasMore(response.hasMore);
+   setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);
+   visiblePage.current=response.page;setPage(response.page);setHasMore(response.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
   finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
