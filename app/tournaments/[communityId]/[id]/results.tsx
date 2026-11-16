@@ -1,4 +1,4 @@
-import React,{useCallback,useState} from 'react';
+import React,{useCallback,useRef,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -32,16 +32,26 @@ export default function TournamentResultsScreen(){
  const [tournament,setTournament]=useState<JynloTournament|null>(null);
  const [overview,setOverview]=useState<TournamentPerformanceOverview|null>(null);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=useCallback(async()=>{
-  if(!auth.token||!auth.username){setTournament(null);setOverview(null);setLoading(false);return;}
+ const generation=useRef(0);
+ const load=useCallback(async(version=generation.current)=>{
+  if(!auth.token||!auth.username){if(version===generation.current){setTournament(null);setOverview(null);setLoading(false);}return;}
   setLoading(true);setError('');setTournament(null);setOverview(null);
   try{
-   const details=await tournamentDetails(cid,tid,auth.token,auth.username);setTournament(details);
-   if(isPerformanceKind(classificationKind(details)))setOverview(await performanceOverview(cid,details,auth.token,auth.username));
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar esta prova.');}
-  finally{setLoading(false);}
+   const details=await tournamentDetails(cid,tid,auth.token,auth.username);
+   if(version!==generation.current)return;
+   setTournament(details);
+   if(isPerformanceKind(classificationKind(details))){
+    const result=await performanceOverview(cid,details,auth.token,auth.username);
+    if(version===generation.current)setOverview(result);
+   }
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar esta prova.');}
+  finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{
+  const version=++generation.current;
+  void load(version);
+  return()=>{generation.current++;};
+ },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
  return <Page><DemoBanner/><Eyebrow>RESULTADOS DA COMPETIÇÃO</Eyebrow>
   <Text style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
