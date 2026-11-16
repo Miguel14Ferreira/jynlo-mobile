@@ -53,6 +53,18 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  },[teamId,kind,token]);
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
+ const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
+  if(!(failure instanceof ApiError)||(failure.status!==401&&failure.status!==403))return false;
+  // A revoked membership must immediately hide cached private content,
+  // even when the rejection occurs during a write rather than a history GET.
+  accessRevokedRef.current=true;setAccessRevoked(true);
+  setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
+  searchVersion.current++;reactionVersion.current++;setReactions({});
+  setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+  setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
+  setError('Já não tens acesso a esta conversa.');
+  return true;
+ },[]);
  const invalidatePendingRead=()=>{
   // Reads started before a write must not overwrite newly saved messages.
   mutationVersion.current++;
@@ -74,15 +86,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    setEntries(history);setSyncWarning('');void loadReactions(history);
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
-   if(e instanceof ApiError&&(e.status===403||e.status===401)){
-    // Membership or authentication was revoked. Never retain private history on screen.
-    accessRevokedRef.current=true;setAccessRevoked(true);setEntries([]);setSearchResults([]);setSearchActive(false);
-    searchVersion.current++;reactionVersion.current++;setReactions({});
-    setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
-    setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
-    setError('Já não tens acesso a esta conversa.');
-    return;
-   }
+   if(revokeIfUnauthorized(e))return;
    const message=e instanceof Error?e.message:'Não foi possível carregar as mensagens.';
    if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
    else setError(message);
@@ -96,7 +100,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
    if(!quiet&&expected===version.current)setLoading(false);
   }
- },[teamId,kind,token,loadReactions]);
+ },[teamId,kind,token,loadReactions,revokeIfUnauthorized]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   pendingRefresh.current=false;
@@ -173,7 +177,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
    setDraft(previous=>previous===draft?'':previous);setReplyTo(null);
   }catch(e){
-   if(current===version.current)
+   if(current===version.current&&!revokeIfUnauthorized(e))
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
       ' Consulta o histórico antes de repetires a operação.');
   }finally{
@@ -189,8 +193,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   try{
    const results=await searchTeamContent(teamId,kind,term,token);
    if(current===searchVersion.current){setSearchResults(results);void loadReactions(results);}
-  }catch{
-   if(current===searchVersion.current)setError('Não foi possível pesquisar as mensagens.');
+  }catch(e){
+   if(current===searchVersion.current&&!revokeIfUnauthorized(e))
+    setError('Não foi possível pesquisar as mensagens.');
   }finally{
    if(current===searchVersion.current)setSearching(false);
   }
@@ -217,8 +222,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(reactions[item.id]?.mine===emoji)
     await removeTeamReaction(teamId,kind,item.id,token);
    else await setTeamReaction(teamId,kind,item.id,emoji,token);
-  }catch{
-   if(current===version.current)setError('Reação não confirmada. Consulta o histórico antes de repetir.');
+  }catch(e){
+   if(current===version.current&&!revokeIfUnauthorized(e))
+    setError('Reação não confirmada. Consulta o histórico antes de repetir.');
   }finally{
    reactionBusyRef.current=false;
    if(current===version.current){setReactionBusyId(null);void loadReactions([item]);}
@@ -236,7 +242,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setEditingId(null);setEditDraft('');
    }
   }catch(e){
-   if(current===version.current)setError('Edição não confirmada. Consulta o histórico antes de repetir.');
+   if(current===version.current&&!revokeIfUnauthorized(e))
+    setError('Edição não confirmada. Consulta o histórico antes de repetir.');
   }finally{
    sendingNow.current=false;
    if(current===version.current){setSending(false);void refresh(true,current);}
@@ -254,8 +261,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      await deleteTeamContent(teamId,kind,item.id,token);
      if(current===version.current)
       setEntries(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true}:entry));
-    }catch{
-     if(current===version.current)setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
+    }catch(e){
+     if(current===version.current&&!revokeIfUnauthorized(e))
+      setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
     }finally{
      sendingNow.current=false;
      if(current===version.current){setSending(false);void refresh(true,current);}
