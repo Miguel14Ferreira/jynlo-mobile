@@ -98,8 +98,13 @@ export interface SportsTeamInvitation {
   teamName: string;
   status: 'INVITED';
 }
+export interface TeamPendingPlayerInvitation { profileId:number; username:string; status:'INVITED'; }
 export async function sportsTeamMembers(teamId: number, token?: string): Promise<SportsTeamMember[]> {
   return request<SportsTeamMember[]>('/api/teams/' + validId(teamId) + '/members', {token});
+}
+export async function pendingSportsTeamPlayers(teamId:number,token:string):Promise<TeamPendingPlayerInvitation[]> {
+  if(!token||DEMO_MODE)return [];
+  return request<TeamPendingPlayerInvitation[]>('/api/teams/'+validId(teamId)+'/invitations',{token});
 }
 export async function mySportsTeamInvitations(token: string): Promise<SportsTeamInvitation[]> {
   if (!token || DEMO_MODE) return [];
