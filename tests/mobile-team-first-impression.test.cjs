@@ -107,7 +107,7 @@ test('team profile survives partial API failures and ignores late results after 
  assert.match(screen,/awards\.status==='fulfilled'/);
  assert.match(screen,/linked\.status==='fulfilled'/);
  assert.match(screen,/version===searchVersion\.current/);
- assert.match(screen,/if\(!auth\.token\|\|saving\|\|!Number\.isSafeInteger\(profileId\)/);
+ assert.match(screen,/if\(!auth\.token\|\|saving\|\|actionRef\.current\|\|!rosterVerified\|\|!Number\.isSafeInteger\(profileId\)/);
 });
 
 test('team rosters and competition data refresh on foreground resume without flashing skeletons',()=>{
