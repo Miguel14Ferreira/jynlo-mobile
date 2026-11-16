@@ -12,7 +12,9 @@ export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
  const [query,setQuery]=useState(''),[sport,setSport]=useState('');
  const [filters,setFilters]=useState({query:'',sport:''});
- const requestVersion=useRef(0);
+ const requestVersion=useRef(0),applyingRef=useRef(false);
+ const [applicationsVerified,setApplicationsVerified]=useState(false);
+ const [ownedVerified,setOwnedVerified]=useState(false);
  const [rows,setRows]=useState<OpenTeamCompetition[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]);
  const [applications,setApplications]=useState<TeamCompetitionApplication[]>([]);
  const [chosen,setChosen]=useState<number|null>(null);
@@ -31,15 +33,15 @@ export default function TeamCompetitionDiscovery(){
   if(competitions.status==='fulfilled')setRows(competitions.value);
   else failed.push('competições');
   if(owned.status==='fulfilled'){
-    setTeams(owned.value);
+    setOwnedVerified(true);setTeams(owned.value);
     const wanted=Number(teamId);
     setChosen(current=>{
       if(Number.isSafeInteger(wanted)&&owned.value.some(t=>t.id===wanted))return wanted;
       return current!==null&&owned.value.some(t=>t.id===current)?current:null;
     });
-  }else failed.push('as tuas equipas');
-  if(requests.status==='fulfilled')setApplications(requests.value);
-  else failed.push('candidaturas anteriores');
+  }else{setOwnedVerified(false);setChosen(null);failed.push('as tuas equipas');}
+  if(requests.status==='fulfilled'){setApplications(requests.value);setApplicationsVerified(true);}
+  else{setApplicationsVerified(false);failed.push('candidaturas anteriores');}
   if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. Podes continuar a consultar as restantes secções.');
   setLoading(false);
  },[filters,auth.token,teamId]);
@@ -62,16 +64,25 @@ export default function TeamCompetitionDiscovery(){
    status==='DECLINED'?'Candidatura recusada':status==='PENDING'?'Pedido em análise':null;
  };
  const apply=async(competition:OpenTeamCompetition)=>{
-  if(!auth.token||!chosen||busy||applied(competition,chosen))return;
-  setBusy(true);setError('');setNotice('');
+  if(!auth.token||!chosen||busy||applyingRef.current||!ownedVerified||!applicationsVerified
+     ||!competition.applicationsOpen||!teams.some(team=>team.id===chosen)
+     ||applied(competition,chosen))return;
+  const current=requestVersion.current,selectedTeamId=chosen;
+  applyingRef.current=true;setBusy(true);setError('');setNotice('');
   try{
    const next=await applyTeamToCompetition(competition.communityId,competition.type,
-     competition.id,chosen,auth.token);
-   setApplications(current=>[next,...current.filter(item=>item.id!==next.id)]);
+     competition.id,selectedTeamId,auth.token);
+   if(current!==requestVersion.current)return;
+   setApplications(previous=>[next,...previous.filter(item=>item.id!==next.id)]);
    setNotice('Candidatura enviada. O organizador poderá aceitar ou recusar.');
-  }catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar o pedido.')+
-    ' Verifica o estado antes de tentar novamente.');}
-  finally{setBusy(false);}
+  }catch(e){
+   if(current===requestVersion.current){
+    // A timed-out POST may already have been committed. Confirm on GET before retrying.
+    setApplicationsVerified(false);
+    setError((e instanceof Error?e.message:'Não foi possível enviar o pedido.')+
+     ' O pedido pode ter sido recebido. Verifica novamente as candidaturas antes de repetir.');
+   }
+  }finally{applyingRef.current=false;if(current===requestVersion.current)setBusy(false);}
  };
  return <Page>
   <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
@@ -84,6 +95,8 @@ export default function TeamCompetitionDiscovery(){
     value={sport} onChangeText={setSport} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
   <Button title="Pesquisar competições" onPress={search} disabled={loading}/>
   {error?<Message tone="error">{error}</Message>:null}
+  {(!applicationsVerified||!ownedVerified)&&auth.token&&!loading?<Button secondary
+    title="Verificar novamente candidaturas e equipas" disabled={busy} onPress={()=>void load()}/>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<Loader/>:null}
   {!loading&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
@@ -104,8 +117,9 @@ export default function TeamCompetitionDiscovery(){
     <Text style={styles.note}>{item.type==='TOURNAMENT'?'Torneio':'Campeonato'} · {item.communityName}</Text>
     <Text style={styles.subtitle}>{item.name}</Text>
     <Text style={styles.note}>{item.sport||'Modalidade não indicada'}</Text>
+    {!item.applicationsOpen?<Text style={styles.note}>Candidaturas encerradas</Text>:null}
     <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
-      disabled={!auth.token||!chosen||busy||applied(item,chosen)}
+      disabled={!auth.token||!chosen||busy||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
    </View>)}
   <Text style={styles.note}>A aprovação não inscreve automaticamente o plantel; os jogadores são confirmados pelas regras da competição.</Text>
