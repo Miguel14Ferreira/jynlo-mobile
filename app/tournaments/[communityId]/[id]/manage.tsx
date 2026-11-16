@@ -231,7 +231,7 @@ export default function TournamentManagerScreen(){
     <Text style={styles.helper}>{fixturesVerified?matches.length:0} jogos confirmados{fixturesVerified&&hasMore?' · existem mais páginas':''}. Os resultados nunca são calculados pelo telemóvel.</Text>
     {fixturesVerified&&matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
     {fixturesVerified?matches.map(m=><View key={m.id} style={styles.match}>
-      <View style={styles.row}><Text style={styles.round}>Jornada {m.roundNumber}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
+      <View style={styles.row}><Text style={styles.round}>{tournament.format==='LEAGUE'?`Jornada ${m.roundNumber}`:m.groupNumber!=null?`Grupo ${m.groupNumber} · Jornada ${m.roundNumber}`:`Eliminatória · Ronda ${m.roundNumber}`}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
       <Text style={styles.matchName}>{m.home}  ·  {m.away}</Text>
       {m.status==='COMPLETED'?<Text style={styles.result}>{m.homeScore} — {m.awayScore}</Text>:null}
       {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} writeGuard={organizerMatchWriteGuard(tournament,m,matches,groups,groups!==null)} onSave={save}/>:null}
