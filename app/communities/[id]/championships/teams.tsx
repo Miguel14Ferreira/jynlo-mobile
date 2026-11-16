@@ -54,7 +54,7 @@ export default function ChampionshipTeamsScreen(){
    if(version===viewGeneration.current)setError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');
   }finally{
    savingRef.current=false;
-   if(version===viewGeneration.current)setSaving(false);
+   setSaving(false);
   }
  }
  return <Page><DemoBanner/><Eyebrow>EQUIPAS DA ÉPOCA</Eyebrow>
