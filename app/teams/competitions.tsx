@@ -41,16 +41,23 @@ export default function TeamCompetitionDiscovery(){
   const failed:string[]=[];
   if(competitions.status==='fulfilled')setRows(competitions.value);
   else{setRows([]);failed.push('competições');}
-  if(owned.status==='fulfilled'){
+  if(owned.status==='fulfilled'&&auth.token){
     setOwnedVerified(true);setTeams(owned.value);
     const wanted=Number(teamId);
     setChosen(current=>{
       if(Number.isSafeInteger(wanted)&&owned.value.some(t=>t.id===wanted))return wanted;
       return current!==null&&owned.value.some(t=>t.id===current)?current:null;
     });
-  }else{setOwnedVerified(false);setTeams([]);setChosen(null);failed.push('as tuas equipas');}
-  if(requests.status==='fulfilled'){setApplications(requests.value);setApplicationsVerified(true);}
-  else{setApplications([]);setApplicationsVerified(false);failed.push('candidaturas anteriores');}
+  }else{
+    setOwnedVerified(false);setTeams([]);setChosen(null);
+    if(auth.token)failed.push('as tuas equipas');
+  }
+  if(requests.status==='fulfilled'&&auth.token){
+    setApplications(requests.value);setApplicationsVerified(true);
+  }else{
+    setApplications([]);setApplicationsVerified(false);
+    if(auth.token)failed.push('candidaturas anteriores');
+  }
   if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. Podes continuar a consultar as restantes secções.');
   setLoading(false);
  },[filters,auth.token,teamId]);
@@ -119,7 +126,8 @@ export default function TeamCompetitionDiscovery(){
     title="Verificar novamente candidaturas e equipas" disabled={busy} onPress={()=>void load()}/>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<Loader/>:null}
-  {!loading&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
+  {!auth.token&&!loading?<Message>Inicia sessão para escolher uma equipa, consultar candidaturas e pedir participação.</Message>:null}
+  {!loading&&!!auth.token&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
   {teams.length>0?<View style={styles.panel}>
    <Text style={styles.subtitle}>Escolher a minha equipa</Text>
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
