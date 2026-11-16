@@ -46,6 +46,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // A revoked membership must immediately hide cached private content,
   // even when the rejection occurs during a write rather than a history GET.
   accessRevokedRef.current=true;setAccessRevoked(true);
+  // Invalidate any HTTP read that started before access was revoked.
+  mutationVersion.current++;readRequestVersion.current++;
+  reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
   searchVersion.current++;reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
@@ -70,7 +73,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const conversation=version.current;
   try{
    const updated=await teamReactionSummaries(teamId,kind,ids,token);
-   if(current===reactionVersion.current&&conversation===version.current)
+   if(current===reactionVersion.current&&conversation===version.current&&!accessRevokedRef.current)
     setReactions(previous=>({...previous,...updated}));
   }catch(e){
    // Reading private reaction totals must enforce the same membership rules
@@ -96,7 +99,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(!quiet){setLoading(true);setError('');}
   try{
    const history=await teamContentHistory(teamId,kind,token);
-   if(expected!==version.current||writeVersion!==mutationVersion.current)return;
+   if(expected!==version.current||writeVersion!==mutationVersion.current||accessRevokedRef.current)return;
    setEntries(history);setSyncWarning('');void loadReactions(history);
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
@@ -188,7 +191,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const current=version.current;
   try{
    const saved=await sendTeamContent(teamId,kind,message,token,replyTo);
-   if(current!==version.current)return;
+   if(current!==version.current||accessRevokedRef.current)return;
    setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
    setDraft(previous=>previous===draft?'':previous);setReplyTo(null);
   }catch(e){
@@ -207,7 +210,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setSearchActive(true);setSearching(true);setError('');
   try{
    const results=await searchTeamContent(teamId,kind,term,token);
-   if(current===searchVersion.current){setSearchResults(results);void loadReactions(results);}
+   if(current===searchVersion.current&&!accessRevokedRef.current){setSearchResults(results);void loadReactions(results);}
   }catch(e){
    if(current===searchVersion.current&&!revokeIfUnauthorized(e))
     setError('Não foi possível pesquisar as mensagens.');
@@ -252,7 +255,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const current=version.current;
   try{
    const updated=await editTeamContent(teamId,kind,editingId,body,token);
-   if(current===version.current){
+   if(current===version.current&&!accessRevokedRef.current){
     setEntries(previous=>previous.map(item=>item.id===updated.id?updated:item));
     setEditingId(null);setEditDraft('');
    }
@@ -274,7 +277,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     const current=version.current;
     try{
      await deleteTeamContent(teamId,kind,item.id,token);
-     if(current===version.current)
+     if(current===version.current&&!accessRevokedRef.current)
       setEntries(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true}:entry));
     }catch(e){
      if(current===version.current&&!revokeIfUnauthorized(e))
