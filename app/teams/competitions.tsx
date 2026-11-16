@@ -64,8 +64,10 @@ export default function TeamCompetitionDiscovery(){
    status==='DECLINED'?'Candidatura recusada':status==='PENDING'?'Pedido em análise':null;
  };
  const apply=async(competition:OpenTeamCompetition)=>{
-  if(!auth.token||!chosen||busy||applyingRef.current||!ownedVerified||!applicationsVerified
-     ||!competition.applicationsOpen||!teams.some(team=>team.id===chosen)
+  if(!auth.token||!chosen||busy||loading||applyingRef.current||!ownedVerified||!applicationsVerified
+     ||!competition.applicationsOpen||!rows.some(item=>item.id===competition.id&&item.type===competition.type
+       &&item.communityId===competition.communityId&&item.applicationsOpen)
+     ||!teams.some(team=>team.id===chosen)
      ||applied(competition,chosen))return;
   const current=requestVersion.current,selectedTeamId=chosen;
   applyingRef.current=true;setBusy(true);setError('');setNotice('');
@@ -119,7 +121,7 @@ export default function TeamCompetitionDiscovery(){
     <Text style={styles.note}>{item.sport||'Modalidade não indicada'}</Text>
     {!item.applicationsOpen?<Text style={styles.note}>Candidaturas encerradas</Text>:null}
     <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
-      disabled={!auth.token||!chosen||busy||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
+      disabled={!auth.token||!chosen||busy||loading||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
    </View>)}
   <Text style={styles.note}>A aprovação não inscreve automaticamente o plantel; os jogadores são confirmados pelas regras da competição.</Text>
