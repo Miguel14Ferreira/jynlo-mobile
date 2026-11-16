@@ -72,4 +72,6 @@ test('failed post-result refresh blocks stale scores and premature league closur
  assert.match(screen,/const allVisibleFinished=fixturesVerified&&matches\.length>0/);
  assert.match(screen,/!type\|\|!fixturesVerified\|\|!auth\.token/);
  assert.match(screen,/Resultado guardado, mas o calendário não foi atualizado/);
+ assert.match(screen,/Os jogos apresentados não estão confirmados pelo servidor/);
+ assert.match(screen,/!loading&&!syncing&&!fixturesVerified&&tournament\.status==='IN_PROGRESS'/);
 });
