@@ -85,3 +85,11 @@ test('community invitations cannot be repeated if mutation succeeded but refresh
  assert.match(screen,/O convite foi tratado, mas não foi possível confirmar as associações/);
  assert.match(screen,/setCommunitiesVerified\(false\)/);
 });
+
+test('failed team data shows a contextual retry without inventing member or community totals',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/error&&!loading&&!saving\?<Button secondary title="Tentar novamente"/);
+ assert.match(screen,/onPress=\{\(\)=>void load\(false,true\)\}/);
+ assert.match(screen,/rosterVerified\?members\.length:'—'/);
+ assert.match(screen,/communitiesVerified\?communities\.filter\(m=>m\.status==='ACTIVE'\)\.length:'—'/);
+});
