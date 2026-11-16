@@ -1,15 +1,8 @@
 name: Validate Jynlo Mobile team chat
+# Manual-only until hosted Actions runner allocation is restored.
+# This repository has no npm lockfile; npm ci / setup-node cache:npm
+# would fail even after a runner becomes available.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - 'src/components/SportsTeamContentPanel.tsx'
-      - 'src/components/SecureChatAttachment.tsx'
-      - 'src/lib/sports-team-content-api.ts'
-      - 'src/lib/chat-photo-album.ts'
-      - 'src/lib/chat-pdf-attachment.ts'
-      - 'tests/mobile-team-first-impression.test.cjs'
-      - '.github/workflows/validate-team-chat.yml'
   workflow_dispatch:
 
 permissions:
@@ -24,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
+      - name: Install dependencies without lifecycle scripts
+        run: npm install --no-audit --no-fund --ignore-scripts
       - name: TypeScript compilation
         run: npm run typecheck
       - name: Mobile teams contract checks
