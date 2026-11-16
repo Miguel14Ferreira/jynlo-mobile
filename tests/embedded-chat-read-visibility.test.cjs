@@ -20,6 +20,17 @@ for(const [name,file,api] of [
   assert.ok(source.includes(api+'(id,latest,'));
   assert.match(source,/lastAcknowledgedMessageId\.current=latest/);
  });
+ test(name+' acknowledges short histories regardless of native layout event order',()=>{
+  const source=read(file);
+  assert.match(source,/const historyContentHeight=useRef\\(0\\)/);
+  assert.match(source,/historyContentHeight\\.current=height/);
+  assert.match(source,/onLayout=\\{event=>\\{/);
+  assert.match(source,/historyContentHeight\\.current>0&&historyContentHeight\\.current<=historyViewportHeight\\.current/);
+  const layout=source.slice(source.indexOf('onLayout={event=>{'),source.indexOf('onContentSizeChange={'));
+  assert.ok(layout.includes(api+'(id,latest,'),'layout must acknowledge the latest visible message');
+  assert.match(layout,/AppState\\.currentState==='active'/);
+  assert.match(layout,/latest>lastAcknowledgedMessageId\\.current/);
+ });
  test(name+' resets read cursor on a failed acknowledgement',()=>{
   const source=read(file);
   assert.match(source,/\.catch\(\(\)=>\{if\(lastAcknowledgedMessageId\.current===latest\)lastAcknowledgedMessageId\.current=0;\}\)/);
