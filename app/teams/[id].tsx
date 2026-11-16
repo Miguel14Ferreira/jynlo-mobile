@@ -172,6 +172,7 @@ export default function TeamDetail(){
  };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
  const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
+ const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId));
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
@@ -229,9 +230,12 @@ export default function TeamDetail(){
     {isOwner?<><TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
       placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
     <Button title={searching?'A procurar…':'Pesquisar jogadores'} disabled={saving||searching||searchName.trim().length<2} onPress={()=>void search()}/>
-    {searchComplete&&candidates.length===0?<Text style={styles.note}>Não encontrámos jogadores com essa pesquisa.</Text>:null}
-    {candidates.map(p=><View key={p.profileId} style={styles.candidate}>
-      <Text style={styles.note}>{p.fullName||p.username} · @{p.username}</Text>
+    {searchComplete&&inviteCandidates.length===0?<Text style={styles.note}>Não encontrámos novos jogadores com essa pesquisa.</Text>:null}
+    {inviteCandidates.map(p=><View key={p.profileId} style={styles.candidate}>
+      <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/social/[username]',params:{username:p.username}})}>
+       <Text style={styles.playerName}>{p.fullName||p.username}</Text>
+       <Text style={styles.note}>@{p.username} · Ver perfil →</Text>
+      </Pressable>
       <Button title="Convidar" disabled={saving} onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
