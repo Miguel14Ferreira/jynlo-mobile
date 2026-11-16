@@ -54,6 +54,7 @@ export default function TournamentManagerScreen(){
    return false;
   }
   setFixturesVerified(false);
+  setStandings(null);setGroups(null);
   setError('');
   if(silent)setSyncing(true);
   else{setLoading(true);setError('');setMatches([]);setHasMore(false);setPage(0);visiblePage.current=0;}
@@ -186,7 +187,7 @@ export default function TournamentManagerScreen(){
    {DEMO_MODE?<Message>Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.</Message>:null}
    {standingsError?<Message tone="error">{standingsError}</Message>:null}
    {!loading&&!syncing&&!fixturesVerified&&tournament.status==='IN_PROGRESS'?<Message tone="error">Os jogos apresentados não estão confirmados pelo servidor. Para proteger a competição, o registo de resultados e o encerramento ficam bloqueados até uma nova sincronização.</Message>:null}
-   {standings?<View style={styles.panel}>
+   {fixturesVerified&&standings?<View style={styles.panel}>
     <Text style={styles.heading}>Classificação oficial</Text>
     {standings.rows.length===0?<Text style={styles.helper}>Ainda não existem resultados classificados.</Text>:null}
     {standings.rows.map(row=>{
@@ -199,7 +200,7 @@ export default function TournamentManagerScreen(){
     })}
     <Text style={styles.helper}>{standings.source}</Text>
    </View>:null}
-   {tournament.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups?
+   {fixturesVerified&&tournament.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups?
     <View style={styles.panel}>
      <Text style={styles.heading}>Fases da competição</Text>
      <Text style={styles.helper}>{groups.knockoutStarted?'Eliminatórias iniciadas pelo servidor.':'Fase de grupos a decorrer.'}</Text>
@@ -218,15 +219,15 @@ export default function TournamentManagerScreen(){
    </View>:null}
    {tournament.status!=='DRAFT'?<View style={styles.panel}>
     <Text style={styles.heading}>{tournament.status==='COMPLETED'?'Jogos e resultados finais':'Jogos e resultados'}</Text>
-    <Text style={styles.helper}>{matches.length} jogos carregados{hasMore?' · existem mais páginas':''}. Os resultados nunca são calculados pelo telemóvel.</Text>
-    {matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
-    {matches.map(m=><View key={m.id} style={styles.match}>
+    <Text style={styles.helper}>{fixturesVerified?matches.length:0} jogos confirmados{fixturesVerified&&hasMore?' · existem mais páginas':''}. Os resultados nunca são calculados pelo telemóvel.</Text>
+    {fixturesVerified&&matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
+    {fixturesVerified?matches.map(m=><View key={m.id} style={styles.match}>
       <View style={styles.row}><Text style={styles.round}>Jornada {m.roundNumber}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
       <Text style={styles.matchName}>{m.home}  ·  {m.away}</Text>
       {m.status==='COMPLETED'?<Text style={styles.result}>{m.homeScore} — {m.awayScore}</Text>:null}
       {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} onSave={save}/>:null}
-    </View>)}
-    {hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
+    </View>):null}
+    {fixturesVerified&&hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
    </View>:null}
    {canFinish?<View style={styles.panel}>
     <Text style={styles.heading}>Encerrar a liga</Text>
