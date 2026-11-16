@@ -17,6 +17,7 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
  const [searched,setSearched]=useState(false);
  const searchVersion=useRef(0);
  const [invitesVerified,setInvitesVerified]=useState(false);
+ const [refreshKey,setRefreshKey]=useState(0);
  useEffect(()=>{
   if(!open)return;
   let active=true;
@@ -34,7 +35,7 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
     if(missing.length)setError('Não foi possível atualizar '+missing.join(' e ')+'. Confirma o estado antes de enviar novos convites.');
   });
   return()=>{active=false;searchVersion.current++;};
- },[open,communityId,competitionId,type,token]);
+ },[open,communityId,competitionId,type,token,refreshKey]);
  const search=async()=>{
   if(loading||query.trim().length<1)return;
   const version=++searchVersion.current;
@@ -89,6 +90,8 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
       accessibilityLabel="Nome da equipa a pesquisar" returnKeyType="search" onSubmitEditing={()=>void search()}/>
     <Button title={loading?'A pesquisar…':'Pesquisar'} disabled={loading||!query.trim()} onPress={()=>void search()}/>
     {error?<Message tone="error">{error}</Message>:null}
+    {!invitesVerified?<Button secondary title="Verificar convites anteriores"
+      disabled={loading} onPress={()=>setRefreshKey(key=>key+1)}/>:null}
     {notice?<Message>{notice}</Message>:null}
     {rows.map(team=>{
      const invitation=existing.find(x=>x.teamId===team.id);
