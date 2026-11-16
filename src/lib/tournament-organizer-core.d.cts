@@ -9,7 +9,7 @@ export function validateTournamentScore(home:string,away:string):{homeScore:numb
 export function validateTournamentMatchScore(tournament:JynloTournament,match:{id:number;groupNumber?:number|null},home:string,away:string):{homeScore:number;awayScore:number};
 export function organizerMatchWriteGuard(
  tournament:JynloTournament|null,
- match:{id:number;roundNumber:number;groupNumber?:number|null}|null,
+ match:{id:number;roundNumber:number;groupNumber?:number|null}|null|undefined,
  matches:ReadonlyArray<{roundNumber:number;groupNumber?:number|null}>,
  groupState:{knockoutStarted:boolean}|null,
  groupsConfirmed:boolean
