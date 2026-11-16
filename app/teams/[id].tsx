@@ -24,6 +24,7 @@ export default function TeamDetail(){
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [kitPrimary,setKitPrimary]=useState('#19CBB6'),[kitSecondary,setKitSecondary]=useState('#F0FAFB');
  const [brandingVerified,setBrandingVerified]=useState(false);
+ const kitEditedRef=useRef(false);
  const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
  const [searchComplete,setSearchComplete]=useState(false),[searching,setSearching]=useState(false);
  const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false);
@@ -50,8 +51,10 @@ export default function TeamDetail(){
   const failed:string[]=[];
   if(details.status==='fulfilled'){
    setTeam(details.value);setBrandingVerified(true);
-   setKitPrimary(safeTeamKitColor(details.value.kitPrimary,'#19CBB6'));
-   setKitSecondary(safeTeamKitColor(details.value.kitSecondary,'#F0FAFB'));
+   if(!kitEditedRef.current){
+    setKitPrimary(safeTeamKitColor(details.value.kitPrimary,'#19CBB6'));
+    setKitSecondary(safeTeamKitColor(details.value.kitSecondary,'#F0FAFB'));
+   }
   }else {setBrandingVerified(false);if(!silent)setTeam(null);failed.push('o perfil da equipa');}
   if(roster.status==='fulfilled'){
    setMembers(roster.value);setRosterVerified(true);
@@ -279,13 +282,13 @@ export default function TeamDetail(){
     ?await removeSportsTeamLogo(teamId,auth.token)
     :await uploadSportsTeamLogo(teamId,asset!,auth.token);
    if(version!==requestVersion.current)return;
-   setTeam(result);setBrandingVerified(true);
+   setTeam(result);setBrandingVerified(true);kitEditedRef.current=false;
    setKitPrimary(safeTeamKitColor(result.kitPrimary,'#19CBB6'));
    setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
    setNotice(mode==='KIT'?'Equipamento guardado.':mode==='REMOVE'?'Logótipo removido.':'Logótipo atualizado.');
   }catch(e){
    if(version===requestVersion.current){
-    setBrandingVerified(false);
+    setBrandingVerified(false);kitEditedRef.current=false;
     setError((e instanceof Error?e.message:'Não foi possível confirmar a alteração.')+
      ' Volta a carregar a equipa antes de repetir.');
    }
@@ -294,11 +297,15 @@ export default function TeamDetail(){
  const pickLogo=async()=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
   const version=requestVersion.current;
-  const result=await ImagePicker.launchImageLibraryAsync({
-   mediaTypes:['images'],allowsEditing:false,quality:1
-  });
-  if(result.canceled||version!==requestVersion.current)return;
-  if(result.assets?.[0])void updateBranding('LOGO',result.assets[0]);
+  try{
+   const result=await ImagePicker.launchImageLibraryAsync({
+    mediaTypes:['images'],allowsEditing:false,quality:1
+   });
+   if(result.canceled||version!==requestVersion.current)return;
+   if(result.assets?.[0])void updateBranding('LOGO',result.assets[0]);
+  }catch{
+   if(version===requestVersion.current)setError('Não foi possível abrir a galeria do dispositivo.');
+  }
  };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
  const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
@@ -352,13 +359,13 @@ export default function TeamDetail(){
     <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'primary'+color}
       accessibilityRole="button" accessibilityLabel={'Cor principal '+color}
       accessibilityState={{selected:kitPrimary===color}}
-      disabled={saving||!brandingVerified} onPress={()=>setKitPrimary(color)}
+      disabled={saving||!brandingVerified} onPress={()=>{kitEditedRef.current=true;setKitPrimary(color);}}
       style={[styles.swatch,{backgroundColor:color},kitPrimary===color&&styles.swatchSelected]}/>)}</View>
     <Text style={styles.kitLabel}>Cor secundária</Text>
     <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'secondary'+color}
       accessibilityRole="button" accessibilityLabel={'Cor secundária '+color}
       accessibilityState={{selected:kitSecondary===color}}
-      disabled={saving||!brandingVerified} onPress={()=>setKitSecondary(color)}
+      disabled={saving||!brandingVerified} onPress={()=>{kitEditedRef.current=true;setKitSecondary(color);}}
       style={[styles.swatch,{backgroundColor:color},kitSecondary===color&&styles.swatchSelected]}/>)}</View>
     <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
       onPress={()=>void updateBranding('KIT')}/>
