@@ -40,6 +40,8 @@ export default function DirectConversation(){
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
  const latestVisibleAtBottom=useRef(false);
+ // Visibility measurements belong to a specific rendered history, never a previous refresh.
+ const measuredHistoryKey=useRef('');
  const lastAcknowledgedMessageId=useRef(0);
  const composerFocused=useRef(false);
  useEffect(()=>{
@@ -146,6 +148,7 @@ export default function DirectConversation(){
    historyViewportHeight.current=0;
    historyContentHeight.current=0;
    latestVisibleAtBottom.current=false;
+   measuredHistoryKey.current='';
    setMessages([]);setDraft('');setReplyTarget(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setError('');setSyncWarning('');historyError.current=null;
    setAttachmentsOpen(false);setSafetyOpen(false);
    setMuteKnown(false);setMuted(false);setMuteBusy(false);setMuteError('');
@@ -446,7 +449,9 @@ export default function DirectConversation(){
    }
   }
  }
+ const historyKey=messages.map(item=>item.id).join(',');
  const acknowledgeVisibleHistory=useCallback((fullyVisible:boolean)=>{
+  if(measuredHistoryKey.current!==historyKey)return;
   if(!fullyVisible||!auth.token||!blockStatusKnown||blocked||loading||syncWarning||
      AppState.currentState!=='active'||DEMO_MODE)return;
   const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
@@ -457,7 +462,7 @@ export default function DirectConversation(){
    if(conversation.current===identity&&generation.current===version&&lastAcknowledgedMessageId.current===latest)
     lastAcknowledgedMessageId.current=0;
   });
- },[auth.token,blockStatusKnown,blocked,loading,syncWarning,messages,peer]);
+ },[auth.token,blockStatusKnown,blocked,loading,syncWarning,messages,peer,historyKey]);
  useEffect(()=>{
   // Short histories may become visible without a native scroll event.
   if(historyViewportHeight.current>0&&historyContentHeight.current>0&&
@@ -476,7 +481,7 @@ export default function DirectConversation(){
       historyViewportHeight.current=event.nativeEvent.layout.height;
       historyViewportMeasured.current=historyViewportHeight.current>0;
       if(historyViewportHeight.current>0&&historyContentHeight.current>0&&
-         historyContentHeight.current<=historyViewportHeight.current){
+         historyContentHeight.current<=historyViewportHeight.current&&measuredHistoryKey.current===historyKey){
         nearBottom.current=true;latestVisibleAtBottom.current=true;
         acknowledgeVisibleHistory(true);
       }
@@ -484,6 +489,7 @@ export default function DirectConversation(){
     onScroll={event=>{const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
       historyViewportHeight.current=layoutMeasurement.height;
       historyContentHeight.current=contentSize.height;
+      measuredHistoryKey.current=historyKey;
       historyViewportMeasured.current=layoutMeasurement.height>0&&contentSize.height>0;
       nearBottom.current=historyViewportMeasured.current&&contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
       // A 90px proximity tolerance is for auto-scroll only, not read receipts.
@@ -494,6 +500,7 @@ export default function DirectConversation(){
     scrollEventThrottle={100}
     onContentSizeChange={(_,height)=>{
       historyContentHeight.current=height;
+      measuredHistoryKey.current=historyKey;
       if(historyViewportHeight.current>0&&height>0&&height<=historyViewportHeight.current){
        nearBottom.current=true;latestVisibleAtBottom.current=true;
        acknowledgeVisibleHistory(true);
