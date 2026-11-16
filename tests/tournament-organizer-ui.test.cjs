@@ -121,3 +121,13 @@ test('stale confirmation dialogs cannot publish, score or close a competition',(
  assert.match(screen,/setNotice\(''\);setError\(''\);setBusy\(false\);setLoading\(true\)/);
  assert.match(screen,/pendingWrite\.current=false;if\(version===generation\.current&&reading===readVersion\.current\)setBusy\(false\)/);
 });
+
+test('editor explains backend-locked group and knockout matches without offering a write',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/writeGuard:\{allowed:boolean;reason:string\|null\}/);
+ assert.match(screen,/!writeGuard\.allowed\?<Text style=\{styles\.helper\}>\{writeGuard\.reason\}/);
+ assert.match(screen,/disabled=\{busy\|\|!valid\|\|!writeGuard\.allowed\}/);
+ assert.match(screen,/organizerMatchWriteGuard\(tournament,match,matches,groups,groups!==null\)/);
+ assert.match(screen,/writeGuard=\{organizerMatchWriteGuard\(tournament,m,matches,groups,groups!==null\)\}/);
+ assert.match(screen,/if\(!guard\.allowed\)\{setError\(/);
+});
