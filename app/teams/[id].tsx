@@ -228,16 +228,23 @@ export default function TeamDetail(){
    </View>:null}
    {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
     {!historyError&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
-    {history.map(item=><Text key={item.tournamentId} style={styles.note}>
-      {item.tournamentName} · {item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'}
-    </Text>)}
+    {history.map(item=><Pressable key={item.tournamentId} accessibilityRole="button" style={styles.historyLink}
+      onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(item.communityId),id:String(item.tournamentId)}})}>
+      <Text style={styles.playerName}>{item.tournamentName}</Text>
+      <Text style={styles.note}>{item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'} · Ver torneio →</Text>
+    </Pressable>)}
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições</Text>
-    <Button title="Encontrar competições para a equipa" onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}/>
-    <Text style={styles.note}>A participação em comunidades, sessões e torneios será ligada a esta identidade.</Text></View>:null}
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições da equipa</Text>
+    <Text style={styles.note}>{history.length} torneios no histórico · {standaloneTrophies.length+championshipHonours.length} troféus oficiais</Text>
+    <Button secondary title="Ver histórico e troféus" onPress={()=>setActiveTab('TROPHIES')}/>
+   </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
     {communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
-      <Text style={styles.note}>{m.communityName}</Text>
+      <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(m.communityId)}})}
+       style={styles.communityLink}>
+       <Text style={styles.playerName}>{m.communityName}</Text>
+       <Text style={styles.note}>Ver comunidade →</Text>
+      </Pressable>
       {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>void removeMembership(m.id)}/>:null}
     </View>)}
     {!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>Ainda não pertence a comunidades.</Text>:null}
@@ -293,6 +300,7 @@ const styles=StyleSheet.create({
  tabBar:{flexDirection:'row',flexWrap:'wrap',gap:8},
  tab:{minHeight:45,minWidth:'47%',flexGrow:1,paddingHorizontal:10,paddingVertical:11,borderWidth:1,borderColor:C.border,borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
  tabSelected:{borderColor:C.mint,backgroundColor:'#123C42'},tabText:{fontSize:12,fontWeight:'800',color:C.muted},tabTextSelected:{color:C.mint},
+ communityLink:{flex:1,gap:3,minHeight:44,justifyContent:'center'},historyLink:{padding:12,borderRadius:11,borderWidth:1,borderColor:C.border,gap:4},
  removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:11,fontWeight:'800',color:C.white},
  title:{fontSize:27,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:20},
