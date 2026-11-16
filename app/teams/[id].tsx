@@ -203,8 +203,10 @@ export default function TeamDetail(){
   ]);
  };
  const decideMembership=async(id:number,accept:boolean)=>{
-  if(!auth.token||saving||!communitiesVerified)return;
+  if(!auth.token||savingRef.current||actionRef.current||!communitiesVerified||
+     !communities.some(item=>item.id===id))return;
   const version=requestVersion.current;
+  actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setMembershipNote('');
   try{
    const decided=await answerTeamCommunityMembership(id,accept,auth.token);
@@ -225,12 +227,17 @@ export default function TeamDetail(){
     setCommunitiesVerified(false);
     setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+' Atualiza antes de tentar novamente.');
    }
-  }finally{if(version===requestVersion.current)setSaving(false);}
+  }finally{
+   actionRef.current=false;savingRef.current=false;
+   if(version===requestVersion.current)setSaving(false);
+  }
  };
  const removeMembership=async(id:number)=>{
-  if(!auth.token||saving||!communitiesVerified)return;
-  setSaving(true);setError('');setMembershipNote('');
+  if(!auth.token||savingRef.current||actionRef.current||!communitiesVerified||
+     !communities.some(item=>item.id===id))return;
   const version=requestVersion.current;
+  actionRef.current=true;savingRef.current=true;
+  setSaving(true);setError('');setMembershipNote('');
   try{
    await removeTeamCommunityMembership(id,auth.token);
    if(version!==requestVersion.current)return;
@@ -250,7 +257,10 @@ export default function TeamDetail(){
     setCommunitiesVerified(false);
     setError((e instanceof Error?e.message:'Não foi possível confirmar a saída.')+' Consulta as comunidades antes de repetir.');
    }
-  }finally{if(version===requestVersion.current)setSaving(false);}
+  }finally{
+   actionRef.current=false;savingRef.current=false;
+   if(version===requestVersion.current)setSaving(false);
+  }
  };
  const confirmLeaveCommunity=(membership:TeamCommunityMembership)=>{
   if(saving||!communitiesVerified)return;
@@ -294,11 +304,25 @@ export default function TeamDetail(){
   ]);
  };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
-  if(!team||!auth.token||saving)return;
-  setSaving(true);setError('');
-  try{setTeam(await setSportsTeamFeatures(team.id,{[field]:!team[field]},auth.token));}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível guardar a configuração.');}
-  finally{setSaving(false);}
+  if(!team||!auth.token||!isOwner||!brandingVerified||savingRef.current||actionRef.current)return;
+  const version=requestVersion.current;
+  actionRef.current=true;savingRef.current=true;
+  setSaving(true);setError('');setNotice('');
+  try{
+   const updated=await setSportsTeamFeatures(team.id,{[field]:!team[field]},auth.token);
+   if(version===requestVersion.current&&updated.id===team.id){
+    setTeam(updated);setNotice('Configuração da equipa guardada.');
+   }
+  }catch(e){
+   if(version===requestVersion.current){
+    setError((e instanceof Error?e.message:'Não foi possível confirmar a configuração.')+
+     ' Confirma o estado atual antes de repetir.');
+    setBrandingVerified(false);
+   }
+  }finally{
+   actionRef.current=false;savingRef.current=false;
+   if(version===requestVersion.current)setSaving(false);
+  }
  };
  const kitPatterns:ReadonlyArray<{id:TeamKitPattern;label:string}>=[
    {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas'},{id:'DIAGONAL',label:'Faixa diagonal'}
