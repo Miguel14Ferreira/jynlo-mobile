@@ -18,6 +18,7 @@ function FixtureRow({fixture,editable,busy,onSave}:FixtureProps){
  const [home,setHome]=useState(fixture.homeScore==null?'':String(fixture.homeScore));
  const [away,setAway]=useState(fixture.awayScore==null?'':String(fixture.awayScore));
  const valid=/^\d{1,3}$/.test(home)&&/^\d{1,3}$/.test(away);
+ const unchanged=valid&&Number(home)===fixture.homeScore&&Number(away)===fixture.awayScore;
  return <View style={styles.fixture}>
   <Text style={styles.note}>Jornada {fixture.round} · Jogo {fixture.match}</Text>
   <Text style={styles.teamName}>{fixture.homeTeamName} — {fixture.awayTeamName}</Text>
@@ -26,7 +27,7 @@ function FixtureRow({fixture,editable,busy,onSave}:FixtureProps){
    <TextInput style={styles.scoreInput} keyboardType="number-pad" maxLength={3} value={home} onChangeText={setHome} editable={!busy} accessibilityLabel={'Golos de '+fixture.homeTeamName}/>
    <Text style={styles.note}>–</Text>
    <TextInput style={styles.scoreInput} keyboardType="number-pad" maxLength={3} value={away} onChangeText={setAway} editable={!busy} accessibilityLabel={'Golos de '+fixture.awayTeamName}/>
-   <Button secondary title="Guardar" disabled={!valid||busy} onPress={()=>onSave(fixture,Number(home),Number(away))}/>
+   <Button secondary title="Guardar resultado" disabled={!valid||busy||unchanged} onPress={()=>onSave(fixture,Number(home),Number(away))}/>
   </View>:null}
  </View>;
 }
@@ -152,7 +153,11 @@ export default function ChampionshipOwnedEventsScreen(){
   ]);
  }
  function saveScore(fixture:OwnedFixture,home:number,away:number){
-  if(!activeEvent||!detailsReady||busy||pending.current||!football||activeEvent.status!=='SCHEDULED')return;
+  if(!activeEvent||!detailsReady||busy||pending.current||!football||activeEvent.status!=='SCHEDULED'||
+    !fixtures.some(item=>item.id===fixture.id&&item.homeTeamId===fixture.homeTeamId&&
+      item.awayTeamId===fixture.awayTeamId))return;
+  if(!Number.isSafeInteger(home)||!Number.isSafeInteger(away)||home<0||away<0||home>999||away>999)return;
+  if(home===fixture.homeScore&&away===fixture.awayScore)return;
   if(activeEvent.format==='CUP'&&home===away){setError('Uma eliminatória precisa de vencedor.');return;}
   confirm('Guardar resultado?',fixture.homeTeamName+' '+home+' – '+away+' '+fixture.awayTeamName,
    ()=>recordOwnedFixtureScore(cid,chid,activeEvent.id,fixture.id,home,away,auth.token!));
