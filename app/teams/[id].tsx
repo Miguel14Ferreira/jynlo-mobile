@@ -30,13 +30,14 @@ export default function TeamDetail(){
  const kitEditedRef=useRef(false);
  const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
  const [searchComplete,setSearchComplete]=useState(false),[searching,setSearching]=useState(false);
- const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false);
+ const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false),actionGeneration=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
  // A new account or team must not inherit the previous team's private roster,
  // pending invitations, memberships, messages, or unsaved kit edits.
  useEffect(()=>{
-  requestVersion.current++;searchVersion.current++;
+  requestVersion.current++;searchVersion.current++;actionGeneration.current++;
+  actionRef.current=false;savingRef.current=false;setSaving(false);
   reading.current=null;kitEditedRef.current=false;
   setTeam(null);setMembers([]);setPendingPlayers([]);setCommunities([]);
   setCandidates([]);setSearchName('');setSearchComplete(false);setSearching(false);
@@ -123,6 +124,11 @@ export default function TeamDetail(){
    requestVersion.current++;searchVersion.current++;
   };
  },[load]));
+ const releaseAction=(action:number)=>{
+  // A request belonging to an old account/team must not unlock a new action.
+  if(action!==actionGeneration.current)return;
+  actionRef.current=false;savingRef.current=false;setSaving(false);
+ };
  const search=async()=>{
   if(!auth.token||searchName.trim().length<2||searchName.trim().length>80||saving||searching)return;
   const version=++searchVersion.current;
@@ -138,22 +144,23 @@ export default function TeamDetail(){
   if(!auth.token||saving||actionRef.current||!rosterVerified||!pendingVerified||!isOwner||
     pendingPlayers.some(p=>p.profileId===profileId)||!candidates.some(p=>p.profileId===profileId)||
     !Number.isSafeInteger(profileId)||profileId<=0)return;
-  actionRef.current=true;setSaving(true);setError('');setNotice('');
+  const action=++actionGeneration.current;
+  actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
   const version=requestVersion.current;
   try{
    await inviteSportsTeamMember(teamId,profileId,auth.token);
    if(version!==requestVersion.current)return;
    setCandidates([]);setSearchName('');setSearchComplete(false);searchVersion.current++;
    setNotice('Convite enviado. O jogador entra no plantel depois de aceitar.');
-   actionRef.current=false;setSaving(false);setPendingVerified(false);
-   void load(true,true);
+   setPendingVerified(false);
+   releaseAction(action);void load(true,true);
   }catch(e){
    if(version===requestVersion.current){
     setPendingVerified(false);setCandidates([]);setSearchComplete(false);
     setError((e instanceof Error?e.message:'Não foi possível confirmar o convite.')+
      ' Verifica os convites pendentes antes de repetir.');
    }
-  }finally{actionRef.current=false;if(version===requestVersion.current)setSaving(false);}
+  }finally{releaseAction(action);}
  };
  const cancelPendingInvite=(invite:TeamPendingPlayerInvitation)=>{
   if(!auth.token||!isOwner||!pendingVerified||saving||actionRef.current||
@@ -163,19 +170,20 @@ export default function TeamDetail(){
    {text:'Manter',style:'cancel'},
    {text:'Cancelar convite',style:'destructive',onPress:()=>{
     if(version!==requestVersion.current||actionRef.current)return;
-    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    const action=++actionGeneration.current;
+    actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
     void removeSportsTeamMember(teamId,invite.profileId,auth.token!).then(()=>{
      if(version!==requestVersion.current)return;
      setPendingVerified(false);
      setNotice('Convite cancelado.');
-     actionRef.current=false;setSaving(false);void load(true,true);
+     releaseAction(action);void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
       setPendingVerified(false);setPendingPlayers([]);
       setError((e instanceof Error?e.message:'Não foi possível confirmar o cancelamento.')+
        ' Verifica os convites antes de tentar novamente.');
      }
-    }).finally(()=>{actionRef.current=false;if(version===requestVersion.current)setSaving(false);});
+    }).finally(()=>releaseAction(action));
    }}
   ]);
  };
@@ -186,19 +194,20 @@ export default function TeamDetail(){
    {text:'Cancelar',style:'cancel'},
    {text:'Remover',style:'destructive',onPress:()=>{
     if(version!==requestVersion.current||actionRef.current)return;
-    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    const action=++actionGeneration.current;
+    actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
     void removeSportsTeamMember(teamId,member.profileId,auth.token!).then(()=>{
      if(version!==requestVersion.current)return;
      setMembers(current=>current.filter(item=>item.profileId!==member.profileId));
      setNotice('Jogador removido do plantel.');
-     actionRef.current=false;setSaving(false);
+     releaseAction(action);
      void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
       setRosterVerified(false);
       setError((e instanceof Error?e.message:'Não foi possível confirmar a remoção.')+' Atualiza o plantel antes de repetir.');
      }
-    }).finally(()=>{actionRef.current=false;if(version===requestVersion.current)setSaving(false);});
+    }).finally(()=>releaseAction(action));
    }}
   ]);
  };
@@ -206,6 +215,8 @@ export default function TeamDetail(){
   if(!auth.token||savingRef.current||actionRef.current||!communitiesVerified||
      !communities.some(item=>item.id===id))return;
   const version=requestVersion.current;
+  const action=++actionGeneration.current;
+  const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setMembershipNote('');
   try{
@@ -227,10 +238,7 @@ export default function TeamDetail(){
     setCommunitiesVerified(false);
     setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+' Atualiza antes de tentar novamente.');
    }
-  }finally{
-   actionRef.current=false;savingRef.current=false;
-   if(version===requestVersion.current)setSaving(false);
-  }
+  }finally{releaseAction(action);}
  };
  const removeMembership=async(id:number)=>{
   if(!auth.token||savingRef.current||actionRef.current||!communitiesVerified||
@@ -257,10 +265,7 @@ export default function TeamDetail(){
     setCommunitiesVerified(false);
     setError((e instanceof Error?e.message:'Não foi possível confirmar a saída.')+' Consulta as comunidades antes de repetir.');
    }
-  }finally{
-   actionRef.current=false;savingRef.current=false;
-   if(version===requestVersion.current)setSaving(false);
-  }
+  }finally{releaseAction(action);}
  };
  const confirmLeaveCommunity=(membership:TeamCommunityMembership)=>{
   if(saving||!communitiesVerified)return;
@@ -282,7 +287,8 @@ export default function TeamDetail(){
    {text:'Cancelar',style:'cancel'},
    {text:'Sair da equipa',style:'destructive',onPress:()=>{
     if(current!==requestVersion.current||actionRef.current)return;
-    actionRef.current=true;setSaving(true);setError('');setNotice('');
+    const action=++actionGeneration.current;
+    actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
     void removeSportsTeamMember(teamId,player.profileId,auth.token!).then(()=>{
      if(current!==requestVersion.current)return;
      setMembers(rows=>rows.filter(item=>item.profileId!==player.profileId));
@@ -296,16 +302,14 @@ export default function TeamDetail(){
       setError((e instanceof Error?e.message:'Saída não confirmada.')+
        ' Verifica o plantel antes de repetir.');
      }
-    }).finally(()=>{
-     actionRef.current=false;
-     if(current===requestVersion.current)setSaving(false);
-    });
+    }).finally(()=>releaseAction(action));
    }}
   ]);
  };
  const feature=async(field:'chatEnabled'|'feedEnabled')=>{
   if(!team||!auth.token||!isOwner||!brandingVerified||savingRef.current||actionRef.current)return;
   const version=requestVersion.current;
+  const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setNotice('');
   try{
@@ -319,10 +323,7 @@ export default function TeamDetail(){
      ' Confirma o estado atual antes de repetir.');
     setBrandingVerified(false);
    }
-  }finally{
-   actionRef.current=false;savingRef.current=false;
-   if(version===requestVersion.current)setSaving(false);
-  }
+  }finally{releaseAction(action);}
  };
  const kitPatterns:ReadonlyArray<{id:TeamKitPattern;label:string}>=[
    {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas'},{id:'DIAGONAL',label:'Faixa diagonal'}
@@ -331,7 +332,8 @@ export default function TeamDetail(){
  const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset)=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
   const version=requestVersion.current;
-  actionRef.current=true;setSaving(true);setError('');setNotice('');
+  const action=++actionGeneration.current;
+  actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
   try{
    const result=mode==='KIT'
     ?await setSportsTeamKit(teamId,kitPrimary,kitSecondary,auth.token,kitPattern)
@@ -354,7 +356,7 @@ export default function TeamDetail(){
     setError((e instanceof Error?e.message:'Não foi possível confirmar a alteração.')+
      ' Volta a carregar a equipa antes de repetir.');
    }
-  }finally{actionRef.current=false;if(version===requestVersion.current)setSaving(false);}
+  }finally{releaseAction(action);}
  };
  const pickLogo=async()=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
