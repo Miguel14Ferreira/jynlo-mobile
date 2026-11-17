@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
 import {ApiError} from '../lib/api';
@@ -14,7 +15,7 @@ import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,del
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
- const historyRef=useRef<ScrollView|null>(null);
+ const historyRef=useRef<ScrollViewInstance|null>(null);
  const nearLatest=useRef(true),latestId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
  const [draft,setDraft]=useState('');
