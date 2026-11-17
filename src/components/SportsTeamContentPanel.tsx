@@ -107,7 +107,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Multipart uploads use expo/fetch and raise a user-facing Error, rather
   // than ApiError. Only explicit authorization failures revoke local access.
   if(!(failure instanceof Error))return false;
-  if(/^O chat da equipa está desativado/i.test(failure.message))
+  if(/^O (?:chat|feed) da equipa está desativado/i.test(failure.message))
    return revokeIfUnauthorized(new ApiError(409,'Conversa desativada.'));
   if(!/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
   return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
