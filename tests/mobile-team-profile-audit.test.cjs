@@ -155,7 +155,7 @@ test('team feed has a top post editor and reverse-chronological cards while chat
 
 test('team feed threads comments without hiding replies whose parents are not loaded',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
- assert.match(panel,/function orderedTeamFeed\(entries:TeamContentEntry\[\]\):TeamContentEntry\[\]/);
+ assert.match(panel,/function orderedTeamFeed\(entries:TeamContentEntry\[\],collapsed:Set<number>,searchActive:boolean,replyTo:number\|null\):TeamContentEntry\[\]/);
  assert.match(panel,/const byId=new Map\(entries\.map\(item=>\[item\.id,item\]\)\)/);
  assert.match(panel,/const rootOf=\(item:TeamContentEntry\):number=>/);
  assert.match(panel,/const seen=new Set<number>\(\[item\.id\]\)/);
@@ -243,4 +243,16 @@ test('private team messages and feed posts show safe round author photos with fa
  assert.match(avatars,/^export function teamPlayerAvatarUri/m);
  assert.match(avatars,/if\(!input\)return null/);
  assert.match(avatars,/return API_BASE\+input/);
+});
+
+
+test('private team feed counts threaded comments and collapses them without affecting chat or search',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/function teamFeedCommentCount\(entries:TeamContentEntry\[\],postId:number\):number/);
+ assert.match(panel,/const visited=new Set<number>\(\[item\.id\]\)/);
+ assert.match(panel,/collapsedFeedPosts,setCollapsedFeedPosts/);
+ assert.match(panel,/searchActive\|\|item\.id===root\|\|!collapsed\.has\(root\)\|\|replyTo===item\.id/);
+ assert.match(panel,/accessibilityState=\{\{expanded:!collapsedFeedPosts\.has\(item\.id\)\}\}/);
+ assert.match(panel,/setCollapsedFeedPosts\(new Set\(\)\)/);
+ assert.match(panel,/if\(id!==null\)setCollapsedFeedPosts/);
 });
