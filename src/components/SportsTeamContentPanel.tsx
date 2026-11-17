@@ -141,7 +141,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  },[teamId,kind,token,loadReactions,revokeIfUnauthorized]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
-  pendingRefresh.current=false;
+  // Old async work belongs to the previous team/account. Reset all mutation
+  // locks and request ownership before loading this conversation.
+  mutationVersion.current++;readRequestVersion.current++;
+  reading.current=null;pendingRefresh.current=false;
+  sendingNow.current=false;reactionBusyRef.current=false;choosing.current=false;
+  setSending(false);setUploading(false);setReactionBusyId(null);setLoading(true);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
@@ -202,7 +207,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    setMedia(next.items);
   }catch(e){if(current===version.current)
     setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
-  finally{choosing.current=false;}
+  finally{if(current===version.current)choosing.current=false;}
  };
  const sendMedia=async()=>{
   if(!media.length||sendingNow.current||!attachmentsEnabled)return;
@@ -219,8 +224,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
      ' Confirma o histórico antes de repetir.');
   }finally{
-   sendingNow.current=false;
-   if(current===version.current){setUploading(false);setSending(false);void refresh(true,current);}
+   if(current===version.current){
+    sendingNow.current=false;setUploading(false);setSending(false);void refresh(true,current);
+   }
   }
  };
  const send=async()=>{
@@ -239,8 +245,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
       ' Consulta o histórico antes de repetires a operação.');
   }finally{
-   sendingNow.current=false;
-   if(current===version.current){setSending(false);void refresh(true,current);}
+   if(current===version.current){
+    sendingNow.current=false;setSending(false);void refresh(true,current);
+   }
   }
  };
  const search=async()=>{
@@ -284,8 +291,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===version.current&&!revokeIfUnauthorized(e))
     setError('Reação não confirmada. Consulta o histórico antes de repetir.');
   }finally{
-   reactionBusyRef.current=false;
-   if(current===version.current){setReactionBusyId(null);void loadReactions([item]);}
+   if(current===version.current){
+    reactionBusyRef.current=false;setReactionBusyId(null);void loadReactions([item]);
+   }
   }
  };
  const update=async()=>{
@@ -304,8 +312,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===version.current&&!revokeIfUnauthorized(e))
     setError('Edição não confirmada. Consulta o histórico antes de repetir.');
   }finally{
-   sendingNow.current=false;
-   if(current===version.current){setSending(false);void refresh(true,current);}
+   if(current===version.current){
+    sendingNow.current=false;setSending(false);void refresh(true,current);
+   }
   }
  };
  const remove=(item:TeamContentEntry)=>{
@@ -326,8 +335,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      if(current===version.current&&!revokeIfUnauthorized(e))
       setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
     }finally{
-     sendingNow.current=false;
-     if(current===version.current){setSending(false);void refresh(true,current);}
+     if(current===version.current){
+      sendingNow.current=false;setSending(false);void refresh(true,current);
+     }
     }
    })();}}
   ]);
