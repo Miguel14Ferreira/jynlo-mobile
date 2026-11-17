@@ -49,7 +49,8 @@ test('detail share follows a verified cancellation response, not a pending actio
 
 test('already cancelled session offers a re-share action on later visits',()=>{
  assert.match(detail,/const cancelledShareText=owner&&detail\?\.status==='CANCELLED'&&detail\.id===id\?/);
- assert.match(detail,/\{cancelledShareText\?<View style=\{styles\.panel\}>/);
+ assert.match(detail,/\{cancelledShareText\?<View style=\{\{gap:10\}\}>/);
  assert.match(detail,/<Text selectable style=\{styles\.hint\}>\{cancelledShareText\}<\/Text>/);
+ assert.match(detail,/Partilhar aviso de cancelamento/);
  assert.doesNotMatch(detail,/setCancelledShare\(/);
 });
