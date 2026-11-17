@@ -178,7 +178,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setError('');setSyncWarning('');
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
-  setMedia([]);setAttachmentsEnabled(false);setSearching(false);
+  if(changedConversation)setMedia([]);
+  setAttachmentsEnabled(false);setSearching(false);
   void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
    if(version.current===current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
   }).catch(failure=>{
@@ -375,8 +376,14 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setEditingId(null);setEditDraft('');
    }
   }catch(e){
-   if(current===version.current&&!revokeIfUnauthorized(e))
-    setError('Edição não confirmada. Consulta o histórico antes de repetir.');
+   if(current===version.current){
+    if(e instanceof ApiError&&e.status===409){
+     // 409 on edit may mean the message was removed, not that the entire
+     // team chat was disabled. The next authorized history GET decides.
+     setError('Esta mensagem pode ter sido eliminada. A verificar o histórico.');
+    }else if(!revokeIfUnauthorized(e))
+     setError('Edição não confirmada. Consulta o histórico antes de repetir.');
+   }
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
@@ -402,8 +409,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      if(current===version.current&&!accessRevokedRef.current)
       setSearchResults(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true,attachments:[]}:entry));
     }catch(e){
-     if(current===version.current&&!revokeIfUnauthorized(e))
-      setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
+     if(current===version.current){
+      if(e instanceof ApiError&&e.status===409){
+       setError('A mensagem já pode ter sido eliminada. A verificar o histórico.');
+      }else if(!revokeIfUnauthorized(e))
+       setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
+     }
     }finally{
      pendingWrites.current.delete(writeKey);
      if(activeWriteKey.current===writeKey){
