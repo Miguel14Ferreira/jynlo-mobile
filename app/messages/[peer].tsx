@@ -449,7 +449,12 @@ export default function DirectConversation(){
    }
   }
  }
- const historyKey=messages.map(item=>item.id).join(',');
+ // A message edit or removal may change layout without changing its ID.
+ // Require a new content-size measurement before acknowledging that history.
+ const historyKey=JSON.stringify(messages.map(item=>[
+  item.id,item.text,item.editedAt,item.deletedAt,item.attachmentName,
+  item.replyToText,item.attachments
+ ]));
  const acknowledgeVisibleHistory=useCallback((fullyVisible:boolean)=>{
   if(measuredHistoryKey.current!==historyKey)return;
   if(!fullyVisible||!auth.token||!blockStatusKnown||blocked||loading||syncWarning||
