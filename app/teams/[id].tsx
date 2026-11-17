@@ -9,13 +9,14 @@ import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
+import SportsTeamChallengesPanel from '../../src/components/SportsTeamChallengesPanel';
 import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
- const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'>('OVERVIEW');
+ const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [brokenAvatars,setBrokenAvatars]=useState<Record<number,boolean>>({});
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
@@ -494,7 +495,7 @@ export default function TeamDetail(){
       onPress={()=>void updateBranding('KIT')}/>
    </View>:null}
    <View style={styles.tabBar}>
-    {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'}] as const).map(tab=>
+    {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'},{id:'CHALLENGES',label:'Desafios'}] as const).map(tab=>
      <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
       onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
       <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
@@ -614,6 +615,10 @@ export default function TeamDetail(){
     {team.feedEnabled&&isMember&&auth.token&&auth.username?
      <SportsTeamContentPanel teamId={teamId} kind="feed" token={auth.token} username={auth.username}/>:null}
     {team.feedEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
+   </View>:null}
+   {activeTab==='CHALLENGES'&&team?<View style={styles.panel}>
+    <SportsTeamChallengesPanel teamId={teamId} token={auth.token}
+      isOwner={isOwner&&rosterVerified} sport={team.sport}/>
    </View>:null}
    {activeTab==='CHAT'?<View style={styles.panel}><Text style={styles.heading}>Mensagens da equipa</Text>
     {!team.chatEnabled?<Text style={styles.note}>O chat da equipa está desativado.</Text>:null}
