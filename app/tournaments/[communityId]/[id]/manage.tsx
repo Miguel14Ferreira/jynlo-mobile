@@ -17,7 +17,7 @@ import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,TournamentTable,TournamentTeamGroups} from '../../../../src/lib/types';
 
 type OrganizerMatch={id:number;roundNumber:number;home:string;away:string;status:'COMPLETED'|'SCHEDULED';homeScore:number|null;awayScore:number|null;groupNumber:number|null};
-function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:m.groupNumber};}
+function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:m.groupNumber??null};}
 function mapIndividual(m:TournamentIndividualMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeUsername,away:m.awayUsername,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:null};}
 function ScoreEditor({match,tournament,busy,writeGuard,onSave}:{match:OrganizerMatch;tournament:JynloTournament;busy:boolean;writeGuard:{allowed:boolean;reason:string|null};onSave:(matchId:number,home:string,away:string)=>void}){
  const [home,setHome]=useState(match.homeScore==null?'':String(match.homeScore));
@@ -148,6 +148,7 @@ export default function TournamentManagerScreen(){
  }
  function save(id:number,home:string,away:string){if(!tournament||!canRecord||!auth.token||!auth.username)return;
   const match=matches.find(item=>item.id===id);
+  if(!match){setError('O jogo já não está disponível. Volta a sincronizar o calendário.');return;}
   const guard=organizerMatchWriteGuard(tournament,match,matches,groups,groups!==null);
   if(!guard.allowed){setError(guard.reason||'Este resultado já não pode ser alterado.');return;}
   try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
@@ -169,7 +170,7 @@ export default function TournamentManagerScreen(){
   pendingWrite.current=true;setBusy(true);setError('');
   try{const next=page+1;
    const response=type==='TEAM'?await teamTournamentMatches(cid,tid,next,auth.token,auth.username):await individualTournamentMatches(cid,tid,next,auth.token,auth.username);
-   const checked=validateNextFixturePage(response,next);
+   const checked=validateNextFixturePage<TournamentTeamMatch|TournamentIndividualMatch>(response,next);
    if(version!==generation.current||reading!==readVersion.current)return;
    const items=checked.matches.map(m=>type==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch));
    if(version!==generation.current)return;
