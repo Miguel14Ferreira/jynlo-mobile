@@ -469,9 +469,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  </View>;
  return <View style={styles.panel}>
   <View style={styles.headingRow}>
-   <View style={styles.headingIcon}><Text style={styles.headingEmoji}>{kind==='chat'?'💬':'📰'}</Text></View>
    <View style={{flex:1}}>
-    <Text style={styles.title}>{kind==='chat'?'Conversa do plantel':'Publicações da equipa'}</Text>
     <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
    </View>
   </View>
@@ -505,7 +503,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(kind==='chat'&&!searchActive&&nearLatest.current)
      historyRef.current?.scrollToEnd({animated:false});
    }}>
-  {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
+  {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
     <View style={{flex:1}}>
@@ -561,8 +559,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     disabled={sending||locationBusy} onPress={()=>void composeLocation()} style={styles.attachmentButton}>
     <JynloIcon name="location" size={20} color={C.mint}/>
    </Pressable>
-  </View>
-  {attachmentsEnabled?<View style={styles.attachmentActions}>
+   {attachmentsEnabled?<>
    <Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
      disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
      <JynloIcon name="gallery" size={20} color={C.mint}/>
@@ -575,7 +572,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      enabled={!sending&&!uploading} compact replyId={replyTo}
      onPermissionError={reason=>{revokeIfUnauthorized(new ApiError(reason==='disabled'?409:403,'Conversa indisponível.'));}}
      onSent={async()=>{await refresh(true,version.current);}}/>
-  </View>:null}
+   </>:null}
+  </View>
   {media.length?<View style={styles.editBox}>
    <Text style={styles.sub}>{media.length} anexo(s): {media.map(file=>file.fileName||file.uri.split('/').pop()).join(', ')}</Text>
    <View style={styles.actions}>
@@ -587,7 +585,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>
    </View>
   </View>:null}
-  <TextInput multiline style={styles.input} value={draft} onChangeText={setDraft}
+  <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
   <Pressable accessibilityRole="button" accessibilityState={{disabled:sending||uploading||!!media.length||!draft.trim()}}
@@ -597,7 +595,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  </View>;
 }
 const styles=StyleSheet.create({
- panel:{borderColor:C.border,borderWidth:1,borderRadius:18,padding:15,gap:13,backgroundColor:C.surface},
+ panel:{borderColor:C.border,borderWidth:1,borderRadius:16,padding:12,gap:9,backgroundColor:C.surface},
  chatHistory:{maxHeight:470,minHeight:150},
  feedHistory:{maxHeight:700},
  historyContent:{gap:11,paddingBottom:12},
@@ -616,6 +614,7 @@ const styles=StyleSheet.create({
  ownEntry:{backgroundColor:'#103B43'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:13,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#0A2A36'},
+ chatInput:{minHeight:48,maxHeight:120},
  button:{backgroundColor:C.mint,borderRadius:11,padding:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:8,minHeight:48},
  buttonText:{color:'#062A30',fontWeight:'800'},
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
