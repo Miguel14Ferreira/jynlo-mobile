@@ -91,6 +91,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const reactionVersion=useRef(0);
  const [reactions,setReactions]=useState<Record<number,TeamReactionState>>({});
  const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
+ const [feedReactionPickerId,setFeedReactionPickerId]=useState<number|null>(null);
  const reactionBusyRef=useRef(false);
  const emojis=['👍','❤️','😂','🔥','👏'];
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
@@ -114,7 +115,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
-  reactionVersion.current++;setReactions({});
+  reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
@@ -245,7 +246,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';
   searchPendingRef.current=false;searchRecheckRef.current=false;
   setSearchTerm('');setSearchResults([]);setSearchActive(false);
-  reactionVersion.current++;setReactions({});
+  reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);
   if(changedConversation)setMedia([]);
   setAttachmentsEnabled(false);setSearching(false);
   void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
@@ -452,6 +453,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return '@'+original.username+': '+original.body.slice(0,110);
  };
  const react=async(item:TeamContentEntry,emoji:string)=>{
+  if(kind==='feed')setFeedReactionPickerId(null);
   if(item.deleted||reactionBusyRef.current)return;
   reactionBusyRef.current=true;setReactionBusyId(item.id);setError('');
   const current=version.current;
@@ -687,13 +689,26 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>:null}
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
-    {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
+    {kind==='feed'?<>
+     <Pressable accessibilityRole="button" accessibilityLabel={'Gostar da publicação de @'+item.username}
+      accessibilityState={{selected:reactions[item.id]?.mine==='❤️',disabled:reactionBusyId!==null}}
+      disabled={reactionBusyId!==null} onPress={()=>void react(item,'❤️')}
+      style={[styles.reactionButton,reactions[item.id]?.mine==='❤️'&&styles.reactionSelected]}>
+      <Text style={styles.reactionLabel}>❤️ {Object.values(reactions[item.id]?.counts||{}).reduce((sum,count)=>sum+(Number(count)||0),0)||'Gostar'}</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={'Escolher reação à publicação de @'+item.username}
+      accessibilityState={{expanded:feedReactionPickerId===item.id,disabled:reactionBusyId!==null}}
+      disabled={reactionBusyId!==null}
+      onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
+      style={styles.reactionButton}><Text style={styles.reactionLabel}>☺ Reagir</Text></Pressable>
+    </>:null}
+    {(kind==='chat'||feedReactionPickerId===item.id)?emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
       accessibilityLabel={'Reagir com '+emoji}
       accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
       disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
       style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
       <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
-    </Pressable>)}
+    </Pressable>):null}
    </View>:null}
    {!item.deleted?<View style={styles.actions}>
     <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>switchReply(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
