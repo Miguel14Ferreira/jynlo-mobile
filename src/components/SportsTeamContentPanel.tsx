@@ -18,19 +18,34 @@ import {teamContentHistory,olderTeamFeed,reconcileTeamFeedEntries,searchTeamCont
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 /** Keep comment replies next to their post, without hiding orphaned history. */
-function teamFeedCommentCount(entries:TeamContentEntry[],postId:number):number {
+function teamFeedCommentCounts(entries:TeamContentEntry[]):Map<number,number> {
  const byId=new Map(entries.map(item=>[item.id,item]));
- return entries.filter(item=>{
-  if(item.id===postId||item.replyToId==null)return false;
-  let parent:number|null=item.replyToId;
-  const visited=new Set<number>([item.id]);
-  while(parent!=null&&!visited.has(parent)){
-   if(parent===postId)return true;
-   visited.add(parent);
-   parent=byId.get(parent)?.replyToId??null;
+ const counts=new Map<number,number>();
+ const roots=new Map<number,number|null>();
+ const rootOf=(item:TeamContentEntry):number|null=>{
+  if(item.replyToId===null)return item.id;
+  if(roots.has(item.id))return roots.get(item.id)!;
+  const chain:number[]=[];
+  const seen=new Set<number>();
+  let current:TeamContentEntry|undefined=item;
+  let root:number|null=null;
+  while(current){
+   if(roots.has(current.id)){root=roots.get(current.id)!;break;}
+   if(seen.has(current.id)){root=null;break;}
+   seen.add(current.id);chain.push(current.id);
+   if(current.replyToId===null){root=current.id;break;}
+   current=byId.get(current.replyToId);
   }
-  return false;
- }).length;
+  for(const id of chain)roots.set(id,root);
+  return root;
+ };
+ for(const item of entries){
+  if(item.replyToId===null)continue;
+  const root=rootOf(item);
+  if(root!==null&&root!==item.id)
+   counts.set(root,(counts.get(root)||0)+1);
+ }
+ return counts;
 }
 function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,searchActive:boolean,replyTo:number|null):TeamContentEntry[]{
  const byId=new Map(entries.map(item=>[item.id,item]));
@@ -638,14 +653,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
   return selected;
  },[kind,entries]);
- const feedCommentCounts=useMemo(()=>{
-  const counts=new Map<number,number>();
-  if(kind!=='feed')return counts;
-  const source=searchActive?searchResults:allFeedEntries;
-  for(const item of source)
-   if(item.replyToId==null)counts.set(item.id,teamFeedCommentCount(source,item.id));
-  return counts;
- },[kind,searchActive,searchResults,allFeedEntries]);
+ const feedCommentCounts=useMemo(()=>
+  kind==='feed'?teamFeedCommentCounts(searchActive?searchResults:allFeedEntries):new Map<number,number>(),
+  [kind,searchActive,searchResults,allFeedEntries]);
  const loadOlderPosts=async()=>{
   if(kind!=='feed'||accessRevokedRef.current||olderPending.current||!hasOlderPosts||sendingNow.current)return;
   const oldest=allFeedEntries.reduce((min,item)=>Math.min(min,item.id),Number.MAX_SAFE_INTEGER);
