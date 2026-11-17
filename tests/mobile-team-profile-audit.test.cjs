@@ -306,3 +306,14 @@ test('team feed reaction counts update immediately, roll back on error and stop 
  assert.match(panel,/if\(!accessRevokedRef\.current\)void loadReactions\(\[item\]\)/);
  assert.match(panel,/if\(item\.deleted\|\|reactionBusyRef\.current\|\|accessRevokedRef\.current\)return/);
 });
+
+
+test('private team reaction summaries skip a like pending server confirmation',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/reactionBusyContentId=useRef<number\|null>\(null\)/);
+ assert.match(panel,/item\.id!==reactionBusyContentId\.current/);
+ assert.match(panel,/reactionBusyContentId\.current=item\.id/);
+ assert.match(panel,/reactionBusyContentId\.current=null/);
+ assert.match(panel,/if\(!ids\.length\)return/);
+ assert.match(panel,/if\(!accessRevokedRef\.current\)void loadReactions\(\[item\]\)/);
+});
