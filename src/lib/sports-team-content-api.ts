@@ -27,6 +27,12 @@ export async function teamContentHistory(teamId:number,kind:TeamContentKind,toke
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar esta conversa.');
  return request<TeamContentEntry[]>(endpoint(teamId,kind),{token});
 }
+export async function olderTeamFeed(teamId:number,before:number,token:string,limit=30):Promise<TeamContentEntry[]>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar a equipa.');
+ if(!Number.isSafeInteger(before)||before<=0||!Number.isInteger(limit)||limit<1||limit>50)
+  throw Error('Página de publicações inválida.');
+ return request<TeamContentEntry[]>(endpoint(teamId,'feed')+'/older?before='+before+'&limit='+limit,{token});
+}
 export async function searchTeamContent(teamId:number,kind:TeamContentKind,query:string,token:string):Promise<TeamContentEntry[]>{
  const term=query.trim();
  if(!token||DEMO_MODE)throw Error('Inicia sessão para pesquisar.');
