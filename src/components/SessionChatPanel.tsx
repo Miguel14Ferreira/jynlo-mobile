@@ -117,6 +117,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  useFocusEffect(useCallback(()=>{
   let active=true;
   const version=++generation.current;
+  // A previous screen's dimensions must never authorize reads in this focus.
+  // Wait for the current ScrollView to report both its viewport and content.
+  historyViewportHeight.current=0;
+  historyContentHeight.current=0;
   const identity=id+'|'+auth.token;
   const changedAccountOrSession=focusedIdentity.current!==identity;
   focusedIdentity.current=identity;
