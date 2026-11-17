@@ -57,7 +57,7 @@ test('inline history follows new messages only while near latest items',()=>{
   assert.match(src,/const inlineNearBottom=useRef\(false\)/);
   assert.match(src,/onScroll=\{event=>\{const \{contentOffset,layoutMeasurement,contentSize\}=event.nativeEvent/);
   assert.match(src,/inlineNearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
-  assert.match(src,/onContentSizeChange=\{\(\)=>\{if\(inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/);
+  assert.match(src,/onContentSizeChange=\{\(_width,height\)=>\{[\s\S]*?if\(inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/);
   assert.match(src,/inlineNearBottom\.current=false;setHistoryLimit\(count=>count\+40\)/);
  }
 });
