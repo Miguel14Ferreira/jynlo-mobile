@@ -42,8 +42,12 @@ test('direct chat marks read only after measured viewport reaches the bottom',()
  const source=read('app/messages/[peer].tsx');
  assert.match(source,/const nearBottom=useRef\(false\)/);
  assert.match(source,/const lastAcknowledgedMessageId=useRef\(0\)/);
- assert.match(source,/historyViewportMeasured\.current&&contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
- assert.match(source,/nearBottom\.current&&auth\.token&&AppState\.currentState==='active'/);
+ assert.match(source,/const currentMeasurement=measuredHistoryKey\.current===historyKey&&/);
+ assert.match(source,/historyViewportMeasured\.current=currentMeasurement/);
+ assert.match(source,/latestVisibleAtBottom\.current=/);
+ assert.match(source,/contentOffset\.y\+layoutMeasurement\.height>=historyContentHeight\.current-2/);
+ assert.match(source,/!fullyVisible\|\|!auth\.token\|\|!blockStatusKnown\|\|blocked/);
+ assert.match(source,/AppState\.currentState!=='active'/);
  assert.match(source,/markDirectRead\(peer,latest,auth\.token\)/);
- assert.match(source,/if\(lastAcknowledgedMessageId\.current===latest\)lastAcknowledgedMessageId\.current=0/);
+ assert.match(source,/lastAcknowledgedMessageId\.current===latest\)/);
 });
