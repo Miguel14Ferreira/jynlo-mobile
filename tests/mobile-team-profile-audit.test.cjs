@@ -364,3 +364,13 @@ test('own historical team post edits and deletions immediately update private lo
  assert.match(panel,/setSearchResults\(previous=>previous\.map\(tombstone\)\)/);
  assert.match(panel,/body:'',deleted:true,attachments:\[\]/);
 });
+
+
+test('stale historical team post responses cannot overwrite successful author edits',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/sendingNow\.current\|\|accessRevokedRef\.current\|\|Date\.now\(\)-olderReconcileAt\.current<30000/);
+ assert.match(panel,/const writeVersion=mutationVersion\.current/);
+ assert.match(panel,/if\(writeVersion!==mutationVersion\.current\)\{olderReconcileAt\.current=0;return;\}/);
+ assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(item=>item\.id===updated\.id\?updated:item\)/);
+ assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(tombstone\)/);
+});
