@@ -120,6 +120,27 @@ test('internal preview APK is configured against a real API',()=>{
   const missing=run('','preview');
   assert.notEqual(missing.status,0,'preview must reject missing API URL');
 });
+test('EAS preview preflight checks HTTPS without bypassing production release guards',()=>{
+  const workflow=fs.readFileSync(
+    path.join(__dirname,'../.eas/workflows/mobile-preflight.yml'),'utf8');
+  assert.match(workflow,/EXPO_PUBLIC_JYNLO_API_URL:\s*https:\/\/desporto24-preview-api\.onrender\.com/);
+  assert.match(workflow,/JYNLO_REQUIRE_REAL_API:\s*'1'/);
+  assert.match(workflow,/run:\s*node scripts\/verify-release\.cjs/);
+  assert.doesNotMatch(workflow,/run:\s*npm run check:release/);
+  const preview=spawnSync(process.execPath,[script],{
+    encoding:'utf8',
+    env:{...process.env,EAS_BUILD_PROFILE:'preview',JYNLO_REQUIRE_REAL_API:'1',
+      EXPO_PUBLIC_JYNLO_API_URL:'https://desporto24-preview-api.onrender.com'}
+  });
+  assert.equal(preview.status,0,preview.stderr);
+  const production=spawnSync(process.execPath,[script,'--production'],{
+    encoding:'utf8',
+    env:{...process.env,EAS_BUILD_PROFILE:'preview',JYNLO_REQUIRE_REAL_API:'1',
+      EXPO_PUBLIC_JYNLO_API_URL:'https://desporto24-preview-api.onrender.com'}
+  });
+  assert.notEqual(production.status,0,'preview backend must still be blocked for Play Store');
+});
+
 test('Google Play build produces an Android App Bundle',()=>{
   const eas=require('../eas.json');
   const app=require('../app.json').expo;
