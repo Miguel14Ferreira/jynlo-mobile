@@ -395,6 +395,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
    {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    // Ignore scroll measurements from an earlier layout after history/keyboard changes.
+    // A stale event must not clear the unread indicator or acknowledge newer messages.
+    if(historyContentHeight.current<=0||historyViewportHeight.current<=0||
+       Math.abs(contentSize.height-historyContentHeight.current)>2||
+       Math.abs(layoutMeasurement.height-historyViewportHeight.current)>2)return;
     inlineNearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
     // Near-bottom is for auto-follow; a read receipt requires the actual end to be visible.
     const lastMessageVisible=contentOffset.y+layoutMeasurement.height>=contentSize.height-4;
