@@ -41,6 +41,8 @@ export interface SessionDetail extends SessionSummary {
   address: string | null;
   canSeeExactAddress: boolean;
   joined: boolean;
+  /** Public sharing permission comes from the server; never infer from absence of a password. */
+  canSharePublicly?: boolean;
   waitlisted: boolean;
   waitlistPosition: number | null;
   gamePhoto: string | null;
