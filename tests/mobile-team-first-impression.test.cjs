@@ -419,3 +419,18 @@ test('team chat blocks duplicate writes across a same-team focus change',()=>{
  assert.match(panel,/needsInitialRead\.current=!!pendingKind/);
  assert.match(panel,/void refresh\(!initial,version\.current\)/);
 });
+
+test('team chat aligns compact controls with other chats and preserves same-team drafts on refocus',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/import \{JynloIcon\} from '\.\/JynloIcon'/);
+ for(const name of ['search','close','reply','edit','remove','gallery','camera','send'])
+  assert.ok(panel.includes('name="'+name+'"'),name);
+ for(const label of ['Pesquisar mensagens','Voltar à conversa','Responder à mensagem',
+  'Editar mensagem da equipa','Eliminar mensagem da equipa','Selecionar fotografias ou vídeos','Abrir câmara'])
+  assert.ok(panel.includes('accessibilityLabel="'+label+'"'),label);
+ assert.match(panel,/const changedConversation=focusedIdentity\.current!==writeKey/);
+ assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\);setEditingId\(null\);setEditDraft\(''\);\}/);
+ assert.match(panel,/onStatus:status=>\{if\(version\.current===current\)\{/);
+ assert.match(panel,/connection==='online'\?'Em tempo real'/);
+ assert.match(panel,/entryAction:\{minWidth:40,minHeight:40/);
+});
