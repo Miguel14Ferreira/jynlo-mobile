@@ -12,6 +12,7 @@ import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from './UI';
 import {useAuth} from '../lib/auth';
 import {ApiError} from '../lib/api';
 import {sessionChatHistory,postSessionChat,markSessionChatRead,editSessionChatMessage,deleteSessionChatMessage} from '../lib/session-chat-api';
+import {observeSessionChat} from '../lib/session-chat-realtime';
 import type {SessionChatEntry} from '../lib/session-chat-api';
 import {C,MobileTheme} from '../lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../lib/chat-photo-attachment';
@@ -142,6 +143,13 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    }).catch(()=>{if(active&&version===generation.current)setMuteError('Não foi possível consultar os avisos deste chat.');});
   }
   void refresh(false,version);
+  // Session events are delivered only to authorized participants. The socket
+  // payload never populates our UI: reconcile private messages over HTTP.
+  const disconnect=auth.token&&Number.isSafeInteger(id)&&id>0
+   ?observeSessionChat({sessionId:id,token:auth.token,onInvalidated:()=>{
+     if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current)
+      void refresh(true,version);
+    }}):()=>{};
   // Read-only polling while focused; a send is never retried automatically.
   const timer=setInterval(()=>{
    if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current)
@@ -153,7 +161,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(state==='active'&&active&&version===generation.current&&!sendingNow.current)
     void refresh(true,version);
   });
-  return ()=>{active=false;clearInterval(timer);resume.remove();pendingRefresh.current=false;generation.current++;
+  return ()=>{active=false;clearInterval(timer);resume.remove();disconnect();pendingRefresh.current=false;generation.current++;
    if(activeChat.current===identity)activeChat.current='';
   };
  },[refresh,auth.token,id]));
