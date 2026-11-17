@@ -408,7 +408,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
     <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
       messageId={item.id} token={token} index={file.index} name={file.filename}
-      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}/>):null}
+      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
+      onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
     {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
