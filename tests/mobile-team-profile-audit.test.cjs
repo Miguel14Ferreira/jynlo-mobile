@@ -143,9 +143,23 @@ test('team feed has a top post editor and reverse-chronological cards while chat
  assert.match(panel,/const composer=<>/);
  assert.match(panel,/\{kind==='feed'\?composer:null\}/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
- assert.match(panel,/kind==='feed'\?\[\.\.\.\(searchActive\?searchResults:entries\)\]\.reverse\(\)/);
+ assert.match(panel,/kind==='feed'\?orderedTeamFeed\(searchActive\?searchResults:entries\)/);
  assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
  assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
  assert.match(panel,/if\(accessRevoked\)return/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
+});
+
+
+test('team feed threads comments without hiding replies whose parents are not loaded',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/function orderedTeamFeed\(entries:TeamContentEntry\[\]\):TeamContentEntry\[\]/);
+ assert.match(panel,/const byId=new Map\(entries\.map\(item=>\[item\.id,item\]\)\)/);
+ assert.match(panel,/const rootOf=\(item:TeamContentEntry\):number=>/);
+ assert.match(panel,/const seen=new Set<number>\(\[item\.id\]\)/);
+ assert.match(panel,/\.flatMap\(\(\[root,items\]\)=>items\.slice\(\)\.sort/);
+ assert.match(panel,/styles\.feedComment/);
+ assert.match(panel,/kind==='feed'&&item\.replyToId!=null/);
+ assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
+ assert.doesNotMatch(panel,/publishPost\(/);
 });
