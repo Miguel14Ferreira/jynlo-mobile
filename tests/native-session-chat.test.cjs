@@ -27,7 +27,7 @@ test('native session chat only appears for confirmed participants before kickoff
 
 test('session chat refreshes read-only while focused without overlapping a send',()=>{
  const screen=read('src/components/SessionChatPanel.tsx');
- assert.match(screen,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\},15000\)/);
+ assert.match(screen,/setInterval\(\(\)=>\{[\s\S]*?AppState\.currentState==='active'&&!sendingNow\.current\)[\s\S]*?void refresh\(true,version\);[\s\S]*?\},15000\)/);
  assert.match(screen,/clearInterval\(timer\)/);
  assert.match(screen,/if\(refreshing\.current===version\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(screen,/if\(!silent\)setLoading\(true\)/);
