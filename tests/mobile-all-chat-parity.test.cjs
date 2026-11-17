@@ -76,3 +76,19 @@ test('PDF permission is independent of camera/photo availability in group conver
   assert.match(pdf[1],/!pendingWrites\.current\.has/);
  }
 });
+
+test('all group and direct chats revalidate membership immediately after a secure media denial',()=>{
+ const expected={
+  direct:/onAuthorizationError=\{\(\)=>\{setMessages\(\[\]\);void refresh\(false,generation\.current\);\}\}/,
+  community:/onAuthorizationError=\{\(\)=>\{setMessages\(\[\]\);void refresh\(generation\.current,false\);\}\}/,
+  session:/onAuthorizationError=\{\(\)=>\{setEntries\(\[\]\);void refresh\(false,generation\.current\);\}\}/
+ };
+ for(const [kind,pattern] of Object.entries(expected)){
+  const screen=screens[kind];
+  assert.match(screen,pattern,kind+' should hide cached media and recheck permissions');
+ }
+ const viewer=read('src/components/SecureChatAttachment.tsx');
+ assert.match(viewer,/\[401,403,409\]\.includes\(response\.status\)&&active\.current/);
+ assert.match(viewer,/generation\.current===version&&!controller\.signal\.aborted/);
+ assert.match(viewer,/onAuthorizationError\?\.\(response\.status\)/);
+});
