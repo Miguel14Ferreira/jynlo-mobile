@@ -4,7 +4,7 @@ import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-nat
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
@@ -187,6 +187,33 @@ export default function TeamDetail(){
     }).finally(()=>releaseAction(action));
    }}
   ]);
+ };
+ const deleteTeam=()=>{
+  if(!auth.token||!team||!isOwner||!rosterVerified||!brandingVerified||
+     savingRef.current||actionRef.current)return;
+  const identity=teamId+'|'+auth.token;
+  const version=requestVersion.current;
+  Alert.alert('Eliminar equipa?',
+   'Esta ação é definitiva. Só é possível eliminar uma equipa sem jogadores convidados, mensagens, competições ou histórico. O servidor protege todos esses dados.',[
+    {text:'Manter equipa',style:'cancel'},
+    {text:'Eliminar equipa',style:'destructive',onPress:()=>{
+      if(version!==requestVersion.current||identity!==teamId+'|'+auth.token||
+         actionRef.current||savingRef.current)return;
+      const action=++actionGeneration.current;
+      actionRef.current=true;savingRef.current=true;setSaving(true);
+      setError('');setNotice('');
+      void deleteSportsTeam(teamId,auth.token!).then(()=>{
+        if(version!==requestVersion.current||action!==actionGeneration.current)return;
+        router.replace('/teams');
+      }).catch(error=>{
+        if(version!==requestVersion.current||action!==actionGeneration.current)return;
+        const message=error instanceof Error?error.message:'';
+        setError(/409|histórico|ligações|conflict/i.test(message)
+         ?'Não é possível eliminar esta equipa: existem jogadores, convites, mensagens ou ligações históricas que devem ser preservadas.'
+         :'Não foi possível confirmar a eliminação. Consulta a equipa antes de repetir.');
+      }).finally(()=>releaseAction(action));
+    }}
+   ]);
  };
  const removePlayer=(member:SportsTeamMember)=>{
   if(!auth.token||saving||actionRef.current||!isOwner||!rosterVerified||member.role==='OWNER')return;
@@ -542,6 +569,16 @@ export default function TeamDetail(){
       <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
     {membershipNote?<Message>{membershipNote}</Message>:null}
     {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
+   </View>:null}
+   {activeTab==='OVERVIEW'&&isOwner?<View style={[styles.panel,{borderColor:'#A95D63',gap:10}]}>
+    <Text style={styles.heading}>Administração da equipa</Text>
+    <Text style={styles.note}>A eliminação é definitiva e apenas permitida a equipas sem jogadores convidados, mensagens, competições ou ligações históricas.</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="Eliminar definitivamente esta equipa"
+      accessibilityState={{disabled:saving||!rosterVerified||!brandingVerified}}
+      disabled={saving||!rosterVerified||!brandingVerified} onPress={deleteTeam}
+      style={[styles.removeAction,{alignSelf:'flex-start',minHeight:44,justifyContent:'center'}]}>
+      <Text style={styles.removeText}>{saving?'A processar…':'Eliminar equipa'}</Text>
+    </Pressable>
    </View>:null}
    {activeTab==='FEED'?<View style={styles.panel}><Text style={styles.heading}>Publicações da equipa</Text>
     {!team.feedEnabled?<Text style={styles.note}>O feed da equipa está desativado.</Text>:null}
