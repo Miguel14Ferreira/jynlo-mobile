@@ -10,6 +10,7 @@ import {ApiError} from '../lib/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
 import {observeTeamContent} from '../lib/team-content-realtime';
+import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -40,6 +41,7 @@ function orderedTeamFeed(entries:TeamContentEntry[]):TeamContentEntry[]{
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const router=useRouter();
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
+ const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
  const nearLatest=useRef(true),latestId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
@@ -93,6 +95,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
+  setBrokenAuthorAvatars({});
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});
@@ -219,6 +222,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
+  setBrokenAuthorAvatars({});
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
    feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();}
   setError('');setSyncWarning('');
@@ -606,7 +610,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }}>
   {(kind==='feed'?orderedTeamFeed(searchActive?searchResults:entries):(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
-    <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
+    <View style={styles.authorAvatar}>
+     {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
+      <Image source={{uri:teamPlayerAvatarUri(item.profilePicUrl)!}} style={styles.authorAvatarPhoto}
+       onError={()=>setBrokenAuthorAvatars(prev=>({...prev,[item.id]:true}))}/>:
+      <Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text>}
+    </View>
     <View style={{flex:1}}>
      <Pressable accessibilityRole="link" accessibilityLabel={'Abrir perfil de @'+item.username}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})}
@@ -672,6 +681,7 @@ const styles=StyleSheet.create({
  headingRow:{flexDirection:'row',alignItems:'center',gap:11,borderBottomColor:C.border,borderBottomWidth:1,paddingBottom:12},
  authorHeader:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:5},
  authorAvatar:{width:37,height:37,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:'#198B8C'},
+ authorAvatarPhoto:{width:37,height:37,borderRadius:19},
  authorLink:{alignSelf:'flex-start',minHeight:36,justifyContent:'center'},
  avatarLetter:{color:'#062A30',fontWeight:'900',fontSize:17},
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
