@@ -93,6 +93,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
  const [feedReactionPickerId,setFeedReactionPickerId]=useState<number|null>(null);
  const reactionBusyRef=useRef(false);
+ const reactionBusyContentId=useRef<number|null>(null);
  const emojis=['👍','❤️','😂','🔥','👏'];
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
  // A write remains owned by its actual team/account even across focus changes.
@@ -115,7 +116,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
-  reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);
+  reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);reactionBusyContentId.current=null;
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
@@ -133,7 +134,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
  };
  const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
-  const ids=items.filter(item=>!item.deleted).slice(-100).map(item=>item.id);
+  // Never replace an optimistic reaction with a stale background summary.
+  const ids=items.filter(item=>!item.deleted&&item.id!==reactionBusyContentId.current).slice(-100).map(item=>item.id);
   if(!ids.length)return;
   const current=++reactionVersion.current;
   const conversation=version.current;
@@ -455,7 +457,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const react=async(item:TeamContentEntry,emoji:string)=>{
   if(kind==='feed')setFeedReactionPickerId(null);
   if(item.deleted||reactionBusyRef.current||accessRevokedRef.current)return;
-  reactionBusyRef.current=true;setReactionBusyId(item.id);setError('');
+  reactionBusyRef.current=true;reactionBusyContentId.current=item.id;setReactionBusyId(item.id);setError('');
   const current=version.current;
   const original:TeamReactionState=reactions[item.id]||{counts:{},mine:null};
   const counts:Record<string,number>={...original.counts};
@@ -478,7 +480,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
   }finally{
    if(current===version.current){
-    reactionBusyRef.current=false;setReactionBusyId(null);
+    reactionBusyRef.current=false;reactionBusyContentId.current=null;setReactionBusyId(null);
     if(!accessRevokedRef.current)void loadReactions([item]);
    }
   }
