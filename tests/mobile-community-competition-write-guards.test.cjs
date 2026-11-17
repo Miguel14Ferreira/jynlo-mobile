@@ -11,11 +11,11 @@ test('championship and team screens synchronously prevent rapid duplicate writes
   'app/communities/[id]/championships/teams.tsx'
  ]){
   const source=read(file);
-  assert.match(source,/import React,\{useCallback,useRef,useState\}/);
-  assert.match(source,/const savingRef=useRef\(false\)/);
+  assert.match(source,/import React,\{useCallback,(?:useEffect,)?useRef,useState\}/);
+  assert.match(source,/savingRef=useRef\(false\)/);
   assert.match(source,/if\(savingRef\.current\|\|saving/);
   assert.match(source,/savingRef\.current=true;setSaving\(true\)/);
-  assert.match(source,/finally\{savingRef\.current=false;setSaving\(false\);\}/);
+  assert.match(source,/finally\{[\s\S]*?savingRef\.current=false;[\s\S]*?setSaving\(false\);[\s\S]*?\}/);
   assert.match(source,/Confirma o estado antes de repetir/);
  }
 });
@@ -31,7 +31,7 @@ test('team updates require data and organizer permissions',()=>{
 });
 test('tournament manager ignores stale responses after navigation',()=>{
  const source=read('app/tournaments/[communityId]/[id]/manage.tsx');
- assert.match(source,/const generation=useRef\(0\)/);
- assert.match(source,/return \(\)=>\{generation\.current\+\+;\}/);
- assert.match(source,/if\(version!==generation\.current\)return/);
+ assert.match(source,/const generation=useRef\(0\),readVersion=useRef\(0\)/);
+ assert.match(source,/return \(\)=>\{generation\.current\+\+;readVersion\.current\+\+;\}/);
+ assert.match(source,/if\(version!==generation\.current\|\|request!==readVersion\.current\)return false/);
 });
