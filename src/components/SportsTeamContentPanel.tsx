@@ -543,6 +543,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   ?orderedTeamFeed(searchActive?searchResults:entries,collapsedFeedPosts,searchActive,replyTo)
   :(searchActive?searchResults:entries),
   [kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo]);
+ // Keep private team feed media traffic bounded while showing recent photos inline.
+ const recentFeedPhotoKeys=useMemo(()=>{
+  const selected=new Set<string>();
+  if(kind!=='feed')return selected;
+  for(const item of [...entries].reverse()){
+   if(selected.size>=4)break;
+   if(item.deleted||item.replyToId!==null)continue;
+   const firstImage=item.attachments?.find(file=>
+    ['image/jpeg','image/png','image/webp','image/gif'].includes(file.mimeType));
+   if(firstImage)selected.add(item.id+':'+firstImage.index);
+  }
+  return selected;
+ },[kind,entries]);
  const feedCommentCounts=useMemo(()=>{
   const counts=new Map<number,number>();
   if(kind!=='feed')return counts;
@@ -662,7 +675,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
     <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
       messageId={item.id} token={token} index={file.index} name={file.filename}
-      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
+      mime={file.mimeType} size={file.size} autoPreview={kind==='chat'?file.mimeType.startsWith('image/'):
+       recentFeedPhotoKeys.has(item.id+':'+file.index)}
       onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
    {kind==='feed'&&!searchActive&&item.replyToId==null&&(feedCommentCounts.get(item.id)||0)>0?
     <Pressable accessibilityRole="button" accessibilityLabel={(collapsedFeedPosts.has(item.id)?'Ver ':'Ocultar ')+(feedCommentCounts.get(item.id)||0)+' comentários'}
