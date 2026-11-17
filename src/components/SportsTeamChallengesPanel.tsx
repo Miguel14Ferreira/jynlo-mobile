@@ -27,9 +27,10 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
  const [searching,setSearching]=useState(false);
  const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
  const generation=useRef(0),searchVersion=useRef(0),writing=useRef(false);
- const reload=useCallback(async()=>{
+ const reload=useCallback(async(silent=false)=>{
   const version=++generation.current;
-  setLoading(true);setError('');
+  if(!silent)setLoading(true);
+  setError('');
   if(!token){setItems([]);setLoading(false);return;}
   try{
    const found=await teamChallenges(teamId,token);
@@ -50,11 +51,14 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
   }catch{
    if(version!==generation.current)return;
    setItems([]);setError('Não foi possível confirmar os desafios. Tenta novamente.');
-  }finally{if(version===generation.current)setLoading(false);}
+  }finally{if(version===generation.current&&!silent)setLoading(false);}
  },[teamId,token,isOwner,sport]);
  useFocusEffect(useCallback(()=>{
-  void reload();
-  return()=>{generation.current++;searchVersion.current++;writing.current=false;
+  if(isOwner)void reload();
+  // Challenges refresh while this screen is focused, without a manual update button.
+  // Avoid starting a second fetch during a write or while the tab is inactive.
+  const interval=isOwner?setInterval(()=>{if(!writing.current)void reload(true);},30000):null;
+  return()=>{if(interval)clearInterval(interval);generation.current++;searchVersion.current++;writing.current=false;
    setItems([]);setCandidates([]);setSelectedId(null);setSessionInputs({});setOwnSessions([]);};
  },[reload]));
  const search=async()=>{
@@ -107,12 +111,11 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
   <Text style={styles.title}>Desafios entre equipas</Text>
   <Text style={styles.hint}>Aceita o desafio e depois associa uma sessão pública.
    A Jynlo não inscreve jogadores automaticamente.</Text>
-  <Pressable style={styles.button} disabled={busy||loading} accessibilityRole="button"
-   onPress={()=>void reload()}><Text style={styles.action}>Verificar desafios</Text></Pressable>
-  {loading?<Text style={styles.hint}>A consultar desafios…</Text>:null}
+  {!isOwner?<Text style={styles.hint}>Os convites e respostas são privados dos responsáveis das equipas.</Text>:null}
+  {isOwner&&loading?<Text style={styles.hint}>A consultar desafios…</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
   {feedback?<Text style={styles.feedback}>{feedback}</Text>:null}
-  {!loading&&!items.length?<Text style={styles.hint}>Ainda não há desafios desta equipa.</Text>:null}
+  {isOwner&&!loading&&!items.length?<Text style={styles.hint}>Ainda não há desafios desta equipa.</Text>:null}
   {items.map(item=><View key={item.id} style={styles.card}>
    <Text style={styles.versus}>{item.challengerTeamName} × {item.challengedTeamName}</Text>
    <Text style={styles.status}>{label[item.status]}</Text>
