@@ -61,6 +61,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [olderBusy,setOlderBusy]=useState(false);
  const [olderError,setOlderError]=useState('');
  const olderPending=useRef(false);
+ const olderExhausted=useRef(false);
  const olderRef=useRef<TeamContentEntry[]>([]);
  const olderReconcilePending=useRef(false),olderReconcileAt=useRef(0),olderReconcileOffset=useRef(0);
  useEffect(()=>{olderRef.current=olderEntries;},[olderEntries]);
@@ -120,7 +121,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Invalidate any HTTP read that started before access was revoked.
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
-  setEntries([]);setOlderEntries([]);olderRef.current=[];setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  setEntries([]);setOlderEntries([]);olderRef.current=[];olderExhausted.current=false;setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setSearchResults([]);setSearchActive(false);setSearching(false);
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
@@ -210,8 +211,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    setEntries(history);
    if(kind==='feed'){
     setOlderEntries(previous=>previous.filter(old=>!history.some(row=>row.id===old.id)));
-    if(history.length<100)setHasOlderPosts(false);
-    else if(!olderPending.current)setHasOlderPosts(previous=>previous||history.length===100);
+    if(history.length<100){
+     olderExhausted.current=true;
+     setHasOlderPosts(false);
+    }else if(!olderPending.current)
+     setHasOlderPosts(!olderExhausted.current);
    }
    // Reconcile visible search hits with authenticated history after live edits
    // and deletions without resetting the user's search or scroll position.
@@ -654,7 +658,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    const known=new Set(allFeedEntries.map(item=>item.id));
    const additions=page.filter(item=>item.id<oldest&&!known.has(item.id));
    setOlderEntries(previous=>[...additions,...previous]);
-   setHasOlderPosts(page.length===30&&additions.length>0);
+   olderExhausted.current=page.length<30||additions.length===0;
+   setHasOlderPosts(!olderExhausted.current);
    if(additions.length)void loadReactions(additions);
   }catch(e){
    if(current!==version.current||accessRevokedRef.current)return;
