@@ -355,3 +355,14 @@ test('team chat has its own scrollable history without moving a reader away from
  assert.match(panel,/historyRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
  assert.match(panel,/if\(kind==='chat'&&!searchActive&&nearLatest\.current\)/);
 });
+
+
+test('team chat pending media and text sends preserve a newer user draft and selected reply',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/submittedDraft=draft,submittedReply=replyTo/);
+ assert.match(panel,/sendChatPhotoAlbum\(\{scope:'team',id:teamId,kind\},token,selection,submittedReply,submittedDraft\)/);
+ assert.match(panel,/setDraft\(previous=>previous===submittedDraft\?'':previous\)/);
+ assert.match(panel,/setDraft\(previous=>previous===draft\?'':previous\)/);
+ assert.match(panel,/setReplyTo\(previous=>previous===submittedReply\?null:previous\)/);
+ assert.doesNotMatch(panel,/setMedia\(\[\]\);setDraft\(''\);setReplyTo\(null\)/);
+});
