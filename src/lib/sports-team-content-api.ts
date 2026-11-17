@@ -4,6 +4,7 @@ export type TeamContentKind='chat'|'feed';
 export interface TeamContentEntry {
  id:number;teamId:number;username:string;body:string;createdAt:string;
  replyToId:number|null;editedAt:string|null;deleted:boolean;canManage:boolean;canEdit:boolean;
+ attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
 const endpoint=(teamId:number,kind:TeamContentKind)=>{
  if(!Number.isSafeInteger(teamId)||teamId<=0)throw Error('Equipa inválida.');
