@@ -353,3 +353,14 @@ test('older team posts reconcile edits and deletions in bounded authorized backg
  assert.match(panel,/if\(expected===version\.current&&!accessRevokedRef\.current\)revokeIfUnauthorized/);
  assert.match(panel,/void reconcileOlder\(expected\)/);
 });
+
+
+test('own historical team post edits and deletions immediately update private loaded pages',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(item=>item\.id===updated\.id\?updated:item\)/);
+ assert.match(panel,/olderRef\.current=next/);
+ assert.match(panel,/const tombstone=\(entry:TeamContentEntry\):TeamContentEntry=>entry\.id===item\.id/);
+ assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(tombstone\)/);
+ assert.match(panel,/setSearchResults\(previous=>previous\.map\(tombstone\)\)/);
+ assert.match(panel,/body:'',deleted:true,attachments:\[\]/);
+});
