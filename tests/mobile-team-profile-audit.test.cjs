@@ -158,7 +158,9 @@ test('team feed threads comments without hiding replies whose parents are not lo
  assert.match(panel,/function orderedTeamFeed\(entries:TeamContentEntry\[\],collapsed:Set<number>,searchActive:boolean,replyTo:number\|null\):TeamContentEntry\[\]/);
  assert.match(panel,/const byId=new Map\(entries\.map\(item=>\[item\.id,item\]\)\)/);
  assert.match(panel,/const rootOf=\(item:TeamContentEntry\):number=>/);
- assert.match(panel,/const seen=new Set<number>\(\[item\.id\]\)/);
+ assert.match(panel,/const rootById=new Map<number,number>\(\)/);
+ assert.match(panel,/const cached=rootById\.get\(item\.id\)/);
+ assert.match(panel,/for\(const id of chain\)rootById\.set\(id,root\)/);
  assert.match(panel,/\.flatMap\(\(\[root,items\]\)=>items\.slice\(\)\.sort/);
  assert.match(panel,/styles\.feedComment/);
  assert.match(panel,/kind==='feed'&&item\.replyToId!=null/);
