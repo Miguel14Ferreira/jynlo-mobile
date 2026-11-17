@@ -121,7 +121,8 @@ export default function TeamDetail(){
   });
   return ()=>{
    clearInterval(timer);resume.remove();
-   requestVersion.current++;searchVersion.current++;
+   requestVersion.current++;searchVersion.current++;actionGeneration.current++;
+   actionRef.current=false;savingRef.current=false;
   };
  },[load]));
  const releaseAction=(action:number)=>{
@@ -216,7 +217,6 @@ export default function TeamDetail(){
      !communities.some(item=>item.id===id))return;
   const version=requestVersion.current;
   const action=++actionGeneration.current;
-  const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setMembershipNote('');
   try{
@@ -244,6 +244,7 @@ export default function TeamDetail(){
   if(!auth.token||savingRef.current||actionRef.current||!communitiesVerified||
      !communities.some(item=>item.id===id))return;
   const version=requestVersion.current;
+  const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setMembershipNote('');
   try{
