@@ -675,7 +675,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
    </View>
   </View>
-  {kind==='feed'&&(replyTo===null||!(searchActive?searchResults:entries).some(item=>item.id===replyTo))?composer:null}
+  {kind==='feed'&&(replyTo===null||!(searchActive?searchResults:allFeedEntries).some(item=>item.id===replyTo))?composer:null}
   <View style={styles.searchRow}>
    <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
     maxLength={80} placeholder={kind==='chat'?'Pesquisar nesta conversa…':'Pesquisar publicações…'} placeholderTextColor={C.muted}
