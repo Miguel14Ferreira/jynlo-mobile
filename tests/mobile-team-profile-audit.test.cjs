@@ -145,7 +145,7 @@ test('team feed has a top post editor and reverse-chronological cards while chat
  assert.match(panel,/\{kind==='feed'&&replyTo===item\.id\?/);
  assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
- assert.match(panel,/\?orderedTeamFeed\(searchActive\?searchResults:entries,collapsedFeedPosts,searchActive,replyTo\)/);
+ assert.match(panel,/\?orderedTeamFeed\(searchActive\?searchResults:allFeedEntries,collapsedFeedPosts,searchActive,replyTo\)/);
  assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
  assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
  assert.match(panel,/if\(accessRevoked\)return/);
@@ -172,7 +172,7 @@ test('team feed comment composer stays beside the post and uses private authenti
  assert.match(panel,/const composer=<>/);
  assert.match(panel,/replyTo===item\.id/);
  assert.match(panel,/A comentar publicação de @/);
- assert.match(panel,/replyTo===null\|\|!\(searchActive\?searchResults:entries\)\.some/);
+ assert.match(panel,/replyTo===null\|\|!\(searchActive\?searchResults:allFeedEntries\)\.some/);
  assert.match(panel,/onPress=\{\(\)=>switchReply\(item\.id\)\}/);
  assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
  assert.match(panel,/pendingWrites\.current\.has\(writeKey\)/);
