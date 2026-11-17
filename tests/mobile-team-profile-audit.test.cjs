@@ -263,9 +263,13 @@ test('private team feed memoizes threaded cards and reply totals while composing
  assert.match(panel,/import React,\{useCallback,useEffect,useMemo,useRef,useState\}/);
  assert.match(panel,/const visibleEntries=useMemo\(\(\)=>kind==='feed'/);
  assert.match(panel,/const feedCommentCounts=useMemo\(\(\)=>/);
+ assert.match(panel,/teamFeedCommentCounts\(searchActive\?searchResults:allFeedEntries\)/);
+ assert.match(panel,/function teamFeedCommentCounts\(entries:TeamContentEntry\[\]\):Map<number,number>/);
+ assert.match(panel,/const roots=new Map<number,number\|null>\(\)/);
+ assert.match(panel,/for\(const id of chain\)roots\.set\(id,root\)/);
  assert.match(panel,/\{visibleEntries\.map\(item=>/);
  assert.match(panel,/feedCommentCounts\.get\(item\.id\)/);
- assert.match(panel,/\[kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo\]/);
+ assert.match(panel,/\[kind,searchActive,searchResults,entries,allFeedEntries,collapsedFeedPosts,replyTo\]/);
 });
 
 
