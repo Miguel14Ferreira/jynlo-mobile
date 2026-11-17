@@ -457,8 +457,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(item.deleted||reactionBusyRef.current||accessRevokedRef.current)return;
   reactionBusyRef.current=true;setReactionBusyId(item.id);setError('');
   const current=version.current;
-  const original=reactions[item.id]||{counts:{},mine:null};
-  const counts={...original.counts};
+  const original:TeamReactionState=reactions[item.id]||{counts:{},mine:null};
+  const counts:Record<string,number>={...original.counts};
   if(original.mine)counts[original.mine]=Math.max(0,(counts[original.mine]||0)-1);
   const next=original.mine===emoji?null:emoji;
   if(next)counts[next]=(counts[next]||0)+1;
