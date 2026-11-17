@@ -117,12 +117,15 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    if(!active.current||generation.current!==version||controller.signal.aborted)return;
    file=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+formats[mime!]);
    await file.write(bytes);
-   if(!active.current||controller.signal.aborted)return;
+   // A file write may finish after the user switched team, feed or account.
+   // Do not install the previous conversation's bytes in the new preview.
+   if(!active.current||generation.current!==version||controller.signal.aborted)return;
    cached.current=file;file=null;
    if(mime==='application/pdf'){
     if(!await File.canPreview(cached.current,{mimeType:'application/pdf'})){
      throw Error('Não existe um visualizador de PDF disponível neste dispositivo.');
     }
+    if(!active.current||generation.current!==version||controller.signal.aborted)return;
     wasBackgrounded.current=false;
     pdfPreview.current=true;
     // Expo hands the file to the native viewer. Its promise does not wait for closing.
@@ -156,7 +159,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   if(!autoPreview||!token||!mime?.startsWith('image/')||!size||size>5*1024*1024)return;
   const timeout=setTimeout(()=>{if(active.current&&!pending.current)void open(true);},180);
   return ()=>clearTimeout(timeout);
- },[autoPreview,scope,conversationId,messageId,index,token,mime,size]);
+ },[autoPreview,scope,conversationId,messageId,index,kind,token,mime,size]);
  function close(){
   setExpanded(false);setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
  }
