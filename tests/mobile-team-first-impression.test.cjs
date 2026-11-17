@@ -367,18 +367,18 @@ test('team chat pending media and text sends preserve a newer user draft and sel
  assert.doesNotMatch(panel,/setMedia\(\[\]\);setDraft\(''\);setReplyTo\(null\)/);
 });
 
-test('switching team chats resets locks and stale mutations cannot unlock the new chat',()=>{
+test('switching team chats preserves pending write locks without leaking old mutations',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/mutationVersion\.current\+\+;readRequestVersion\.current\+\+;/);
  assert.match(panel,/reading\.current=null;pendingRefresh\.current=false;/);
- assert.match(panel,/sendingNow\.current=false;reactionBusyRef\.current=false;choosing\.current=false;/);
- assert.match(panel,/setSending\(false\);setUploading\(false\);setReactionBusyId\(null\);setLoading\(true\)/);
+ assert.match(panel,/const pendingKind=pendingWrites\.current\.get\(writeKey\)/);
+ assert.match(panel,/sendingNow\.current=!!pendingKind/);
+ assert.match(panel,/setSending\(!!pendingKind\);setUploading\(pendingKind==='media'\)/);
  assert.match(panel,/finally\{if\(current===version\.current\)choosing\.current=false;\}/);
- assert.match(panel,/if\(current===version\.current\)\{\s*sendingNow\.current=false;setSending\(false\);void refresh\(true,current\);/);
+ assert.match(panel,/if\(activeWriteKey\.current===writeKey\)\{\s*sendingNow\.current=false;setSending\(false\);void refresh\(true,version\.current\);/);
  assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;setReactionBusyId\(null\);void loadReactions\(\[item\]\);/);
  assert.doesNotMatch(panel,/sendingNow\.current=false;\s*if\(current===version\.current\)/);
 });
-
 
 test('private team attachment probes never hide a revoked membership from the chat UI',()=>{
  const api=read('src/lib/sports-team-content-api.ts');
@@ -400,4 +400,20 @@ test('secure team attachment revocation clears private chat and ignores stale re
  assert.match(viewer,/onAuthorizationError\?\.\(response\.status\)/);
  assert.match(panel,/onAuthorizationError=\{status=>\{revokeIfUnauthorized\(new ApiError\(status,'Anexo privado indisponível\.'\)\);\}\}/);
  assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+});
+
+
+test('team chat blocks duplicate writes across a same-team focus change',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const writeKey=teamId\+'\\|'\+kind\+'\\|'\+token/);
+ assert.match(panel,/pendingWrites=useRef\(new Map<string,'media'\|'text'\|'edit'\|'delete'>\(\)\)/);
+ for(const kind of ['media','text','edit','delete']){
+  assert.ok(panel.includes("pendingWrites.current.set(writeKey,'"+kind+"')"),kind);
+ }
+ const locks=panel.match(/pendingWrites\.current\.has\(writeKey\)/g)||[];
+ const releases=panel.match(/pendingWrites\.current\.delete\(writeKey\)/g)||[];
+ assert.equal(locks.length,4);
+ assert.equal(releases.length,4);
+ assert.match(panel,/if\(activeWriteKey\.current===writeKey\)activeWriteKey\.current=''/);
+ assert.match(panel,/void refresh\(true,version\.current\)/);
 });
