@@ -15,6 +15,7 @@ import {SessionOfficialResultCard} from '../../src/components/SessionOfficialRes
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
+import SessionMemoriesPanel from '../../src/components/SessionMemoriesPanel';
 import SessionLocationPanel from '../../src/components/SessionLocationPanel';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
@@ -549,6 +550,10 @@ export default function SessionScreen(){
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
+      {detail&&auth.token&&detail.canSharePublicly===true?
+        <SessionMemoriesPanel sessionId={id} token={auth.token}
+          canSharePublicly={true} completed={detail.status==='COMPLETED'}
+          canPublish={owner||detail.joined}/>:null}
       {feedback?<Message>{feedback}</Message>:null}
       {detail?.status==='CANCELLED'?<View style={styles.panel}>
         <Text style={styles.cancelledHeading}>×  Sessão cancelada</Text>
