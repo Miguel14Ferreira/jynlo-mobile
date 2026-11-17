@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {JynloIcon} from './JynloIcon';
 import type {ScrollViewInstance} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
@@ -23,6 +24,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [sending,setSending]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
+ const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('connecting');
  const [accessRevoked,setAccessRevoked]=useState(false);
  const [blockReason,setBlockReason]=useState('Já não tens acesso a esta conversa.');
  const accessRevokedRef=useRef(false);
@@ -49,6 +51,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const writeKey=teamId+'|'+kind+'|'+token;
  const pendingWrites=useRef(new Map<string,'media'|'text'|'edit'|'delete'>());
  const activeWriteKey=useRef('');
+ const focusedIdentity=useRef('');
  const needsInitialRead=useRef(false);
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
@@ -156,14 +159,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // locks and request ownership before loading this conversation.
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;
+  const changedConversation=focusedIdentity.current!==writeKey;
+  focusedIdentity.current=writeKey;
   activeWriteKey.current=writeKey;
   const pendingKind=pendingWrites.current.get(writeKey);
   needsInitialRead.current=!!pendingKind;
   sendingNow.current=!!pendingKind;
   reactionBusyRef.current=false;choosing.current=false;
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
+  setConnection('connecting');
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
-  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
+  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
+  if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');}
+  setError('');setSyncWarning('');
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
   setMedia([]);setAttachmentsEnabled(false);setSearching(false);
@@ -183,7 +191,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   let socketOnline=false;
   const stopObserving=observeTeamContent({teamId,kind,token,
    onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current,true);},
-   onStatus:status=>{socketOnline=status==='online';}
+   onStatus:status=>{if(version.current===current){socketOnline=status==='online';setConnection(status);}}
   });
   let pollTicks=0;
   const timer=setInterval(()=>{
@@ -390,17 +398,17 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    <View style={styles.headingIcon}><Text style={styles.headingEmoji}>{kind==='chat'?'💬':'📰'}</Text></View>
    <View style={{flex:1}}>
     <Text style={styles.title}>{kind==='chat'?'Conversa do plantel':'Publicações da equipa'}</Text>
-    <Text style={styles.sub}>Só para membros confirmados · Atualização automática</Text>
+    <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
    </View>
   </View>
   <View style={styles.searchRow}>
    <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
     maxLength={80} placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
     accessibilityLabel="Pesquisar mensagens da equipa"/>
-   <Pressable disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
-    style={styles.searchButton}><Text style={styles.actionText}>Pesquisar</Text></Pressable>
-   {searchActive?<Pressable onPress={clearSearch} style={styles.searchButton}>
-    <Text style={styles.actionText}>Voltar</Text></Pressable>:null}
+   <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar mensagens" disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
+    style={styles.searchButton}><JynloIcon name="search" size={20} color={C.mint}/></Pressable>
+   {searchActive?<Pressable accessibilityRole="button" accessibilityLabel="Voltar à conversa" onPress={clearSearch} style={styles.searchButton}>
+    <JynloIcon name="close" size={20} color={C.mint}/></Pressable>:null}
   </View>
   {searchActive?<Text style={styles.sub}>{searching?'A pesquisar…':searchResults.length+' resultados encontrados'}</Text>:null}
   {loading&&!searchActive?<Text style={styles.sub}>A carregar…</Text>:null}
@@ -449,9 +457,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>)}
    </View>:null}
    {!item.deleted?<View style={styles.actions}>
-    <Pressable disabled={sending} onPress={()=>setReplyTo(item.id)}><Text style={styles.actionText}>Responder</Text></Pressable>
-    {item.canEdit?<Pressable disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><Text style={styles.actionText}>Editar</Text></Pressable>:null}
-    {item.canManage?<Pressable disabled={sending} onPress={()=>remove(item)}><Text style={styles.actionText}>Eliminar</Text></Pressable>:null}
+    <Pressable accessibilityRole="button" accessibilityLabel="Responder à mensagem" style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+    {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel="Editar mensagem da equipa" style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
+    {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar mensagem da equipa" style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
    </View>:null}
    {editingId===item.id?<View style={styles.editBox}>
     <TextInput multiline maxLength={2000} style={styles.input} value={editDraft} onChangeText={setEditDraft} editable={!sending} accessibilityLabel="Editar mensagem"/>
@@ -472,11 +480,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   {attachmentsEnabled?<View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
      disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
-     <Text style={styles.actionText}>▧ Galeria</Text>
+     <JynloIcon name="gallery" size={20} color={C.mint}/>
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara"
      disabled={sending||uploading} onPress={()=>void chooseMedia('camera')} style={styles.attachmentButton}>
-     <Text style={styles.actionText}>📷 Câmara</Text>
+     <JynloIcon name="camera" size={20} color={C.mint}/>
    </Pressable>
    <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
      enabled={!sending&&!uploading} compact replyId={replyTo}
@@ -499,7 +507,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
   <Pressable accessibilityRole="button" accessibilityState={{disabled:sending||uploading||!!media.length||!draft.trim()}}
    disabled={sending||uploading||!!media.length||!draft.trim()} onPress={()=>void send()} style={styles.button}>
-   <Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar mensagem':'Publicar'}</Text>
+   <JynloIcon name="send" size={20} color="#062A30"/><Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar':'Publicar'}</Text>
   </Pressable>
  </View>;
 }
@@ -523,18 +531,19 @@ const styles=StyleSheet.create({
  ownEntry:{backgroundColor:'#103B43'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:13,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#0A2A36'},
- button:{backgroundColor:C.mint,borderRadius:11,padding:12,alignItems:'center'},
+ button:{backgroundColor:C.mint,borderRadius:11,padding:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:8,minHeight:48},
  buttonText:{color:'#062A30',fontWeight:'800'},
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
  actionText:{color:C.mint,fontSize:12,fontWeight:'800'},
+ entryAction:{minWidth:40,minHeight:40,alignItems:'center',justifyContent:'center',borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:'#153B45'},
  editBox:{gap:10},
  searchRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  searchInput:{flexGrow:1,flexBasis:160,minWidth:0,borderWidth:1,borderColor:C.border,borderRadius:10,padding:9,color:C.white},
- searchButton:{padding:8,borderWidth:1,borderColor:C.border,borderRadius:9},
+ searchButton:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:11},
  reactionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},
  reactionButton:{borderWidth:1,borderColor:C.border,borderRadius:20,paddingHorizontal:9,paddingVertical:6},
  reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
  reactionLabel:{color:C.white,fontSize:12},
  attachmentActions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
- attachmentButton:{padding:11,minHeight:44,borderWidth:1,borderColor:C.border,borderRadius:12,justifyContent:'center',backgroundColor:'#143A47'}
+ attachmentButton:{padding:11,minHeight:44,minWidth:48,alignItems:'center',borderWidth:1,borderColor:C.border,borderRadius:12,justifyContent:'center',backgroundColor:'#143A47'}
 });
