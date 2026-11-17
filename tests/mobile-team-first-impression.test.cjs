@@ -390,3 +390,14 @@ test('private team attachment probes never hide a revoked membership from the ch
  assert.match(panel,/setAttachmentsEnabled\(false\);\s*revokeIfUnauthorized\(failure\)/);
  assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
 });
+
+test('secure team attachment revocation clears private chat and ignores stale responses',()=>{
+ const viewer=read('src/components/SecureChatAttachment.tsx');
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(viewer,/onAuthorizationError\?:\(status:number\)=>void/);
+ assert.match(viewer,/\[401,403,409\]\.includes\(response\.status\)&&active\.current/);
+ assert.match(viewer,/generation\.current===version&&!controller\.signal\.aborted/);
+ assert.match(viewer,/onAuthorizationError\?\.\(response\.status\)/);
+ assert.match(panel,/onAuthorizationError=\{status=>\{revokeIfUnauthorized\(new ApiError\(status,'Anexo privado indisponível\.'\)\);\}\}/);
+ assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+});
