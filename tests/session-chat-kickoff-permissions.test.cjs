@@ -39,8 +39,8 @@ test('all session attachment transports identify the kickoff conflict',()=>{
 
 test('PDF composer tells session chat to recheck permission after a rejected upload',()=>{
  const pdf=fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8');
- assert.match(pdf,/onPermissionError\?:\(\)=>void/);
- assert.match(pdf,/onPermissionError\?\.\(\)/);
+ assert.match(pdf,/onPermissionError\?:\(reason\?:'disabled'\|'forbidden'\)=>void/);
+ assert.match(pdf,/onPermissionError\?\.\(\/chat da equipa está desativado\/i\.test\(e\.message\)\?'disabled':'forbidden'\)/);
  const matches=source.match(/onPermissionError=\{\(\)=>\{void refresh\(true,generation\.current\);\}\}/g)||[];
  assert.equal(matches.length,2);
 });
