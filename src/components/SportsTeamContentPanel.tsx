@@ -1,4 +1,4 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Alert,AppState,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
@@ -538,6 +538,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(latest>latestId.current&&latestId.current>0&&!nearLatest.current)setUnseenBelow(true);
   latestId.current=latest;
  },[entries,kind,accessRevoked]);
+ // Expensive thread grouping and comment counts should not rerun on every keystroke.
+ const visibleEntries=useMemo(()=>kind==='feed'
+  ?orderedTeamFeed(searchActive?searchResults:entries,collapsedFeedPosts,searchActive,replyTo)
+  :(searchActive?searchResults:entries),
+  [kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo]);
+ const feedCommentCounts=useMemo(()=>{
+  const counts=new Map<number,number>();
+  if(kind!=='feed')return counts;
+  const source=searchActive?searchResults:entries;
+  for(const item of source)
+   if(item.replyToId==null)counts.set(item.id,teamFeedCommentCount(source,item.id));
+  return counts;
+ },[kind,searchActive,searchResults,entries]);
  const composer=<>
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>{kind==='chat'?'A responder a':'A comentar'} {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>switchReply(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
@@ -625,7 +638,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(kind==='chat'&&!searchActive&&nearLatest.current)
      historyRef.current?.scrollToEnd({animated:false});
    }}>
-  {(kind==='feed'?orderedTeamFeed(searchActive?searchResults:entries,collapsedFeedPosts,searchActive,replyTo):(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
+  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
@@ -651,12 +664,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       messageId={item.id} token={token} index={file.index} name={file.filename}
       mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
       onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
-   {kind==='feed'&&!searchActive&&item.replyToId==null&&teamFeedCommentCount(entries,item.id)>0?
-    <Pressable accessibilityRole="button" accessibilityLabel={(collapsedFeedPosts.has(item.id)?'Ver ':'Ocultar ')+teamFeedCommentCount(entries,item.id)+' comentários'}
+   {kind==='feed'&&!searchActive&&item.replyToId==null&&(feedCommentCounts.get(item.id)||0)>0?
+    <Pressable accessibilityRole="button" accessibilityLabel={(collapsedFeedPosts.has(item.id)?'Ver ':'Ocultar ')+(feedCommentCounts.get(item.id)||0)+' comentários'}
      accessibilityState={{expanded:!collapsedFeedPosts.has(item.id)}}
      onPress={()=>setCollapsedFeedPosts(previous=>{const next=new Set(previous);if(next.has(item.id))next.delete(item.id);else next.add(item.id);return next;})}
      style={styles.commentToggle}>
-     <Text style={styles.commentToggleText}>{collapsedFeedPosts.has(item.id)?'Ver':'Ocultar'} {teamFeedCommentCount(entries,item.id)} {teamFeedCommentCount(entries,item.id)===1?'comentário':'comentários'}</Text>
+     <Text style={styles.commentToggleText}>{collapsedFeedPosts.has(item.id)?'Ver':'Ocultar'} {feedCommentCounts.get(item.id)||0} {(feedCommentCounts.get(item.id)||0)===1?'comentário':'comentários'}</Text>
     </Pressable>:null}
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
