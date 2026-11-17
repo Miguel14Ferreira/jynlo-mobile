@@ -537,7 +537,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
    </View>
   </View>
-  {kind==='feed'?composer:null}
+  {kind==='feed'&&(replyTo===null||!(searchActive?searchResults:entries).some(item=>item.id===replyTo))?composer:null}
   <View style={styles.searchRow}>
    <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
     maxLength={80} placeholder={kind==='chat'?'Pesquisar nesta conversa…':'Pesquisar publicações…'} placeholderTextColor={C.muted}
@@ -598,9 +598,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>)}
    </View>:null}
    {!item.deleted?<View style={styles.actions}>
-    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(current=>current===item.id?null:item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
     {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Editar mensagem da equipa':'Editar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
     {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Eliminar mensagem da equipa':'Eliminar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
+   </View>:null}
+   {kind==='feed'&&replyTo===item.id?<View style={styles.inlineCommentComposer}>
+    <Text style={styles.commentContext}>A comentar publicação de @{item.username}</Text>
+    {composer}
    </View>:null}
    {editingId===item.id?<View style={styles.editBox}>
     <TextInput multiline maxLength={2000} style={styles.input} value={editDraft} onChangeText={setEditDraft} editable={!sending} accessibilityLabel="Editar mensagem"/>
@@ -635,7 +639,9 @@ const styles=StyleSheet.create({
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
  entry:{borderWidth:1,borderColor:C.border,borderRadius:16,padding:13,gap:8,backgroundColor:'#0D2B38'},
  ownEntry:{backgroundColor:'#103B43'},
- feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},author:{fontSize:11,fontWeight:'800',color:C.mint},
+ feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},
+ inlineCommentComposer:{gap:10,padding:12,borderRadius:12,borderWidth:1,borderColor:C.mint,backgroundColor:'#103D43'},
+ commentContext:{color:C.mint,fontSize:12,fontWeight:'800'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:13,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#0A2A36'},
  chatInput:{minHeight:48,maxHeight:120},
