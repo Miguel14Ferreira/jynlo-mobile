@@ -164,16 +164,24 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   });
   return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
- const chooseMedia=async()=>{
+ const chooseMedia=async(source:'gallery'|'camera'='gallery')=>{
   if(!attachmentsEnabled||choosing.current||sendingNow.current||accessRevokedRef.current)return;
   const current=version.current;
   choosing.current=true;setError('');
   try{
    const ImagePicker=await import('expo-image-picker');
-   const chosen=await ImagePicker.launchImageLibraryAsync({
-    mediaTypes:['images','videos'],allowsMultipleSelection:true,
-    selectionLimit:Math.max(1,4-media.length),quality:.8,exif:false,base64:false
-   });
+   if(source==='camera'){
+    const permission=await ImagePicker.requestCameraPermissionsAsync();
+    if(!permission.granted)throw Error('É necessária permissão para utilizar a câmara.');
+   }
+   const chosen=source==='camera'
+    ?await ImagePicker.launchCameraAsync({
+      mediaTypes:['images','videos'],quality:.8,exif:false,base64:false,videoMaxDuration:30
+     })
+    :await ImagePicker.launchImageLibraryAsync({
+      mediaTypes:['images','videos'],allowsMultipleSelection:true,
+      selectionLimit:Math.max(1,4-media.length),quality:.8,exif:false,base64:false
+     });
    if(chosen.canceled||!chosen.assets?.length||current!==version.current||accessRevokedRef.current)return;
    const next=appendChatMediaSelection(media,chosen.assets);
    if(next.error)throw Error(next.error);
@@ -309,8 +317,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
  </View>;
  return <View style={styles.panel}>
-  <Text style={styles.title}>{kind==='chat'?'Conversa da equipa':'Publicações da equipa'}</Text>
-  <Text style={styles.sub}>Apenas o responsável e membros confirmados podem participar.</Text>
+  <View style={styles.headingRow}>
+   <View style={styles.headingIcon}><Text style={styles.headingEmoji}>{kind==='chat'?'💬':'📰'}</Text></View>
+   <View style={{flex:1}}>
+    <Text style={styles.title}>{kind==='chat'?'Conversa do plantel':'Publicações da equipa'}</Text>
+    <Text style={styles.sub}>Só para membros confirmados · Atualização automática</Text>
+   </View>
+  </View>
   <View style={styles.searchRow}>
    <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
     maxLength={80} placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
@@ -328,7 +341,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
   </Text>:null}
   {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
-   <Text style={styles.author}>@{item.username} · {new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
+   <View style={styles.authorHeader}>
+    <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
+    <View style={{flex:1}}>
+     <Text style={styles.author}>@{item.username}</Text>
+     <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
+    </View>
+   </View>
    {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
    <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
@@ -359,9 +378,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
   {attachmentsEnabled?<View style={styles.attachmentActions}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Anexar fotografias ou vídeos"
+   <Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
      disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
-     <Text style={styles.actionText}>📎 Fotos e vídeos</Text>
+     <Text style={styles.actionText}>▧ Galeria</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara"
+     disabled={sending||uploading} onPress={()=>void chooseMedia('camera')} style={styles.attachmentButton}>
+     <Text style={styles.actionText}>📷 Câmara</Text>
    </Pressable>
    <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
      enabled={!sending&&!uploading} compact replyId={replyTo}
@@ -389,13 +412,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  </View>;
 }
 const styles=StyleSheet.create({
- panel:{borderColor:C.border,borderWidth:1,borderRadius:16,padding:15,gap:10,backgroundColor:C.surface},
+ panel:{borderColor:C.border,borderWidth:1,borderRadius:18,padding:15,gap:13,backgroundColor:C.surface},
+ headingRow:{flexDirection:'row',alignItems:'center',gap:11,borderBottomColor:C.border,borderBottomWidth:1,paddingBottom:12},
+ headingIcon:{width:44,height:44,borderRadius:13,alignItems:'center',justifyContent:'center',backgroundColor:'#124750'},
+ headingEmoji:{fontSize:21},
+ authorHeader:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:5},
+ authorAvatar:{width:37,height:37,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:'#198B8C'},
+ avatarLetter:{color:'#062A30',fontWeight:'900',fontSize:17},
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
- entry:{borderWidth:1,borderColor:C.border,borderRadius:11,padding:11,gap:5},
+ entry:{borderWidth:1,borderColor:C.border,borderRadius:16,padding:13,gap:8,backgroundColor:'#0D2B38'},
  ownEntry:{backgroundColor:'#103B43'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
- input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:11,padding:10,color:C.white,textAlignVertical:'top'},
+ input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:13,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#0A2A36'},
  button:{backgroundColor:C.mint,borderRadius:11,padding:12,alignItems:'center'},
  buttonText:{color:'#062A30',fontWeight:'800'},
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
@@ -409,5 +438,5 @@ const styles=StyleSheet.create({
  reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
  reactionLabel:{color:C.white,fontSize:12},
  attachmentActions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
- attachmentButton:{padding:10,borderWidth:1,borderColor:C.border,borderRadius:10}
+ attachmentButton:{padding:11,minHeight:44,borderWidth:1,borderColor:C.border,borderRadius:12,justifyContent:'center',backgroundColor:'#143A47'}
 });
