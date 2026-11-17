@@ -69,7 +69,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
     if(target.scope==='session'&&response.status===409)
      throw Error('O chat da sessão está encerrado. Confirma o estado do jogo.');
     if(target.scope==='team'&&response.status===409)
-     throw Error('O chat da equipa está desativado.');
+     throw Error(target.kind==='feed'?'O feed da equipa está desativado.':'O chat da equipa está desativado.');
     if(response.status===413)throw Error('O álbum ultrapassa o limite permitido pelo servidor.');
     if(response.status===503)throw Error('O armazenamento privado está indisponível.');
     throw Error('O servidor não aceitou o álbum. Verifica o histórico antes de repetir.');
@@ -87,7 +87,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
   }catch(error){
    if(controller.signal.aborted)
     throw Error('O envio excedeu o tempo limite. Consulta o histórico antes de repetir.');
-   if(error instanceof Error&&/^(A sessão|Já não tens|O chat da equipa|O álbum|O armazenamento|O servidor|O envio)/.test(error.message))
+   if(error instanceof Error&&/^(A sessão|Já não tens|O (?:chat|feed) da equipa|O álbum|O armazenamento|O servidor|O envio)/.test(error.message))
     throw error;
    throw Error('Falha de ligação. Consulta o histórico antes de repetir.');
   }finally{clearTimeout(timeout);}
