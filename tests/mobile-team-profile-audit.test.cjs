@@ -336,3 +336,20 @@ test('team feed history is cursor paginated and scoped to private team membershi
  assert.match(panel,/setOlderEntries\(\[\]\);setHasOlderPosts\(false\)/);
  assert.match(panel,/accessibilityRole="button" disabled=\{olderBusy\|\|loading\|\|sending\}/);
 });
+
+test('older team posts reconcile edits and deletions in bounded authorized background pages',()=>{
+ const api=read('src/lib/sports-team-content-api.ts');
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(api,/export async function reconcileTeamFeedEntries\(teamId:number,ids:number\[\],token:string\)/);
+ assert.match(api,/ids\.length>100/);
+ assert.match(api,/endpoint\(teamId,'feed'\)\+'\/entries\?ids='/);
+ assert.match(panel,/olderReconcilePending=useRef\(false\)/);
+ assert.match(panel,/Date\.now\(\)-olderReconcileAt\.current<30000/);
+ assert.match(panel,/older\.slice\(start,start\+100\)/);
+ assert.match(panel,/await reconcileTeamFeedEntries\(teamId,ids,token\)/);
+ assert.match(panel,/const fresh=new Map\(updated\.map\(item=>\[item\.id,item\]\)\)/);
+ assert.match(panel,/setOlderEntries\(previous=>previous\.filter/);
+ assert.match(panel,/if\(expected!==version\.current\|\|accessRevokedRef\.current\)return/);
+ assert.match(panel,/if\(expected===version\.current&&!accessRevokedRef\.current\)revokeIfUnauthorized/);
+ assert.match(panel,/void reconcileOlder\(expected\)/);
+});
