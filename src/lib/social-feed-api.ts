@@ -248,10 +248,12 @@ export async function togglePostCommentLike(postId:number,comment:SocialComment,
   throw Error('O servidor não confirmou o gosto no comentário. Atualiza antes de repetir.');
  return result;
 }
-export async function createTextPost(content:string,token:string|null,username:string|null,location=''):Promise<FeedItem>{
-  requireViewer(token,username);const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
-  if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
-  const result=await request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null}});
+export async function createTextPost(content:string,token:string|null,username:string|null,location='',sessionId?:number):Promise<FeedItem>{
+  requireViewer(token,username);
+  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Sessão inválida.');
+  const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
+  if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:sessionId??null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
+  const result=await request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null,...(sessionId?{sessionId}:{})}});
   if(!confirmedTextPostReceipt(result,username!,body,location))
     throw Error('O servidor respondeu, mas não confirmou a publicação de texto. Verifica o perfil antes de repetir.');
   return result;
@@ -331,20 +333,21 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    for(const file of temporary){try{if(file.exists)file.delete();}catch{}}
  }
 }
-export async function publishPost(content:string,files:MobileMedia[]|null,token:string|null,username:string|null,location=''):Promise<FeedItem>{
+export async function publishPost(content:string,files:MobileMedia[]|null,token:string|null,username:string|null,location='',sessionId?:number):Promise<FeedItem>{
   requireViewer(token,username);
   const caption=content.trim();
   const place=location.trim();
+  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Sessão inválida.');
   if(caption.length>1000)throw new Error('A publicação não pode exceder 1000 caracteres.');
   if(place.length>160)throw new Error('A localização pode ter até 160 caracteres.');
-  if(!files?.length)return createTextPost(caption,token,username,place);
+  if(!files?.length)return createTextPost(caption,token,username,place,sessionId);
   // Photo/video-only posts are supported by the server; never invent a caption.
   if(DEMO_MODE){
     let item:FeedItem;
-    if(caption)item=await createTextPost(caption,token,username,place);
+    if(caption)item=await createTextPost(caption,token,username,place,sessionId);
     else{
       item={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,
-        authorProfilePicUrl:null,content:'',imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:null,
+        authorProfilePicUrl:null,content:'',imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:sessionId??null,
         sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:place||null};
       demoPosts.unshift(item);
     }
@@ -354,7 +357,8 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     item.extraMedia=extra.map(file=>({url:file.uri,mimeType:file.mimeType}));
     return item;
   }
-  const confirmed=await sendMedia('/api/feed/posts',{content:caption,...(place?{location:place}:{})},files,token!);
+  const confirmed=await sendMedia('/api/feed/posts',{content:caption,...(place?{location:place}:{}),
+    ...(sessionId?{sessionId:String(sessionId)}:{})},files,token!);
   if(!confirmedTextPostReceipt(confirmed,username!,caption,place))
     throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
   return confirmed;
