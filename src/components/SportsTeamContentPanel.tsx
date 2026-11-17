@@ -88,19 +88,27 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reading.current=null;
   pendingRefresh.current=false;
  };
- const refresh=useCallback(async(quiet=false,expected=version.current)=>{
+ const refresh=useCallback(async(quiet=false,expected=version.current,revalidateBlocked=false)=>{
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
   if(reading.current===expected){pendingRefresh.current=true;return;}
-  if(sendingNow.current||accessRevokedRef.current)return;
+  if(sendingNow.current||(accessRevokedRef.current&&!revalidateBlocked))return;
   reading.current=expected;
   const readRequest=++readRequestVersion.current;
   const writeVersion=mutationVersion.current;
   if(!quiet){setLoading(true);setError('');}
   try{
    const history=await teamContentHistory(teamId,kind,token);
-   if(expected!==version.current||writeVersion!==mutationVersion.current||accessRevokedRef.current)return;
+   if(expected!==version.current||writeVersion!==mutationVersion.current)return;
+   const wasBlocked=accessRevokedRef.current;
+   accessRevokedRef.current=false;setAccessRevoked(false);
+   setBlockReason('Já não tens acesso a esta conversa.');setError('');
    setEntries(history);setSyncWarning('');void loadReactions(history);
+   if(wasBlocked){
+    void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
+     if(expected===version.current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
+    }).catch(()=>{if(expected===version.current)setAttachmentsEnabled(false);});
+   }
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    if(revokeIfUnauthorized(e))return;
@@ -133,7 +141,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // remains a fallback for disconnected devices and missed events.
   let socketOnline=false;
   const stopObserving=observeTeamContent({teamId,kind,token,
-   onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current);},
+   onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current,true);},
    onStatus:status=>{socketOnline=status==='online';}
   });
   let pollTicks=0;
@@ -142,10 +150,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    // 30 seconds online, and every 5 seconds while disconnected.
    if(AppState.currentState!=='active')return;
    pollTicks++;
-   if(!socketOnline||pollTicks%6===0)void refresh(true,current);
+   if(!socketOnline||pollTicks%6===0)void refresh(true,current,true);
   },5000);
   const resume=AppState.addEventListener('change',state=>{
-   if(state==='active')void refresh(true,current);
+   if(state==='active')void refresh(true,current,true);
   });
   return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;version.current++;searchVersion.current++;reactionVersion.current++;};
  },[refresh]));
