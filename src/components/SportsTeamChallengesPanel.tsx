@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {discoverSportsTeams,type SportsTeam} from '../lib/sports-teams-api';
 import {
@@ -57,17 +57,22 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
   if(writing.current||!token)return;
   writing.current=true;setBusy(true);setFeedback('');setError('');
   const version=generation.current;
+  let confirmed=false;
   try{
    await run();
    if(version!==generation.current)return;
+   confirmed=true;
    setFeedback(success);
-   await reload();
   }catch{
    if(version!==generation.current)return;
    setError('Não foi possível confirmar a ação. Verifica o estado antes de tentares novamente.');
-   await reload();
   }finally{
-   if(version===generation.current){writing.current=false;setBusy(false);}
+   if(version===generation.current){
+    writing.current=false;setBusy(false);
+    // Refresh only after releasing the mutation guard. A refresh increments
+    // generation and must not strand the composer in its busy state.
+    if(confirmed)void reload();
+   }
   }
  };
  const invite=()=>{
@@ -128,7 +133,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
   </View>)}
   {isOwner?<View style={styles.create}>
    <Text style={styles.subtitle}>Desafiar outra equipa</Text>
-   <TextInput value={query} onChangeText={value=>{setQuery(value);setCandidates([]);setSelectedId(null);}}
+   <TextInput value={query} onChangeText={value=>{searchVersion.current++;setQuery(value);setCandidates([]);setSelectedId(null);}}
     placeholder="Pesquisar adversário" placeholderTextColor={C.muted}
     maxLength={80} style={styles.input}/>
    <Pressable onPress={()=>void search()} disabled={busy||searching||query.trim().length<2}
