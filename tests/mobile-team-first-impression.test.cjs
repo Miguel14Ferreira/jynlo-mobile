@@ -320,3 +320,27 @@ test('team owners see verified pending invitations and can cancel them safely',(
  assert.match(screen,/title="Verificar convites"/);
  assert.match(screen,/title="Cancelar convite"/);
 });
+
+test('team owners have confirmed deletion but history always remains server protected',()=>{
+ const detail=read('app/teams/[id].tsx');
+ const api=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/export async function deleteSportsTeam\(teamId:number,token:string\)/);
+ assert.match(api,/request<void>\('\/api\/teams\/'\+validId\(teamId\),\{token,method:'DELETE'\}\)/);
+ assert.match(detail,/const deleteTeam=\(\)=>/);
+ assert.match(detail,/!isOwner\|\|!rosterVerified\|\|!brandingVerified/);
+ assert.match(detail,/Alert\.alert\('Eliminar equipa\?'/);
+ assert.match(detail,/deleteSportsTeam\(teamId,auth\.token!\)/);
+ assert.match(detail,/router\.replace\('\/teams'\)/);
+ assert.match(detail,/disabled=\{saving\|\|!rosterVerified\|\|!brandingVerified\} onPress=\{deleteTeam\}/);
+});
+test('team feed and chat use native camera, gallery and authenticated PDF composer',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/chooseMedia=async\(source:'gallery'\|'camera'='gallery'\)/);
+ assert.match(panel,/requestCameraPermissionsAsync\(\)/);
+ assert.match(panel,/launchCameraAsync\(\{/);
+ assert.match(panel,/launchImageLibraryAsync\(\{/);
+ assert.match(panel,/accessibilityLabel="Abrir câmara"/);
+ assert.match(panel,/accessibilityLabel="Selecionar fotografias ou vídeos"/);
+ assert.match(panel,/ChatPdfComposer target=\{\{scope:'team',id:teamId,kind\}\}/);
+ assert.match(panel,/SecureChatAttachment key=\{file\.index\} scope="team" kind=\{kind\}/);
+});
