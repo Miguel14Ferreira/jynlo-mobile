@@ -20,8 +20,12 @@ jobs:
           git rev-parse HEAD
           node --version
           npm --version
-      - name: Confirmar configuracao de API real
-        run: npm run check:release
+      # Preview workers must validate a real HTTPS API, but never require
+      # production-only Google Maps/Firebase credentials or reject staging.
+      # scripts/verify-release.cjs still enforces strict production guards
+      # whenever run with --production or a store build profile.
+      - name: Confirmar configuracao de API real (preview)
+        run: node scripts/verify-release.cjs
       - name: TypeScript estrito
         run: npm run typecheck
       - name: Testes de sintaxe e contratos
