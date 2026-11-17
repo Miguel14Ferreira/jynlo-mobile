@@ -375,7 +375,8 @@ test('switching team chats preserves pending write locks without leaking old mut
  assert.match(panel,/sendingNow\.current=!!pendingKind/);
  assert.match(panel,/setSending\(!!pendingKind\);setUploading\(pendingKind==='media'\)/);
  assert.match(panel,/finally\{if\(current===version\.current\)choosing\.current=false;\}/);
- assert.match(panel,/if\(activeWriteKey\.current===writeKey\)\{\s*sendingNow\.current=false;setSending\(false\);void refresh\(true,version\.current\);/);
+ assert.match(panel,/if\(activeWriteKey\.current===writeKey\)\{\s*sendingNow\.current=false;setSending\(false\);/);
+ assert.match(panel,/const initial=needsInitialRead\.current;needsInitialRead\.current=false/);
  assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;setReactionBusyId\(null\);void loadReactions\(\[item\]\);/);
  assert.doesNotMatch(panel,/sendingNow\.current=false;\s*if\(current===version\.current\)/);
 });
@@ -415,5 +416,6 @@ test('team chat blocks duplicate writes across a same-team focus change',()=>{
  assert.equal(locks.length,4);
  assert.equal(releases.length,4);
  assert.match(panel,/if\(activeWriteKey\.current===writeKey\)activeWriteKey\.current=''/);
- assert.match(panel,/void refresh\(true,version\.current\)/);
+ assert.match(panel,/needsInitialRead\.current=!!pendingKind/);
+ assert.match(panel,/void refresh\(!initial,version\.current\)/);
 });
