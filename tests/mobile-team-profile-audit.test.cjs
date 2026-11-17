@@ -267,3 +267,16 @@ test('private team feed memoizes threaded cards and reply totals while composing
  assert.match(panel,/feedCommentCounts\.get\(item\.id\)/);
  assert.match(panel,/\[kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo\]/);
 });
+
+
+test('team feed preloads only four recent post photos; chat retains inline media previews',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const recentFeedPhotoKeys=useMemo\(\(\)=>/);
+ assert.match(panel,/if\(selected\.size>=4\)break/);
+ assert.match(panel,/if\(item\.deleted\|\|item\.replyToId!==null\)continue/);
+ assert.match(panel,/\['image\/jpeg','image\/png','image\/webp','image\/gif'\]/);
+ assert.match(panel,/if\(firstImage\)selected\.add\(item\.id\+':'\+firstImage\.index\)/);
+ assert.match(panel,/autoPreview=\{kind==='chat'\?file\.mimeType\.startsWith\('image\/'\):/);
+ assert.match(panel,/recentFeedPhotoKeys\.has\(item\.id\+':'\+file\.index\)/);
+ assert.match(panel,/onAuthorizationError=\{status=>\{revokeIfUnauthorized/);
+});
