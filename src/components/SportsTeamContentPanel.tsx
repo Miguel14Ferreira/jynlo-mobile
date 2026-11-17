@@ -18,7 +18,21 @@ import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,del
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 /** Keep comment replies next to their post, without hiding orphaned history. */
-function orderedTeamFeed(entries:TeamContentEntry[]):TeamContentEntry[]{
+function teamFeedCommentCount(entries:TeamContentEntry[],postId:number):number {
+ const byId=new Map(entries.map(item=>[item.id,item]));
+ return entries.filter(item=>{
+  if(item.id===postId||item.replyToId==null)return false;
+  let parent:number|null=item.replyToId;
+  const visited=new Set<number>([item.id]);
+  while(parent!=null&&!visited.has(parent)){
+   if(parent===postId)return true;
+   visited.add(parent);
+   parent=byId.get(parent)?.replyToId??null;
+  }
+  return false;
+ }).length;
+}
+function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,searchActive:boolean,replyTo:number|null):TeamContentEntry[]{
  const byId=new Map(entries.map(item=>[item.id,item]));
  const rootOf=(item:TeamContentEntry):number=>{
   let current=item;
@@ -35,12 +49,14 @@ function orderedTeamFeed(entries:TeamContentEntry[]):TeamContentEntry[]{
  }
  return [...groups.entries()].sort((a,b)=>b[0]-a[0])
   .flatMap(([root,items])=>items.slice().sort((a,b)=>
-   a.id===root?-1:b.id===root?1:a.id-b.id));
+   a.id===root?-1:b.id===root?1:a.id-b.id)
+   .filter(item=>searchActive||item.id===root||!collapsed.has(root)||replyTo===item.id));
 }
 
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const router=useRouter();
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
+ const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
  const nearLatest=useRef(true),latestId=useRef(0);
@@ -95,7 +111,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
-  setBrokenAuthorAvatars({});
+  setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});
@@ -294,6 +310,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const switchReply=(id:number|null)=>{
   if(sendingNow.current||accessRevokedRef.current)return;
   if(kind!=='feed'){setReplyTo(current=>current===id?null:id);return;}
+  if(id!==null)setCollapsedFeedPosts(previous=>{const next=new Set(previous);next.delete(id);return next;});
   if(replyTo===null)feedRootDraft.current={draft,media};
   else feedCommentDrafts.current.set(replyTo,{draft,media});
   const target=replyTo===id?null:id;
@@ -608,7 +625,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(kind==='chat'&&!searchActive&&nearLatest.current)
      historyRef.current?.scrollToEnd({animated:false});
    }}>
-  {(kind==='feed'?orderedTeamFeed(searchActive?searchResults:entries):(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
+  {(kind==='feed'?orderedTeamFeed(searchActive?searchResults:entries,collapsedFeedPosts,searchActive,replyTo):(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
@@ -634,6 +651,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       messageId={item.id} token={token} index={file.index} name={file.filename}
       mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
       onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
+   {kind==='feed'&&!searchActive&&item.replyToId==null&&teamFeedCommentCount(entries,item.id)>0?
+    <Pressable accessibilityRole="button" accessibilityLabel={(collapsedFeedPosts.has(item.id)?'Ver ':'Ocultar ')+teamFeedCommentCount(entries,item.id)+' comentários'}
+     accessibilityState={{expanded:!collapsedFeedPosts.has(item.id)}}
+     onPress={()=>setCollapsedFeedPosts(previous=>{const next=new Set(previous);if(next.has(item.id))next.delete(item.id);else next.add(item.id);return next;})}
+     style={styles.commentToggle}>
+     <Text style={styles.commentToggleText}>{collapsedFeedPosts.has(item.id)?'Ver':'Ocultar'} {teamFeedCommentCount(entries,item.id)} {teamFeedCommentCount(entries,item.id)===1?'comentário':'comentários'}</Text>
+    </Pressable>:null}
    {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
     {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
@@ -689,6 +713,8 @@ const styles=StyleSheet.create({
  entry:{borderWidth:1,borderColor:C.border,borderRadius:16,padding:13,gap:8,backgroundColor:'#0D2B38'},
  ownEntry:{backgroundColor:'#103B43'},
  feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},
+ commentToggle:{alignSelf:'flex-start',minHeight:40,justifyContent:'center'},
+ commentToggleText:{color:C.mint,fontSize:12,fontWeight:'800'},
  inlineCommentComposer:{gap:10,padding:12,borderRadius:12,borderWidth:1,borderColor:C.mint,backgroundColor:'#103D43'},
  commentContext:{color:C.mint,fontSize:12,fontWeight:'800'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
