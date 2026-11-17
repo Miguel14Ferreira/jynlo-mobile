@@ -18,7 +18,7 @@ test('private, session and community chat media use native Blob-backed files in 
   'src/lib/chat-photo-album.ts','src/lib/chat-pdf-attachment.ts'];
  for(const file of paths){
   const source=read(file);
-  assert.match(source,/new File\([^)]*\) as unknown as Blob|form\.append\('file',file as unknown as Blob/);
+  assert.match(source,/new File\([^)]*\)|form\.append\((?:target\.scope==='team'\?'files':'file'|'file'),file as unknown as Blob/);
   assert.doesNotMatch(source,/form\.append\('(?:file|files)',\{\s*uri:/);
   assert.match(source,/credentials:'omit'/);
  }
