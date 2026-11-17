@@ -77,7 +77,8 @@ test('organizer can search teams even if community membership inventory fails',(
  assert.match(screen,/invitations\.status==='fulfilled'/);
  assert.match(screen,/if\(teams\.status==='fulfilled'\)/);
  assert.match(screen,/setInvitesVerified\(false\)/);
- assert.match(screen,/if\(loading\|\|!invitesVerified\|\|existing\.some/);
+ assert.match(screen,/if\(loading\|\|!invitesVerified\|\|/);
+ assert.match(screen,/existing\.some\(x=>x\.teamId===teamId\)/);
  assert.match(screen,/disabled=\{loading\|\|!invitesVerified\}/);
  assert.match(screen,/searchVersion\.current\+\+/);
 });
@@ -159,7 +160,7 @@ test('unknown global entry is rechecked with GET before another finalize is allo
 
 test('mobile competition applications fail closed until owned teams and prior requests are verified',()=>{
  const screen=read('app/teams/competitions.tsx');
- assert.match(screen,/setOwnedVerified\(false\);setChosen\(null\)/);
+ assert.match(screen,/setOwnedVerified\(false\);setTeams\(\[\]\);setChosen\(null\)/);
  assert.match(screen,/setApplicationsVerified\(false\)/);
  assert.match(screen,/!ownedVerified\|\|!applicationsVerified/);
  assert.match(screen,/!competition\.applicationsOpen/);
@@ -169,10 +170,9 @@ test('mobile competition applications fail closed until owned teams and prior re
  assert.match(screen,/title="Verificar novamente candidaturas e equipas"/);
  assert.match(screen,/O pedido pode ter sido recebido/);
  assert.match(screen,/applyingRef\.current=true/);
- assert.match(screen,/const current=requestVersion\.current,selectedTeamId=chosen/);
+ assert.match(screen,/selectedTeamId=chosen,action=\+\+applyGeneration\.current/);
  assert.match(screen,/if\(current!==requestVersion\.current\)return/);
 });
-
 
 test('competition team invitations cannot be resent after an uncertain server response',()=>{
  const panel=read('src/components/CompetitionTeamSearch.tsx');
