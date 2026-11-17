@@ -46,6 +46,15 @@ export async function profilePosts(username:string,token:string|null,page=0):Pro
  return requireSocialCollection(await request<unknown>('/api/feed/users/'+encodeURIComponent(username)+'/posts?page='+page,{token}),'feed');
 }
 
+/** Opt-in posts linked to a public game. API enforces block/profile/session visibility. */
+export async function sessionSocialMemories(sessionId:number,token:string|null):Promise<FeedItem[]>{
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
+ if(!token)return [];
+ if(DEMO_MODE)return demoPosts.filter(post=>post.sessionId===sessionId);
+ const entries=requireSocialCollection(await request<unknown>(
+  '/api/feed/sessions/'+sessionId+'/memories',{token}),'feed');
+ return entries.filter(item=>item.type==='POST'&&item.sessionId===sessionId);
+}
 export async function socialPostById(postId:number,token:string|null):Promise<FeedItem>{
  if(!Number.isSafeInteger(postId)||postId<=0)throw new Error('Publicação inválida.');
  if(!token)throw new Error('Inicia sessão para consultar a publicação.');
