@@ -319,6 +319,15 @@ test('private team reaction summaries skip a like pending server confirmation',(
 });
 
 
+test('team feed remembers exhausted cursor across websocket and polling refreshes',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/olderExhausted=useRef\(false\)/);
+ assert.match(panel,/olderExhausted\.current=page\.length<30\|\|additions\.length===0/);
+ assert.match(panel,/setHasOlderPosts\(!olderExhausted\.current\)/);
+ assert.match(panel,/olderExhausted\.current=false;setHasOlderPosts\(false\)/);
+ assert.doesNotMatch(panel,/setHasOlderPosts\(previous=>previous\|\|history\.length===100\)/);
+});
+
 test('team feed history is cursor paginated and scoped to private team membership',()=>{
  const api=read('src/lib/sports-team-content-api.ts');
  const panel=read('src/components/SportsTeamContentPanel.tsx');
