@@ -236,7 +236,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const pendingKind=pendingWrites.current.get(writeKey);
   needsInitialRead.current=!!pendingKind;
   sendingNow.current=!!pendingKind;
-  reactionBusyRef.current=false;choosing.current=false;
+  reactionBusyRef.current=false;reactionBusyContentId.current=null;choosing.current=false;
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
