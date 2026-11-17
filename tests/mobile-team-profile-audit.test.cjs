@@ -141,7 +141,7 @@ test('embedded team chat and feed keep a compact single composer toolbar',()=>{
 test('team feed has a top post editor and reverse-chronological cards while chat remains chronological',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/const composer=<>/);
- assert.match(panel,/kind==='feed'&&replyTo===null/);
+ assert.match(panel,/kind==='feed'&&\(replyTo===null/);
  assert.match(panel,/\{kind==='feed'&&replyTo===item\.id\?/);
  assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
