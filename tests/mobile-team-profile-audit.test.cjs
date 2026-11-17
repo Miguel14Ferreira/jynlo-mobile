@@ -293,3 +293,16 @@ test('team feed offers compact likes and optional reactions while private chat k
  assert.match(panel,/setFeedReactionPickerId\(null\)/);
  assert.match(panel,/teamReactionSummaries\(teamId,kind,ids,token\)/);
 });
+
+
+test('team feed reaction counts update immediately, roll back on error and stop after revoked access',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const original=reactions\[item\.id\]\|\|\{counts:\{\},mine:null\}/);
+ assert.match(panel,/if\(original\.mine\)counts\[original\.mine\]=Math\.max\(0/);
+ assert.match(panel,/const next=original\.mine===emoji\?null:emoji/);
+ assert.match(panel,/reactionVersion\.current\+\+/);
+ assert.match(panel,/setReactions\(previous=>\(\{\.\.\.previous,\[item\.id\]:\{counts,mine:next\}\}\)\)/);
+ assert.match(panel,/setReactions\(previous=>\(\{\.\.\.previous,\[item\.id\]:original\}\)\)/);
+ assert.match(panel,/if\(!accessRevokedRef\.current\)void loadReactions\(\[item\]\)/);
+ assert.match(panel,/if\(item\.deleted\|\|reactionBusyRef\.current\|\|accessRevokedRef\.current\)return/);
+});
