@@ -30,6 +30,8 @@ test('private chat only auto-follows after measuring a near-bottom viewport',()=
  const screen=read('app/messages/[peer].tsx');
  assert.match(screen,/const nearBottom=useRef\(false\)/);
  assert.match(screen,/const historyViewportMeasured=useRef\(false\)/);
- assert.match(screen,/historyViewportMeasured\.current&&contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
+ assert.match(screen,/historyViewportMeasured\.current=currentMeasurement/);
+ assert.match(screen,/nearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=historyContentHeight\.current-90/);
+ assert.match(screen,/if\(!currentMeasurement\)\{/);
  assert.match(screen,/nearBottom\.current&&historyViewportMeasured\.current/);
 });
