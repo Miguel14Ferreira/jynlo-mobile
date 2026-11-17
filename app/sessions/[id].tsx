@@ -6,6 +6,7 @@ import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,lea
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
+import {cancellationNotice} from '../../src/lib/session-cancellation-notice.cjs';
 import {formatDate,money} from '../../src/lib/format.cjs';
 import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -60,6 +61,10 @@ export default function SessionScreen(){
   const teamsInFlight=useRef(false),teamsOperation=useRef(0);
   const [teamsMessage,setTeamsMessage]=useState('');
   const owner=isOrganizer(detail,auth.username);
+  // A verified cancelled session always offers a reusable public-only notice.
+  // Private meeting details, access codes and exact coordinates are excluded.
+  const cancelledShareText=owner&&detail?.status==='CANCELLED'&&detail.id===id?
+    cancellationNotice(detail):null;
 
   const load=useCallback(async():Promise<SessionDetail|null>=>{
     const version=++detailRequestGeneration.current;
@@ -549,6 +554,12 @@ export default function SessionScreen(){
         <Text style={styles.cancelledHeading}>×  Sessão cancelada</Text>
         <Text style={styles.hint}>A sessão foi cancelada e já não aceita novas inscrições.</Text>
         {owner?<Text style={styles.hint}>A Jynlo envia automaticamente o aviso aos participantes inscritos e em lista de espera, conforme as suas preferências. Convidados externos devem ser informados pelo canal utilizado.</Text>:null}
+        {cancelledShareText?<View style={{gap:10}}>
+          <Text selectable style={styles.hint}>{cancelledShareText}</Text>
+          <Button secondary title="Partilhar aviso de cancelamento"
+            onPress={()=>{void Share.share({message:cancelledShareText}).catch(()=>
+              setFeedback('Não foi possível partilhar o aviso. Podes copiar o texto apresentado.'));}}/>
+        </View>:null}
       </View>:null}
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
