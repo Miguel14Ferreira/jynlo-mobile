@@ -55,6 +55,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [blockReason,setBlockReason]=useState('Já não tens acesso a esta conversa.');
  const accessRevokedRef=useRef(false);
  const [replyTo,setReplyTo]=useState<number|null>(null);
+ const feedRootDraft=useRef<{draft:string;media:ImagePickerAsset[]}>({draft:'',media:[]});
+ const feedCommentDrafts=useRef(new Map<number,{draft:string;media:ImagePickerAsset[]}>());
  const [editingId,setEditingId]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
  const [attachmentsEnabled,setAttachmentsEnabled]=useState(false);
@@ -95,6 +97,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+  feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
   const message=failure.status===409?'O chat ou feed da equipa foi desativado pelo responsável.':'Já não tens acesso a esta conversa.';
   setBlockReason(message);setError(message);
@@ -216,7 +219,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
-  if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');}
+  if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+   feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();}
   setError('');setSyncWarning('');
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';
   searchPendingRef.current=false;searchRecheckRef.current=false;
@@ -283,6 +287,16 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
   finally{if(current===version.current)choosing.current=false;}
  };
+ const switchReply=(id:number|null)=>{
+  if(sendingNow.current||accessRevokedRef.current)return;
+  if(kind!=='feed'){setReplyTo(current=>current===id?null:id);return;}
+  if(replyTo===null)feedRootDraft.current={draft,media};
+  else feedCommentDrafts.current.set(replyTo,{draft,media});
+  const target=replyTo===id?null:id;
+  const restored=target===null?feedRootDraft.current:feedCommentDrafts.current.get(target);
+  setDraft(restored?.draft||'');setMedia(restored?.media||[]);
+  setReplyTo(target);
+ };
  const sendMedia=async()=>{
   if(!media.length||sendingNow.current||pendingWrites.current.has(writeKey)||!attachmentsEnabled)return;
   pendingWrites.current.set(writeKey,'media');
@@ -294,8 +308,16 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    // submitted values; never mutate a different team/account's composer.
    if(activeWriteKey.current!==writeKey||accessRevokedRef.current)return;
    setMedia(previous=>previous===media?[]:previous);
-   setDraft(previous=>previous===submittedDraft?'':previous);
-   setReplyTo(previous=>previous===submittedReply?null:previous);
+   if(kind==='feed'&&submittedReply!==null){
+    feedCommentDrafts.current.delete(submittedReply);
+    const original=feedRootDraft.current;
+    setDraft(original.draft);setMedia(original.media);
+    feedRootDraft.current={draft:'',media:[]};
+    setReplyTo(current=>current===submittedReply?null:current);
+   }else{
+    setDraft(previous=>previous===submittedDraft?'':previous);
+    setReplyTo(previous=>previous===submittedReply?null:previous);
+   }
   }catch(e){
    if(current===version.current&&!rejectPrivateUpload(e))
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
@@ -323,8 +345,16 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    // the follow-up HTTP refresh is the source of truth otherwise.
    if(current===version.current)
     setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
-   setDraft(previous=>previous===draft?'':previous);
-   setReplyTo(previous=>previous===submittedReply?null:previous);
+   if(kind==='feed'&&submittedReply!==null){
+    feedCommentDrafts.current.delete(submittedReply);
+    const original=feedRootDraft.current;
+    setDraft(original.draft);setMedia(original.media);
+    feedRootDraft.current={draft:'',media:[]};
+    setReplyTo(current=>current===submittedReply?null:current);
+   }else{
+    setDraft(previous=>previous===draft?'':previous);
+    setReplyTo(previous=>previous===submittedReply?null:previous);
+   }
   }catch(e){
    if(current===version.current&&!revokeIfUnauthorized(e))
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
@@ -487,7 +517,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  },[entries,kind,accessRevoked]);
  const composer=<>
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>{kind==='chat'?'A responder a':'A comentar'} {replyPreview(replyTo)}</Text>
-   <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
+   <Pressable onPress={()=>switchReply(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
   <View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual"
     accessibilityState={{disabled:sending||locationBusy}}
@@ -601,7 +631,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>)}
    </View>:null}
    {!item.deleted?<View style={styles.actions}>
-    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(current=>current===item.id?null:item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>switchReply(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
     {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Editar mensagem da equipa':'Editar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
     {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Eliminar mensagem da equipa':'Eliminar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
    </View>:null}
