@@ -108,7 +108,15 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    const wasBlocked=accessRevokedRef.current;
    accessRevokedRef.current=false;setAccessRevoked(false);
    setBlockReason('Já não tens acesso a esta conversa.');setError('');
-   setEntries(history);setSyncWarning('');void loadReactions(history);
+   setEntries(history);
+   // Reconcile visible search hits with authenticated history after live edits
+   // and deletions without resetting the user's search or scroll position.
+   setSearchResults(previous=>{
+    if(!previous.length)return previous;
+    const latest=new Map(history.map(item=>[item.id,item]));
+    return previous.map(item=>latest.get(item.id)||item);
+   });
+   setSyncWarning('');void loadReactions(history);
    if(wasBlocked){
     void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
      if(expected===version.current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
@@ -286,6 +294,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    const updated=await editTeamContent(teamId,kind,editingId,body,token);
    if(current===version.current&&!accessRevokedRef.current){
     setEntries(previous=>previous.map(item=>item.id===updated.id?updated:item));
+    setSearchResults(previous=>previous.map(item=>item.id===updated.id?updated:item));
     setEditingId(null);setEditDraft('');
    }
   }catch(e){
@@ -307,7 +316,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     try{
      await deleteTeamContent(teamId,kind,item.id,token);
      if(current===version.current&&!accessRevokedRef.current)
-      setEntries(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true}:entry));
+      setEntries(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true,attachments:[]}:entry));
+     if(current===version.current&&!accessRevokedRef.current)
+      setSearchResults(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true,attachments:[]}:entry));
     }catch(e){
      if(current===version.current&&!revokeIfUnauthorized(e))
       setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
