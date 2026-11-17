@@ -141,7 +141,9 @@ test('embedded team chat and feed keep a compact single composer toolbar',()=>{
 test('team feed has a top post editor and reverse-chronological cards while chat remains chronological',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/const composer=<>/);
- assert.match(panel,/\{kind==='feed'\?composer:null\}/);
+ assert.match(panel,/kind==='feed'&&replyTo===null/);
+ assert.match(panel,/\{kind==='feed'&&replyTo===item\.id\?/);
+ assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
  assert.match(panel,/kind==='feed'\?orderedTeamFeed\(searchActive\?searchResults:entries\)/);
  assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
@@ -162,4 +164,17 @@ test('team feed threads comments without hiding replies whose parents are not lo
  assert.match(panel,/kind==='feed'&&item\.replyToId!=null/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
  assert.doesNotMatch(panel,/publishPost\(/);
+});
+
+
+test('team feed comment composer stays beside the post and uses private authenticated send',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const composer=<>/);
+ assert.match(panel,/replyTo===item\.id/);
+ assert.match(panel,/A comentar publicação de @/);
+ assert.match(panel,/replyTo===null\|\|!\(searchActive\?searchResults:entries\)\.some/);
+ assert.match(panel,/setReplyTo\(current=>current===item\.id\?null:item\.id\)/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
+ assert.match(panel,/pendingWrites\.current\.has\(writeKey\)/);
+ assert.match(panel,/accessRevokedRef\.current/);
 });
