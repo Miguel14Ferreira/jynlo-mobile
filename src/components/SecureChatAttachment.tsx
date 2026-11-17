@@ -63,7 +63,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    // Do not remove a PDF handed to Android while its external viewer is opening.
    if(!pdfPreview.current)cleanup();
   };
- },[cleanup,scope,conversationId,messageId,index,token]));
+ },[cleanup,scope,conversationId,messageId,index,kind,token]));
  React.useEffect(()=>{
   const subscription=AppState.addEventListener('change',state=>{
    if(state==='background'||state==='inactive'){
