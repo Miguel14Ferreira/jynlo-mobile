@@ -537,6 +537,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    const updated=await editTeamContent(teamId,kind,editingId,body,token);
    if(current===version.current&&!accessRevokedRef.current){
     setEntries(previous=>previous.map(item=>item.id===updated.id?updated:item));
+    setOlderEntries(previous=>{
+     const next=previous.map(item=>item.id===updated.id?updated:item);
+     olderRef.current=next;
+     return next;
+    });
     setSearchResults(previous=>previous.map(item=>item.id===updated.id?updated:item));
     setEditingId(null);setEditDraft('');
    }
@@ -569,10 +574,17 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     const current=version.current;
     try{
      await deleteTeamContent(teamId,kind,item.id,token);
-     if(current===version.current&&!accessRevokedRef.current)
-      setEntries(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true,attachments:[]}:entry));
-     if(current===version.current&&!accessRevokedRef.current)
-      setSearchResults(previous=>previous.map(entry=>entry.id===item.id?{...entry,body:'',deleted:true,attachments:[]}:entry));
+     if(current===version.current&&!accessRevokedRef.current){
+      const tombstone=(entry:TeamContentEntry):TeamContentEntry=>entry.id===item.id
+       ?{...entry,body:'',deleted:true,attachments:[]}:entry;
+      setEntries(previous=>previous.map(tombstone));
+      setOlderEntries(previous=>{
+       const next=previous.map(tombstone);
+       olderRef.current=next;
+       return next;
+      });
+      setSearchResults(previous=>previous.map(tombstone));
+     }
     }catch(e){
      if(current===version.current){
       if(e instanceof ApiError&&e.status===409){
