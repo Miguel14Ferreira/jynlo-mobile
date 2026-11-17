@@ -41,3 +41,13 @@ test('text and album publishing send the selected session identity, never attach
  assert.match(api,/sessionId:sessionId\?\?null/);
  assert.match(api,/sessionId!==undefined&&\(!Number\.isSafeInteger\(sessionId\)\|\|sessionId<=0\)/);
 });
+
+test('native memories reconcile on focus without manual refresh or automatic publishing',()=>{
+ const panel=read('src/components/SessionMemoriesPanel.tsx');
+ assert.match(panel,/setInterval\(\(\)=>\{if\(!pending\.current\)void load\(true\);\},30000\)/);
+ assert.match(panel,/clearInterval\(interval\)/);
+ assert.match(panel,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
+ assert.match(panel,/if\(!silent\)setLoading\(false\)/);
+ assert.doesNotMatch(panel,/Ver novos momentos/);
+ assert.doesNotMatch(panel,/publishPost\(/);
+});
