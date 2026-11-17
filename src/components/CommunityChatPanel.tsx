@@ -135,6 +135,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  useFocusEffect(useCallback(()=>{
    let active=true;
    const version=++generation.current;
+   // Never reuse geometry from a previous focus to acknowledge new messages.
+   // The current ScrollView must measure its viewport and content again.
+   historyViewportHeight.current=0;
+   historyContentHeight.current=0;
    const identity=id+'|'+auth.token;
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
