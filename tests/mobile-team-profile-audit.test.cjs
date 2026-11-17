@@ -106,3 +106,17 @@ test('competition application buttons display actual backend state instead of a 
  assert.match(screen,/!ownedVerified\|\|!applicationsVerified/);
  assert.match(screen,/applied\(item,chosen\)/);
 });
+
+test('global team roster uses public avatars with round fallbacks and resets on account changes',()=>{
+ const screen=read('app/teams/[id].tsx');
+ const api=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/profilePicUrl\?: string \| null/);
+ assert.match(api,/export function teamPlayerAvatarUri\(input:string\|null\|undefined\):string\|null/);
+ assert.match(api,/if\(!input\)return null/);
+ assert.match(api,/return API_BASE\+input/);
+ assert.match(screen,/teamPlayerAvatarUri\(m\.profilePicUrl\)/);
+ assert.match(screen,/!brokenAvatars\[m\.profileId\]/);
+ assert.match(screen,/onError=\{\(\)=>setBrokenAvatars\(previous=>\(\{\.\.\.previous,\[m\.profileId\]:true\}\)\)\}/);
+ assert.match(screen,/setTeam\(null\);setMembers\(\[\]\);setBrokenAvatars\(\{\}\)/);
+ assert.match(screen,/playerAvatarPhoto:\{width:42,height:42,borderRadius:21\}/);
+});
