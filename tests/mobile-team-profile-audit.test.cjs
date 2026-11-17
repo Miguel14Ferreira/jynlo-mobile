@@ -136,3 +136,16 @@ test('embedded team chat and feed keep a compact single composer toolbar',()=>{
  assert.doesNotMatch(panel,/headingEmoji/);
  assert.doesNotMatch(panel,/Ver novos momentos|Verificar desafios/);
 });
+
+
+test('team feed has a top post editor and reverse-chronological cards while chat remains chronological',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const composer=<>/);
+ assert.match(panel,/\{kind==='feed'\?composer:null\}/);
+ assert.match(panel,/\{kind==='chat'\?composer:null\}/);
+ assert.match(panel,/kind==='feed'\?\[\.\.\.\(searchActive\?searchResults:entries\)\]\.reverse\(\)/);
+ assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
+ assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
+ assert.match(panel,/if\(accessRevoked\)return/);
+ assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
+});
