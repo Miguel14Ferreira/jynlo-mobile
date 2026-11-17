@@ -1,14 +1,16 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {View,Text,StyleSheet} from 'react-native';
+import {View,Text,StyleSheet,Share,Alert} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {Button,Loader,Message} from './UI';
 import {C} from '../lib/theme';
 import {ApiError} from '../lib/api';
 import {sessionOfficialResult} from '../lib/session-competition-api';
 import type {SessionOfficialResult} from '../lib/session-competition-api';
+import {publicSessionResultMessage} from '../lib/session-result-share.cjs';
+import type {SessionDetail} from '../lib/types';
 
 /** Read-only, authorization-scoped result. No private roster in this component. */
-export function SessionOfficialResultCard({sessionId,token}:{sessionId:number;token:string|null}){
+export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:number;token:string|null;game?:SessionDetail}){
  const requestVersion=useRef(0);
  const [result,setResult]=useState<SessionOfficialResult|null>(null);
  const [loadedFor,setLoadedFor]=useState('');
@@ -51,6 +53,11 @@ export function SessionOfficialResultCard({sessionId,token}:{sessionId:number;to
     <Text style={styles.separator}>–</Text>
     <View style={styles.side}><Text style={styles.team}>Equipa B</Text><Text style={styles.score}>{result.scoreB??'—'}</Text></View>
    </View>
+   {game&&publicSessionResultMessage(game,result,sessionId)?<Button secondary title="Partilhar marcador oficial"
+     onPress={()=>{
+       const message=publicSessionResultMessage(game,result,sessionId);
+       if(message)void Share.share({message}).catch(()=>Alert.alert('Partilhar resultado','Não foi possível abrir a partilha.'));
+     }}/>:null}
    <Text style={styles.caption}>{result.scoreA===null||result.scoreB===null?
     'Jornada registada; o marcador oficial não foi indicado.':
     'Marcador confirmado na jornada da comunidade.'}</Text>
