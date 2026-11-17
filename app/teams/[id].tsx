@@ -23,6 +23,8 @@ export default function TeamDetail(){
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
  const [communitiesVerified,setCommunitiesVerified]=useState(false);
  const [history,setHistory]=useState<TeamCompetitionHistory[]>([]),[historyError,setHistoryError]=useState('');
+ const [trophiesLoading,setTrophiesLoading]=useState(false),[trophiesVerified,setTrophiesVerified]=useState(false);
+ const trophiesVersion=useRef(0),trophiesRequested=useRef(false);
  const [championshipHonours,setChampionshipHonours]=useState<TeamChampionshipHonour[]>([]),[honoursError,setHonoursError]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [kitPrimary,setKitPrimary]=useState('#19CBB6'),[kitSecondary,setKitSecondary]=useState('#F0FAFB');
@@ -42,6 +44,8 @@ export default function TeamDetail(){
   reading.current=null;kitEditedRef.current=false;
   setTeam(null);setMembers([]);setBrokenAvatars({});setPendingPlayers([]);setCommunities([]);
   setCandidates([]);setSearchName('');setSearchComplete(false);setSearching(false);
+  trophiesVersion.current++;trophiesRequested.current=false;
+  setTrophiesLoading(false);setTrophiesVerified(false);
   setHistory([]);setChampionshipHonours([]);setHistoryError('');setHonoursError('');
   setRosterVerified(false);setPendingVerified(false);setCommunitiesVerified(false);
   setBrandingVerified(false);setActiveTab('OVERVIEW');
@@ -70,11 +74,9 @@ export default function TeamDetail(){
    }
    if(!silent)setLoading(false);
   }).catch(()=>{});
-  const [details,roster,pastEvents,awards,linked]=await Promise.allSettled([
+  const [details,roster,linked]=await Promise.allSettled([
    detailsRequest,
    sportsTeamMembers(teamId,auth.token||undefined),
-   sportsTeamHistory(teamId,auth.token||undefined),
-   sportsTeamChampionshipHonours(teamId,auth.token||undefined),
    auth.token?sportsTeamCommunities(teamId,auth.token):Promise.resolve([])
   ]);
   if(reading.current===version)reading.current=null;
@@ -101,10 +103,6 @@ export default function TeamDetail(){
     });
    }else{setPendingPlayers([]);setPendingVerified(false);}
   }else{setMembers([]);setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push('o plantel');}
-  if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
-  else{setHistory([]);setHistoryError('Não foi possível atualizar o histórico oficial.');}
-  if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
-  else{setChampionshipHonours([]);setHonoursError('Não foi possível atualizar os troféus.');}
   if(linked.status==='fulfilled'){setCommunities(linked.value);setCommunitiesVerified(true);}
   else{setCommunities([]);setCommunitiesVerified(false);failed.push('as comunidades');}
   if(failed.length){
@@ -126,6 +124,28 @@ export default function TeamDetail(){
    actionRef.current=false;savingRef.current=false;
   };
  },[load]));
+ const loadTrophies=useCallback(async(force=false)=>{
+  if(!Number.isSafeInteger(teamId)||teamId<=0)return;
+  if(trophiesRequested.current&&!force)return;
+  trophiesRequested.current=true;
+  const current=++trophiesVersion.current;
+  setTrophiesLoading(true);setTrophiesVerified(false);
+  setHistoryError('');setHonoursError('');
+  const [pastEvents,awards]=await Promise.allSettled([
+   sportsTeamHistory(teamId,auth.token||undefined),
+   sportsTeamChampionshipHonours(teamId,auth.token||undefined)
+  ]);
+  if(current!==trophiesVersion.current)return;
+  if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
+  else{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
+  if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
+  else{setChampionshipHonours([]);setHonoursError('Não foi possível carregar os troféus.');}
+  setTrophiesVerified(pastEvents.status==='fulfilled'&&awards.status==='fulfilled');
+  setTrophiesLoading(false);
+ },[teamId,auth.token]);
+ useEffect(()=>{
+  if(activeTab==='TROPHIES')void loadTrophies();
+ },[activeTab,loadTrophies]);
  const releaseAction=(action:number)=>{
   // A request belonging to an old account/team must not unlock a new action.
   if(action!==actionGeneration.current)return;
@@ -526,10 +546,12 @@ export default function TeamDetail(){
       <Button title="Convidar" disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
-   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({standaloneTrophies.length+championshipHonours.length})</Text>
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'})</Text>
+    {trophiesLoading?<Text style={styles.note}>A carregar conquistas oficiais…</Text>:null}
+    {!trophiesLoading&&(historyError||honoursError)?<Button secondary title="Tentar novamente" onPress={()=>void loadTrophies(true)}/>:null}
     {historyError?<Text style={styles.note}>{historyError}</Text>:null}
     {honoursError?<Text style={styles.note}>{honoursError}</Text>:null}
-    {!historyError&&!honoursError&&!standaloneTrophies.length&&!championshipHonours.length?
+    {trophiesVerified&&!standaloneTrophies.length&&!championshipHonours.length?
       <Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
     {championshipHonours.map(item=><View key={'season:'+item.championshipId+':'+(item.ownedEventId?'event:'+item.ownedEventId:'tournament:'+item.tournamentId)} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.competitionName}</Text>
@@ -543,8 +565,8 @@ export default function TeamDetail(){
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
     </View>)}
    </View>:null}
-   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({history.length})</Text>
-    {!historyError&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({trophiesVerified?history.length:'—'})</Text>
+    {trophiesVerified&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
     {history.map(item=><Pressable key={item.tournamentId} accessibilityRole="button" style={styles.historyLink}
       onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(item.communityId),id:String(item.tournamentId)}})}>
       <Text style={styles.playerName}>{item.tournamentName}</Text>
@@ -552,7 +574,7 @@ export default function TeamDetail(){
     </Pressable>)}
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições da equipa</Text>
-    <Text style={styles.note}>{history.length} torneios no histórico · {standaloneTrophies.length+championshipHonours.length} troféus oficiais</Text>
+    <Text style={styles.note}>{trophiesVerified?`${history.length} torneios no histórico · ${standaloneTrophies.length+championshipHonours.length} troféus oficiais`:'Histórico e troféus disponíveis no separador próprio.'}</Text>
     <Button secondary title="Ver histórico e troféus" onPress={()=>setActiveTab('TROPHIES')}/>
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
