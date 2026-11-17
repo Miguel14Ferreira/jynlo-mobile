@@ -1,10 +1,10 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {teamPlayerAvatarUri,setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
@@ -17,6 +17,7 @@ export default function TeamDetail(){
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
  const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
+ const [brokenAvatars,setBrokenAvatars]=useState<Record<number,boolean>>({});
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
  const [pendingPlayers,setPendingPlayers]=useState<TeamPendingPlayerInvitation[]>([]),[pendingVerified,setPendingVerified]=useState(false);
  const [communities,setCommunities]=useState<TeamCommunityMembership[]>([]),[membershipNote,setMembershipNote]=useState('');
@@ -39,7 +40,7 @@ export default function TeamDetail(){
   requestVersion.current++;searchVersion.current++;actionGeneration.current++;
   actionRef.current=false;savingRef.current=false;setSaving(false);
   reading.current=null;kitEditedRef.current=false;
-  setTeam(null);setMembers([]);setPendingPlayers([]);setCommunities([]);
+  setTeam(null);setMembers([]);setBrokenAvatars({});setPendingPlayers([]);setCommunities([]);
   setCandidates([]);setSearchName('');setSearchComplete(false);setSearching(false);
   setHistory([]);setChampionshipHonours([]);setHistoryError('');setHonoursError('');
   setRosterVerified(false);setPendingVerified(false);setCommunitiesVerified(false);
@@ -484,7 +485,12 @@ export default function TeamDetail(){
     {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
     <View style={styles.roster}>
     {rosterVerified?members.map(m=><View key={m.profileId} style={styles.playerCard}>
-      <View style={styles.playerAvatar}><Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text></View>
+      <View style={styles.playerAvatar}>
+       {teamPlayerAvatarUri(m.profilePicUrl)&&!brokenAvatars[m.profileId]
+        ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={styles.playerAvatarPhoto}
+          onError={()=>setBrokenAvatars(previous=>({...previous,[m.profileId]:true}))}/>
+        :<Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text>}
+      </View>
       <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`} style={styles.playerInfo}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
        <Text style={styles.playerName}>@{m.username}</Text>
@@ -626,7 +632,8 @@ const styles=StyleSheet.create({
  heroActionLabel:{color:'#053039',fontWeight:'900'},
  roster:{gap:8},
  playerCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,flexDirection:'row',alignItems:'center',gap:11},
- playerAvatar:{height:42,width:42,borderRadius:21,backgroundColor:'#167A7D',alignItems:'center',justifyContent:'center'},
+ playerAvatar:{height:42,width:42,borderRadius:21,backgroundColor:'#167A7D',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ playerAvatarPhoto:{width:42,height:42,borderRadius:21},
  playerAvatarText:{color:C.white,fontWeight:'900',fontSize:17},
  playerInfo:{flex:1,gap:2},
  playerName:{color:C.white,fontSize:14,fontWeight:'800'},
