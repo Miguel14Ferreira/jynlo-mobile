@@ -549,7 +549,7 @@ export default function SessionScreen(){
          canEdit={owner} onSaved={updated=>{setDetail(updated);setFeedback('Localização Google Maps atualizada.');}}/>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
-        <SessionOfficialResultCard sessionId={id} token={auth.token}/>:null}
+        <SessionOfficialResultCard sessionId={id} token={auth.token} game={detail}/>:null}
       {detail&&auth.token&&detail.canSharePublicly===true?
         <SessionMemoriesPanel sessionId={id} token={auth.token}
           canSharePublicly={true} completed={detail.status==='COMPLETED'}
