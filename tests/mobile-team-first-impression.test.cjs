@@ -405,7 +405,7 @@ test('secure team attachment revocation clears private chat and ignores stale re
 
 test('team chat blocks duplicate writes across a same-team focus change',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
- assert.match(panel,/const writeKey=teamId\+'\\|'\+kind\+'\\|'\+token/);
+ assert.ok(panel.includes("const writeKey=teamId+'|'+kind+'|'+token"));
  assert.match(panel,/pendingWrites=useRef\(new Map<string,'media'\|'text'\|'edit'\|'delete'>\(\)\)/);
  for(const kind of ['media','text','edit','delete']){
   assert.ok(panel.includes("pendingWrites.current.set(writeKey,'"+kind+"')"),kind);
