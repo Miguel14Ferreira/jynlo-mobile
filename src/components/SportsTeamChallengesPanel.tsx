@@ -7,6 +7,8 @@ import {
  linkTeamChallengeSession,type TeamChallenge
 } from '../lib/sports-team-challenges-api';
 import {C} from '../lib/theme';
+import {request} from '../lib/api';
+import type {MySessions,SessionSummary} from '../lib/types';
 
 type Props={teamId:number;token:string|null;sport:string|null;isOwner:boolean};
 const label={PENDING:'A aguardar',ACCEPTED:'Aceite',DECLINED:'Recusado',CANCELLED:'Cancelado'} as const;
@@ -19,6 +21,8 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
  const [query,setQuery]=useState(''),[message,setMessage]=useState('');
  const [selectedId,setSelectedId]=useState<number|null>(null);
  const [sessionInputs,setSessionInputs]=useState<Record<number,string>>({});
+ const [ownSessions,setOwnSessions]=useState<SessionSummary[]>([]);
+ const [ownSessionsError,setOwnSessionsError]=useState('');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [searching,setSearching]=useState(false);
  const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
@@ -31,15 +35,27 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
    const found=await teamChallenges(teamId,token);
    if(version!==generation.current)return;
    setItems(found);
+   if(isOwner&&found.some(challenge=>challenge.status==='ACCEPTED'&&!challenge.sessionId)){
+    try{
+     const mine=await request<MySessions>('/api/sessions/mine',{token});
+     if(version!==generation.current)return;
+     setOwnSessions(mine.created.filter(game=>!game.privateGame&&game.audience!=='COMMUNITY_ONLY'
+       &&game.status!=='CANCELLED'
+       &&(!sport||!game.sport||game.sport.toLowerCase()===sport.toLowerCase())));
+     setOwnSessionsError('');
+    }catch{
+     if(version===generation.current){setOwnSessions([]);setOwnSessionsError('Não foi possível consultar as tuas sessões.');}
+    }
+   }
   }catch{
    if(version!==generation.current)return;
    setItems([]);setError('Não foi possível confirmar os desafios. Tenta novamente.');
   }finally{if(version===generation.current)setLoading(false);}
- },[teamId,token]);
+ },[teamId,token,isOwner,sport]);
  useFocusEffect(useCallback(()=>{
   void reload();
   return()=>{generation.current++;searchVersion.current++;writing.current=false;
-   setItems([]);setCandidates([]);setSelectedId(null);setSessionInputs({});};
+   setItems([]);setCandidates([]);setSelectedId(null);setSessionInputs({});setOwnSessions([]);};
  },[reload]));
  const search=async()=>{
   if(!isOwner||!token||writing.current||query.trim().length<2)return;
@@ -119,11 +135,19 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
       ])}><Text style={styles.action}>Cancelar convite</Text></Pressable>:null}
    {isOwner&&item.status==='ACCEPTED'&&!item.sessionId?
     <View style={styles.link}>
-     <Text style={styles.hint}>Cria uma sessão pública e indica aqui o seu número.</Text>
-     <TextInput value={sessionInputs[item.id]||''} keyboardType="number-pad"
-      onChangeText={value=>setSessionInputs(prev=>({...prev,[item.id]:value}))}
-      placeholder="ID da sessão" placeholderTextColor={C.muted} style={styles.input}/>
-     <Pressable disabled={busy||!/^[1-9][0-9]*$/.test(sessionInputs[item.id]||'')}
+     <Text style={styles.hint}>Escolhe uma sessão pública criada por ti para este desafio.</Text>
+     {ownSessions.map(game=><Pressable key={game.id}
+      accessibilityRole="button"
+      accessibilityState={{selected:sessionInputs[item.id]===String(game.id)}}
+      style={[styles.button,sessionInputs[item.id]===String(game.id)&&styles.selected]}
+      onPress={()=>setSessionInputs(prev=>({...prev,[item.id]:String(game.id)}))}>
+      <Text style={styles.action}>{game.sport} · {game.city} · {game.gameDate.slice(0,10)}</Text>
+     </Pressable>)}
+     {ownSessionsError?<Text style={styles.error}>{ownSessionsError}</Text>:null}
+     {!ownSessions.length?<Text style={styles.hint}>Ainda não tens uma sessão pública elegível.</Text>:null}
+     <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/create')}
+       style={styles.button}><Text style={styles.action}>Criar sessão</Text></Pressable>
+     <Pressable disabled={busy||!ownSessions.some(game=>String(game.id)===sessionInputs[item.id])}
       onPress={()=>joinSession(item)} style={[styles.button,styles.primary]}>
       <Text style={styles.action}>Associar jogo</Text></Pressable>
     </View>:null}
