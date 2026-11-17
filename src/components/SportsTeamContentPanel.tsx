@@ -49,13 +49,23 @@ function teamFeedCommentCounts(entries:TeamContentEntry[]):Map<number,number> {
 }
 function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,searchActive:boolean,replyTo:number|null):TeamContentEntry[]{
  const byId=new Map(entries.map(item=>[item.id,item]));
+ const rootById=new Map<number,number>();
  const rootOf=(item:TeamContentEntry):number=>{
+  const cached=rootById.get(item.id);
+  if(cached!==undefined)return cached;
   let current=item;
-  const seen=new Set<number>([item.id]);
-  while(current.replyToId!=null&&byId.has(current.replyToId)&&!seen.has(current.replyToId)){
-   current=byId.get(current.replyToId)!;seen.add(current.id);
+  const chain:number[]=[];
+  const seen=new Set<number>();
+  while(!rootById.has(current.id)&&!seen.has(current.id)){
+   seen.add(current.id);
+   chain.push(current.id);
+   const parent=current.replyToId;
+   if(parent===null||!byId.has(parent)||seen.has(parent))break;
+   current=byId.get(parent)!;
   }
-  return current.id;
+  const root=rootById.get(current.id)??current.id;
+  for(const id of chain)rootById.set(id,root);
+  return root;
  };
  const groups=new Map<number,TeamContentEntry[]>();
  for(const item of entries){
