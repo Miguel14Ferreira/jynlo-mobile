@@ -178,3 +178,14 @@ test('team feed comment composer stays beside the post and uses private authenti
  assert.match(panel,/pendingWrites\.current\.has\(writeKey\)/);
  assert.match(panel,/accessRevokedRef\.current/);
 });
+
+
+test('team content authors open ordinary Jynlo profiles without exposing private team material',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/import \{useFocusEffect,useRouter\} from 'expo-router'/);
+ assert.match(panel,/accessibilityRole="link" accessibilityLabel=\{'Abrir perfil de @'\+item\.username\}/);
+ assert.match(panel,/pathname:'\/social\/\[username\]',params:\{username:item\.username\}/);
+ assert.match(panel,/authorLink:\{alignSelf:'flex-start',minHeight:36/);
+ assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
+ assert.match(panel,/if\(accessRevoked\)return/);
+});
