@@ -460,3 +460,16 @@ test('team chat distinguishes deleted-message conflicts from disabled team priva
  assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\)/);
  assert.match(panel,/if\(!revokeIfUnauthorized\(e\)\)/);
 });
+
+test('team realtime reconciliation updates old search hits without reviving stale results',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/const searchQueryRef=useRef\(''\),searchActiveRef=useRef\(false\)/);
+ assert.match(panel,/searchPendingRef=useRef\(false\),searchRecheckRef=useRef\(false\)/);
+ assert.match(panel,/searchActiveRef\.current&&!searchPendingRef\.current&&!searchRecheckRef\.current/);
+ assert.match(panel,/void searchTeamContent\(teamId,kind,query,token\)\.then\(results=>/);
+ assert.match(panel,/searchGeneration!==searchVersion\.current/);
+ assert.match(panel,/searchQueryRef\.current!==query\|\|accessRevokedRef\.current/);
+ assert.match(panel,/setSearchResults\(results\);void loadReactions\(results\)/);
+ assert.match(panel,/searchActiveRef\.current=false;searchQueryRef\.current='';searchPendingRef\.current=false;searchRecheckRef\.current=false/);
+ assert.match(panel,/if\(!revokeIfUnauthorized\(failure\)\)/);
+});
