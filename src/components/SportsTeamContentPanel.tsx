@@ -44,6 +44,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const reactionBusyRef=useRef(false);
  const emojis=['👍','❤️','😂','🔥','👏'];
  const version=useRef(0),reading=useRef<number|null>(null),sendingNow=useRef(false);
+ // A write remains owned by its actual team/account even across focus changes.
+ // Reopening the same chat must never turn an unresolved write into a duplicate.
+ const writeKey=teamId+'|'+kind+'|'+token;
+ const pendingWrites=useRef(new Map<string,'media'|'text'|'edit'|'delete'>());
+ const activeWriteKey=useRef('');
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
   if(!(failure instanceof ApiError)||![401,403,409].includes(failure.status))return false;
@@ -150,8 +155,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // locks and request ownership before loading this conversation.
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;
-  sendingNow.current=false;reactionBusyRef.current=false;choosing.current=false;
-  setSending(false);setUploading(false);setReactionBusyId(null);setLoading(true);
+  activeWriteKey.current=writeKey;
+  const pendingKind=pendingWrites.current.get(writeKey);
+  sendingNow.current=!!pendingKind;
+  reactionBusyRef.current=false;choosing.current=false;
+  setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
@@ -186,8 +194,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current,true);
   });
-  return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;version.current++;searchVersion.current++;reactionVersion.current++;};
- },[refresh]));
+  return()=>{clearInterval(timer);resume.remove();stopObserving();pendingRefresh.current=false;
+   if(activeWriteKey.current===writeKey)activeWriteKey.current='';
+   version.current++;searchVersion.current++;reactionVersion.current++;};
+ },[refresh,writeKey]));
  const chooseMedia=async(source:'gallery'|'camera'='gallery')=>{
   if(!attachmentsEnabled||choosing.current||sendingNow.current||accessRevokedRef.current)return;
   const current=version.current;
@@ -215,7 +225,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   finally{if(current===version.current)choosing.current=false;}
  };
  const sendMedia=async()=>{
-  if(!media.length||sendingNow.current||!attachmentsEnabled)return;
+  if(!media.length||sendingNow.current||pendingWrites.current.has(writeKey)||!attachmentsEnabled)return;
+  pendingWrites.current.set(writeKey,'media');
   sendingNow.current=true;invalidatePendingRead();setUploading(true);setSending(true);setError('');
   const current=version.current,selection=[...media],submittedDraft=draft,submittedReply=replyTo;
   try{
@@ -229,14 +240,16 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
      ' Confirma o histórico antes de repetir.');
   }finally{
-   if(current===version.current){
-    sendingNow.current=false;setUploading(false);setSending(false);void refresh(true,current);
+   pendingWrites.current.delete(writeKey);
+   if(activeWriteKey.current===writeKey){
+    sendingNow.current=false;setUploading(false);setSending(false);void refresh(true,version.current);
    }
   }
  };
  const send=async()=>{
   const message=draft.trim();
-  if(!message||sendingNow.current||!token)return;
+  if(!message||sendingNow.current||pendingWrites.current.has(writeKey)||!token)return;
+  pendingWrites.current.set(writeKey,'text');
   sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
   const current=version.current,submittedReply=replyTo;
   try{
@@ -250,8 +263,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
       ' Consulta o histórico antes de repetires a operação.');
   }finally{
-   if(current===version.current){
-    sendingNow.current=false;setSending(false);void refresh(true,current);
+   pendingWrites.current.delete(writeKey);
+   if(activeWriteKey.current===writeKey){
+    sendingNow.current=false;setSending(false);void refresh(true,version.current);
    }
   }
  };
@@ -303,7 +317,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const update=async()=>{
   const body=editDraft.trim();
-  if(!editingId||!body||sendingNow.current)return;
+  if(!editingId||!body||sendingNow.current||pendingWrites.current.has(writeKey))return;
+  pendingWrites.current.set(writeKey,'edit');
   sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
   const current=version.current;
   try{
@@ -317,8 +332,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===version.current&&!revokeIfUnauthorized(e))
     setError('Edição não confirmada. Consulta o histórico antes de repetir.');
   }finally{
-   if(current===version.current){
-    sendingNow.current=false;setSending(false);void refresh(true,current);
+   pendingWrites.current.delete(writeKey);
+   if(activeWriteKey.current===writeKey){
+    sendingNow.current=false;setSending(false);void refresh(true,version.current);
    }
   }
  };
@@ -327,7 +343,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   Alert.alert('Eliminar conteúdo','Queres eliminar esta mensagem da equipa?',[
    {text:'Cancelar',style:'cancel'},
    {text:'Eliminar',style:'destructive',onPress:()=>{void (async()=>{
-    if(sendingNow.current||accessRevokedRef.current)return;
+    if(sendingNow.current||pendingWrites.current.has(writeKey)||accessRevokedRef.current)return;
+    pendingWrites.current.set(writeKey,'delete');
     sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
     const current=version.current;
     try{
@@ -340,8 +357,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      if(current===version.current&&!revokeIfUnauthorized(e))
       setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
     }finally{
-     if(current===version.current){
-      sendingNow.current=false;setSending(false);void refresh(true,current);
+     pendingWrites.current.delete(writeKey);
+     if(activeWriteKey.current===writeKey){
+      sendingNow.current=false;setSending(false);void refresh(true,version.current);
      }
     }
    })();}}
