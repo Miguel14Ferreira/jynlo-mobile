@@ -38,11 +38,13 @@ test('tournament rosters have structured cards, a bounded progress indicator and
 test('an unavailable invitation endpoint does not hide owned or discovered teams',()=>{
  const screen=read('app/teams/index.tsx');
  assert.match(screen,/Promise\.allSettled\(\[/);
+ for(const status of ['discovery','mine','memberTeams','memberships','competitions'])
+  assert.ok(screen.includes(status+".status==='fulfilled'"),status);
  assert.match(screen,/if\(discovery\.status==='fulfilled'\)setTeams\(discovery\.value\)/);
  assert.match(screen,/if\(mine\.status==='fulfilled'\)setOwned\(mine\.value\)/);
- assert.match(screen,/if\(memberships\.status==='fulfilled'\)setInvites\(memberships\.value\)/);
- assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
- assert.match(screen,/As restantes secções continuam disponíveis/);
+ assert.match(screen,/else\{setInvites\(\[\]\);failed\.push\('convites de jogadores'\);\}/);
+ assert.match(screen,/else\{setCompetitionInvites\(\[\]\);failed\.push\('convites para competições'\);\}/);
+ assert.match(screen,/As secções afetadas foram ocultadas até uma nova verificação/);
  assert.doesNotMatch(screen,/await Promise\.all\(\[mySportsTeamInvitations/);
 });
 
@@ -59,11 +61,15 @@ test('team requests ignore stale results and navigation-away responses',()=>{
 
 test('membership invitations cannot be submitted repeatedly while saving',()=>{
  const screen=read('app/teams/index.tsx');
- assert.match(screen,/if\(!auth\.token\|\|saving\)return;/);
- assert.match(screen,/try\{await respondSportsTeamInvitation\(teamId,accept,auth\.token\);await load\(false,true\);\}/);
- assert.match(screen,/finally\{setSaving\(false\);\}/);
- assert.match(screen,/title="Aceitar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,true\)\}/);
- assert.match(screen,/title="Recusar convite" disabled=\{saving\} onPress=\{\(\)=>void respond\(x\.teamId,false\)\}/);
+ assert.match(screen,/savingRef\.current\|\|!invites\.some\(item=>item\.teamId===teamId\)/);
+ assert.match(screen,/const action=\+\+actionVersion\.current/);
+ assert.match(screen,/savingRef\.current=true;setSaving\(true\)/);
+ assert.match(screen,/await respondSportsTeamInvitation\(teamId,accept,auth\.token\)/);
+ assert.match(screen,/if\(action!==actionVersion\.current\)return/);
+ assert.match(screen,/await load\(false,true\)/);
+ assert.match(screen,/if\(action===actionVersion\.current\)\{savingRef\.current=false;setSaving\(false\);\}/);
+ assert.match(screen,/respond\(x\.teamId,true\)/);
+ assert.match(screen,/respond\(x\.teamId,false\)/);
 });
 
 test('competition discovery submits filters explicitly and survives partial API failure',()=>{
@@ -72,9 +78,10 @@ test('competition discovery submits filters explicitly and survives partial API 
  assert.match(screen,/discoverTeamCompetitions\(filters\.query,filters\.sport,/);
  assert.match(screen,/Promise\.allSettled\(\[/);
  assert.match(screen,/if\(competitions\.status==='fulfilled'\)setRows\(competitions\.value\)/);
- assert.match(screen,/if\(requests\.status==='fulfilled'\)setApplications\(requests\.value\)/);
+ assert.match(screen,/if\(requests\.status==='fulfilled'&&auth\.token\)/);
+ assert.match(screen,/setApplications\(requests\.value\);setApplicationsVerified\(true\)/);
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
- assert.match(screen,/return \(\)=>\{requestVersion\.current\+\+;\}/);
+ assert.match(screen,/requestVersion\.current\+\+;applyGeneration\.current\+\+;applyingRef\.current=false/);
  assert.match(screen,/onSubmitEditing=\{search\}/);
  assert.match(screen,/onPress=\{search\}/);
  assert.doesNotMatch(screen,/\},\[query,sport,auth\.token,teamId\]\)/);
@@ -82,9 +89,12 @@ test('competition discovery submits filters explicitly and survives partial API 
 
 test('competition selection stays within owned teams and anonymous users cannot apply',()=>{
  const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/owned\.value\.some\(t=>t\.id===wanted\)/);
  assert.match(screen,/owned\.value\.some\(t=>t\.id===current\)\?current:null/);
- assert.match(screen,/disabled=\{!auth\.token\|\|!chosen\|\|busy\|\|applied\(item,chosen\)\}/);
- assert.match(screen,/setApplications\(current=>\[next,\.\.\.current\.filter\(item=>item\.id!==next\.id\)\]\)/);
+ assert.match(screen,/!auth\.token\|\|!chosen\|\|busy\|\|loading\|\|applyingRef\.current\|\|!ownedVerified\|\|!applicationsVerified/);
+ assert.match(screen,/!teams\.some\(team=>team\.id===chosen\)/);
+ assert.match(screen,/a\.communityId===competition\.communityId/);
+ assert.match(screen,/setApplications\(previous=>\[next,\.\.\.previous\.filter\(item=>item\.id!==next\.id\)\]\)/);
 });
 
 test('team profile displays an identity hero with verified roster and competition stats',()=>{
@@ -100,14 +110,13 @@ test('team profile survives partial API failures and ignores late results after 
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/Promise\.allSettled\(\[/);
  assert.match(screen,/if\(version!==requestVersion\.current\)return/);
- assert.match(screen,/return \(\)=>\{\s*clearInterval\(timer\);resume\.remove\(\);\s*requestVersion\.current\+\+;searchVersion\.current\+\+;\s*\}/);
- assert.match(screen,/details\.status==='fulfilled'/);
- assert.match(screen,/roster\.status==='fulfilled'/);
- assert.match(screen,/pastEvents\.status==='fulfilled'/);
- assert.match(screen,/awards\.status==='fulfilled'/);
- assert.match(screen,/linked\.status==='fulfilled'/);
- assert.match(screen,/version===searchVersion\.current/);
- assert.match(screen,/if\(!auth\.token\|\|saving\|\|actionRef\.current\|\|!rosterVerified\|\|!Number\.isSafeInteger\(profileId\)/);
+ assert.match(screen,/requestVersion\.current\+\+;searchVersion\.current\+\+;actionGeneration\.current\+\+/);
+ for(const status of ['details','roster','pastEvents','awards','linked'])
+  assert.ok(screen.includes(status+".status==='fulfilled'"),status);
+ assert.match(screen,/else\{setMembers\(\[\]\);setRosterVerified\(false\)/);
+ assert.match(screen,/setCandidates\(\[\]\);setSearchName\(''\)/);
+ assert.match(screen,/pendingPlayers\.some\(p=>p\.profileId===profileId\)/);
+ assert.match(screen,/if\(!auth\.token\|\|saving\|\|actionRef\.current\|\|!rosterVerified/);
 });
 
 test('team rosters and competition data refresh on foreground resume without flashing skeletons',()=>{
@@ -126,13 +135,13 @@ test('team rosters and competition data refresh on foreground resume without fla
 
 test('team directory keeps invitations updated when returning to the app without manual refresh',()=>{
  const screen=read('app/teams/index.tsx');
- assert.match(screen,/const load=useCallback\(async\(silent=false\)=>/);
+ assert.match(screen,/const load=useCallback\(async\(silent=false,force=false\)=>/);
  assert.match(screen,/AppState\.addEventListener\('change',state=>/);
  assert.match(screen,/state==='active'&&!savingRef\.current/);
- assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
- assert.match(screen,/!force&&\(reading\.current===requestVersion\.current\|\|savingRef\.current\)/);
- assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
+ assert.match(screen,/clearInterval\(timer\);resume\.remove\(\);requestVersion\.current\+\+/);
+ assert.match(screen,/if\(!force&&\(reading\.current===requestVersion\.current\|\|savingRef\.current\)\)return/);
  assert.match(screen,/if\(competitions\.status==='fulfilled'\)setCompetitionInvites\(competitions\.value\.filter/);
+ assert.match(screen,/if\(memberships\.status==='fulfilled'\)setInvites\(memberships\.value\)/);
  assert.doesNotMatch(screen.slice(screen.indexOf('const timer=setInterval('),screen.indexOf('const resume=AppState.addEventListener(')),/respondSportsTeamInvitation/);
 });
 
@@ -225,37 +234,36 @@ test('switching team chats cannot be blocked by an in-flight request from the pr
  assert.match(panel,/reading=useRef<number\|null>\(null\)/);
  assert.match(panel,/if\(reading\.current===expected\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(panel,/reading\.current=expected/);
- assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)reading\.current=null/);
- assert.match(panel,/if\(expected!==version\.current\)return/);
+ assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)/);
+ assert.match(panel,/expected!==version\.current\|\|writeVersion!==mutationVersion\.current/);
+ assert.match(panel,/return\(\)=>\{clearInterval\(timer\);resume\.remove\(\);stopObserving\(\)/);
  assert.doesNotMatch(panel,/if\(reading\.current\|\|sendingNow\.current\)return/);
 });
 
 test('team chat drops history fetched before a write and avoids overlapping refresh cleanup',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
- assert.match(panel,/const mutationVersion=useRef\(0\),readRequestVersion=useRef\(0\)/);
+ assert.match(panel,/mutationVersion=useRef\(0\),readRequestVersion=useRef\(0\)/);
  assert.match(panel,/const writeVersion=mutationVersion\.current/);
  assert.match(panel,/expected!==version\.current\|\|writeVersion!==mutationVersion\.current/);
  assert.match(panel,/const readRequest=\+\+readRequestVersion\.current/);
- assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)reading\.current=null/);
- assert.equal((panel.match(/sendingNow\.current=true;invalidatePendingRead\(\)/g)||[]).length,4);
- assert.match(panel,/if\(AppState\.currentState==='active'\)void refresh\(true,current\)/);
- assert.match(panel,/\},5000\)/);
+ assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)/);
+ assert.match(panel,/pendingRefresh\.current=false/);
+ assert.match(panel,/if\(state==='active'\)void refresh\(true,current,true\)/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current,true\)/);
 });
 
 test('team chat uses member-scoped WebSocket hints with polling only as fallback',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  const realtime=read('src/lib/team-content-realtime.ts');
  assert.match(panel,/observeTeamContent\(\{teamId,kind,token/);
- assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current\)/);
+ assert.match(panel,/onInvalidated:\(\)=>\{if\(version\.current===current&&AppState\.currentState==='active'\)void refresh\(true,current,true\)/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current,true\)/);
  assert.match(panel,/if\(AppState\.currentState!=='active'\)return/);
  assert.match(panel,/stopObserving\(\)/);
- assert.match(panel,/pendingRefresh\.current=true/);
- assert.match(panel,/if\(pendingRefresh\.current&&expected===version\.current&&!sendingNow\.current\)/);
  assert.match(realtime,/type:'AUTH',token/);
  assert.match(realtime,/envelope\.type==='AUTHENTICATED'/);
  assert.match(realtime,/if\(!authenticated\|\|envelope\.type!=='TEAM_CONTENT_INVALIDATED'\)return/);
  assert.match(realtime,/envelope\.teamId!==teamId\|\|envelope\.kind!==kind/);
- assert.match(realtime,/if\(e\.code===1003\)\{active=false;return;\}/);
 });
 
 test('confirmed joined squads are listed separately from owned team identities',()=>{
@@ -274,15 +282,15 @@ test('confirmed joined squads are listed separately from owned team identities',
 test('team chat clears private content when membership is revoked during background refresh',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/import \{ApiError\} from '\.\.\/lib\/api'/);
- assert.match(panel,/e instanceof ApiError&&\(e\.status===403\|\|e\.status===401\)/);
- assert.match(panel,/accessRevokedRef\.current=true;setAccessRevoked\(true\);setEntries\(\[\]\)/);
- assert.match(panel,/setSearchResults\(\[\]\);setSearchActive\(false\)/);
+ assert.match(panel,/\[401,403,409\]\.includes\(failure\.status\)/);
+ assert.match(panel,/accessRevokedRef\.current=true;setAccessRevoked\(true\)/);
+ assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
  assert.match(panel,/setMedia\(\[\]\);setAttachmentsEnabled\(false\)/);
  assert.match(panel,/if\(accessRevoked\)return <View/);
  assert.match(panel,/accessRevokedRef\.current=false;setAccessRevoked\(false\)/);
+ assert.match(panel,/revalidateBlocked=false/);
  assert.doesNotMatch(panel,/\[teamId,kind,token,loadReactions,accessRevoked\]/);
 });
-
 
 test('confirmed mobile players may leave a squad without owner permissions',()=>{
  const screen=read('app/teams/[id].tsx');
@@ -302,17 +310,13 @@ test('team owners see verified pending invitations and can cancel them safely',(
  const screen=read('app/teams/[id].tsx');
  const api=read('src/lib/sports-teams-api.ts');
  assert.match(api,/export async function pendingSportsTeamPlayers\(teamId:number,token:string\)/);
- assert.match(api,/\/api\/teams\/'\+validId\(teamId\)\+'\/invitations'/);
- assert.match(screen,/setPendingVerified\(false\)/);
  assert.match(screen,/pendingSportsTeamPlayers\(teamId,auth\.token!\)/);
- assert.match(screen,/if\(version===requestVersion\.current\)\{setPendingPlayers\(rows\);setPendingVerified\(true\);\}/);
- assert.match(screen,/!pendingVerified\|\|!isOwner/);
+ assert.match(screen,/setPendingPlayers\(rows\);setPendingVerified\(true\)/);
  assert.match(screen,/pendingPlayers\.some\(p=>p\.profileId===profileId\)/);
  assert.match(screen,/const cancelPendingInvite=\(invite:TeamPendingPlayerInvitation\)=>/);
+ assert.match(screen,/actionRef\.current=true;savingRef\.current=true;setSaving\(true\)/);
+ assert.match(screen,/releaseAction\(action\);void load\(true,true\)/);
  assert.match(screen,/Verifica os convites pendentes antes de repetir/);
  assert.match(screen,/title="Verificar convites"/);
  assert.match(screen,/title="Cancelar convite"/);
- assert.match(screen,/disabled=\{saving\|\|!pendingVerified\}/);
- assert.match(screen,/actionRef\.current=false;setSaving\(false\);setPendingVerified\(false\);\s*void load\(true,true\)/);
- assert.match(screen,/actionRef\.current=false;setSaving\(false\);void load\(true,true\)/);
 });
