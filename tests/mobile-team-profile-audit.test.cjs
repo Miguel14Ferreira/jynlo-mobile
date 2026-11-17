@@ -145,7 +145,7 @@ test('team feed has a top post editor and reverse-chronological cards while chat
  assert.match(panel,/\{kind==='feed'&&replyTo===item\.id\?/);
  assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
- assert.match(panel,/kind==='feed'\?orderedTeamFeed\(searchActive\?searchResults:entries\)/);
+ assert.match(panel,/\?orderedTeamFeed\(searchActive\?searchResults:entries,collapsedFeedPosts,searchActive,replyTo\)/);
  assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
  assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
  assert.match(panel,/if\(accessRevoked\)return/);
@@ -255,4 +255,15 @@ test('private team feed counts threaded comments and collapses them without affe
  assert.match(panel,/accessibilityState=\{\{expanded:!collapsedFeedPosts\.has\(item\.id\)\}\}/);
  assert.match(panel,/setCollapsedFeedPosts\(new Set\(\)\)/);
  assert.match(panel,/if\(id!==null\)setCollapsedFeedPosts/);
+});
+
+
+test('private team feed memoizes threaded cards and reply totals while composing',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/import React,\{useCallback,useEffect,useMemo,useRef,useState\}/);
+ assert.match(panel,/const visibleEntries=useMemo\(\(\)=>kind==='feed'/);
+ assert.match(panel,/const feedCommentCounts=useMemo\(\(\)=>/);
+ assert.match(panel,/\{visibleEntries\.map\(item=>/);
+ assert.match(panel,/feedCommentCounts\.get\(item\.id\)/);
+ assert.match(panel,/\[kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo\]/);
 });
