@@ -378,3 +378,15 @@ test('switching team chats resets locks and stale mutations cannot unlock the ne
  assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;setReactionBusyId\(null\);void loadReactions\(\[item\]\);/);
  assert.doesNotMatch(panel,/sendingNow\.current=false;\s*if\(current===version\.current\)/);
 });
+
+
+test('private team attachment probes never hide a revoked membership from the chat UI',()=>{
+ const api=read('src/lib/sports-team-content-api.ts');
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(api,/import \{ApiError,DEMO_MODE,request\} from '\.\/api'/);
+ assert.match(api,/if\(error instanceof ApiError&&\[401,403,409\]\.includes\(error\.status\)\)throw error/);
+ assert.match(api,/return false;\s*\}/);
+ assert.match(panel,/teamPrivateAttachmentsAvailable\(teamId,kind,token\)\.then\(available=>/);
+ assert.match(panel,/setAttachmentsEnabled\(false\);\s*revokeIfUnauthorized\(failure\)/);
+ assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+});
