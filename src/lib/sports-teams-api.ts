@@ -98,6 +98,13 @@ const HEX_COLOR=/^#[0-9a-fA-F]{6}$/;
 export function safeTeamKitColor(input:string|null|undefined,fallback:string):string {
  return input&&HEX_COLOR.test(input)?input:fallback;
 }
+export function teamPlayerAvatarUri(input:string|null|undefined):string|null {
+ if(!input)return null;
+ if(/^https:\/\/[^\s]+$/i.test(input))return input;
+ if(/^\/media\/[A-Za-z0-9_\/.-]+$/i.test(input)&&!input.includes('..'))
+  return API_BASE+input;
+ return null;
+}
 export function teamLogoUri(input:string|null|undefined):string|null {
  if(!input)return null;
  if(/^https:\/\/[^\s]+$/i.test(input))return input;
@@ -165,6 +172,7 @@ export interface SportsTeamMember {
   profileId: number;
   username: string;
   role: 'OWNER' | 'PLAYER';
+  profilePicUrl?: string | null;
 }
 export interface SportsTeamInvitation {
   teamId: number;
