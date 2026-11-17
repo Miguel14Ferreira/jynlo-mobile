@@ -10,7 +10,7 @@ import {C} from '../lib/theme';
 type Scope='direct'|'community'|'session'|'team';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
  name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean;
- kind?:'chat'|'feed'};
+ kind?:'chat'|'feed';onAuthorizationError?:(status:number)=>void};
 const isVoice=(mime:string|null|undefined)=>typeof mime==='string'&&mime.startsWith('audio/');
 const isVideo=(mime:string|null|undefined)=>mime==='video/mp4'||mime==='video/webm';
 const ChatVideo=lazy(()=>import('./FeedVideo'));
@@ -38,7 +38,7 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0,ki
 }
 
 /** Authenticated downloads use temporary app cache; native PDF viewer may run outside the app. */
-export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,index=0,autoPreview=false,kind='chat'}:Props){
+export default function SecureChatAttachment({scope,conversationId,messageId,token,name,mime,size,index=0,autoPreview=false,kind='chat',onAuthorizationError}:Props){
  const [uri,setUri]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [expanded,setExpanded]=useState(false);
  const player=useAudioPlayer(null);
@@ -107,7 +107,14 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
     headers:{Authorization:'Bearer '+token,Accept:mime!},credentials:'omit',redirect:'error',
     signal:controller.signal
    });
-   if(!response.ok)throw Error('Não foi possível abrir o anexo. Verifica as permissões.');
+   if(!response.ok){
+    // A private team attachment is an authorization boundary too. Report a
+    // revoked membership to its parent instead of leaving the chat visible.
+    if([401,403,409].includes(response.status)&&active.current
+      &&generation.current===version&&!controller.signal.aborted)
+     onAuthorizationError?.(response.status);
+    throw Error('Não foi possível abrir o anexo. Verifica as permissões.');
+   }
    const type=(response.headers.get('content-type')||'').split(';')[0]?.trim().toLowerCase()||'';
    if(type!==mime)throw Error('O formato recebido não corresponde ao anexo.');
    const declared=Number(response.headers.get('content-length'));
