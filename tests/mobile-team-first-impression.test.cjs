@@ -214,10 +214,10 @@ test('team chat private media reuses authenticated viewer and verified native up
  const pdf=read('src/lib/chat-pdf-attachment.ts');
  const viewer=read('src/components/SecureChatAttachment.tsx');
  assert.match(panel,/teamPrivateAttachmentsAvailable\(teamId,kind,token\)/);
- assert.match(panel,/sendChatPhotoAlbum\(\{scope:'team',id:teamId,kind\},token,selection,replyTo,draft\)/);
+ assert.match(panel,/sendChatPhotoAlbum\(\{scope:'team',id:teamId,kind\},token,selection,submittedReply,submittedDraft\)/);
  assert.match(panel,/<ChatPdfComposer target=\{\{scope:'team',id:teamId,kind\}\}/);
  assert.match(panel,/<SecureChatAttachment key=\{file\.index\} scope="team" kind=\{kind\}/);
- assert.match(panel,/setMedia\(\[\]\)/);
+ assert.match(panel,/setMedia\(previous=>previous===media\?\[\]:previous\)/);
  assert.match(api,/\/attachments\/availability/);
  assert.match(album,/target\.scope==='team'/);
  assert.match(album,/\/attachments\/batch/);
@@ -472,4 +472,15 @@ test('team realtime reconciliation updates old search hits without reviving stal
  assert.match(panel,/setSearchResults\(results\);void loadReactions\(results\)/);
  assert.match(panel,/searchActiveRef\.current=false;searchQueryRef\.current='';searchPendingRef\.current=false;searchRecheckRef\.current=false/);
  assert.match(panel,/if\(!revokeIfUnauthorized\(failure\)\)/);
+});
+
+test('same-team refocus clears only confirmed text and media after requests settle',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/if\(activeWriteKey\.current!==writeKey\|\|accessRevokedRef\.current\)return/);
+ assert.match(panel,/setMedia\(previous=>previous===media\?\[\]:previous\)/);
+ assert.match(panel,/setDraft\(previous=>previous===submittedDraft\?'':previous\)/);
+ assert.match(panel,/setReplyTo\(previous=>previous===submittedReply\?null:previous\)/);
+ assert.match(panel,/if\(current===version\.current\)\s*setEntries\(previous=>/);
+ assert.match(panel,/const initial=needsInitialRead\.current;needsInitialRead\.current=false/);
+ assert.doesNotMatch(panel,/if\(current!==version\.current\)return;\s*setMedia/);
 });
