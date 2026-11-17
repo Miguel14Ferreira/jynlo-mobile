@@ -22,27 +22,28 @@ export default function SessionMemoriesPanel({
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const generation=useRef(0),pending=useRef(false);
- const load=useCallback(async()=>{
+ const load=useCallback(async(silent=false)=>{
   if(pending.current||!canSharePublicly||!token)return;
   const current=++generation.current;
   pending.current=true;
-  setLoading(true);setError('');
+  if(!silent){setLoading(true);setError('');}
   try{
    const found=await sessionSocialMemories(sessionId,token);
    if(current!==generation.current)return;
    setPosts(found.filter(post=>post.type==='POST'&&post.sessionId===sessionId));
   }catch{
    if(current!==generation.current)return;
-   setPosts([]);setError('Não foi possível carregar as recordações deste jogo.');
+   if(!silent){setPosts([]);setError('Não foi possível carregar as recordações deste jogo.');}
   }finally{
-   if(current===generation.current){pending.current=false;setLoading(false);}
+   if(current===generation.current){pending.current=false;if(!silent)setLoading(false);}
   }
  },[sessionId,token,canSharePublicly]);
 
  useFocusEffect(useCallback(()=>{
   // A return from the post composer may have added a new moment.
   pending.current=false;void load();
-  return()=>{generation.current++;pending.current=false;setPosts([]);setLoading(true);};
+  const interval=setInterval(()=>{if(!pending.current)void load(true);},30000);
+  return()=>{clearInterval(interval);generation.current++;pending.current=false;setPosts([]);setLoading(true);};
  },[load]));
 
  if(!canSharePublicly||!token)return null;
@@ -51,10 +52,6 @@ export default function SessionMemoriesPanel({
   <Text style={styles.heading}>Recordações deste jogo</Text>
   <Text style={styles.hint}>Partilha fotografias, vídeos e momentos do jogo. Nada é publicado automaticamente.</Text>
   <View style={styles.actions}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Ver novos momentos desta sessão"
-    disabled={loading} onPress={()=>void load()} style={styles.action}>
-    <Text style={styles.actionLabel}>Ver novos momentos</Text>
-   </Pressable>
    {completed&&canPublish?<Pressable accessibilityRole="button"
     accessibilityLabel="Partilhar um momento desta sessão" style={[styles.action,styles.primary]}
     onPress={()=>router.push({pathname:'/(tabs)',params:{momentSession:String(sessionId)}})}>
