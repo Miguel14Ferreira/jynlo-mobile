@@ -29,7 +29,15 @@ jobs:
       - name: TypeScript estrito
         run: npm run typecheck
       - name: Testes de sintaxe e contratos
-        run: npm run test:all
+        run: |
+          set +e
+          npm run test:all > /tmp/jynlo-mobile-tests.log 2>&1
+          status=$?
+          grep -E '^not ok [0-9]+ - |^# (tests|pass|fail|duration_ms)' /tmp/jynlo-mobile-tests.log || true
+          if [ "$status" -ne 0 ]; then
+            awk '/^not ok [0-9]+ - /{print; bad=1;next} bad && /^  (location:|error:)/{print} bad && /^  \\.\\.\\.$/{bad=0}' /tmp/jynlo-mobile-tests.log
+          fi
+          exit "$status"
       - name: Gerar bundle JavaScript Android
         run: npx expo export --platform android --output-dir /tmp/jynlo-mobile-preflight-bundle
       - name: Validar configuracao nativa Android e LiveKit
