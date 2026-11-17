@@ -55,7 +55,7 @@ test('ecrãs existem e equipas navegam para a página própria',()=>{
  const list=fs.readFileSync(path.join(root,'teams.tsx'),'utf8');
  const detail=fs.readFileSync(path.join(root,'teams/[teamId].tsx'),'utf8');
  const fixturesScreen=fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8');
- assert.match(list,/Abrir página da equipa/);
+ assert.match(list,/Ver plantel e jogos|Abrir página da equipa|Ver equipa/);
  assert.match(detail,/teamProfileMatches/);
  assert.match(detail,/Partilhar convite da equipa/);
  assert.match(fixturesScreen,/teamTournamentGroups/);
