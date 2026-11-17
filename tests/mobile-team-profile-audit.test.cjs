@@ -173,7 +173,7 @@ test('team feed comment composer stays beside the post and uses private authenti
  assert.match(panel,/replyTo===item\.id/);
  assert.match(panel,/A comentar publicação de @/);
  assert.match(panel,/replyTo===null\|\|!\(searchActive\?searchResults:entries\)\.some/);
- assert.match(panel,/setReplyTo\(current=>current===item\.id\?null:item\.id\)/);
+ assert.match(panel,/onPress=\{\(\)=>switchReply\(item\.id\)\}/);
  assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
  assert.match(panel,/pendingWrites\.current\.has\(writeKey\)/);
  assert.match(panel,/accessRevokedRef\.current/);
@@ -188,4 +188,19 @@ test('team content authors open ordinary Jynlo profiles without exposing private
  assert.match(panel,/authorLink:\{alignSelf:'flex-start',minHeight:36/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
  assert.match(panel,/if\(accessRevoked\)return/);
+});
+
+
+test('team post drafts and attachments remain separate from comment drafts across targets and sends',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/feedRootDraft=useRef/);
+ assert.match(panel,/feedCommentDrafts=useRef/);
+ assert.match(panel,/const switchReply=\(id:number\|null\)=>/);
+ assert.match(panel,/feedRootDraft\.current=\{draft,media\}/);
+ assert.match(panel,/feedCommentDrafts\.current\.set\(replyTo,\{draft,media\}\)/);
+ assert.match(panel,/setDraft\(restored\?\.draft\|\|''\);setMedia\(restored\?\.media\|\|\[\]\)/);
+ assert.match(panel,/feedCommentDrafts\.current\.delete\(submittedReply\)/);
+ assert.match(panel,/setDraft\(original\.draft\);setMedia\(original\.media\)/);
+ assert.match(panel,/feedCommentDrafts\.current\.clear\(\)/);
+ assert.match(panel,/if\(sendingNow\.current\|\|accessRevokedRef\.current\)return/);
 });
