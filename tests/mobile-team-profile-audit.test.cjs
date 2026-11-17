@@ -204,3 +204,27 @@ test('team post drafts and attachments remain separate from comment drafts acros
  assert.match(panel,/feedCommentDrafts\.current\.clear\(\)/);
  assert.match(panel,/if\(sendingNow\.current\|\|accessRevokedRef\.current\)return/);
 });
+
+test('one publish action supports text, photos, videos, captions and individual attachment removal',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const album=read('src/lib/chat-photo-album.ts');
+ assert.match(panel,/if\(media\.length\)\{await sendMedia\(\);return;\}/);
+ assert.match(panel,/sendChatPhotoAlbum\(\{scope:'team',id:teamId,kind\},token,selection,submittedReply,submittedDraft\)/);
+ assert.match(panel,/disabled=\{sending\|\|uploading\|\|\(!media\.length&&!draft\.trim\(\)\)\}/);
+ assert.match(panel,/accessibilityLabel=\{kind==='chat'\?'Enviar mensagem':'Publicar na equipa'\}/);
+ assert.match(panel,/file\.type==='image'\?<Image/);
+ assert.match(panel,/accessibilityLabel=\{'Retirar anexo '\+\(index\+1\)\}/);
+ assert.match(panel,/setMedia\(current=>current\.filter\(\(_,i\)=>i!==index\)\)/);
+ assert.doesNotMatch(panel,/Enviar anexos/);
+ assert.match(album,/if\(caption\?\.trim\(\)\)form\.append\('caption',caption\.trim\(\)\)/);
+ assert.match(album,/if\(replyToMessageId!=null\)form\.append\('replyToMessageId'/);
+});
+test('disabled private team feed rejects albums distinctly and revokes cached private content',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const album=read('src/lib/chat-photo-album.ts');
+ assert.match(album,/target\.kind==='feed'\?'O feed da equipa está desativado\.'/);
+ assert.match(album,/O \(\?:chat\|feed\) da equipa/);
+ assert.match(panel,/O \(\?:chat\|feed\) da equipa está desativado/);
+ assert.match(panel,/revokeIfUnauthorized\(new ApiError\(409,'Conversa desativada\.'\)\)/);
+ assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
+});
