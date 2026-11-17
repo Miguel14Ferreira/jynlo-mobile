@@ -454,19 +454,32 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const react=async(item:TeamContentEntry,emoji:string)=>{
   if(kind==='feed')setFeedReactionPickerId(null);
-  if(item.deleted||reactionBusyRef.current)return;
+  if(item.deleted||reactionBusyRef.current||accessRevokedRef.current)return;
   reactionBusyRef.current=true;setReactionBusyId(item.id);setError('');
   const current=version.current;
+  const original=reactions[item.id]||{counts:{},mine:null};
+  const counts={...original.counts};
+  if(original.mine)counts[original.mine]=Math.max(0,(counts[original.mine]||0)-1);
+  const next=original.mine===emoji?null:emoji;
+  if(next)counts[next]=(counts[next]||0)+1;
+  // Prevent an older read from replacing the pending optimistic value.
+  reactionVersion.current++;
+  setReactions(previous=>({...previous,[item.id]:{counts,mine:next}}));
   try{
-   if(reactions[item.id]?.mine===emoji)
+   if(original.mine===emoji)
     await removeTeamReaction(teamId,kind,item.id,token);
    else await setTeamReaction(teamId,kind,item.id,emoji,token);
   }catch(e){
-   if(current===version.current&&!revokeIfUnauthorized(e))
-    setError('Reação não confirmada. Consulta o histórico antes de repetir.');
+   if(current===version.current&&!accessRevokedRef.current){
+    if(!revokeIfUnauthorized(e)){
+     setReactions(previous=>({...previous,[item.id]:original}));
+     setError('Reação não confirmada. Consulta o histórico antes de repetir.');
+    }
+   }
   }finally{
    if(current===version.current){
-    reactionBusyRef.current=false;setReactionBusyId(null);void loadReactions([item]);
+    reactionBusyRef.current=false;setReactionBusyId(null);
+    if(!accessRevokedRef.current)void loadReactions([item]);
    }
   }
  };
