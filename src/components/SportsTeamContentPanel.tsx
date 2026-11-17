@@ -14,7 +14,7 @@ import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
-import {teamContentHistory,olderTeamFeed,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
+import {teamContentHistory,olderTeamFeed,reconcileTeamFeedEntries,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 /** Keep comment replies next to their post, without hiding orphaned history. */
@@ -61,6 +61,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [olderBusy,setOlderBusy]=useState(false);
  const [olderError,setOlderError]=useState('');
  const olderPending=useRef(false);
+ const olderRef=useRef<TeamContentEntry[]>([]);
+ const olderReconcilePending=useRef(false),olderReconcileAt=useRef(0),olderReconcileOffset=useRef(0);
+ useEffect(()=>{olderRef.current=olderEntries;},[olderEntries]);
  const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
@@ -117,7 +120,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Invalidate any HTTP read that started before access was revoked.
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
-  setEntries([]);setOlderEntries([]);setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  setEntries([]);setOlderEntries([]);olderRef.current=[];setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setSearchResults([]);setSearchActive(false);setSearching(false);
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
@@ -162,6 +166,30 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reading.current=null;
   pendingRefresh.current=false;
  };
+ const reconcileOlder=useCallback(async(expected:number)=>{
+  const older=olderRef.current;
+  if(kind!=='feed'||!older.length||olderPending.current||olderReconcilePending.current
+    ||accessRevokedRef.current||Date.now()-olderReconcileAt.current<30000)return;
+  olderReconcileAt.current=Date.now();
+  const start=olderReconcileOffset.current%older.length;
+  const ids=older.slice(start,start+100).map(item=>item.id);
+  olderReconcileOffset.current=start+ids.length>=older.length?0:start+ids.length;
+  if(!ids.length)return;
+  olderReconcilePending.current=true;
+  try{
+   const updated=await reconcileTeamFeedEntries(teamId,ids,token);
+   if(expected!==version.current||accessRevokedRef.current)return;
+   const fresh=new Map(updated.map(item=>[item.id,item]));
+   const requested=new Set(ids);
+   setOlderEntries(previous=>previous.filter(item=>!requested.has(item.id)||fresh.has(item.id))
+    .map(item=>fresh.get(item.id)||item));
+   if(updated.length)void loadReactions(updated);
+  }catch(failure){
+   if(expected===version.current&&!accessRevokedRef.current)revokeIfUnauthorized(failure);
+  }finally{
+   if(expected===version.current)olderReconcilePending.current=false;
+  }
+ },[teamId,kind,token,loadReactions,revokeIfUnauthorized]);
  const refresh=useCallback(async(quiet=false,expected=version.current,revalidateBlocked=false)=>{
   // Only deduplicate requests within the same conversation generation.
   // An old request must never block loading a newly focused team.
@@ -191,6 +219,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     return previous.map(item=>latest.get(item.id)||item);
    });
    setSyncWarning('');void loadReactions(history);
+   void reconcileOlder(expected);
    // Results outside the 100 newest messages also need revalidation after
    // content-free WebSocket hints. Keep the search view and scroll stable.
    const query=searchQueryRef.current,searchGeneration=searchVersion.current;
@@ -234,7 +263,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
    if(!quiet&&expected===version.current)setLoading(false);
   }
- },[teamId,kind,token,loadReactions,revokeIfUnauthorized]);
+ },[teamId,kind,token,loadReactions,revokeIfUnauthorized,reconcileOlder]);
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   // Old async work belongs to the previous team/account. Reset all mutation
@@ -252,7 +281,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');
-  setEntries([]);setOlderEntries([]);setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  setEntries([]);setOlderEntries([]);olderRef.current=[];setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setBrokenAuthorAvatars({});
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
    feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();}
