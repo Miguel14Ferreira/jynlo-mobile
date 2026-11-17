@@ -228,3 +228,18 @@ test('disabled private team feed rejects albums distinctly and revokes cached pr
  assert.match(panel,/revokeIfUnauthorized\(new ApiError\(409,'Conversa desativada\.'\)\)/);
  assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
 });
+
+test('private team messages and feed posts show safe round author photos with fallback',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const api=read('src/lib/sports-team-content-api.ts');
+ const avatars=read('src/lib/sports-teams-api.ts');
+ assert.match(api,/profilePicUrl\?:string\|null/);
+ assert.match(panel,/teamPlayerAvatarUri\(item\.profilePicUrl\)/);
+ assert.match(panel,/!brokenAuthorAvatars\[item\.id\]/);
+ assert.match(panel,/onError=\{\(\)=>setBrokenAuthorAvatars\(prev=>/);
+ assert.match(panel,/authorAvatarPhoto:\{width:37,height:37,borderRadius:19\}/);
+ assert.match(panel,/setBrokenAuthorAvatars\(\{\}\)/);
+ assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
+ assert.match(avatars,/^export function teamPlayerAvatarUri/m);
+ assert.match(avatars,/if\(\^\/media\/|if\(\/\^\\\/media/);
+});
