@@ -434,3 +434,19 @@ test('team chat aligns compact controls with other chats and preserves same-team
  assert.match(panel,/connection==='online'\?'Em tempo real'/);
  assert.match(panel,/entryAction:\{minWidth:40,minHeight:40/);
 });
+
+test('team conversation renders trusted GIFs and maps and only drafts location after permission',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/import \{giphyImageUrl\} from '\.\.\/lib\/chat-giphy\.cjs'/);
+ assert.match(panel,/import \{chatLocationUrl\} from '\.\.\/lib\/chat-location\.cjs'/);
+ assert.match(panel,/!item\.deleted&&giphyImageUrl\(item\.body\)\?<Image/);
+ assert.match(panel,/!item\.deleted&&chatLocationUrl\(item\.body\)\?<Pressable/);
+ assert.match(panel,/accessibilityLabel="Abrir localização no mapa"/);
+ assert.match(panel,/const composeLocation=async\(\)=>/);
+ assert.match(panel,/requestForegroundPermissionsAsync\(\)/);
+ assert.match(panel,/getCurrentPositionAsync\(\{accuracy:Location\.Accuracy\.Balanced\}\)/);
+ assert.match(panel,/setDraft\(previous=>\{/);
+ assert.match(panel,/onPress=\{\(\)=>void composeLocation\(\)\}/);
+ assert.match(panel,/accessibilityLabel="Partilhar localização atual"/);
+ assert.doesNotMatch(panel,/await sendTeamContent\([^)]*link/);
+});
