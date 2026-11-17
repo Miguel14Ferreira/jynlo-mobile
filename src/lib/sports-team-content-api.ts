@@ -2,7 +2,7 @@ import {ApiError,DEMO_MODE,request} from './api';
 
 export type TeamContentKind='chat'|'feed';
 export interface TeamContentEntry {
- id:number;teamId:number;username:string;body:string;createdAt:string;
+ id:number;teamId:number;username:string;profilePicUrl?:string|null;body:string;createdAt:string;
  replyToId:number|null;editedAt:string|null;deleted:boolean;canManage:boolean;canEdit:boolean;
  attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
