@@ -60,7 +60,7 @@ test('successful batch with unreadable JSON preserves uncertain delivery warning
  assert.ok(success>=0&&parse>success&&warning>parse&&transport>warning);
  assert.match(uploader,/try\{\s*reply=await response\.json\(\) as typeof reply;\s*\}catch\{\s*throw Error\('O envio não foi confirmado\. Consulta o histórico antes de repetir\.'\);/);
  assert.match(uploader,/credentials:'omit',body:form,signal:controller\.signal/);
- assert.match(uploader,/\^\(A sessão\|Já não tens\|O álbum\|O armazenamento\|O servidor\|O envio\)/);
+ assert.match(uploader,/\^\(A sessão\|Já não tens\|O chat da equipa\|O álbum\|O armazenamento\|O servidor\|O envio\)/);
 });
 
 test('media drafts append from multiple gallery visits and keep valid existing items on rejection',()=>{
