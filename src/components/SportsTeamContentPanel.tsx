@@ -49,6 +49,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const writeKey=teamId+'|'+kind+'|'+token;
  const pendingWrites=useRef(new Map<string,'media'|'text'|'edit'|'delete'>());
  const activeWriteKey=useRef('');
+ const needsInitialRead=useRef(false);
  const mutationVersion=useRef(0),readRequestVersion=useRef(0),pendingRefresh=useRef(false);
  const revokeIfUnauthorized=useCallback((failure:unknown):boolean=>{
   if(!(failure instanceof ApiError)||![401,403,409].includes(failure.status))return false;
@@ -157,6 +158,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reading.current=null;pendingRefresh.current=false;
   activeWriteKey.current=writeKey;
   const pendingKind=pendingWrites.current.get(writeKey);
+  needsInitialRead.current=!!pendingKind;
   sendingNow.current=!!pendingKind;
   reactionBusyRef.current=false;choosing.current=false;
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
@@ -242,7 +244,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
-    sendingNow.current=false;setUploading(false);setSending(false);void refresh(true,version.current);
+    sendingNow.current=false;setUploading(false);setSending(false);
+    const initial=needsInitialRead.current;needsInitialRead.current=false;
+    void refresh(!initial,version.current);
    }
   }
  };
@@ -265,7 +269,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
-    sendingNow.current=false;setSending(false);void refresh(true,version.current);
+    sendingNow.current=false;setSending(false);
+    const initial=needsInitialRead.current;needsInitialRead.current=false;
+    void refresh(!initial,version.current);
    }
   }
  };
@@ -334,7 +340,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
-    sendingNow.current=false;setSending(false);void refresh(true,version.current);
+    sendingNow.current=false;setSending(false);
+    const initial=needsInitialRead.current;needsInitialRead.current=false;
+    void refresh(!initial,version.current);
    }
   }
  };
@@ -359,7 +367,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     }finally{
      pendingWrites.current.delete(writeKey);
      if(activeWriteKey.current===writeKey){
-      sendingNow.current=false;setSending(false);void refresh(true,version.current);
+      sendingNow.current=false;setSending(false);
+      const initial=needsInitialRead.current;needsInitialRead.current=false;
+      void refresh(!initial,version.current);
      }
     }
    })();}}
