@@ -43,3 +43,13 @@ test('after challenge mutation, release action lock before reloading the list',(
  assert.match(panel,/searchVersion\.current\+\+;setQuery\(value\)/);
  assert.doesNotMatch(panel,/await reload\(\);\s*\}catch/);
 });
+
+test('challenge inbox refreshes quietly on focus without a manual refresh button',()=>{
+ const panel=read('src/components/SportsTeamChallengesPanel.tsx');
+ assert.match(panel,/setInterval\(\(\)=>\{if\(!writing\.current\)void reload\(true\);\},30000\)/);
+ assert.match(panel,/clearInterval\(interval\)/);
+ assert.match(panel,/if\(!silent\)setLoading\(true\)/);
+ assert.match(panel,/if\(isOwner\)void reload\(\)/);
+ assert.doesNotMatch(panel,/Verificar desafios/);
+ assert.match(panel,/Os convites e respostas são privados dos responsáveis/);
+});
