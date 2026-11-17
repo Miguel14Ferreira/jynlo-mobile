@@ -6,7 +6,7 @@ test('text-only posts remain available and use the real authenticated JSON API',
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
  assert.match(home,/async function submitPost\(\)\{/);
  assert.match(home,/!composerMedia.length&&!composerText.trim\(\)/);
- assert.match(api,/if\(!files\?\.length\)return createTextPost\(caption,token,username,place\)/);
+ assert.match(api,/if\(!files\?\.length\)return createTextPost\(caption,token,username,place,sessionId\)/);
  assert.match(api,/request<FeedItem>\('\/api\/feed\/posts',\{method:'POST',token,body:\{content:body,location:location\.trim\(\)\|\|null\}\}\)/);
  assert.match(api,/requireSocialCollection\(await request<unknown>\('\/api\/feed',\{token\}\),'feed'\)/);
 });
