@@ -44,6 +44,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [searchActive,setSearchActive]=useState(false);
  const [searching,setSearching]=useState(false);
  const searchVersion=useRef(0);
+ const searchQueryRef=useRef(''),searchActiveRef=useRef(false);
+ const searchPendingRef=useRef(false),searchRecheckRef=useRef(false);
  const reactionVersion=useRef(0);
  const [reactions,setReactions]=useState<Record<number,TeamReactionState>>({});
  const [reactionBusyId,setReactionBusyId]=useState<number|null>(null);
@@ -68,7 +70,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
-  searchVersion.current++;reactionVersion.current++;setReactions({});
+  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;
+  reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
   const message=failure.status===409?'O chat ou feed da equipa foi desativado pelo responsável.':'Já não tens acesso a esta conversa.';
@@ -130,6 +133,23 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     return previous.map(item=>latest.get(item.id)||item);
    });
    setSyncWarning('');void loadReactions(history);
+   // Results outside the 100 newest messages also need revalidation after
+   // content-free WebSocket hints. Keep the search view and scroll stable.
+   const query=searchQueryRef.current,searchGeneration=searchVersion.current;
+   if(searchActiveRef.current&&!searchPendingRef.current&&!searchRecheckRef.current
+      &&query.length>=2&&query.length<=80){
+    searchRecheckRef.current=true;
+    void searchTeamContent(teamId,kind,query,token).then(results=>{
+     if(expected!==version.current||searchGeneration!==searchVersion.current
+        ||!searchActiveRef.current||searchQueryRef.current!==query||accessRevokedRef.current)return;
+     setSearchResults(results);void loadReactions(results);
+    }).catch(failure=>{
+     if(expected===version.current&&searchGeneration===searchVersion.current){
+      if(!revokeIfUnauthorized(failure))
+       setSyncWarning('Não foi possível sincronizar os resultados da pesquisa.');
+     }
+    }).finally(()=>{if(expected===version.current)searchRecheckRef.current=false;});
+   }
    if(wasBlocked){
     void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
      if(expected===version.current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
@@ -176,7 +196,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');}
   setError('');setSyncWarning('');
-  searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
+  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';
+  searchPendingRef.current=false;searchRecheckRef.current=false;
+  setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
   if(changedConversation)setMedia([]);
   setAttachmentsEnabled(false);setSearching(false);
@@ -292,6 +314,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const term=searchTerm.trim();
   if(term.length<2||term.length>80||searching||accessRevokedRef.current)return;
   const current=++searchVersion.current;
+  searchQueryRef.current=term;searchActiveRef.current=true;searchPendingRef.current=true;
   setSearchActive(true);setSearching(true);setError('');
   try{
    const results=await searchTeamContent(teamId,kind,term,token);
@@ -300,7 +323,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===searchVersion.current&&!revokeIfUnauthorized(e))
     setError('Não foi possível pesquisar as mensagens.');
   }finally{
-   if(current===searchVersion.current)setSearching(false);
+   if(current===searchVersion.current){searchPendingRef.current=false;setSearching(false);}
   }
  };
  const composeLocation=async()=>{
@@ -332,11 +355,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  };
  const clearSearch=()=>{
-  searchVersion.current++;setSearchActive(false);setSearching(false);setSearchResults([]);
+  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;
+  setSearchActive(false);setSearching(false);setSearchResults([]);
  };
  const changeSearchTerm=(term:string)=>{
   // Never display an obsolete response after editing a search.
-  searchVersion.current++;setSearchTerm(term);setSearchResults([]);
+  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;
+  setSearchTerm(term);setSearchResults([]);
   setSearchActive(false);setSearching(false);
  };
  const replyPreview=(id:number|null):string=>{
