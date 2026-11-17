@@ -268,7 +268,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const current=version.current,selection=[...media],submittedDraft=draft,submittedReply=replyTo;
   try{
    await sendChatPhotoAlbum({scope:'team',id:teamId,kind},token,selection,submittedReply,submittedDraft);
-   if(current!==version.current)return;
+   // A send may finish after returning to this same team. Clear only the
+   // submitted values; never mutate a different team/account's composer.
+   if(activeWriteKey.current!==writeKey||accessRevokedRef.current)return;
    setMedia(previous=>previous===media?[]:previous);
    setDraft(previous=>previous===submittedDraft?'':previous);
    setReplyTo(previous=>previous===submittedReply?null:previous);
@@ -293,8 +295,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const current=version.current,submittedReply=replyTo;
   try{
    const saved=await sendTeamContent(teamId,kind,message,token,submittedReply);
-   if(current!==version.current||accessRevokedRef.current)return;
-   setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
+   if(activeWriteKey.current!==writeKey||accessRevokedRef.current)return;
+   // The authenticated history can still be loading after a refocus.
+   // Append the confirmed item only if this is the current generation;
+   // the follow-up HTTP refresh is the source of truth otherwise.
+   if(current===version.current)
+    setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
    setDraft(previous=>previous===draft?'':previous);
    setReplyTo(previous=>previous===submittedReply?null:previous);
   }catch(e){
