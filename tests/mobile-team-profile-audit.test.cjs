@@ -241,5 +241,6 @@ test('private team messages and feed posts show safe round author photos with fa
  assert.match(panel,/setBrokenAuthorAvatars\(\{\}\)/);
  assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
  assert.match(avatars,/^export function teamPlayerAvatarUri/m);
- assert.match(avatars,/if\(\^\/media\/|if\(\/\^\\\/media/);
+ assert.match(avatars,/if\(!input\)return null/);
+ assert.match(avatars,/return API_BASE\+input/);
 });
