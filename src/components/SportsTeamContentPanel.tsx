@@ -120,7 +120,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(wasBlocked){
     void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
      if(expected===version.current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
-    }).catch(()=>{if(expected===version.current)setAttachmentsEnabled(false);});
+    }).catch(failure=>{
+     if(expected===version.current){
+      setAttachmentsEnabled(false);
+      revokeIfUnauthorized(failure);
+     }
+    });
    }
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
