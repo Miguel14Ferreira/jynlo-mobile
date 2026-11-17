@@ -1,4 +1,4 @@
-import {DEMO_MODE,request} from './api';
+import {ApiError,DEMO_MODE,request} from './api';
 
 export type TeamContentKind='chat'|'feed';
 export interface TeamContentEntry {
@@ -15,7 +15,13 @@ export async function teamPrivateAttachmentsAvailable(teamId:number,kind:TeamCon
  try{
   const status=await request<{available:boolean}>(endpoint(teamId,kind)+'/attachments/availability',{token});
   return status?.available===true;
- }catch{return false;}
+ }catch(error){
+  // Missing media support is optional, but revoked membership is not.
+  // Propagate authorization failures so every chat entry point clears cached
+  // private messages immediately, even if the availability probe responds first.
+  if(error instanceof ApiError&&[401,403,409].includes(error.status))throw error;
+  return false;
+ }
 }
 export async function teamContentHistory(teamId:number,kind:TeamContentKind,token:string):Promise<TeamContentEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar esta conversa.');
