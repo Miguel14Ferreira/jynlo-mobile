@@ -230,7 +230,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
   const {width:screenWidth,height:screenHeight}=useWindowDimensions();
-  const {compose,storyId}=useLocalSearchParams<{compose?:string;storyId?:string}>();
+  const {compose,storyId,momentSession}=useLocalSearchParams<{compose?:string;storyId?:string;momentSession?:string}>();
   const activeStoryAccount=useRef<string|null>(auth.token);
   activeStoryAccount.current=auth.token;
   const [unreadNotifications,setUnreadNotifications]=useState(0);
@@ -260,6 +260,7 @@ export default function JynloFeedHome(){
   const storyCaptionRef=useRef(''),storyMediaRef=useRef<MobileMedia|null>(null);
   storyMediaRef.current=storyMedia;
   const [composerOpen,setComposerOpen]=useState(false);
+  const [composerSessionId,setComposerSessionId]=useState<number|null>(null);
   const [expandedPostImage,setExpandedPostImage]=useState<ExpandedPostPhotos|null>(null);
   const [composerText,setComposerText]=useState(''),[composerLocation,setComposerLocation]=useState(''),[composerMedia,setComposerMedia]=useState<MobileMedia[]>([]);
   const [postPlaceOptions,setPostPlaceOptions]=useState<SocialPlace[]>([]),[verifiedPostPlace,setVerifiedPostPlace]=useState(''),[postPlaceLoading,setPostPlaceLoading]=useState(false);
@@ -419,7 +420,7 @@ export default function JynloFeedHome(){
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setExpandedPostImage(null);
-      postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
+      postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
     }
     setLoading(true);setError('');
@@ -479,7 +480,7 @@ export default function JynloFeedHome(){
   // The central + action reuses the same authenticated composers as the Feed.
   // Consume the route intent once to avoid reopening it after dismissal.
   useEffect(()=>{
-    if(compose!=='post'&&compose!=='story')return;
+    if(momentSession || (compose!=='post'&&compose!=='story'))return;
     if(!auth.ready)return;
     router.setParams({compose:undefined});
     if(!auth.token||!auth.username){
@@ -488,7 +489,27 @@ export default function JynloFeedHome(){
     }
     if(compose==='post')openPostComposer();
     else openStoryComposer();
-  },[compose,auth.ready,auth.token,auth.username,router]);
+  },[compose,momentSession,auth.ready,auth.token,auth.username,router]);
+  useEffect(()=>{
+    if(!momentSession||!auth.ready)return;
+    // Consume the intent before fetching eligibility; no automatic posts.
+    router.setParams({momentSession:undefined,compose:undefined});
+    if(!auth.token||!auth.username){router.push({pathname:'/login',params:{redirect:'/'}});return;}
+    if(!/^[1-9][0-9]{0,12}$/.test(momentSession))return;
+    const gameId=Number(momentSession),actor=auth.token,username=auth.username;
+    if(!Number.isSafeInteger(gameId))return;
+    void sessionDetail(gameId,actor,username).then(game=>{
+      if(activeStoryAccount.current!==actor)return;
+      if(game.status!=='COMPLETED'||game.canSharePublicly!==true||
+        (!game.joined&&game.creatorUsername?.toLowerCase()!==username.toLowerCase())){
+        setError('Só os participantes ou o organizador podem partilhar momentos de uma sessão pública concluída.');
+        return;
+      }
+      openPostComposer(gameId);
+    }).catch(()=>{
+      if(activeStoryAccount.current===actor)setError('Não foi possível confirmar a sessão para partilhar o momento.');
+    });
+  },[momentSession,auth.ready,auth.token,auth.username,router]);
   useEffect(()=>{
     if(typeof storyId!=='string'||!auth.ready||!auth.token)return;
     // Consume the deep link exactly once; no automatic retries for expired Stories.
@@ -666,7 +687,8 @@ export default function JynloFeedHome(){
     }
   }
 
-  function openPostComposer(){
+  function openPostComposer(sessionId:number|null=null){
+    setComposerSessionId(sessionId);
     setPublishNotice(null);setPostPublishError('');setVerifiedPostPlace('');setPostPlaceOptions([]);
     postComposerRevision.current++;
     composerOpenRef.current=true;setComposerOpen(true);
@@ -708,12 +730,12 @@ export default function JynloFeedHome(){
       Alert.alert('Descartar publicação?','As fotografias, os vídeos e o texto deste rascunho serão perdidos.',[
         {text:'Continuar a editar',style:'cancel'},
         {text:'Descartar',style:'destructive',onPress:()=>{
-          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);
+          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);setComposerSessionId(null);
         }}
       ]);
       return;
     }
-    postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);
+    postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);
   }
   function requireLogin(){if(auth.token&&auth.username)return true;router.push({pathname:'/login',params:{redirect:'/'}});return false;}
   async function pickMedia(setter:(v:MobileMedia|null)=>void,source:'gallery'|'camera'='gallery',album=false){
@@ -774,10 +796,13 @@ export default function JynloFeedHome(){
       setPostPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
     }
     const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
+    const linkedSessionId=composerSessionId;
     const revision=postComposerRevision.current;
     postInFlight.current=true;setPublishing(true);setPostPublishError('');
     try{
-      const created=await publishPost(body,media,actor,username,place);
+      const created=await publishPost(body,media,actor,username,place,linkedSessionId??undefined);
+      if(linkedSessionId&&created.sessionId!==linkedSessionId)
+        Alert.alert('Publicação enviada','O servidor confirmou a publicação, mas não a associação à sessão. Não voltes a enviar sem verificar o teu feed.');
       // Show the server-confirmed item immediately. A delayed feed refresh must
       // never make a successful post look as if it vanished.
       if(feedIdentity.current===`${username}:${actor}`){
@@ -796,7 +821,7 @@ export default function JynloFeedHome(){
           postComposerRevision.current++;composerOpenRef.current=false;
           setComposerText('');composerTextRef.current='';
           setComposerLocation('');composerLocationRef.current='';
-          changeComposerMedia(()=>[]);setComposerOpen(false);
+          changeComposerMedia(()=>[]);setComposerOpen(false);setComposerSessionId(null);
         }else{
           Alert.alert('Publicação enviada','As alterações feitas durante o envio ficaram guardadas no editor. Podes criar outra publicação.');
         }
@@ -1172,7 +1197,7 @@ export default function JynloFeedHome(){
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
         <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
-        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>Partilha texto, fotografias ou vídeos com a comunidade.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>{composerSessionId?'Recordação do jogo · sessão '+composerSessionId:'Partilha texto, fotografias ou vídeos com a comunidade.'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
         <ScrollView ref={postComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
             <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><JynloIcon name="camera" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
