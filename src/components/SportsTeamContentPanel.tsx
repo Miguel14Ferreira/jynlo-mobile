@@ -14,7 +14,7 @@ import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
-import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
+import {teamContentHistory,olderTeamFeed,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 /** Keep comment replies next to their post, without hiding orphaned history. */
@@ -56,6 +56,11 @@ function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,search
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const router=useRouter();
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
+ const [olderEntries,setOlderEntries]=useState<TeamContentEntry[]>([]);
+ const [hasOlderPosts,setHasOlderPosts]=useState(false);
+ const [olderBusy,setOlderBusy]=useState(false);
+ const [olderError,setOlderError]=useState('');
+ const olderPending=useRef(false);
  const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
@@ -112,7 +117,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Invalidate any HTTP read that started before access was revoked.
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
-  setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
+  setEntries([]);setOlderEntries([]);setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  setSearchResults([]);setSearchActive(false);setSearching(false);
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
@@ -172,6 +178,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    accessRevokedRef.current=false;setAccessRevoked(false);
    setBlockReason('Já não tens acesso a esta conversa.');setError('');
    setEntries(history);
+   if(kind==='feed'){
+    setOlderEntries(previous=>previous.filter(old=>!history.some(row=>row.id===old.id)));
+    if(history.length<100)setHasOlderPosts(false);
+    else if(!olderPending.current)setHasOlderPosts(previous=>previous||history.length===100);
+   }
    // Reconcile visible search hits with authenticated history after live edits
    // and deletions without resetting the user's search or scroll position.
    setSearchResults(previous=>{
@@ -240,7 +251,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
-  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
+  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');
+  setEntries([]);setOlderEntries([]);setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   setBrokenAuthorAvatars({});
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
    feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();}
@@ -449,7 +461,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setSearchActive(false);setSearching(false);
  };
  const replyPreview=(id:number|null):string=>{
-  const original=[...searchResults,...entries].find(item=>item.id===id);
+  const original=[...searchResults,...entries,...olderEntries].find(item=>item.id===id);
   if(!original)return 'uma mensagem anterior';
   if(original.deleted)return 'uma mensagem eliminada';
   return '@'+original.username+': '+original.body.slice(0,110);
@@ -555,11 +567,16 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(latest>latestId.current&&latestId.current>0&&!nearLatest.current)setUnseenBelow(true);
   latestId.current=latest;
  },[entries,kind,accessRevoked]);
+ const allFeedEntries=useMemo(()=>{
+  if(kind!=='feed'||!olderEntries.length)return entries;
+  const latestIds=new Set(entries.map(item=>item.id));
+  return [...olderEntries.filter(item=>!latestIds.has(item.id)),...entries];
+ },[kind,entries,olderEntries]);
  // Expensive thread grouping and comment counts should not rerun on every keystroke.
  const visibleEntries=useMemo(()=>kind==='feed'
-  ?orderedTeamFeed(searchActive?searchResults:entries,collapsedFeedPosts,searchActive,replyTo)
+  ?orderedTeamFeed(searchActive?searchResults:allFeedEntries,collapsedFeedPosts,searchActive,replyTo)
   :(searchActive?searchResults:entries),
-  [kind,searchActive,searchResults,entries,collapsedFeedPosts,replyTo]);
+  [kind,searchActive,searchResults,entries,allFeedEntries,collapsedFeedPosts,replyTo]);
  // Keep private team feed media traffic bounded while showing recent photos inline.
  const recentFeedPhotoKeys=useMemo(()=>{
   const selected=new Set<string>();
@@ -576,11 +593,32 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const feedCommentCounts=useMemo(()=>{
   const counts=new Map<number,number>();
   if(kind!=='feed')return counts;
-  const source=searchActive?searchResults:entries;
+  const source=searchActive?searchResults:allFeedEntries;
   for(const item of source)
    if(item.replyToId==null)counts.set(item.id,teamFeedCommentCount(source,item.id));
   return counts;
- },[kind,searchActive,searchResults,entries]);
+ },[kind,searchActive,searchResults,allFeedEntries]);
+ const loadOlderPosts=async()=>{
+  if(kind!=='feed'||accessRevokedRef.current||olderPending.current||!hasOlderPosts||sendingNow.current)return;
+  const oldest=allFeedEntries.reduce((min,item)=>Math.min(min,item.id),Number.MAX_SAFE_INTEGER);
+  if(!Number.isSafeInteger(oldest)||oldest===Number.MAX_SAFE_INTEGER){setHasOlderPosts(false);return;}
+  const current=version.current;
+  olderPending.current=true;setOlderBusy(true);setOlderError('');
+  try{
+   const page=await olderTeamFeed(teamId,oldest,token,30);
+   if(current!==version.current||accessRevokedRef.current)return;
+   const known=new Set(allFeedEntries.map(item=>item.id));
+   const additions=page.filter(item=>item.id<oldest&&!known.has(item.id));
+   setOlderEntries(previous=>[...additions,...previous]);
+   setHasOlderPosts(page.length===30&&additions.length>0);
+   if(additions.length)void loadReactions(additions);
+  }catch(e){
+   if(current!==version.current||accessRevokedRef.current)return;
+   if(!revokeIfUnauthorized(e))setOlderError('Não foi possível carregar publicações anteriores.');
+  }finally{
+   if(current===version.current){olderPending.current=false;setOlderBusy(false);}
+  }
+ };
  const composer=<>
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>{kind==='chat'?'A responder a':'A comentar'} {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>switchReply(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
@@ -668,7 +706,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(kind==='chat'&&!searchActive&&nearLatest.current)
      historyRef.current?.scrollToEnd({animated:false});
    }}>
-  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
+  {kind==='feed'&&!searchActive&&(hasOlderPosts||olderBusy||!!olderError)?<View style={styles.historyLoadMore}>
+   <Pressable accessibilityRole="button" disabled={olderBusy||loading||sending} onPress={()=>void loadOlderPosts()} style={styles.attachmentButton}>
+    <Text style={styles.actionText}>{olderBusy?'A carregar publicações…':'Ver publicações anteriores'}</Text>
+   </Pressable>
+   {olderError?<Text accessibilityRole="alert" style={styles.error}>{olderError}</Text>:null}
+  </View>:null}
+  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
@@ -770,6 +814,7 @@ const styles=StyleSheet.create({
  entry:{borderWidth:1,borderColor:C.border,borderRadius:16,padding:13,gap:8,backgroundColor:'#0D2B38'},
  ownEntry:{backgroundColor:'#103B43'},
  feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},
+ historyLoadMore:{paddingVertical:12,alignItems:'center',gap:7},
  commentToggle:{alignSelf:'flex-start',minHeight:40,justifyContent:'center'},
  commentToggleText:{color:C.mint,fontSize:12,fontWeight:'800'},
  inlineCommentComposer:{gap:10,padding:12,borderRadius:12,borderWidth:1,borderColor:C.mint,backgroundColor:'#103D43'},
