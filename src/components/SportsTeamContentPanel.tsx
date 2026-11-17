@@ -332,6 +332,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  };
  const send=async()=>{
+  // One explicit publish action for text, albums and captioned media.
+  if(media.length){await sendMedia();return;}
   const message=draft.trim();
   if(!message||sendingNow.current||pendingWrites.current.has(writeKey)||!token)return;
   pendingWrites.current.set(writeKey,'text');
@@ -539,23 +541,26 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      onSent={async()=>{await refresh(true,version.current);}}/>
    </>:null}
   </View>
-  {media.length?<View style={styles.editBox}>
-   <Text style={styles.sub}>{media.length} anexo(s): {media.map(file=>file.fileName||file.uri.split('/').pop()).join(', ')}</Text>
-   <View style={styles.actions}>
-    <Pressable disabled={sending||uploading} onPress={()=>void sendMedia()} style={styles.attachmentButton}>
-     <Text style={styles.actionText}>{uploading?'A enviar…':'Enviar anexos'}</Text>
-    </Pressable>
-    <Pressable disabled={sending||uploading} onPress={()=>setMedia([])}>
-     <Text style={styles.actionText}>Retirar</Text>
-    </Pressable>
+  {media.length?<View style={styles.selectedMedia}>
+   <Text style={styles.sub}>{media.length} ficheiro(s) selecionado(s) · A legenda é opcional.</Text>
+   <View style={styles.mediaPreviews}>
+    {media.map((file,index)=><View key={file.uri+'-'+index} style={styles.mediaPreviewCard}>
+     {file.type==='image'?<Image source={{uri:file.uri}} style={styles.mediaPreviewImage} resizeMode="cover"/>:
+      <View style={styles.mediaPreviewVideo}><JynloIcon name="video" size={24} color={C.mint}/></View>}
+     <Pressable accessibilityRole="button" accessibilityLabel={'Retirar anexo '+(index+1)}
+      disabled={sending||uploading} onPress={()=>setMedia(current=>current.filter((_,i)=>i!==index))}
+      style={styles.removeMedia}><JynloIcon name="close" size={17} color={C.white}/></Pressable>
+    </View>)}
    </View>
   </View>:null}
   <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
-  <Pressable accessibilityRole="button" accessibilityState={{disabled:sending||uploading||!!media.length||!draft.trim()}}
-   disabled={sending||uploading||!!media.length||!draft.trim()} onPress={()=>void send()} style={styles.button}>
-   <JynloIcon name="send" size={20} color="#062A30"/><Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar':'Publicar'}</Text>
+  <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
+   accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
+   disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()} style={styles.button}>
+   <JynloIcon name="send" size={20} color="#062A30"/>
+   <Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar':'Publicar'}</Text>
   </Pressable>
  </>;
  if(accessRevoked)return <View style={styles.panel}>
@@ -694,6 +699,12 @@ const styles=StyleSheet.create({
  reactionButton:{borderWidth:1,borderColor:C.border,borderRadius:20,paddingHorizontal:9,paddingVertical:6},
  reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
  reactionLabel:{color:C.white,fontSize:12},
+ selectedMedia:{gap:8},
+ mediaPreviews:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ mediaPreviewCard:{width:78,height:78,borderRadius:10,overflow:'hidden',backgroundColor:'#143A47',borderWidth:1,borderColor:C.border},
+ mediaPreviewImage:{width:'100%',height:'100%'},
+ mediaPreviewVideo:{flex:1,justifyContent:'center',alignItems:'center'},
+ removeMedia:{position:'absolute',right:2,top:2,minWidth:30,minHeight:30,borderRadius:15,backgroundColor:'#092934DD',justifyContent:'center',alignItems:'center'},
  attachmentActions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:10},
  attachmentButton:{padding:11,minHeight:44,minWidth:48,alignItems:'center',borderWidth:1,borderColor:C.border,borderRadius:12,justifyContent:'center',backgroundColor:'#143A47'}
 });
