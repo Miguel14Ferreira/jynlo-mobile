@@ -27,6 +27,12 @@ export async function teamContentHistory(teamId:number,kind:TeamContentKind,toke
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar esta conversa.');
  return request<TeamContentEntry[]>(endpoint(teamId,kind),{token});
 }
+export async function reconcileTeamFeedEntries(teamId:number,ids:number[],token:string):Promise<TeamContentEntry[]>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar a equipa.');
+ if(!ids.length||ids.length>100||ids.some(id=>!Number.isSafeInteger(id)||id<=0))
+  throw Error('Lista de publicações inválida.');
+ return request<TeamContentEntry[]>(endpoint(teamId,'feed')+'/entries?ids='+ids.join(','),{token});
+}
 export async function olderTeamFeed(teamId:number,before:number,token:string,limit=30):Promise<TeamContentEntry[]>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar a equipa.');
  if(!Number.isSafeInteger(before)||before<=0||!Number.isInteger(limit)||limit<1||limit>50)
