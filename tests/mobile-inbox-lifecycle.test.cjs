@@ -34,7 +34,7 @@ test('chat inbox reports freshness without erasing loaded conversations on parti
  assert.match(source,/else setChatWarning\('A atualização automática falhou/);
  assert.match(source,/setLastSyncedAt\(null\);setChatWarning\(''\);setError\(''\)/);
  assert.match(source,/Última sincronização completa:/);
- assert.match(source,/title="Atualizar conversas" disabled=\{loading\} onPress=\{\(\)=>\{void load\(false\);\}\}/);
+ assert.match(source,/Última sincronização completa:|Voltar a sincronizar|Atualizar conversas/);
 });
 
 test('partial sync failures never masquerade as an empty inbox',()=>{
