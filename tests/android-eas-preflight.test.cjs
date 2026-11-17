@@ -13,7 +13,7 @@ test('Expo independent preflight is manual, private and verifies real API usage'
  assert.match(workflow,/uses: eas\/install_node_modules/);
  assert.match(workflow,/EXPO_PUBLIC_JYNLO_API_URL: https:\/\/desporto24-preview-api\.onrender\.com/);
  assert.match(workflow,/JYNLO_REQUIRE_REAL_API: '1'/);
- for(const step of ['npm run check:release','npm run typecheck','npm run test:all',
+ for(const step of ['node scripts/verify-release.cjs','npm run typecheck','npm run test:all',
   'npx expo export --platform android',
   'npx expo prebuild --platform android --no-install --clean'])
   assert.ok(workflow.includes(step),step);
@@ -27,7 +27,7 @@ test('EAS diagnostic APK is gated by all code, native and bundle validations',()
  assert.match(workflow,/type: build/);
  assert.match(workflow,/profile: diagnostic/);
  const preflight=workflow.slice(workflow.indexOf('  mobile_preflight:'),workflow.indexOf('  android_diagnostic:'));
- for(const check of ['npm run check:release','npm run typecheck','npm run test:all',
+ for(const check of ['node scripts/verify-release.cjs','npm run typecheck','npm run test:all',
   'npx expo export --platform android','npx expo prebuild --platform android --no-install --clean'])
   assert.ok(preflight.includes(check),check);
  assert.doesNotMatch(workflow,/type: submit|profile: production/);
@@ -42,6 +42,9 @@ test('EAS custom preflight and diagnostic build share the preview environment',(
  const preflight=diagnostic.slice(diagnostic.indexOf('  mobile_preflight:'),diagnostic.indexOf('  android_diagnostic:'));
  const build=diagnostic.slice(diagnostic.indexOf('  android_diagnostic:'));
  assert.ok(preflight.includes('environment: preview'));
+ // A staging API is expected in EAS preview; store build guards remain strict.
+ assert.doesNotMatch(standalone,/run:\\s*npm run check:release/);
+ assert.doesNotMatch(preflight,/run:\\s*npm run check:release/);
  assert.ok(build.includes('environment: preview'));
  assert.doesNotMatch(standalone,/environment: production/);
  assert.doesNotMatch(diagnostic,/environment: production/);
