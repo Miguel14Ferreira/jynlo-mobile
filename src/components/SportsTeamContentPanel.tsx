@@ -4,7 +4,7 @@ import {JynloIcon} from './JynloIcon';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import type {ScrollViewInstance} from 'react-native';
-import {useFocusEffect} from 'expo-router';
+import {useFocusEffect,useRouter} from 'expo-router';
 import {C} from '../lib/theme';
 import {ApiError} from '../lib/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
@@ -38,6 +38,7 @@ function orderedTeamFeed(entries:TeamContentEntry[]):TeamContentEntry[]{
 }
 
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
+ const router=useRouter();
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
  const historyRef=useRef<ScrollViewInstance|null>(null);
  const nearLatest=useRef(true),latestId=useRef(0);
@@ -572,7 +573,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
     <View style={{flex:1}}>
-     <Text style={styles.author}>@{item.username}</Text>
+     <Pressable accessibilityRole="link" accessibilityLabel={'Abrir perfil de @'+item.username}
+      onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})}
+      style={styles.authorLink}><Text style={styles.author}>@{item.username}</Text></Pressable>
      <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
     </View>
    </View>
@@ -634,6 +637,7 @@ const styles=StyleSheet.create({
  headingRow:{flexDirection:'row',alignItems:'center',gap:11,borderBottomColor:C.border,borderBottomWidth:1,paddingBottom:12},
  authorHeader:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:5},
  authorAvatar:{width:37,height:37,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:'#198B8C'},
+ authorLink:{alignSelf:'flex-start',minHeight:36,justifyContent:'center'},
  avatarLetter:{color:'#062A30',fontWeight:'900',fontSize:17},
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
