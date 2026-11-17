@@ -55,24 +55,25 @@ test('owner permissions work with normalized handles and fail closed on unreadab
  assert.match(screen,/const isOwner=rosterVerified&&/);
  assert.match(screen,/const isMember=rosterVerified&&/);
  assert.match(screen,/m\.username\.toLowerCase\(\)===auth\.username!\.toLowerCase\(\)/);
- assert.match(screen,/else\{setRosterVerified\(false\);failed\.push\('o plantel'\);\}/);
+ assert.match(screen,/else\{setMembers\(\[\]\);setRosterVerified\(false\);setPendingVerified\(false\)/);
+ assert.match(screen,/setPendingPlayers\(\[\]\);failed\.push\('o plantel'\)/);
 });
 
 test('community exits require confirmation and verified membership, with safe reconciliation',()=>{
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/Alert\.alert\('Sair da comunidade\?'/);
  assert.match(screen,/onPress=\{\(\)=>confirmLeaveCommunity\(m\)\}/);
- assert.match(screen,/if\(!auth\.token\|\|saving\|\|!communitiesVerified\)return/);
+ assert.match(screen,/if\(!auth\.token\|\|savingRef\.current\|\|actionRef\.current\|\|!communitiesVerified/);
  assert.match(screen,/setCommunitiesVerified\(false\)/);
- assert.match(screen,/communitiesVerified\?communities\.filter/);
- assert.match(screen,/isOwner&&communitiesVerified\?communities\.filter/);
  assert.match(screen,/setCommunities\(current=>current\.filter\(item=>item\.id!==id\)\)/);
  assert.match(screen,/A saída foi enviada, mas não foi possível confirmar a lista atual/);
+ assert.match(screen,/releaseAction\(action\)/);
 });
 
 test('invitation results exclude current squad members and link to public profiles',()=>{
  const screen=read('app/teams/[id].tsx');
- assert.match(screen,/const inviteCandidates=candidates\.filter\(p=>!members\.some\(m=>m\.profileId===p\.profileId\)\)/);
+ assert.match(screen,/const inviteCandidates=candidates\.filter\(p=>!members\.some\(m=>m\.profileId===p\.profileId\)&&/);
+ assert.match(screen,/!pendingPlayers\.some\(invite=>invite\.profileId===p\.profileId\)/);
  assert.match(screen,/inviteCandidates\.map\(p=><View/);
  assert.match(screen,/params:\{username:p\.username\}/);
  assert.match(screen,/Não encontrámos novos jogadores com essa pesquisa/);
@@ -97,9 +98,11 @@ test('failed team data shows a contextual retry without inventing member or comm
 test('competition application buttons display actual backend state instead of a generic sent label',()=>{
  const screen=read('app/teams/competitions.tsx');
  assert.match(screen,/const applicationStatus=\(competition:OpenTeamCompetition,teamId:number\|null\)=>/);
- assert.match(screen,/status==='APPROVED'\?'Candidatura aprovada'/);
+ assert.match(screen,/a\.communityId===competition\.communityId/);
+ assert.match(screen,/status==='APPROVED'\?'Aprovada · inscrição por confirmar'/);
  assert.match(screen,/status==='DECLINED'\?'Candidatura recusada'/);
  assert.match(screen,/status==='PENDING'\?'Pedido em análise'/);
  assert.match(screen,/applicationLabel\(item,chosen\)/);
- assert.match(screen,/disabled=\{!auth\.token\|\|!chosen\|\|busy\|\|applied\(item,chosen\)\}/);
+ assert.match(screen,/!ownedVerified\|\|!applicationsVerified/);
+ assert.match(screen,/applied\(item,chosen\)/);
 });
