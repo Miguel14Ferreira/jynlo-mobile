@@ -66,4 +66,8 @@ test('team chat and feed never reuse a cached private attachment when kind chang
  assert.match(screen,/if\(generation\.current===version\)generation\.current\+\+/);
  assert.match(screen,/active\.current=false;setUri\(null\);setExpanded\(false\)/);
  assert.match(screen,/abort\.current\?\.abort\(\)/);
+ assert.match(screen,/await file\.write\(bytes\);\s*\/\/ A file write may finish/);
+ assert.match(screen,/if\(!active\.current\|\|generation\.current!==version\|\|controller\.signal\.aborted\)return/);
+ assert.match(screen,/\[autoPreview,scope,conversationId,messageId,index,kind,token,mime,size\]/);
+ assert.match(screen,/if\(!active\.current\|\|generation\.current!==version\|\|controller\.signal\.aborted\)return;\s*wasBackgrounded\.current=false/);
 });
