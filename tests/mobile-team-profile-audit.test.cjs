@@ -317,3 +317,22 @@ test('private team reaction summaries skip a like pending server confirmation',(
  assert.match(panel,/if\(!ids\.length\)return/);
  assert.match(panel,/if\(!accessRevokedRef\.current\)void loadReactions\(\[item\]\)/);
 });
+
+
+test('team feed history is cursor paginated and scoped to private team membership',()=>{
+ const api=read('src/lib/sports-team-content-api.ts');
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(api,/export async function olderTeamFeed\(teamId:number,before:number,token:string,limit=30\)/);
+ assert.match(api,/Number\.isSafeInteger\(before\)/);
+ assert.match(api,/limit<1\|\|limit>50/);
+ assert.match(api,/endpoint\(teamId,'feed'\)\+'\/older\?before='/);
+ assert.match(panel,/const \[olderEntries,setOlderEntries\]=useState<TeamContentEntry\[\]>\(\[\]\)/);
+ assert.match(panel,/const allFeedEntries=useMemo/);
+ assert.match(panel,/new Set\(entries\.map\(item=>item\.id\)\)/);
+ assert.match(panel,/const page=await olderTeamFeed\(teamId,oldest,token,30\)/);
+ assert.match(panel,/page\.filter\(item=>item\.id<oldest&&!known\.has\(item\.id\)\)/);
+ assert.match(panel,/current!==version\.current\|\|accessRevokedRef\.current/);
+ assert.match(panel,/if\(!revokeIfUnauthorized\(e\)\)setOlderError/);
+ assert.match(panel,/setOlderEntries\(\[\]\);setHasOlderPosts\(false\)/);
+ assert.match(panel,/accessibilityRole="button" disabled=\{olderBusy\|\|loading\|\|sending\}/);
+});
