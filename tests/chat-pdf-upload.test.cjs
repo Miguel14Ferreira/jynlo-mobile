@@ -19,18 +19,22 @@ test('PDF API uses private authenticated scoped endpoints and signed PDF bytes',
  assert.match(api,/\/api\/chat\/me\//);
  assert.match(api,/encodeURIComponent\(peer\)/);
  assert.match(api,/\/messages\/attachments/);
+ assert.match(api,/\/attachments\/batch/);
+ assert.match(api,/target\.kind!=='chat'&&target\.kind!=='feed'/);
  assert.match(api,/Number\.isSafeInteger\(numeric\)/);
  assert.match(api,/asset\.mimeType!=='application\/pdf'/);
  assert.match(api,/asset\.size>MAX_BYTES/);
  assert.match(api,/bytes\[0\]!==37/);
  assert.match(api,/bytes\[4\]!==45/);
- assert.match(api,/form\.append\('file'/);
+ assert.match(api,/form\.append\(target\.scope==='team'\?'files':'file'/);
  assert.match(api,/Authorization:'Bearer '\+token/);
  assert.match(api,/credentials:'omit',redirect:'error'/);
  assert.match(api,/controller\.abort\(\)/);
+ assert.match(api,/target\.scope==='team'\?result\.attachments/);
  assert.match(api,/result\.attachmentMimeType!=='application\/pdf'/);
  assert.doesNotMatch(api,/\/media\//);
 });
+
 test('PDF sending integrated in private, community and session chats only when permitted',()=>{
  const cases=[
   ['app/messages/[peer].tsx',"scope:'direct'"],
