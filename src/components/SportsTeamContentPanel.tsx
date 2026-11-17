@@ -287,7 +287,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');
-  setEntries([]);setOlderEntries([]);olderRef.current=[];setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
+  setEntries([]);setOlderEntries([]);olderRef.current=[];olderExhausted.current=false;setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setBrokenAuthorAvatars({});
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
