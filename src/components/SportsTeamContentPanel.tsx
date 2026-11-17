@@ -169,16 +169,18 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const reconcileOlder=useCallback(async(expected:number)=>{
   const older=olderRef.current;
   if(kind!=='feed'||!older.length||olderPending.current||olderReconcilePending.current
-    ||accessRevokedRef.current||Date.now()-olderReconcileAt.current<30000)return;
+    ||sendingNow.current||accessRevokedRef.current||Date.now()-olderReconcileAt.current<30000)return;
   olderReconcileAt.current=Date.now();
   const start=olderReconcileOffset.current%older.length;
   const ids=older.slice(start,start+100).map(item=>item.id);
   olderReconcileOffset.current=start+ids.length>=older.length?0:start+ids.length;
   if(!ids.length)return;
   olderReconcilePending.current=true;
+  const writeVersion=mutationVersion.current;
   try{
    const updated=await reconcileTeamFeedEntries(teamId,ids,token);
    if(expected!==version.current||accessRevokedRef.current)return;
+   if(writeVersion!==mutationVersion.current){olderReconcileAt.current=0;return;}
    const fresh=new Map(updated.map(item=>[item.id,item]));
    const requested=new Set(ids);
    setOlderEntries(previous=>previous.filter(item=>!requested.has(item.id)||fresh.has(item.id))
