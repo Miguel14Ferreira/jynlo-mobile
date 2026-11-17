@@ -16,6 +16,27 @@ import ChatPdfComposer from './ChatPdfComposer';
 import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
+/** Keep comment replies next to their post, without hiding orphaned history. */
+function orderedTeamFeed(entries:TeamContentEntry[]):TeamContentEntry[]{
+ const byId=new Map(entries.map(item=>[item.id,item]));
+ const rootOf=(item:TeamContentEntry):number=>{
+  let current=item;
+  const seen=new Set<number>([item.id]);
+  while(current.replyToId!=null&&byId.has(current.replyToId)&&!seen.has(current.replyToId)){
+   current=byId.get(current.replyToId)!;seen.add(current.id);
+  }
+  return current.id;
+ };
+ const groups=new Map<number,TeamContentEntry[]>();
+ for(const item of entries){
+  const root=rootOf(item),group=groups.get(root)||[];
+  group.push(item);groups.set(root,group);
+ }
+ return [...groups.entries()].sort((a,b)=>b[0]-a[0])
+  .flatMap(([root,items])=>items.slice().sort((a,b)=>
+   a.id===root?-1:b.id===root?1:a.id-b.id));
+}
+
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
  const historyRef=useRef<ScrollViewInstance|null>(null);
@@ -547,7 +568,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(kind==='chat'&&!searchActive&&nearLatest.current)
      historyRef.current?.scrollToEnd({animated:false});
    }}>
-  {(kind==='feed'?[...(searchActive?searchResults:entries)].reverse():(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry]}>
+  {(kind==='feed'?orderedTeamFeed(searchActive?searchResults:entries):(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:entries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
     <View style={{flex:1}}>
@@ -613,7 +634,8 @@ const styles=StyleSheet.create({
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
  entry:{borderWidth:1,borderColor:C.border,borderRadius:16,padding:13,gap:8,backgroundColor:'#0D2B38'},
- ownEntry:{backgroundColor:'#103B43'},author:{fontSize:11,fontWeight:'800',color:C.mint},
+ ownEntry:{backgroundColor:'#103B43'},
+ feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:C.border,borderRadius:13,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#0A2A36'},
  chatInput:{minHeight:48,maxHeight:120},
