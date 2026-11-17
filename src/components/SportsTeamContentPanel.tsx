@@ -1,6 +1,8 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Alert,AppState,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
+import {giphyImageUrl} from '../lib/chat-giphy.cjs';
+import {chatLocationUrl} from '../lib/chat-location.cjs';
 import type {ScrollViewInstance} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
@@ -25,6 +27,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
  const [connection,setConnection]=useState<'connecting'|'online'|'offline'>('connecting');
+ const [locationBusy,setLocationBusy]=useState(false);
+ const locationRequest=useRef(false);
  const [accessRevoked,setAccessRevoked]=useState(false);
  const [blockReason,setBlockReason]=useState('Já não tens acesso a esta conversa.');
  const accessRevokedRef=useRef(false);
@@ -167,7 +171,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   sendingNow.current=!!pendingKind;
   reactionBusyRef.current=false;choosing.current=false;
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
-  setConnection('connecting');
+  setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);
   if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');}
@@ -296,6 +300,34 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     setError('Não foi possível pesquisar as mensagens.');
   }finally{
    if(current===searchVersion.current)setSearching(false);
+  }
+ };
+ const composeLocation=async()=>{
+  // A location is only inserted into the composer. Sending always requires an
+  // independent tap on Enviar, so a permission grant never broadcasts GPS.
+  if(locationRequest.current||sendingNow.current||accessRevokedRef.current)return;
+  const current=version.current;
+  locationRequest.current=true;setLocationBusy(true);setError('');
+  try{
+   const Location=await import('expo-location');
+   const permission=await Location.requestForegroundPermissionsAsync();
+   if(!permission.granted)throw Error('Autoriza a localização para a partilhares.');
+   const position=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
+   if(current!==version.current||accessRevokedRef.current)return;
+   const lat=position.coords.latitude,lng=position.coords.longitude;
+   if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)
+    throw Error('Não foi possível obter coordenadas válidas.');
+   const link='https://www.google.com/maps?q='+lat.toFixed(6)+','+lng.toFixed(6);
+   setDraft(previous=>{
+    const next=previous.trim()?previous.trim()+'\n'+link:link;
+    if(next.length>2000){setError('A mensagem já atingiu o limite de caracteres.');return previous;}
+    return next;
+   });
+  }catch(e){
+   if(current===version.current&&!accessRevokedRef.current)
+    setError(e instanceof Error?e.message:'Não foi possível obter a localização.');
+  }finally{
+   if(current===version.current){locationRequest.current=false;setLocationBusy(false);}
   }
  };
  const clearSearch=()=>{
@@ -440,7 +472,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>
    </View>
    {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
-   <Text style={styles.body}>{item.deleted?'Mensagem eliminada':item.body}</Text>
+   <Text style={styles.body}>{item.deleted?'Mensagem eliminada':giphyImageUrl(item.body)?'GIF partilhado':item.body}</Text>
+   {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
+   {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
+    onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
+    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null>
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
     <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
       messageId={item.id} token={token} index={file.index} name={file.filename}
@@ -477,6 +513,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   </Pressable>:null}
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
+  <View style={styles.attachmentActions}>
+   <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual"
+    accessibilityState={{disabled:sending||locationBusy}}
+    disabled={sending||locationBusy} onPress={()=>void composeLocation()} style={styles.attachmentButton}>
+    <JynloIcon name="location" size={20} color={C.mint}/>
+   </Pressable>
+  </View>
   {attachmentsEnabled?<View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
      disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
@@ -536,6 +579,8 @@ const styles=StyleSheet.create({
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
  actionText:{color:C.mint,fontSize:12,fontWeight:'800'},
  entryAction:{minWidth:40,minHeight:40,alignItems:'center',justifyContent:'center',borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:'#153B45'},
+ sharedGif:{width:'100%',height:190,borderRadius:12,backgroundColor:'#102E38'},
+ mapLink:{flexDirection:'row',alignSelf:'flex-start',alignItems:'center',gap:8,padding:9,borderWidth:1,borderColor:C.border,borderRadius:11},
  editBox:{gap:10},
  searchRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  searchInput:{flexGrow:1,flexBasis:160,minWidth:0,borderWidth:1,borderColor:C.border,borderRadius:10,padding:9,color:C.white},
