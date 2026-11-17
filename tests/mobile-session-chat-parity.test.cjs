@@ -55,15 +55,18 @@ test('map links inside messages have bounded coordinates and safe HTTPS host',()
  assert.equal(chatLocationUrl(null),null);
 });
 
-test('cancelled sessions show an automatic notification status, never a manual share panel',()=>{
+test('cancelled sessions notify players automatically and let owners share a public-only notice',()=>{
  const screen=read('app/sessions/[id].tsx');
  assert.match(screen,/cancelSession\(id,actorToken,actorUsername\|\|undefined\)/);
  assert.match(screen,/detail\?\.status==='CANCELLED'\?<View style=\{styles\.panel\}>/);
  assert.match(screen,/A Jynlo envia automaticamente o aviso aos participantes inscritos/);
  assert.match(screen,/Convidados externos devem ser informados pelo canal utilizado/);
  assert.match(screen,/×  Sessão cancelada/);
- assert.doesNotMatch(screen,/cancelledShareText/);
- assert.doesNotMatch(screen,/Partilhar aviso de cancelamento/);
+ assert.match(screen,/const cancelledShareText=owner&&detail\?\.status==='CANCELLED'&&detail\.id===id\?/);
+ assert.match(screen,/cancellationNotice\(detail\)/);
+ assert.match(screen,/Partilhar aviso de cancelamento/);
+ assert.match(screen,/Share\.share\(\{message:cancelledShareText\}\)/);
+ assert.doesNotMatch(screen,/cancellationNotice\(\{[^}]*meetingPointInstructions/);
 });
 
 test('session chat syncs on foreground resume and never re-sends messages automatically',()=>{
