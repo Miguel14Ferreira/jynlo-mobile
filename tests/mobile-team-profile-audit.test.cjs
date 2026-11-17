@@ -120,3 +120,19 @@ test('global team roster uses public avatars with round fallbacks and resets on 
  assert.match(screen,/setTeam\(null\);setMembers\(\[\]\);setBrokenAvatars\(\{\}\)/);
  assert.match(screen,/playerAvatarPhoto:\{width:42,height:42,borderRadius:21\}/);
 });
+
+
+test('embedded team chat and feed keep a compact single composer toolbar',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/activeTab==='CHAT'\?<View/);
+ assert.match(screen,/activeTab==='FEED'\?<View/);
+ assert.match(panel,/style=\{\[styles\.input,kind==='chat'&&styles\.chatInput\]\}/);
+ assert.match(panel,/chatInput:\{minHeight:48,maxHeight:120\}/);
+ assert.match(panel,/\{attachmentsEnabled\?<>/);
+ assert.match(panel,/onPress=\{\(\)=>void composeLocation\(\)\}/);
+ assert.match(panel,/clearInterval\(timer\)/);
+ assert.match(panel,/item\.username\?\.toLowerCase\(\)===username\.toLowerCase\(\)/);
+ assert.doesNotMatch(panel,/headingEmoji/);
+ assert.doesNotMatch(panel,/Ver novos momentos|Verificar desafios/);
+});
