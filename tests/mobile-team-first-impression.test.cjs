@@ -450,3 +450,13 @@ test('team conversation renders trusted GIFs and maps and only drafts location a
  assert.match(panel,/accessibilityLabel="Partilhar localização atual"/);
  assert.doesNotMatch(panel,/await sendTeamContent\([^)]*link/);
 });
+
+test('team chat distinguishes deleted-message conflicts from disabled team privacy',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/if\(e instanceof ApiError&&e\.status===409\)\{\s*\/\/ 409 on edit may mean the message was removed/);
+ assert.match(panel,/setError\('Esta mensagem pode ter sido eliminada\. A verificar o histórico\.'\)/);
+ assert.match(panel,/setError\('A mensagem já pode ter sido eliminada\. A verificar o histórico\.'\)/);
+ assert.match(panel,/if\(changedConversation\)setMedia\(\[\]\)/);
+ assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\)/);
+ assert.match(panel,/if\(!revokeIfUnauthorized\(e\)\)/);
+});
