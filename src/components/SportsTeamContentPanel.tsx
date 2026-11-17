@@ -1,5 +1,5 @@
-import React,{useCallback,useRef,useState} from 'react';
-import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {Alert,AppState,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C} from '../lib/theme';
 import {ApiError} from '../lib/api';
@@ -14,6 +14,9 @@ import {teamContentHistory,searchTeamContent,sendTeamContent,editTeamContent,del
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
+ const historyRef=useRef<ScrollView|null>(null);
+ const nearLatest=useRef(true),latestId=useRef(0);
+ const [unseenBelow,setUnseenBelow]=useState(false);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true);
  const [sending,setSending]=useState(false);
@@ -50,6 +53,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   mutationVersion.current++;readRequestVersion.current++;
   reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
+  latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   searchVersion.current++;reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
@@ -129,6 +133,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  useFocusEffect(useCallback(()=>{
   const current=++version.current;
   pendingRefresh.current=false;
+  latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');setEntries([]);setDraft('');setError('');setSyncWarning('');setReplyTo(null);setEditingId(null);
   searchVersion.current++;setSearchTerm('');setSearchResults([]);setSearchActive(false);
   reactionVersion.current++;setReactions({});
@@ -312,6 +317,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    })();}}
   ]);
  };
+ useEffect(()=>{
+  if(kind!=='chat'||accessRevoked)return;
+  const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
+  if(latest>latestId.current&&latestId.current>0&&!nearLatest.current)setUnseenBelow(true);
+  latestId.current=latest;
+ },[entries,kind,accessRevoked]);
  if(accessRevoked)return <View style={styles.panel}>
   <Text style={styles.title}>Conversa indisponível</Text>
   <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
@@ -340,6 +351,20 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   {!searchActive&&!loading&&!entries.length?<Text style={styles.empty}>
    {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
   </Text>:null}
+  <ScrollView ref={historyRef} nestedScrollEnabled keyboardShouldPersistTaps="handled"
+   style={kind==='chat'?styles.chatHistory:styles.feedHistory}
+   contentContainerStyle={styles.historyContent}
+   scrollEventThrottle={100}
+   onScroll={event=>{
+    if(kind!=='chat'||searchActive)return;
+    const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    nearLatest.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-85;
+    if(nearLatest.current)setUnseenBelow(false);
+   }}
+   onContentSizeChange={()=>{
+    if(kind==='chat'&&!searchActive&&nearLatest.current)
+     historyRef.current?.scrollToEnd({animated:false});
+   }}>
   {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username===username&&styles.ownEntry]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
@@ -375,6 +400,14 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     <Pressable onPress={()=>setEditingId(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable>
    </View>:null}
   </View>)}
+  </ScrollView>
+  {kind==='chat'&&unseenBelow&&!searchActive?<Pressable accessibilityRole="button"
+   accessibilityLabel="Ver mensagens novas" onPress={()=>{
+    nearLatest.current=true;setUnseenBelow(false);
+    historyRef.current?.scrollToEnd({animated:true});
+   }} style={styles.newMessagesButton}>
+   <Text style={styles.newMessagesText}>↓ Mensagens novas</Text>
+  </Pressable>:null}
   {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
   {attachmentsEnabled?<View style={styles.attachmentActions}>
@@ -413,6 +446,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
 }
 const styles=StyleSheet.create({
  panel:{borderColor:C.border,borderWidth:1,borderRadius:18,padding:15,gap:13,backgroundColor:C.surface},
+ chatHistory:{maxHeight:470,minHeight:150},
+ feedHistory:{maxHeight:700},
+ historyContent:{gap:11,paddingBottom:12},
+ newMessagesButton:{alignSelf:'center',paddingHorizontal:15,paddingVertical:10,
+   borderWidth:1,borderColor:C.mint,borderRadius:24,backgroundColor:'#124C50'},
+ newMessagesText:{color:C.mint,fontWeight:'800',fontSize:12},
  headingRow:{flexDirection:'row',alignItems:'center',gap:11,borderBottomColor:C.border,borderBottomWidth:1,paddingBottom:12},
  headingIcon:{width:44,height:44,borderRadius:13,alignItems:'center',justifyContent:'center',backgroundColor:'#124750'},
  headingEmoji:{fontSize:21},
