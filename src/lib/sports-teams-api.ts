@@ -194,6 +194,12 @@ export async function respondSportsTeamInvitation(teamId: number, accept: boolea
   return request<void>('/api/teams/' + validId(teamId) + '/invitations/' +
     (accept ? 'accept' : 'decline'),{token,method:'POST',body:{}});
 }
+/** Empty, unreferenced teams only; server rejects any retained team history. */
+export async function deleteSportsTeam(teamId:number,token:string):Promise<void>{
+ if(!token||DEMO_MODE)throw Error('Inicia sessão para gerir a equipa.');
+ return request<void>('/api/teams/'+validId(teamId),{token,method:'DELETE'});
+}
+
 export async function removeSportsTeamMember(teamId: number, profileId: number, token: string): Promise<void> {
   if (!token || DEMO_MODE) throw Error('Inicia sessão para gerir jogadores.');
   return request<void>('/api/teams/' + validId(teamId) + '/members/' + validId(profileId),
