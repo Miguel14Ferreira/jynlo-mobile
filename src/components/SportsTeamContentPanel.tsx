@@ -70,7 +70,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reading.current=null;pendingRefresh.current=false;setLoading(false);
   setEntries([]);setSearchResults([]);setSearchActive(false);setSearching(false);
   latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
-  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;
+  searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
