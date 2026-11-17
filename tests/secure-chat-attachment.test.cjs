@@ -58,3 +58,12 @@ test('PDF attachments use authenticated byte download and platform native previe
  assert.doesNotMatch(screen,/Sharing\.shareAsync/);
  assert.doesNotMatch(screen,/Linking\.openURL/);
 });
+
+test('team chat and feed never reuse a cached private attachment when kind changes',()=>{
+ const screen=read('src/components/SecureChatAttachment.tsx');
+ assert.match(screen,/if\(scope==='team'\)return '\/api\/teams\/'\+numeric\+'\/'\+kind\+'\/attachments\/'/);
+ assert.match(screen,/\[cleanup,scope,conversationId,messageId,index,kind,token\]/);
+ assert.match(screen,/if\(generation\.current===version\)generation\.current\+\+/);
+ assert.match(screen,/active\.current=false;setUri\(null\);setExpanded\(false\)/);
+ assert.match(screen,/abort\.current\?\.abort\(\)/);
+});
