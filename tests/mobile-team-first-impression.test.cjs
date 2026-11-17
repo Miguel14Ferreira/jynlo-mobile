@@ -366,3 +366,15 @@ test('team chat pending media and text sends preserve a newer user draft and sel
  assert.match(panel,/setReplyTo\(previous=>previous===submittedReply\?null:previous\)/);
  assert.doesNotMatch(panel,/setMedia\(\[\]\);setDraft\(''\);setReplyTo\(null\)/);
 });
+
+test('switching team chats resets locks and stale mutations cannot unlock the new chat',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/mutationVersion\.current\+\+;readRequestVersion\.current\+\+;/);
+ assert.match(panel,/reading\.current=null;pendingRefresh\.current=false;/);
+ assert.match(panel,/sendingNow\.current=false;reactionBusyRef\.current=false;choosing\.current=false;/);
+ assert.match(panel,/setSending\(false\);setUploading\(false\);setReactionBusyId\(null\);setLoading\(true\)/);
+ assert.match(panel,/finally\{if\(current===version\.current\)choosing\.current=false;\}/);
+ assert.match(panel,/if\(current===version\.current\)\{\s*sendingNow\.current=false;setSending\(false\);void refresh\(true,current\);/);
+ assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;setReactionBusyId\(null\);void loadReactions\(\[item\]\);/);
+ assert.doesNotMatch(panel,/sendingNow\.current=false;\s*if\(current===version\.current\)/);
+});
