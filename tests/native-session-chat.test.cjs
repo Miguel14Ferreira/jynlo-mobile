@@ -76,3 +76,19 @@ test('session text send clears drafts only after server receipt confirms exact m
  assert.match(s,/confirmedSessionChatSend\(confirmed,id,auth\.username\|\|'',originalDraft,originalReplyId\)/);
  assert.ok(s.indexOf('confirmedSessionChatSend(confirmed')<s.indexOf("setDraft(current=>current===originalDraft?'':current)"));
 });
+
+test('session chat receives live authenticated WebSocket signals and rechecks private history',()=>{
+ const panel=read('src/components/SessionChatPanel.tsx');
+ const realtime=read('src/lib/session-chat-realtime.ts');
+ assert.match(panel,/import \{observeSessionChat\} from '\.\.\/lib\/session-chat-realtime'/);
+ assert.match(panel,/observeSessionChat\(\{sessionId:id,token:auth\.token,onInvalidated:/);
+ assert.match(panel,/version===generation\.current&&AppState\.currentState==='active'&&!sendingNow\.current/);
+ assert.match(panel,/void refresh\(true,version\)/);
+ assert.match(panel,/resume\.remove\(\);disconnect\(\)/);
+ assert.match(realtime,/\{type:'AUTH',token\}/);
+ assert.match(realtime,/envelope\.type==='AUTHENTICATED'/);
+ assert.match(realtime,/!authenticated\|\|envelope\.type!=='SESSION_CHAT_MESSAGE'/);
+ assert.match(realtime,/sessionId!==sessionId/);
+ assert.match(realtime,/onInvalidated\(\)/);
+ assert.doesNotMatch(realtime,/onMessage\(message\)|setEntries\(/);
+});
