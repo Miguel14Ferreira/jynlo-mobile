@@ -603,8 +603,6 @@ const styles=StyleSheet.create({
    borderWidth:1,borderColor:C.mint,borderRadius:24,backgroundColor:'#124C50'},
  newMessagesText:{color:C.mint,fontWeight:'800',fontSize:12},
  headingRow:{flexDirection:'row',alignItems:'center',gap:11,borderBottomColor:C.border,borderBottomWidth:1,paddingBottom:12},
- headingIcon:{width:44,height:44,borderRadius:13,alignItems:'center',justifyContent:'center',backgroundColor:'#124750'},
- headingEmoji:{fontSize:21},
  authorHeader:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:5},
  authorAvatar:{width:37,height:37,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:'#198B8C'},
  avatarLetter:{color:'#062A30',fontWeight:'900',fontSize:17},
