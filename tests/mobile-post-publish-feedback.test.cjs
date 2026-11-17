@@ -6,7 +6,7 @@ const path=require('node:path');
 const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
 
 test('a server-confirmed post is inserted immediately and gets visible feedback',()=>{
- assert.match(feed,/const created=await publishPost\(body,media,actor,username,place\)/);
+ assert.match(feed,/const created=await publishPost\(body,media,actor,username,place,linkedSessionId\?\?undefined\)/);
  assert.match(feed,/recentlyConfirmedPosts\.current=\[/);
  assert.match(feed,/setPosts\(current=>\[created,\.\.\.current\.filter\(item=>item\.postId!==created\.postId\)\]\)/);
  assert.match(feed,/setPublishNotice\('post'\)/);
