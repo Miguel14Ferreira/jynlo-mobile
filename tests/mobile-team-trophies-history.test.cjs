@@ -34,3 +34,18 @@ test('team profile has dedicated navigation rather than mixing trophies into the
  assert.match(screen,/activeTab==='OVERVIEW'\?/);
  assert.doesNotMatch(screen,/activeTab='(?:TROPHIES|OVERVIEW)'\?/);
 });
+
+test('team trophies stay lazy through overview loading, refresh and focus resume',()=>{
+ assert.match(screen,/const loadTrophies=useCallback\(async\(force=false\)=>/);
+ assert.match(screen,/if\(trophiesRequested\.current&&!force\)return/);
+ assert.match(screen,/if\(activeTab==='TROPHIES'\)void loadTrophies\(\)/);
+ assert.match(screen,/setTrophiesVerified\(pastEvents\.status==='fulfilled'&&awards\.status==='fulfilled'\)/);
+ assert.match(screen,/trophiesVersion\.current\+\+;trophiesRequested\.current=false/);
+ assert.match(screen,/onPress=\{\(\)=>void loadTrophies\(true\)\}/);
+ assert.match(screen,/trophiesVerified\?standaloneTrophies\.length\+championshipHonours\.length:'—'/);
+ const regularLoad=screen.slice(screen.indexOf('const load=useCallback('),
+  screen.indexOf('const loadTrophies=useCallback('));
+ assert.doesNotMatch(regularLoad,/sportsTeamHistory\(/);
+ assert.doesNotMatch(regularLoad,/sportsTeamChampionshipHonours\(/);
+ assert.match(regularLoad,/sportsTeamMembers\(teamId,auth\.token\|\|undefined\)/);
+});
