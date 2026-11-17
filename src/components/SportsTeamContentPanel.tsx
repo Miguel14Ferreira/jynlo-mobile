@@ -134,7 +134,14 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reactionVersion.current++;setReactions({});
   setMedia([]);setAttachmentsEnabled(false);setSearching(false);
   void teamPrivateAttachmentsAvailable(teamId,kind,token).then(available=>{
-   if(version.current===current)setAttachmentsEnabled(available);
+   if(version.current===current&&!accessRevokedRef.current)setAttachmentsEnabled(available);
+  }).catch(failure=>{
+   // Authorization errors may arrive before the first history response.
+   // Never leave an unhandled Promise rejection or expose stale attachment controls.
+   if(version.current===current&&!accessRevokedRef.current){
+    setAttachmentsEnabled(false);
+    revokeIfUnauthorized(failure);
+   }
   });
   void refresh(false,current);
   // Authenticated WebSocket signals trigger immediate HTTP refresh. Polling
