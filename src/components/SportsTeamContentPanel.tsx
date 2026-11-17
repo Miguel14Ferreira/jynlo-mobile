@@ -463,95 +463,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   if(latest>latestId.current&&latestId.current>0&&!nearLatest.current)setUnseenBelow(true);
   latestId.current=latest;
  },[entries,kind,accessRevoked]);
- if(accessRevoked)return <View style={styles.panel}>
-  <Text style={styles.title}>Conversa indisponível</Text>
-  <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
- </View>;
- return <View style={styles.panel}>
-  <View style={styles.headingRow}>
-   <View style={{flex:1}}>
-    <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
-   </View>
-  </View>
-  <View style={styles.searchRow}>
-   <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
-    maxLength={80} placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
-    accessibilityLabel="Pesquisar mensagens da equipa"/>
-   <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar mensagens" disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
-    style={styles.searchButton}><JynloIcon name="search" size={20} color={C.mint}/></Pressable>
-   {searchActive?<Pressable accessibilityRole="button" accessibilityLabel="Voltar à conversa" onPress={clearSearch} style={styles.searchButton}>
-    <JynloIcon name="close" size={20} color={C.mint}/></Pressable>:null}
-  </View>
-  {searchActive?<Text style={styles.sub}>{searching?'A pesquisar…':searchResults.length+' resultados encontrados'}</Text>:null}
-  {loading&&!searchActive?<Text style={styles.sub}>A carregar…</Text>:null}
-  {error?<Text style={styles.error} accessibilityRole="alert">{error}</Text>:null}
-  {syncWarning?<Text style={styles.sub}>{syncWarning}</Text>:null}
-  {!searchActive&&!loading&&!entries.length?<Text style={styles.empty}>
-   {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
-  </Text>:null}
-  <ScrollView ref={historyRef} nestedScrollEnabled keyboardShouldPersistTaps="handled"
-   style={kind==='chat'?styles.chatHistory:styles.feedHistory}
-   contentContainerStyle={styles.historyContent}
-   scrollEventThrottle={100}
-   onScroll={event=>{
-    if(kind!=='chat'||searchActive)return;
-    const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
-    nearLatest.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-85;
-    if(nearLatest.current)setUnseenBelow(false);
-   }}
-   onContentSizeChange={()=>{
-    if(kind==='chat'&&!searchActive&&nearLatest.current)
-     historyRef.current?.scrollToEnd({animated:false});
-   }}>
-  {(searchActive?searchResults:entries).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry]}>
-   <View style={styles.authorHeader}>
-    <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
-    <View style={{flex:1}}>
-     <Text style={styles.author}>@{item.username}</Text>
-     <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
-    </View>
-   </View>
-   {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
-   <Text style={styles.body}>{item.deleted?'Mensagem eliminada':giphyImageUrl(item.body)?'GIF partilhado':item.body}</Text>
-   {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
-   {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
-    onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
-    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null>
-   {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
-    <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
-      messageId={item.id} token={token} index={file.index} name={file.filename}
-      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
-      onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
-   {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
-   {!item.deleted?<View style={styles.reactionRow}>
-    {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
-      accessibilityLabel={'Reagir com '+emoji}
-      accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
-      disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
-      style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
-      <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
-    </Pressable>)}
-   </View>:null}
-   {!item.deleted?<View style={styles.actions}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Responder à mensagem" style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
-    {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel="Editar mensagem da equipa" style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
-    {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar mensagem da equipa" style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
-   </View>:null}
-   {editingId===item.id?<View style={styles.editBox}>
-    <TextInput multiline maxLength={2000} style={styles.input} value={editDraft} onChangeText={setEditDraft} editable={!sending} accessibilityLabel="Editar mensagem"/>
-    <Pressable disabled={sending||!editDraft.trim()} onPress={()=>void update()}><Text style={styles.actionText}>Guardar alteração</Text></Pressable>
-    <Pressable onPress={()=>setEditingId(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable>
-   </View>:null}
-  </View>)}
-  </ScrollView>
-  {kind==='chat'&&unseenBelow&&!searchActive?<Pressable accessibilityRole="button"
-   accessibilityLabel="Ver mensagens novas" onPress={()=>{
-    nearLatest.current=true;setUnseenBelow(false);
-    historyRef.current?.scrollToEnd({animated:true});
-   }} style={styles.newMessagesButton}>
-   <Text style={styles.newMessagesText}>↓ Mensagens novas</Text>
-  </Pressable>:null}
-  {replyTo?<View style={styles.actions}><Text style={styles.sub}>A responder a {replyPreview(replyTo)}</Text>
+ const composer=<>
+  {replyTo?<View style={styles.actions}><Text style={styles.sub}>{kind==='chat'?'A responder a':'A comentar'} {replyPreview(replyTo)}</Text>
    <Pressable onPress={()=>setReplyTo(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
   <View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual"
@@ -592,6 +505,97 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    disabled={sending||uploading||!!media.length||!draft.trim()} onPress={()=>void send()} style={styles.button}>
    <JynloIcon name="send" size={20} color="#062A30"/><Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar':'Publicar'}</Text>
   </Pressable>
+ </>;
+ if(accessRevoked)return <View style={styles.panel}>
+  <Text style={styles.title}>Conversa indisponível</Text>
+  <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
+ </View>;
+ return <View style={styles.panel}>
+  <View style={styles.headingRow}>
+   <View style={{flex:1}}>
+    <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
+   </View>
+  </View>
+  {kind==='feed'?composer:null}
+  <View style={styles.searchRow}>
+   <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
+    maxLength={80} placeholder={kind==='chat'?'Pesquisar nesta conversa…':'Pesquisar publicações…'} placeholderTextColor={C.muted}
+    accessibilityLabel={kind==='chat'?'Pesquisar mensagens da equipa':'Pesquisar publicações da equipa'}/>
+   <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar mensagens" disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
+    style={styles.searchButton}><JynloIcon name="search" size={20} color={C.mint}/></Pressable>
+   {searchActive?<Pressable accessibilityRole="button" accessibilityLabel="Voltar à conversa" onPress={clearSearch} style={styles.searchButton}>
+    <JynloIcon name="close" size={20} color={C.mint}/></Pressable>:null}
+  </View>
+  {searchActive?<Text style={styles.sub}>{searching?'A pesquisar…':searchResults.length+' resultados encontrados'}</Text>:null}
+  {loading&&!searchActive?<Text style={styles.sub}>A carregar…</Text>:null}
+  {error?<Text style={styles.error} accessibilityRole="alert">{error}</Text>:null}
+  {syncWarning?<Text style={styles.sub}>{syncWarning}</Text>:null}
+  {!searchActive&&!loading&&!entries.length?<Text style={styles.empty}>
+   {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
+  </Text>:null}
+  <ScrollView ref={historyRef} nestedScrollEnabled keyboardShouldPersistTaps="handled"
+   style={kind==='chat'?styles.chatHistory:styles.feedHistory}
+   contentContainerStyle={styles.historyContent}
+   scrollEventThrottle={100}
+   onScroll={event=>{
+    if(kind!=='chat'||searchActive)return;
+    const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    nearLatest.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-85;
+    if(nearLatest.current)setUnseenBelow(false);
+   }}
+   onContentSizeChange={()=>{
+    if(kind==='chat'&&!searchActive&&nearLatest.current)
+     historyRef.current?.scrollToEnd({animated:false});
+   }}>
+  {(kind==='feed'?[...(searchActive?searchResults:entries)].reverse():(searchActive?searchResults:entries)).map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry]}>
+   <View style={styles.authorHeader}>
+    <View style={styles.authorAvatar}><Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text></View>
+    <View style={{flex:1}}>
+     <Text style={styles.author}>@{item.username}</Text>
+     <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
+    </View>
+   </View>
+   {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
+   <Text style={styles.body}>{item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body}</Text>
+   {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
+   {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
+    onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
+    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null>
+   {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
+    <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
+      messageId={item.id} token={token} index={file.index} name={file.filename}
+      mime={file.mimeType} size={file.size} autoPreview={file.mimeType.startsWith('image/')}
+      onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
+   {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
+   {!item.deleted?<View style={styles.reactionRow}>
+    {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
+      accessibilityLabel={'Reagir com '+emoji}
+      accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
+      disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
+      style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
+      <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
+    </Pressable>)}
+   </View>:null}
+   {!item.deleted?<View style={styles.actions}>
+    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>setReplyTo(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+    {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Editar mensagem da equipa':'Editar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
+    {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Eliminar mensagem da equipa':'Eliminar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
+   </View>:null}
+   {editingId===item.id?<View style={styles.editBox}>
+    <TextInput multiline maxLength={2000} style={styles.input} value={editDraft} onChangeText={setEditDraft} editable={!sending} accessibilityLabel="Editar mensagem"/>
+    <Pressable disabled={sending||!editDraft.trim()} onPress={()=>void update()}><Text style={styles.actionText}>Guardar alteração</Text></Pressable>
+    <Pressable onPress={()=>setEditingId(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable>
+   </View>:null}
+  </View>)}
+  </ScrollView>
+  {kind==='chat'&&unseenBelow&&!searchActive?<Pressable accessibilityRole="button"
+   accessibilityLabel="Ver mensagens novas" onPress={()=>{
+    nearLatest.current=true;setUnseenBelow(false);
+    historyRef.current?.scrollToEnd({animated:true});
+   }} style={styles.newMessagesButton}>
+   <Text style={styles.newMessagesText}>↓ Mensagens novas</Text>
+  </Pressable>:null}
+  {kind==='chat'?composer:null}
  </View>;
 }
 const styles=StyleSheet.create({
