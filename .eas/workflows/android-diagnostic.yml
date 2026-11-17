@@ -16,11 +16,19 @@ jobs:
       - uses: eas/checkout
       - uses: eas/install_node_modules
       - name: Confirmar API real
-        run: npm run check:release
+        run: node scripts/verify-release.cjs
       - name: Validar TypeScript
         run: npm run typecheck
       - name: Executar todos os testes
-        run: npm run test:all
+        run: |
+          set +e
+          npm run test:all > /tmp/jynlo-android-tests.log 2>&1
+          status=$?
+          grep -E '^not ok [0-9]+ - |^# (tests|pass|fail|duration_ms)' /tmp/jynlo-android-tests.log || true
+          if [ "$status" -ne 0 ]; then
+            awk '/^not ok [0-9]+ - /{print; bad=1;next} bad && /^  (location:|error:)/{print} bad && /^  \\.\\.\\.$/{bad=0}' /tmp/jynlo-android-tests.log
+          fi
+          exit "$status"
       - name: Validar bundle Android
         run: npx expo export --platform android --output-dir /tmp/jynlo-android-diagnostic-bundle
       - name: Validar geracao do projeto nativo
