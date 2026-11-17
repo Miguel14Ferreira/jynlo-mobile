@@ -207,11 +207,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const sendMedia=async()=>{
   if(!media.length||sendingNow.current||!attachmentsEnabled)return;
   sendingNow.current=true;invalidatePendingRead();setUploading(true);setSending(true);setError('');
-  const current=version.current,selection=[...media];
+  const current=version.current,selection=[...media],submittedDraft=draft,submittedReply=replyTo;
   try{
-   await sendChatPhotoAlbum({scope:'team',id:teamId,kind},token,selection,replyTo,draft);
+   await sendChatPhotoAlbum({scope:'team',id:teamId,kind},token,selection,submittedReply,submittedDraft);
    if(current!==version.current)return;
-   setMedia([]);setDraft('');setReplyTo(null);
+   setMedia(previous=>previous===media?[]:previous);
+   setDraft(previous=>previous===submittedDraft?'':previous);
+   setReplyTo(previous=>previous===submittedReply?null:previous);
   }catch(e){
    if(current===version.current&&!rejectPrivateUpload(e))
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
@@ -225,12 +227,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const message=draft.trim();
   if(!message||sendingNow.current||!token)return;
   sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
-  const current=version.current;
+  const current=version.current,submittedReply=replyTo;
   try{
-   const saved=await sendTeamContent(teamId,kind,message,token,replyTo);
+   const saved=await sendTeamContent(teamId,kind,message,token,submittedReply);
    if(current!==version.current||accessRevokedRef.current)return;
    setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));
-   setDraft(previous=>previous===draft?'':previous);setReplyTo(null);
+   setDraft(previous=>previous===draft?'':previous);
+   setReplyTo(previous=>previous===submittedReply?null:previous);
   }catch(e){
    if(current===version.current&&!revokeIfUnauthorized(e))
     setError((e instanceof Error?e.message:'Envio não confirmado.')+
