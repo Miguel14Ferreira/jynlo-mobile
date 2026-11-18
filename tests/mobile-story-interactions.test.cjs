@@ -44,7 +44,8 @@ test('story reply disables navigation while focused or in flight',()=>{
 });
 
 test('story viewer close controls do not abandon in-flight private messages or deletes',()=>{
- assert.match(viewer,/const safeClose=\(\)=>\{if\(!submittingStory\.current\)onClose\(\);\}/);
+ assert.match(viewer,/const safeClose=\(\)=>\{if\(submittingStory\.current\)return;/);
+ assert.match(viewer,/if\(audienceOpen\)\{setAudienceOpen\(false\);setPaused\(false\);return;\}/);
  assert.match(viewer,/onRequestClose=\{safeClose\}/);
  assert.match(viewer,/onPress=\{safeClose\} style=\{styles\.closeStory\}/);
  assert.match(viewer,/pageY-start>110&&!replyFocused&&!audienceOpen\)safeClose\(\)/);
