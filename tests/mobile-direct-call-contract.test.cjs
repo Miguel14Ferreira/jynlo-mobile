@@ -272,3 +272,11 @@ test('late native call actions cannot unlock a newer account or screen generatio
  assert.match(screen,/clearInterval\(timer\);generation\.current\+\+;[\s\S]{0,210}operation\.current=false;\s*const orphan=sessionRef\.current/);
  assert.match(screen,/if\(version!==generation\.current\)\{void endDirectCall\(result\.callId,auth\.token\)\.catch\(\(\)=>\{\}\);return;\}/);
 });
+
+test('LiveKit VideoTrack accepts one merged ViewStyle object rather than a React Native style array',()=>{
+ const screen=read('src/features/direct-call-screen.tsx');
+ assert.match(screen,/<VideoTrack trackRef=\{track\} style=\{\{\.\.\.styles\.video,\.\.\.\(track\.participant\.isLocal\?styles\.localVideo:\{\}\)\}\}\/>/);
+ assert.doesNotMatch(screen,/<VideoTrack[^>]*style=\{\[/);
+ assert.match(screen,/sort\(\(a,b\)=>Number\(a\.participant\.isLocal\)-Number\(b\.participant\.isLocal\)\)/);
+ assert.match(screen,/localVideo:\{height:130\}/);
+});
