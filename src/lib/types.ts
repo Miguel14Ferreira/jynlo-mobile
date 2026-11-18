@@ -227,6 +227,7 @@ export interface SocialStory {
   canDelete:boolean;likeCount?:number;likedByMe?:boolean;
   textX?:number|null;textY?:number|null;textRotation?:number|null;textZoom?:number|null;
   textColor?:StoryTextColor|null;textBackground?:StoryTextBackground|null;textFont?:StoryTextFont|null;
+  showTime?:boolean;
   locationLabel?:string|null;taggedUsernames?:string|null;
 }
 export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;editedAt?:string|null;likeCount?:number;likedByMe?:boolean;}
