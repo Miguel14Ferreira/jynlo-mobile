@@ -47,6 +47,7 @@ export interface SessionDetail extends SessionSummary {
   waitlistPosition: number | null;
   gamePhoto: string | null;
   meetingPointInstructions?: string | null;
+  description?: string | null;
   /** Server-gated exact place, distinct from the venue catalogue coordinates. */
   googleMapsUrl?: string | null;
   pinLatitude?: number | null;
