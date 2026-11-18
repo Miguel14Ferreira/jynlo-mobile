@@ -154,7 +154,7 @@ export default function DiscoverScreen(){
      <Message tone="error">{error}</Message>
      <Pressable accessibilityRole="button" accessibilityLabel="Repetir pesquisa de sessões" style={styles.retryAction}
        disabled={loading} onPress={()=>{void load();}}>
-       <JynloIcon name="refresh-cw" size={18} color={C.background}/><Text style={styles.retryActionText}>Tentar novamente</Text>
+       <JynloIcon name="search" size={18} color={C.background}/><Text style={styles.retryActionText}>Tentar novamente</Text>
      </Pressable>
    </View>:null}
    {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>Ainda não encontrámos jogos</Text><Text style={styles.emptyDetail}>Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>Ver todas as modalidades</Text></Pressable></View>:null}
