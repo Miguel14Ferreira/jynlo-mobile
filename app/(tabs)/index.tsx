@@ -220,7 +220,29 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={styles.storyImage} accessibilityLabel={story.altText||story.caption||'Fotografia da Story'}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?
+        <MediaVideo key={story.id+'-'+mediaRetry} uri={uri} story muted={storyMuted}
+          paused={paused||replyFocused||storyBusy||audienceOpen||!appActive||mediaState==='error'}
+          onReady={mediaReady} onPlaybackError={()=>setMediaState('error')} onEnd={()=>go(1)}/>:
+        <Image key={story.id+'-'+mediaRetry} source={mediaRequestSource(uri,token)}
+          resizeMode="contain" style={styles.storyImage}
+          onLoad={mediaReady} onError={()=>setMediaState('error')}
+          accessibilityLabel={story.altText||story.caption||'Fotografia da Story'}/>):null}
+        {mediaState==='loading'&&uri?<View pointerEvents="none" style={styles.storyMediaStatus}>
+          <ActivityIndicator color={WHITE} size="large"/><Text style={styles.storyMediaStatusText}>A carregar Story…</Text>
+        </View>:null}
+        {(!uri||mediaState==='error')?<View style={styles.storyMediaFailure}>
+          <JynloIcon name="image" size={32} color={TEAL}/>
+          <Text style={styles.storyMediaFailureTitle}>Não foi possível mostrar esta Story</Text>
+          <Text style={styles.storyMediaStatusText}>Verifica a ligação ou tenta carregar novamente.</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Voltar a carregar Story"
+            style={styles.storyMediaRetry} onPress={()=>{
+              setMediaState('loading');setMediaRetry(n=>n+1);
+              if(token)void storyById(story.id,token,username).then(fresh=>{
+                if(activeAccount.current===token&&fresh.id===story.id)onUpdated(fresh);
+              }).catch(()=>{setMediaState('error');});
+            }}><Text style={styles.storyMediaRetryText}>Tentar novamente</Text></Pressable>
+        </View>:null}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
              appearance={{color:story.textColor||'white',background:story.textBackground||'dark',font:story.textFont||'modern'}}
@@ -240,6 +262,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       </View>
       <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text><Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text></View>
       <View style={styles.storyEngagement}>
+        {ownStory?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"
+          disabled={audienceBusy} onPress={()=>void loadAudience()} style={[styles.storyEngagementAction,styles.storyViewsAction]}>
+          <JynloIcon name="eye" size={19} color={WHITE}/>
+          <Text style={styles.storyEngagementText}>{audience?audience.viewCount+' visualizações':'Ver visualizações'}</Text>
+        </Pressable>:null}
         {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?'Ativar som do vídeo':'Silenciar vídeo'} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
           <JynloIcon name={storyMuted?'volume-off':'volume'} color={WHITE} size={21}/>
         </Pressable>:null}
@@ -256,7 +283,40 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           <Text style={styles.storyReplySendText}>{storyBusy?'…':'Enviar'}</Text>
         </Pressable>
       </View>:null}
+      {!ownStory?<View style={styles.storyReactions}>
+        <Text style={styles.storyReactionsTitle}>Reagir em privado</Text>
+        <View style={styles.storyReactionRow}>{['❤️','🔥','👏','😂','😮','⚽'].map(emoji=>
+          <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Reagir à Story com '+emoji}
+            disabled={storyBusy} onPress={()=>void sendQuickReaction(emoji)} style={styles.storyReactionButton}>
+            <Text style={styles.storyReactionEmoji}>{emoji}</Text>
+          </Pressable>)}</View>
+      </View>:null}
       {!ownStory?<Text style={styles.storyReplyHint}>Resposta privada, guardada para o autor. A notificação é opcional.</Text>:null}
+      {audienceOpen&&ownStory?<View style={styles.storyAudiencePanel}>
+        <View style={styles.storyAudienceHeader}>
+          <Text style={styles.storyAudienceTitle}>Quem viu a tua Story</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Fechar visualizações"
+            onPress={()=>{setAudienceOpen(false);setPaused(false);}} style={styles.storyAudienceClose}>
+            <Text style={styles.storyAudienceCloseText}>✕</Text>
+          </Pressable>
+        </View>
+        {audienceBusy?<ActivityIndicator color={TEAL}/>:null}
+        {audienceError?<Text accessibilityRole="alert" style={styles.storyMediaStatusText}>{audienceError}</Text>:null}
+        {audience?<Text style={styles.storyAudienceCount}>{audience.viewCount} visualizações únicas</Text>:null}
+        {audience&&audience.viewers.length===0?<Text style={styles.storyMediaStatusText}>Ainda não há visualizações registadas.</Text>:null}
+        <ScrollView style={styles.storyAudienceScroll} keyboardShouldPersistTaps="handled">
+          {audience?.viewers.map(viewer=><Pressable key={viewer.username} accessibilityRole="button"
+            accessibilityLabel={'Abrir perfil de '+viewer.username} style={styles.storyViewerRow}
+            onPress={()=>{onClose();router.push({pathname:'/social/[username]',params:{username:viewer.username}});}}>
+            <CircleAvatar name={viewer.displayName||viewer.username} image={viewer.avatarUrl} size={36}/>
+            <View style={{flex:1}}><Text style={styles.storyViewerName}>@{viewer.username}</Text>
+              <Text style={styles.storyViewerTime}>{new Date(viewer.viewedAt).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</Text></View>
+          </Pressable>)}
+        </ScrollView>
+        {audience&&audience.viewCount>audience.viewers.length?<Text style={styles.storyMediaStatusText}>
+          A apresentar as 100 visualizações mais recentes disponíveis.
+        </Text>:null}
+      </View>:null}
       {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha Story" disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>Eliminar Story</Text></Pressable>:null}
     </SafeAreaView>
     </KeyboardAvoidingView>
@@ -1505,6 +1565,29 @@ const styles=StyleSheet.create({
    publishProgressHint:{color:MUTED,fontSize:13,lineHeight:20,textAlign:'center',paddingHorizontal:8},
    composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:13},countText:{color:MUTED,fontSize:12},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{borderWidth:1,borderColor:BORDER,borderRadius:14,overflow:'hidden',backgroundColor:'#020A10'},postMediaPreviewImage:{width:'100%',height:300,backgroundColor:'#020A10'},postMediaPreviewFooter:{gap:8,paddingHorizontal:10,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:13,flex:1},
   latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:10},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:BORDER,borderRadius:16,padding:15,gap:13},postTop:{flexDirection:'row',alignItems:'center',gap:11},postName:{color:WHITE,fontSize:14,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:21},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',borderTopColor:'#154653',borderTopWidth:1,paddingTop:10,rowGap:8,columnGap:13},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
+  storyMediaStatus:{...StyleSheet.absoluteFillObject,justifyContent:'center',alignItems:'center',gap:12,backgroundColor:'#03131DBB'},
+  storyMediaStatusText:{color:MUTED,textAlign:'center',fontSize:13,lineHeight:19},
+  storyMediaFailure:{...StyleSheet.absoluteFillObject,justifyContent:'center',alignItems:'center',gap:13,padding:24,backgroundColor:'#061620'},
+  storyMediaFailureTitle:{color:WHITE,fontSize:17,fontWeight:'900',textAlign:'center'},
+  storyMediaRetry:{paddingHorizontal:22,paddingVertical:12,borderRadius:14,backgroundColor:TEAL,minHeight:44,justifyContent:'center'},
+  storyMediaRetryText:{color:INDIGO,fontWeight:'900'},
+  storyViewsAction:{flexGrow:1,flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#123641'},
+  storyReactions:{gap:8,paddingVertical:7},
+  storyReactionsTitle:{color:MUTED,fontSize:12,fontWeight:'800'},
+  storyReactionRow:{flexDirection:'row',justifyContent:'space-between',gap:5},
+  storyReactionButton:{minWidth:44,minHeight:44,borderRadius:16,backgroundColor:'#12313B',borderWidth:1,borderColor:BORDER,alignItems:'center',justifyContent:'center'},
+  storyReactionEmoji:{fontSize:22},
+  storyAudiencePanel:{position:'absolute',left:0,right:0,bottom:0,maxHeight:'70%',minHeight:240,zIndex:30,
+    backgroundColor:'#102733',borderTopWidth:1,borderColor:TEAL,borderTopLeftRadius:24,borderTopRightRadius:24,padding:16,gap:12},
+  storyAudienceHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+  storyAudienceTitle:{color:WHITE,fontSize:18,fontWeight:'900'},
+  storyAudienceClose:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},
+  storyAudienceCloseText:{color:WHITE,fontSize:21},
+  storyAudienceCount:{color:TEAL,fontWeight:'800',fontSize:14},
+  storyAudienceScroll:{flexGrow:0},
+  storyViewerRow:{flexDirection:'row',alignItems:'center',gap:10,minHeight:57,paddingVertical:8,borderBottomWidth:1,borderBottomColor:BORDER},
+  storyViewerName:{color:WHITE,fontSize:14,fontWeight:'800'},
+  storyViewerTime:{color:MUTED,fontSize:12},
   storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyEngagement:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:6},storyEngagementAction:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderColor:BORDER,borderWidth:1,borderRadius:18},storyEngagementText:{color:WHITE,fontSize:15,fontWeight:'800'},storyReplyRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},storyReplyInput:{flex:1,color:WHITE,borderColor:BORDER,borderWidth:1,borderRadius:23,minHeight:46,paddingHorizontal:15,backgroundColor:PANEL},storyReplySend:{minHeight:46,paddingHorizontal:13,backgroundColor:TEAL,borderRadius:23,justifyContent:'center'},storyReplySendText:{color:INDIGO,fontWeight:'800'},storyReplyHint:{fontSize:13,color:MUTED,paddingBottom:8},storyDeleteAction:{minHeight:44,alignSelf:'center',justifyContent:'center',paddingHorizontal:15},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3,overflow:'hidden'},storyProgressFill:{height:'100%',width:'100%',backgroundColor:WHITE},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center',padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyTapZones:{...StyleSheet.absoluteFill,flexDirection:'row'},storyTapZone:{flex:1},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyCaptionLayer:{position:'absolute',bottom:24,left:15,right:15,alignItems:'center',justifyContent:'center'},storyCaptionOverlay:{color:WHITE,fontSize:20,fontWeight:'900',textAlign:'center',backgroundColor:'rgba(0,0,0,0.64)',paddingHorizontal:14,paddingVertical:9,borderRadius:13,overflow:'hidden'},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:12},storyOwnHint:{color:MUTED,fontSize:12,textAlign:'center',paddingBottom:5},
   modalClose:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},modalCloseText:{fontSize:22,color:WHITE,fontWeight:'800'},mediaComposeBody:{gap:14,paddingBottom:24},mediaChooseRow:{flexDirection:'row',gap:12},mediaChooseButton:{flex:1,minHeight:94,borderRadius:15,borderWidth:1,borderColor:'#146875',backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:7,padding:12},mediaChooseIcon:{fontSize:25,color:TEAL},mediaChooseText:{fontSize:14,fontWeight:'800',color:WHITE},mediaEmptyState:{minHeight:155,borderRadius:16,borderWidth:1,borderColor:BORDER,backgroundColor:'#072B39',justifyContent:'center',alignItems:'center',gap:9,padding:20},mediaEmptyTitle:{fontSize:15,fontWeight:'800',color:WHITE,textAlign:'center'},storyComposerOverlay:{flex:1,backgroundColor:INDIGO,padding:18,gap:17},storyComposerCompact:{padding:12,gap:10},storyComposerHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},storyComposerTitle:{color:WHITE,fontSize:22,fontWeight:'900'},mediaPicker:{minHeight:115,borderRadius:15,borderWidth:1,borderColor:TEAL,backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:9,padding:12},storyFriendOption:{flexDirection:'row',alignItems:'center',gap:12,padding:10,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,minHeight:56},
  storyFriendAvatar:{width:38,height:38,borderRadius:19},
