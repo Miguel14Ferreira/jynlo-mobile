@@ -100,7 +100,7 @@ test('manifest declares custom signing accurately if a non-debug certificate sig
 
 test('QA instructions identify build identity and required tester journey',()=>{
  const instructions=qaTestInstructions(artifactMetadata(input,app,bytes,report));
- assert.match(instructions,/Versão: 0\.16\.6 \(build 13\)/);
+ assert.ok(instructions.includes(`Versão: ${app.version} (build ${app.android.versionCode})`));
  assert.match(instructions,/APK: app-release\.apk/);
  assert.match(instructions,/SHA-256:/);
  assert.match(instructions,/Instalar a APK/);
