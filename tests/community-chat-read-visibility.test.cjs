@@ -6,12 +6,14 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
 
 test('WebSocket delivery does not mark community messages as read',()=>{
- const start=source.indexOf('onMessage:(msg)=>');
- const end=source.indexOf('// A disconnected WebSocket',start);
+ const start=source.indexOf('onMessage:(_msg)=>');
+ const end=source.indexOf('// Real-time events normally update',start);
  assert.ok(start>=0&&end>start,'community WebSocket message handler exists');
  const handler=source.slice(start,end);
- assert.match(handler,/setMessages\(old=>mergeMessages\(old,\[msg\]\)\)/);
- assert.doesNotMatch(handler,/markCommunityRead\(/);
+ assert.match(handler,/void refresh\(version,true\)/);
+ assert.doesNotMatch(handler,/setMessages\(|markCommunityRead\(/);
+ // HTTP access control is rechecked on each hint before rendering content.
+ assert.match(source,/communityMessages\(id,auth\.token,auth\.username\)/);
 });
 
 test('embedded community read receipts require measured message visibility',()=>{
