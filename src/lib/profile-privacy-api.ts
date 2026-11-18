@@ -3,6 +3,12 @@ import {DEMO_MODE,request} from './api';
 export type ProfilePrivacyStatus={
  privateProfile:boolean;canViewContent:boolean;privateModeAvailable:boolean;
 };
+export type PrivateMediaReadiness={publicReferences:number;protectedReferences:number;databaseReferencesReady:boolean};
+/** Personal media inventory counts only; does not expose public URLs or storage keys. */
+export async function myPrivateMediaReadiness(token:string):Promise<PrivateMediaReadiness>{
+ if(!token||DEMO_MODE)throw new Error('Inicia sessão para verificar a privacidade.');
+ return request<PrivateMediaReadiness>('/api/profile/privacy/me/media-readiness',{token});
+}
 export type PendingFollowRequest={
  id:number;username:string;name:string|null;avatarUrl:string|null;createdAt:string;
 };
