@@ -24,10 +24,12 @@ test('team chat keeps input accessible without jumping away from earlier message
  const component=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(component,/const composerFocused=useRef\(false\)/);
  assert.match(component,/Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
- assert.match(component,/if\(composerFocused\.current&&nearLatest\.current\)historyRef\.current\?\.scrollToEnd/);
+ assert.match(component,/if\(kind==='chat'&&composerFocused\.current&&nearLatest\.current\)/);
+ assert.match(component,/historyRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
  assert.match(component,/onFocus=\{\(\)=>\{composerFocused\.current=true;\}\} onBlur=\{\(\)=>\{composerFocused\.current=false;\}\}/);
  assert.match(component,/keyboardOpen&&styles\.chatHistoryKeyboard/);
  assert.match(component,/return\(\)=>\{open\.remove\(\);close\.remove\(\);\}/);
+ assert.match(component,/\},\[kind\]\)/);
 });
 
 test('team feed and team chat keep permissions, private media, WebSocket and fallback',()=>{
