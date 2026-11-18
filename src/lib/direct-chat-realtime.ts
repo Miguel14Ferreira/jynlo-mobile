@@ -50,7 +50,8 @@ export function observeDirectChat(options:{
    if(envelope.type==='CHAT_READ_RECEIPT'){
     const receipt=envelope.receipt;
     if(receipt&&typeof receipt==='object'&&
-      (receipt as Record<string,unknown>).peerUsername?.toString().toLowerCase()===other)
+      typeof (receipt as Record<string,unknown>).peerUsername==='string'&&
+      ((receipt as Record<string,unknown>).peerUsername as string).toLowerCase()===other)
       invalidate();
     return;
    }
