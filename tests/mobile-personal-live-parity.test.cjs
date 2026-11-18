@@ -45,3 +45,17 @@ test('home navigation points to the implemented native personal Lives screens',(
  assert.match(routes,/name="live\/index"/);
  assert.match(routes,/name="live\/\[id\]"/);
 });
+
+test('personal Lives refresh from authenticated WebSocket invalidations, with a modest fallback',()=>{
+ const realtime=read('src/lib/personal-live-realtime.ts');
+ const room=read('app/live/[id].tsx');
+ const list=read('app/live/index.tsx');
+ assert.match(realtime,/type:'AUTH',token/);
+ assert.match(realtime,/envelope\.type==='AUTHENTICATED'/);
+ assert.match(realtime,/envelope\.type==='PERSONAL_LIVE_INVALIDATED'/);
+ assert.match(realtime,/reconnectDelay\(attempt\+\+\)/);
+ assert.match(realtime,/onInvalidated\(\)/);
+ assert.match(room,/observePersonalLives\(\{token:auth\.token/);
+ assert.match(list,/observePersonalLives\(\{token:auth\.token/);
+ assert.match(room,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'\)void refresh\(\);\},30000\)/);
+});
