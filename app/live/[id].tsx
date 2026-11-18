@@ -100,6 +100,15 @@ export default function PersonalLiveRoom(){
   if(state.status==='fulfilled'){
    setControls(state.value);
    // Guest approval grants publishing only with a NEW LiveKit token.
+   if(!state.value.isGuest&&connectionRole.current==='GUEST'&&!switchingRole.current){
+    // A host can revoke co-host privileges at any moment. A previously
+    // approved guest must not keep a publishing UI after server revocation.
+    switchingRole.current=true;
+    void joinPersonalLive(auth.token,id).then(next=>{
+     if(active.current&&next.role==='VIEWER'){connectionRole.current='VIEWER';setConnection(next);}
+    }).catch(()=>{if(active.current)setChatError('Não foi possível atualizar as permissões do direto.');})
+     .finally(()=>{switchingRole.current=false;});
+   }
    if(state.value.isGuest&&connectionRole.current==='VIEWER'&&!switchingRole.current){
     switchingRole.current=true;
     void (async()=>{
