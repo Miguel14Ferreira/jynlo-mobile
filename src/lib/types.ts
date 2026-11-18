@@ -226,6 +226,7 @@ export interface SocialStory {
   caption:string|null;mediaUrl:string;video:boolean;createdAt:string;expiresAt:string;
   canDelete:boolean;likeCount?:number;likedByMe?:boolean;
   textX?:number|null;textY?:number|null;textRotation?:number|null;textZoom?:number|null;
+  textColor?:StoryTextColor|null;textBackground?:StoryTextBackground|null;textFont?:StoryTextFont|null;
   locationLabel?:string|null;taggedUsernames?:string|null;
 }
 export interface SocialComment {id:number;postId:number;authorUsername:string;authorDisplayName:string;authorProfilePicUrl:string|null;content:string;createdAt:string;editedAt?:string|null;likeCount?:number;likedByMe?:boolean;}
@@ -234,5 +235,9 @@ export interface MobileMedia {uri:string;type:'image'|'video';mimeType:string;fi
 
 /** Percent coordinates, degrees and native scale, shared with the Jynlo Story backend. */
 export interface StoryTextGeometry {x:number;y:number;rotation:number;zoom:number}
+export type StoryTextColor='white'|'black'|'yellow'|'mint'|'pink'|'blue';
+export type StoryTextBackground='dark'|'light'|'none';
+export type StoryTextFont='modern'|'classic'|'mono';
+export interface StoryTextAppearance {color:StoryTextColor;background:StoryTextBackground;font:StoryTextFont}
 
 export interface StoryDetails {locationLabel:string;taggedUsernames:string}
