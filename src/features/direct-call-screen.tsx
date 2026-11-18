@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,PermissionsAndroid,Platform,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {JynloIcon} from '../components/JynloIcon';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
 import {Track} from 'livekit-client';
@@ -47,17 +48,28 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
  return <View style={styles.mediaPanel}>
   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
   {media==='video'?<View style={styles.videos}>
-   {tracks.filter(isTrackReference).map(track=><View key={track.participant.identity+'-'+track.source} style={styles.videoCard}>
-    <VideoTrack trackRef={track} style={styles.video}/>
+   {tracks.filter(isTrackReference).map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.videoCard,track.participant.isLocal&&styles.localVideoCard]}>
+    <VideoTrack trackRef={track} style={[styles.video,track.participant.isLocal&&styles.localVideo]}/>
     <Text style={styles.note}>{track.participant.isLocal?'Tu':'Participante'}</Text>
    </View>)}
    {tracks.every(track=>!isTrackReference(track))?<Text style={styles.note}>A aguardar vídeo dos participantes…</Text>:null}
   </View>:<Text style={styles.note}>A ligação de áudio utiliza o LiveKit. Verifica o som do dispositivo.</Text>}
   {error?<Message tone="error">{error}</Message>:null}
-  <Text style={styles.note}>Microfone {muted?'desligado':'ligado'}{media==='video'? ' · Câmara '+(cameraOff?'desligada':'ligada'):''}</Text>
-  <Button title={muted?'Ligar microfone':'Desligar microfone'} secondary disabled={changing} onPress={()=>{void toggle('microphone');}}/>
-  {media==='video'?<Button title={cameraOff?'Ligar câmara':'Desligar câmara'} secondary disabled={changing} onPress={()=>{void toggle('camera');}}/>:null}
-  <Button title="Terminar chamada" danger onPress={onHangup}/>
+  <View style={styles.callActions}>
+   <Pressable accessibilityRole="button" accessibilityLabel={muted?'Ligar microfone':'Desligar microfone'} accessibilityState={{disabled:changing}} disabled={changing}
+    onPress={()=>{void toggle('microphone');}} style={styles.callAction}>
+    <JynloIcon name="microphone" size={23} color={muted?C.muted:C.mint}/>
+    <Text style={styles.callActionText}>{muted?'Ligar áudio':'Silenciar'}</Text>
+   </Pressable>
+   {media==='video'?<Pressable accessibilityRole="button" accessibilityLabel={cameraOff?'Ligar câmara':'Desligar câmara'} accessibilityState={{disabled:changing}} disabled={changing}
+    onPress={()=>{void toggle('camera');}} style={styles.callAction}>
+    <JynloIcon name="video" size={23} color={cameraOff?C.muted:C.mint}/>
+    <Text style={styles.callActionText}>{cameraOff?'Ligar vídeo':'Desligar vídeo'}</Text>
+   </Pressable>:null}
+   <Pressable accessibilityRole="button" accessibilityLabel="Terminar chamada" onPress={onHangup} style={[styles.callAction,styles.hangupAction]}>
+    <JynloIcon name="close" size={24} color={C.white}/><Text style={styles.callActionText}>Desligar</Text>
+   </Pressable>
+  </View>
  </View>;
 }
 export default function DirectCallScreen(){
@@ -221,7 +233,13 @@ export default function DirectCallScreen(){
 const styles=StyleSheet.create({
  heading:{fontSize:22,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:19},
- mediaPanel:{gap:13,padding:16,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface},
+ mediaPanel:{gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface},
+ callActions:{flexDirection:'row',gap:8,alignItems:'stretch',justifyContent:'space-evenly'},
+ callAction:{flex:1,minHeight:70,paddingHorizontal:5,paddingVertical:9,backgroundColor:C.surface2,borderRadius:14,justifyContent:'center',alignItems:'center',gap:5},
+ callActionText:{color:C.white,fontSize:11,fontWeight:'800',textAlign:'center'},
+ hangupAction:{backgroundColor:'#813D43'},
+ localVideoCard:{alignSelf:'flex-end',width:'40%'},
+ localVideo:{height:130},
  videos:{gap:9},videoCard:{gap:5,padding:8,backgroundColor:C.surface2,borderRadius:12},
- video:{width:'100%',height:230,borderRadius:10}
+ video:{width:'100%',height:320,borderRadius:10}
 });
