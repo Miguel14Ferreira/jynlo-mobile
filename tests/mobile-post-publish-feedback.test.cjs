@@ -43,3 +43,15 @@ test('new stories remain visible in the public feed until the server listing cat
  assert.match(feed,/const fresh=recentlyConfirmedStories\.current\.filter\(entry=>/);
  assert.match(feed,/setStories\(\[\.\.\.fresh\.map\(entry=>entry\.item\),\.\.\.received\.filter\(story=>!ids\.has\(story\.id\)\)\]\)/);
 });
+
+test('slow media uploads show active progress feedback for posts and Stories',()=>{
+ assert.match(feed,/accessibilityState=\{\{disabled:\(!composerMedia\.length&&!composerText\.trim\(\)\)\|\|publishing,busy:publishing\}\}/);
+ assert.match(feed,/accessibilityState=\{\{disabled:!storyMedia\|\|storyPublishing,busy:storyPublishing\}\}/);
+ assert.match(feed,/publishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
+ assert.match(feed,/storyPublishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
+ assert.match(feed,/A enviar publicação…/);
+ assert.match(feed,/A enviar Story…/);
+ assert.match(feed,/Mantém este ecrã aberto/);
+ assert.match(feed,/Não feches este ecrã até receberes a confirmação/);
+ assert.match(feed,/publishProgressHint:\{color:MUTED,fontSize:13,lineHeight:20/);
+});
