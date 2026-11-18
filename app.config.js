@@ -40,6 +40,10 @@ module.exports = ({config}) => {
         // is looked up by the original class name, so R8 must preserve both.
         '-keep class androidx.work.impl.WorkDatabase { *; }',
         '-keep class androidx.work.impl.WorkDatabase_Impl { *; }',
+        // Room and WorkManager instantiate implementations reflectively. R8
+        // full mode must not discard their public no-argument constructors.
+        '-keep class * extends androidx.room.RoomDatabase { public <init>(); }',
+        '-keep class * extends androidx.work.InputMerger { public <init>(); }',
       ].join('\n'),
       ...(diagnostic ? {
         enableMinifyInReleaseBuilds: false,
