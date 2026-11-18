@@ -18,7 +18,10 @@ test('own profile respects server feature gate and offers follow moderation',()=
  assert.match(ui,/updateProfilePrivacy/);
  assert.match(ui,/pendingFollowRequests/);
  assert.match(ui,/decideFollowRequest/);
- assert.match(ui,/Tornar privado — indisponível/);
+ assert.match(ui,/Proteção privada ainda não disponível/);
+ assert.match(ui,/myPrivateMediaReadiness\(token\)/);
+ assert.match(ui,/privacy\.privateModeAvailable\?<Pressable/);
+ assert.match(ui,/media\.publicReferences/);
  assert.match(read('app/(tabs)/profile.tsx'),/ProfilePrivacySettings/);
 });
 
