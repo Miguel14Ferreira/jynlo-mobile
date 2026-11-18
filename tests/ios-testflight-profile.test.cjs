@@ -40,3 +40,24 @@ test('iOS TestFlight blocks preview API without asking for Android Maps/Firebase
  assert.equal(valid.status,0,valid.stderr);
  assert.match(valid.stdout,/OK \(api\)/);
 });
+
+test('Codemagic iOS workflow uses production API credentials and signs only validated builds',()=>{
+ const yaml=fs.readFileSync(path.join(root,'codemagic.yaml'),'utf8');
+ const start=yaml.indexOf('  jynlo-ios-testflight:');
+ const stop=yaml.indexOf('\n# Diagnostic-only:',start);
+ assert.ok(start>=0&&stop>start,'Missing isolated Codemagic TestFlight workflow');
+ const ios=yaml.slice(start,stop);
+ assert.match(ios,/app_store_connect: apple/);
+ assert.match(ios,/distribution_type: app_store/);
+ assert.match(ios,/bundle_identifier: com\.jynlo\.app/);
+ assert.match(ios,/groups:\s*\n\s*- jynlo_play_release/);
+ assert.match(ios,/EAS_BUILD_PROFILE: "ios-testflight"/);
+ assert.match(ios,/node scripts\/verify-release\.cjs/);
+ assert.match(ios,/npm run typecheck/);
+ assert.match(ios,/npm run test:all/);
+ assert.match(ios,/xcode-project use-profiles/);
+ assert.match(ios,/xcode-project build-ipa/);
+ assert.doesNotMatch(ios,/EXPO_PUBLIC_JYNLO_API_URL: "https:\/\/desporto24-preview-api\.onrender\.com"/);
+ assert.match(ios,/submit_to_testflight: false/);
+ assert.match(ios,/submit_to_app_store: false/);
+});
