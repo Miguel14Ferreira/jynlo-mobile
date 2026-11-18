@@ -149,16 +149,22 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   void refresh(false,version);
   // Session events are delivered only to authorized participants. The socket
   // payload never populates our UI: reconcile private messages over HTTP.
+  let socketOnline=false,pollTicks=0;
   const disconnect=auth.token&&Number.isSafeInteger(id)&&id>0
    ?observeSessionChat({sessionId:id,token:auth.token,onInvalidated:()=>{
      if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current)
       void refresh(true,version);
+    },onStatus:status=>{
+     if(active&&version===generation.current)socketOnline=status==='online';
     }}):()=>{};
-  // Read-only polling while focused; a send is never retried automatically.
+  // WebSocket gives immediate hints; 5s offline / 30s online HTTP fallback.
+  // Polling only reads authorized history, never retries an outbound message.
   const timer=setInterval(()=>{
-   if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current)
-    void refresh(true,version);
-  },15000);
+   if(active&&version===generation.current&&AppState.currentState==='active'&&!sendingNow.current){
+    pollTicks++;
+    if(!socketOnline||pollTicks%6===0)void refresh(true,version);
+   }
+  },5000);
   // Mirror the Messages and Community chats: reconcile immediately on app resume.
   // The refresh guard coalesces concurrent reads and cannot retry an outbound POST.
   const resume=AppState.addEventListener('change',state=>{
