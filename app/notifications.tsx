@@ -297,14 +297,6 @@ export default function NotificationsScreen(){
  return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites, novidades desportivas e atividade social. Os destinos são confirmados a partir da tua lista de notificações na API.</Text>
-  {sameAccount?<View style={styles.pushPanel}>
-   <Text style={styles.heading}>Notificações no telemóvel</Text>
-   <Text style={styles.note}>{androidPushConfigured()?pushEnabled?'Este dispositivo está registado para notificações push. O registo não garante que os avisos sejam entregues.':'Podes ativar os avisos neste dispositivo. A entrega exige o serviço de envio operacional.':'As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.'}</Text>
-   {deliveryReady===false?<Message tone="error">O envio push ainda não está ativo no servidor. Os avisos continuam disponíveis dentro da Jynlo, mas não serão enviados para o telemóvel.</Message>:null}
-   {deliveryReady===null&&androidPushConfigured()?<Text style={styles.note}>Não foi possível confirmar se o servidor está preparado para enviar avisos push.</Text>:null}
-   {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy||(!pushEnabled&&deliveryReady===false)} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
-   {pushError?<Message tone="error">{pushError}</Message>:null}
-  </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
   {sameAccount?<Button secondary title="Respostas privadas às minhas Stories" onPress={()=>router.push('/stories/replies')}/>:null}
   {loading?<Loader/>:null}
@@ -352,6 +344,14 @@ export default function NotificationsScreen(){
      <Pressable accessibilityRole="button" accessibilityLabel={'Eliminar notificação: '+(n.subject||'Jynlo')} disabled={notificationBusy} onPress={()=>Alert.alert('Eliminar esta notificação?','A notificação será removida da tua lista.',[{text:'Cancelar',style:'cancel'},{text:'Eliminar',style:'destructive',onPress:()=>void removeOne(n)}])} style={styles.deleteButton}><Text style={styles.deleteText}>Eliminar</Text></Pressable>
     </View>
    </View>)}
+  </View>:null}
+  {sameAccount?<View style={styles.pushPanel}>
+   <Text style={styles.heading}>Notificações no telemóvel</Text>
+   <Text style={styles.note}>{androidPushConfigured()?pushEnabled?'Este dispositivo está registado para notificações push. O registo não garante que os avisos sejam entregues.':'Podes ativar os avisos neste dispositivo. A entrega exige o serviço de envio operacional.':'As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.'}</Text>
+   {deliveryReady===false?<Message tone="error">O envio push ainda não está ativo no servidor. Os avisos continuam disponíveis dentro da Jynlo, mas não serão enviados para o telemóvel.</Message>:null}
+   {deliveryReady===null&&androidPushConfigured()?<Text style={styles.note}>Não foi possível confirmar se o servidor está preparado para enviar avisos push.</Text>:null}
+   {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy||(!pushEnabled&&deliveryReady===false)} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
+   {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
 
