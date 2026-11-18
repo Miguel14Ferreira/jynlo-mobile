@@ -12,6 +12,7 @@ import {confirmedSessionJoin} from '../src/lib/session-join-receipt.cjs';
 import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
+import {pushDeliveryReady} from '../src/lib/push-device-api';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter(),isFocused=useIsFocused();
@@ -24,6 +25,7 @@ export default function NotificationsScreen(){
  const [unreadOnly,setUnreadOnly]=useState(false),[notificationBusy,setNotificationBusy]=useState(false);
  const notificationLock=useRef(false),notificationRevision=useRef(0);
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
+ const [deliveryReady,setDeliveryReady]=useState<boolean|null>(null);
  const pushBusyRef=useRef(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
@@ -87,11 +89,17 @@ export default function NotificationsScreen(){
   const version=++generation.current;
   pendingRefresh.current=false;
   setHistoryReady(false);
-  setPushEnabled(false);setPushError('');
+  setPushEnabled(false);setPushError('');setDeliveryReady(null);
   const requestId=++statusRequest.current;
-  if(auth.username&&auth.token)void pushRegistrationStatus(auth.username,auth.token).then(value=>{
-   if(generation.current===version&&statusRequest.current===requestId)setPushEnabled(value);
-  }).catch(()=>{});
+  if(auth.username&&auth.token){
+   void pushRegistrationStatus(auth.username,auth.token).then(value=>{
+    if(generation.current===version&&statusRequest.current===requestId)setPushEnabled(value);
+   }).catch(()=>{});
+   // A registered token does not prove that server push delivery is enabled.
+   void pushDeliveryReady(auth.token).then(value=>{
+    if(generation.current===version&&statusRequest.current===requestId)setDeliveryReady(value);
+   }).catch(()=>{if(generation.current===version&&statusRequest.current===requestId)setDeliveryReady(null);});
+  }
   void load(false,version);
   const timer=setInterval(()=>{void load(true,version);},20000);
   const resume=AppState.addEventListener('change',state=>{
@@ -285,8 +293,10 @@ export default function NotificationsScreen(){
   <Text style={styles.note}>Convites, novidades desportivas e atividade social. Os destinos são confirmados a partir da tua lista de notificações na API.</Text>
   {sameAccount?<View style={styles.pushPanel}>
    <Text style={styles.heading}>Notificações no telemóvel</Text>
-   <Text style={styles.note}>{androidPushConfigured()?pushEnabled?'Este dispositivo está registado para notificações push. A entrega depende da ligação e do serviço de envio.':'Podes ativar os avisos neste dispositivo. A entrega depende também das credenciais e do serviço de envio.':'As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.'}</Text>
-   {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
+   <Text style={styles.note}>{androidPushConfigured()?pushEnabled?'Este dispositivo está registado para notificações push. O registo não garante que os avisos sejam entregues.':'Podes ativar os avisos neste dispositivo. A entrega exige o serviço de envio operacional.':'As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.'}</Text>
+   {deliveryReady===false?<Message tone="error">O envio push ainda não está ativo no servidor. Os avisos continuam disponíveis dentro da Jynlo, mas não serão enviados para o telemóvel.</Message>:null}
+   {deliveryReady===null&&androidPushConfigured()?<Text style={styles.note}>Não foi possível confirmar se o servidor está preparado para enviar avisos push.</Text>:null}
+   {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy||(!pushEnabled&&deliveryReady===false)} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
