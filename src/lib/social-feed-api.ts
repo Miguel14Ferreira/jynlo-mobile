@@ -111,6 +111,26 @@ export async function editPost(postId:number,content:string,location:string,toke
    throw Error('O servidor não confirmou a edição da publicação. Consulta o perfil antes de repetir.');
  return updated;
 }
+/** Replace every media asset of an authored post, only after explicit UI confirmation.
+ * The backend requires PUT multipart with repeated "files" and replaceMedia=true.
+ * Existing likes/comments remain attached to the same post ID.
+ */
+export async function replacePostMedia(postId:number,files:MobileMedia[],content:string,location:string,
+ token:string|null,username:string|null):Promise<FeedItem>{
+ requireViewer(token,username);
+ if(!Number.isSafeInteger(postId)||postId<=0)throw Error('Publicação inválida.');
+ const description=content.trim(),place=location.trim();
+ if(description.length>1000||place.length>160)throw Error('Verifica a descrição e localização.');
+ const {albumError}=require('./post-album.cjs') as typeof import('./post-album.cjs');
+ const validation=albumError(files,true);
+ if(validation)throw Error(validation);
+ if(DEMO_MODE)throw Error('A substituição de multimédia exige a API real da Jynlo.');
+ const confirmed=await sendMedia(`/api/feed/posts/${postId}/media`,
+  {content:description,location:place,replaceMedia:'true'},files,token!,'PUT',true) as FeedItem;
+ if(confirmed.postId!==postId||!confirmedTextPostReceipt(confirmed,username!,description,place))
+  throw Error('O servidor não confirmou a edição. Verifica a publicação antes de repetir.');
+ return confirmed;
+}
 export async function deletePost(postId:number,token:string|null):Promise<void>{
  if(!Number.isSafeInteger(postId)||postId<=0||!token)throw Error('Publicação inválida.');
  if(DEMO_MODE){
@@ -258,7 +278,7 @@ export async function createTextPost(content:string,token:string|null,username:s
     throw Error('O servidor respondeu, mas não confirmou a publicação de texto. Verifica o perfil antes de repetir.');
   return result;
 }
-async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string):Promise<any>{
+async function sendMedia(path:string,fields:Record<string,string>,files:MobileMedia[],token:string,method:'POST'|'PUT'='POST',forceFilesParts=false):Promise<any>{
  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
  const {albumError}=require('./post-album.cjs') as typeof import('./post-album.cjs');
  const validation=albumError(files,true);
@@ -292,12 +312,12 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      if(totalBytes>60*1024*1024)throw Error('O álbum não pode exceder 60 MB no total.');
      // Back-end accepts the legacy image/video part for one asset, or repeated
      // "files" parts for albums. Do not mix these two request formats.
-     form.append(files.length>1?'files':file.type==='video'?'video':'image',new File(uri) as unknown as Blob,'jynlo-media.'+extension);
+     form.append(forceFilesParts||files.length>1?'files':file.type==='video'?'video':'image',new File(uri) as unknown as Blob,'jynlo-media.'+extension);
    }
    const controller=new AbortController();
    const timeout=setTimeout(()=>controller.abort(),90000);
    try{
-     const response=await expoFetch(`${API_BASE}${path}`,{method:'POST',signal:controller.signal,
+     const response=await expoFetch(`${API_BASE}${path}`,{method,signal:controller.signal,
        // Never follow redirects with an authenticated multipart upload.
        // Expo's native fetch supports redirect:'error' but not web-only cache options.
        credentials:'omit',redirect:'error',
