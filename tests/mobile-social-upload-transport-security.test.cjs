@@ -36,7 +36,7 @@ test('publish failures preserve composer drafts and require server receipt',()=>
  assert.match(composer,/storyInFlight\.current=true;setStoryPublishing\(true\);setStoryPublishError\(''\)/);
  assert.match(composer,/setPostPublishError\(message\)/);
  assert.match(composer,/setStoryPublishError\(message\)/);
- assert.match(composer,/const created=await publishPost\(body,media,actor,username,place\)/);
+ assert.match(composer,/const created=await publishPost\(body,media,actor,username,place,linkedSessionId\?\?undefined\)/);
  assert.match(composer,/const created=await publishStory\(body,media,actor,username,selectedCommunityId,geometry,details\)/);
  assert.match(composer,/feedIdentity\.current===\x60\$\{username\}:\$\{actor\}\x60/);
 });
