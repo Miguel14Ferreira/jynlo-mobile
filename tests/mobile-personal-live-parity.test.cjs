@@ -16,7 +16,7 @@ test('mobile Lives share the authenticated backend routes with Jynlo Web',()=>{
 
 test('Live event is created only after camera and microphone permissions',()=>{
  const list=read('app/live/index.tsx');
- const permissions=list.indexOf('PermissionsAndroid.requestMultiple');
+ const permissions=list.indexOf('await ensureLiveCapturePermissions()');
  const create=list.indexOf('startPersonalLive(auth.token,title)');
  assert.ok(permissions>=0&&create>permissions);
  assert.match(list,/router\.push\(\{pathname:'\/live\/\[id\]'/);
@@ -65,6 +65,6 @@ test('guest permissions are revoked after host removal, and never guessed from t
  assert.match(room,/!state\.value\.isGuest&&connectionRole\.current==='GUEST'/);
  assert.match(room,/next\.role==='VIEWER'/);
  assert.match(room,/next\.role==='GUEST'/);
- assert.match(room,/PermissionsAndroid\.requestMultiple/);
+ assert.match(room,/await ensureLiveCapturePermissions\(\)/);
  assert.match(room,/connectionRole\.current===role/);
 });
