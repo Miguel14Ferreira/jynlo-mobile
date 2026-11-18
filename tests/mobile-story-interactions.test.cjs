@@ -34,7 +34,7 @@ test('story sharing uses native share sheet without fabricated permanent URL',()
 });
 
 test('reply draft belongs to current story and videos pause while composing',()=>{
- assert.match(viewer,/React\.useEffect\(\(\)=>\{setReplyText\(''\);setReplyFocused\(false\);setMediaState\('loading'\)/);
+ assert.match(viewer,/React\.useEffect\(\(\)=>\{audienceRequest\.current\+\+;\s*setReplyText\(''\);setReplyFocused\(false\);setMediaState\('loading'\)/);
  assert.match(viewer,/paused\|\|replyFocused\|\|storyBusy/);
  assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
 });
