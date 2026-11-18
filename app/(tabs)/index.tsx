@@ -9,6 +9,7 @@ import {useAuth} from '../../src/lib/auth';
 import {mediaRequestSource} from '../../src/lib/protected-media-source';
 import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
+import {myCommunityInvites} from '../../src/lib/community-api';
 import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
@@ -533,13 +534,18 @@ export default function JynloFeedHome(){
     if(!auth.token||!auth.username)return ()=>{active=false;};
     const token=auth.token,username=auth.username;
     const refresh=async()=>{
-      try{
-        const notifications=await myNotifications(token,username);
-        if(active)setUnreadNotifications(notifications.filter(item=>!item.read).length);
-      }catch{
-        // Unknown is not equivalent to unread; never invent a red badge.
-        if(active)setUnreadNotifications(0);
-      }
+      // Community invitations may arrive by email without an accompanying
+      // notifications row. Never hide these pending invites from the bell.
+      const [notifications,communityInvitations]=await Promise.allSettled([
+        myNotifications(token,username),myCommunityInvites(token,username)
+      ]);
+      if(!active)return;
+      const unread=notifications.status==='fulfilled'?
+        notifications.value.filter(item=>!item.read).length:0;
+      const pending=communityInvitations.status==='fulfilled'?communityInvitations.value.length:0;
+      // The bell is a presence indicator; it is not an additive count that
+      // could accidentally double count an invite also in notifications.
+      setUnreadNotifications(Math.max(unread,pending));
     };
     void refresh();
     const subscription=AppState.addEventListener('change',state=>{
