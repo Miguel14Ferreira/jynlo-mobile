@@ -14,7 +14,7 @@ import {C} from '../../../src/lib/theme';
 import type {SessionDetail} from '../../../src/lib/types';
 
 type Draft={sport:string;date:string;hour:string;city:string;address:string;
- maxParticipants:string;minParticipants:string;priceAmount:string;meetingPointInstructions:string};
+ maxParticipants:string;minParticipants:string;priceAmount:string;meetingPointInstructions:string;description:string};
 const fromSession=(s:SessionDetail):Draft=>{
  const date=new Date(s.gameDate);
  const localDate=Number.isFinite(date.getTime())
@@ -23,7 +23,7 @@ const fromSession=(s:SessionDetail):Draft=>{
   ?String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0'):'';
  return {sport:s.sport||'',date:localDate,hour,city:s.city||'',address:s.address||'',
   maxParticipants:String(s.maxParticipants??''),minParticipants:String(s.minParticipants??2),
-  priceAmount:String(s.priceAmount??0),meetingPointInstructions:s.meetingPointInstructions||''};
+  priceAmount:String(s.priceAmount??0),meetingPointInstructions:s.meetingPointInstructions||'',description:s.description||''};
 };
 export default function EditSession(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
@@ -107,6 +107,12 @@ export default function EditSession(){
    {field('Mínimo de jogadores','minParticipants',{keyboardType:'number-pad'})}
    {field('Preço por jogador (€)','priceAmount',{keyboardType:'decimal-pad'})}
    {field('Ponto de encontro (opcional)','meetingPointInstructions')}
+   <View style={styles.field}><Text style={styles.label}>Descrição da sessão (opcional)</Text>
+    <TextInput style={[styles.input,styles.multiline]} multiline textAlignVertical="top" maxLength={1000}
+     value={draft.description} onChangeText={value=>set('description',value)} editable={!busy}
+     placeholder="Informações sobre o jogo, regras ou material necessário" placeholderTextColor={C.muted}
+     accessibilityLabel="Descrição da sessão"/>
+   </View>
    <Button title={busy?'A guardar…':'Guardar alterações'} disabled={busy} onPress={confirm}/>
    <Button secondary title="Cancelar" disabled={busy} onPress={()=>router.back()}/>
   </View>:null}
@@ -115,6 +121,7 @@ export default function EditSession(){
 const styles=StyleSheet.create({
  title:{color:C.white,fontWeight:'900',fontSize:26},
  form:{gap:15},field:{gap:7},label:{color:C.muted,fontWeight:'800',fontSize:12},
+ multiline:{minHeight:110,paddingVertical:12},
  input:{minHeight:51,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:12,color:C.white,paddingHorizontal:13,fontSize:15},
  picker:{minHeight:50,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:14},
  pickerText:{color:C.white,fontSize:14,fontWeight:'700'},option:{padding:12,borderBottomWidth:1,borderBottomColor:C.border},
