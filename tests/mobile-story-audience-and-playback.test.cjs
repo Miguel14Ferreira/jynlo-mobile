@@ -29,8 +29,9 @@ test('media viewer handles loading and a real failed image/video instead of blan
  assert.match(viewer,/pointerEvents=\{mediaState==='error'\|\|!uri\|\|audienceOpen\?'none':'box-none'\}/);
  assert.match(player,/player\.addListener\('statusChange'/);
  assert.match(player,/videoFailed\?<View/);
- assert.match(player,/contentFit=\{story\?'contain':'contain'\}/);
+ assert.match(player,/contentFit="contain"/);
  assert.match(viewer,/mediaState!=='ready'/);
+ assert.match(viewer,/setTimeout\(\(\)=>setMediaState\(current=>current==='loading'\?'error':current\),12000\)/);
 });
 
 test('the author alone sees the real unique view count and user list',()=>{
