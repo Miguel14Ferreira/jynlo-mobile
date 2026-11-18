@@ -21,7 +21,7 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(tabs,/router\.push\('\/venues\/create'\)/);
  assert.match(tabs,/router\.push\('\/tournaments\/create'\)/);
  assert.match(tabs,/params:\{compose:destination\}/);
- assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string\}>\(\)/);
+ assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string;momentSession\?:string\}>\(\)/);
  assert.match(feed,/if\(compose==='post'\)openPostComposer\(\)/);
  assert.match(feed,/else openStoryComposer\(\)/);
  assert.match(feed,/router\.setParams\(\{compose:undefined\}\)/);
