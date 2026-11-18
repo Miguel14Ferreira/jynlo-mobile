@@ -18,7 +18,7 @@ test('Story colors survive publication and are sent in the backend contract',()=
  const editor=read('app/(tabs)/index.tsx');
  const api=read('src/lib/social-feed-api.ts');
  const types=read('src/lib/types.ts');
- assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance\)/);
+ assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime\)/);
  assert.match(editor,/storyAppearance\.color===appearance\.color&&storyAppearance\.background===appearance\.background&&storyAppearance\.font===appearance\.font/);
  assert.match(api,/textColor:appearance\.color,textBackground:appearance\.background,textFont:appearance\.font/);
  assert.match(api,/textColor:appearance\?\.color\|\|'white'/);
@@ -33,4 +33,15 @@ test('Story sticker applies appearance in the preview and viewer, not just the e
  assert.match(text,/style=\{\[styles\.captionText,\{color,fontFamily\}\]\}/);
  assert.match(text,/appearance\?\.font==='classic'/);
  assert.match(text,/appearance\?\.background==='none'/);
+});
+
+test('show-time sticker is optional and persisted with Story data',()=>{
+ const editor=read('app/(tabs)/index.tsx');
+ const viewer=read('src/components/StoryDetailsView.tsx');
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(editor,/accessibilityState=\{\{checked:showStoryTime\}\}/);
+ assert.match(editor,/showTime=\{showStoryTime\} createdAt=\{storyEditorOpenedAt\}/);
+ assert.match(editor,/showTime=\{story\.showTime===true\} createdAt=\{story\.createdAt\}/);
+ assert.match(api,/showTime:String\(showTime\)/);
+ assert.match(viewer,/toLocaleString\('pt-PT'/);
 });
