@@ -14,7 +14,8 @@ test('a Story never counts a mere feed impression or the author viewing own Stor
  assert.match(viewer,/if\(!ownStory&&token&&username&&!viewedStoryIds\.current\.has\(story\.id\)\)/);
  assert.match(viewer,/onLoad=\{mediaReady\}/);
  assert.match(viewer,/onReady=\{mediaReady\}/);
- assert.doesNotMatch(api,/export async function storyFeed[\s\S]*?recordStoryView\(/);
+ const feedOnly=api.split('export async function storyFeed(')[1]?.split('export async function ')[0]||'';
+ assert.doesNotMatch(feedOnly,/recordStoryView\(/);
 });
 
 test('media viewer handles loading and a real failed image/video instead of blank black screen',()=>{
