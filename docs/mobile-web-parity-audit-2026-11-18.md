@@ -34,7 +34,15 @@ The backend accepts creating single-media posts, mixed albums (up to six), text/
 Pending: run complete TypeScript/Node suite and actual Android media-upload/edit/delete flow against staging with two accounts. Confirm media stored, old files cleaned, privacy rules, album order, post preview + profile gallery, resuming after network faults, and feed events. Do not retry uncertain upload responses automatically: a network timeout may occur after the server has saved the post.
 
 ### 5. Chats — HIGH
-Mobile direct, community, session and team chats exist. Many use authenticated WebSockets with HTTP resync, but updates, keyboard overlaps, attachment visibility, history and parity must be tested with two real accounts and roles. Never restore manual Refresh as a workaround.
+Mobile direct, community, session and team chats support authenticated historical messages and media/PDF attachments, but connectivity differed. The direct-chat screen relied on a 15-second timer and optional native notifications even though the backend already emits authenticated `CHAT_MESSAGE` and `CHAT_READ_RECEIPT` WebSocket events.
+
+On mobile `develop`:
+- Added `observeDirectChat` scoped to authenticated self+peer. It only uses relevant WebSocket event envelopes as **invalidation hints**, never message data. Authorized HTTP continues to own content, block checks, read state and errors.
+- Changed the direct screen to refresh immediately on relevant events or socket reconnect, with 5-second fallback when disconnected and 30-second recovery sync when online. It tears down sockets on focus/account/peer changes.
+- Changed session chat from fixed 15-second polling to WebSocket-first refresh with the same adaptive fallback. Other community/team chats already use authenticated realtime invalidations and HTTP reconciliation; no manual Refresh button was reintroduced.
+- Added regression tests for cross-conversation events, socket authentication and cleanup, and scoped fallback/notification handling.
+
+Pending: two-device tests with distinct accounts and blocked users, attachments (images and PDFs) in direct/session/community/team scopes, pending writes during backgrounding, receipt consistency, reconnect under poor network, typing indicators, and team/community feeds. Ensure native keyboard does not hide the composer. A successful source contract check does not establish device-level message delivery.
 
 ### 6. Sessions, tournaments, teams — HIGH
 Mobile has creation/review/editing, maps and tournament/championship/team routes; previous fixes were added on `develop`. Validate saved venue pin, session cancellation fan-out, registration rules, team balancing, creating teams, scores and tournament controls. Do not claim full parity without checking server-permission matrices.
