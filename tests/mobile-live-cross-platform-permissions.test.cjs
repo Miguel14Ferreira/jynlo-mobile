@@ -36,3 +36,11 @@ test('a guest cannot publish before camera and microphone permission',()=>{
  assert.ok(permission>0&&token>permission);
  assert.match(room,/if\(active\.current&&next\.role==='GUEST'\)/);
 });
+
+test('signed iOS and Android app manifests declare live capture permission descriptions',()=>{
+ const config=JSON.parse(read('app.json')).expo;
+ assert.match(config.ios.infoPlist.NSCameraUsageDescription,/câmara/i);
+ assert.match(config.ios.infoPlist.NSMicrophoneUsageDescription,/microfone/i);
+ assert.ok(config.android.permissions.includes('android.permission.CAMERA'));
+ assert.ok(config.android.permissions.includes('android.permission.RECORD_AUDIO'));
+});
