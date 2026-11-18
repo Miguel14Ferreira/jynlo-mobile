@@ -15,7 +15,7 @@ type Props={
  token:string|null;
  username:string|null;
  onClose:()=>void;
- onSaved:(updated:FeedItem)=>void;
+ onSaved:(updated:FeedItem,mediaReplaced:boolean)=>void;
 };
 /** Update the post's text/location without re-uploading or replacing existing media. */
 export default function PostEditSheet({post,token,username,onClose,onSaved}:Props){
@@ -104,7 +104,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
      const result=replacing
       ?await replacePostMedia(post.postId!,replacementMedia,text,location,token,username)
       :await editPost(post.postId!,text,location,token,username);
-     if(version===generation.current&&currentIdentity===initialIdentity)onSaved(result);
+     if(version===generation.current&&currentIdentity===initialIdentity)onSaved(result,replacing);
    }catch(e){
      if(version===generation.current&&currentIdentity===initialIdentity){
        setError(e instanceof Error?e.message:'Não foi possível guardar. Confirma a publicação antes de repetir.');
