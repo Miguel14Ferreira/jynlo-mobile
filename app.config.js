@@ -35,6 +35,11 @@ module.exports = ({config}) => {
         '-dontwarn livekit.org.jni_zero.JniZeroJni',
         '-keep class livekit.org.jni_zero.JniInit { *; }',
         '-keep class livekit.org.jni_zero.** { *; }',
+        // The earlier device log crashed before React Native while Room
+        // resolved WorkDatabase.canonicalName. Its generated implementation
+        // is looked up by the original class name, so R8 must preserve both.
+        '-keep class androidx.work.impl.WorkDatabase { *; }',
+        '-keep class androidx.work.impl.WorkDatabase_Impl { *; }',
       ].join('\n'),
       ...(diagnostic ? {
         enableMinifyInReleaseBuilds: false,
