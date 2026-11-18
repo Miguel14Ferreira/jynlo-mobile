@@ -12,11 +12,17 @@ import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} fro
 
 const info=(label:string,value:unknown)=>{
  if(typeof value!=='string'||!value.trim())return null;
- return <Text style={styles.meta}>{label}: {value.trim()}</Text>;
+ return <View style={styles.infoRow} accessibilityLabel={label+': '+value.trim()}>
+  <Text style={styles.infoLabel}>{label}</Text>
+  <Text style={styles.infoValue}>{value.trim()}</Text>
+ </View>;
 };
 const availability=(label:string,value:boolean|null|undefined)=>{
  if(value==null)return null;
- return <Text style={styles.meta}>{label}: {value?'Sim':'Não'}</Text>;
+ return <View style={styles.infoRow} accessibilityLabel={label+': '+(value?'Sim':'Não')}>
+  <Text style={styles.infoLabel}>{label}</Text>
+  <Text style={styles.infoValue}>{value?'Sim':'Não'}</Text>
+ </View>;
 };
 function safeHttps(value:string|null|undefined):string|null{
  if(!value)return null;
@@ -155,8 +161,12 @@ export default function VenueDetailScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
- card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:18,padding:20,gap:14},
- name:{color:C.white,fontSize:25,fontWeight:'900'},meta:{color:C.muted,fontSize:14,lineHeight:21},
+ card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:18,padding:16,gap:12},
+ name:{color:C.white,fontSize:25,fontWeight:'900',lineHeight:32},
+ meta:{color:C.muted,fontSize:15,lineHeight:22},
+ infoRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'flex-start',gap:8,paddingVertical:3},
+ infoLabel:{minWidth:110,maxWidth:'43%',color:C.muted,fontSize:14,fontWeight:'700',lineHeight:22},
+ infoValue:{flexGrow:1,flexShrink:1,flexBasis:155,color:C.white,fontSize:15,fontWeight:'600',lineHeight:23},
  photo:{width:'100%',height:190,borderRadius:12,backgroundColor:C.background},
  condition:{gap:5,padding:12,borderRadius:12,backgroundColor:C.background},
  conditionTitle:{color:C.white,fontSize:15,fontWeight:'800'},
