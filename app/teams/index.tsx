@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {createSportsTeam,discoverSportsTeams,mySportsTeams,joinedSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
@@ -11,11 +11,20 @@ import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCo
 
 export default function TeamsScreen(){
  const auth=useAuth(),router=useRouter();
+ const params=useLocalSearchParams<{create?:string}>();
  const [owned,setOwned]=useState<SportsTeam[]>([]),[joined,setJoined]=useState<SportsTeam[]>([]),[teams,setTeams]=useState<SportsTeam[]>([]),[invites,setInvites]=useState<SportsTeamInvitation[]>([]),[competitionInvites,setCompetitionInvites]=useState<TeamCompetitionInvitation[]>([]),[query,setQuery]=useState('');
  const [name,setName]=useState(''),[sport,setSport]=useState(''),[location,setLocation]=useState('');
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [joinedError,setJoinedError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
+ useEffect(()=>{
+  if(params.create==='1'&&auth.token){
+   setCreateOpen(true);
+   // Consume the one-time intent; returning from the new team's page must
+   // not reopen an empty creation form unexpectedly.
+   router.setParams({create:undefined});
+  }
+ },[params.create,auth.token,router]);
  const [submittedQuery,setSubmittedQuery]=useState('');
  const joinedOnly=joined.filter(team=>!owned.some(owner=>owner.id===team.id));
  const requestVersion=useRef(0),actionVersion=useRef(0);
