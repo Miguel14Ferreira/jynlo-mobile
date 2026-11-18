@@ -140,3 +140,14 @@ test('posting media without typed caption uses a valid default backend caption',
  assert.match(api,/const caption=content\.trim\(\)/);
  assert.match(api,/const confirmed=await sendMedia\('\/api\/feed\/posts',\{content:caption,/);
 });
+
+test('feed and story text remains legible with accessible 44pt post actions',()=>{
+ assert.match(feed,/eyebrow:\{fontSize:12,color:TEAL/);
+ assert.match(feed,/storyItemName:\{fontSize:12,color:WHITE/);
+ assert.match(feed,/postMeta:\{color:MUTED,fontSize:12,lineHeight:18/);
+ assert.match(feed,/commentBody:\{fontSize:14,color:WHITE,lineHeight:20/);
+ assert.match(feed,/storyReplyHint:\{fontSize:13,color:MUTED/);
+ assert.match(feed,/postAction:\{flexDirection:'row',gap:5,alignItems:'center',minHeight:44\}/);
+ assert.match(feed,/publishPost\(body,media,actor,username/);
+ assert.match(feed,/publishStory\(body,media,actor,username/);
+});
