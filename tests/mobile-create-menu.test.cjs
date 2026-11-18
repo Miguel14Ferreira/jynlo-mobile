@@ -20,6 +20,7 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(tabs,/router\.push\('\/communities\/create'\)/);
  assert.match(tabs,/router\.push\('\/venues\/create'\)/);
  assert.match(tabs,/router\.push\('\/tournaments\/create'\)/);
+ assert.match(tabs,/router\.push\(\{pathname:'\/teams',params:\{create:'1'\}\}\)/);
  assert.match(tabs,/params:\{compose:destination\}/);
  assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string;momentSession\?:string\}>\(\)/);
  assert.match(feed,/if\(compose==='post'\)openPostComposer\(\)/);
@@ -71,4 +72,15 @@ test('plus menu contains only post and community secondary tiles without duplica
  assert.doesNotMatch(tiles,/action\('story'\)/);
  assert.doesNotMatch(layout,/Criar Story com a câmara/);
  assert.match(feed,/accessibilityLabel="Criar a minha story"/);
+});
+
+test('create team opens the form after identity reset and consumes the deep-link once',()=>{
+ const screen=read('app/teams/index.tsx');
+ assert.match(screen,/useLocalSearchParams<\{create\?:string\}>\(\)/);
+ assert.match(screen,/if\(params\.create==='1'&&auth\.token\)/);
+ assert.match(screen,/setCreateOpen\(true\)/);
+ assert.match(screen,/router\.setParams\(\{create:undefined\}\)/);
+ const reset=screen.indexOf("setCreateOpen(false);setName('');");
+ const open=screen.indexOf("if(params.create==='1'&&auth.token)");
+ assert.ok(reset>=0&&open>reset,'the URL intent must run after account reset');
 });
