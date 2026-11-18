@@ -230,7 +230,6 @@ workflows:
       java: 17
       vars:
         CI: "1"
-        EAS_BUILD_PROFILE: "play-internal"
         JYNLO_REQUIRE_REAL_API: "1"
         JYNLO_REQUIRE_NATIVE_PUSH: "1"
     cache:
@@ -267,7 +266,7 @@ workflows:
         script: |
           set -eu
           bash scripts/prepare-jynlo-icon.sh
-          npx --no-install expo prebuild --platform android --no-install
+          EAS_BUILD_PROFILE=play-internal npx --no-install expo prebuild --platform android --no-install
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Bloquear R8 na build corretiva do crash Android
         script: |
