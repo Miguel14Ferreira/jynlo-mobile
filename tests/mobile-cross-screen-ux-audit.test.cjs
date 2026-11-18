@@ -27,6 +27,11 @@ test('discovery, inbox, profile and tournament filters remain usable on touch de
  const inbox=read('app/(tabs)/messages.tsx');
  const profile=read('app/(tabs)/profile.tsx');
  const tournaments=read('app/(tabs)/tournaments.tsx');
+ assert.match(explore,/destinationRow:\{flexDirection:'row',alignItems:'stretch',gap:8\}/);
+ assert.match(explore,/destinationShortcut:\{flex:1,minWidth:0,minHeight:76/);
+ for(const destination of ['Explorar equipas','Explorar comunidades desportivas','Encontrar recintos desportivos'])
+  assert.ok(explore.includes(destination),destination);
+ assert.ok(explore.indexOf('<View style={styles.destinationRow}>')<explore.indexOf('accessibilityLabel="Filtrar por cidade"'));
  assert.match(explore,/chip:\{minHeight:44,justifyContent:'center'/);
  assert.match(explore,/accessibilityLabel="Repetir pesquisa de sessões"/);
  assert.match(explore,/onPress=\{\(\)=>\{void load\(\);\}\}/);
