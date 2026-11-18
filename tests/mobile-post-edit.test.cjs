@@ -58,5 +58,8 @@ test('editing post media uses explicit replacement consent and the server media 
  assert.match(editor,/selectionLimit:6/);
  assert.match(editor,/albumError\(files,true\)/);
  assert.match(editor,/setReplacementMedia\(\[\]\)/);
+ assert.match(editor,/accessibilityLabel=\{'Fotografia nova '\+\(index\+1\)\}/);
+ assert.match(editor,/file\.type==='image'\?<Image/);
+ assert.match(editor,/if\(!text\.trim\(\)&&!replacing&&postMediaItems\(post\)\.length===0\)/);
  assert.match(editor,/replacePostMedia\(post\.postId!,replacementMedia,text,location,token,username\)/);
 });
