@@ -28,3 +28,14 @@ test('expired session status is consistent between the badge and detail informat
  assert.match(view,/sessionParticipationLabel\(\{status:s\.status\|\|'UNKNOWN',gameDate:s\.gameDate,joined:false,waitlisted:false\}\)/);
  assert.doesNotMatch(view,/s\.status==='OPEN'\?'Aberta':s\.status==='FULL'\?'Completa'/);
 });
+
+test('session detail uses accessible metadata and 44pt attendance actions',()=>{
+ const view=read('app/sessions/[id].tsx');
+ assert.match(view,/label:\{fontSize:12,letterSpacing:\.5/);
+ assert.match(view,/value:\{fontSize:16,color:C\.white,fontWeight:'800',lineHeight:23/);
+ assert.match(view,/attendanceButton:\{[^\n]*minHeight:44/);
+ assert.match(view,/removePlayerButton:\{[^\n]*minHeight:44/);
+ assert.match(view,/memberStatus:\{color:C\.muted,fontSize:13/);
+ assert.match(view,/accessibilityLabel=\{'Confirmar presença de '\+p\.username\}/);
+ assert.match(view,/accessibilityLabel=\{'Registar falta de '\+p\.username\}/);
+});
