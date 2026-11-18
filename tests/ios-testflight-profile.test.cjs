@@ -9,12 +9,34 @@ const app=JSON.parse(fs.readFileSync(path.join(root,'app.json'),'utf8')).expo;
 test('TestFlight is a store-signed iOS build, separate from Android diagnostics',()=>{
  const ios=eas.build['ios-testflight'];
  assert.equal(ios.distribution,'store');
- assert.equal(ios.environment,'preview');
- assert.equal(ios.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
+ assert.equal(ios.environment,'production');
+ assert.ok(!Object.prototype.hasOwnProperty.call(ios.env,'EXPO_PUBLIC_JYNLO_API_URL'),
+  'Use the configured production API from EAS production environment, not hardcoded preview');
  assert.equal(ios.env.JYNLO_REQUIRE_REAL_API,'1');
  assert.ok(!('JYNLO_ANDROID_DIAGNOSTIC_NO_R8' in ios.env));
  assert.equal(eas.build.diagnostic.android.buildType,'apk');
  assert.equal(eas.build.diagnostic.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
  assert.equal(app.ios.bundleIdentifier,'com.jynlo.app');
+ assert.equal(app.version,'0.16.7');
+ assert.equal(app.ios.buildNumber,'2');
+ assert.equal(app.android.versionCode,14,'Do not change the ongoing Android closed testing release');
  assert.ok(Object.prototype.hasOwnProperty.call(eas.submit,'ios-testflight'));
+});
+
+test('iOS TestFlight blocks preview API without asking for Android Maps/Firebase secrets',()=>{
+ const {spawnSync}=require('node:child_process');
+ const script=path.join(root,'scripts/verify-release.cjs');
+ const run=url=>spawnSync(process.execPath,[script],{
+  encoding:'utf8',env:{...process.env,EAS_BUILD_PROFILE:'ios-testflight',
+    EXPO_PUBLIC_JYNLO_API_URL:url,JYNLO_REQUIRE_REAL_API:'1',
+    GOOGLE_SERVICES_JSON:'',JYNLO_GOOGLE_MAPS_ANDROID_API_KEY:''}
+ });
+ for(const url of ['','https://desporto24-preview-api.onrender.com','https://staging-api.example.org']){
+  const rejected=run(url);
+  assert.notEqual(rejected.status,0,url||'missing production API');
+  assert.match(rejected.stderr,/BUILD BLOQUEADO/);
+ }
+ const valid=run('https://api.d24sports.com');
+ assert.equal(valid.status,0,valid.stderr);
+ assert.match(valid.stdout,/OK \(api\)/);
 });
