@@ -59,3 +59,12 @@ test('personal Lives refresh from authenticated WebSocket invalidations, with a 
  assert.match(list,/observePersonalLives\(\{token:auth\.token/);
  assert.match(room,/setInterval\(\(\)=>\{if\(AppState\.currentState==='active'\)void refresh\(\);\},30000\)/);
 });
+
+test('guest permissions are revoked after host removal, and never guessed from the UI',()=>{
+ const room=read('app/live/[id].tsx');
+ assert.match(room,/!state\.value\.isGuest&&connectionRole\.current==='GUEST'/);
+ assert.match(room,/next\.role==='VIEWER'/);
+ assert.match(room,/next\.role==='GUEST'/);
+ assert.match(room,/PermissionsAndroid\.requestMultiple/);
+ assert.match(room,/connectionRole\.current===role/);
+});
