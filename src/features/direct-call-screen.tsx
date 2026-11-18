@@ -48,7 +48,7 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
  return <View style={styles.mediaPanel}>
   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
   {media==='video'?<View style={styles.videos}>
-   {tracks.filter(isTrackReference).map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.videoCard,track.participant.isLocal&&styles.localVideoCard]}>
+   {tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal)).map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.videoCard,track.participant.isLocal&&styles.localVideoCard]}>
     <VideoTrack trackRef={track} style={[styles.video,track.participant.isLocal&&styles.localVideo]}/>
     <Text style={styles.note}>{track.participant.isLocal?'Tu':'Participante'}</Text>
    </View>)}
