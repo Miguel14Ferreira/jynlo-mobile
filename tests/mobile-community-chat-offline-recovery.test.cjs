@@ -5,10 +5,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
 
-test('community chat polls while websocket is offline and the app is active',()=>{
- assert.match(source,/connectionStatus\.current!=='online'&&AppState\.currentState==='active'/);
+test('community chat refreshes promptly offline and periodically online',()=>{
+ assert.match(source,/AppState\.currentState==='active'&&!sendingNow\.current/);
+ assert.match(source,/connectionStatus\.current!=='online'\|\|pollTicks%6===0/);
  assert.match(source,/setInterval\(\(\)=>\{/);
- assert.match(source,/15000\)/);
+ assert.match(source,/\},5000\)/);
  assert.match(source,/AppState\.addEventListener\('change',state=>/);
  assert.match(source,/void refresh\(version,true\)/);
  assert.match(source,/clearInterval\(timer\);resume\.remove\(\)/);
