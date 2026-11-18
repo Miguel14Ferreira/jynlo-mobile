@@ -3,7 +3,13 @@
 const {isIP}=require('node:net');
 const fs=require('node:fs');
 const httpUrl=(process.env.EXPO_PUBLIC_JYNLO_API_URL||'').trim();
-const storeRelease=process.argv.includes('--production') || ['production','play-internal'].includes(process.env.EAS_BUILD_PROFILE);
+const profile=process.env.EAS_BUILD_PROFILE||'';
+const iosStoreRelease=profile==='ios-testflight';
+// Keep --production backward-compatible with the Android release checks,
+// but iOS TestFlight must never require Android Maps or Firebase secrets.
+const androidStoreRelease=['production','play-internal'].includes(profile) ||
+  (process.argv.includes('--production')&&!iosStoreRelease);
+const storeRelease=androidStoreRelease||iosStoreRelease;
 const release=storeRelease || process.env.JYNLO_REQUIRE_REAL_API==='1';
 function checkProductionEnvironment(){
   if(!release) return {ok:true,mode:httpUrl?'api':'demo'};
@@ -15,7 +21,7 @@ function checkProductionEnvironment(){
   }
   const host=url.hostname.toLowerCase();
   // A valid public HTTPS URL can still point to the preview database.
-  // Never ship a Play Store AAB targeting our development/staging backend.
+  // Never ship a Play Store AAB or TestFlight IPA targeting development/staging.
   if(storeRelease && (host==='desporto24-preview-api.onrender.com' ||
      /(?:^|[.-])(?:preview|staging|sandbox)(?:[.-]|$)/.test(host))) {
     throw new Error('BUILD BLOQUEADO: a versão de loja não pode usar o backend preview/staging. Configura a API de produção.');
@@ -33,7 +39,7 @@ function checkProductionEnvironment(){
      /^172\.(1[6-9]|2\d|3[01])\./.test(host) || /^169\.254\./.test(host)) {
     throw new Error('BUILD BLOQUEADO: endpoint de demonstração/inválido ou rede privada.');
   }
-  if(storeRelease){
+  if(androidStoreRelease){
     const mapsKey=(process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY||'').trim();
     if(!/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
       throw new Error('BUILD BLOQUEADO: falta uma chave Google Maps Android válida na configuração EAS de loja.');
