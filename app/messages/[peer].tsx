@@ -11,6 +11,7 @@ import type {ScrollViewInstance} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
+import {observeDirectChat} from '../../src/lib/direct-chat-realtime';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Loader,Message} from '../../src/components/UI';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -191,10 +192,23 @@ export default function DirectConversation(){
     if(active&&generation.current===version&&blockCheckRequest.current===blockRequest){setBlocked(value);setBlockStatusKnown(true);}
    }).catch(()=>{ /* Keep calls disabled when the block status cannot be verified. */ });
   }
-  // Poll only while focused; old responses cannot overwrite a new conversation.
+  // The authenticated socket gives instant hints; all message content still
+  // comes from block-aware HTTP. A modest fallback protects against lost hints.
+  let socketOnline=false,pollTicks=0;
+  const disconnect=auth.token&&auth.username?observeDirectChat({
+   peer,self:auth.username,token:auth.token,
+   onInvalidated:()=>{
+    if(active&&generation.current===version&&AppState.currentState==='active'&&!sendingNow.current)
+     void refresh(true,version);
+   },
+   onStatus:status=>{if(active&&generation.current===version)socketOnline=status==='online';}
+  }):()=>{};
   const timer=setInterval(()=>{
-   if(AppState.currentState==='active'&&!sendingNow.current)void refresh(true,version);
-  },15000);
+   if(active&&generation.current===version&&AppState.currentState==='active'&&!sendingNow.current){
+    pollTicks++;
+    if(!socketOnline||pollTicks%6===0)void refresh(true,version);
+   }
+  },5000);
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active'&&generation.current===version)void refresh(true,version);
   });
@@ -208,16 +222,16 @@ export default function DirectConversation(){
     if(auth.token)void refresh(true,version);
    });
   }catch{
-   // The 15-second poll and app-resume refresh still keep this chat current.
+   // The socket and fallback poll still keep this chat current.
   }
   return ()=>{
-   active=false;clearInterval(timer);resume.remove();
+   active=false;clearInterval(timer);disconnect();resume.remove();
    try{received?.remove();}catch{
     // Optional native listener teardown must not block navigation.
    }
    pendingRefresh.current=false;generation.current++;blockCheckRequest.current++;
   };
- },[refresh,peer,auth.token]));
+ },[refresh,peer,auth.token,auth.username]));
  function toggleMute(){
   const token=auth.token,identity=peer+'|'+token;
   if(!token||!muteKnown||muteBusy||pendingMuteWrites.current.has(identity))return;
