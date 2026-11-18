@@ -90,8 +90,8 @@ function mediaMatches(post,entry){
 function rememberPostEdit(edits,post,now=Date.now(),mediaReplaced=false){
  const next=new Map(edits);
  if(!post||!Number.isSafeInteger(post.postId)||post.postId<=0||
-    post.type!=='POST'||typeof post.content!=='string')return next;
- next.set(post.postId,{content:post.content,location:post.location||null,until:now+RECEIPT_TTL_MS,
+    post.type!=='POST'||(typeof post.content!=='string'&&post.content!==null))return next;
+ next.set(post.postId,{content:post.content||'',location:post.location||null,until:now+RECEIPT_TTL_MS,
   ...(mediaReplaced?{mediaReplaced:true,...mediaSnapshot(post)}:{})});
  return next;
 }
@@ -102,7 +102,7 @@ function reconcilePostEdits(edits,posts,now=Date.now()){
  for(const [id,entry] of edits){
   if(!entry||typeof entry.content!=='string'||!Number.isFinite(entry.until)||entry.until<=now)continue;
   const received=byId.get(id);
-  if(received&&received.content===entry.content&&(received.location||null)===(entry.location||null)&&
+  if(received&&(received.content||'')===entry.content&&(received.location||null)===(entry.location||null)&&
      (!entry.mediaReplaced||mediaMatches(received,entry)))continue;
   next.set(id,entry);
  }
