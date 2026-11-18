@@ -6,6 +6,7 @@ import {Track} from 'livekit-client';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
+import {observePersonalLives} from '../../src/lib/personal-live-realtime';
 import {
  joinPersonalLive,heartbeatPersonalLive,endPersonalLive,
  personalLiveMessages,personalLiveControls,sendPersonalLiveMessage,requestPersonalLiveGuest,
@@ -118,9 +119,10 @@ export default function PersonalLiveRoom(){
  useEffect(()=>{
   if(!connection||!ready)return;
   void refresh();
-  const poll=setInterval(()=>{if(AppState.currentState==='active')void refresh();},4000);
-  return()=>clearInterval(poll);
- },[connection?.serverUrl,ready,refresh]);
+  const stop=auth.token?observePersonalLives({token:auth.token,onInvalidated:()=>{if(AppState.currentState==='active')void refresh();}}):()=>{};
+  const poll=setInterval(()=>{if(AppState.currentState==='active')void refresh();},30000);
+  return()=>{stop();clearInterval(poll);};
+ },[connection?.serverUrl,ready,refresh,auth.token]);
  useEffect(()=>{
   if(!host||!auth.token||!ready)return;
   // Host heartbeats are intentionally scoped to the active room. If the app
