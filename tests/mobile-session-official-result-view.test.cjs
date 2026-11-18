@@ -16,7 +16,7 @@ test('only authenticated joined players or organizers see the official scoreboar
  assert.match(page,/import \{SessionOfficialResultCard\} from '\.\.\/\.\.\/src\/components\/SessionOfficialResultCard'/);
  assert.match(page,/detail&&auth.token&&\(owner\|\|detail.joined\)&&s.status!=='CANCELLED'/);
  assert.match(page,/Date.parse\(s.gameDate\)<=Date.now\(\)/);
- assert.match(page,/<SessionOfficialResultCard sessionId=\{id\} token=\{auth.token\}\/>/);
+ assert.match(page,/<SessionOfficialResultCard sessionId=\{id\} token=\{auth.token\} game=\{detail\}\/>/);
 });
 test('scorecard distinguishes a saved old winner-only round from a real final score',()=>{
  const ui=read('src/components/SessionOfficialResultCard.tsx');
