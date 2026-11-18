@@ -60,6 +60,17 @@ test('direct diagnostic EAS builds use the same preview environment as the workf
  assert.equal(diagnostic.env.EXPO_PUBLIC_JYNLO_API_URL,'https://desporto24-preview-api.onrender.com');
 });
 
+test('Play builds preserve the WorkManager Room database name used during Android startup',()=>{
+ const config=require('../app.config.js');
+ const configured=config({config:{plugins:[],android:{},extra:{}}});
+ const buildProperties=configured.plugins.find(plugin=>Array.isArray(plugin)&&plugin[0]==='expo-build-properties');
+ assert.ok(buildProperties,'Android build properties plugin must be configured');
+ const rules=buildProperties[1].android.extraProguardRules;
+ assert.match(rules,/-keep class androidx\\.work\\.impl\\.WorkDatabase \\{ \\*; \\}/);
+ assert.match(rules,/-keep class androidx\\.work\\.impl\\.WorkDatabase_Impl \\{ \\*; \\}/);
+ assert.match(rules,/-keep class livekit\\.org\\.jni_zero\\.JniInit \\{ \\*; \\}/);
+});
+
 test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup crash',()=>{
  const eas=require('../eas.json');
  const preview=eas.build.preview;
