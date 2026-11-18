@@ -58,7 +58,7 @@ test('optional post location uses backend supported 160 character limit',()=>{
  assert.match(api,/location:place/);
  assert.match(feed,/placeholder="Adicionar localização \(opcional\)"/);
  assert.match(feed,/maxLength=\{160\}/);
- assert.match(feed,/publishPost\(body,media,actor,username,place\)/);
+ assert.match(feed,/publishPost\(body,media,actor,username,place,linkedSessionId\?\?undefined\)/);
  assert.match(feed,/item\.location\?\.trim\(\)/);
  assert.match(types,/location\?:string\|null/);
 });
