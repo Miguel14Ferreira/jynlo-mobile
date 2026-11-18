@@ -275,7 +275,7 @@ workflows:
           from pathlib import Path
           import re
           props = Path('android/gradle.properties').read_text()
-          for setting in ('android.enableProguardInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):
+          for setting in ('android.enableMinifyInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):
               pattern = r'(?m)^' + re.escape(setting) + r'\s*=\s*false(?:\s|$)'
               if not re.search(pattern, props):
                   raise SystemExit(f'Build bloqueada: {setting} tem de estar explicitamente false em gradle.properties')
