@@ -17,3 +17,11 @@ test('custom sport selector validates before changing wizard step and resets on 
  assert.match(screen,/accessibilityLabel="Nome da modalidade personalizada"/);
  assert.match(screen,/isValidCustomSport\(form\.sport\.trim\(\)\.replace/);
 });
+
+test('session creation wizard offers readable instructions and touch-sized steps',()=>{
+ assert.match(screen,/stepChip:\{minHeight:44/);
+ assert.match(screen,/stepText:\{color:C\.muted,fontSize:13/);
+ assert.match(screen,/note:\{color:C\.muted,fontSize:14,lineHeight:21/);
+ assert.match(screen,/option:\{gap:12,padding:12,minHeight:44/);
+ assert.match(screen,/input:\{borderWidth:1,[^\n]*fontSize:15/);
+});
