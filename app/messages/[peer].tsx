@@ -698,7 +698,7 @@ const styles=StyleSheet.create({
  reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
  title:{fontSize:23,fontWeight:'900',color:C.white},
  note:{fontSize:12,color:C.muted,lineHeight:19},
- message:{padding:10,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:5,maxWidth:'88%',alignSelf:'flex-start',borderBottomLeftRadius:5},
+ message:{padding:10,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:5,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},
  sender:{fontSize:11,color:C.mint,fontWeight:'800'},replyAction:{alignSelf:'flex-end',paddingHorizontal:9,paddingVertical:6,minHeight:32,justifyContent:'center'},replyActionText:{fontSize:11,fontWeight:'800',color:C.mint},replyPreview:{flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,paddingVertical:9,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:C.surface,borderRadius:10},replyPreviewTitle:{fontSize:12,fontWeight:'800',color:C.mint},replyPreviewText:{fontSize:12,color:C.white},replyCancel:{minWidth:38,minHeight:38,justifyContent:'center',alignItems:'center'},
  quote:{fontSize:12,color:C.muted,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8},
