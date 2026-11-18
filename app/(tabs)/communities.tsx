@@ -95,12 +95,12 @@ export default function CommunitiesScreen(){
 const styles=StyleSheet.create({
   hero:{gap:12},headline:{fontSize:30,lineHeight:37,color:C.white,fontWeight:'900'},sub:{color:C.muted,fontSize:14,lineHeight:21},
   actions:{flexDirection:'row',alignItems:'stretch',gap:10},inbox:{minWidth:80,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:17,alignItems:'center',justifyContent:'center',gap:2,paddingHorizontal:11},
-  inboxIcon:{fontSize:22,color:C.mint},inboxLabel:{fontSize:11,color:C.white,fontWeight:'800'},
-  segment:{flexDirection:'row',padding:5,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,gap:4},segmentTab:{flex:1,alignItems:'center',paddingVertical:12,borderRadius:11},
+  inboxIcon:{fontSize:22,color:C.mint},inboxLabel:{fontSize:12,color:C.white,fontWeight:'800'},
+  segment:{flexDirection:'row',padding:5,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,gap:4},segmentTab:{flex:1,alignItems:'center',justifyContent:'center',minHeight:44,paddingVertical:10,borderRadius:11},
   segmentActive:{backgroundColor:C.mint},segmentText:{color:C.white,fontSize:13,fontWeight:'800'},
   input:{backgroundColor:MobileTheme.colors.surface,borderColor:MobileTheme.colors.border,borderWidth:1,color:MobileTheme.colors.text,minHeight:52,borderRadius:MobileTheme.radius.md,paddingHorizontal:15},
-  filters:{gap:10},resetFilters:{alignSelf:'flex-start',minHeight:MobileTheme.touchTarget,justifyContent:'center',borderColor:MobileTheme.colors.border,borderWidth:1,borderRadius:MobileTheme.radius.pill,paddingHorizontal:13},resetFiltersText:{color:MobileTheme.colors.accent,fontSize:12,fontWeight:'800'},resultHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:9},resultTitle:{fontSize:17,fontWeight:'900',color:MobileTheme.colors.text},resultCount:{fontSize:12,color:MobileTheme.colors.muted},selectedFilter:{color:C.mint,fontSize:13,fontWeight:'800'},
+  filters:{gap:10},resetFilters:{alignSelf:'flex-start',minHeight:MobileTheme.touchTarget,justifyContent:'center',borderColor:MobileTheme.colors.border,borderWidth:1,borderRadius:MobileTheme.radius.pill,paddingHorizontal:13},resetFiltersText:{color:MobileTheme.colors.accent,fontSize:12,fontWeight:'800'},resultHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:9},resultTitle:{fontSize:17,fontWeight:'900',color:MobileTheme.colors.text},resultCount:{fontSize:13,color:MobileTheme.colors.muted},selectedFilter:{color:C.mint,fontSize:13,fontWeight:'800'},
   suggestion:{padding:12,borderRadius:11,backgroundColor:C.surface2},suggestionText:{color:C.white,fontSize:13,fontWeight:'700'},
   empty:{alignItems:'center',padding:23,backgroundColor:C.surface,borderRadius:22,gap:13},emptyEmoji:{fontSize:42},emptyTitle:{fontSize:18,color:C.white,fontWeight:'800'},
-  note:{color:C.muted,fontSize:11,lineHeight:16,textAlign:'center'}
+  note:{color:C.muted,fontSize:13,lineHeight:20,textAlign:'center'}
 });
