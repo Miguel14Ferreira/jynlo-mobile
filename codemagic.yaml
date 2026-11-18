@@ -337,12 +337,16 @@ workflows:
       node: v22.23.1
       xcode: latest
       cocoapods: default
+      # Reuse the existing encrypted production API configuration from the
+      # signed Google Play pipeline. No backend URLs or secrets in Git.
+      groups:
+        - jynlo_play_release
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.jynlo.app
       vars:
         CI: "1"
-        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        EAS_BUILD_PROFILE: "ios-testflight"
         JYNLO_REQUIRE_REAL_API: "1"
     scripts:
       - name: Confirmar branch e ferramentas
@@ -352,8 +356,11 @@ workflows:
             echo "Build iOS bloqueada: usar exclusivamente a branch develop."
             exit 1
           fi
+          test -n "${EXPO_PUBLIC_JYNLO_API_URL:-}" || { echo "Falta EXPO_PUBLIC_JYNLO_API_URL no grupo protegido jynlo_play_release."; exit 1; }
           node --version
           xcodebuild -version
+          node -e "const app=require('./app.json').expo; if(app.ios.bundleIdentifier!=='com.jynlo.app'||app.ios.buildNumber!=='2'||app.version!=='0.16.7'){throw Error('Versao iOS inesperada: necessario 0.16.7 (2)');}"
+          node scripts/verify-release.cjs
       - name: Instalar dependencias e validar app
         script: |
           set -eu
