@@ -11,11 +11,11 @@ test('direct chat tolerates unavailable native notification registration',()=>{
  assert.match(focus,/const Notifications=getNativeNotifications\(\)/);
  assert.match(focus,/try\{\s*const Notifications=getNativeNotifications\(\)/);
  assert.match(focus,/if\(Notifications\)received=Notifications\.addNotificationReceivedListener\(/);
- assert.match(focus,/\}catch\{\s*\/\/ The 15-second poll and app-resume refresh/);
+ assert.match(focus,/\}catch\{\s*\/\/ The socket and fallback poll still keep this chat current/);
  assert.match(focus,/if\(notification\.request\?\.content\?\.data\?\.kind!=='notification'/);
 });
 test('direct chat listener removal is failure-safe during navigation',()=>{
- assert.match(focus,/active=false;clearInterval\(timer\);resume\.remove\(\)/);
+ assert.match(focus,/active=false;clearInterval\(timer\);disconnect\(\);resume\.remove\(\)/);
  assert.match(focus,/try\{received\?\.remove\(\);\}catch\{/);
  assert.match(focus,/pendingRefresh\.current=false;generation\.current\+\+;blockCheckRequest\.current\+\+/);
 });
