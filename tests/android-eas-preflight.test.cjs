@@ -69,6 +69,8 @@ test('Play builds preserve the WorkManager Room database name used during Androi
  assert.match(rules,/-keep class androidx\.work\.impl\.WorkDatabase \{ \*; \}/);
  assert.match(rules,/-keep class androidx\.work\.impl\.WorkDatabase_Impl \{ \*; \}/);
  assert.match(rules,/-keep class livekit\.org\.jni_zero\.JniInit \{ \*; \}/);
+ assert.ok(rules.includes('-keep class * extends androidx.room.RoomDatabase { public <init>(); }'));
+ assert.ok(rules.includes('-keep class * extends androidx.work.InputMerger { public <init>(); }'));
 });
 
 test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup crash',()=>{
