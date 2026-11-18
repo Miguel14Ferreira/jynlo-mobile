@@ -10,7 +10,8 @@ import {mediaRequestSource} from '../../src/lib/protected-media-source';
 import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import type {StoryAudience} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
 import {rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts,rememberPostEdit,reconcilePostEdits} from '../../src/lib/feed-interaction-reconciliation.cjs';
@@ -45,9 +46,9 @@ const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.s
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
 const StoryCameraCapture=lazy(()=>import('../../src/components/StoryCameraCapture'));
-function MediaVideo({uri,story=false,paused=false,muted=false,onEnd}:{uri:string;story?:boolean;paused?:boolean;muted?:boolean;onEnd?:()=>void}){
+function MediaVideo({uri,story=false,paused=false,muted=false,onEnd,onReady,onPlaybackError}:{uri:string;story?:boolean;paused?:boolean;muted?:boolean;onEnd?:()=>void;onReady?:()=>void;onPlaybackError?:()=>void}){
  return <Suspense fallback={<View style={story?styles.storyVideo:styles.postVideo}/>}>
-  <FeedVideo uri={uri} story={story} paused={paused} muted={muted} onEnd={onEnd}/>
+  <FeedVideo uri={uri} story={story} paused={paused} muted={muted} onEnd={onEnd} onReady={onReady} onPlaybackError={onPlaybackError}/>
  </Suspense>;
 }
 function CircleAvatar({name,size=42,image}:{name:string;size?:number;image?:string|null}){
@@ -71,6 +72,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [paused,setPaused]=useState(false);
   const [appActive,setAppActive]=useState(AppState.currentState==='active');
   const [replyText,setReplyText]=useState(''),[storyBusy,setStoryBusy]=useState(false),[replyFocused,setReplyFocused]=useState(false),[storyMuted,setStoryMuted]=useState(true);
+  const [mediaState,setMediaState]=useState<'loading'|'ready'|'error'>('loading');
+  const [mediaRetry,setMediaRetry]=useState(0);
+  const [audience,setAudience]=useState<StoryAudience|null>(null);
+  const [audienceOpen,setAudienceOpen]=useState(false),[audienceBusy,setAudienceBusy]=useState(false),[audienceError,setAudienceError]=useState('');
+  const viewedStoryIds=useRef(new Set<number>());
   const submittingStory=useRef(false);
   const activeAccount=useRef(token);
   activeAccount.current=token;
@@ -84,7 +90,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   },[group?.key,progress]);
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
-  React.useEffect(()=>{setReplyText('');setReplyFocused(false);},[story?.id]);
+  React.useEffect(()=>{setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
+    setAudience(null);setAudienceOpen(false);setAudienceError('');},[story?.id]);
   React.useEffect(()=>{
     const subscription=AppState.addEventListener('change',state=>{
       if(state!=='active')progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
@@ -110,7 +117,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   // Drive both the visible progress bar and photo advancement from one animation.
   // Pausing resumes from the remaining duration rather than restarting 6 seconds.
   React.useEffect(()=>{
-    if(!story||story.video||paused||replyFocused||storyBusy||!appActive)return;
+    if(!story||story.video||mediaState!=='ready'||paused||replyFocused||storyBusy||audienceOpen||!appActive)return;
     const animation=Animated.timing(progress,{toValue:1,duration:Math.max(50,6000*remaining.current),useNativeDriver:false});
     animation.start(({finished})=>{
       if(finished){
@@ -121,10 +128,36 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       }
     });
     return ()=>{animation.stop();};
-  },[story?.id,story?.video,paused,replyFocused,storyBusy,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
+  },[story?.id,story?.video,mediaState,paused,replyFocused,storyBusy,audienceOpen,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
   if(!group||!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
+  const mediaReady=()=>{
+    setMediaState('ready');
+    // Record a view only after real media is ready, once per Story/account.
+    if(!ownStory&&token&&username&&!viewedStoryIds.current.has(story.id)){
+      viewedStoryIds.current.add(story.id);
+      void recordStoryView(story.id,token).catch(()=>{viewedStoryIds.current.delete(story.id);});
+    }
+  };
+  const loadAudience=async()=>{
+    if(!ownStory||!token||audienceBusy)return;
+    pauseProgress();setAudienceOpen(true);setAudienceBusy(true);setAudienceError('');
+    const id=story.id,actor=token;
+    try{const result=await storyAudience(id,actor);
+      if(activeAccount.current===actor)setAudience(result);
+    }catch(e){if(activeAccount.current===actor)setAudienceError(e instanceof Error?e.message:'Não foi possível carregar as visualizações.');}
+    finally{if(activeAccount.current===actor)setAudienceBusy(false);}
+  };
+  const sendQuickReaction=async(emoji:string)=>{
+    if(ownStory||!token||!username||storyBusy||submittingStory.current)return;
+    submittingStory.current=true;setStoryBusy(true);pauseProgress();
+    const id=story.id,actor=token;
+    try{await replyToStory(id,emoji,actor,username);
+      if(activeAccount.current===actor)Alert.alert('Reação enviada',emoji+' A reação foi enviada em privado ao autor.');
+    }catch(e){if(activeAccount.current===actor)Alert.alert('Reação',e instanceof Error?e.message:'Não foi possível confirmar a reação.');}
+    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+  };
   async function toggleLike(){
     if(!story||!token||!username||submittingStory.current)return;
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
