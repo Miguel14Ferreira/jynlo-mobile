@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
@@ -93,8 +93,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
+ const composerFocused=useRef(false);
+ const [keyboardOpen,setKeyboardOpen]=useState(false);
  const nearLatest=useRef(true),latestId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
+ useEffect(()=>{
+  const open=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{
+   setKeyboardOpen(true);
+   // Never pull someone away from older messages merely because a keyboard opens.
+   if(composerFocused.current&&nearLatest.current)historyRef.current?.scrollToEnd({animated:true});
+  });
+  const close=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide',()=>setKeyboardOpen(false));
+  return()=>{open.remove();close.remove();};
+ },[]);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true);
  const [sending,setSending]=useState(false);
@@ -725,6 +736,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </View>
   </View>:null}
   <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
+   onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
   <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
@@ -762,7 +774,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
   </Text>:null}
   <ScrollView ref={historyRef} nestedScrollEnabled keyboardShouldPersistTaps="handled"
-   style={kind==='chat'?styles.chatHistory:styles.feedHistory}
+   style={kind==='chat'?[styles.chatHistory,keyboardOpen&&styles.chatHistoryKeyboard]:styles.feedHistory}
    contentContainerStyle={styles.historyContent}
    scrollEventThrottle={100}
    onScroll={event=>{
@@ -867,6 +879,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
 const styles=StyleSheet.create({
  panel:{borderColor:C.border,borderWidth:1,borderRadius:16,padding:12,gap:9,backgroundColor:C.surface},
  chatHistory:{maxHeight:470,minHeight:150},
+ chatHistoryKeyboard:{maxHeight:290,minHeight:100},
  feedHistory:{maxHeight:700},
  historyContent:{gap:11,paddingBottom:12},
  newMessagesButton:{alignSelf:'center',paddingHorizontal:15,paddingVertical:10,
