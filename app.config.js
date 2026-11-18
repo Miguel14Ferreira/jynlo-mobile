@@ -45,7 +45,12 @@ module.exports = ({config}) => {
         '-keep class * extends androidx.room.RoomDatabase { public <init>(); }',
         '-keep class * extends androidx.work.InputMerger { public <init>(); }',
       ].join('\n'),
-      ...(diagnostic ? {
+      // Emergency startup recovery: the real Play binary crashes during
+      // androidx.startup WorkManager/Room initialization before React Native.
+      // Disable R8 for the next store build as well as diagnostic APKs.
+      // Keep package, signing identity, API, Maps and Firebase checks intact.
+      // Re-enable only after a minified signed AAB passes device launch tests.
+      ...(diagnostic || storeBuild ? {
         enableMinifyInReleaseBuilds: false,
         enableShrinkResourcesInReleaseBuilds: false,
       } : {}),
