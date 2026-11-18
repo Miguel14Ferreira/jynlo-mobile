@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Alert,Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Linking,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
@@ -91,6 +91,7 @@ export default function CreateSessionScreen(){
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  const [step,setStep]=useState(0);
  const [showDateCalendar,setShowDateCalendar]=useState(false);
+ const [showSeasonHelp,setShowSeasonHelp]=useState(false);
  const [showRegistrationCalendar,setShowRegistrationCalendar]=useState(false);
  const [showExtraCalendar,setShowExtraCalendar]=useState(false);
  // Selection controls whether an existing group of players must be counted explicitly.
@@ -426,7 +427,23 @@ export default function CreateSessionScreen(){
     secureTextEntry={key==='password'} autoCorrect={key==='password'?false:undefined}
     autoCapitalize={key==='password'?'none':'sentences'}
     editable={!busy} accessibilityLabel={label}/></View>;
- return <Page><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
+ return <Page>
+  <Modal visible={showSeasonHelp} transparent animationType="fade" onRequestClose={()=>setShowSeasonHelp(false)}>
+   <View style={styles.helpOverlay}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Fechar explicação do jogo de época" onPress={()=>setShowSeasonHelp(false)} style={styles.helpBackdrop}/>
+    <View style={styles.helpDialog} accessibilityViewIsModal>
+     <Text style={styles.helpTitle}>O que é um jogo de época?</Text>
+     <ScrollView style={styles.helpScroll} contentContainerStyle={styles.helpContent} showsVerticalScrollIndicator>
+      <Text style={styles.helpHeading}>Contar para a época</Text>
+      <Text style={styles.helpBody}>O resultado deste jogo pode contar para a classificação da tua comunidade, conforme as regras da modalidade.</Text>
+      <Text style={styles.helpHeading}>Não contar para a época</Text>
+      <Text style={styles.helpBody}>É um jogo normal: os participantes jogam, mas o resultado não altera a classificação.</Text>
+      <Text style={styles.helpHint}>Se a comunidade ainda não tiver classificações, tens de autorizar a sua ativação antes de criar um jogo de época.</Text>
+     </ScrollView>
+     <Pressable accessibilityRole="button" accessibilityLabel="Percebi, fechar explicação" onPress={()=>setShowSeasonHelp(false)} style={styles.helpClose}><Text style={styles.helpCloseText}>Percebi</Text></Pressable>
+    </View>
+   </View>
+  </Modal><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
   <Text style={styles.title}>Criar uma sessão</Text>
   <Text style={styles.note}>Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.</Text>
   <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}
@@ -542,9 +559,9 @@ export default function CreateSessionScreen(){
   {selectedCommunity?<View style={styles.panel}>
    <View style={styles.seasonHead}>
     <Text style={styles.heading}>Jogo de época</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>Alert.alert('O que é um jogo de época?','Se escolheres «Contar para a época», esta sessão fica associada à época ativa da comunidade e os seus resultados podem contribuir para a classificação, conforme a modalidade e as regras da comunidade.\n\nSe escolheres «Não contar para a época», a sessão continua a existir normalmente, sem influenciar a classificação.\n\nAo longo das jornadas, resultados e avaliações podem ajudar a melhorar as classificações e, quando existirem dados suficientes, a formar equipas mais equilibradas.\n\nSe as classificações estiverem desativadas, a ativação exige autorização explícita.')} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>ⓘ Saber mais sobre o jogo de época</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>setShowSeasonHelp(true)} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>ⓘ Saber mais sobre o jogo de época</Text></Pressable>
    </View>
-   <Text style={styles.note}>Decide se esta sessão contribui para a época e classificações da comunidade.</Text>
+   <Text style={styles.note}>Queres que o resultado deste jogo conte para a classificação da comunidade?</Text>
    <View style={styles.playerChoices}>
     <Button title="Não contar para a época" secondary={form.seasonGame===true} disabled={busy}
      onPress={()=>setForm(prev=>({...prev,seasonGame:false,confirmActivateRankings:false}))}/>
@@ -552,7 +569,7 @@ export default function CreateSessionScreen(){
      onPress={()=>setForm(prev=>({...prev,seasonGame:true,confirmActivateRankings:false}))}/>
    </View>
    {form.seasonGame&&!selectedCommunity.rankingsEnabled?<View style={styles.option}>
-    <Message>As classificações ainda não estão ativas nesta comunidade. A criação de um jogo de época poderá ativá-las e criar uma época por defeito.</Message>
+    <Message>Esta comunidade ainda não tem classificações ativas. Para contar este jogo, tens de autorizar a ativação da época e das classificações.</Message>
     <Button title={form.confirmActivateRankings?'Ativação autorizada ✓':'Autorizar ativação das classificações'}
      secondary={form.confirmActivateRankings!==true} disabled={busy}
      onPress={()=>patch('confirmActivateRankings',!form.confirmActivateRankings)}/>
@@ -769,6 +786,17 @@ const styles=StyleSheet.create({
  locationModePanel:{gap:10,padding:12,borderRadius:12,borderColor:C.border,borderWidth:1},
  locationConfirm:{minHeight:56,justifyContent:'center',padding:10,backgroundColor:'#10483F',borderRadius:10},
 
+ helpOverlay:{flex:1,justifyContent:'center',padding:22},
+ helpBackdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,0.78)'},
+ helpDialog:{backgroundColor:C.surface,borderColor:C.mint,borderWidth:1,borderRadius:20,padding:20,gap:15,maxHeight:'80%'},
+ helpTitle:{fontSize:21,lineHeight:28,fontWeight:'900',color:C.white},
+ helpScroll:{flexShrink:1},
+ helpContent:{gap:9,paddingBottom:6},
+ helpHeading:{fontSize:16,lineHeight:23,fontWeight:'900',color:C.mint,marginTop:5},
+ helpBody:{fontSize:15,lineHeight:23,color:C.white},
+ helpHint:{fontSize:14,lineHeight:22,color:C.white,backgroundColor:C.surface2,padding:12,borderRadius:12,marginTop:6},
+ helpClose:{minHeight:48,borderRadius:12,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
+ helpCloseText:{color:C.background,fontSize:16,fontWeight:'900'},
  seasonHead:{gap:10,alignItems:'flex-start'},
  seasonHelp:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingVertical:8,paddingHorizontal:12,backgroundColor:C.surface2,borderRadius:12,borderWidth:1,borderColor:C.mint},
  seasonHelpText:{color:C.mint,fontWeight:'800',fontSize:13},
