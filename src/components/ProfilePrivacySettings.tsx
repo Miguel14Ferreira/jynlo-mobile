@@ -16,9 +16,14 @@ export default function ProfilePrivacySettings({token}:{token:string}){
  useFocusEffect(useCallback(()=>{
    let active=true;
    setPrivacy(null);setPending([]);setMedia(null);setError('');setLoading(true);
-   void Promise.all([myProfilePrivacy(token),pendingFollowRequests(token)])
-    .then(([status,requests])=>{if(active){setPrivacy(status);setPending(requests);}})
-    .catch(()=>{if(active)setError('Não foi possível consultar a privacidade.');})
+   // A failed follow-request fetch must not hide the privacy setting itself.
+   void Promise.allSettled([myProfilePrivacy(token),pendingFollowRequests(token)])
+    .then(([status,requests])=>{
+     if(!active)return;
+     if(status.status==='fulfilled')setPrivacy(status.value);
+     else setError('Não foi possível consultar a privacidade.');
+     if(requests.status==='fulfilled')setPending(requests.value);
+    })
     .finally(()=>{if(active)setLoading(false);});
    void myPrivateMediaReadiness(token).then(result=>{if(active)setMedia(result);}).catch(()=>{});
    return()=>{active=false;};
@@ -66,7 +71,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
      <Text style={styles.readinessTitle}>Proteção privada ainda não disponível</Text>
      <Text style={styles.muted}>A Jynlo tem de proteger os ficheiros e os links antigos antes de ativar perfis privados. Não basta esconder as publicações no ecrã.</Text>
      {media?<Text style={styles.muted}>{media.publicReferences>0
-      ?`O teu perfil ainda tem ${media.publicReferences} referência(s) de multimédia sem proteção. A migração será feita pelo serviço, sem perder publicações.`
+      ?`O teu perfil ainda tem ${media.publicReferences} referência(s) de multimédia sem proteção. É necessária uma migração segura antes de ativar a privacidade.`
       :'O teu perfil não tem referências públicas por migrar; falta validar a segurança e ativar esta funcionalidade no servidor.'}</Text>:null}
      <Text style={styles.muted}>A opção ficará disponível quando o servidor confirmar a migração segura dos conteúdos.</Text>
     </View>:null}
