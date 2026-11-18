@@ -54,7 +54,7 @@ export default function TabsLayout(){
   }
   if(destination==='session')router.push('/sessions/create');
   else if(destination==='community')router.push('/communities/create');
-  else if(destination==='team')router.push('/teams');
+  else if(destination==='team')router.push({pathname:'/teams',params:{create:'1'}});
   else if(destination==='venue')router.push('/venues/create');
   else if(destination==='tournament')router.push('/tournaments/create');
   else router.push({pathname:'/(tabs)',params:{compose:destination}});
