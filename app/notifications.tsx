@@ -7,9 +7,10 @@ import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI'
 import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
 import {myNotifications,markNotificationRead,deleteMyNotification,deleteAllMyNotifications} from '../src/lib/notifications-api';
+import {myCommunityInvites} from '../src/lib/community-api';
 import {C} from '../src/lib/theme';
 import {confirmedSessionJoin} from '../src/lib/session-join-receipt.cjs';
-import type {JynloNotification,PendingSessionInvite} from '../src/lib/types';
+import type {JynloNotification,PendingSessionInvite,CommunityInvite} from '../src/lib/types';
 import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
@@ -19,6 +20,7 @@ export default function NotificationsScreen(){
  const {notificationId}=useLocalSearchParams<{notificationId?:string}>();
  const lastPushHandled=useRef<string|null>(null);
  const [items,setItems]=useState<JynloNotification[]>([]),[invites,setInvites]=useState<PendingSessionInvite[]>([]);
+ const [communityInvites,setCommunityInvites]=useState<CommunityInvite[]>([]);
  const [loading,setLoading]=useState(true),[historyReady,setHistoryReady]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const [busyInvite,setBusyInvite]=useState<number|null>(null);
@@ -40,17 +42,20 @@ export default function NotificationsScreen(){
  const unreadCount=visibleItems.filter(item=>!item.read).length;
  const filteredItems=unreadOnly?visibleItems.filter(item=>!item.read):visibleItems;
  const visibleInvites=sameAccount?invites:[];
+ const visibleCommunityInvites=sameAccount?communityInvites:[];
  const load=useCallback(async(silent=false,version=generation.current)=>{
   if(inFlight.current===version){pendingRefresh.current=true;return;}
   if(!auth.token||!auth.username){
-   setHistoryReady(false);setLoading(false);setItems([]);setInvites([]);return;
+   setHistoryReady(false);setLoading(false);setItems([]);setInvites([]);setCommunityInvites([]);return;
   }
   inFlight.current=version;
   const initialNotificationRevision=notificationRevision.current;
   if(!silent){setLoading(true);setError('');}
   try{
-   const [notifs,invitations]=await Promise.allSettled([
-    myNotifications(auth.token,auth.username),pendingSessionInvites(auth.token,auth.username)
+   const [notifs,invitations,communityInvitations]=await Promise.allSettled([
+    myNotifications(auth.token,auth.username),
+    pendingSessionInvites(auth.token,auth.username),
+    myCommunityInvites(auth.token,auth.username)
    ]);
    if(version!==generation.current||account.current!==auth.username+'|'+auth.token)return;
    // An older GET must never undo a newly confirmed delete or read mutation.
@@ -60,7 +65,8 @@ export default function NotificationsScreen(){
    }
    if(notifs.status==='rejected')setHistoryReady(false);
    if(invitations.status==='fulfilled')setInvites(invitations.value);
-   if(notifs.status==='rejected'||invitations.status==='rejected'){
+   if(communityInvitations.status==='fulfilled')setCommunityInvites(communityInvitations.value);
+   if(notifs.status==='rejected'||invitations.status==='rejected'||communityInvitations.status==='rejected'){
     if(!silent)setError('Não foi possível atualizar todas as notificações. A informação anterior foi preservada.');
    }else if(!silent)setError('');
   }finally{
@@ -77,7 +83,7 @@ export default function NotificationsScreen(){
  useFocusEffect(useCallback(()=>{
   const identity=auth.username+'|'+auth.token;
   if(identity!==account.current){
-   account.current=identity;setItems([]);setInvites([]);
+   account.current=identity;setItems([]);setInvites([]);setCommunityInvites([]);
    // Invalidate in-flight mutations started by the previous account.
    pushOperation.current++;inviteOperation.current++;notificationRevision.current++;
    notificationLock.current=false;setNotificationBusy(false);setUnreadOnly(false);
@@ -305,6 +311,16 @@ export default function NotificationsScreen(){
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}
   {sameAccount&&notice?<Message>{notice}</Message>:null}
   {sameAccount&&!loading?<View style={{gap:12}}>
+   <Text style={styles.heading}>Convites para comunidades · {visibleCommunityInvites.length}</Text>
+   {visibleCommunityInvites.length===0?<Text style={styles.note}>Não tens convites pendentes para comunidades.</Text>:
+    visibleCommunityInvites.slice(0,5).map(invite=><View key={invite.id} style={styles.invite}>
+     <Text style={styles.subject}>{invite.communityName}</Text>
+     <Text style={styles.body}>Convidado por @{invite.invitedByUsername}</Text>
+     <Button title="Ver convite e responder" secondary
+      onPress={()=>router.push('/communities/invites')}/>
+    </View>)}
+   {visibleCommunityInvites.length>5?<Button secondary title="Ver todos os convites de comunidades"
+    onPress={()=>router.push('/communities/invites')}/>:null}
    <Text style={styles.heading}>Convites para sessões · {visibleInvites.length}</Text>
    {visibleInvites.length===0?<Text style={styles.note}>Não tens convites pendentes para sessões.</Text>:visibleInvites.map(invite=><View key={invite.id} style={styles.invite}>
     <Text style={styles.subject}>{invite.sport||'Sessão desportiva'} · {invite.city||'Local a confirmar'}</Text>
