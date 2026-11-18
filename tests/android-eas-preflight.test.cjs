@@ -73,6 +73,27 @@ test('Play builds preserve the WorkManager Room database name used during Androi
  assert.ok(rules.includes('-keep class * extends androidx.work.InputMerger { public <init>(); }'));
 });
 
+test('Play corrective build disables native shrinking without weakening API or project guards',()=>{
+ const config=require('../app.config.js');
+ const oldProfile=process.env.EAS_BUILD_PROFILE;
+ const oldMaps=process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY;
+ try{
+  process.env.EAS_BUILD_PROFILE='play-internal';
+  process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY='AIza'+'A'.repeat(35);
+  const built=config({config:{plugins:[],android:{package:'com.jynlo.app'},extra:{}}});
+  const properties=built.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-build-properties')[1].android;
+  assert.equal(properties.enableMinifyInReleaseBuilds,false);
+  assert.equal(properties.enableShrinkResourcesInReleaseBuilds,false);
+  assert.equal(built.android.package,'com.jynlo.app');
+  assert.equal(built.extra.eas.projectId,'5628b5c4-513a-4b82-b0fb-7a50cace5cb6');
+ }finally{
+  if(oldProfile===undefined)delete process.env.EAS_BUILD_PROFILE;
+  else process.env.EAS_BUILD_PROFILE=oldProfile;
+  if(oldMaps===undefined)delete process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY;
+  else process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY=oldMaps;
+ }
+});
+
 test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup crash',()=>{
  const eas=require('../eas.json');
  const preview=eas.build.preview;
