@@ -801,7 +801,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
    {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
     onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
-    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null>
+    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null}
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
     <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
       messageId={item.id} token={token} index={file.index} name={file.filename}
