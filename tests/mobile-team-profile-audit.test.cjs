@@ -228,7 +228,7 @@ test('disabled private team feed rejects albums distinctly and revokes cached pr
  assert.match(album,/O \(\?:chat\|feed\) da equipa/);
  assert.match(panel,/O \(\?:chat\|feed\) da equipa está desativado/);
  assert.match(panel,/revokeIfUnauthorized\(new ApiError\(409,'Conversa desativada\.'\)\)/);
- assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
+ assert.match(panel,/setEntries\(\[\]\);setOlderEntries\(\[\]\)[\s\S]*?setSearchResults\(\[\]\)/);
 });
 
 test('private team messages and feed posts show safe round author photos with fallback',()=>{
@@ -241,7 +241,7 @@ test('private team messages and feed posts show safe round author photos with fa
  assert.match(panel,/onError=\{\(\)=>setBrokenAuthorAvatars\(prev=>/);
  assert.match(panel,/authorAvatarPhoto:\{width:37,height:37,borderRadius:19\}/);
  assert.match(panel,/setBrokenAuthorAvatars\(\{\}\)/);
- assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\)/);
+ assert.match(panel,/setEntries\(\[\]\);setOlderEntries\(\[\]\)[\s\S]*?setSearchResults\(\[\]\)/);
  assert.match(avatars,/^export function teamPlayerAvatarUri/m);
  assert.match(avatars,/if\(!input\)return null/);
  assert.match(avatars,/return API_BASE\+input/);
@@ -250,8 +250,8 @@ test('private team messages and feed posts show safe round author photos with fa
 
 test('private team feed counts threaded comments and collapses them without affecting chat or search',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
- assert.match(panel,/function teamFeedCommentCount\(entries:TeamContentEntry\[\],postId:number\):number/);
- assert.match(panel,/const visited=new Set<number>\(\[item\.id\]\)/);
+ assert.match(panel,/function teamFeedCommentCounts\(entries:TeamContentEntry\[\]\):Map<number,number>/);
+ assert.match(panel,/const seen=new Set<number>\(\)/);
  assert.match(panel,/collapsedFeedPosts,setCollapsedFeedPosts/);
  assert.match(panel,/searchActive\|\|item\.id===root\|\|!collapsed\.has\(root\)\|\|replyTo===item\.id/);
  assert.match(panel,/accessibilityState=\{\{expanded:!collapsedFeedPosts\.has\(item\.id\)\}\}/);
@@ -303,7 +303,7 @@ test('team feed offers compact likes and optional reactions while private chat k
 
 test('team feed reaction counts update immediately, roll back on error and stop after revoked access',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
- assert.match(panel,/const original=reactions\[item\.id\]\|\|\{counts:\{\},mine:null\}/);
+ assert.match(panel,/const original:TeamReactionState=reactions\[item\.id\]\|\|\{counts:\{\},mine:null\}/);
  assert.match(panel,/if\(original\.mine\)counts\[original\.mine\]=Math\.max\(0/);
  assert.match(panel,/const next=original\.mine===emoji\?null:emoji/);
  assert.match(panel,/reactionVersion\.current\+\+/);
@@ -348,7 +348,7 @@ test('team feed history is cursor paginated and scoped to private team membershi
  assert.match(panel,/page\.filter\(item=>item\.id<oldest&&!known\.has\(item\.id\)\)/);
  assert.match(panel,/current!==version\.current\|\|accessRevokedRef\.current/);
  assert.match(panel,/if\(!revokeIfUnauthorized\(e\)\)setOlderError/);
- assert.match(panel,/setOlderEntries\(\[\]\);setHasOlderPosts\(false\)/);
+ assert.match(panel,/setOlderEntries\(\[\]\);olderRef\.current=\[\];olderExhausted\.current=false;setHasOlderPosts\(false\)/);
  assert.match(panel,/accessibilityRole="button" disabled=\{olderBusy\|\|loading\|\|sending\}/);
 });
 
