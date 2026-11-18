@@ -150,7 +150,13 @@ export default function DiscoverScreen(){
      </Pressable>
    </View>
    {loading&&sessions.length===0?<Loader/>:null}
-   {error?<Message tone="error">{error}</Message>:null}
+   {error?<View style={styles.retryPanel}>
+     <Message tone="error">{error}</Message>
+     <Pressable accessibilityRole="button" accessibilityLabel="Repetir pesquisa de sessões" style={styles.retryAction}
+       disabled={loading} onPress={()=>{void load();}}>
+       <JynloIcon name="refresh-cw" size={18} color={C.background}/><Text style={styles.retryActionText}>Tentar novamente</Text>
+     </Pressable>
+   </View>:null}
    {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>Ainda não encontrámos jogos</Text><Text style={styles.emptyDetail}>Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>Ver todas as modalidades</Text></Pressable></View>:null}
    {display==='map'?<View style={styles.mapPanel}>
      {NATIVE_MAP_READY?<Suspense fallback={<Loader/>}>
@@ -194,6 +200,9 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ retryPanel:{gap:10},
+ retryAction:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,minHeight:48,paddingHorizontal:16,borderRadius:12,backgroundColor:C.mint},
+ retryActionText:{color:C.background,fontSize:14,fontWeight:'800'},
  page:{flex:1,backgroundColor:MobileTheme.colors.background},content:{paddingHorizontal:MobileTheme.spacing.lg,paddingTop:MobileTheme.spacing.lg,paddingBottom:42,gap:MobileTheme.spacing.lg},
  hero:{marginTop:7,gap:11},headline:{fontSize:31,lineHeight:39,color:C.white,fontWeight:'900',letterSpacing:-0.6},
  sub:{color:C.muted,lineHeight:21,fontSize:14},
