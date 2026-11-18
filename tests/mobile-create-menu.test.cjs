@@ -54,6 +54,9 @@ test('session creation is an accessible full-width hero above secondary actions'
  assert.ok(layout.indexOf('accessibilityLabel="Criar sessão desportiva"') < layout.indexOf("onPress={()=>action('post')}"));
  assert.match(layout,/Marca o jogo, reúne jogadores e organiza as equipas/);
  assert.match(layout,/Também podes criar/);
+ assert.match(layout,/style=\{\[styles\.actionCard,styles\.teamCard\]\}/);
+ assert.match(layout,/teamCard:\{width:'100%'/);
+ assert.match(layout,/style=\{styles\.teamCopy\}/);
 });
 
 test('plus menu contains only post and community secondary tiles without duplicate Story tile',()=>{
