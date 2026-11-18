@@ -1,4 +1,5 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
@@ -216,17 +217,16 @@ export default function MessagesScreen(){
       accessibilityLabel={isConversationMuted(mutes,item.kind,item.id)?'Ativar avisos da conversa':'Silenciar avisos da conversa'}
       disabled={mutingKey!==null} onPress={()=>toggleConversationMute(item)}
       style={styles.muteAction}>
-      <Text style={styles.muteIcon}>{isConversationMuted(mutes,item.kind,item.id)?'🔕':'♧'}</Text>
-      <Text style={styles.muteText}>{isConversationMuted(mutes,item.kind,item.id)?'Silenciada':'Avisos'}</Text>
+      <JynloIcon name={isConversationMuted(mutes,item.kind,item.id)?'volume-off':'volume'} size={21} color={T.accent}/>
     </Pressable>:null}
   </View>)}
  </Page>;
 }
 const T=MobileTheme.colors;
 const styles=StyleSheet.create({
- conversationRow:{flexDirection:'row',alignItems:'stretch',gap:6},
+ conversationRow:{flexDirection:'row',alignItems:'center',gap:8},
  tileContent:{flex:1,minWidth:0},
- muteAction:{minWidth:72,maxWidth:82,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.lg,alignItems:'center',justifyContent:'center',padding:7,gap:3},
+ muteAction:{width:44,height:44,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:22,alignItems:'center',justifyContent:'center'},
  muteIcon:{fontSize:19,color:T.accent},muteText:{fontSize:10,fontWeight:'800',color:T.muted},
  headerRow:{flexDirection:'row',alignItems:'flex-start',gap:12},
  headerCopy:{flex:1,gap:8},
@@ -243,11 +243,11 @@ const styles=StyleSheet.create({
  listHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  listTitle:{fontSize:17,fontWeight:'900',color:T.text},listCount:{color:T.muted,fontSize:12},
  conversationTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- tile:{borderRadius:MobileTheme.radius.lg,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,padding:13,flexDirection:'row',alignItems:'center',gap:12,minHeight:82},
+ tile:{borderRadius:MobileTheme.radius.lg,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,padding:11,flexDirection:'row',alignItems:'center',gap:10,minHeight:72},
  unreadTile:{borderColor:T.accent,backgroundColor:T.raised},pressedTile:{opacity:.78},
- avatar:{width:52,height:52,borderRadius:17,backgroundColor:T.raised,alignItems:'center',justifyContent:'center'},
+ avatar:{width:46,height:46,borderRadius:16,backgroundColor:T.raised,alignItems:'center',justifyContent:'center'},
  communityAvatar:{backgroundColor:'#0C4650'},sessionAvatar:{backgroundColor:'#15453F'},
- avatarSymbol:{fontSize:25,fontWeight:'800',color:T.accent},
+ avatarSymbol:{fontSize:21,fontWeight:'800',color:T.accent},
  conversationBody:{flex:1,gap:5},
  item:{flexShrink:1,fontWeight:'800',fontSize:15,color:T.text},itemUnread:{fontWeight:'900'},
  preview:{color:T.muted,fontSize:12,lineHeight:17},previewUnread:{color:T.text,fontWeight:'700'},
