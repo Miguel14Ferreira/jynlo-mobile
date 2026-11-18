@@ -101,8 +101,8 @@ export default function TabsLayout(){
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
        </Pressable>
-       <Pressable accessibilityRole="button" accessibilityLabel="Criar uma equipa" style={styles.actionCard} onPress={()=>action('team')}>
-        <JynloIcon name="tournament" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Equipa</Text><Text style={styles.actionHint}>Cria a tua equipa e gere o plantel</Text>
+       <Pressable accessibilityRole="button" accessibilityLabel="Criar uma equipa" style={[styles.actionCard,styles.teamCard]} onPress={()=>action('team')}>
+        <View style={styles.teamIcon}><JynloIcon name="tournament" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>Equipa</Text><Text style={styles.actionHint}>Cria a tua equipa e gere o plantel</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
        </Pressable>
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel="Mostrar outras ferramentas de criação"
@@ -164,6 +164,9 @@ const styles=StyleSheet.create({
  sessionHeroArrow:{color:colors.background,fontSize:34,fontWeight:'700'},
  moreActionsTitle:{color:colors.muted,fontWeight:'800',fontSize:12,marginTop:4},
  actionCard:{width:'48%',minHeight:122,padding:15,borderRadius:18,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,justifyContent:'flex-end',gap:5},
+ teamCard:{width:'100%',minHeight:94,flexDirection:'row',alignItems:'center',justifyContent:'flex-start',gap:12,paddingVertical:14},
+ teamIcon:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:14,backgroundColor:colors.raised},
+ teamCopy:{flex:1,gap:5},
  actionIcon:{fontSize:23,color:colors.accent},actionTitle:{fontSize:15,fontWeight:'900',color:colors.text},actionHint:{fontSize:11,color:colors.muted},
  secondaryAction:{minHeight:65,padding:12,borderRadius:15,borderWidth:1,borderColor:colors.border,backgroundColor:colors.surface,flexDirection:'row',alignItems:'center',gap:12},
  secondaryIcon:{fontSize:26,color:colors.accent,width:31,textAlign:'center'},
