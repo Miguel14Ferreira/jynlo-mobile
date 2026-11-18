@@ -12,6 +12,14 @@ Web editor supports draggable/rotatable caption, font, color, background, option
 
 Mobile `develop` now sends `textColor`, `textBackground`, `textFont`, `showTime`, and `altText` to the existing `POST /api/stories` contract, renders corresponding overlays in editor and viewer, and adds test coverage. Existing captions remain supported. Pending: real Android/iOS visual checks for alignment, pinch/rotate, camera/gallery, date label, tags and actual publish/refresh. Multiple Stories/media in one authoring action are not yet verified.
 
+#### Story viewer, reactions and verified audience (2026-11-18)
+After the Android screenshot showing an apparently empty Story viewer:
+- Added explicit media states (loading, ready, error), 12-second timeout for stalled images/videos, a retry action and a clear error overlay rather than a permanently black surface. Video uses `contain` to avoid cutting off the subject. Photo progression waits for a successful media load.
+- Improved the lower interaction row with responsive wrapping, private quick reactions (emoji replies), privacy disclosure, and an author-only `Quem viu` sheet showing unique authenticated viewers, usernames, avatars and view timestamps.
+- Added `POST /api/stories/{id}/views` only after a photo loads or a video reaches ready-to-play; the author does not count as a viewer. `GET /api/stories/{id}/audience` is author-only. Do not synthesize zero counts while the backend is unavailable.
+- Backend `develop` adds `social_story_view` with unique `story_id,profile_id` and cascade deletion (Liquibase change `2026-11-18-story-view-audience.yaml`). The web Story feed and profile player also report a view after media load, and the web owner gets an audience panel.
+- The feature is **NOT production-ready** until migration, Java unit tests, Angular build, mobile typecheck and native two-account tests pass. Confirm private profile blocking, viewer permissions, Story expiration cleanup, and FCM unaffected. Existing stories cannot acquire historical viewer counts retroactively.
+
 ### 2. Personal Lives — CRITICAL
 Web has `/api/live` event management, LiveKit rooms, chat, guest requests and host moderation; mobile had LiveKit direct calls but no personal Lives flow.
 
