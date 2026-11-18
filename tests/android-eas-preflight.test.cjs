@@ -66,9 +66,9 @@ test('Play builds preserve the WorkManager Room database name used during Androi
  const buildProperties=configured.plugins.find(plugin=>Array.isArray(plugin)&&plugin[0]==='expo-build-properties');
  assert.ok(buildProperties,'Android build properties plugin must be configured');
  const rules=buildProperties[1].android.extraProguardRules;
- assert.match(rules,/-keep class androidx\\.work\\.impl\\.WorkDatabase \\{ \\*; \\}/);
- assert.match(rules,/-keep class androidx\\.work\\.impl\\.WorkDatabase_Impl \\{ \\*; \\}/);
- assert.match(rules,/-keep class livekit\\.org\\.jni_zero\\.JniInit \\{ \\*; \\}/);
+ assert.match(rules,/-keep class androidx\.work\.impl\.WorkDatabase \{ \*; \}/);
+ assert.match(rules,/-keep class androidx\.work\.impl\.WorkDatabase_Impl \{ \*; \}/);
+ assert.match(rules,/-keep class livekit\.org\.jni_zero\.JniInit \{ \*; \}/);
 });
 
 test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup crash',()=>{
