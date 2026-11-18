@@ -50,21 +50,30 @@ export default function TournamentsScreen(){
         </Pressable>)}
       </ScrollView></>:null}
   </View>:null}
-  {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&!error&&auth.token&&items.length===0?<Message>Ainda não existem torneios nas tuas comunidades. Junta-te a uma comunidade para os descobrires.</Message>:null}
+  {loading?<Loader/>:null}
+  {error?<View style={styles.recovery}><Message tone="error">{error}</Message>
+    <Button secondary title="Tentar novamente" onPress={()=>{void load();}}/>
+  </View>:null}
+  {!loading&&!error&&auth.token&&items.length===0?<View style={styles.recovery}>
+    <Message>Ainda não existem torneios nas tuas comunidades. Junta-te a uma comunidade para os descobrires.</Message>
+    <Button secondary title="Descobrir comunidades" onPress={()=>router.push('/(tabs)/communities')}/>
+  </View>:null}
   {!loading&&!error&&items.length>0?<Text style={styles.count}>{filtered.length} {filtered.length===1?'torneio encontrado':'torneios encontrados'} de {items.length}</Text>:null}
-  {!loading&&!error&&items.length>0&&filtered.length===0?<Message>Não existem torneios com estes filtros. Experimenta outra modalidade ou estado.</Message>:null}
-  {!loading&&!error?filtered.map(x=><Pressable key={`${x.communityId}-${x.tournament.id}`}
+  {!loading&&!error&&items.length>0&&filtered.length===0?<View style={styles.recovery}>
+    <Message>Não existem torneios com estes filtros. Experimenta outra modalidade ou estado.</Message>
+    <Button secondary title="Limpar filtros" onPress={()=>{setQuery('');setStatus('ALL');setSport('ALL');}}/>
+  </View>:null}
+  {!loading&&!error?filtered.map(x=><Pressable accessibilityRole="button" accessibilityLabel={'Abrir torneio '+x.tournament.name} key={`${x.communityId}-${x.tournament.id}`}
     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(x.communityId),id:String(x.tournament.id)}})}
     style={styles.card}>
     <View style={styles.row}><Text style={styles.sport}>{sportIcon(x.tournament.sport)}</Text><View style={{flex:1}}><Text style={styles.name}>{x.tournament.name}</Text><Text style={styles.sub}>{x.communityName}</Text></View><Text style={styles.arrow}>›</Text></View>
     <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>
     <Text style={styles.sub}>{x.tournament.status==='DRAFT'?'Em preparação':x.tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'} · {x.tournament.sport}</Text>
   </Pressable>):null}
-  <Message>Quando a modalidade tem regras ainda não validadas no mobile, mostramos essa limitação em vez de inventar classificações de futebol.</Message>
+  {auth.token&&items.length>0?<Message>As classificações respeitam as regras disponíveis para cada modalidade. Algumas provas podem ter funcionalidades limitadas no mobile.</Message>:null}
  </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},sub:{fontSize:14,lineHeight:21,color:C.muted},card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:19,padding:17,gap:12},
+const styles=StyleSheet.create({recovery:{gap:10},title:{fontSize:28,fontWeight:'900',color:C.white},sub:{fontSize:14,lineHeight:21,color:C.muted},card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:19,padding:17,gap:12},
  row:{flexDirection:'row',alignItems:'center',gap:12},sport:{fontSize:27},name:{fontSize:17,fontWeight:'900',color:C.white},arrow:{fontSize:30,color:C.mint},classification:{color:C.mint,fontWeight:'800',fontSize:12},
  filters:{gap:10,marginTop:6},
  search:{minHeight:52,paddingHorizontal:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,color:C.white,borderRadius:16,fontSize:14},
