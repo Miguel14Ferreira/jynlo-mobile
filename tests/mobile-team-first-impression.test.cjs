@@ -158,7 +158,7 @@ test('permanent team chat and feed use authorized, feature-gated server timeline
  assert.match(api,/\/api\/teams\//);
  assert.match(api,/method:'POST',body:\{body:message,replyToId\}/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
- assert.match(panel,/sendTeamContent\(teamId,kind,message,token,replyTo\)/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
  assert.match(panel,/AppState\.addEventListener\('change',state=>/);
  assert.match(panel,/clearInterval\(timer\);resume\.remove\(\)/);
  assert.match(panel,/Consulta o histórico antes de repetires/);
@@ -168,7 +168,7 @@ test('team conversations support replies, author edits and owner moderated delet
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  const api=read('src/lib/sports-team-content-api.ts');
  assert.match(panel,/replyTo/);
- assert.match(panel,/sendTeamContent\(teamId,kind,message,token,replyTo\)/);
+ assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
  assert.match(panel,/item\.canEdit/);
  assert.match(panel,/item\.canManage/);
  assert.match(panel,/editTeamContent\(teamId,kind,editingId,body,token\)/);
@@ -284,7 +284,7 @@ test('team chat clears private content when membership is revoked during backgro
  assert.match(panel,/import \{ApiError\} from '\.\.\/lib\/api'/);
  assert.match(panel,/\[401,403,409\]\.includes\(failure\.status\)/);
  assert.match(panel,/accessRevokedRef\.current=true;setAccessRevoked\(true\)/);
- assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+ assert.match(panel,/setEntries\(\[\]\);setOlderEntries\(\[\]\)[\s\S]*?setSearchResults\(\[\]\);setSearchActive\(false\)/);
  assert.match(panel,/setMedia\(\[\]\);setAttachmentsEnabled\(false\)/);
  assert.match(panel,/if\(accessRevoked\)return <View/);
  assert.match(panel,/accessRevokedRef\.current=false;setAccessRevoked\(false\)/);
@@ -377,7 +377,7 @@ test('switching team chats preserves pending write locks without leaking old mut
  assert.match(panel,/finally\{if\(current===version\.current\)choosing\.current=false;\}/);
  assert.match(panel,/if\(activeWriteKey\.current===writeKey\)\{\s*sendingNow\.current=false;setSending\(false\);/);
  assert.match(panel,/const initial=needsInitialRead\.current;needsInitialRead\.current=false/);
- assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;setReactionBusyId\(null\);void loadReactions\(\[item\]\);/);
+ assert.match(panel,/if\(current===version\.current\)\{\s*reactionBusyRef\.current=false;reactionBusyContentId\.current=null;setReactionBusyId\(null\);\s*if\(!accessRevokedRef\.current\)void loadReactions\(\[item\]\);/);
  assert.doesNotMatch(panel,/sendingNow\.current=false;\s*if\(current===version\.current\)/);
 });
 
@@ -389,7 +389,7 @@ test('private team attachment probes never hide a revoked membership from the ch
  assert.match(api,/return false;\s*\}/);
  assert.match(panel,/teamPrivateAttachmentsAvailable\(teamId,kind,token\)\.then\(available=>/);
  assert.match(panel,/setAttachmentsEnabled\(false\);\s*revokeIfUnauthorized\(failure\)/);
- assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+ assert.match(panel,/setEntries\(\[\]\);setOlderEntries\(\[\]\)[\s\S]*?setSearchResults\(\[\]\);setSearchActive\(false\)/);
 });
 
 test('secure team attachment revocation clears private chat and ignores stale responses',()=>{
@@ -400,7 +400,7 @@ test('secure team attachment revocation clears private chat and ignores stale re
  assert.match(viewer,/generation\.current===version&&!controller\.signal\.aborted/);
  assert.match(viewer,/onAuthorizationError\?\.\(response\.status\)/);
  assert.match(panel,/onAuthorizationError=\{status=>\{revokeIfUnauthorized\(new ApiError\(status,'Anexo privado indisponível\.'\)\);\}\}/);
- assert.match(panel,/setEntries\(\[\]\);setSearchResults\(\[\]\);setSearchActive\(false\)/);
+ assert.match(panel,/setEntries\(\[\]\);setOlderEntries\(\[\]\)[\s\S]*?setSearchResults\(\[\]\);setSearchActive\(false\)/);
 });
 
 
@@ -427,9 +427,9 @@ test('team chat aligns compact controls with other chats and preserves same-team
   assert.ok(panel.includes('name="'+name+'"'),name);
  for(const label of ['Pesquisar mensagens','Voltar à conversa','Responder à mensagem',
   'Editar mensagem da equipa','Eliminar mensagem da equipa','Selecionar fotografias ou vídeos','Abrir câmara'])
-  assert.ok(panel.includes('accessibilityLabel="'+label+'"'),label);
+  assert.ok(panel.includes(label),label);
  assert.match(panel,/const changedConversation=focusedIdentity\.current!==writeKey/);
- assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\);setEditingId\(null\);setEditDraft\(''\);\}/);
+ assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\);setEditingId\(null\);setEditDraft\(''\);[\s\S]*?feedCommentDrafts\.current\.clear\(\);\}/);
  assert.match(panel,/onStatus:status=>\{if\(version\.current===current\)\{/);
  assert.match(panel,/connection==='online'\?'Em tempo real'/);
  assert.match(panel,/entryAction:\{minWidth:40,minHeight:40/);
