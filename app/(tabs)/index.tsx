@@ -301,7 +301,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
             <Text style={styles.storyReactionEmoji}>{emoji}</Text>
           </Pressable>)}</View>
       </View>:null}
-      {!ownStory?<Text style={styles.storyReplyHint}>Resposta privada, guardada para o autor. A notificação é opcional.</Text>:null}
+      {!ownStory?<Text style={styles.storyReplyHint}>O autor pode ver que visualizaste esta Story. As reações e respostas são privadas.</Text>:null}
       {audienceOpen&&ownStory?<View style={styles.storyAudiencePanel}>
         <View style={styles.storyAudienceHeader}>
           <Text style={styles.storyAudienceTitle}>Quem viu a tua Story</Text>
