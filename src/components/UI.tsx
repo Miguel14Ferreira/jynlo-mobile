@@ -42,6 +42,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
     <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
     {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[styles.content,keyboardHeight>0&&{paddingBottom:keyboardHeight+88}]} showsVerticalScrollIndicator={false}
+      onLayout={()=>{if(keyboardVisible.current)scrollFocused();}}
       onScroll={autoScrollToEnd?event=>{
         const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
         nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
