@@ -2,7 +2,7 @@ import {fetch as expoFetch} from 'expo/fetch';
 /** Jynlo Web contracts. The demo is isolated and never calls production. */
 import {API_BASE,DEMO_MODE,ApiError,request} from './api';
 import {feed as demoFeedSeed} from './parity-api';
-import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry,StoryDetails} from './types';
+import type {FeedItem,SocialStory,SocialComment,MobileMedia,FeedUserSuggestion,StoryTextGeometry,StoryDetails,StoryTextAppearance} from './types';
 import {validateMedia,mediaUrl} from './social-feed-core.cjs';
 import {confirmedSocialMediaReceipt} from './social-upload-receipt.cjs';
 import {verifiedPostLikeReceipt} from './social-like-receipt.cjs';
