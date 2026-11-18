@@ -30,9 +30,11 @@ export default function MessagesScreen(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
+ const [conversationKind,setConversationKind]=useState<'all'|'direct'|'community'|'session'>('all');
  const identity=useRef('');
  const sameIdentity=!!auth.token&&!!auth.username&&identity.current===auth.username+'|'+auth.token;
- const displayed=useMemo(()=>sameIdentity?filterInbox(items,search,unreadOnly) as JynloInboxSummary[]:[],[items,search,unreadOnly,sameIdentity]);
+ const displayed=useMemo(()=>sameIdentity?(filterInbox(items,search,unreadOnly) as JynloInboxSummary[])
+  .filter(item=>conversationKind==='all'||item.kind===conversationKind):[],[items,search,unreadOnly,sameIdentity,conversationKind]);
  const unreadTotal=useMemo(()=>sameIdentity?unreadInboxCount(items) as number:0,[items,sameIdentity]);
  const busyVersion=useRef<number|null>(null),generation=useRef(0);
  const pendingRefresh=useRef(false);
@@ -159,6 +161,12 @@ export default function MessagesScreen(){
     placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
     accessibilityLabel="Pesquisar conversas pelo contacto ou mensagem"/>
    <View style={styles.filterRow}>
+    {([['all','Todas'],['direct','Privadas'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={'Filtrar conversas: '+label} accessibilityState={{selected:conversationKind===kind}}
+      onPress={()=>setConversationKind(kind)} style={[styles.kindChip,conversationKind===kind&&styles.kindChipActive]}>
+      <Text style={[styles.kindText,conversationKind===kind&&styles.kindTextActive]}>{label}</Text>
+    </Pressable>)}
+   </View>
+   <View style={styles.filterRow}>
     <Pressable accessibilityRole="button" accessibilityLabel="Mostrar todas as conversas" accessibilityState={{selected:!unreadOnly}}
       onPress={()=>setUnreadOnly(false)} style={[styles.filterChip,!unreadOnly&&styles.filterActive]}>
       <Text style={[styles.filterText,!unreadOnly&&styles.filterTextActive]}>Todas</Text>
@@ -234,7 +242,10 @@ const styles=StyleSheet.create({
  notificationIcon:{fontSize:21,color:T.accent},notificationLabel:{fontSize:10,fontWeight:'800',color:T.muted},
  searchBox:{gap:11,padding:14,borderRadius:MobileTheme.radius.lg,backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
  searchInput:{color:T.text,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.md,paddingHorizontal:13,minHeight:MobileTheme.touchTarget,backgroundColor:T.background},
- filterRow:{flexDirection:'row',gap:8,alignItems:'center',flexWrap:'wrap'},
+ filterRow:{flexDirection:'row',gap:7,alignItems:'center',flexWrap:'wrap'},
+ kindChip:{minHeight:38,paddingHorizontal:11,justifyContent:'center',borderRadius:MobileTheme.radius.pill,borderWidth:1,borderColor:T.border,backgroundColor:T.surface},
+ kindChipActive:{backgroundColor:T.accent,borderColor:T.accent},
+ kindText:{fontSize:12,fontWeight:'800',color:T.muted},kindTextActive:{color:T.background},
  filterChip:{minHeight:MobileTheme.touchTarget,justifyContent:'center',paddingHorizontal:15,paddingVertical:9,borderRadius:MobileTheme.radius.pill,borderColor:T.border,borderWidth:1},
  filterActive:{backgroundColor:T.accent,borderColor:T.accent},
  filterText:{color:T.muted,fontWeight:'800',fontSize:12},filterTextActive:{color:T.background},
