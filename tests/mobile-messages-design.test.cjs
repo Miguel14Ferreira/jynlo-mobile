@@ -14,10 +14,10 @@ test('modern inbox keeps real conversation sources and refresh protections',()=>
  assert.match(inbox,/pendingDirectCall\(auth\.token\)/);
 });
 test('accessible unread tabs, search reset and visual hierarchy',()=>{
- assert.match(inbox,/accessibilityLabel="Mostrar todas as conversas"/);
+ assert.match(inbox,/accessibilityLabel=\{'Filtrar conversas: '\+label\}/);
+ assert.match(inbox,/\['all','Todas'\]/);
  assert.match(inbox,/accessibilityLabel="Mostrar apenas conversas não lidas"/);
- assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(false\)\}/);
- assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(true\)\}/);
+ assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(current=>!current\)\}/);
  assert.match(inbox,/accessibilityLabel="Limpar pesquisa de conversas"/);
  assert.match(inbox,/item\.unreadCount>0&&styles\.unreadTile/);
  assert.match(inbox,/formatUnreadBadge\(item\.unreadCount\)/);
