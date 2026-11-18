@@ -91,8 +91,8 @@ export default function ProfileScreen(){
         <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
       </View>:null}
       {auth.username?<View style={styles.socialNav}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>Seguidores</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>A seguir</Text><Text style={styles.socialActionHint}>Ver pessoas  ›</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>Seguidores</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>A seguir</Text></Pressable>
       </View>:null}
       {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel="Editar o meu perfil desportivo" onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
         <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
@@ -134,7 +134,7 @@ export default function ProfileScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
- profile:{padding:MobileTheme.spacing.lg,borderWidth:1,borderColor:MobileTheme.colors.border,backgroundColor:MobileTheme.colors.surface,borderRadius:MobileTheme.radius.xl,gap:16},
+ profile:{padding:16,borderWidth:1,borderColor:MobileTheme.colors.border,backgroundColor:MobileTheme.colors.surface,borderRadius:MobileTheme.radius.xl,gap:12},
  profileTop:{flexDirection:'row',alignItems:'center',gap:14},
  avatar:{width:80,height:80,borderRadius:40,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center',overflow:'hidden',borderWidth:2,borderColor:MobileTheme.colors.accent},
  avatarImage:{width:'100%',height:'100%'},
@@ -147,13 +147,13 @@ const styles=StyleSheet.create({
  location:{color:MobileTheme.colors.muted,fontSize:12},
  profileHint:{color:MobileTheme.colors.muted,fontSize:12,lineHeight:18},
  socialNav:{flexDirection:'row',gap:10},
- socialAction:{flex:1,minHeight:MobileTheme.touchTarget+15,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center',gap:4,padding:9},
+ socialAction:{flex:1,minHeight:MobileTheme.touchTarget+5,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center',gap:4,padding:9},
  socialActionTitle:{color:MobileTheme.colors.text,fontWeight:'900',fontSize:14},
  socialActionHint:{color:MobileTheme.colors.accent,fontWeight:'700',fontSize:11},
- favoriteSection:{gap:10,borderTopWidth:1,borderTopColor:MobileTheme.colors.border,paddingTop:14},
+ favoriteSection:{gap:8,borderTopWidth:1,borderTopColor:MobileTheme.colors.border,paddingTop:10},
  favoriteHeading:{color:MobileTheme.colors.muted,fontSize:10,letterSpacing:1,fontWeight:'900'},
  sportTags:{flexDirection:'row',flexWrap:'wrap',gap:8},
- sportTag:{backgroundColor:MobileTheme.colors.raised,borderRadius:MobileTheme.radius.pill,paddingHorizontal:12,paddingVertical:8},
+ sportTag:{backgroundColor:MobileTheme.colors.raised,borderRadius:MobileTheme.radius.pill,paddingHorizontal:11,paddingVertical:7},
  sportTagText:{color:MobileTheme.colors.accent,fontSize:12,fontWeight:'800'},
  editProfileAction:{minHeight:MobileTheme.touchTarget,borderTopWidth:1,borderTopColor:MobileTheme.colors.border,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  editProfileText:{color:MobileTheme.colors.accent,fontWeight:'900',fontSize:13},
