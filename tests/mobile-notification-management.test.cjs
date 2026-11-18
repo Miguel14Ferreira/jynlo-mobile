@@ -55,3 +55,26 @@ test('messages tab obtains an authenticated unread alert badge without leaking p
  assert.match(tab,/sameIdentity&&notificationUnread>0/);
  assert.match(tab,/notificationUnread>99\?'99\+'/);
 });
+
+test('notification inbox also shows real pending community invites from API',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/import \{myCommunityInvites\} from '\.\.\/src\/lib\/community-api'/);
+ assert.match(screen,/\[communityInvites,setCommunityInvites\]=useState<CommunityInvite\[\]>\(\[\]\)/);
+ assert.match(screen,/const visibleCommunityInvites=sameAccount\?communityInvites:\[\]/);
+ assert.match(screen,/myCommunityInvites\(auth\.token,auth\.username\)/);
+ assert.match(screen,/communityInvitations\.status==='fulfilled'/);
+ assert.match(screen,/setCommunityInvites\(communityInvitations\.value\)/);
+ assert.match(screen,/Convites para comunidades · \{visibleCommunityInvites\.length\}/);
+ assert.match(screen,/Convidado por @\{invite\.invitedByUsername\}/);
+ assert.match(screen,/router\.push\('\/communities\/invites'\)/);
+ assert.match(screen,/account\.current=identity;setItems\(\[\]\);setInvites\(\[\]\);setCommunityInvites\(\[\]\)/);
+});
+
+test('home bell signals server-confirmed community invites without inventing duplicate counts',()=>{
+ const feed=read('app/(tabs)/index.tsx');
+ assert.match(feed,/import \{myCommunityInvites\} from '\.\.\/\.\.\/src\/lib\/community-api'/);
+ assert.match(feed,/Promise\.allSettled\(\[\s*myNotifications\(token,username\),myCommunityInvites\(token,username\)/);
+ assert.match(feed,/communityInvitations\.status==='fulfilled'\?communityInvitations\.value\.length:0/);
+ assert.match(feed,/setUnreadNotifications\(Math\.max\(unread,pending\)\)/);
+ assert.match(feed,/if\(!active\)return;/);
+});
