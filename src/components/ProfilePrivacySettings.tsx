@@ -10,6 +10,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
  const [pending,setPending]=useState<PendingFollowRequest[]>([]);
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
+ const [detailsOpen,setDetailsOpen]=useState(false);
  const [error,setError]=useState('');
  useFocusEffect(useCallback(()=>{
    let active=true;
@@ -44,10 +45,12 @@ export default function ProfilePrivacySettings({token}:{token:string}){
     .finally(()=>setBusy(false));
  };
  return <View style={styles.box}>
-   <Text style={styles.title}>Privacidade do perfil</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Mostrar detalhes de privacidade do perfil" accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(open=>!open)} style={styles.headingRow}>
+     <Text style={styles.title}>Privacidade do perfil</Text><Text style={styles.disclosure}>{detailsOpen?'Ocultar':'Detalhes'} {detailsOpen?'⌃':'⌄'}</Text>
+   </Pressable>
    {loading?<Text style={styles.muted}>A verificar a privacidade…</Text>:null}
-   {privacy?<><Text style={styles.state}>Perfil {privacy.privateProfile?'privado':'público'}</Text>
-    <Text style={styles.description}>{privacy.privateProfile
+   {privacy?<><Text style={styles.state}>Perfil {privacy.privateProfile?'privado':'público'}{!privacy.privateModeAvailable?' · Alteração indisponível':''}</Text>
+    {detailsOpen?<><Text style={styles.description}>{privacy.privateProfile
       ?'As publicações e stories só são visíveis aos seguidores aprovados.'
       :'Qualquer utilizador da Jynlo pode ver as tuas publicações e stories, mesmo sem te seguir.'}</Text>
     <Text style={styles.muted}>{privacy.privateProfile
@@ -59,6 +62,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
     </Pressable>:<><View style={[styles.action,styles.disabled]} accessibilityRole="text">
      <Text style={styles.actionText}>Tornar privado — indisponível</Text>
     </View><Text style={styles.muted}>A proteção do acesso direto a fotografias e vídeos está em preparação. O perfil continua público até essa proteção ficar concluída.</Text></>}
+    </>:null}
    </>:null}
    {pending.length>0?<View style={styles.requests}><Text style={styles.title}>Pedidos para seguir ({pending.length})</Text>
      {pending.map(item=><View key={item.id} style={styles.request}>
@@ -75,7 +79,9 @@ export default function ProfilePrivacySettings({token}:{token:string}){
  </View>;
 }
 const styles=StyleSheet.create({
- box:{gap:12,padding:16,borderRadius:MobileTheme.radius.xl,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ box:{gap:9,padding:14,borderRadius:MobileTheme.radius.xl,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ headingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44},
+ disclosure:{color:C.mint,fontWeight:'800',fontSize:12},
  title:{fontWeight:'900',fontSize:16,color:C.white},
  state:{fontWeight:'800',fontSize:13,color:C.mint},
  description:{fontSize:13,lineHeight:19,color:C.white},
