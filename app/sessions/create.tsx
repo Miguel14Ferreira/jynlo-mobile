@@ -2,6 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Linking,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
+import SessionDraftLocationMap from '../../src/components/SessionDraftLocationMap';
 import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
@@ -12,7 +13,7 @@ import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
 import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
 import {venues} from '../../src/lib/parity-api';
-import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview} from '../../src/lib/session-location-api';
+import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview,validCoordinates} from '../../src/lib/session-location-api';
 import type {SessionCoordinates} from '../../src/lib/session-location-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
@@ -757,6 +758,15 @@ export default function CreateSessionScreen(){
    <Text style={styles.summaryValue}>{venueChosen?'Recinto: '+venueChosen.name:form.address}</Text>
    <Text style={styles.summaryValue}>{form.city}</Text>
    {form.meetingPointInstructions?<Text style={styles.note}>Ponto de encontro: {form.meetingPointInstructions}</Text>:null}
+   <SessionDraftLocationMap
+    point={form.venueId&&venueChosen?.id===form.venueId
+      ?(typeof venueChosen.latitude==='number'&&typeof venueChosen.longitude==='number'&&validCoordinates(venueChosen.latitude,venueChosen.longitude)
+        ?{latitude:venueChosen.latitude,longitude:venueChosen.longitude}:null)
+      :(typeof form.latitude==='number'&&typeof form.longitude==='number'&&form.locationConfirmed===true&&validCoordinates(form.latitude,form.longitude)
+        ?{latitude:form.latitude,longitude:form.longitude}:null)}
+    venueName={venueChosen?.id===form.venueId?venueChosen.name:null}
+    address={form.address} city={form.city}
+    onEdit={()=>setStep(1)}/>
    <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
    <Text style={styles.summaryTitle}>Participação e regras</Text>
    <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
