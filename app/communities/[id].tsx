@@ -209,17 +209,17 @@ export default function CommunityDetailScreen(){
 }
 const styles=StyleSheet.create({
   sportList:{flexDirection:'row',flexWrap:'wrap',gap:7},
-  sportPill:{paddingHorizontal:11,paddingVertical:7,borderRadius:11,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
-  sportText:{fontSize:12,color:C.mint,fontWeight:'700'},
-  banner:{padding:20,backgroundColor:C.surface2,borderRadius:22,alignItems:'center',gap:9},
-  bannerIcon:{fontSize:48},bannerText:{color:C.mint,fontWeight:'800',fontSize:13},
+  sportPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:11,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
+  sportText:{fontSize:14,color:C.mint,fontWeight:'700'},
+  banner:{padding:14,backgroundColor:C.surface2,borderRadius:18,alignItems:'center',gap:7},
+  bannerIcon:{fontSize:32},bannerText:{color:C.mint,fontWeight:'800',fontSize:14,lineHeight:21,textAlign:'center'},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   heading:{flex:1,color:C.white,fontSize:27,fontWeight:'900'},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
-  section:{padding:18,borderRadius:20,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:14},
+  section:{padding:15,borderRadius:18,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:12},
   communitySessionRow:{gap:9},
   sectionTitle:{color:C.white,fontSize:20,fontWeight:'900'},member:{flexDirection:'row',gap:12,alignItems:'center'},
   avatar:{width:42,height:42,borderRadius:15,alignItems:'center',justifyContent:'center',backgroundColor:C.surface2},
   avatarText:{fontSize:18,color:C.mint,fontWeight:'800'},memberName:{fontSize:15,color:C.white,fontWeight:'800'},
-  muted:{fontSize:12,color:C.muted,lineHeight:19},input:{height:52,paddingHorizontal:14,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.background,color:C.white},
+  muted:{fontSize:14,color:C.muted,lineHeight:21},input:{minHeight:52,paddingHorizontal:14,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.background,color:C.white,fontSize:15},
   request:{padding:12,backgroundColor:C.surface2,borderRadius:12,gap:12}
 });
