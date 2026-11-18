@@ -48,3 +48,11 @@ test('private membership status lookup errors do not invite duplicate requests',
  assert.match(source,/community\.visibility==='PRIVATE'&&!myRequest&&!myRequestError/);
  assert.match(source,/title="Verificar estado do pedido novamente"/);
 });
+
+test('community details use compact banner and readable member information',()=>{
+ assert.match(source,/banner:\{padding:14/);
+ assert.match(source,/bannerText:\{color:C\.mint,fontWeight:'800',fontSize:14,lineHeight:21/);
+ assert.match(source,/sportText:\{fontSize:14/);
+ assert.match(source,/muted:\{fontSize:14,color:C\.muted,lineHeight:21/);
+ assert.match(source,/input:\{minHeight:52/);
+});
