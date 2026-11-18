@@ -162,3 +162,18 @@ test('PDF composer stale upload completion must not clear busy flag of new conve
  assert.ok(composer.includes('if(active.current&&generation.current===version)setBusy(false)'));
  assert.ok(composer.includes('generation.current!==version'));
 });
+
+test('confirmed outbound community and session messages appear before history reconciliation',()=>{
+ const community=read('src/components/CommunityChatPanel.tsx');
+ const session=read('src/components/SessionChatPanel.tsx');
+ const verifiedCommunity=community.indexOf('if(!confirmedCommunityChatSend(confirmed,');
+ const visibleCommunity=community.indexOf('setMessages(current=>mergeMessages(current,[confirmed]))',verifiedCommunity);
+ const reloadCommunity=community.indexOf('await refresh(version);',visibleCommunity);
+ assert.ok(verifiedCommunity>=0&&visibleCommunity>verifiedCommunity&&reloadCommunity>visibleCommunity);
+ const verifiedSession=session.indexOf('if(!confirmedSessionChatSend(confirmed,');
+ const visibleSession=session.indexOf('setEntries(current=>current.some(entry=>entry.id===confirmed.id)',verifiedSession);
+ const reloadSession=session.indexOf('await refresh(false,version);',visibleSession);
+ assert.ok(verifiedSession>=0&&visibleSession>verifiedSession&&reloadSession>visibleSession);
+ assert.ok(community.includes('if(version!==generation.current)return;'));
+ assert.ok(session.includes('if(version!==generation.current)return;'));
+});
