@@ -101,11 +101,12 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   const open=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{
    setKeyboardOpen(true);
    // Never pull someone away from older messages merely because a keyboard opens.
-   if(composerFocused.current&&nearLatest.current)historyRef.current?.scrollToEnd({animated:true});
+   if(kind==='chat'&&composerFocused.current&&nearLatest.current)
+    historyRef.current?.scrollToEnd({animated:true});
   });
   const close=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide',()=>setKeyboardOpen(false));
   return()=>{open.remove();close.remove();};
- },[]);
+ },[kind]);
  const [draft,setDraft]=useState('');
  const [loading,setLoading]=useState(true);
  const [sending,setSending]=useState(false);
