@@ -59,8 +59,10 @@ export default function CommunityLivesScreen(){
   if(!auth.token||!caps?.canManage)return;
   void run(async()=>{
    if(goNow)await hostPermissions();
-   const timestamp=goNow?new Date().toISOString():new Date(scheduledAt).toISOString();
-   const event=await scheduleCommunityLive(auth.token!,id,title,description,timestamp);
+   const date=goNow?new Date():new Date(scheduledAt.replace(' ','T'));
+   if(!Number.isFinite(date.getTime()))throw Error('A data e a hora não são válidas. Usa AAAA-MM-DD HH:mm.');
+   const timestamp=date.toISOString();
+   const event=await scheduleCommunityLive(auth.token!,id,goNow?(title.trim()||'Direto da comunidade'):title,description,timestamp);
    if(goNow){
     const active=await startCommunityLive(auth.token!,id,event.id);
     open(active);
