@@ -18,7 +18,7 @@ test('Story colors survive publication and are sent in the backend contract',()=
  const editor=read('app/(tabs)/index.tsx');
  const api=read('src/lib/social-feed-api.ts');
  const types=read('src/lib/types.ts');
- assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime\)/);
+ assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText\)/);
  assert.match(editor,/storyAppearance\.color===appearance\.color&&storyAppearance\.background===appearance\.background&&storyAppearance\.font===appearance\.font/);
  assert.match(api,/textColor:appearance\.color,textBackground:appearance\.background,textFont:appearance\.font/);
  assert.match(api,/textColor:appearance\?\.color\|\|'white'/);
@@ -44,4 +44,14 @@ test('show-time sticker is optional and persisted with Story data',()=>{
  assert.match(editor,/showTime=\{story\.showTime===true\} createdAt=\{story\.createdAt\}/);
  assert.match(api,/showTime:String\(showTime\)/);
  assert.match(viewer,/toLocaleString\('pt-PT'/);
+});
+
+test('Story accessibility metadata can be edited and uploaded independently of visual caption',()=>{
+ const editor=read('app/(tabs)/index.tsx');
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(editor,/accessibilityLabel="Descrição acessível da Story"/);
+ assert.match(editor,/maxLength=\{350\} multiline/);
+ assert.match(editor,/accessibilityLabel=\{story\.altText\|\|story\.caption/);
+ assert.match(api,/altText\.trim\(\)\.length>350/);
+ assert.match(api,/\.\.\.\(altText\.trim\(\)\?\{altText:altText\.trim\(\)\}:\{\}\)/);
 });
