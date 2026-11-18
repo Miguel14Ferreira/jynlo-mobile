@@ -38,6 +38,7 @@ export default function ProfileScreen(){
   const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||auth.username||'Visitante';
   const location=[profile?.location?.trim(),profile?.country?.trim()].filter(Boolean).join(' · ');
   const [showDelete,setShowDelete]=useState(false);
+  const [moreOptionsOpen,setMoreOptionsOpen]=useState(false);
   const [deleting,setDeleting]=useState(false);
   const canDelete=Boolean(!DEMO_MODE&&auth.username&&auth.token&&confirmUsername.trim()===auth.username&&!deleting);
   const deleteAccount=()=>{
@@ -100,6 +101,12 @@ export default function ProfileScreen(){
     </View>
     {auth.token&&!DEMO_MODE?<ProfilePrivacySettings token={auth.token}/>:null}
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
+    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar mais opções do perfil" accessibilityState={{expanded:moreOptionsOpen}}
+      onPress={()=>setMoreOptionsOpen(open=>!open)} style={styles.moreOptionsAction}>
+      <View style={styles.moreOptionsLabel}><JynloIcon name="settings" size={20} color={C.mint}/><Text style={styles.moreOptionsText}>Mais opções</Text></View>
+      <JynloIcon name={moreOptionsOpen?'chevron-up':'chevron-down'} size={21} color={C.mint}/>
+    </Pressable>
+    {moreOptionsOpen?<>
     <Eyebrow>EXPLORAR A JYNLO</Eyebrow>
     <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
     <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
@@ -131,9 +138,13 @@ export default function ProfileScreen(){
     <Button title="Como pedir a eliminação da conta" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'delete'}})}/>
     {!auth.username?<Message>Inicia sessão para participares nas atividades desportivas.</Message>:null}
     {DEMO_MODE?<Message>Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.</Message>:null}
+    </>:null}
   </Page>;
 }
 const styles=StyleSheet.create({
+ moreOptionsAction:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,paddingVertical:12,borderWidth:1,borderColor:C.border,borderRadius:MobileTheme.radius.lg,backgroundColor:C.surface,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ moreOptionsLabel:{flexDirection:'row',alignItems:'center',gap:9},
+ moreOptionsText:{fontSize:14,fontWeight:'800',color:C.white},
  profile:{padding:16,borderWidth:1,borderColor:MobileTheme.colors.border,backgroundColor:MobileTheme.colors.surface,borderRadius:MobileTheme.radius.xl,gap:12},
  profileTop:{flexDirection:'row',alignItems:'center',gap:14},
  avatar:{width:80,height:80,borderRadius:40,backgroundColor:MobileTheme.colors.raised,alignItems:'center',justifyContent:'center',overflow:'hidden',borderWidth:2,borderColor:MobileTheme.colors.accent},
