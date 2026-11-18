@@ -34,3 +34,10 @@ test('community access rules and navigation stay intact',()=>{
  assert.match(screen,/setSportFilter\(''\)/);
  assert.match(screen,/setMode\('explore'\)/);
 });
+
+test('community discovery keeps readable helper text and accessible category tabs',()=>{
+ assert.match(screen,/segmentTab:\{[^\n]*minHeight:44/);
+ assert.match(screen,/note:\{color:C\.muted,fontSize:13,lineHeight:20/);
+ assert.match(screen,/inboxLabel:\{fontSize:12/);
+ assert.match(screen,/accessibilityRole="tab" accessibilityState=\{\{selected:mode===tab\}\}/);
+});
