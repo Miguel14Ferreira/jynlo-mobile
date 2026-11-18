@@ -64,14 +64,14 @@ export default function TournamentsScreen(){
   <Message>Quando a modalidade tem regras ainda não validadas no mobile, mostramos essa limitação em vez de inventar classificações de futebol.</Message>
  </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:32,fontWeight:'900',color:C.white},sub:{fontSize:13,lineHeight:20,color:C.muted},card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:19,padding:17,gap:12},
+const styles=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},sub:{fontSize:14,lineHeight:21,color:C.muted},card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:19,padding:17,gap:12},
  row:{flexDirection:'row',alignItems:'center',gap:12},sport:{fontSize:27},name:{fontSize:17,fontWeight:'900',color:C.white},arrow:{fontSize:30,color:C.mint},classification:{color:C.mint,fontWeight:'800',fontSize:12},
  filters:{gap:10,marginTop:6},
  search:{minHeight:52,paddingHorizontal:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,color:C.white,borderRadius:16,fontSize:14},
- filterLabel:{color:C.muted,fontWeight:'800',fontSize:10,letterSpacing:1.1},
+ filterLabel:{color:C.muted,fontWeight:'800',fontSize:12,letterSpacing:1.1},
  chips:{gap:9,paddingVertical:3},
- chip:{paddingHorizontal:14,paddingVertical:10,borderRadius:24,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ chip:{minHeight:44,justifyContent:'center',paddingHorizontal:14,paddingVertical:10,borderRadius:24,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  selected:{backgroundColor:C.mint,borderColor:C.mint},
- chipText:{fontSize:12,fontWeight:'800',color:C.white},selectedText:{color:C.background},
+ chipText:{fontSize:13,fontWeight:'800',color:C.white},selectedText:{color:C.background},
  count:{fontSize:12,fontWeight:'800',color:C.muted}
 });
