@@ -152,7 +152,7 @@ test('private attachment downloads ignore responses from previous chat identitie
  for(const item of [
   'generation=useRef(0)','const version=++generation.current',
   'if(generation.current===version)generation.current++',
-  'generation.current!==version','[cleanup,scope,conversationId,messageId,index,token]',
+  'generation.current!==version','[cleanup,scope,conversationId,messageId,index,kind,token]',
   'if(generation.current===version){pending.current=false'
  ])assert.ok(attachment.includes(item),item);
  assert.ok(attachment.includes("if(file?.exists)try{file.delete();}catch{}"));
