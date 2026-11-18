@@ -7,7 +7,9 @@ const read=filename=>fs.readFileSync(path.join(__dirname,'..',filename),'utf8');
 
 test('team discovery prioritizes identity and CTA over a long creation form',()=>{
  const screen=read('app/teams/index.tsx');
- assert.match(screen,/O teu clube\. A tua história\./);
+ assert.match(screen,/As tuas equipas/);
+ assert.match(screen,/Explorar competições/);
+ assert.match(screen,/joinedOnly=joined\.filter\(team=>!owned\.some/);
  assert.match(screen,/const \[createOpen,setCreateOpen\]=useState\(false\)/);
  assert.match(screen,/auth\.token&&createOpen\?/);
  assert.match(screen,/Encontrar torneios e campeonatos/);
