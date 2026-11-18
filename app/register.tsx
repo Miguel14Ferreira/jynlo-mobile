@@ -2,6 +2,7 @@ import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
+import BirthDatePicker from '../src/components/BirthDatePicker';
 import {C} from '../src/lib/theme';
 import {registerNative,validateNativeRegistration} from '../src/lib/native-registration';
 
@@ -63,9 +64,9 @@ export default function RegisterScreen(){
    <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry maxLength={128} autoComplete="new-password" placeholder="Repetir palavra-passe" placeholderTextColor={C.muted}/>
    <Text style={styles.label}>Nome pelo qual queres ser tratado</Text>
    <TextInput style={styles.input} value={nickname} onChangeText={setNickname} maxLength={80} placeholder="Opcional" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Data de nascimento * (AAAA-MM-DD)</Text>
-   <TextInput style={styles.input} value={dateOfBirth} onChangeText={setDateOfBirth} maxLength={10} keyboardType="numbers-and-punctuation" placeholder="1998-05-24" placeholderTextColor={C.muted}/>
-   <Text style={styles.hint}>Tens de ter pelo menos 18 anos.</Text>
+   <Text style={styles.label}>Data de nascimento *</Text>
+   <BirthDatePicker onChange={setDateOfBirth} disabled={busy}/>
+   <Text style={styles.hint}>Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.</Text>
    <Text style={styles.label}>País *</Text>
    <TextInput style={styles.input} value={country} onChangeText={setCountry} maxLength={100} placeholderTextColor={C.muted}/>
    <Text style={styles.label}>Género (opcional)</Text>
