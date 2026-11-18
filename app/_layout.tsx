@@ -80,6 +80,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>
     <Stack.Screen name="communities/invites" options={{title:"Convites"}}/>
     <Stack.Screen name="communities/[id]/chat" options={{title:"Chat da comunidade"}}/>
+    <Stack.Screen name="communities/[id]/live/index" options={{title:"Diretos da comunidade"}}/>
+    <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:"Em direto"}}/>
     <Stack.Screen name="messages/[peer]" options={{title:"Chat privado"}}/>
     <Stack.Screen name="messages/call" options={{title:"Chamada privada"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
