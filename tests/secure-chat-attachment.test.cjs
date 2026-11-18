@@ -29,7 +29,7 @@ test('preview only fetches on user action and removes private local files',()=>{
  assert.match(screen,/type!==mime/);
  assert.match(screen,/maxAttachmentSize\(mime\)/);
  assert.match(screen,/index\?\'\/\'\+index:\'\'/);
- assert.match(screen,/!active\.current\|\|controller\.signal\.aborted/);
+ assert.match(screen,/!active\.current\|\|generation\.current!==version\|\|controller\.signal\.aborted/);
 });
 test('all chat kinds only expose attachments from non-deleted messages',()=>{
  for(const file of ['app/messages/[peer].tsx','src/components/CommunityChatPanel.tsx','src/components/SessionChatPanel.tsx']){
