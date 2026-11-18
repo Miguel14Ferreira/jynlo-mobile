@@ -12,7 +12,7 @@ test('stories support left/right taps and hold-to-pause without timing out video
  assert.match(viewer,/tapZone\(-1\)/);
  assert.match(viewer,/tapZone\(1\)/);
  assert.match(viewer,/onLongPress:/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\|\|!appActive\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
  assert.match(viewer,/Animated\.timing\(progress/);
  assert.match(viewer,/animation\.stop\(\)/);
  assert.match(viewer,/remaining\.current=Math\.max\(0,1-value\)/);
@@ -44,13 +44,13 @@ test('story videos advance once at native playback completion, without looping',
  assert.match(source,/if\(ended\.current\)return/);
  assert.match(source,/subscription\.remove\(\)/);
  assert.match(viewer,/onEnd=\{\(\)=>go\(1\)\}/);
- assert.match(viewer,/key=\{story\.id\}/);
+ assert.match(viewer,/key=\{story\.id\+'-'\+mediaRetry\}/);
 });
 
 test('viewer closes on downward swipe without overriding ordinary taps',()=>{
  assert.match(viewer,/onTouchStart=/);
  assert.match(viewer,/onTouchEnd=/);
- assert.match(viewer,/pageY-start>110&&!replyFocused\)safeClose\(\)/);
+ assert.match(viewer,/pageY-start>110&&!replyFocused&&!audienceOpen\)safeClose\(\)/);
  assert.match(viewer,/onTouchCancel=/);
 });
 
