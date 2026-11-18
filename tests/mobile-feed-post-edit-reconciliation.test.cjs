@@ -78,3 +78,15 @@ test('ordinary text edits keep original server media authoritative',()=>{
  const guarded=reconcilePostEdits(receipts,[updatedFromServer],1100);
  assert.equal(guarded.posts[0].imageUrl,updatedFromServer.imageUrl);
 });
+
+test('media-only post edits accept nullable captions and preserve replacement media',()=>{
+ const old={...post(null),imageUrl:'https://cdn.example/old.jpg',extraMedia:[]};
+ const updated={...old,imageUrl:'https://cdn.example/new.jpg'};
+ const receipt=rememberPostEdit(new Map(),updated,1000,true);
+ const guarded=reconcilePostEdits(receipt,[old],1100);
+ assert.equal(guarded.posts[0].imageUrl,updated.imageUrl);
+ assert.equal(guarded.posts[0].content,'');
+ assert.equal(guarded.edits.size,1);
+ const synced=reconcilePostEdits(guarded.edits,[updated],1200);
+ assert.equal(synced.edits.size,0);
+});
