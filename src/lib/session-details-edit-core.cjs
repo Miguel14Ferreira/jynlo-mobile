@@ -26,7 +26,7 @@ function editSessionPayload(fields,allowedSports,now=Date.now()){
  if(city.length<2||city.length>120)throw Error('Indica uma cidade entre 2 e 120 caracteres.');
  if(address.length<1||address.length>500)throw Error('Indica uma morada até 500 caracteres.');
  const description=String(fields.description??'').trim();
- if(description.length>1000||/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]/.test(description))
+ if(description.length>1000||/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(description))
   throw Error('A descrição deve ter até 1000 caracteres e não pode conter caracteres de controlo.');
  const meeting=String(fields.meetingPointInstructions||'').trim();
  if(meeting.length>240||/[\r\n\x00-\x1f\x7f]/.test(meeting))
