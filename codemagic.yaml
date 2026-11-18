@@ -230,6 +230,7 @@ workflows:
       java: 17
       vars:
         CI: "1"
+        EAS_BUILD_PROFILE: "play-internal"
         JYNLO_REQUIRE_REAL_API: "1"
         JYNLO_REQUIRE_NATIVE_PUSH: "1"
     cache:
@@ -274,12 +275,12 @@ workflows:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          source = Path('android/app/build.gradle').read_text()
-          for setting in ('minifyEnabled', 'shrinkResources'):
-              values = re.findall(r'(?m)^\\s*' + setting + r'\\s+([^\\s/]+)', source)
-              if values != ['false']:
-                  raise SystemExit(f'Jynlo startup fix: {setting} deve estar false, encontrado {values!r}')
-          print('WorkManager startup recovery: R8/minify and resource shrink disabled.')
+          props = Path('android/gradle.properties').read_text()
+          for setting in ('android.enableProguardInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):
+              pattern = r'(?m)^' + re.escape(setting) + r'\\s*=\\s*false\\s*$'
+              if not re.search(pattern, props):
+                  raise SystemExit(f'Build bloqueada: {setting} tem de estar explicitamente false em gradle.properties')
+          print('R8 e resource shrink desativados no projeto nativo gerado.')
           PY
       - name: Configurar chave de upload Google Play sem a expor
         script: |
