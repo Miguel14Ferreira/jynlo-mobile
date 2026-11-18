@@ -237,6 +237,10 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(!confirmedSessionChatSend(confirmed,id,auth.username||'',originalDraft,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current)return;
+   // Render only the validated server acknowledgement, never an invented
+   // optimistic message. Deduplicate if the socket already delivered it.
+   setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:
+    [...current,confirmed].sort((a,b)=>a.id-b.id));
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(false,version);
