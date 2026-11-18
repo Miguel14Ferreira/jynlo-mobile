@@ -1,4 +1,4 @@
-import React,{useEffect,useRef} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -13,30 +13,45 @@ import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollViewInstance|null>(null);
   const nearBottom=useRef(true);
+  const [keyboardHeight,setKeyboardHeight]=useState(0);
+  const keyboardVisible=useRef(false);
+  const scrollFocused=useCallback(()=>{
+    const focused=TextInput.State.currentlyFocusedInput?.();
+    if(focused)scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,64,true);
+  },[]);
   // Measure the actual focused field instead of blindly jumping to the bottom.
   // A caption, reply or edit box can be above the last message in long chats.
   useEffect(()=>{
     if(!scroll)return;
-    const event=Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow';
-    const subscription=Keyboard.addListener(event,()=>{
-      const focused=TextInput.State.currentlyFocusedInput?.();
-      if(focused){
-        scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(focused,24,true);
-      }else if(autoScrollToEnd&&nearBottom.current){
-        scrollRef.current?.scrollToEnd({animated:true});
-      }
+    // Android adjustResize is enabled, but some keyboards resize the native
+    // window after keyboardDidShow. Keep extra scrollable space so mid-form
+    // inputs remain reachable even when the keyboard overlays the activity.
+    const shown=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',event=>{
+      keyboardVisible.current=true;
+      if(Platform.OS==='android')setKeyboardHeight(Math.max(0,event.endCoordinates.height));
+      // First pass after the native keyboard appears.
+      scrollFocused();
     });
-    return()=>subscription.remove();
-  },[autoScrollToEnd,scroll]);
+    const hidden=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillHide':'keyboardDidHide',()=>{
+      keyboardVisible.current=false;
+      setKeyboardHeight(0);
+    });
+    return()=>{shown.remove();hidden.remove();keyboardVisible.current=false;};
+  },[scroll,scrollFocused]);
+
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
     <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
-    {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}
+    {scroll ? <ScrollView ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[styles.content,keyboardHeight>0&&{paddingBottom:keyboardHeight+88}]} showsVerticalScrollIndicator={false}
       onScroll={autoScrollToEnd?event=>{
         const {layoutMeasurement,contentOffset,contentSize}=event.nativeEvent;
         nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
       }:undefined}
       scrollEventThrottle={100}
-      onContentSizeChange={autoScrollToEnd?()=>{if(nearBottom.current)scrollRef.current?.scrollToEnd({animated:false});}:undefined}>
+      onContentSizeChange={()=>{
+        // Retry once after the list relays out around the native keyboard.
+        if(keyboardVisible.current)scrollFocused();
+        else if(autoScrollToEnd&&nearBottom.current)scrollRef.current?.scrollToEnd({animated:false});
+      }}>
         {children}
       </ScrollView>
       : <View style={styles.content}>{children}</View>}
