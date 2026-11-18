@@ -4,6 +4,7 @@ import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
+import {observePersonalLives} from '../../src/lib/personal-live-realtime';
 import {activePersonalLives,startPersonalLive,type PersonalLiveEvent} from '../../src/lib/personal-live-api';
 
 export default function LivesScreen(){
@@ -24,8 +25,10 @@ export default function LivesScreen(){
  },[auth.token]);
  useFocusEffect(useCallback(()=>{
   void refresh();
-  const timer=setInterval(()=>{if(AppState.currentState==='active'&&!starting.current)void refresh(true);},15000);
-  return()=>{generation.current++;clearInterval(timer);};
+  const stop=auth.token?observePersonalLives({token:auth.token,onInvalidated:()=>{if(AppState.currentState==='active'&&!starting.current)void refresh(true);}}):()=>{};
+  // Low-frequency fallback while offline, rather than hammering the backend.
+  const timer=setInterval(()=>{if(AppState.currentState==='active'&&!starting.current)void refresh(true);},30000);
+  return()=>{generation.current++;clearInterval(timer);stop();};
  },[refresh]));
  const start=async()=>{
   if(!auth.token||starting.current||!title.trim())return;
