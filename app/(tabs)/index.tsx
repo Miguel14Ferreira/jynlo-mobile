@@ -93,6 +93,13 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   React.useEffect(()=>{setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
     setAudience(null);setAudienceOpen(false);setAudienceError('');},[story?.id]);
   React.useEffect(()=>{
+    if(!story||mediaState!=='loading')return;
+    // Native players sometimes never fire a failure callback on a stalled connection.
+    // Show recovery instead of a permanently black Story after 12 seconds.
+    const timer=setTimeout(()=>setMediaState(current=>current==='loading'?'error':current),12000);
+    return ()=>clearTimeout(timer);
+  },[story?.id,mediaState,mediaRetry]);
+  React.useEffect(()=>{
     const subscription=AppState.addEventListener('change',state=>{
       if(state!=='active')progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
       setAppActive(state==='active');
