@@ -87,3 +87,31 @@ test('mobile profile prioritizes sports and social identity over redundant follo
  assert.doesNotMatch(profile,/Ver pessoas  ›/);
  assert.match(profile,/favoriteSports\.map\(sport=>/);
 });
+
+test('mobile UX: direct conversation keeps peer identity and authorized call action fixed above history',()=>{
+ const screen=source('app/messages/[peer].tsx');
+ assert.match(screen,/fixedChatHeader/);
+ assert.match(screen,/accessibilityLabel="Voltar às conversas"/);
+ assert.match(screen,/accessibilityLabel="Iniciar chamada com este contacto"/);
+ assert.match(screen,/blockStatusKnown&&!blocked&&peer\.toLowerCase\(\)!==auth\.username\?\.toLowerCase\(\)/);
+ assert.ok(screen.indexOf('<View style={styles.fixedChatHeader}>')<screen.indexOf('<ScrollView ref={conversationScroll}'));
+ assert.match(screen,/historyViewportMeasured\.current/);
+ assert.match(screen,/acknowledgeVisibleHistory/);
+});
+test('mobile UX: profile places account controls behind an accessible expandable section',()=>{
+ const profile=source('app/(tabs)/profile.tsx');
+ assert.match(profile,/moreOptionsOpen,setMoreOptionsOpen/);
+ assert.match(profile,/accessibilityState=\{\{expanded:moreOptionsOpen\}\}/);
+ assert.match(profile,/\{moreOptionsOpen\?<\>/);
+ assert.ok(profile.indexOf('<ProfilePosts')<profile.indexOf('Mais opções'));
+ assert.match(profile,/router\.push\('\/change-password'\)/);
+ assert.match(profile,/Eliminar a minha conta/);
+});
+test('mobile UX: inbox keeps notifications, filters, invites, and mute actions accessible without placeholder symbols',()=>{
+ const inbox=source('app/(tabs)/messages.tsx');
+ assert.match(inbox,/name="notifications"/);
+ assert.match(inbox,/accessibilityLabel="Ver convites e pedidos"/);
+ assert.match(inbox,/name=\{item\.kind==='direct'\?'profile'/);
+ assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(current=>!current\)\}/);
+ assert.match(inbox,/accessibilityLabel=\{isConversationMuted/);
+});
