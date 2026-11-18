@@ -395,6 +395,7 @@ export default function JynloFeedHome(){
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
+  const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
   const recentlyConfirmedStories=useRef<Array<{item:SocialStory;until:number}>>([]);
   const hiddenKeysRef=useRef<string[]>([]);
@@ -421,7 +422,7 @@ export default function JynloFeedHome(){
       postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
       setPublishing(false);setStoryPublishing(false);
       confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();confirmedPostEdits.current.clear();
-      recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
+      recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setConfirmedPostId(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);hiddenReadyRef.current=false;setHiddenReady(false);setShowAllAttendance(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
@@ -823,6 +824,7 @@ export default function JynloFeedHome(){
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedPosts.current=[...recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==created.postId),{item:created,until:Date.now()+120000}];
         setPosts(current=>[created,...current.filter(item=>item.postId!==created.postId)]);
+        setConfirmedPostId(created.postId);
         setPublishNotice('post');
       }
       // A user may have kept typing or selected another file during the upload.
@@ -872,6 +874,7 @@ export default function JynloFeedHome(){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
         setStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
+        setConfirmedPostId(null);
         setPublishNotice('story');
       }
       if(feedIdentity.current===`${username}:${actor}`&&
@@ -1111,7 +1114,11 @@ export default function JynloFeedHome(){
     </View>:null}
     {identityMatches&&publishNotice?<View style={styles.hiddenNotice}>
       <Text style={styles.hiddenNoticeText}>{publishNotice==='post'?'Publicação confirmada! Já aparece no teu feed.':'Story confirmada! Já aparece nas tuas Stories.'}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Fechar confirmação de publicação" onPress={()=>setPublishNotice(null)} style={styles.hiddenUndo}><Text style={styles.link}>Fechar</Text></Pressable>
+      {publishNotice==='post'&&confirmedPostId!==null?<Pressable accessibilityRole="button" accessibilityLabel="Ver publicação confirmada"
+        onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(confirmedPostId)}})} style={styles.hiddenUndo}>
+        <Text style={styles.link}>Ver publicação</Text>
+      </Pressable>:null}
+      <Pressable accessibilityRole="button" accessibilityLabel="Fechar confirmação de publicação" onPress={()=>{setPublishNotice(null);setConfirmedPostId(null);}} style={styles.hiddenUndo}><Text style={styles.link}>Fechar</Text></Pressable>
     </View>:null}
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
     {(loading||!identityMatches)&&visiblePosts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
