@@ -71,14 +71,28 @@ function reconcileCommentCounts(floors,posts,now=Date.now()){
   })
  };
 }
-/** Preserve only the edited fields until the feed reflects the successful PUT.
- * Other server-owned fields (likes, comments, media) remain authoritative.
+/** Preserve confirmed text, location and optionally replacement media until
+ * the feed GET converges. Never freeze likes/comments or media on text-only edits.
+ * All receipts remain scoped to the authenticated account by the caller.
  */
-function rememberPostEdit(edits,post,now=Date.now()){
+function mediaSnapshot(post){
+ return {
+  imageUrl:post.imageUrl||null,
+  videoUrl:post.videoUrl||null,
+  extraMedia:Array.isArray(post.extraMedia)?post.extraMedia.map(asset=>({...asset})):[]
+ };
+}
+function mediaMatches(post,entry){
+ const server=mediaSnapshot(post);
+ return server.imageUrl===entry.imageUrl&&server.videoUrl===entry.videoUrl&&
+  JSON.stringify(server.extraMedia)===JSON.stringify(entry.extraMedia);
+}
+function rememberPostEdit(edits,post,now=Date.now(),mediaReplaced=false){
  const next=new Map(edits);
  if(!post||!Number.isSafeInteger(post.postId)||post.postId<=0||
     post.type!=='POST'||typeof post.content!=='string')return next;
- next.set(post.postId,{content:post.content,location:post.location||null,until:now+RECEIPT_TTL_MS});
+ next.set(post.postId,{content:post.content,location:post.location||null,until:now+RECEIPT_TTL_MS,
+  ...(mediaReplaced?{mediaReplaced:true,...mediaSnapshot(post)}:{})});
  return next;
 }
 function reconcilePostEdits(edits,posts,now=Date.now()){
@@ -88,12 +102,17 @@ function reconcilePostEdits(edits,posts,now=Date.now()){
  for(const [id,entry] of edits){
   if(!entry||typeof entry.content!=='string'||!Number.isFinite(entry.until)||entry.until<=now)continue;
   const received=byId.get(id);
-  if(received&&received.content===entry.content&&(received.location||null)===(entry.location||null))continue;
+  if(received&&received.content===entry.content&&(received.location||null)===(entry.location||null)&&
+     (!entry.mediaReplaced||mediaMatches(received,entry)))continue;
   next.set(id,entry);
  }
  return {edits:next,posts:(posts||[]).map(post=>{
   const edited=post?.type==='POST'?next.get(post.postId):null;
-  return edited?{...post,content:edited.content,location:edited.location}:post;
+  if(!edited)return post;
+  return {...post,content:edited.content,location:edited.location,
+   ...(edited.mediaReplaced?{imageUrl:edited.imageUrl,videoUrl:edited.videoUrl,
+    extraMedia:edited.extraMedia}:{})};
  })};
 }
+
 module.exports={RECEIPT_TTL_MS,rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts,rememberPostEdit,reconcilePostEdits};
