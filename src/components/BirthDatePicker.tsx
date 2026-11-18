@@ -6,7 +6,7 @@ import {validAdultDate} from '../lib/native-registration';
 type Part='day'|'month'|'year';
 const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const pad=(value:number)=>String(value).padStart(2,'0');
-const YEARS=Array.from({length:121},(_,index)=>new Date().getFullYear()-18-index);
+const YEARS=Array.from({length:103},(_,index)=>new Date().getUTCFullYear()-18-index);
 
 export default function BirthDatePicker({onChange,disabled=false}:{onChange:(isoDate:string)=>void;disabled?:boolean}){
  const [day,setDay]=useState<number|null>(null);
