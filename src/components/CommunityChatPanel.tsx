@@ -175,11 +175,17 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       // Delivery alone never proves visibility. The embedded viewport acknowledges
       // messages only after its measured scroll reaches the bottom.
     }});
-   // A disconnected WebSocket must not leave the conversation frozen until a manual refresh.
+   // Real-time events normally update this conversation immediately.
+   // Poll every 5 seconds only offline; while connected, reconcile every
+   // 30 seconds to recover from a missed socket event without manual refresh.
+   let pollTicks=0;
    const timer=setInterval(()=>{
-    if(active&&generation.current===version&&connectionStatus.current!=='online'&&AppState.currentState==='active')
-     void refresh(version,true);
-   },15000);
+    if(active&&generation.current===version&&AppState.currentState==='active'&&!sendingNow.current){
+     pollTicks++;
+     if(connectionStatus.current!=='online'||pollTicks%6===0)
+      void refresh(version,true);
+    }
+   },5000);
    const resume=AppState.addEventListener('change',state=>{
     if(state==='active'&&active&&generation.current===version)void refresh(version,true);
    });
