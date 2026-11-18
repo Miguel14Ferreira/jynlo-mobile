@@ -276,7 +276,7 @@ workflows:
           import re
           props = Path('android/gradle.properties').read_text()
           for setting in ('android.enableProguardInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):
-              pattern = r'(?m)^' + re.escape(setting) + r'\s*=\s*false\s*
+              pattern = r'(?m)^' + re.escape(setting) + r'\s*=\s*false(?:\s|$)'
               if not re.search(pattern, props):
                   raise SystemExit(f'Build bloqueada: {setting} tem de estar explicitamente false em gradle.properties')
           print('R8 e resource shrink desativados no projeto nativo gerado.')
