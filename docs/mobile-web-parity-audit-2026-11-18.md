@@ -41,6 +41,10 @@ On mobile `develop`:
 - Changed the direct screen to refresh immediately on relevant events or socket reconnect, with 5-second fallback when disconnected and 30-second recovery sync when online. It tears down sockets on focus/account/peer changes.
 - Changed session chat from fixed 15-second polling to WebSocket-first refresh with the same adaptive fallback. Other community/team chats already use authenticated realtime invalidations and HTTP reconciliation; no manual Refresh button was reintroduced.
 - Added regression tests for cross-conversation events, socket authentication and cleanup, and scoped fallback/notification handling.
+- **Community membership safety:** the community WebSocket handler no longer places socket payload messages directly into the visible history. It triggers an authenticated HTTP refresh, which rechecks access and clears messages if membership is revoked; read receipts still require actual message visibility in the viewport.
+- **Team composer keyboard:** the team chat now tracks keyboard show/hide and composer focus. The history shrinks while typing, and scrolls to the latest message only if the user was already near the bottom. This avoids involuntary jumps away from earlier messages.
+- Team feeds already provide member-scoped WebSocket invalidations, the same online/offline 30-second/5-second recovery schedule, private media and PDF attachments, comments, reactions, search and pagination. Reused rather than duplicating these existing features.
+- Added `mobile-community-team-chat-parity-audit.test.cjs` and updated the community chat visibility regression test. These are source-level contracts; complete device tests remain a release gate.
 
 Pending: two-device tests with distinct accounts and blocked users, attachments (images and PDFs) in direct/session/community/team scopes, pending writes during backgrounding, receipt consistency, reconnect under poor network, typing indicators, and team/community feeds. Ensure native keyboard does not hide the composer. A successful source contract check does not establish device-level message delivery.
 
