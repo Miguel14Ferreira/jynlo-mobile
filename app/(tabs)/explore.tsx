@@ -95,9 +95,20 @@ export default function DiscoverScreen(){
        <View style={{flex:1,gap:3}}><Text style={styles.createShortcutTitle}>Organizar um jogo</Text><Text style={styles.createShortcutSub}>Cria uma sessão e convida jogadores</Text></View>
        <Text style={styles.createShortcutArrow}>›</Text>
      </Pressable>
-     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/teams')} accessibilityRole="button" accessibilityLabel="Explorar equipas"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="tournament" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Equipas · descobrir ou criar</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
-     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button" accessibilityLabel="Explorar comunidades desportivas"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="community" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Explorar comunidades</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
-     <Pressable style={styles.venueShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos"><View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name="venue" size={19} color={MobileTheme.colors.accent}/><Text style={styles.venueShortcutText}>Explorar recintos</Text></View><JynloIcon name="chevron-right" size={20} color={MobileTheme.colors.accent}/></Pressable>
+     <View style={styles.destinationRow}>
+       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/teams')} accessibilityRole="button" accessibilityLabel="Explorar equipas">
+         <JynloIcon name="tournament" size={23} color={MobileTheme.colors.accent}/>
+         <Text style={styles.destinationText} numberOfLines={1}>Equipas</Text>
+       </Pressable>
+       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button" accessibilityLabel="Explorar comunidades desportivas">
+         <JynloIcon name="community" size={23} color={MobileTheme.colors.accent}/>
+         <Text style={styles.destinationText} numberOfLines={1}>Comunidades</Text>
+       </Pressable>
+       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos">
+         <JynloIcon name="venue" size={23} color={MobileTheme.colors.accent}/>
+         <Text style={styles.destinationText} numberOfLines={1}>Recintos</Text>
+       </Pressable>
+     </View>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    <Text style={styles.filterLabel}>MODALIDADE · {SPORTS.length} DESPORTOS</Text>
@@ -204,12 +215,15 @@ const styles=StyleSheet.create({
  retryAction:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,minHeight:48,paddingHorizontal:16,borderRadius:12,backgroundColor:C.mint},
  retryActionText:{color:C.background,fontSize:14,fontWeight:'800'},
  page:{flex:1,backgroundColor:MobileTheme.colors.background},content:{paddingHorizontal:MobileTheme.spacing.lg,paddingTop:MobileTheme.spacing.lg,paddingBottom:42,gap:MobileTheme.spacing.lg},
- hero:{marginTop:7,gap:11},headline:{fontSize:31,lineHeight:39,color:C.white,fontWeight:'900',letterSpacing:-0.6},
+ hero:{marginTop:4,gap:8},headline:{fontSize:28,lineHeight:35,color:C.white,fontWeight:'900',letterSpacing:-0.6},
  sub:{color:C.muted,lineHeight:21,fontSize:14},
  search:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,height:54,paddingHorizontal:17,color:C.white,fontSize:15},
  chips:{gap:10,paddingVertical:3},chip:{minHeight:44,justifyContent:'center',paddingHorizontal:17,paddingVertical:10,borderRadius:26,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  selected:{backgroundColor:C.mint,borderColor:C.mint},chipText:{fontSize:13,fontWeight:'800',color:C.white},
- shortcuts:{gap:10},createShortcut:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.lg,paddingHorizontal:16,minHeight:84},createShortcutSymbol:{fontSize:30,color:MobileTheme.colors.background,fontWeight:'700'},createShortcutTitle:{fontSize:16,fontWeight:'900',color:MobileTheme.colors.background},createShortcutSub:{fontSize:13,color:MobileTheme.colors.background,opacity:1,lineHeight:19},createShortcutArrow:{fontSize:29,color:MobileTheme.colors.background},venueShortcut:{minHeight:MobileTheme.touchTarget,flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingHorizontal:15,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border},venueShortcutText:{color:MobileTheme.colors.text,fontSize:13,fontWeight:'800'},venueShortcutArrow:{color:MobileTheme.colors.accent,fontSize:19},
+ destinationRow:{flexDirection:'row',alignItems:'stretch',gap:8},
+ destinationShortcut:{flex:1,minWidth:0,minHeight:76,paddingVertical:10,paddingHorizontal:5,gap:7,alignItems:'center',justifyContent:'center',borderRadius:13,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border},
+ destinationText:{color:MobileTheme.colors.text,fontSize:12,fontWeight:'800',textAlign:'center'},
+ shortcuts:{gap:9},createShortcut:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.lg,paddingHorizontal:16,minHeight:74},createShortcutSymbol:{fontSize:30,color:MobileTheme.colors.background,fontWeight:'700'},createShortcutTitle:{fontSize:16,fontWeight:'900',color:MobileTheme.colors.background},createShortcutSub:{fontSize:13,color:MobileTheme.colors.background,opacity:1,lineHeight:19},createShortcutArrow:{fontSize:29,color:MobileTheme.colors.background},venueShortcut:{minHeight:MobileTheme.touchTarget,flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingHorizontal:15,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border},venueShortcutText:{color:MobileTheme.colors.text,fontSize:13,fontWeight:'800'},venueShortcutArrow:{color:MobileTheme.colors.accent,fontSize:19},
  filterLabel:{fontSize:12,fontWeight:'900',letterSpacing:1.1,color:C.mint,marginTop:4},
  sportSelector:{height:52,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:14,paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  sportSelectorText:{color:C.white,fontWeight:'800',fontSize:14},sportChevron:{fontSize:23,color:C.mint},
