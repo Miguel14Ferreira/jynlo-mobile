@@ -13,7 +13,7 @@ test('Mobile offers a personal destination and public communities the user manag
 test('Publishing a Story sends the explicitly selected destination to the server',()=>{
  assert.match(source,/const selectedCommunityId=storyPublishCommunityId/);
  assert.match(source,/!storyManagedCommunities\.some\(group=>group\.id===selectedCommunityId\)/);
- assert.match(source,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details\)/);
+ assert.match(source,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime\)/);
  assert.match(api,/communityId\?\{communityId:String\(communityId\)\}/);
 });
 test('Story composer resets the community on a new or discarded draft',()=>{
