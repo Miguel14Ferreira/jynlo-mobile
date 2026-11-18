@@ -1086,6 +1086,9 @@ export default function JynloFeedHome(){
   }
   const Header=()=> <View style={styles.screenPad}>
     <View style={styles.navHeader}><View style={styles.brand}><Image source={require('../../assets/jynlo-icon.png')} style={styles.brandLogo}/><Text style={styles.brandName}>JYNLO</Text></View><View style={styles.headerRight}>
+      <Pressable onPress={()=>router.push(auth.token?'/live':'/login')}
+        accessibilityRole="button" accessibilityLabel="Abrir diretos Jynlo" style={styles.headerCircle}>
+        <JynloIcon name="video" color={WHITE} size={22}/></Pressable>
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
