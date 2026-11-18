@@ -39,7 +39,11 @@ test('tournament is gated by owned or administrated communities, not membership 
 test('jogo de época explains rankings and keeps long choices in a vertical layout',()=>{
  const create=read('app/sessions/create.tsx');
  assert.match(create,/accessibilityLabel="Saber mais sobre jogos de época"/);
- assert.match(create,/Alert\.alert\('O que é um jogo de época\?'/);
+ assert.match(create,/<Modal visible=\{showSeasonHelp\} transparent animationType="fade"/);
+ assert.match(create,/onPress=\{\(\)=>setShowSeasonHelp\(true\)\}/);
+ assert.match(create,/accessibilityLabel="Percebi, fechar explicação"/);
+ assert.match(create,/helpBody:\{fontSize:15,lineHeight:23,color:C.white\}/);
+ assert.doesNotMatch(create,/Alert\.alert\('O que é um jogo de época\?'/);
  assert.match(create,/title="Não contar para a época"/);
  assert.match(create,/title="Contar para a época"/);
  assert.match(create,/styles\.playerChoices/);
