@@ -170,10 +170,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     // Reconcile missed messages and clear an offline warning only after a successful server read.
     if(status==='online'&&!wasConnected)void refresh(version,true);
    }}, 
-    onMessage:(msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
-      setMessages(old=>mergeMessages(old,[msg]));
-      // Delivery alone never proves visibility. The embedded viewport acknowledges
-      // messages only after its measured scroll reaches the bottom.
+    onMessage:(_msg)=>{if(!active||version!==generation.current||revokedRef.current)return;
+      // WebSocket delivery is an invalidation hint, not a new authorization.
+      // Only the authenticated HTTP history may put messages in the UI.
+      // If membership was revoked, refresh clears cached private messages.
+      if(AppState.currentState==='active'&&!sendingNow.current)
+       void refresh(version,true);
     }});
    // Real-time events normally update this conversation immediately.
    // Poll every 5 seconds only offline; while connected, reconcile every
