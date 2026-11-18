@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useTracks,useRoomContext} from '@livekit/react-native';
 import {Track} from 'livekit-client';
@@ -101,7 +101,14 @@ export default function PersonalLiveRoom(){
    // Guest approval grants publishing only with a NEW LiveKit token.
    if(state.value.isGuest&&connectionRole.current==='VIEWER'&&!switchingRole.current){
     switchingRole.current=true;
-    void joinPersonalLive(auth.token,id).then(next=>{
+    void (async()=>{
+     if(Platform.OS==='android'){
+      const granted=await PermissionsAndroid.requestMultiple([PermissionsAndroid.PERMISSIONS.CAMERA,PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]);
+      if(granted[PermissionsAndroid.PERMISSIONS.CAMERA]!=='granted'||granted[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]!=='granted')
+       throw Error('Autoriza a câmara e o microfone para entrares no direto.');
+     }
+     return joinPersonalLive(auth.token,id);
+    })().then(next=>{
      if(active.current&&next.role==='GUEST'){connectionRole.current='GUEST';setConnection(next);}
     }).catch(()=>{if(active.current)setChatError('A aprovação foi recebida, mas o vídeo ainda não ligou.');})
       .finally(()=>{switchingRole.current=false;});
@@ -184,7 +191,7 @@ export default function PersonalLiveRoom(){
   {!loading&&!connection?<Button title="Voltar aos diretos" secondary onPress={leave}/>:null}
   {connection&&ready?<LiveKitRoom key={id+'-'+role} serverUrl={connection.serverUrl}
    token={connection.token} connect audio={host||role==='GUEST'} video={host||role==='GUEST'}
-   onDisconnected={()=>{if(active.current&&!endingRef.current)setError('A ligação ao vídeo terminou. Volta à lista para entrar novamente.');}}
+   onDisconnected={()=>{if(active.current&&!endingRef.current&&connectionRole.current===role)setError('A ligação ao vídeo terminou. Volta à lista para entrar novamente.');}}
    onError={e=>{if(active.current)setError('Erro na transmissão: '+e.message);}}>
    <LiveVideoStage host={host}/>
    <BroadcastControls publisher={host||role==='GUEST'}/>
