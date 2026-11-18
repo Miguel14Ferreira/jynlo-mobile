@@ -187,7 +187,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
-      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
+      <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={styles.storyImage} accessibilityLabel={story.altText||story.caption||'Fotografia da Story'}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
              appearance={{color:story.textColor||'white',background:story.textBackground||'dark',font:story.textFont||'modern'}}
@@ -253,6 +253,7 @@ export default function JynloFeedHome(){
   const [storySearchedProfiles,setStorySearchedProfiles]=useState<StoryFriend[]>([]),[storyProfileSearchBusy,setStoryProfileSearchBusy]=useState(false);
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
   const [showStoryTime,setShowStoryTime]=useState(false);
+  const [storyAltText,setStoryAltText]=useState('');
   const [storyEditorOpenedAt,setStoryEditorOpenedAt]=useState(()=>new Date().toISOString());
   const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const [storyAppearance,setStoryAppearance]=useState<StoryTextAppearance>({color:'white',background:'dark',font:'modern'});
@@ -424,7 +425,7 @@ export default function JynloFeedHome(){
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
-      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setShowStoryTime(false);setExpandedPostImage(null);
+      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setShowStoryTime(false);setStoryAltText('');setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
     }
@@ -848,7 +849,7 @@ export default function JynloFeedHome(){
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
-    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance},showTime=showStoryTime;
+    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance},showTime=showStoryTime,altText=storyAltText;
     if(storyLocation.trim()&&verifiedStoryPlace!==storyLocation.trim()){
       setStoryPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
     }
@@ -862,7 +863,7 @@ export default function JynloFeedHome(){
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
-      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime);
+      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText);
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
@@ -877,7 +878,7 @@ export default function JynloFeedHome(){
           storyPublishCommunityId===selectedCommunityId&&
           currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
           currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom&&
-          storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font&&showStoryTime===showTime;
+          storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font&&showStoryTime===showTime&&storyAltText===altText;
         if(unchanged){
           storyComposerRevision.current++;storyComposerRef.current=false;
           setStoryCaption('');storyCaptionRef.current='';
@@ -1340,6 +1341,12 @@ export default function JynloFeedHome(){
           </Pressable>)}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyCaption.length}/180</Text>
+          <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyAltText}
+            onChangeText={setStoryAltText} maxLength={350} multiline
+            placeholder="Descreve a imagem ou o vídeo para acessibilidade (opcional)"
+            accessibilityLabel="Descrição acessível da Story" placeholderTextColor={MUTED}
+            style={styles.storyCaptionInput}/>
+          <Text style={styles.countText}>{storyAltText.length}/350</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyLocation} onChangeText={value=>{storyLocationRef.current=value;setStoryLocation(value);setVerifiedStoryPlace('');setStoryPlaceOptions([]);}}
             placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da Story"
             maxLength={160} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
