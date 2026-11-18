@@ -40,3 +40,33 @@ test('attachments and private access checks are preserved',()=>{
  assert.match(session,/markSessionChatRead/);
  assert.match(session,/ChatPdfComposer/);
 });
+
+test('real-device UX: direct chats remain compact without losing composer or attachments',()=>{
+ const direct=source('app/messages/[peer].tsx');
+ assert.match(direct,/history:\{paddingHorizontal:12,paddingTop:10,paddingBottom:18,gap:8/);
+ assert.match(direct,/message:\{padding:10,/);
+ assert.match(direct,/SecureChatAttachment/);
+ assert.match(direct,/Escreve uma mensagem privada/);
+});
+test('real-device UX: inbox mute controls do not occupy a full conversation tile',()=>{
+ const inbox=source('app/(tabs)/messages.tsx');
+ assert.match(inbox,/muteAction:\{width:44,height:44/);
+ assert.match(inbox,/JynloIcon name=\{isConversationMuted/);
+ assert.match(inbox,/accessibilityLabel=\{isConversationMuted/);
+ assert.match(inbox,/minHeight:72/);
+});
+test('real-device UX: profile privacy summary collapses, but follow requests remain visible',()=>{
+ const privacy=source('src/components/ProfilePrivacySettings.tsx');
+ assert.match(privacy,/detailsOpen,setDetailsOpen/);
+ assert.match(privacy,/accessibilityState=\{\{expanded:detailsOpen\}\}/);
+ assert.match(privacy,/privateModeAvailable/);
+ assert.match(privacy,/pending\.map\(item=>/);
+});
+test('real-device UX: native video call foreground and actions remain accessible',()=>{
+ const call=source('src/features/direct-call-screen.tsx');
+ assert.match(call,/localVideoCard:\{alignSelf:'flex-end',width:'40%'\}/);
+ assert.match(call,/callActions:\{flexDirection:'row'/);
+ for(const label of ['Desligar microfone','Desligar câmara','Terminar chamada'])
+  assert.ok(call.includes(label),label);
+ assert.match(call,/onPress=\{onHangup\}/);
+});
