@@ -79,7 +79,7 @@ test('Stories open the device camera and still offer a gallery without a tall bl
 });
 test('feed engagement actions wrap rather than overlapping on small screens',()=>{
  assert.match(feed,/postActions:\{flexDirection:'row',flexWrap:'wrap'/);
- assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:36/);
+ assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:44/);
 });
 
 test('post creation supports camera, multiple gallery assets and one-item removal',()=>{
