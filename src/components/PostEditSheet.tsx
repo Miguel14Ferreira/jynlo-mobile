@@ -96,7 +96,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  async function persist(){
    if(!visible||!post||!token||!username||lock.current||!changed)return;
    const initialIdentity=currentIdentity,version=generation.current;
-   if(!text.trim()&&postMediaItems(post).length===0){
+   if(!text.trim()&&!replacing&&postMediaItems(post).length===0){
      setError('Uma publicação sem fotografias ou vídeos precisa de uma descrição.');return;
    }
    lock.current=true;setBusy(true);setError('');
