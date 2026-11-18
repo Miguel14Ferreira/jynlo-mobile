@@ -8,14 +8,14 @@ const source=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
 const future=new Date(Date.now()+86400000*10);
 const date=[future.getFullYear(),String(future.getMonth()+1).padStart(2,'0'),String(future.getDate()).padStart(2,'0')].join('-');
 const input=()=>({sport:'Padel',date,hour:'20:00',city:'Lisboa',address:'Rua do Desporto 12',
- maxParticipants:'10',minParticipants:'6',priceAmount:'3,50',meetingPointInstructions:'Porta principal'});
+ maxParticipants:'10',minParticipants:'6',priceAmount:'3,50',meetingPointInstructions:'Porta principal',description:'Jogo amigável'});
 test('session detail edits match web backend PATCH fields',()=>{
  const payload=editSessionPayload(input(),['Padel','Futebol']);
  assert.equal(payload.priceAmount,3.5);
  assert.equal(payload.maxParticipants,10);
  assert.equal(payload.minParticipants,6);
  assert.deepEqual(Object.keys(payload).sort(),
-  ['sport','gameDate','maxParticipants','minParticipants','priceAmount','city','address','meetingPointInstructions'].sort());
+  ['sport','gameDate','maxParticipants','minParticipants','priceAmount','city','address','meetingPointInstructions','description'].sort());
 });
 test('reject capacity below the minimum, invalid sports and bad dates',()=>{
  assert.throws(()=>editSessionPayload({...input(),maxParticipants:'5'},['Padel']),/Mínimo/);
@@ -58,4 +58,17 @@ test('edit form reuses stable local date/time input formatters',()=>{
  assert.match(edit,/formatLocalTimeInput\(value\)/);
  assert.match(edit,/currentParticipantCount:session\.participantCount/);
  assert.match(edit,/currentExternalConfirmedParticipants:session\.externalConfirmedParticipants/);
+});
+
+test('mobile editing supports the server description field without corrupting existing text',()=>{
+ const payload=editSessionPayload({...input(),description:'  Regras: levar colete  '},['Padel']);
+ assert.equal(payload.description,'Regras: levar colete');
+ assert.equal(editSessionPayload({...input(),description:''},['Padel']).description,'');
+ assert.throws(()=>editSessionPayload({...input(),description:'a'.repeat(1001)},['Padel']),/descrição/);
+ assert.throws(()=>editSessionPayload({...input(),description:'abc\\u0000def'},['Padel']),/descrição/);
+ const ui=source('app/sessions/[id]/edit.tsx');
+ assert.match(ui,/Descrição da sessão \(opcional\)/);
+ assert.match(ui,/value=\{draft\.description\}/);
+ assert.match(ui,/maxLength=\{1000\}/);
+ assert.match(source('src/lib/session-details-edit-api.ts'),/description:string/);
 });
