@@ -1,5 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {Alert,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Image,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import type {FeedItem,MobileMedia} from '../lib/types';
 import {editPost,replacePostMedia} from '../lib/social-feed-api';
@@ -141,8 +141,14 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
     </Pressable>
     {replacing?<View style={styles.replacement}>
      <Text style={styles.replacementLabel}>{replacementMedia.length} novo(s) ficheiro(s) selecionado(s)</Text>
-     {replacementMedia.map((file,index)=><Text key={file.uri+'-'+index} style={styles.hint} numberOfLines={1}>
-      {index+1}. {file.fileName}</Text>)}
+     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaPreviewRow}>
+      {replacementMedia.map((file,index)=><View key={file.uri+'-'+index} style={styles.mediaPreview}>
+       {file.type==='image'?<Image source={{uri:file.uri}} style={styles.mediaImage} resizeMode="cover"
+        accessibilityLabel={'Fotografia nova '+(index+1)}/>:<View style={styles.mediaVideo}>
+        <Text style={styles.mediaVideoText}>Vídeo {index+1}</Text></View>}
+       <Text style={styles.previewName} numberOfLines={2}>{file.fileName}</Text>
+      </View>)}
+     </ScrollView>
      <Pressable accessibilityRole="button" accessibilityLabel="Manter fotografias e vídeos atuais" disabled={busy}
        onPress={()=>setReplacementMedia([])} style={styles.mediaButton}>
        <Text style={styles.mediaButtonText}>Manter multimédia atual</Text>
@@ -172,5 +178,11 @@ const styles=StyleSheet.create({
  mediaButton:{minHeight:44,borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,padding:12,justifyContent:'center'},
  mediaButtonText:{color:C.accent,fontSize:13,fontWeight:'800'},
  replacement:{gap:8,padding:12,borderRadius:12,backgroundColor:C.raised},
- replacementLabel:{color:C.text,fontWeight:'900',fontSize:13}
+ replacementLabel:{color:C.text,fontWeight:'900',fontSize:13},
+ mediaPreviewRow:{gap:9,paddingBottom:4},
+ mediaPreview:{width:104,gap:5},
+ mediaImage:{width:104,height:104,borderRadius:10,backgroundColor:C.surface},
+ mediaVideo:{width:104,height:104,borderRadius:10,backgroundColor:C.surface,alignItems:'center',justifyContent:'center'},
+ mediaVideoText:{color:C.accent,fontWeight:'900',fontSize:13},
+ previewName:{color:C.muted,fontSize:11,lineHeight:16}
 });
