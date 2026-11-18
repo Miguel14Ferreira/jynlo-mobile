@@ -1,10 +1,10 @@
 import React,{useRef,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GestureResponderEvent} from 'react-native';
-import type {StoryTextGeometry} from '../lib/types';
+import type {StoryTextGeometry,StoryTextAppearance} from '../lib/types';
 import {clampStickerPosition} from '../lib/story-sticker-bounds.cjs';
 
-type Props={caption:string;geometry:StoryTextGeometry;onChange?:(value:StoryTextGeometry)=>void;disabled?:boolean;reservedTopPx?:number};
+type Props={caption:string;geometry:StoryTextGeometry;appearance?:StoryTextAppearance;onChange?:(value:StoryTextGeometry)=>void;disabled?:boolean;reservedTopPx?:number};
 type TouchPoint={pageX:number;pageY:number};
 type GestureStart={count:number;centerX:number;centerY:number;distance:number;angle:number;geometry:StoryTextGeometry};
 const clamp=(v:number,min:number,max:number)=>Math.max(min,Math.min(max,v));
@@ -17,7 +17,13 @@ const touchMetrics=(touches:readonly TouchPoint[])=>{
   angle:b?Math.atan2(b.pageY-a.pageY,b.pageX-a.pageX):0};
 };
 /** Drag a Story caption with one finger; pinch and rotate with two fingers. */
-export default function StoryTextPlacement({caption,geometry,onChange,disabled=false,reservedTopPx=0}:Props){
+export default function StoryTextPlacement({caption,geometry,appearance,onChange,disabled=false,reservedTopPx=0}:Props){
+ const palette={white:'#ffffff',black:'#020617',yellow:'#fef08a',mint:'#5eead4',pink:'#f9a8d4',blue:'#93c5fd'};
+ const color=palette[appearance?.color||'white'];
+ const background=appearance?.background==='none'?'transparent':
+   appearance?.background==='light'||(appearance?.background!=='light'&&appearance?.color==='black')
+    ?'rgba(255,255,255,.88)':'rgba(2,15,24,.8)';
+ const fontFamily=appearance?.font==='classic'?'serif':appearance?.font==='mono'?'monospace':undefined;
  const [area,setArea]=useState({width:340,height:320});
  const [sticker,setSticker]=useState({width:150,height:54});
  const gesture=useRef<GestureStart|null>(null);
@@ -47,6 +53,7 @@ export default function StoryTextPlacement({caption,geometry,onChange,disabled=f
   onLayout={event=>{const {width,height}=event.nativeEvent.layout;if(width>0&&height>0)setArea({width,height});}}>
   <View accessible accessibilityLabel={onChange?'Texto da Story: arrasta com um dedo, roda ou amplia com dois dedos':'Texto da Story'}
    style={[styles.caption,{
+    backgroundColor:background,
     left:area.width*position.x/100-sticker.width/2,
     top:area.height*position.y/100-sticker.height/2,
     transform:[{rotate:geometry.rotation+'deg'},{scale:geometry.zoom}]
@@ -58,7 +65,7 @@ export default function StoryTextPlacement({caption,geometry,onChange,disabled=f
    onResponderGrant={begin} onResponderMove={move}
    onResponderRelease={()=>{gesture.current=null;}}
    onResponderTerminate={()=>{gesture.current=null;}}>
-   <Text style={styles.captionText}>{caption}</Text>
+   <Text style={[styles.captionText,{color,fontFamily}]}>{caption}</Text>
   </View>
  </View>;
 }
