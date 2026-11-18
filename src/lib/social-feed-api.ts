@@ -363,7 +363,7 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
   return confirmed;
 }
-export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails):Promise<SocialStory>{
+export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails,appearance?:StoryTextAppearance):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
   // A selected community must be a real numeric resource, never an invalid
@@ -375,12 +375,17 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
      geometry.rotation < -3600||geometry.rotation > 3600||geometry.zoom<.5||geometry.zoom>3))
     throw Error('A posição do texto da Story é inválida.');
   const safeDetails=prepareStoryDetails(details?.locationLabel||'',details?.taggedUsernames||'');
+  if(appearance&&(!(['white','black','yellow','mint','pink','blue'] as string[]).includes(appearance.color)||
+    !(['dark','light','none'] as string[]).includes(appearance.background)||
+    !(['modern','classic','mono'] as string[]).includes(appearance.font)))throw Error('Estilo de texto da Story inválido.');
   if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true,
     textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null,
-    locationLabel:safeDetails.locationLabel||null,taggedUsernames:safeDetails.taggedUsernames||null};demoStories.unshift(item);return item;}
+    locationLabel:safeDetails.locationLabel||null,taggedUsernames:safeDetails.taggedUsernames||null,
+    textColor:appearance?.color||'white',textBackground:appearance?.background||'dark',textFont:appearance?.font||'modern'};demoStories.unshift(item);return item;}
   const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
     ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{}),
+    ...(appearance?{textColor:appearance.color,textBackground:appearance.background,textFont:appearance.font}:{}),
     ...(safeDetails.locationLabel?{locationLabel:safeDetails.locationLabel}:{}),
     ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
   if(!confirmedStoryAuthorReceipt(confirmed,username!,caption)||
