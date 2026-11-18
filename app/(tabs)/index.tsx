@@ -34,7 +34,7 @@ import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import {searchSocialPlaces,socialPlaceLabel,type SocialPlace} from '../../src/lib/social-place-search';
-import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails} from '../../src/lib/types';
+import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails,StoryTextAppearance} from '../../src/lib/types';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
 const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
@@ -190,6 +190,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyMedia}>{uri?(story.video?<MediaVideo key={story.id} uri={uri} story muted={storyMuted} paused={paused||replyFocused||storyBusy||!appActive} onEnd={()=>go(1)}/>:<Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={styles.storyImage}/>):<Text style={styles.storyCaption}>Media indisponível</Text>}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
+             appearance={{color:story.textColor||'white',background:story.textBackground||'dark',font:story.textFont||'modern'}}
              reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
           <View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>):null}
         <View style={styles.storyTapZones} pointerEvents="box-none">
@@ -252,6 +253,7 @@ export default function JynloFeedHome(){
   const [storySearchedProfiles,setStorySearchedProfiles]=useState<StoryFriend[]>([]),[storyProfileSearchBusy,setStoryProfileSearchBusy]=useState(false);
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
   const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
+  const [storyAppearance,setStoryAppearance]=useState<StoryTextAppearance>({color:'white',background:'dark',font:'modern'});
   const storyGeometryRef=useRef<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const storyComposerRef=useRef(false);
   const storyComposerRevision=useRef(0);
@@ -420,7 +422,7 @@ export default function JynloFeedHome(){
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
-      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setExpandedPostImage(null);
+      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
     }
@@ -844,7 +846,7 @@ export default function JynloFeedHome(){
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
-    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current};
+    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance};
     if(storyLocation.trim()&&verifiedStoryPlace!==storyLocation.trim()){
       setStoryPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
     }
@@ -858,7 +860,7 @@ export default function JynloFeedHome(){
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
-      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details);
+      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance);
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
@@ -872,7 +874,8 @@ export default function JynloFeedHome(){
           storyLocationRef.current===locationDraft&&storyTagsRef.current===tagsDraft&&
           storyPublishCommunityId===selectedCommunityId&&
           currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
-          currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom;
+          currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom&&
+          storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font;
         if(unchanged){
           storyComposerRevision.current++;storyComposerRef.current=false;
           setStoryCaption('');storyCaptionRef.current='';
@@ -1264,7 +1267,7 @@ export default function JynloFeedHome(){
           {storyMedia?<View style={[styles.storyPreview,{height:Math.min(460,Math.max(240,Math.round(screenHeight*0.48)))}]}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
             <StoryDetailsView locationLabel={storyLocation} taggedUsernames={storyTags.replace(/@/g,'')}/>
-            {storyCaption.trim()?<StoryTextPlacement caption={storyCaption.trim()} geometry={storyTextGeometry}
+            {storyCaption.trim()?<StoryTextPlacement caption={storyCaption.trim()} geometry={storyTextGeometry} appearance={storyAppearance}
               reservedTopPx={storyMetadataReservedHeight(storyLocation,storyTags)}
               onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
           </View>:null}
@@ -1283,6 +1286,36 @@ export default function JynloFeedHome(){
             </Pressable>
            </View>:null}
           <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
+          <View style={styles.storyStylePanel}>
+           <Text style={styles.storyStyleTitle}>Personalizar texto da Story</Text>
+           <Text style={styles.storyStyleLabel}>Cor</Text>
+           <View style={styles.storyStyleRow}>{([
+            ['white','Branco'],['black','Preto'],['yellow','Amarelo'],['mint','Verde'],['pink','Rosa'],['blue','Azul']
+           ] as const).map(([color,label])=><Pressable key={color} accessibilityRole="button" accessibilityLabel={'Cor do texto: '+label}
+             accessibilityState={{selected:storyAppearance.color===color}} disabled={storyPublishing}
+             onPress={()=>setStoryAppearance(prev=>({...prev,color}))}
+             style={[styles.storyStyleChoice,storyAppearance.color===color&&styles.storyStyleSelected]}>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.color===color?'✓ ':''}{label}</Text>
+            </Pressable>)}</View>
+           <Text style={styles.storyStyleLabel}>Fundo do texto</Text>
+           <View style={styles.storyStyleRow}>{([
+            ['dark','Escuro'],['light','Claro'],['none','Sem fundo']
+           ] as const).map(([background,label])=><Pressable key={background} accessibilityRole="button"
+             accessibilityLabel={'Fundo do texto: '+label} accessibilityState={{selected:storyAppearance.background===background}}
+             disabled={storyPublishing} onPress={()=>setStoryAppearance(prev=>({...prev,background}))}
+             style={[styles.storyStyleChoice,storyAppearance.background===background&&styles.storyStyleSelected]}>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.background===background?'✓ ':''}{label}</Text>
+            </Pressable>)}</View>
+           <Text style={styles.storyStyleLabel}>Fonte</Text>
+           <View style={styles.storyStyleRow}>{([
+            ['modern','Moderna'],['classic','Clássica'],['mono','Monoespaçada']
+           ] as const).map(([font,label])=><Pressable key={font} accessibilityRole="button"
+             accessibilityLabel={'Fonte: '+label} accessibilityState={{selected:storyAppearance.font===font}}
+             disabled={storyPublishing} onPress={()=>setStoryAppearance(prev=>({...prev,font}))}
+             style={[styles.storyStyleChoice,storyAppearance.font===font&&styles.storyStyleSelected]}>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.font===font?'✓ ':''}{label}</Text>
+            </Pressable>)}</View>
+          </View>
           <Text style={styles.storiesIntro}>Publicar como</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
             disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(null)}
@@ -1360,6 +1393,13 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ storyStylePanel:{gap:9,padding:12,borderWidth:1,borderColor:BORDER,borderRadius:14,backgroundColor:PANEL},
+ storyStyleTitle:{fontSize:15,fontWeight:'900',color:WHITE},
+ storyStyleLabel:{fontSize:12,fontWeight:'800',color:MUTED},
+ storyStyleRow:{flexDirection:'row',flexWrap:'wrap',gap:7},
+ storyStyleChoice:{borderWidth:1,borderColor:BORDER,borderRadius:9,minHeight:40,paddingHorizontal:10,paddingVertical:9,justifyContent:'center'},
+ storyStyleSelected:{borderColor:TEAL,backgroundColor:'#10483F'},
+ storyStyleChoiceText:{fontSize:12,fontWeight:'800',color:WHITE},
   attendanceDigest:{gap:8,marginVertical:4},
   attendanceRow:{flexDirection:'row',gap:11,alignItems:'flex-start',borderWidth:1,borderColor:'#0B6071',borderRadius:13,backgroundColor:'#062C3A',padding:12},
   attendanceCheck:{width:27,height:27,borderRadius:14,backgroundColor:'#0B5260',alignItems:'center',justifyContent:'center',marginTop:1},
