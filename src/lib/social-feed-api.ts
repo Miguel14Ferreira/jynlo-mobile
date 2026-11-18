@@ -363,9 +363,10 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
   return confirmed;
 }
-export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails,appearance?:StoryTextAppearance,showTime=false):Promise<SocialStory>{
+export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails,appearance?:StoryTextAppearance,showTime=false,altText=''):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
+  if(altText.trim().length>350)throw new Error('A descrição acessível da Story pode ter até 350 caracteres.');
   // A selected community must be a real numeric resource, never an invalid
   // negative/NaN ID that silently changes the publishing destination.
   if(communityId!=null&&(!Number.isSafeInteger(communityId)||communityId<=0))
@@ -382,11 +383,12 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true,
     textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null,
     locationLabel:safeDetails.locationLabel||null,taggedUsernames:safeDetails.taggedUsernames||null,
-    textColor:appearance?.color||'white',textBackground:appearance?.background||'dark',textFont:appearance?.font||'modern',showTime};demoStories.unshift(item);return item;}
+    textColor:appearance?.color||'white',textBackground:appearance?.background||'dark',textFont:appearance?.font||'modern',showTime,altText:altText.trim()||null};demoStories.unshift(item);return item;}
   const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
     ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{}),
     ...(appearance?{textColor:appearance.color,textBackground:appearance.background,textFont:appearance.font}:{}),
     showTime:String(showTime),
+    ...(altText.trim()?{altText:altText.trim()}:{}),
     ...(safeDetails.locationLabel?{locationLabel:safeDetails.locationLabel}:{}),
     ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
   if(!confirmedStoryAuthorReceipt(confirmed,username!,caption)||
