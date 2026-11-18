@@ -66,3 +66,23 @@ test('Google native errors are classified across SDK initialization, Play Servic
  assert.ok(google.includes('return result.data.idToken'));
  assert.ok(!google.includes('Linking.openURL'));
 });
+
+test('Google and email registration use a touch-friendly birth date selector',()=>{
+ const google=read('app/google-onboarding.tsx');
+ const email=read('app/register.tsx');
+ const picker=read('src/components/BirthDatePicker.tsx');
+ for(const screen of [google,email]){
+  assert.match(screen,/import BirthDatePicker from '\.\.\/src\/components\/BirthDatePicker'/);
+  assert.match(screen,/<BirthDatePicker onChange=\{set(?:Birth|DateOfBirth)\} disabled=\{busy\}\/>/);
+  assert.doesNotMatch(screen,/keyboardType="numbers-and-punctuation" placeholder="1998-05-24"/);
+  assert.match(screen,/Escolhe dia, mês e ano/);
+ }
+ assert.match(picker,/const MONTHS=\[/);
+ assert.match(picker,/Array\.from\(\{length:103\}/);
+ assert.match(picker,/accessibilityRole="button"/);
+ assert.match(picker,/onChange\(iso&&validAdultDate\(iso\)\?iso:''\)/);
+ assert.match(picker,/minHeight:52/);
+ assert.match(picker,/minHeight:48/);
+ assert.match(google,/Cria o teu perfil Jynlo/);
+ assert.doesNotMatch(google,/Conta Google confirmada: \{auth\.googleOnboardingEmail\}/);
+});
