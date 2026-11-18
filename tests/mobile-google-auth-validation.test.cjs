@@ -80,7 +80,9 @@ test('Google and email registration use a touch-friendly birth date selector',()
  assert.match(picker,/const MONTHS=\[/);
  assert.match(picker,/Array\.from\(\{length:103\}/);
  assert.match(picker,/accessibilityRole="button"/);
- assert.match(picker,/onChange\(iso&&validAdultDate\(iso\)\?iso:''\)/);
+ assert.match(picker,/const accepted=Boolean\(iso&&validAdultDate\(iso\)\)/);
+ assert.match(picker,/onChange\(accepted\?iso:''\)/);
+ assert.match(picker,/A data selecionada ainda não cumpre a idade mínima de 18 anos/);
  assert.match(picker,/minHeight:52/);
  assert.match(picker,/minHeight:48/);
  assert.match(google,/Cria o teu perfil Jynlo/);
