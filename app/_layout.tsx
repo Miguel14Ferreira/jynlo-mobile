@@ -88,6 +88,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="teams/competitions" options={{title:"Encontrar competições"}}/>
     <Stack.Screen name="teams/[id]" options={{title:"Perfil da equipa"}}/>
     <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
+    <Stack.Screen name="live/index" options={{title:"Lives Jynlo"}}/>
+    <Stack.Screen name="live/[id]" options={{title:"Em direto"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/fixtures" options={{title:"Jogos e fases"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/teams/[teamId]" options={{title:"Equipa"}}/>
