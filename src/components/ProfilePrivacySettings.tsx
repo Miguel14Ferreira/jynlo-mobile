@@ -2,23 +2,25 @@ import React,{useCallback,useState} from 'react';
 import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {C,MobileTheme} from '../lib/theme';
-import {myProfilePrivacy,pendingFollowRequests,updateProfilePrivacy,decideFollowRequest,
- type PendingFollowRequest,type ProfilePrivacyStatus} from '../lib/profile-privacy-api';
+import {myProfilePrivacy,myPrivateMediaReadiness,pendingFollowRequests,updateProfilePrivacy,decideFollowRequest,
+ type PendingFollowRequest,type ProfilePrivacyStatus,type PrivateMediaReadiness} from '../lib/profile-privacy-api';
 
 export default function ProfilePrivacySettings({token}:{token:string}){
  const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
  const [pending,setPending]=useState<PendingFollowRequest[]>([]);
+ const [media,setMedia]=useState<PrivateMediaReadiness|null>(null);
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
  const [detailsOpen,setDetailsOpen]=useState(false);
  const [error,setError]=useState('');
  useFocusEffect(useCallback(()=>{
    let active=true;
-   setPrivacy(null);setPending([]);setError('');setLoading(true);
+   setPrivacy(null);setPending([]);setMedia(null);setError('');setLoading(true);
    void Promise.all([myProfilePrivacy(token),pendingFollowRequests(token)])
     .then(([status,requests])=>{if(active){setPrivacy(status);setPending(requests);}})
     .catch(()=>{if(active)setError('Não foi possível consultar a privacidade.');})
     .finally(()=>{if(active)setLoading(false);});
+   void myPrivateMediaReadiness(token).then(result=>{if(active)setMedia(result);}).catch(()=>{});
    return()=>{active=false;};
  },[token]));
  const setPrivate=(value:boolean)=>{
@@ -49,20 +51,33 @@ export default function ProfilePrivacySettings({token}:{token:string}){
      <Text style={styles.title}>Privacidade do perfil</Text><Text style={styles.disclosure}>{detailsOpen?'Ocultar':'Detalhes'} {detailsOpen?'⌃':'⌄'}</Text>
    </Pressable>
    {loading?<Text style={styles.muted}>A verificar a privacidade…</Text>:null}
-   {privacy?<><Text style={styles.state}>Perfil {privacy.privateProfile?'privado':'público'}{!privacy.privateModeAvailable?' · Alteração indisponível':''}</Text>
-    {detailsOpen?<><Text style={styles.description}>{privacy.privateProfile
-      ?'As publicações e stories só são visíveis aos seguidores aprovados.'
-      :'Qualquer utilizador da Jynlo pode ver as tuas publicações e stories, mesmo sem te seguir.'}</Text>
-    <Text style={styles.muted}>{privacy.privateProfile
+   {privacy?<>
+    <View style={styles.statusRow}>
+      <View style={styles.statusCopy}>
+       <Text style={styles.state}>Perfil {privacy.privateProfile?'privado':'público'}</Text>
+       <Text style={styles.muted}>{privacy.privateProfile?'Apenas seguidores aprovados veem as tuas publicações e stories.':'Controla quem pode seguir-te e ver os teus conteúdos.'}</Text>
+      </View>
+      {privacy.privateModeAvailable?<Pressable accessibilityRole="button" accessibilityLabel={privacy.privateProfile?'Tornar o perfil público':'Tornar o perfil privado'} disabled={busy}
+       onPress={()=>setPrivate(!privacy.privateProfile)} style={[styles.action,busy&&styles.disabled]}>
+       <Text style={styles.actionText}>{busy?'A guardar…':privacy.privateProfile?'Tornar público':'Tornar privado'}</Text>
+      </Pressable>:null}
+    </View>
+    {!privacy.privateModeAvailable?<View style={styles.readiness}>
+     <Text style={styles.readinessTitle}>Proteção privada ainda não disponível</Text>
+     <Text style={styles.muted}>A Jynlo tem de proteger os ficheiros e os links antigos antes de ativar perfis privados. Não basta esconder as publicações no ecrã.</Text>
+     {media?<Text style={styles.muted}>{media.publicReferences>0
+      ?`O teu perfil ainda tem ${media.publicReferences} referência(s) de multimédia sem proteção. A migração será feita pelo serviço, sem perder publicações.`
+      :'O teu perfil não tem referências públicas por migrar; falta validar a segurança e ativar esta funcionalidade no servidor.'}</Text>:null}
+     <Text style={styles.muted}>A opção ficará disponível quando o servidor confirmar a migração segura dos conteúdos.</Text>
+    </View>:null}
+    {detailsOpen?<View style={styles.details}>
+     <Text style={styles.description}>{privacy.privateProfile
+      ?'As tuas publicações e stories pessoais são visíveis apenas a ti e aos seguidores que aprovaste.'
+      :'Neste momento, qualquer utilizador da Jynlo pode ver as tuas publicações e stories pessoais.'}</Text>
+     <Text style={styles.muted}>{privacy.privateProfile
       ?'Os novos seguidores precisam da tua aprovação. Os seguidores existentes mantêm acesso.'
-      :'Qualquer pessoa pode seguir-te imediatamente.'}</Text>
-    {privacy.privateModeAvailable?<Pressable accessibilityRole="button" disabled={busy}
-      onPress={()=>setPrivate(!privacy.privateProfile)} style={[styles.action,busy&&styles.disabled]}>
-      <Text style={styles.actionText}>{busy?'A guardar…':privacy.privateProfile?'Tornar público':'Tornar privado'}</Text>
-    </Pressable>:<><View style={[styles.action,styles.disabled]} accessibilityRole="text">
-     <Text style={styles.actionText}>Tornar privado — indisponível</Text>
-    </View><Text style={styles.muted}>A proteção do acesso direto a fotografias e vídeos está em preparação. O perfil continua público até essa proteção ficar concluída.</Text></>}
-    </>:null}
+      :'Quando ativares a privacidade, os novos seguidores terão de enviar um pedido.'}</Text>
+    </View>:null}
    </>:null}
    {pending.length>0?<View style={styles.requests}><Text style={styles.title}>Pedidos para seguir ({pending.length})</Text>
      {pending.map(item=><View key={item.id} style={styles.request}>
@@ -84,6 +99,11 @@ const styles=StyleSheet.create({
  disclosure:{color:C.mint,fontWeight:'800',fontSize:12},
  title:{fontWeight:'900',fontSize:16,color:C.white},
  state:{fontWeight:'800',fontSize:13,color:C.mint},
+ statusRow:{flexDirection:'row',alignItems:'center',gap:10,justifyContent:'space-between'},
+ statusCopy:{flex:1,gap:5},
+ readiness:{gap:7,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.background},
+ readinessTitle:{color:C.white,fontSize:13,fontWeight:'900'},
+ details:{gap:8,paddingTop:4},
  description:{fontSize:13,lineHeight:19,color:C.white},
  muted:{fontSize:12,lineHeight:18,color:C.muted},
  error:{fontSize:12,color:C.danger},
