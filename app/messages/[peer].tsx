@@ -481,6 +481,12 @@ export default function DirectConversation(){
  const reactions=useChatReactions('direct',peer,auth.token,messages.map(m=>m.id),!blocked&&blockStatusKnown);
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
+  <View style={styles.fixedChatHeader}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Voltar às conversas" onPress={()=>router.back()} style={styles.headerIcon}><JynloIcon name="back" size={23} color={C.white}/></Pressable>
+    <View style={styles.peerAvatar}><JynloIcon name="profile" size={25} color={C.mint}/></View>
+    <Text style={styles.peerTitle} numberOfLines={1}>{peer}</Text>
+    {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Pressable accessibilityRole="button" accessibilityLabel="Iniciar chamada com este contacto" style={styles.headerIcon} onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}><JynloIcon name="video" size={23} color={C.mint}/></Pressable>:null}
+  </View>
   <ScrollView ref={conversationScroll} style={styles.historyScroll} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
     onLayout={event=>{
       historyViewportHeight.current=event.nativeEvent.layout.height;
@@ -521,8 +527,7 @@ export default function DirectConversation(){
        conversationScroll.current?.scrollToEnd({animated:false});
       }
     }}>
-  <DemoBanner/><Eyebrow>CHAT PRIVADO</Eyebrow>
-  <Text style={styles.title}>{peer}</Text>
+  <DemoBanner/>
   <ChatSearchPanel kind="direct" conversationId={peer} token={auth.token} enabled={blockStatusKnown&&!blocked}/>
   <Text style={styles.note}>Conversas sincronizadas com a tua conta Jynlo. As permissões de amizade e bloqueio são verificadas pelo servidor.</Text>
   {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Button secondary title="Chamada de voz ou vídeo" onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}/>:null}
@@ -684,6 +689,10 @@ const styles=StyleSheet.create({
  muteButton:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,borderRadius:12,borderWidth:1,borderColor:C.mint,alignItems:'center',justifyContent:'center'},
  muteButtonText:{color:C.mint,fontSize:12,fontWeight:'800'},
  screen:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},
+ fixedChatHeader:{minHeight:62,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderBottomColor:C.border,backgroundColor:C.background},
+ headerIcon:{width:44,height:44,alignItems:'center',justifyContent:'center'},
+ peerAvatar:{width:38,height:38,borderRadius:19,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
+ peerTitle:{flex:1,fontSize:17,fontWeight:'900',color:C.white},
  historyScroll:{flex:1},history:{paddingHorizontal:12,paddingTop:10,paddingBottom:18,gap:8,flexGrow:1},
  footer:{flexShrink:0,paddingHorizontal:12,paddingTop:8,paddingBottom:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:7},
  refreshLink:{alignSelf:'center',padding:10,minHeight:44,justifyContent:'center'},refreshText:{color:C.muted,fontSize:12,fontWeight:'700'},
