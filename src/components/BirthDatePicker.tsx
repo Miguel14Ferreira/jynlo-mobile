@@ -13,6 +13,7 @@ export default function BirthDatePicker({onChange,disabled=false}:{onChange:(iso
  const [month,setMonth]=useState<number|null>(null);
  const [year,setYear]=useState<number|null>(null);
  const [open,setOpen]=useState<Part|null>(null);
+ const [invalidAge,setInvalidAge]=useState(false);
  const count=month?new Date(Date.UTC(year??2000,month,0)).getUTCDate():31;
  const days=Array.from({length:count},(_,i)=>i+1);
  const values=open==='day'?days:open==='month'?MONTHS.map((_,i)=>i+1):YEARS;
@@ -24,7 +25,9 @@ export default function BirthDatePicker({onChange,disabled=false}:{onChange:(iso
   const safeDay=nextDay&&nextDay>maxDay?null:nextDay;
   setDay(safeDay);setMonth(nextMonth);setYear(nextYear);
   const iso=safeDay&&nextMonth&&nextYear?`${nextYear}-${pad(nextMonth)}-${pad(safeDay)}`:'';
-  onChange(iso&&validAdultDate(iso)?iso:'');
+  const accepted=Boolean(iso&&validAdultDate(iso));
+  setInvalidAge(Boolean(iso&&!accepted));
+  onChange(accepted?iso:'');
   setOpen(null);
  };
  const value=(part:Part)=>part==='day'?(day?pad(day):'Dia'):part==='month'?(month?MONTHS[month-1]:'Mês'):(year?String(year):'Ano');
@@ -39,6 +42,7 @@ export default function BirthDatePicker({onChange,disabled=false}:{onChange:(iso
     <Text style={styles.chevron}>⌄</Text>
    </Pressable>)}
   </View>
+  {invalidAge?<Text accessibilityRole="alert" style={styles.error}>A data selecionada ainda não cumpre a idade mínima de 18 anos.</Text>:null}
   <Modal visible={open!==null} transparent animationType="slide" onRequestClose={()=>setOpen(null)}>
    <View style={styles.overlay}>
     <Pressable accessibilityRole="button" accessibilityLabel="Fechar seleção da data" onPress={()=>setOpen(null)} style={styles.backdrop}/>
@@ -67,6 +71,7 @@ const styles=StyleSheet.create({
  field:{flex:1,minWidth:0,minHeight:52,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,borderWidth:1,borderColor:C.border,borderRadius:13,backgroundColor:C.surface,gap:4},
  fieldText:{color:C.white,fontWeight:'700',fontSize:14,flexShrink:1},placeholder:{color:C.muted},
  chevron:{fontSize:17,color:C.mint},disabled:{opacity:.55},
+ error:{color:C.danger,fontSize:13,lineHeight:19,marginTop:6},
  overlay:{flex:1,justifyContent:'flex-end'},backdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,.75)'},
  sheet:{backgroundColor:C.background,borderTopLeftRadius:22,borderTopRightRadius:22,maxHeight:'70%',paddingHorizontal:16,paddingTop:14,paddingBottom:30,borderWidth:1,borderColor:C.border},
  heading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:12},
