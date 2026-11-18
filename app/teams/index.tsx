@@ -17,6 +17,7 @@ export default function TeamsScreen(){
  const [joinedError,setJoinedError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
+ const joinedOnly=joined.filter(team=>!owned.some(owner=>owner.id===team.id));
  const requestVersion=useRef(0),actionVersion=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
@@ -134,11 +135,12 @@ export default function TeamsScreen(){
  };
  return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
   <View style={styles.hero}>
-   <View style={styles.heroEmblem}><JynloIcon name="community" size={29} color={C.mint}/></View>
-   <Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text>
-   <Text style={styles.title}>O teu clube. A tua história.</Text>
-   <Text style={styles.heroSub}>Junta a malta, entra em competições e leva a equipa contigo para todas as épocas.</Text>
-   <Button title="Encontrar torneios e campeonatos" onPress={()=>router.push('/teams/competitions')}/>
+   <View style={styles.heroHeading}><View style={styles.heroEmblem}><JynloIcon name="community" size={25} color={C.mint}/></View>
+    <View style={styles.heroCopy}><Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text><Text style={styles.title}>As tuas equipas</Text></View></View>
+   <Text style={styles.heroSub}>Encontra jogadores, cria um clube e participa em competições.</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Encontrar torneios e campeonatos" style={styles.competitionsAction} onPress={()=>router.push('/teams/competitions')}>
+    <JynloIcon name="tournament" size={19} color={C.mint}/><Text style={styles.competitionsLabel}>Explorar competições</Text><JynloIcon name="chevron-right" color={C.mint} size={19}/>
+   </Pressable>
   </View>
   {auth.token?<Button title={createOpen?'Fechar criação de equipa':'+ Criar nova equipa'} secondary onPress={()=>setCreateOpen(open=>!open)}/>
    :<Button title="Iniciar sessão para criar equipa" onPress={()=>router.push('/login')}/>}
@@ -189,11 +191,10 @@ export default function TeamsScreen(){
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
   </View>:null}
-  {auth.token?<View style={styles.section}>
-    <View style={styles.sectionHeader}><Text style={styles.heading}>Equipas onde és jogador</Text><Text style={styles.count}>{joined.length}</Text></View>
-    <Text style={styles.note}>Acede às mensagens, às publicações e ao plantel das equipas onde aceitaste um convite.</Text>
+  {auth.token&&(joinedOnly.length>0||joinedError)?<View style={styles.section}>
+    <View style={styles.sectionHeader}><Text style={styles.heading}>Equipas onde és jogador</Text><Text style={styles.count}>{joinedOnly.length}</Text></View>
     {joinedError?<Message tone="error">{joinedError}</Message>:null}
-    {joined.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
+    {joinedOnly.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
       accessibilityRole="button" accessibilityLabel={'Abrir equipa onde és jogador '+team.name}
       onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
       <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
@@ -208,7 +209,7 @@ export default function TeamsScreen(){
        placeholder="Nome, modalidade ou cidade" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"
        returnKeyType="search" onSubmitEditing={search}/>
     <Button title="Pesquisar" secondary onPress={search}/>
-    {loading?<Loader/>:teams.length===0?<View style={styles.empty}><Text style={styles.note}>Não encontrámos equipas. Experimenta outra pesquisa.</Text></View>:
+    {loading?<Loader/>:teams.length===0?<View style={styles.empty}><Text style={styles.note}>{submittedQuery?'Não encontrámos equipas para esta pesquisa. Experimenta outra modalidade ou cidade.':'Ainda não há equipas disponíveis para descobrir.'}</Text></View>:
       teams.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
         accessibilityRole="button" accessibilityLabel={'Ver equipa '+team.name}
         onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
@@ -221,11 +222,15 @@ export default function TeamsScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
- title:{fontSize:31,fontWeight:'900',color:C.white,lineHeight:37,letterSpacing:-.7},
+ title:{fontSize:24,fontWeight:'900',color:C.white,lineHeight:30,letterSpacing:-.4},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white,flexShrink:1},
- hero:{backgroundColor:'#12352C',borderWidth:1,borderColor:'#2A6754',borderRadius:24,padding:21,gap:13},
- heroEmblem:{backgroundColor:'#225342',borderRadius:17,width:56,height:56,alignItems:'center',justifyContent:'center'},
+ hero:{backgroundColor:'#12352C',borderWidth:1,borderColor:'#2A6754',borderRadius:20,padding:15,gap:9},
+ heroHeading:{flexDirection:'row',alignItems:'center',gap:12},
+ heroCopy:{flex:1,gap:3},
+ competitionsAction:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:9,minHeight:44,paddingHorizontal:10,borderRadius:12,backgroundColor:'#20513F'},
+ competitionsLabel:{fontSize:13,fontWeight:'800',color:C.mint},
+ heroEmblem:{backgroundColor:'#225342',borderRadius:14,width:46,height:46,alignItems:'center',justifyContent:'center'},
  heroEyebrow:{fontSize:10,color:C.mint,fontWeight:'900',letterSpacing:1.5},
  heroSub:{fontSize:14,color:'#D5E6DD',lineHeight:22},
  input:{backgroundColor:C.surface2,borderWidth:1,borderColor:C.border,borderRadius:14,
