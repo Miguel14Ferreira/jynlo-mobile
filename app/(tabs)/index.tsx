@@ -403,6 +403,9 @@ export default function JynloFeedHome(){
   const [showAllAttendance,setShowAllAttendance]=useState(false);
    const [myProfilePhoto,setMyProfilePhoto]=useState<string|null>(null);
   const [hiddenReady,setHiddenReady]=useState(false);
+  // A canceled first reload must not permanently hide all posts while the
+  // persisted visibility preferences have not finished loading.
+  const hiddenReadyRef=useRef(false);
   const load=useCallback(async()=>{
     const id=++reloadNumber.current;
     const identity=auth.token&&auth.username?`${auth.username}:${auth.token}`:'guest';
@@ -420,7 +423,7 @@ export default function JynloFeedHome(){
       confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();confirmedPostEdits.current.clear();
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
-      hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);setHiddenReady(false);setShowAllAttendance(false);
+      hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);hiddenReadyRef.current=false;setHiddenReady(false);setShowAllAttendance(false);
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
@@ -434,7 +437,7 @@ export default function JynloFeedHome(){
       auth.token&&auth.username?socialFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?storyFeed(auth.token,auth.username):Promise.resolve([]),
       auth.token?myStories(auth.token,auth.username):Promise.resolve([]),
-      identityChanged&&auth.token&&auth.username?readHiddenFeedEntries(auth.username):Promise.resolve(hiddenKeysRef.current),
+      (identityChanged||!hiddenReadyRef.current)&&auth.token&&auth.username?readHiddenFeedEntries(auth.username):Promise.resolve(hiddenKeysRef.current),
        auth.token?request<{profilePicUrl?:string|null}>('/api/profile/me/mobile',{token:auth.token}):Promise.resolve(null)
     ]);
     if(id!==reloadNumber.current)return;
@@ -472,9 +475,10 @@ export default function JynloFeedHome(){
       setOwnStories([...recentlyConfirmedStories.current.map(entry=>entry.item),...received]);
     }
      if(fetches[4].status==='fulfilled')setMyProfilePhoto(value(4,null as {profilePicUrl?:string|null}|null)?.profilePicUrl||null);
-    if(identityChanged){
+    if(!hiddenReadyRef.current){
       const stored=value(3,[] as string[]);
-      hiddenKeysRef.current=stored;setHiddenKeys(stored);setHiddenReady(true);
+      hiddenKeysRef.current=stored;setHiddenKeys(stored);
+      hiddenReadyRef.current=true;setHiddenReady(true);
     }
     if(fetches[0].status==='rejected')
       setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
