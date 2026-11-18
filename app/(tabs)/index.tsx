@@ -99,7 +99,9 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     });
     return ()=>subscription.remove();
   },[progress]);
-  const safeClose=()=>{if(!submittingStory.current)onClose();};
+  const safeClose=()=>{if(submittingStory.current)return;
+    if(audienceOpen){setAudienceOpen(false);setPaused(false);return;}
+    onClose();};
   const pauseProgress=()=>{
     progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});
     setPaused(true);
@@ -213,7 +215,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       onTouchEnd={event=>{
         const start=touchStartY.current;
         touchStartY.current=null;
-        if(start!==null&&event.nativeEvent.pageY-start>110&&!replyFocused)safeClose();
+        if(start!==null&&event.nativeEvent.pageY-start>110&&!replyFocused&&!audienceOpen)safeClose();
       }}
       onTouchCancel={()=>{touchStartY.current=null;}}>
       <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{if(submittingStory.current||replyFocused||!appActive)return;resetProgress();setIndex(i);}} style={styles.progressPart}>
@@ -232,7 +234,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           <ActivityIndicator color={WHITE} size="large"/><Text style={styles.storyMediaStatusText}>A carregar Story…</Text>
         </View>:null}
         {(!uri||mediaState==='error')?<View style={styles.storyMediaFailure}>
-          <JynloIcon name="image" size={32} color={TEAL}/>
+          <JynloIcon name="gallery" size={32} color={TEAL}/>
           <Text style={styles.storyMediaFailureTitle}>Não foi possível mostrar esta Story</Text>
           <Text style={styles.storyMediaStatusText}>Verifica a ligação ou tenta carregar novamente.</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Voltar a carregar Story"
@@ -248,7 +250,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
              appearance={{color:story.textColor||'white',background:story.textBackground||'dark',font:story.textFont||'modern'}}
              reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
           <View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>):null}
-        <View style={styles.storyTapZones} pointerEvents="box-none">
+        <View style={styles.storyTapZones} pointerEvents={mediaState==='error'||!uri||audienceOpen?'none':'box-none'}>
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
           <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
         </View>
@@ -264,7 +266,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyEngagement}>
         {ownStory?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"
           disabled={audienceBusy} onPress={()=>void loadAudience()} style={[styles.storyEngagementAction,styles.storyViewsAction]}>
-          <JynloIcon name="eye" size={19} color={WHITE}/>
+          <JynloIcon name="views" size={19} color={WHITE}/>
           <Text style={styles.storyEngagementText}>{audience?audience.viewCount+' visualizações':'Ver visualizações'}</Text>
         </Pressable>:null}
         {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?'Ativar som do vídeo':'Silenciar vídeo'} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
