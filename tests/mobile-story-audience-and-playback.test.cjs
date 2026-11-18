@@ -46,6 +46,10 @@ test('the author alone sees the real unique view count and user list',()=>{
  assert.match(viewer,/audience\?\.viewers\.map\(viewer=>/);
  assert.match(viewer,/router\.push\(\{pathname:'\/social\/\[username\]'/);
  assert.doesNotMatch(viewer,/setAudience\(\{viewCount:0/);
+ assert.match(viewer,/activeStoryIdRef\.current=story\?\.id\?\?null/);
+ assert.match(viewer,/audienceRequest\.current\+\+/);
+ assert.match(viewer,/const stillCurrent=\(\)=>activeAccount\.current===actor&&activeStoryIdRef\.current===id&&/);
+ assert.match(viewer,/audienceRequest\.current===requestId/);
 });
 
 test('reactions are private replies, never fabricated public emoji counts',()=>{
