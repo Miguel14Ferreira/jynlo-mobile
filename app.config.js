@@ -11,7 +11,7 @@ module.exports = ({config}) => {
   if (diagnostic && storeBuild) {
     throw new Error('BUILD BLOQUEADO: não desatives R8/minificação numa build destinada à Google Play.');
   }
-  // Disable native shrinking only in internal EAS diagnostic builds.
+  // Keep diagnostic and temporary Play crash-recovery builds unminified.
   // Never silently change the signed Play Store production profile.
   // A signed Android binary cannot initialize react-native-maps without a
   // configured Google Maps SDK key. Inject it at build time, never hardcode it.
