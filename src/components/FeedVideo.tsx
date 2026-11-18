@@ -19,7 +19,8 @@ export default function FeedVideo({uri,story=false,paused=false,muted=false,onEn
  useEffect(()=>{ended.current=false;readyOnce.current=false;setVideoFailed(false);},[uri]);
  useEffect(()=>{
   if(!story)return;
-  const listener=player.addListener('statusChange',({status,error})=>{
+  if(player.status==='readyToPlay'&&!readyOnce.current){readyOnce.current=true;onReady?.();}
+  const listener=player.addListener('statusChange',({status})=>{
    if(status==='readyToPlay'&&!readyOnce.current){readyOnce.current=true;onReady?.();}
    if(status==='error'){
     setVideoFailed(true);onPlaybackError?.();
@@ -40,7 +41,7 @@ export default function FeedVideo({uri,story=false,paused=false,muted=false,onEn
  useEffect(()=>{if(story)player.muted=muted;},[muted,story,player]);
  return <View style={story?styles.storyVideo:styles.postVideo}>
   <VideoView player={player} style={styles.videoFill}
-   contentFit={story?'contain':'contain'} nativeControls={!story}/>
+   contentFit="contain" nativeControls={!story}/>
   {videoFailed?<View style={styles.videoError}><Text style={styles.videoErrorText}>Não foi possível reproduzir este vídeo.</Text></View>:null}
  </View>;
 }
