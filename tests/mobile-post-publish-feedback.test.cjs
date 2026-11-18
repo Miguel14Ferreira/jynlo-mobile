@@ -55,3 +55,12 @@ test('slow media uploads show active progress feedback for posts and Stories',()
  assert.match(feed,/Não feches este ecrã até receberes a confirmação/);
  assert.match(feed,/publishProgressHint:\{color:MUTED,fontSize:13,lineHeight:20/);
 });
+
+test('published post confirmation offers an authoritatively confirmed deep link',()=>{
+ assert.match(feed,/const \[confirmedPostId,setConfirmedPostId\]=useState<number\|null>\(null\)/);
+ assert.match(feed,/setConfirmedPostId\(created\.postId\)/);
+ assert.match(feed,/publishNotice==='post'&&confirmedPostId!==null/);
+ assert.match(feed,/accessibilityLabel="Ver publicação confirmada"/);
+ assert.match(feed,/router\.push\(\{pathname:'\/posts\/\[postId\]',params:\{postId:String\(confirmedPostId\)\}\}\)/);
+ assert.match(feed,/setPublishNotice\(null\);setConfirmedPostId\(null\)/);
+});
