@@ -12,7 +12,7 @@ import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Button,DemoBanner,Eyebrow,Loader,Message} from '../../src/components/UI';
+import {Button,DemoBanner,Loader,Message} from '../../src/components/UI';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE} from '../../src/lib/api';
