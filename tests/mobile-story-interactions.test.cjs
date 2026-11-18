@@ -33,9 +33,9 @@ test('story sharing uses native share sheet without fabricated permanent URL',()
 });
 
 test('reply draft belongs to current story and videos pause while composing',()=>{
- assert.match(viewer,/React\.useEffect\(\(\)=>\{setReplyText\(''\);setReplyFocused\(false\);\},\[story\?\.id\]\)/);
+ assert.match(viewer,/React\.useEffect\(\(\)=>\{setReplyText\(''\);setReplyFocused\(false\);setMediaState\('loading'\)/);
  assert.match(viewer,/paused\|\|replyFocused\|\|storyBusy/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\|\|!appActive\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
 });
 
 test('story reply disables navigation while focused or in flight',()=>{
@@ -47,5 +47,5 @@ test('story viewer close controls do not abandon in-flight private messages or d
  assert.match(viewer,/const safeClose=\(\)=>\{if\(!submittingStory\.current\)onClose\(\);\}/);
  assert.match(viewer,/onRequestClose=\{safeClose\}/);
  assert.match(viewer,/onPress=\{safeClose\} style=\{styles\.closeStory\}/);
- assert.match(viewer,/pageY-start>110&&!replyFocused\)safeClose\(\)/);
+ assert.match(viewer,/pageY-start>110&&!replyFocused&&!audienceOpen\)safeClose\(\)/);
 });
