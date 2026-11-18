@@ -184,6 +184,12 @@ export default function CommunityDetailScreen(){
         </View>)}
       </View>:null}
       {role?<View style={styles.section}>
+        <Eyebrow>TRANSMISSÕES EM DIRETO</Eyebrow>
+        <Text style={styles.sectionTitle}>Lives da comunidade</Text>
+        <Text style={styles.muted}>Assiste aos jogos e treinos em direto. O servidor confirma quem pode transmitir.</Text>
+        <Button secondary title="Ver diretos da comunidade" onPress={()=>router.push({pathname:'/communities/[id]/live',params:{id:String(id)}})}/>
+      </View>:null}
+      {role?<View style={styles.section}>
         <Eyebrow>A CONVERSA CONTINUA</Eyebrow>
         <Text style={styles.sectionTitle}>Juntos, mesmo fora do campo</Text>
         <CommunityChatPanel embedded/>
