@@ -11,7 +11,7 @@ test('inactive mobile app pauses story photo timer and native video, and prevent
  assert.match(source,/import \{[^}]*AppState[^}]*\} from 'react-native'/);
  assert.match(viewer,/AppState\.addEventListener\('change',state=>\{/);
  assert.match(viewer,/setAppActive\(state==='active'\)/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|paused\|\|replyFocused\|\|storyBusy\|\|!appActive\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
  assert.match(viewer,/story muted=\{storyMuted\} paused=\{paused\|\|replyFocused\|\|storyBusy\|\|!appActive\}/);
  assert.match(viewer,/if\(!activeGroup\|\|submittingStory\.current\|\|replyFocused\|\|!appActive\)return/);
 });
