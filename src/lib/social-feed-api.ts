@@ -153,6 +153,25 @@ export async function storyById(storyId:number,token:string|null,username:string
  return request<SocialStory>(`/api/stories/${storyId}`,{token});
 }
 
+export type StoryViewerInfo={username:string;displayName:string;avatarUrl:string|null;viewedAt:string};
+export type StoryAudience={viewCount:number;viewers:StoryViewerInfo[]};
+
+/** Recording is deliberately explicit: do not count a feed impression as a view. */
+export async function recordStoryView(storyId:number,token:string|null):Promise<void>{
+ if(!token||!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
+ if(DEMO_MODE)return;
+ await request<void>(`/api/stories/${storyId}/views`,{token,method:'POST',body:{}});
+}
+/** Audience lists are available to the author only. Do not fake zeros on a 404. */
+export async function storyAudience(storyId:number,token:string|null):Promise<StoryAudience>{
+ if(!token||!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
+ if(DEMO_MODE)throw Error('Visualizações não disponíveis na demonstração.');
+ const result=await request<StoryAudience>(`/api/stories/${storyId}/audience`,{token});
+ if(!Number.isSafeInteger(result?.viewCount)||result.viewCount<0||!Array.isArray(result.viewers))
+  throw Error('Resposta de visualizações inválida.');
+ return result;
+}
+
 export async function toggleStoryLike(storyId:number,liked:boolean,token:string|null,username:string|null):Promise<SocialStory>{
  requireViewer(token,username);
  if(!Number.isSafeInteger(storyId)||storyId<=0)throw Error('Story inválida.');
