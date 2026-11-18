@@ -41,6 +41,17 @@ test('Codemagic targets authenticated preview backend and blocks production or m
  assert.match(play,/node scripts\/verify-release\.cjs --production/);
  assert.doesNotMatch(play,/publishing:|submit_to_app_store:|submit_to_testflight:/);
 });
+test('corrective Play AAB refuses an R8-enabled Gradle release before signing',()=>{
+ const yaml=read('codemagic.yaml');
+ const play=yaml.split('  jynlo-android-google-play-closed:')[1]?.split('  jynlo-ios-testflight:')[0];
+ assert.ok(play);
+ const preflight=play.indexOf('Bloquear R8 na build corretiva do crash Android');
+ const signing=play.indexOf('Configurar chave de upload Google Play sem a expor');
+ assert.ok(preflight>=0&&signing>preflight);
+ assert.match(play,/for setting in \\('minifyEnabled', 'shrinkResources'\\):/);
+ assert.match(play,/values != \\['false'\\]/);
+ assert.match(play,/bundleRelease/);
+});
 test('Jynlo official icon step is cross-platform for Codemagic macOS',()=>{
  const script=read('scripts/prepare-jynlo-icon.sh');
  assert.match(script,/uname -s/);
