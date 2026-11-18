@@ -56,3 +56,14 @@ test('community details use compact banner and readable member information',()=>
  assert.match(source,/muted:\{fontSize:14,color:C\.muted,lineHeight:21/);
  assert.match(source,/input:\{minHeight:52/);
 });
+
+test('community creation clearly labels privacy controls and keeps sports selections touchable',()=>{
+ const create=fs.readFileSync(path.join(__dirname,'../app/communities/create.tsx'),'utf8');
+ assert.match(create,/accessibilityRole="radio"/);
+ assert.match(create,/accessibilityState=\{\{checked:visibility===value\}\}/);
+ assert.match(create,/accessibilityLabel="Nome da comunidade"/);
+ assert.match(create,/accessibilityLabel="Descrição da comunidade"/);
+ assert.match(create,/sportChip:\{[^\n]*minHeight:44/);
+ assert.match(create,/suggestion:\{[^\n]*minHeight:44/);
+ assert.match(create,/help:\{color:C\.muted,fontSize:14,lineHeight:21/);
+});
