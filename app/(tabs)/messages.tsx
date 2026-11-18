@@ -154,7 +154,7 @@ export default function MessagesScreen(){
    <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
     <Text style={styles.sub}>Conversas privadas, comunidades e sessões, num só lugar.</Text>
    </View>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><Text style={styles.notificationIcon}>♢</Text><Text style={styles.notificationLabel}>Alertas{sameIdentity&&notificationUnread>0?' · '+(notificationUnread>99?'99+':notificationUnread):''}</Text></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
   </View>
   {auth.token?<View style={styles.searchBox}>
    <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar conversas…"
@@ -167,12 +167,8 @@ export default function MessagesScreen(){
     </Pressable>)}
    </View>
    <View style={styles.filterRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar todas as conversas" accessibilityState={{selected:!unreadOnly}}
-      onPress={()=>setUnreadOnly(false)} style={[styles.filterChip,!unreadOnly&&styles.filterActive]}>
-      <Text style={[styles.filterText,!unreadOnly&&styles.filterTextActive]}>Todas</Text>
-    </Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Mostrar apenas conversas não lidas" accessibilityState={{selected:unreadOnly}}
-      onPress={()=>setUnreadOnly(true)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
+      onPress={()=>setUnreadOnly(current=>!current)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
       <Text style={[styles.filterText,unreadOnly&&styles.filterTextActive]}>Não lidas · {unreadTotal}</Text>
     </Pressable>
     {!!search?<Pressable accessibilityRole="button" accessibilityLabel="Limpar pesquisa de conversas" onPress={()=>setSearch('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>Limpar ×</Text></Pressable>:null}
@@ -192,7 +188,7 @@ export default function MessagesScreen(){
   {sameIdentity&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
     <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
   </Pressable>:null}
-  {auth.token?<Button secondary title="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')}/>:null}
+  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')} style={styles.invitesShortcut}><JynloIcon name="community" size={17} color={T.accent}/><Text style={styles.invitesText}>Convites e pedidos</Text><JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
   {muteError?<Message tone="error">{muteError}</Message>:null}
@@ -209,7 +205,7 @@ export default function MessagesScreen(){
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
     style={({pressed})=>[styles.tile,styles.tileContent,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
     <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
-      <Text style={styles.avatarSymbol}>{item.kind==='direct'?'◉':item.kind==='community'?'◎':'▣'}</Text>
+      <JynloIcon name={item.kind==='direct'?'profile':item.kind==='community'?'community':'session'} size={24} color={T.accent}/>
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
@@ -239,8 +235,10 @@ const styles=StyleSheet.create({
  headerRow:{flexDirection:'row',alignItems:'flex-start',gap:12},
  headerCopy:{flex:1,gap:8},
  notificationAction:{minWidth:MobileTheme.touchTarget,minHeight:MobileTheme.touchTarget,paddingHorizontal:9,paddingVertical:8,borderRadius:MobileTheme.radius.md,alignItems:'center',justifyContent:'center',backgroundColor:T.surface,borderWidth:1,borderColor:T.border,gap:3},
- notificationIcon:{fontSize:21,color:T.accent},notificationLabel:{fontSize:10,fontWeight:'800',color:T.muted},
- searchBox:{gap:11,padding:14,borderRadius:MobileTheme.radius.lg,backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
+ notificationCount:{fontSize:10,fontWeight:'900',color:T.accent},
+ invitesShortcut:{flexDirection:'row',alignItems:'center',gap:9,alignSelf:'flex-start',paddingHorizontal:10,minHeight:44},
+ invitesText:{color:T.accent,fontWeight:'700',fontSize:12},
+ searchBox:{gap:8,padding:11,borderRadius:MobileTheme.radius.lg,backgroundColor:T.surface,borderWidth:1,borderColor:T.border},
  searchInput:{color:T.text,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.md,paddingHorizontal:13,minHeight:MobileTheme.touchTarget,backgroundColor:T.background},
  filterRow:{flexDirection:'row',gap:7,alignItems:'center',flexWrap:'wrap'},
  kindChip:{minHeight:38,paddingHorizontal:11,justifyContent:'center',borderRadius:MobileTheme.radius.pill,borderWidth:1,borderColor:T.border,backgroundColor:T.surface},
