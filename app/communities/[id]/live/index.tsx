@@ -1,21 +1,13 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
+import {ensureLiveCapturePermissions} from '../../../src/lib/live-capture-permissions';
 import {communityLiveCapabilities,communityLiveEvents,scheduleCommunityLive,startCommunityLive,
  type CommunityLiveCapabilities,type CommunityLiveEvent} from '../../../src/lib/community-live-api';
 
-async function hostPermissions(){
- if(Platform.OS!=='android')return;
- const result=await PermissionsAndroid.requestMultiple([
-  PermissionsAndroid.PERMISSIONS.CAMERA,PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
- ]);
- if(result[PermissionsAndroid.PERMISSIONS.CAMERA]!=='granted'||
-    result[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]!=='granted')
-  throw Error('Autoriza a câmara e o microfone para começares a transmitir.');
-}
 export default function CommunityLivesScreen(){
  const {id:rawId}=useLocalSearchParams<{id:string}>(),id=Number(rawId);
  const auth=useAuth(),router=useRouter();
@@ -58,7 +50,7 @@ export default function CommunityLivesScreen(){
  const schedule=(goNow:boolean)=>{
   if(!auth.token||!caps?.canManage)return;
   void run(async()=>{
-   if(goNow)await hostPermissions();
+   if(goNow)await ensureLiveCapturePermissions();
    const date=goNow?new Date():new Date(scheduledAt.replace(' ','T'));
    if(!Number.isFinite(date.getTime()))throw Error('A data e a hora não são válidas. Usa AAAA-MM-DD HH:mm.');
    const timestamp=date.toISOString();
@@ -72,7 +64,7 @@ export default function CommunityLivesScreen(){
  const launch=(event:CommunityLiveEvent)=>{
   if(!auth.token||!caps?.canManage||!event.canManage)return;
   void run(async()=>{
-   await hostPermissions();
+   await ensureLiveCapturePermissions();
    const active=await startCommunityLive(auth.token!,id,event.id);
    open(active);
   });
