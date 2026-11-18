@@ -197,7 +197,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
           <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
         </View>
-        <StoryDetailsView locationLabel={story.locationLabel} taggedUsernames={story.taggedUsernames}
+        <StoryDetailsView locationLabel={story.locationLabel} taggedUsernames={story.taggedUsernames} showTime={story.showTime===true} createdAt={story.createdAt}
          onOpenProfile={profile=>{
           if(!submittingStory.current){
            pauseProgress();onClose();
@@ -252,6 +252,8 @@ export default function JynloFeedHome(){
   const [storyFriendsBusy,setStoryFriendsBusy]=useState(false),[storyFriendsError,setStoryFriendsError]=useState('');
   const [storySearchedProfiles,setStorySearchedProfiles]=useState<StoryFriend[]>([]),[storyProfileSearchBusy,setStoryProfileSearchBusy]=useState(false);
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
+  const [showStoryTime,setShowStoryTime]=useState(false);
+  const [storyEditorOpenedAt,setStoryEditorOpenedAt]=useState(()=>new Date().toISOString());
   const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const [storyAppearance,setStoryAppearance]=useState<StoryTextAppearance>({color:'white',background:'dark',font:'modern'});
   const storyGeometryRef=useRef<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
@@ -422,7 +424,7 @@ export default function JynloFeedHome(){
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
       setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
-      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setExpandedPostImage(null);
+      setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setShowStoryTime(false);setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
     }
@@ -705,7 +707,7 @@ export default function JynloFeedHome(){
     setPublishNotice(null);setStoryPublishError('');setVerifiedStoryPlace('');setStoryPlaceOptions([]);
     setStoryPublishCommunityId(null);
     storyComposerRevision.current++;
-    storyComposerRef.current=true;setStoryComposer(true);
+    storyComposerRef.current=true;setStoryComposer(true);setStoryEditorOpenedAt(new Date().toISOString());
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
     setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
     setStoryFriendSearch('');setStorySearchedProfiles([]);
@@ -846,7 +848,7 @@ export default function JynloFeedHome(){
   }
   async function submitStory(){
     if(!requireLogin()||storyInFlight.current||!storyMedia)return;
-    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance};
+    const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance},showTime=showStoryTime;
     if(storyLocation.trim()&&verifiedStoryPlace!==storyLocation.trim()){
       setStoryPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
     }
@@ -860,7 +862,7 @@ export default function JynloFeedHome(){
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
-      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance);
+      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime);
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
@@ -875,7 +877,7 @@ export default function JynloFeedHome(){
           storyPublishCommunityId===selectedCommunityId&&
           currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
           currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom&&
-          storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font;
+          storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font&&showStoryTime===showTime;
         if(unchanged){
           storyComposerRevision.current++;storyComposerRef.current=false;
           setStoryCaption('');storyCaptionRef.current='';
@@ -1266,7 +1268,7 @@ export default function JynloFeedHome(){
           </Suspense>:null}
           {storyMedia?<View style={[styles.storyPreview,{height:Math.min(460,Math.max(240,Math.round(screenHeight*0.48)))}]}>
             {storyMedia.type==='image'?<Image source={{uri:storyMedia.uri}} resizeMode="contain" style={styles.storyPreviewMedia}/>:<MediaVideo uri={storyMedia.uri} story paused/>}
-            <StoryDetailsView locationLabel={storyLocation} taggedUsernames={storyTags.replace(/@/g,'')}/>
+            <StoryDetailsView locationLabel={storyLocation} taggedUsernames={storyTags.replace(/@/g,'')} showTime={showStoryTime} createdAt={storyEditorOpenedAt}/>
             {storyCaption.trim()?<StoryTextPlacement caption={storyCaption.trim()} geometry={storyTextGeometry} appearance={storyAppearance}
               reservedTopPx={storyMetadataReservedHeight(storyLocation,storyTags)}
               onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
@@ -1288,6 +1290,10 @@ export default function JynloFeedHome(){
           <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
           <View style={styles.storyStylePanel}>
            <Text style={styles.storyStyleTitle}>Personalizar texto da Story</Text>
+           <Pressable accessibilityRole="checkbox" accessibilityState={{checked:showStoryTime}} disabled={storyPublishing}
+            onPress={()=>setShowStoryTime(value=>!value)} style={styles.storyStyleChoice}>
+            <Text style={styles.storyStyleChoiceText}>{showStoryTime?'☑':'☐'} Mostrar data e hora na Story</Text>
+           </Pressable>
            <Text style={styles.storyStyleLabel}>Cor</Text>
            <View style={styles.storyStyleRow}>{([
             ['white','Branco'],['black','Preto'],['yellow','Amarelo'],['mint','Verde'],['pink','Rosa'],['blue','Azul']
