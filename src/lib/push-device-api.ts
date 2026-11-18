@@ -34,3 +34,10 @@ export async function getPushDeviceStatus(token:string,deviceId:string):Promise<
   '/api/notifications/me/devices/'+encodeURIComponent(deviceId),{token});
  return result?.registered===true;
 }
+
+/** Reports server configuration only, not proof of provider delivery. */
+export async function pushDeliveryReady(token:string):Promise<boolean>{
+ if(DEMO_MODE||!token)return false;
+ const status=await request<{ready:boolean}>('/api/notifications/me/devices/delivery-status',{token});
+ return status?.ready===true;
+}
