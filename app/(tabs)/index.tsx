@@ -77,6 +77,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const [audience,setAudience]=useState<StoryAudience|null>(null);
   const [audienceOpen,setAudienceOpen]=useState(false),[audienceBusy,setAudienceBusy]=useState(false),[audienceError,setAudienceError]=useState('');
   const viewedStoryIds=useRef(new Set<number>());
+  const activeStoryIdRef=useRef<number|null>(null);
+  const audienceRequest=useRef(0);
   const submittingStory=useRef(false);
   const activeAccount=useRef(token);
   activeAccount.current=token;
@@ -91,7 +93,9 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   },[group?.key,progress]);
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
-  React.useEffect(()=>{setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
+  activeStoryIdRef.current=story?.id??null;
+  React.useEffect(()=>{audienceRequest.current++;
+    setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
     setAudience(null);setAudienceOpen(false);setAudienceError('');},[story?.id]);
   React.useEffect(()=>{
     if(!story||mediaState!=='loading')return;
@@ -153,11 +157,13 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const loadAudience=async()=>{
     if(!ownStory||!token||audienceBusy)return;
     pauseProgress();setAudienceOpen(true);setAudienceBusy(true);setAudienceError('');
-    const id=story.id,actor=token;
+    const id=story.id,actor=token,requestId=++audienceRequest.current;
+    const stillCurrent=()=>activeAccount.current===actor&&activeStoryIdRef.current===id&&
+      audienceRequest.current===requestId;
     try{const result=await storyAudience(id,actor);
-      if(activeAccount.current===actor)setAudience(result);
-    }catch(e){if(activeAccount.current===actor)setAudienceError(e instanceof Error?e.message:'Não foi possível carregar as visualizações.');}
-    finally{if(activeAccount.current===actor)setAudienceBusy(false);}
+      if(stillCurrent())setAudience(result);
+    }catch(e){if(stillCurrent())setAudienceError(e instanceof Error?e.message:'Não foi possível carregar as visualizações.');}
+    finally{if(stillCurrent())setAudienceBusy(false);}
   };
   const sendQuickReaction=async(emoji:string)=>{
     if(ownStory||!token||!username||storyBusy||submittingStory.current)return;
