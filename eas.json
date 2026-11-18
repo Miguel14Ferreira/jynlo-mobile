@@ -59,9 +59,8 @@
     },
     "ios-testflight": {
       "distribution": "store",
-      "environment": "preview",
+      "environment": "production",
       "env": {
-        "EXPO_PUBLIC_JYNLO_API_URL": "https://desporto24-preview-api.onrender.com",
         "JYNLO_REQUIRE_REAL_API": "1"
       },
       "ios": {}
