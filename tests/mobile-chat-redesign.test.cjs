@@ -65,6 +65,7 @@ test('real-device UX: profile privacy summary collapses, but follow requests rem
 test('real-device UX: native video call foreground and actions remain accessible',()=>{
  const call=source('src/features/direct-call-screen.tsx');
  assert.match(call,/localVideoCard:\{alignSelf:'flex-end',width:'40%'\}/);
+ assert.match(call,/sort\(\(a,b\)=>Number\(a\.participant\.isLocal\)-Number\(b\.participant\.isLocal\)\)/);
  assert.match(call,/callActions:\{flexDirection:'row'/);
  for(const label of ['Desligar microfone','Desligar câmara','Terminar chamada'])
   assert.ok(call.includes(label),label);
