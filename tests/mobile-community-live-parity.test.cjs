@@ -26,8 +26,8 @@ test('community scheduling is owner-only and native capture permission is reques
  const screen=source('app/communities/[id]/live/index.tsx');
  assert.match(screen,/caps\.canManage/);
  assert.match(screen,/event\.canManage/);
- assert.match(screen,/await hostPermissions\(\)/);
- assert.ok(screen.indexOf('await hostPermissions()')<screen.indexOf('await startCommunityLive'));
+ assert.match(screen,/await ensureLiveCapturePermissions\(\)/);
+ assert.ok(screen.indexOf('await ensureLiveCapturePermissions()')<screen.indexOf('await startCommunityLive'));
  assert.match(screen,/communityLiveCapabilities\(auth\.token,id\)/);
  assert.match(screen,/communityLiveEvents\(auth\.token,id\)/);
  assert.match(screen,/date\.toISOString\(\)/);
