@@ -1,7 +1,8 @@
 import React,{useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter,useLocalSearchParams} from 'expo-router';
-import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
+import {Button,Message,Page} from '../src/components/UI';
+import BirthDatePicker from '../src/components/BirthDatePicker';
 import {useAuth} from '../src/lib/auth';
 import {validAdultDate} from '../src/lib/native-registration';
 import {safeRedirect} from '../src/lib/routes.cjs';
@@ -37,10 +38,10 @@ export default function GoogleOnboarding(){
   O registo Google não está ativo. Volta ao login e escolhe novamente a tua conta Google.
  </Message><Button title="Voltar ao login" onPress={()=>router.replace('/login')}/></Page>;
  return <Page>
-  <Brand subtitle="CRIAR CONTA COM GOOGLE"/>
-  <Eyebrow>QUASE PRONTO</Eyebrow>
-  <Text style={styles.title}>Bem-vindo à Jynlo</Text>
-  <Text style={styles.subtitle}>Conta Google confirmada: {auth.googleOnboardingEmail}. Para criares o perfil Jynlo, preenche os dados obrigatórios.</Text>
+  <Text style={styles.eyebrow}>QUASE PRONTO · CONTA GOOGLE</Text>
+  <Text style={styles.title}>Cria o teu perfil Jynlo</Text>
+  <Text style={styles.subtitle}>Google confirmado. Escolhe como queres aparecer na Jynlo.</Text>
+  <Text style={styles.email} numberOfLines={2}>{auth.googleOnboardingEmail}</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.group}>
    <Text style={styles.label}>Nome de utilizador *</Text>
@@ -50,10 +51,9 @@ export default function GoogleOnboarding(){
    <Text style={styles.label}>Nome pelo qual queres ser tratado</Text>
    <TextInput style={styles.input} value={nickname} onChangeText={setNickname}
     maxLength={80} placeholder="Opcional" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Data de nascimento * (AAAA-MM-DD)</Text>
-   <TextInput style={styles.input} value={birth} onChangeText={setBirth} maxLength={10}
-    keyboardType="numbers-and-punctuation" placeholder="1998-05-24" placeholderTextColor={C.muted}/>
-   <Text style={styles.hint}>É necessário ter pelo menos 18 anos para criar conta.</Text>
+   <Text style={styles.label}>Data de nascimento *</Text>
+   <BirthDatePicker onChange={setBirth} disabled={busy}/>
+   <Text style={styles.hint}>Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.</Text>
    <Text style={styles.label}>País *</Text>
    <TextInput style={styles.input} value={country} onChangeText={setCountry}
     maxLength={100} placeholder="Portugal" placeholderTextColor={C.muted}/>
@@ -72,10 +72,12 @@ export default function GoogleOnboarding(){
  </Page>;
 }
 const styles=StyleSheet.create({
- title:{color:C.white,fontSize:29,fontWeight:'900'},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
- group:{gap:10},label:{color:C.white,fontSize:13,fontWeight:'800'},
+ eyebrow:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1.1},
+ title:{color:C.white,fontSize:25,fontWeight:'900'},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
+ email:{color:C.white,fontSize:13,fontWeight:'700',lineHeight:19},
+ group:{gap:10},label:{color:C.white,fontSize:14,fontWeight:'800'},
  input:{height:52,borderRadius:13,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,paddingHorizontal:15,color:C.white,fontSize:15},
- hint:{color:C.muted,fontSize:12,lineHeight:19},
+ hint:{color:C.muted,fontSize:13,lineHeight:19},
  consent:{flexDirection:'row',alignItems:'flex-start',gap:12,padding:13,borderRadius:15,backgroundColor:C.surface},
  check:{width:22,height:22,borderRadius:6,borderWidth:1,borderColor:C.mint,alignItems:'center',justifyContent:'center'},checked:{backgroundColor:C.mint},
  consentText:{flex:1,color:C.white,fontSize:13,lineHeight:20},links:{flexDirection:'row',flexWrap:'wrap',gap:16},link:{color:C.mint,textDecorationLine:'underline',fontWeight:'700',fontSize:13}
