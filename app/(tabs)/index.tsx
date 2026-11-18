@@ -1208,6 +1208,33 @@ export default function JynloFeedHome(){
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
+    <View style={styles.jynloDiscoverPanel}>
+      <Text style={styles.jynloDiscoverEyebrow}>ENCONTRA O TEU DESPORTO</Text>
+      <Text style={styles.jynloDiscoverTitle}>Encontra as tuas pessoas.</Text>
+      <Text style={styles.jynloDiscoverSub}>Descobre jogos, junta a tua equipa e partilha os melhores momentos.</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Criar uma nova sessão desportiva"
+        onPress={()=>router.push(auth.token?'/sessions/create':'/login')}
+        style={styles.jynloDiscoverPrimary}>
+        <JynloIcon name="session" size={19} color={INDIGO}/>
+        <Text style={styles.jynloDiscoverPrimaryText}>Criar sessão</Text>
+        <JynloIcon name="chevron-right" size={19} color={INDIGO}/>
+      </Pressable>
+    </View>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}
+      accessibilityLabel="Acessos rápidos Jynlo" contentContainerStyle={styles.jynloActionRail}>
+      {([
+        {label:'Explorar',icon:'explore',go:()=>router.push('/(tabs)/explore')},
+        {label:'Equipas',icon:'community',go:()=>router.push('/teams')},
+        {label:'Torneios',icon:'tournament',go:()=>router.push('/tournaments')},
+        {label:'Diretos',icon:'video',go:()=>router.push(auth.token?'/live':'/login')},
+        {label:'Publicar',icon:'post',go:()=>requireLogin()&&openPostComposer()},
+        {label:'Comunidades',icon:'community',go:()=>router.push('/communities')}
+      ] as const).map(item=><Pressable key={item.label} accessibilityRole="button"
+        accessibilityLabel={item.label} onPress={item.go} style={styles.jynloActionTile}>
+        <View style={styles.jynloActionIcon}><JynloIcon name={item.icon} color={TEAL} size={24}/></View>
+        <Text style={styles.jynloActionText}>{item.label}</Text>
+      </Pressable>)}
+    </ScrollView>
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"/>
       {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>A tua story</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
@@ -1530,6 +1557,22 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ jynloDiscoverPanel:{marginTop:11,marginBottom:14,padding:20,borderRadius:24,
+  borderWidth:1,borderColor:'#167F80',backgroundColor:'#07303A',gap:9},
+ jynloDiscoverEyebrow:{fontSize:11,fontWeight:'900',letterSpacing:1.5,color:TEAL},
+ jynloDiscoverTitle:{fontSize:25,fontWeight:'900',letterSpacing:-.5,color:WHITE,lineHeight:31},
+ jynloDiscoverSub:{fontSize:13,lineHeight:20,color:'#C3DEE0',maxWidth:360},
+ jynloDiscoverPrimary:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10,
+  minHeight:48,backgroundColor:TEAL,borderRadius:14,marginTop:5,paddingHorizontal:16},
+ jynloDiscoverPrimaryText:{fontSize:14,color:INDIGO,fontWeight:'900'},
+ jynloActionRail:{gap:9,paddingBottom:14,paddingRight:12},
+ jynloActionTile:{minWidth:90,minHeight:91,backgroundColor:'#0B2D3B',
+  borderColor:'#1C5966',borderWidth:1,borderRadius:17,padding:9,
+  alignItems:'center',justifyContent:'center',gap:8},
+ jynloActionIcon:{width:38,height:38,borderRadius:13,backgroundColor:'#104451',
+  justifyContent:'center',alignItems:'center'},
+ jynloActionText:{fontSize:12,fontWeight:'800',color:WHITE,textAlign:'center'},
+
  storyStylePanel:{gap:9,padding:12,borderWidth:1,borderColor:BORDER,borderRadius:14,backgroundColor:PANEL},
  storyStyleTitle:{fontSize:15,fontWeight:'900',color:WHITE},
  storyStyleLabel:{fontSize:12,fontWeight:'800',color:MUTED},
