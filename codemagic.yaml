@@ -277,7 +277,189 @@ workflows:
           import re
           props = Path('android/gradle.properties').read_text()
           for setting in ('android.enableProguardInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):
-              pattern = r'(?m)^' + re.escape(setting) + r'\\s*=\\s*false\\s*$'
+              pattern = r'(?m)^' + re.escape(setting) + r'\s*=\s*false\s*
+              if not re.search(pattern, props):
+                  raise SystemExit(f'Build bloqueada: {setting} tem de estar explicitamente false em gradle.properties')
+          print('R8 e resource shrink desativados no projeto nativo gerado.')
+          PY
+      - name: Configurar chave de upload Google Play sem a expor
+        script: |
+          set -eu
+          # Certificado usado no AAB 0.16.0/versionCode 7, conforme auditoria do projeto.
+          expected_sha256="7A55D817C089ECC4910761DFC1AE565F9E23B0A4E9CBB958FAA90F733999491A"
+          keyfile="$(mktemp "${TMPDIR:-/tmp}/jynlo-play-upload.XXXXXX")"
+          chmod 600 "$keyfile"
+          printf '%s' "$JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64" | base64 -D > "$keyfile"
+          test -s "$keyfile"
+          export JYNLO_PLAY_UPLOAD_KEYSTORE_PATH="$keyfile"
+          keytool -list -keystore "$keyfile" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" >/dev/null 2>&1 || { echo "Chave upload/alias/password invalidos."; exit 1; }
+          csr="$(mktemp "${TMPDIR:-/tmp}/jynlo-play-csr.XXXXXX")"
+          trap 'rm -f "$csr"' EXIT
+          keytool -certreq -keystore "$keyfile" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -keypass "$JYNLO_PLAY_UPLOAD_KEY_PASSWORD" -file "$csr" >/dev/null 2>&1 || { echo "Password da chave privada incorreta."; exit 1; }
+          actual_sha256="$(LC_ALL=C keytool -list -v -keystore "$keyfile" -storepass "$JYNLO_PLAY_UPLOAD_STORE_PASSWORD" -alias "$JYNLO_PLAY_UPLOAD_KEY_ALIAS" | grep -m1 'SHA256:' | sed 's/.*SHA256: //' | tr -d ':' | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')"
+          test "$actual_sha256" = "$expected_sha256" || { echo "Certificado nao corresponde a upload key historica. NAO publicar."; exit 1; }
+          printf 'JYNLO_PLAY_UPLOAD_KEYSTORE_PATH=%s\n' "$keyfile" >> "$CM_ENV"
+          node scripts/configure-play-signing.cjs android/app/build.gradle
+          echo "Certificado Play existente validado (sem divulgar chaves)."
+      - name: Gerar AAB assinado para closed testing
+        script: |
+          set -eu
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:bundleRelease --no-daemon --max-workers=2
+      - name: Confirmar AAB e identidade antes do upload manual
+        script: |
+          set -eu
+          aab="android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$aab"
+          unzip -Z1 "$aab" | grep -q "^base/manifest/AndroidManifest.xml$"
+          jarsigner -verify "$aab"
+          actual_sha256="$(LC_ALL=C keytool -printcert -jarfile "$aab" | grep -m1 SHA256 | sed "s/.*SHA256: //" | tr -d ":" | tr "[:lower:]" "[:upper:]" | tr -d "[:space:]")"
+          test "$actual_sha256" = "7A55D817C089ECC4910761DFC1AE565F9E23B0A4E9CBB958FAA90F733999491A" || { echo "AAB assinado com certificado errado."; exit 1; }
+          GITHUB_SHA="$(git rev-parse HEAD)" node scripts/write-android-build-info.cjs aab
+          shasum -a 256 "$aab" > build-metadata-jynlo-aab-sha256.txt
+          echo "AAB validado: upload MANUAL apenas para closed testing."
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/mapping/release/mapping.txt
+      - android-build-info.json
+      - build-metadata-jynlo-aab-sha256.txt
+
+# iOS/TestFlight: manually run from develop, using the Codemagic Apple
+# Developer Portal integration named "apple".
+# Signing credentials live only in Codemagic/Apple, never in this repository.
+  jynlo-ios-testflight:
+    name: Jynlo iOS - IPA TestFlight (develop)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    integrations:
+      app_store_connect: apple
+    environment:
+      node: v22.23.1
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.jynlo.app
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+    scripts:
+      - name: Confirmar branch e ferramentas
+        script: |
+          set -eu
+          if [ "${CM_BRANCH:-}" != "develop" ]; then
+            echo "Build iOS bloqueada: usar exclusivamente a branch develop."
+            exit 1
+          fi
+          node --version
+          xcodebuild -version
+      - name: Instalar dependencias e validar app
+        script: |
+          set -eu
+          npm install --no-audit --no-fund
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          npm run typecheck
+          npm run test:all
+      - name: Gerar projeto nativo iOS
+        script: |
+          set -eu
+          bash scripts/prepare-jynlo-icon.sh
+          npx --no-install expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Aplicar assinatura Apple (App Store/TestFlight)
+        script: |
+          set -eu
+          xcode-project use-profiles
+      - name: Gerar IPA assinada
+        script: |
+          set -eu
+          WORKSPACE="$(find "$CM_BUILD_DIR/ios" -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          if [ -z "$WORKSPACE" ]; then
+            echo "Nao foi encontrado o workspace Xcode."
+            exit 1
+          fi
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          xcode-project build-ipa --workspace "$WORKSPACE" --scheme "$SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Upload only after full test suite passes; beta review stays manual.
+        submit_to_testflight: false
+        submit_to_app_store: false
+
+# Diagnostic-only: verify native iOS compilation without weakening the
+# regular TestFlight gate, which still requires the complete test suite.
+  jynlo-ios-native-diagnostic:
+    name: Jynlo iOS - IPA de diagnóstico (develop)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      node: v22.23.1
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.jynlo.app
+      vars:
+        CI: "1"
+        EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+        JYNLO_REQUIRE_REAL_API: "1"
+    scripts:
+      - name: Confirmar branch e ferramentas
+        script: |
+          set -eu
+          if [ "${CM_BRANCH:-}" != "develop" ]; then
+            echo "Build iOS bloqueada: usar exclusivamente a branch develop."
+            exit 1
+          fi
+          node --version
+          xcodebuild -version
+      - name: Instalar dependencias e validar app
+        script: |
+          set -eu
+          npm install --no-audit --no-fund
+          node scripts/verify-release.cjs
+          node scripts/check-eas-project.cjs
+          npm run typecheck
+          # Diagnostic IPA only. The strict TestFlight workflow still runs
+          # the full suite; do not publish this build without resolving it.
+          npm run test:syntax
+          node --test tests/api-origin-security.test.cjs tests/security-api-transport.test.cjs tests/response-body.test.cjs tests/post-album.test.cjs tests/story-sticker-bounds.test.cjs tests/picker-media-content-uri.test.cjs
+      - name: Gerar projeto nativo iOS
+        script: |
+          set -eu
+          bash scripts/prepare-jynlo-icon.sh
+          npx --no-install expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Aplicar assinatura Apple (App Store/TestFlight)
+        script: |
+          set -eu
+          xcode-project use-profiles
+      - name: Gerar IPA assinada
+        script: |
+          set -eu
+          WORKSPACE="$(find "$CM_BUILD_DIR/ios" -maxdepth 1 -name '*.xcworkspace' -print -quit)"
+          if [ -z "$WORKSPACE" ]; then
+            echo "Nao foi encontrado o workspace Xcode."
+            exit 1
+          fi
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          xcode-project build-ipa --workspace "$WORKSPACE" --scheme "$SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+
               if not re.search(pattern, props):
                   raise SystemExit(f'Build bloqueada: {setting} tem de estar explicitamente false em gradle.properties')
           print('R8 e resource shrink desativados no projeto nativo gerado.')
