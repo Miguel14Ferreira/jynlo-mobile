@@ -389,3 +389,14 @@ test('stale historical team post responses cannot overwrite successful author ed
  assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(item=>item\.id===updated\.id\?updated:item\)/);
  assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(tombstone\)/);
 });
+
+test('team identity kit controls meet minimum touch sizing and readable labels',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/swatch:\{width:44,height:44/);
+ assert.match(screen,/kitPatternCard:\{flex:1,minWidth:90,minHeight:94/);
+ assert.match(screen,/kitPatternText:\{fontSize:13/);
+ assert.match(screen,/statLabel:\{color:'#C9E4E8',fontSize:12/);
+ assert.match(screen,/tabText:\{fontSize:14/);
+ assert.match(screen,/accessibilityLabel=\{'Cor principal '\+color\}/);
+ assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
+});
