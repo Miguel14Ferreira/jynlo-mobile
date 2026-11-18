@@ -48,8 +48,9 @@ test('corrective Play AAB refuses an R8-enabled Gradle release before signing',(
  const preflight=play.indexOf('Bloquear R8 na build corretiva do crash Android');
  const signing=play.indexOf('Configurar chave de upload Google Play sem a expor');
  assert.ok(preflight>=0&&signing>preflight);
- assert.ok(play.includes("for setting in ('minifyEnabled', 'shrinkResources'):"));
- assert.ok(play.includes("values != ['false']"));
+ assert.ok(play.includes('EAS_BUILD_PROFILE: "play-internal"'));
+ assert.ok(play.includes("for setting in ('android.enableProguardInReleaseBuilds', 'android.enableShrinkResourcesInReleaseBuilds'):"));
+ assert.ok(play.includes("gradle.properties"));
  assert.match(play,/bundleRelease/);
 });
 test('Jynlo official icon step is cross-platform for Codemagic macOS',()=>{
