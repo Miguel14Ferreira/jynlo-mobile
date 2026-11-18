@@ -1,9 +1,10 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
+import {ensureLiveCapturePermissions} from '../../src/lib/live-capture-permissions';
 import {observePersonalLives} from '../../src/lib/personal-live-realtime';
 import {activePersonalLives,startPersonalLive,type PersonalLiveEvent} from '../../src/lib/personal-live-api';
 
@@ -36,14 +37,7 @@ export default function LivesScreen(){
   try{
    // Ask before creating a server LIVE event: a denied permission must never
    // leave behind a broadcast that viewers cannot actually watch.
-   if(Platform.OS==='android'){
-    const permissions=await PermissionsAndroid.requestMultiple([
-     PermissionsAndroid.PERMISSIONS.CAMERA,PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
-    ]);
-    if(permissions[PermissionsAndroid.PERMISSIONS.CAMERA]!=='granted'||
-       permissions[PermissionsAndroid.PERMISSIONS.RECORD_AUDIO]!=='granted')
-     throw Error('Autoriza a câmara e o microfone para iniciar um direto.');
-   }
+   await ensureLiveCapturePermissions();
    const created=await startPersonalLive(auth.token,title);
    router.push({pathname:'/live/[id]',params:{id:String(created.id)}});
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar o direto.');}
