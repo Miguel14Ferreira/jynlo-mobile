@@ -248,6 +248,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    if(!confirmedCommunityChatSend(confirmed,id,username,message,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.');
    if(version!==generation.current)return;
+   // The verified server receipt is already an authorized chat entry. Show it
+   // immediately rather than waiting for an eventually consistent history GET.
+   setMessages(current=>mergeMessages(current,[confirmed]));
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
    await refresh(version);
