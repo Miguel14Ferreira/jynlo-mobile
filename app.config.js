@@ -23,6 +23,10 @@ module.exports = ({config}) => {
   // Set GOOGLE_SERVICES_JSON as an EAS file environment variable holding the
   // Android Firebase google-services.json. Do not commit service account keys.
   const firebaseConfigFile = (process.env.GOOGLE_SERVICES_JSON || '').trim();
+  // A Play testing release without Firebase cannot receive native FCM pushes.
+  // Fail at build configuration time rather than silently shipping a broken opt-in.
+  if (storeBuild && !firebaseConfigFile)
+    throw new Error('BUILD BLOQUEADO: falta GOOGLE_SERVICES_JSON para notificações Android na Google Play. Configura o ficheiro Firebase no EAS.');
   const plugins = [
     ...(config.plugins || []),
     ...(mapsKey ? [['react-native-maps', {androidGoogleMapsApiKey: mapsKey}]] : []),
