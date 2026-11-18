@@ -5,7 +5,7 @@ import type {ComponentProps} from 'react';
 export type JynloIconName=
  'home'|'explore'|'messages'|'profile'|'plus'|'post'|'community'|'session'|
  'venue'|'tournament'|'championship'|'notifications'|'camera'|'gallery'|
- 'like'|'comment'|'share'|'location'|'more'|'close'|'send'|'chevron-down'|
+ 'like'|'views'|'comment'|'share'|'location'|'more'|'close'|'send'|'chevron-down'|
  'chevron-up'|'chevron-right'|'calendar'|'settings'|'search'|'check'|
  'attachment'|'remove'|'back'|'reply'|'edit'|'document'|'microphone'|'video'|'volume'|'volume-off';
 
@@ -25,6 +25,7 @@ const icons:Record<JynloIconName,{regular:ComponentProps<typeof Ionicons>['name'
  camera:{regular:'camera-outline',active:'camera'},
  gallery:{regular:'images-outline',active:'images'},
  like:{regular:'heart-outline',active:'heart'},
+ views:{regular:'eye-outline',active:'eye'},
  comment:{regular:'chatbubble-outline',active:'chatbubble'},
  share:{regular:'paper-plane-outline',active:'paper-plane'},
  location:{regular:'location-outline',active:'location'},
