@@ -70,3 +70,20 @@ test('real-device UX: native video call foreground and actions remain accessible
   assert.ok(call.includes(label),label);
  assert.match(call,/onPress=\{onHangup\}/);
 });
+
+test('mobile inbox supports clear category filters without mixing private and group messages',()=>{
+ const inbox=source('app/(tabs)/messages.tsx');
+ assert.match(inbox,/conversationKind,setConversationKind/);
+ for(const kind of ["['all','Todas']","['direct','Privadas']","['community','Comunidades']","['session','Sessões']"])
+  assert.ok(inbox.includes(kind),kind);
+ assert.match(inbox,/item\.kind===conversationKind/);
+ assert.match(inbox,/accessibilityState=\{\{selected:conversationKind===kind\}\}/);
+ assert.match(inbox,/filterInbox\(items,search,unreadOnly\)/);
+});
+test('mobile profile prioritizes sports and social identity over redundant follower copy',()=>{
+ const profile=source('app/(tabs)/profile.tsx');
+ assert.match(profile,/accessibilityLabel="Ver os meus seguidores"/);
+ assert.match(profile,/accessibilityLabel="Ver quem sigo"/);
+ assert.doesNotMatch(profile,/Ver pessoas  ›/);
+ assert.match(profile,/favoriteSports\.map\(sport=>/);
+});
