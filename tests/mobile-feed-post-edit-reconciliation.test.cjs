@@ -49,10 +49,32 @@ test('a different account has no leftover edit data',()=>{
 test('feed integrates edit guard after likes and comment counts',()=>{
  assert.match(feed,/const edits=reconcilePostEdits\(confirmedPostEdits\.current,comments\.posts\)/);
  assert.match(feed,/setPosts\(edits\.posts\)/);
- assert.match(feed,/confirmedPostEdits\.current=rememberPostEdit\(confirmedPostEdits\.current,updated\)/);
+ assert.match(feed,/confirmedPostEdits\.current=rememberPostEdit\(confirmedPostEdits\.current,updated,Date\.now\(\),mediaReplaced\)/);
  assert.match(feed,/recentlyConfirmedPosts\.current=recentlyConfirmedPosts\.current\.map\(entry=>\(\{/);
  assert.match(feed,/const applyEdit=\(item:FeedItem\)=>item\.postId===updated\.postId\?/);
- assert.match(feed,/\{\.\.\.item,content:updated\.content,location:updated\.location\}:item/);
+ assert.match(feed,/mediaReplaced\?\{imageUrl:updated\.imageUrl,videoUrl:updated\.videoUrl,extraMedia:updated\.extraMedia\}/);
  assert.match(feed,/setPosts\(current=>current\.map\(applyEdit\)\)/);
  assert.match(api,/updated\?\.postId!==postId\|\|!confirmedTextPostReceipt\(updated,username!,description,place\)/);
+});
+
+test('confirmed media replacements survive stale GETs without freezing reactions',()=>{
+ const before={...post('Antigo','Porto'),imageUrl:'https://cdn.example/old.jpg',
+   videoUrl:null,extraMedia:[]};
+ const after={...post('Novo','Lisboa'),imageUrl:'https://cdn.example/new.jpg',
+   videoUrl:null,extraMedia:[{url:'https://cdn.example/second.jpg',mimeType:'image/jpeg'}]};
+ const edits=rememberPostEdit(new Map(),after,1000,true);
+ const oldServer={...before,likeCount:8,commentCount:16};
+ const guarded=reconcilePostEdits(edits,[oldServer],1100);
+ assert.deepEqual(guarded.posts,[{...oldServer,content:'Novo',location:'Lisboa',
+  imageUrl:after.imageUrl,videoUrl:null,extraMedia:after.extraMedia}]);
+ assert.equal(guarded.edits.size,1);
+ const synced=reconcilePostEdits(guarded.edits,[{...after,likeCount:9,commentCount:17}],1300);
+ assert.equal(synced.edits.size,0);
+});
+test('ordinary text edits keep original server media authoritative',()=>{
+ const edited={...post('Novo','Lisboa'),imageUrl:'https://cdn.example/old.jpg'};
+ const receipts=rememberPostEdit(new Map(),edited,1000);
+ const updatedFromServer={...post('Antigo','Porto'),imageUrl:'https://cdn.example/changed.jpg'};
+ const guarded=reconcilePostEdits(receipts,[updatedFromServer],1100);
+ assert.equal(guarded.posts[0].imageUrl,updatedFromServer.imageUrl);
 });
