@@ -17,14 +17,6 @@ export default function TeamsScreen(){
  const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState('');
  const [joinedError,setJoinedError]=useState('');
  const [createOpen,setCreateOpen]=useState(false);
- useEffect(()=>{
-  if(params.create==='1'&&auth.token){
-   setCreateOpen(true);
-   // Consume the one-time intent; returning from the new team's page must
-   // not reopen an empty creation form unexpectedly.
-   router.setParams({create:undefined});
-  }
- },[params.create,auth.token,router]);
  const [submittedQuery,setSubmittedQuery]=useState('');
  const joinedOnly=joined.filter(team=>!owned.some(owner=>owner.id===team.id));
  const requestVersion=useRef(0),actionVersion=useRef(0);
@@ -38,6 +30,15 @@ export default function TeamsScreen(){
    setTeams([]);setJoinedError('');setError('');setLoading(true);
    setCreateOpen(false);setName('');setSport('');setLocation('');
  },[auth.token]);
+ useEffect(()=>{
+  if(params.create==='1'&&auth.token){
+   setCreateOpen(true);
+   // Consume the one-time intent; returning from the new team's page must
+   // not reopen an empty creation form unexpectedly.
+   router.setParams({create:undefined});
+  }
+ },[params.create,auth.token,router]);
+
  const load=useCallback(async(silent=false,force=false)=>{
    if(!force&&(reading.current===requestVersion.current||savingRef.current))return;
    const version=++requestVersion.current;
