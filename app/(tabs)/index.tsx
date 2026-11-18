@@ -1189,7 +1189,7 @@ export default function JynloFeedHome(){
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
             <Pressable accessibilityRole="button" accessibilityLabel="Editar publicação" style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);setEditingPost(post);
-            }}><Text style={styles.postMenuText}>Editar texto e localização</Text></Pressable>:null}
+            }}><Text style={styles.postMenuText}>Editar publicação e multimédia</Text></Pressable>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
             <Pressable accessibilityRole="button" accessibilityLabel="Eliminar publicação" style={styles.postMenuAction} onPress={()=>deleteOwnedPost(postMenuItem)}>
               <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Eliminar publicação</Text>
@@ -1207,13 +1207,14 @@ export default function JynloFeedHome(){
       </View>
     </Modal>
     <PostEditSheet post={identityMatches?editingPost:null} token={auth.token} username={auth.username}
-      onClose={()=>setEditingPost(null)} onSaved={updated=>{
+      onClose={()=>setEditingPost(null)} onSaved={(updated,mediaReplaced)=>{
         if(feedIdentity.current!==currentFeedIdentity)return;
-        confirmedPostEdits.current=rememberPostEdit(confirmedPostEdits.current,updated);
-        // The edit endpoint returns new text/location but not the aggregate
-        // like/comment counters. Preserve those server-backed feed values.
+        confirmedPostEdits.current=rememberPostEdit(confirmedPostEdits.current,updated,Date.now(),mediaReplaced);
+        // Keep reactions from the current feed, but use server-confirmed media
+        // after explicit replacement. A stale GET is reconciled by the receipt.
         const applyEdit=(item:FeedItem)=>item.postId===updated.postId?
-          {...item,content:updated.content,location:updated.location}:item;
+          {...item,content:updated.content,location:updated.location,
+            ...(mediaReplaced?{imageUrl:updated.imageUrl,videoUrl:updated.videoUrl,extraMedia:updated.extraMedia}:{} )}:item;
         recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.map(entry=>({
           ...entry,item:applyEdit(entry.item)
         }));
