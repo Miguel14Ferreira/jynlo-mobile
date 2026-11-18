@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useTracks} from '@livekit/react-native';
+import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useTracks,useRoomContext} from '@livekit/react-native';
 import {Track} from 'livekit-client';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -9,13 +9,14 @@ import {C} from '../../src/lib/theme';
 import {
  joinPersonalLive,heartbeatPersonalLive,endPersonalLive,
  personalLiveMessages,personalLiveControls,sendPersonalLiveMessage,requestPersonalLiveGuest,
+ setPersonalLiveChatEnabled,decidePersonalLiveGuest,
  type PersonalLiveConnection,type PersonalLiveMessage,type PersonalLiveControls
 } from '../../src/lib/personal-live-api';
 
 let globalsReady=false;
 function LiveVideoStage({host}:{host:boolean}){
  const tracks=useTracks([Track.Source.Camera]);
- const videos=tracks.filter(isTrackReference).filter(track=>track.publication?.isSubscribed!==false);
+ const videos=tracks.filter(isTrackReference);
  return <View style={styles.videoStage}>
   {videos.length?videos.map(track=><View key={track.participant.identity+'|'+track.source} style={styles.videoTile}>
     <VideoTrack trackRef={track} style={styles.video}/>
@@ -23,6 +24,37 @@ function LiveVideoStage({host}:{host:boolean}){
    </View>):<View style={styles.videoPlaceholder}><Text style={styles.placeholderText}>
    {host?'A transmitir. Ativa a câmara se ainda não apareceu imagem.':'À espera da imagem do apresentador…'}
   </Text></View>}
+ </View>;
+}
+function BroadcastControls({publisher}:{publisher:boolean}){
+ const room=useRoomContext();
+ const [micOn,setMicOn]=useState(true),[cameraOn,setCameraOn]=useState(true);
+ const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ if(!publisher)return null;
+ const toggle=async(kind:'mic'|'camera')=>{
+  if(busy)return;
+  setBusy(true);setError('');
+  try{
+   if(kind==='mic'){
+    await room.localParticipant.setMicrophoneEnabled(!micOn);
+    setMicOn(value=>!value);
+   }else{
+    await room.localParticipant.setCameraEnabled(!cameraOn);
+    setCameraOn(value=>!value);
+   }
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível mudar o dispositivo.');}
+  finally{setBusy(false);}
+ };
+ return <View style={styles.broadcastControls}>
+  <Pressable accessibilityRole="button" accessibilityLabel={micOn?'Desligar microfone':'Ligar microfone'}
+   disabled={busy} style={styles.control} onPress={()=>void toggle('mic')}>
+    <Text style={styles.controlLabel}>{micOn?'🎙️ Microfone ligado':'🔇 Microfone desligado'}</Text>
+  </Pressable>
+  <Pressable accessibilityRole="button" accessibilityLabel={cameraOn?'Desligar câmara':'Ligar câmara'}
+   disabled={busy} style={styles.control} onPress={()=>void toggle('camera')}>
+    <Text style={styles.controlLabel}>{cameraOn?'📹 Câmara ligada':'📷 Câmara desligada'}</Text>
+  </Pressable>
+  {error?<Text style={styles.note}>{error}</Text>:null}
  </View>;
 }
 export default function PersonalLiveRoom(){
@@ -34,8 +66,9 @@ export default function PersonalLiveRoom(){
  const [messages,setMessages]=useState<PersonalLiveMessage[]>([]);
  const [controls,setControls]=useState<PersonalLiveControls|null>(null);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false),[showChat,setShowChat]=useState(true);
- const [requesting,setRequesting]=useState(false);
+ const [requesting,setRequesting]=useState(false),[moderating,setModerating]=useState(false);
  const active=useRef(false),endingRef=useRef(false),sendLock=useRef(false);
+ const connectionRole=useRef<PersonalLiveConnection['role']|null>(null),switchingRole=useRef(false);
  const role=connection?.role;
  const host=role==='HOST';
  useFocusEffect(useCallback(()=>{
@@ -50,11 +83,11 @@ export default function PersonalLiveRoom(){
    if(!globalsReady){registerGlobals();globalsReady=true;}
    await AudioSession.startAudioSession();
    if(!active.current){void AudioSession.stopAudioSession();return;}
-   setConnection(value);setReady(true);
+   connectionRole.current=value.role;setConnection(value);setReady(true);
   }).catch(e=>{if(active.current)setError(e instanceof Error?e.message:'Não foi possível entrar no direto.');})
    .finally(()=>{if(active.current)setLoading(false);});
   return()=>{
-   active.current=false;setConnection(null);setReady(false);
+   active.current=false;connectionRole.current=null;setConnection(null);setReady(false);
    void AudioSession.stopAudioSession();
   };
  },[auth.token,id]));
@@ -63,7 +96,17 @@ export default function PersonalLiveRoom(){
   const [chat,state]=await Promise.allSettled([personalLiveMessages(auth.token,id),personalLiveControls(auth.token,id)]);
   if(!active.current)return;
   if(chat.status==='fulfilled')setMessages(chat.value.slice(-100));
-  if(state.status==='fulfilled')setControls(state.value);
+  if(state.status==='fulfilled'){
+   setControls(state.value);
+   // Guest approval grants publishing only with a NEW LiveKit token.
+   if(state.value.isGuest&&connectionRole.current==='VIEWER'&&!switchingRole.current){
+    switchingRole.current=true;
+    void joinPersonalLive(auth.token,id).then(next=>{
+     if(active.current&&next.role==='GUEST'){connectionRole.current='GUEST';setConnection(next);}
+    }).catch(()=>{if(active.current)setChatError('A aprovação foi recebida, mas o vídeo ainda não ligou.');})
+      .finally(()=>{switchingRole.current=false;});
+   }
+  }
  },[id,auth.token]);
  useEffect(()=>{
   if(!connection||!ready)return;
@@ -109,6 +152,21 @@ export default function PersonalLiveRoom(){
   }catch(e){if(active.current)setChatError(e instanceof Error?e.message:'A mensagem não foi confirmada.');}
   finally{sendLock.current=false;if(active.current)setSending(false);}
  };
+ const toggleChat=async()=>{
+  if(!host||!auth.token||!controls||moderating)return;
+  setModerating(true);setChatError('');
+  try{const value=await setPersonalLiveChatEnabled(auth.token,id,!controls.chatEnabled);
+   if(active.current)setControls(value);
+  }catch(e){if(active.current)setChatError(e instanceof Error?e.message:'Não foi possível alterar o chat.');}
+  finally{if(active.current)setModerating(false);}
+ };
+ const decide=async(requestId:number,approve:boolean)=>{
+  if(!host||!auth.token||moderating)return;
+  setModerating(true);setChatError('');
+  try{await decidePersonalLiveGuest(auth.token,id,requestId,approve);if(active.current)await refresh();}
+  catch(e){if(active.current)setChatError(e instanceof Error?e.message:'Não foi possível decidir o pedido.');}
+  finally{if(active.current)setModerating(false);}
+ };
  const ask=async()=>{
   if(!auth.token||host||requesting)return;
   setRequesting(true);setChatError('');
@@ -129,6 +187,7 @@ export default function PersonalLiveRoom(){
    onDisconnected={()=>{if(active.current&&!endingRef.current)setError('A ligação ao vídeo terminou. Volta à lista para entrar novamente.');}}
    onError={e=>{if(active.current)setError('Erro na transmissão: '+e.message);}}>
    <LiveVideoStage host={host}/>
+   <BroadcastControls publisher={host||role==='GUEST'}/>
   </LiveKitRoom>:null}
   {connection?<View style={styles.actions}>
    <Button title={host?(ending?'A terminar…':'Terminar direto'):'Sair do direto'}
@@ -142,6 +201,17 @@ export default function PersonalLiveRoom(){
     {controls?.requestStatus!=='PENDING'?
      <Button secondary title={requesting?'A enviar…':'Pedir para entrar no direto'} disabled={requesting} onPress={()=>void ask()}/>:null}
    </View>:null}
+  {connection&&host&&controls?<View style={styles.panel}>
+   <Text style={styles.subtitle}>Moderação do direto</Text>
+   <Button secondary title={controls.chatEnabled?'Desativar chat':'Ativar chat'}
+     disabled={moderating} onPress={()=>void toggleChat()}/>
+   {controls.pendingRequests.filter(item=>item.status==='PENDING').map(item=>
+    <View key={item.id} style={styles.requestRow}>
+     <Text style={styles.note}>@{item.username} quer entrar no direto</Text>
+     <Button title="Aceitar" disabled={moderating} onPress={()=>void decide(item.id,true)}/>
+     <Button secondary title="Recusar" disabled={moderating} onPress={()=>void decide(item.id,false)}/>
+    </View>)}
+  </View>:null}
   {connection&&showChat?<View style={styles.panel}>
    <Text style={styles.subtitle}>Chat do direto</Text>
    {messages.length?messages.map(message=><View key={message.id} style={styles.message}>
@@ -165,6 +235,10 @@ export default function PersonalLiveRoom(){
 const styles=StyleSheet.create({
  header:{gap:4},heading:{color:'#FF838C',fontWeight:'900',fontSize:19},
  subtitle:{color:C.white,fontWeight:'900',fontSize:18},
+ broadcastControls:{flexDirection:'row',flexWrap:'wrap',gap:9},
+ control:{minHeight:44,padding:10,borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,justifyContent:'center'},
+ controlLabel:{color:C.white,fontWeight:'800',fontSize:12},
+ requestRow:{gap:8,paddingVertical:8,borderBottomWidth:1,borderColor:C.border},
  videoStage:{minHeight:235,backgroundColor:'#021017',borderRadius:15,overflow:'hidden',gap:7},
  videoTile:{height:280},video:{width:'100%',height:'100%'},
  videoLabel:{position:'absolute',bottom:9,left:12,color:C.white,fontWeight:'800',backgroundColor:'#142A32',padding:6,borderRadius:7},
