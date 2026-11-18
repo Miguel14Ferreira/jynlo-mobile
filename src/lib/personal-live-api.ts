@@ -48,3 +48,12 @@ export const personalLiveControls=(token:string,id:number)=>
  request<PersonalLiveControls>(idPath(id)+'/controls',{token:authenticated(token)});
 export const requestPersonalLiveGuest=(token:string,id:number)=>
  request<{id:number;username:string;status:string}>(idPath(id)+'/guest-requests',{method:'POST',token:authenticated(token),body:{}});
+
+export const setPersonalLiveChatEnabled=(token:string,id:number,enabled:boolean)=>
+ request<PersonalLiveControls>(idPath(id)+'/chat',{method:'PUT',token:authenticated(token),body:{enabled}});
+export const decidePersonalLiveGuest=(token:string,id:number,requestId:number,approve:boolean)=>{
+ if(!Number.isSafeInteger(requestId)||requestId<=0)throw Error('Pedido inválido.');
+ return request<{id:number;username:string;status:string}>(
+  idPath(id)+'/guest-requests/'+requestId+(approve?'/approve':'/decline'),
+  {method:'POST',token:authenticated(token),body:{}});
+};
