@@ -28,6 +28,7 @@ import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 import ChatSearchPanel from './ChatSearchPanel';
+import ChatReplyPreview from './ChatReplyPreview';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
@@ -540,7 +541,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      <TextInput accessibilityLabel="Editar mensagem" multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Mensagem…" placeholderTextColor={C.muted} style={styles.editInput}/>
      <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
    </View>:null}
-   {reply&&!accessRevoked?<View style={styles.quoteComposer}><View style={{flex:1,gap:4}}><Text style={styles.quoteTitle}>A responder a {reply.username}</Text><Text numberOfLines={2} style={styles.quoteBody}>{reply.body||reply.attachmentName||'Anexo'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta" disabled={sending||uploading} onPress={()=>setReply(null)}><JynloIcon name="close" size={20} color={C.mint}/></Pressable></View>:null}
+   {reply&&!accessRevoked?<ChatReplyPreview sender={reply.username} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
      <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
