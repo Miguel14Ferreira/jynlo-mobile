@@ -86,7 +86,7 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);setCommunityInvites([]);
    // Invalidate in-flight mutations started by the previous account.
    pushOperation.current++;inviteOperation.current++;notificationRevision.current++;
-   notificationLock.current=false;pushBusyRef.current=false;setNotificationBusy(false);setUnreadOnly(false);
+   pushBusyRef.current=false;notificationLock.current=false;setNotificationBusy(false);setUnreadOnly(false);
    inviteDecisionInFlight.current=null;
    // An old request finishing after account change cannot clear the new account's lock.
    // The in-flight native enrollment is cancelled by auth logout/expiry.
