@@ -517,20 +517,20 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   </>;
  return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }
-const styles=StyleSheet.create({inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
- inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
- inlineHistoryKeyboard:{height:168},
+const styles=StyleSheet.create({inline:{gap:12,padding:14,borderWidth:1,borderColor:'#3FC6B04D',borderRadius:18,backgroundColor:'#082B39'},
+ inlineHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
+ inlineHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
  olderMessages:{padding:10,alignItems:'center'},
  newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:9,borderRadius:20,backgroundColor:C.mint},
  newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},editInput:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:12,color:C.white,minHeight:52,maxHeight:150},replyAction:{minHeight:38,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
- message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
- mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
+ message:{padding:12,borderRadius:17,backgroundColor:'#0D3945',borderWidth:1,borderColor:'#3BB2AE52',gap:6,maxWidth:'88%',alignSelf:'flex-start',borderBottomLeftRadius:5},
+ mine:{backgroundColor:'#12554D',borderColor:'#3CBB9B80',alignSelf:'flex-end',borderBottomLeftRadius:17,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  muteRow:{gap:8,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
  attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},attachmentOptions:{gap:8},
  gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
  mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},
- composer:{flexDirection:'row',alignItems:'flex-end',gap:9},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:MobileTheme.colors.surface,borderColor:MobileTheme.colors.border,borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:MobileTheme.radius.lg},
- send:{backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.md,paddingHorizontal:16,minHeight:MobileTheme.touchTarget,justifyContent:'center'},sendText:{color:C.background,fontWeight:'900'}});
+ composer:{flexDirection:'row',alignItems:'flex-end',gap:9,paddingTop:10,borderTopWidth:1,borderTopColor:'#42BDAE40'},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:'#061F2E',borderColor:'#3BB6AA66',borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:14},
+ send:{backgroundColor:MobileTheme.colors.accent,borderRadius:13,paddingHorizontal:16,minWidth:52,minHeight:MobileTheme.touchTarget,justifyContent:'center',alignItems:'center'},sendText:{color:C.background,fontWeight:'900'}});
