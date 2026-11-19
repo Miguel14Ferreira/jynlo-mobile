@@ -101,9 +101,17 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const activeGroup=groups.find(entry=>entry.key===currentKey)||group;
   const story=activeGroup?.stories[index];
   activeStoryIdRef.current=story?.id??null;
-  React.useEffect(()=>{audienceRequest.current++;
+  React.useEffect(()=>{
+    // Each Story is a separate interaction context. A request for the previous
+    // Story must never leave the new one locked, paused, or showing old results.
+    storyMutationEpoch.current++;
+    submittingStory.current=false;
+    setStoryBusy(false);
+    setPaused(false);
+    audienceRequest.current++;
     setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
-    setAudience(null);setAudienceOpen(false);setAudienceError('');},[story?.id]);
+    setAudience(null);setAudienceOpen(false);setAudienceBusy(false);setAudienceError('');
+  },[story?.id]);
   React.useEffect(()=>{
     if(!story||mediaState!=='loading')return;
     // Native players sometimes never fire a failure callback on a stalled connection.
@@ -154,12 +162,20 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
   const mediaReady=()=>{
+    // Late native image/video callbacks may belong to a Story already skipped.
+    const id=story.id,actor=token;
+    if(activeStoryIdRef.current!==id||activeAccount.current!==actor)return;
     setMediaState('ready');
-    // Record a view only after real media is ready, once per Story/account.
-    if(!ownStory&&token&&username&&!viewedStoryIds.current.has(story.id)){
-      viewedStoryIds.current.add(story.id);
-      void recordStoryView(story.id,token).catch(()=>{viewedStoryIds.current.delete(story.id);});
+    // Record a view only for media that actually loaded in this active Story.
+    if(!ownStory&&actor&&username&&!viewedStoryIds.current.has(id)){
+      viewedStoryIds.current.add(id);
+      void recordStoryView(id,actor).catch(()=>{
+        if(activeAccount.current===actor)viewedStoryIds.current.delete(id);
+      });
     }
+  };
+  const mediaFailed=()=>{
+    if(activeStoryIdRef.current===story.id&&activeAccount.current===token)setMediaState('error');
   };
   const loadAudience=async()=>{
     if(!ownStory||!token||audienceBusy)return;
@@ -258,10 +274,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyMedia}>{uri?(story.video?
         <MediaVideo key={story.id+'-'+mediaRetry} uri={uri} story muted={storyMuted}
           paused={paused||replyFocused||storyBusy||audienceOpen||!appActive||mediaState==='error'}
-          onReady={mediaReady} onPlaybackError={()=>setMediaState('error')} onEnd={()=>go(1)}/>:
+          onReady={mediaReady} onPlaybackError={mediaFailed}
+          onEnd={()=>{if(activeStoryIdRef.current===story.id&&activeAccount.current===token)go(1);}}/>:
         <Image key={story.id+'-'+mediaRetry} source={mediaRequestSource(uri,token)}
           resizeMode="contain" style={styles.storyImage}
-          onLoad={mediaReady} onError={()=>setMediaState('error')}
+          onLoad={mediaReady} onError={mediaFailed}
           accessibilityLabel={story.altText||story.caption||'Fotografia da Story'}/>):null}
         {mediaState==='loading'&&uri?<View pointerEvents="none" style={styles.storyMediaStatus}>
           <ActivityIndicator color={WHITE} size="large"/><Text style={styles.storyMediaStatusText}>A carregar Story…</Text>
