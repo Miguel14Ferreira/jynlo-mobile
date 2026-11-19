@@ -56,6 +56,8 @@ export default function SessionScreen(){
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const [adminToolsOpen,setAdminToolsOpen]=useState(false);
+  const [showSessionChat,setShowSessionChat]=useState(false);
+  const [showParticipantRoster,setShowParticipantRoster]=useState(true);
   const [teamSource,setTeamSource]=useState<'AUTO'|'RANDOM'>('AUTO');
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
@@ -170,6 +172,7 @@ export default function SessionScreen(){
       setEditMeetingPoint(false);setEditExternalCount(false);
       setMeetingDraft('');setExternalDraft('');
       setFeedback('');setRosterFeedback('');setTeamsMessage('');
+      setShowSessionChat(false);setShowParticipantRoster(true);
     }
     // A write may still be pending when returning to this screen.
     setBusy(operationInFlight.current||removalInFlight.current||attendanceInFlight.current);
@@ -545,6 +548,21 @@ export default function SessionScreen(){
         <Text style={styles.hint}>{minimum.missing===0?'Mínimo de jogadores atingido.':`Faltam ${minimum.missing} ${minimum.missing===1?'inscrição':'inscrições'} para atingir o mínimo.`}</Text>
         <Text style={styles.subtleHint}>O estado efetivo da sessão continua a ser determinado pelo servidor.</Text>
       </View>:null}
+      {auth.token&&detail&&(owner||detail.joined)&&
+        s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
+        typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
+        <View style={styles.panel}>
+         <Pressable accessibilityRole="button" accessibilityLabel={showSessionChat?'Fechar chat da sessão':'Abrir chat da sessão'}
+           accessibilityState={{expanded:showSessionChat}} onPress={()=>setShowSessionChat(open=>!open)}
+           style={styles.chatDisclosure}>
+          <View style={{flex:1,gap:4}}>
+           <Text style={styles.panelHeading}>Chat da sessão</Text>
+           <Text style={styles.hint}>Mensagens dos participantes confirmados · atualização em tempo real</Text>
+          </View>
+          <Text style={styles.chatDisclosureSymbol}>{showSessionChat?'−':'+'}</Text>
+         </Pressable>
+         {showSessionChat?<SessionChatPanel embedded/>:null}
+        </View>:null}
       {detail?<SessionLocationPanel session={detail} token={auth.token}
          canEdit={owner} onSaved={updated=>{setDetail(updated);setFeedback('Localização Google Maps atualizada.');}}/>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
@@ -566,10 +584,7 @@ export default function SessionScreen(){
               setFeedback('Não foi possível partilhar o aviso. Podes copiar o texto apresentado.'));}}/>
         </View>:null}
       </View>:null}
-      {auth.token&&detail&&(owner||detail.joined)&&
-        s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
-        typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
-        <SessionChatPanel embedded/>:null}
+
       {detail?.joined&&!['CANCELLED','COMPLETED'].includes(s.status||'')&&Date.parse(s.gameDate||'')>Date.now()?<Message>✓ A tua inscrição está confirmada.</Message>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
@@ -676,8 +691,16 @@ export default function SessionScreen(){
         </View>)}
         {confirmedTeams.unassigned.length>0?<Text style={styles.hint}>{confirmedTeams.unassigned.length} jogadores ainda sem equipa atribuída.</Text>:null}
       </View>:null}
-      {detail&&canViewRoster(detail,auth.username)?<View style={{gap:11}}>
-        <View style={styles.top}><Text style={styles.rosterTitle}>Quem vai</Text><Text style={styles.hint}>{participants.length} participantes visíveis</Text></View>
+      {detail&&canViewRoster(detail,auth.username)?<View style={styles.panel}>
+        <Pressable accessibilityRole="button" accessibilityLabel={showParticipantRoster?'Ocultar participantes da sessão':'Mostrar participantes da sessão'}
+          accessibilityState={{expanded:showParticipantRoster}} onPress={()=>setShowParticipantRoster(open=>!open)} style={styles.rosterDisclosure}>
+          <View style={{flex:1,gap:3}}>
+           <Text style={styles.rosterTitle}>Quem vai</Text>
+           <Text style={styles.hint}>{rosterError?'Lista por confirmar':participants.length+' participantes visíveis'}</Text>
+          </View>
+          <Text style={styles.chatDisclosureSymbol}>{showParticipantRoster?'−':'+'}</Text>
+        </Pressable>
+        {showParticipantRoster?<>
         {rosterError?<Text style={styles.rosterError}>{rosterError}</Text>:null}
         {rosterFeedback?<Message>{rosterFeedback}</Message>:null}
         {!rosterError&&participants.length===0?<Text style={styles.hint}>Ainda não existem participantes visíveis nesta lista.</Text>:null}
@@ -715,6 +738,7 @@ export default function SessionScreen(){
               </Pressable>:null}
           </View>;
         })}
+        </>:null}
       </View>:null}
       <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
@@ -741,6 +765,9 @@ const styles=StyleSheet.create({
   label:{fontSize:12,letterSpacing:.5,color:C.muted,fontWeight:'800',lineHeight:18},
   value:{fontSize:17,color:C.white,fontWeight:'900',lineHeight:24,marginTop:5},
   panel:{gap:12,padding:17,borderRadius:18,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+  chatDisclosure:{minHeight:60,flexDirection:'row',alignItems:'center',gap:12},
+  chatDisclosureSymbol:{fontSize:26,fontWeight:'900',color:C.mint,minWidth:30,textAlign:'center'},
+  rosterDisclosure:{minHeight:54,flexDirection:'row',alignItems:'center',gap:12},
   editor:{gap:10},
   teamPanel:{padding:12,gap:7,borderColor:C.border,borderWidth:1,borderRadius:12},
   confirmedTeamCard:{gap:10,padding:13,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2,borderRadius:14},
