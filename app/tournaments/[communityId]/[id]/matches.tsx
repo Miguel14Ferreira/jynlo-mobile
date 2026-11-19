@@ -82,7 +82,7 @@ const styles=StyleSheet.create({
  card:{backgroundColor:'#0A3340',padding:15,borderWidth:1,borderColor:'#3DC4B04D',borderRadius:17,gap:13},
  row:{flexDirection:'row',flexWrap:'wrap',gap:8},
  match:{flexDirection:'row',gap:8,alignItems:'center',minWidth:0},
- player:{flex:1,minWidth:0,fontSize:13,lineHeight:18,fontWeight:'850',color:C.white,textAlign:'right'},
+ player:{flex:1,minWidth:0,fontSize:13,lineHeight:18,fontWeight:'800',color:C.white,textAlign:'right'},
  awayPlayer:{textAlign:'left'},
  scoreBox:{width:118,minHeight:51,paddingHorizontal:7,paddingVertical:9,justifyContent:'center',alignItems:'center',backgroundColor:'#153D48',borderWidth:1,borderColor:'#409CA054',borderRadius:12},
  scoreBoxFinal:{backgroundColor:'#115D55',borderColor:'#4CDAB66B'},
