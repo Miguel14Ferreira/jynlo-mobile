@@ -25,7 +25,7 @@ test('media publishing uses synchronous single-flight guards and preserves uncer
  assert.match(home,/postInFlight.current=true;setPublishing\(true\)/);
  assert.match(home,/storyInFlight.current=true;setStoryPublishing\(true\)/);
  assert.match(home,/!requireLogin\(\)\|\|postInFlight.current\|\|\(!composerMedia.length&&!composerText.trim\(\)\)/);
- assert.match(home,/!requireLogin\(\)\|\|storyInFlight.current\|\|!storyMedia/);
+ assert.match(home,/!requireLogin\(\)\|\|storyInFlight.current\|\|!storyRetryAcknowledged\|\|!storyMedia/);
  assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Publicação enviada/);
  assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Story enviada/);
  assert.match(home,/feedIdentity.current===`\$\{username\}:\$\{actor\}`/);
