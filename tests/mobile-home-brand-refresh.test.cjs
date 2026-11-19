@@ -26,7 +26,7 @@ test('mobile home actions resolve to screens already registered in Expo Router',
 });
 test('new hero routes authenticated users to real session creation and guests to sign in',()=>{
  assert.match(home,/router\.push\(auth\.token\?'\/sessions\/create':'\/login'\)/);
- assert.match(home,/onPress=\{\(\)=>requireLogin\(\)&&openPostComposer\(\)\}/);
+ assert.match(home,/\{label:'Publicar',icon:'post',go:\(\)=>requireLogin\(\)&&openPostComposer\(\)\}/);
  assert.match(home,/accessibilityLabel="Criar uma nova sessão desportiva"/);
 });
 test('quick actions are accessible without blocking or replacing the existing Stories, feed or post interactions',()=>{
