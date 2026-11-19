@@ -400,6 +400,7 @@ export default function JynloFeedHome(){
   const storyLocationRef=useRef(''),storyTagsRef=useRef('');
   const [showStoryTime,setShowStoryTime]=useState(false);
   const [storyAltText,setStoryAltText]=useState('');
+  const [storyStyleOpen,setStoryStyleOpen]=useState(false),[storyDetailsOpen,setStoryDetailsOpen]=useState(false);
   const [storyEditorOpenedAt,setStoryEditorOpenedAt]=useState(()=>new Date().toISOString());
   const [storyTextGeometry,setStoryTextGeometry]=useState<StoryTextGeometry>({x:50,y:78,rotation:0,zoom:1});
   const [storyAppearance,setStoryAppearance]=useState<StoryTextAppearance>({color:'white',background:'dark',font:'modern'});
@@ -871,7 +872,7 @@ export default function JynloFeedHome(){
   }
   function openStoryComposer(){
     setPublishNotice(null);setStoryPublishError('');setVerifiedStoryPlace('');setStoryPlaceOptions([]);
-    setStoryPublishCommunityId(null);
+    setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);setStoryEditorOpenedAt(new Date().toISOString());
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
@@ -885,7 +886,7 @@ export default function JynloFeedHome(){
       setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-      setStoryPublishCommunityId(null);
+      setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
     };
     if(storyMedia||storyCaption.trim()||storyLocation.trim()||storyTags.trim()){
       Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
@@ -1524,8 +1525,20 @@ export default function JynloFeedHome(){
              <JynloIcon name="remove" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Remover</Text>
             </Pressable>
            </View>:null}
-          <Text style={styles.storiesIntro}>Arrasta o texto com um dedo. Usa dois dedos para rodar e ampliar.</Text>
-          <View style={styles.storyStylePanel}>
+          {storyMedia?<View style={styles.storyCaptionBlock}>
+            <Text style={styles.storyStyleLabel}>Legenda da Story</Text>
+            <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180}
+             placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} accessibilityLabel="Legenda da Story" style={styles.storyCaptionInput}/>
+            <Text style={styles.countText}>{storyCaption.length}/180</Text>
+            {storyCaption.trim()?<Text style={styles.storiesIntro}>Arrasta o texto na imagem com um dedo. Usa dois dedos para rodar e ampliar.</Text>:null}
+          </View>:null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Personalizar cores e tipo de letra da Story"
+           accessibilityState={{expanded:storyStyleOpen}} disabled={storyPublishing}
+           onPress={()=>setStoryStyleOpen(value=>!value)} style={styles.storyEditorDisclosure}>
+           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="edit" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Estilo e texto</Text></View>
+           <JynloIcon name={storyStyleOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
+          </Pressable>
+          {storyStyleOpen?<View style={styles.storyStylePanel}>
            <Text style={styles.storyStyleTitle}>Personalizar texto da Story</Text>
            <Pressable accessibilityRole="checkbox" accessibilityState={{checked:showStoryTime}} disabled={storyPublishing}
             onPress={()=>setShowStoryTime(value=>!value)} style={styles.storyStyleChoice}>
@@ -1558,7 +1571,14 @@ export default function JynloFeedHome(){
              style={[styles.storyStyleChoice,storyAppearance.font===font&&styles.storyStyleSelected]}>
              <Text style={styles.storyStyleChoiceText}>{storyAppearance.font===font?'✓ ':''}{label}</Text>
             </Pressable>)}</View>
-          </View>
+          </View>:null}
+          <Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de publicação e identificação da Story"
+           accessibilityState={{expanded:storyDetailsOpen}} disabled={storyPublishing}
+           onPress={()=>setStoryDetailsOpen(value=>!value)} style={styles.storyEditorDisclosure}>
+           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="settings" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Localização, amigos e mais opções</Text></View>
+           <JynloIcon name={storyDetailsOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
+          </Pressable>
+          {storyDetailsOpen?<View style={styles.storyEditorAdvanced}>
           <Text style={styles.storiesIntro}>Publicar como</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
             disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(null)}
@@ -1575,8 +1595,6 @@ export default function JynloFeedHome(){
             <JynloIcon name="community" size={19} color={TEAL}/>
             <Text style={styles.storyFriendName}>{storyPublishCommunityId===group.id?'✓  ':''}{group.name}</Text>
           </Pressable>)}
-          <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180} placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
-          <Text style={styles.countText}>{storyCaption.length}/180</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyAltText}
             onChangeText={setStoryAltText} maxLength={350} multiline
             placeholder="Descreve a imagem ou o vídeo para acessibilidade (opcional)"
@@ -1630,6 +1648,7 @@ export default function JynloFeedHome(){
             <Text style={styles.storyFriendName}>{selected?'✓':'+'}</Text>
            </Pressable>;
           })}
+          </View>:null}
         </ScrollView>
         {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Verifica se a Story já foi publicada antes de repetires.</Text></View>:null}
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" accessibilityState={{disabled:!storyMedia||storyPublishing,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}>
@@ -1642,6 +1661,12 @@ export default function JynloFeedHome(){
   </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ storyCaptionBlock:{gap:8,paddingVertical:5},
+ storyEditorDisclosure:{minHeight:52,paddingHorizontal:13,paddingVertical:10,borderRadius:14,borderWidth:1,
+  borderColor:'#3FC6B077',backgroundColor:'#0C3541',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},
+ storyEditorDisclosureCopy:{flexDirection:'row',alignItems:'center',gap:9,flex:1,minWidth:0},
+ storyEditorDisclosureTitle:{fontSize:14,fontWeight:'800',color:WHITE,flexShrink:1},
+ storyEditorAdvanced:{gap:12,padding:12,borderRadius:14,borderWidth:1,borderColor:'#3FC6B044',backgroundColor:'#082A36'},
  jynloDiscoverPanel:{marginTop:11,marginBottom:14,padding:20,borderRadius:24,
   borderWidth:1,borderColor:'#167F80',backgroundColor:'#07303A',gap:9},
  jynloDiscoverEyebrow:{fontSize:11,fontWeight:'900',letterSpacing:1.5,color:TEAL},
