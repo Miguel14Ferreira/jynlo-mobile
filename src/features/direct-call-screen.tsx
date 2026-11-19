@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {JynloIcon} from '../components/JynloIcon';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
@@ -8,6 +8,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../components/UI';
 import {useAuth} from '../lib/auth';
 import {ApiError} from '../lib/api';
 import {C} from '../lib/theme';
+import {chooseVideoStageTracks,videoStageDimensions} from '../lib/video-stage-layout.cjs';
 import {
  directCallAvailability,pendingDirectCall,startDirectCall,acceptDirectCall,declineDirectCall,endDirectCall,directCallMembers,
  type DirectCallSession,type DirectCallInvitation,type DirectCallMedia
@@ -29,6 +30,8 @@ async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
 function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void}){
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
+ const {width,height}=useWindowDimensions();
+ const dimensions=videoStageDimensions(width,height,expandedVideo);
  const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
  const [expandedVideo,setExpandedVideo]=useState(false);
  const [changing,setChanging]=useState(false),[error,setError]=useState('');
@@ -50,18 +53,18 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
   {media==='video'?<View style={styles.videos}>
    {(()=>{
-    const valid=tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal));
-    const dominant=valid[0],preview=valid.slice(1);
+    const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
     return <>
-     <View style={[styles.videoStage,expandedVideo&&styles.videoStageExpanded]}>
+     <View style={[styles.videoStage,{height:dimensions.stageHeight}]}>
       {dominant?<View style={styles.mainVideo}>
        <VideoTrack trackRef={dominant} style={styles.video}/>
        <Text style={styles.videoTag}>{dominant.participant.isLocal?'Tu':'Participante'}</Text>
       </View>:<View style={styles.videoFallback}><Text style={styles.note}>A aguardar vídeo dos participantes…</Text></View>}
-      {preview.map(track=><View key={track.participant.identity+'-'+track.source} style={styles.previewVideo}>
+      {previews.map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.previewVideo,{width:dimensions.previewWidth,height:dimensions.previewHeight}]}>
        <VideoTrack trackRef={track} style={styles.video}/>
        <Text style={styles.previewTag}>{track.participant.isLocal?'Tu':'Participante'}</Text>
       </View>)}
+      {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>+{remaining} câmaras</Text></View>:null}
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?'Reduzir vídeo da chamada':'Ampliar vídeo da chamada'}
       accessibilityState={{selected:expandedVideo}} onPress={()=>setExpandedVideo(value=>!value)} style={styles.expandVideoAction}>
@@ -255,15 +258,16 @@ const styles=StyleSheet.create({
  callActionText:{color:C.white,fontSize:11,fontWeight:'800',textAlign:'center'},
  hangupAction:{backgroundColor:'#813D43'},
  videos:{gap:9},
- videoStage:{height:345,borderRadius:17,overflow:'hidden',backgroundColor:'#021017',position:'relative'},
- videoStageExpanded:{height:500},
+ videoStage:{borderRadius:17,overflow:'hidden',backgroundColor:'#021017',position:'relative'},
  mainVideo:{height:'100%',width:'100%'},
  video:{width:'100%',height:'100%'},
  videoFallback:{flex:1,alignItems:'center',justifyContent:'center',padding:14},
  videoTag:{position:'absolute',top:10,left:10,color:C.white,fontWeight:'900',fontSize:12,
   paddingHorizontal:9,paddingVertical:6,backgroundColor:'#12313ED9',borderRadius:8},
- previewVideo:{position:'absolute',right:10,bottom:10,width:112,height:144,borderRadius:12,
+ previewVideo:{position:'absolute',right:10,bottom:10,borderRadius:12,
   overflow:'hidden',borderColor:C.mint,borderWidth:2,backgroundColor:'#021017'},
+ remainingCount:{position:'absolute',right:10,top:10,backgroundColor:'#0B273BCF',borderRadius:9,paddingHorizontal:9,paddingVertical:5},
+ remainingCountText:{fontSize:11,color:C.white,fontWeight:'900'},
  previewTag:{position:'absolute',bottom:5,left:5,color:C.white,fontSize:11,fontWeight:'900',
   backgroundColor:'#122D3BD9',borderRadius:5,paddingHorizontal:5,paddingVertical:3},
  expandVideoAction:{alignSelf:'flex-end',minHeight:44,justifyContent:'center',paddingHorizontal:14,
