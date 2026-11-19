@@ -3,6 +3,7 @@ import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
 import SecureChatAttachment from './SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
+import {uncertainChatSend} from '../lib/chat-send-uncertainty.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
@@ -30,6 +31,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
  const [entries,setEntries]=useState<SessionChatEntry[]>([]);
+ const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
@@ -239,6 +241,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  async function send(){
   const identity=id+'|'+auth.token;
   if(mutationLock.current||sendingNow.current||pendingWrites.current.has(identity)||closed||!auth.token||!draft.trim())return;
+  if(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))return;
   const version=generation.current,originalDraft=draft,originalReplyId=reply?.id;
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
@@ -247,6 +250,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(!confirmedSessionChatSend(confirmed,id,auth.username||'',originalDraft,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current)return;
+   setUncertainSend(null);
    // Render only the validated server acknowledgement, never an invented
    // optimistic message. Deduplicate if the socket already delivered it.
    setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:
@@ -262,6 +266,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     // A session may have started while the send was in flight.
     await refresh(true,version);return;
    }
+   if(uncertainChatSend(e))setUncertainSend({identity,body:originalDraft.trim(),replyId:originalReplyId??null});
    setError((e instanceof Error?e.message:'Falha no envio.')+
     ' Consulta o histórico antes de voltares a tentar.');
   }
@@ -419,6 +424,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
   </View>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
+  {!closed&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
+   onPress={()=>setUncertainSend(null)}/>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
