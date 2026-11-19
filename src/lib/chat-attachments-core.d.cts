@@ -27,5 +27,14 @@ export declare function recentPreviewMessageIds(
 /** Confirm that all uploaded album files are represented by the server. */
 export declare function confirmedChatAlbumReply(reply:{id?:number;attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>}|null,requestedMimes:string[]):boolean;
 
+/** Validate a single photo upload against its authenticated conversation. */
+export declare function confirmedSingleChatPhotoReply(
+ reply:{
+  id?:number;deletedAt?:string|null;attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
+  replyToMessageId?:number|null;communityId?:number;kind?:string;sessionId?:number;senderUsername?:string;
+  username2?:string;
+ }|null,
+ scope:'community'|'session'|'direct',conversationId:number|string,requestedMime:string,replyToId?:number|null
+):boolean;
 /** Append selected picker assets without replacing earlier files. */
 export declare function appendChatMediaSelection(existing:ImagePickerAsset[],selected:ImagePickerAsset[]):{items:ImagePickerAsset[];error:string|null};
