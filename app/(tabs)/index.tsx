@@ -596,7 +596,9 @@ export default function JynloFeedHome(){
         setError('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.');
       }
     }
-    if(fetches[0].status==='rejected')
+    if(fetches[3].status==='rejected'&&!hiddenReadyRef.current)
+      setError('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.');
+    else if(fetches[0].status==='rejected')
       setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
     else if(fetches[1].status==='rejected'||fetches[2].status==='rejected')
       setError('Não foi possível atualizar as Stories. As Stories apresentadas podem estar desatualizadas. Tenta novamente.');
