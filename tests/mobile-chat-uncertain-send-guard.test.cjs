@@ -33,4 +33,10 @@ for(const chat of chats)test(chat.path+' blocks a repeated unconfirmed write unt
  assert.match(s,/title="Já confirmei no histórico · Permitir novo envio"/);
  assert.match(s,/onPress=\{\(\)=>\{uncertainSendRef\.current=null;setUncertainSend\(null\);\}\}/);
  assert.match(s,/uncertainSend\.replyId===/);
+ assert.match(s,/Envio sem confirmação\. Confirma no histórico antes de repetir esta mensagem\./);
+ assert.match(s,/disabled=\{[^\n]*uncertainSend\?\.identity===/);
+ assert.match(send,/if\(uncertainSendRef\.current\?\.identity===identity&&uncertainSendRef\.current\.body===/);
+ assert.match(send,/uncertainSendRef\.current\.replyId===/);
+ assert.doesNotMatch(send,/\n   uncertainSendRef\.current=null;setUncertainSend\(null\);\n   \/\/ /);
+
 });
