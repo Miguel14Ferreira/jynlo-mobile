@@ -36,7 +36,7 @@ test('Feed item keys remain stable when new posts arrive',()=>{
 test('photo composer preview uses contain rather than hiding edges of images',()=>{
  const s=read('app/(tabs)/index.tsx');
  assert.match(s,/media.type==='image'\?<Image source=\{\{uri:media.uri\}\} resizeMode="contain" style=\{styles.postMediaPreviewImage\}/);
- assert.match(s,/postMediaPreviewImage:\{width:'100%',height:300,backgroundColor:/);
+ assert.match(s,/postMediaPreviewImage:\{width:'100%',height:255,backgroundColor:/);
 });
 
 test('album ordering changes only the selected item and keeps files intact',()=>{
