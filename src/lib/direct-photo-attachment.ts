@@ -44,7 +44,7 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
  try{
   const response=await expoFetch(base(peer),{
    method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
-   body:form,credentials:'omit',signal:controller.signal
+   body:form,credentials:'omit',redirect:'error',signal:controller.signal
   });
   if(!response.ok){
    if(response.status===401)throw Error('A sessão expirou. Inicia sessão novamente.');
@@ -53,8 +53,11 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
    if(response.status===503)throw Error('O armazenamento privado está indisponível.');
    throw Error('O servidor não aceitou a fotografia.');
   }
-  const message=await response.json() as DirectChatEntry;
-  if(!Number.isSafeInteger(message.id)||!message.attachmentName)
+  let message:DirectChatEntry;
+  try{message=await response.json() as DirectChatEntry;}
+  catch{throw Error('O envio não foi confirmado. Consulta o histórico antes de tentar novamente.');}
+  if(!message||!Number.isSafeInteger(message.id)||message.id<=0||
+     typeof message.attachmentName!=='string'||!message.attachmentName.trim())
    throw Error('O envio não foi confirmado. Consulta o histórico antes de tentar novamente.');
   return message;
  }catch(error){
