@@ -63,3 +63,31 @@ test('late media callbacks cannot mark another Story loaded or record a view',()
  assert.match(screen,/onError=\{mediaFailed\}/);
  assert.match(screen,/onEnd=\{\(\)=>\{if\(activeStoryIdRef\.current===story\.id&&activeAccount\.current===token\)go\(1\);\}\}/);
 });
+
+
+test('private Story replies are presented as contextual cards, not anonymous chat text',()=>{
+ const replies=read('app/stories/replies.tsx');
+ const inbox=read('app/(tabs)/messages.tsx');
+ const direct=read('app/messages/[peer].tsx');
+ assert.match(replies,/storyReplyKind\(reply\.content\)==='reaction'/);
+ assert.match(replies,/À tua Story/);
+ assert.match(replies,/Abrir conversa/);
+ assert.match(replies,/pathname:'\/messages\/\[peer\]'/);
+ assert.match(inbox,/router\.push\('\/stories\/replies'\)/);
+ assert.match(direct,/myStoryReplies\(auth\.token,0,auth\.username\)/);
+ assert.match(direct,/item\.senderUsername\.toLowerCase\(\)===peer\.toLowerCase\(\)/);
+ assert.match(direct,/storyRepliesIdentity\.current===auth\.token\+'\|'\+auth\.username\+'\|'\+peer/);
+ assert.match(direct,/storyReplyKind\(item\.content\)==='reaction'/);
+ assert.match(direct,/Ver Story original/);
+});
+test('known quick reactions are distinct from arbitrary private replies',()=>{
+ const {isQuickStoryReaction,storyReplyKind}=require('../src/lib/story-reply-display.cjs');
+ for(const emoji of ['❤️','🔥','👏','😂','😮','⚽']){
+  assert.equal(isQuickStoryReaction(emoji),true,emoji);
+  assert.equal(storyReplyKind(emoji),'reaction');
+ }
+ for(const content of ['','❤️ Boa jogada','bom jogo',null,undefined]){
+  assert.equal(isQuickStoryReaction(content),false);
+  assert.equal(storyReplyKind(content),'message');
+ }
+});
