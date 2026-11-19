@@ -43,3 +43,15 @@ test('call chat revokes old account messages and never fabricates call-only hist
  assert.match(panel,/const rows=await directChatHistory/);
  assert.doesNotMatch(panel,/markDirectRead\(/);
 });
+
+
+test('the call chat respects server deletions while retaining recent acknowledged sends',()=>{
+ const panel=read('src/components/CallChatSidePanel.tsx');
+ assert.match(panel,/const recentlyConfirmed=useRef\(new Map<number,\{message:DirectChatEntry;at:number\}>\(\)\)/);
+ assert.match(panel,/const serverIds=new Set<number>\(\)/);
+ assert.match(panel,/if\(serverIds\.has\(id\)\|\|now-entry\.at>45_000\)/);
+ assert.match(panel,/recentlyConfirmed\.current\.set\(confirmed\.id,\{message:confirmed,at:Date\.now\(\)\}\)/);
+ assert.match(panel,/recentlyConfirmed\.current\.clear\(\);setAccessRevoked\(true\)/);
+ assert.match(panel,/readOwner\.current!==identity\+'\|'\+version/);
+ assert.doesNotMatch(panel,/for\(const row of \[\.\.\.current,\.\.\.rows\]\)/);
+});
