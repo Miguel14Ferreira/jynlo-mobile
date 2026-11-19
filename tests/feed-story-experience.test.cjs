@@ -95,7 +95,7 @@ test('post creation supports camera, multiple gallery assets and one-item remova
  assert.match(composer,/changeComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
  assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);
- assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:300,backgroundColor:/);
+ assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:255,backgroundColor:/);
 });
 
 test('feed comments use a dismissible bottom sheet instead of expanding under the post',()=>{
