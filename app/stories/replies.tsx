@@ -43,7 +43,7 @@ export default function PrivateStoryReplies(){
  },[identity,load]));
  return <Page>
   <Text style={styles.title}>Reações às tuas Stories</Text>
-  <Text style={styles.note}>As reações e respostas são privadas. Ficam guardadas mesmo depois de a Story expirar.</Text>
+  <Text style={styles.note}>As reações e respostas são privadas. Continuam guardadas depois de as Stories expirarem.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {sameAccount?items.map(reply=>{
    const isReaction=storyReplyKind(reply.content)==='reaction';
