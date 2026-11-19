@@ -396,7 +396,7 @@ export default function DirectConversation(){
    if(!confirmedDirectChatSend(confirmed,auth.username||'',peer,submittedText,originalReply?.id))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current||conversation.current!==identity)return;
-   uncertainSendRef.current=null;setUncertainSend(null);
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===submittedText&&uncertainSendRef.current.replyId===(originalReply?.id??null)){uncertainSendRef.current=null;setUncertainSend(null);}
    // The server confirmed the write: render it now, independent of a later GET.
    setMessages(current=>current.some(message=>message.id===confirmed.id)?current:
     [...current,confirmed].sort((left,right)=>left.id-right.id));
@@ -576,6 +576,7 @@ export default function DirectConversation(){
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {uncertainSend?.identity===(peer+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.</Text>:null}
   {!blocked&&uncertainSend?.identity===(peer+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
   {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
@@ -739,7 +740,7 @@ export default function DirectConversation(){
     onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel="Mensagem privada para o contacto"/>
    <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem privada'} style={[styles.send,sending&&{opacity:0.5}]}
-    disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!blockStatusKnown||!draft.trim()} onPress={()=>{void send();}}>
+    disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!blockStatusKnown||!draft.trim()||(uncertainSend?.identity===(peer+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null))} onPress={()=>{void send();}}>
     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}
    </Pressable>
   </View>:null}
