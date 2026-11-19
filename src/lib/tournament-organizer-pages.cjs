@@ -31,16 +31,29 @@ async function reconcileVisibleFixtures(fetchPage,previousPage,isCurrent,maxPage
  }
  return {matches,page:lastPage,hasMore};
 }
-/** Refuse a broken next-page cursor before enabling the league close action. */
-function validateNextFixturePage(response,expectedPage){
- if(!Number.isSafeInteger(expectedPage)||expectedPage<1||expectedPage>9999
+/** Validate the first page as well as subsequent pages before displaying server results. */
+function validateFixturePage(response,expectedPage){
+ if(!Number.isSafeInteger(expectedPage)||expectedPage<0||expectedPage>9999
   ||!response||response.page!==expectedPage||!Array.isArray(response.matches)
   ||typeof response.hasMore!=='boolean')
   throw Error('O servidor devolveu uma página de jogos inválida. Volta a sincronizar.');
  if(response.hasMore&&response.matches.length===0)
   throw Error('A paginação dos jogos não avançou. Volta a sincronizar.');
- if(response.matches.some(match=>!match||!Number.isSafeInteger(match.id)||match.id<=0))
-  throw Error('O servidor devolveu um jogo inválido. Volta a sincronizar.');
+ const seen=new Set();
+ for(const match of response.matches){
+  if(!match||!Number.isSafeInteger(match.id)||match.id<=0)
+   throw Error('O servidor devolveu um jogo inválido. Volta a sincronizar.');
+  if(seen.has(match.id))
+   throw Error('O servidor devolveu jogos repetidos na mesma página. Volta a sincronizar.');
+  seen.add(match.id);
+ }
  return response;
 }
-module.exports={reconcileVisibleFixtures,validateNextFixturePage};
+function validateFirstFixturePage(response){return validateFixturePage(response,0);}
+/** Refuse a broken next-page cursor before enabling the league close action. */
+function validateNextFixturePage(response,expectedPage){
+ if(!Number.isSafeInteger(expectedPage)||expectedPage<1)
+  throw Error('Paginação do calendário inválida.');
+ return validateFixturePage(response,expectedPage);
+}
+module.exports={reconcileVisibleFixtures,validateFirstFixturePage,validateNextFixturePage};
