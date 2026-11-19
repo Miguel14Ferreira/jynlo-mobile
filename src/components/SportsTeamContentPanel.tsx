@@ -14,6 +14,7 @@ import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
+import ChatReplyPreview from './ChatReplyPreview';
 import {teamContentHistory,olderTeamFeed,reconcileTeamFeedEntries,searchTeamContent,sendTeamContent,editTeamContent,deleteTeamContent,teamReactionSummaries,setTeamReaction,removeTeamReaction,teamPrivateAttachmentsAvailable,type TeamReactionState,type TeamContentEntry,type TeamContentKind} from '../lib/sports-team-content-api';
 
 type Props={teamId:number;kind:TeamContentKind;token:string;username:string};
@@ -702,8 +703,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }
  };
  const composer=<>
-  {replyTo?<View style={styles.actions}><Text style={styles.sub}>{kind==='chat'?'A responder a':'A comentar'} {replyPreview(replyTo)}</Text>
-   <Pressable onPress={()=>switchReply(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable></View>:null}
+  {replyTo?<ChatReplyPreview sender={kind==='chat'?'mensagem da equipa':'publicação'} body={replyPreview(replyTo)} onCancel={()=>switchReply(null)} disabled={sending||uploading}/>:null}
   <View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual"
     accessibilityState={{disabled:sending||locationBusy}}
@@ -737,16 +737,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>)}
    </View>
   </View>:null}
-  <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
-   onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
-   maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
-   placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
-  <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
-   accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
-   disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()} style={styles.button}>
-   <JynloIcon name="send" size={20} color="#062A30"/>
-   <Text style={styles.buttonText}>{sending?'A enviar…':kind==='chat'?'Enviar':'Publicar'}</Text>
-  </Pressable>
+  <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
+   <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
+    onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
+    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
+    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
+   <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
+    accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
+    disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()}
+    style={[styles.button,kind==='chat'&&styles.chatSendButton]}>
+    <JynloIcon name="send" size={20} color="#062A30"/>
+    {kind==='feed'?<Text style={styles.buttonText}>{sending?'A publicar…':'Publicar'}</Text>:null}
+   </Pressable>
+  </View>
  </>;
  if(accessRevoked)return <View style={styles.panel}>
   <Text style={styles.title}>Conversa indisponível</Text>
@@ -912,7 +915,10 @@ const styles=StyleSheet.create({
  commentContext:{color:C.mint,fontSize:12,fontWeight:'800'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:'#3BB6AA66',borderRadius:14,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#061F2E'},
- chatInput:{minHeight:48,maxHeight:120},
+ chatInput:{flex:1,minWidth:0,minHeight:48,maxHeight:120},
+ chatComposerRow:{flexDirection:'row',alignItems:'flex-end',gap:8},
+ feedComposerColumn:{gap:9},
+ chatSendButton:{width:48,minWidth:48,minHeight:48,paddingHorizontal:0},
  button:{backgroundColor:C.mint,borderRadius:11,padding:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:8,minHeight:48},
  buttonText:{color:'#062A30',fontWeight:'800'},
  actions:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:14,paddingTop:6},
