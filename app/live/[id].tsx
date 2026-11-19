@@ -1,11 +1,12 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useTracks,useRoomContext} from '@livekit/react-native';
 import {Track} from 'livekit-client';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
+import {chooseVideoStageTracks,videoStageDimensions} from '../../src/lib/video-stage-layout.cjs';
 import {ensureLiveCapturePermissions} from '../../src/lib/live-capture-permissions';
 import {observePersonalLives} from '../../src/lib/personal-live-realtime';
 import {
@@ -18,19 +19,21 @@ import {
 let globalsReady=false;
 function LiveVideoStage({host,expanded}:{host:boolean;expanded:boolean}){
  const tracks=useTracks([Track.Source.Camera]);
- const videos=tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal));
- const dominant=videos[0],previews=videos.slice(1);
- return <View style={[styles.videoStage,expanded&&styles.videoStageExpanded]}>
+ const {width,height}=useWindowDimensions();
+ const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
+ const dimensions=videoStageDimensions(width,height,expanded);
+ return <View style={[styles.videoStage,{height:dimensions.stageHeight}]}>
   {dominant?<View style={styles.videoMain}>
     <VideoTrack trackRef={dominant} style={styles.video}/>
     <Text style={styles.videoLabel}>{dominant.participant.isLocal?'A tua câmara':'Em direto'}</Text>
    </View>:<View style={styles.videoPlaceholder}><Text style={styles.placeholderText}>
     {host?'A transmitir. Ativa a câmara se ainda não apareceu imagem.':'À espera da imagem do apresentador…'}
    </Text></View>}
-  {previews.map(track=><View key={track.participant.identity+'|'+track.source} style={styles.videoPreview}>
+  {previews.map(track=><View key={track.participant.identity+'|'+track.source} style={[styles.videoPreview,{width:dimensions.previewWidth,height:dimensions.previewHeight}]}>
     <VideoTrack trackRef={track} style={styles.video}/>
     <Text style={styles.videoPreviewLabel}>{track.participant.isLocal?'Tu':'Convidado'}</Text>
    </View>)}
+  {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>+{remaining} câmaras</Text></View>:null}
  </View>;
 }
 function BroadcastControls({publisher}:{publisher:boolean}){
@@ -270,11 +273,12 @@ const styles=StyleSheet.create({
  control:{minHeight:44,padding:10,borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,justifyContent:'center'},
  controlLabel:{color:C.white,fontWeight:'800',fontSize:12},
  requestRow:{gap:8,paddingVertical:8,borderBottomWidth:1,borderColor:C.border},
- videoStage:{height:370,backgroundColor:'#021017',borderRadius:18,overflow:'hidden',position:'relative'},
- videoStageExpanded:{height:510},
+ videoStage:{backgroundColor:'#021017',borderRadius:18,overflow:'hidden',position:'relative'},
  videoMain:{width:'100%',height:'100%'},video:{width:'100%',height:'100%'},
- videoPreview:{position:'absolute',right:12,bottom:12,width:112,height:150,overflow:'hidden',
+ videoPreview:{position:'absolute',right:12,bottom:12,overflow:'hidden',
   borderRadius:13,borderWidth:2,borderColor:C.mint,backgroundColor:'#021017'},
+ remainingCount:{position:'absolute',right:12,top:12,backgroundColor:'#0B273BCF',borderRadius:9,paddingHorizontal:9,paddingVertical:5},
+ remainingCountText:{fontSize:11,color:C.white,fontWeight:'900'},
  videoPreviewLabel:{position:'absolute',bottom:4,left:5,fontSize:11,fontWeight:'900',
   color:C.white,backgroundColor:'#102932D9',paddingHorizontal:5,paddingVertical:3,borderRadius:5},
  videoLabel:{position:'absolute',top:10,left:12,color:C.white,fontWeight:'800',backgroundColor:'#142A32',padding:6,borderRadius:7},
