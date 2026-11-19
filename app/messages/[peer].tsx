@@ -162,6 +162,7 @@ export default function DirectConversation(){
   let active=true;
   const identity=peer+'|'+auth.token;
   if(conversation.current!==identity){
+   uncertainSendRef.current=null;setUncertainSend(null);
    conversation.current=identity;
    lastAcknowledgedMessageId.current=0;
    nearBottom.current=false;
