@@ -28,3 +28,18 @@ test('a native push only navigates to the authenticated inbox and never uses an 
  assert.match(inbox,/const target=items\.find\(item=>String\(item\.id\)===notificationId\)/);
  assert.match(inbox,/if\(open\(target\)\)/);
 });
+
+
+test('notification settings independently verify device registration and push provider readiness',()=>{
+ const s=read('app/notifications.tsx');
+ const verify=s.slice(s.indexOf('async function verifyPushStatus()'),s.indexOf('async function togglePush()'));
+ assert.match(verify,/Promise\.allSettled\(\[/);
+ assert.match(verify,/pushRegistrationStatus\(auth\.username,auth\.token\)/);
+ assert.match(verify,/pushDeliveryReady\(auth\.token\)/);
+ assert.match(verify,/account\.current!==identity\|\|statusRequest\.current!==revision/);
+ assert.match(verify,/registration\.status==='fulfilled'\)setPushEnabled\(registration\.value\)/);
+ assert.match(verify,/delivery\.status==='fulfilled'\)setDeliveryReady\(delivery\.value\)/);
+ assert.match(s,/Verificar registo e serviço de envio/);
+ assert.match(s,/A entrega deve ser confirmada com uma notificação real/);
+ assert.match(s,/statusRequest\.current===request/);
+});
