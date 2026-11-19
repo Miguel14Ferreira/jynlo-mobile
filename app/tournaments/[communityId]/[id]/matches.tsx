@@ -6,6 +6,7 @@ import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {individualTournamentMatches} from '../../../../src/lib/performance-api';
 import {classificationKind} from '../../../../src/lib/competition-core.cjs';
 import {validPage,matchRound,matchScore} from '../../../../src/lib/tournament-fixtures-core.cjs';
+import {validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {useAuth} from '../../../../src/lib/auth';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentIndividualMatch} from '../../../../src/lib/types';
@@ -46,8 +47,9 @@ export default function IndividualMatchesScreen(){
  async function next(){if(!auth.token||!auth.username||paging.current||busy||!more||loading)return;
   const version=generation.current;
   paging.current=true;setBusy(true);setError('');
-  try{const p=validPage(page+1),data=await individualTournamentMatches(cid,tid,p,auth.token,auth.username);
+  try{const p=validPage(page+1),response=await individualTournamentMatches(cid,tid,p,auth.token,auth.username);
    if(version!==generation.current)return;
+   const data=validateNextFixturePage<TournamentIndividualMatch>(response,p);
    setMatches(existing=>[...existing,...data.matches.filter(m=>!existing.some(x=>x.id===m.id))]);setPage(data.page);setMore(data.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
   finally{if(version===generation.current){paging.current=false;setBusy(false);}}
