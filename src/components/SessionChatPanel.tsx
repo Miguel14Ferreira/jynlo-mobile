@@ -251,7 +251,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    if(!confirmedSessionChatSend(confirmed,id,auth.username||'',originalDraft,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current)return;
-   uncertainSendRef.current=null;setUncertainSend(null);
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===originalDraft.trim()&&uncertainSendRef.current.replyId===(originalReplyId??null)){uncertainSendRef.current=null;setUncertainSend(null);}
    // Render only the validated server acknowledgement, never an invented
    // optimistic message. Deduplicate if the socket already delivered it.
    setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:
@@ -425,6 +425,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
   </View>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
+  {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.</Text>:null}
   {!closed&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
@@ -549,7 +550,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
        onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
      <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem'} style={styles.sendAction}
-       disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()}
+       disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))}
        onPress={()=>{void send();}}><JynloIcon name="send" size={22} color={C.background}/></Pressable>
     </View>
   </KeyboardAvoidingView>:null}
