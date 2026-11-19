@@ -30,6 +30,7 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
  const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
+ const [expandedVideo,setExpandedVideo]=useState(false);
  const [changing,setChanging]=useState(false),[error,setError]=useState('');
  async function toggle(kind:'microphone'|'camera'){
   if(changing)return;
@@ -48,11 +49,26 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
  return <View style={styles.mediaPanel}>
   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
   {media==='video'?<View style={styles.videos}>
-   {tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal)).map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.videoCard,track.participant.isLocal&&styles.localVideoCard]}>
-    <VideoTrack trackRef={track} style={{...styles.video,...(track.participant.isLocal?styles.localVideo:{})}}/>
-    <Text style={styles.note}>{track.participant.isLocal?'Tu':'Participante'}</Text>
-   </View>)}
-   {tracks.every(track=>!isTrackReference(track))?<Text style={styles.note}>A aguardar vídeo dos participantes…</Text>:null}
+   {(()=>{
+    const valid=tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal));
+    const dominant=valid[0],preview=valid.slice(1);
+    return <>
+     <View style={[styles.videoStage,expandedVideo&&styles.videoStageExpanded]}>
+      {dominant?<View style={styles.mainVideo}>
+       <VideoTrack trackRef={dominant} style={styles.video}/>
+       <Text style={styles.videoTag}>{dominant.participant.isLocal?'Tu':'Participante'}</Text>
+      </View>:<View style={styles.videoFallback}><Text style={styles.note}>A aguardar vídeo dos participantes…</Text></View>}
+      {preview.map(track=><View key={track.participant.identity+'-'+track.source} style={styles.previewVideo}>
+       <VideoTrack trackRef={track} style={styles.video}/>
+       <Text style={styles.previewTag}>{track.participant.isLocal?'Tu':'Participante'}</Text>
+      </View>)}
+     </View>
+     <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?'Reduzir vídeo da chamada':'Ampliar vídeo da chamada'}
+      accessibilityState={{selected:expandedVideo}} onPress={()=>setExpandedVideo(value=>!value)} style={styles.expandVideoAction}>
+      <Text style={styles.expandVideoText}>{expandedVideo?'Reduzir vídeo':'Ampliar vídeo'}</Text>
+     </Pressable>
+    </>;
+   })()}
   </View>:<Text style={styles.note}>A ligação de áudio utiliza o LiveKit. Verifica o som do dispositivo.</Text>}
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.callActions}>
@@ -238,8 +254,19 @@ const styles=StyleSheet.create({
  callAction:{flex:1,minHeight:70,paddingHorizontal:5,paddingVertical:9,backgroundColor:C.surface2,borderRadius:14,justifyContent:'center',alignItems:'center',gap:5},
  callActionText:{color:C.white,fontSize:11,fontWeight:'800',textAlign:'center'},
  hangupAction:{backgroundColor:'#813D43'},
- localVideoCard:{alignSelf:'flex-end',width:'40%'},
- localVideo:{height:130},
- videos:{gap:9},videoCard:{gap:5,padding:8,backgroundColor:C.surface2,borderRadius:12},
- video:{width:'100%',height:320,borderRadius:10}
+ videos:{gap:9},
+ videoStage:{height:345,borderRadius:17,overflow:'hidden',backgroundColor:'#021017',position:'relative'},
+ videoStageExpanded:{height:500},
+ mainVideo:{height:'100%',width:'100%'},
+ video:{width:'100%',height:'100%'},
+ videoFallback:{flex:1,alignItems:'center',justifyContent:'center',padding:14},
+ videoTag:{position:'absolute',top:10,left:10,color:C.white,fontWeight:'900',fontSize:12,
+  paddingHorizontal:9,paddingVertical:6,backgroundColor:'#12313ED9',borderRadius:8},
+ previewVideo:{position:'absolute',right:10,bottom:10,width:112,height:144,borderRadius:12,
+  overflow:'hidden',borderColor:C.mint,borderWidth:2,backgroundColor:'#021017'},
+ previewTag:{position:'absolute',bottom:5,left:5,color:C.white,fontSize:11,fontWeight:'900',
+  backgroundColor:'#122D3BD9',borderRadius:5,paddingHorizontal:5,paddingVertical:3},
+ expandVideoAction:{alignSelf:'flex-end',minHeight:44,justifyContent:'center',paddingHorizontal:14,
+  borderWidth:1,borderColor:C.border,borderRadius:11,backgroundColor:C.surface2},
+ expandVideoText:{color:C.mint,fontWeight:'800',fontSize:13}
 });
