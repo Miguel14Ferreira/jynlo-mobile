@@ -24,10 +24,10 @@ test('media publishing uses synchronous single-flight guards and preserves uncer
  const home=read('app/(tabs)/index.tsx');
  assert.match(home,/postInFlight.current=true;setPublishing\(true\)/);
  assert.match(home,/storyInFlight.current=true;setStoryPublishing\(true\)/);
- assert.match(home,/!requireLogin\(\)\|\|postInFlight.current\|\|\(!composerMedia.length&&!composerText.trim\(\)\)/);
+ assert.match(home,/!requireLogin\(\)\|\|postInFlight\.current\|\|!postRetryAcknowledged\|\|\(!composerMedia\.length&&!composerText\.trim\(\)\)/);
  assert.match(home,/!requireLogin\(\)\|\|storyInFlight.current\|\|!storyRetryAcknowledged\|\|!storyMedia/);
- assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Publicação enviada/);
- assert.match(home,/void load\(\)\.catch\(\(\)=>setError\('Story enviada/);
+ assert.match(home,/void load\(\)\.catch\(\(\)=>\{[\s\S]*?setError\('Publicação enviada/);
+ assert.match(home,/void load\(\)\.catch\(\(\)=>\{[\s\S]*?setError\('Story enviada/);
  assert.match(home,/feedIdentity.current===`\$\{username\}:\$\{actor\}`/);
 });
 test('multipart success requires verified server media metadata before clearing composer',()=>{
