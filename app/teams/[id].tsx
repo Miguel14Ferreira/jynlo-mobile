@@ -465,6 +465,13 @@ export default function TeamDetail(){
      </Pressable>:null}
     </View>
    </View>
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
+    {([...([{id:'OVERVIEW',label:'Plantel'},{id:'TROPHIES',label:'Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Chat'},{id:'CHALLENGES',label:'Desafios'}] as const),...(isOwner?[{id:'BRANDING' as const,label:'Identidade'}]:[])]).map(tab=>
+     <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
+      onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
+      <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
+     </Pressable>)}
+   </ScrollView>
    {isOwner&&activeTab==='BRANDING'?<View style={styles.panel}>
     <Text style={styles.heading}>Identidade da equipa</Text>
     <Text style={styles.note}>Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.</Text>
@@ -500,13 +507,6 @@ export default function TeamDetail(){
     <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
       onPress={()=>void updateBranding('KIT')}/>
    </View>:null}
-   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
-    {([...([{id:'OVERVIEW',label:'Plantel'},{id:'TROPHIES',label:'Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Chat'},{id:'CHALLENGES',label:'Desafios'}] as const),...(isOwner?[{id:'BRANDING' as const,label:'Identidade'}]:[])]).map(tab=>
-     <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
-      onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
-      <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
-     </Pressable>)}
-   </ScrollView>
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({rosterVerified?members.length:'—'})</Text>
     {!rosterVerified?<Text style={styles.note}>Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.</Text>:null}
     {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
