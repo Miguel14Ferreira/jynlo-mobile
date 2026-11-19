@@ -186,3 +186,12 @@ test('push switch uses a synchronous lock against double taps',()=>{
  assert.match(screen,/pushBusyRef\.current=true/);
  assert.match(screen,/pushBusyRef\.current=false/);
 });
+
+
+test('push enrollment locks cannot leak across account switches',()=>{
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/pushOperation\.current\+\+;inviteOperation\.current\+\+;notificationRevision\.current\+\+/);
+ assert.match(screen,/pushBusyRef\.current=false;notificationLock\.current=false;setNotificationBusy\(false\)/);
+ assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)\{\s*pushBusyRef\.current=false;\s*setPushBusy\(false\)/);
+ assert.match(screen,/if\(!sameAccount\|\|!auth\.username\|\|!auth\.token\|\|pushBusyRef\.current\)return/);
+});
