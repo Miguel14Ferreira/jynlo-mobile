@@ -72,7 +72,7 @@ export default function TeamFixturesScreen(){
    {!auth.token?<Button title="Entrar para consultar os jogos" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
    {!loading&&tournament&&!canListMatches(tournament)?<Message>Esta competição tem um sistema próprio de resultados. Não vamos apresentar resultados de jogos genéricos para esta modalidade.</Message>:null}
-   {!loading&&tournament&&canListMatches(tournament)?<>
+   {!loading&&tournament&&canListMatches(tournament)&&(!error||matches.length>0)?<>
     {isGroups?<>
       <View style={styles.tabs}>{([{id:'GROUP',title:'Fase de grupos'},{id:'KNOCKOUT',title:'Eliminatórias'}] as const).map(t=><Pressable key={t.id} onPress={()=>setActive(t.id)} style={[styles.tab,active===t.id&&styles.tabActive]} accessibilityRole="button" accessibilityState={{selected:active===t.id}}>
         <Text style={[styles.tabText,active===t.id&&styles.tabTextActive]}>{t.title}</Text>
