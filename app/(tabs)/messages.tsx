@@ -188,6 +188,13 @@ export default function MessagesScreen(){
   {sameIdentity&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
     <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
   </Pressable>:null}
+  {sameIdentity?<Pressable accessibilityRole="button" accessibilityLabel="Ver reações e respostas privadas às minhas Stories"
+   onPress={()=>router.push('/stories/replies')} style={styles.storyRepliesShortcut}>
+   <View style={styles.storyRepliesSymbol}><Text style={styles.storyRepliesEmoji}>❤️</Text></View>
+   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Reações às tuas Stories</Text>
+    <Text style={styles.storyRepliesCaption}>Respostas privadas, com acesso à Story e à conversa</Text></View>
+   <JynloIcon name="chevron-right" size={20} color={T.accent}/>
+  </Pressable>:null}
   {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')} style={styles.invitesShortcut}><JynloIcon name="community" size={17} color={T.accent}/><Text style={styles.invitesText}>Convites e pedidos</Text><JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
@@ -228,6 +235,10 @@ export default function MessagesScreen(){
 }
 const T=MobileTheme.colors;
 const styles=StyleSheet.create({
+ storyRepliesShortcut:{flexDirection:'row',alignItems:'center',gap:11,minHeight:74,padding:12,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:MobileTheme.radius.lg},
+ storyRepliesSymbol:{width:46,height:46,borderRadius:15,backgroundColor:T.raised,alignItems:'center',justifyContent:'center'},
+ storyRepliesEmoji:{fontSize:23},storyRepliesTitle:{fontSize:14,fontWeight:'900',color:T.text},
+ storyRepliesCaption:{fontSize:11,lineHeight:16,color:T.muted},
  conversationRow:{flexDirection:'row',alignItems:'center',gap:8},
  tileContent:{flex:1,minWidth:0},
  muteAction:{width:44,height:44,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:22,alignItems:'center',justifyContent:'center'},
