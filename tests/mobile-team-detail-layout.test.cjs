@@ -27,3 +27,15 @@ test('team public statistics are verified and owner actions are accessible',()=>
  assert.match(source,/activeTab==='FEED'/);
  assert.match(source,/activeTab==='CHAT'/);
 });
+
+
+test('club dashboard provides accessible direct access to content, chat and honours',()=>{
+ const source=read('app/teams/[id].tsx');
+ assert.match(source,/activeTab==='OVERVIEW'\?<View style=\{styles\.panel\}>\s*<Text style=\{styles\.heading\}>O espaço da equipa/);
+ for(const [label,tab] of [['Abrir publicações da equipa','FEED'],['Abrir chat da equipa','CHAT'],['Abrir troféus e histórico da equipa','TROPHIES']]){
+  assert.ok(source.includes('accessibilityLabel="'+label+'"'));
+  assert.ok(source.includes("onPress={()=>setActiveTab('"+tab+"')}"));
+ }
+ assert.match(source,/team\.chatEnabled\?'Conversa da equipa':'Indisponível'/);
+ assert.match(source,/quickLinks:\{flexDirection:'row',flexWrap:'wrap'/);
+});
