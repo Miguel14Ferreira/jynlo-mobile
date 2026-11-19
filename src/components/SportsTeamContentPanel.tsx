@@ -800,7 +800,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </Pressable>
    {olderError?<Text accessibilityRole="alert" style={styles.error}>{olderError}</Text>:null}
   </View>:null}
-  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
+  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,kind==='chat'&&styles.chatBubble,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='chat'&&item.username?.toLowerCase()===username.toLowerCase()&&styles.ownChatBubble,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <View style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
@@ -888,7 +888,7 @@ const styles=StyleSheet.create({
  chatHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
  chatHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
  feedHistory:{maxHeight:780},
- historyContent:{gap:11,paddingBottom:12},
+ historyContent:{gap:11,paddingBottom:12,paddingHorizontal:5},
  newMessagesButton:{alignSelf:'center',paddingHorizontal:15,paddingVertical:10,
    borderWidth:1,borderColor:C.mint,borderRadius:24,backgroundColor:'#124C50'},
  newMessagesText:{color:C.mint,fontWeight:'800',fontSize:12},
@@ -901,6 +901,8 @@ const styles=StyleSheet.create({
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
  entry:{borderWidth:1,borderColor:'#3BB2AE52',borderRadius:17,padding:13,gap:9,backgroundColor:'#0D3945'},
+ chatBubble:{maxWidth:'89%',alignSelf:'flex-start',borderBottomLeftRadius:5,padding:11,gap:6},
+ ownChatBubble:{alignSelf:'flex-end',borderBottomLeftRadius:17,borderBottomRightRadius:5},
  ownEntry:{backgroundColor:'#12554D',borderColor:'#3CBB9B80'},
  feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},
  historyLoadMore:{paddingVertical:12,alignItems:'center',gap:7},
