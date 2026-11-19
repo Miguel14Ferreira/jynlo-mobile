@@ -7,7 +7,7 @@ import {useAuth} from '../../../../src/lib/auth';
 import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {teamTournamentGroups,teamTournamentMatches} from '../../../../src/lib/tournament-fixtures-api';
 import {canListMatches,splitTeamMatches} from '../../../../src/lib/tournament-fixtures-core.cjs';
-import {validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
+import {validateFirstFixturePage,validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamGroups,TournamentTeamMatch} from '../../../../src/lib/types';
 export default function TeamFixturesScreen(){
@@ -38,7 +38,8 @@ export default function TeamFixturesScreen(){
     teamTournamentMatches(cid,tid,0,auth.token,auth.username)
    ]);
    if(version!==generation.current)return;
-   setGroups(groupData);setMatches(matchData.matches);setPage(matchData.page);setHasMore(matchData.hasMore);
+   const verified=validateFirstFixturePage<TournamentTeamMatch>(matchData);
+   setGroups(groupData);setMatches(verified.matches);setPage(verified.page);setHasMore(verified.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos do torneio.');}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
