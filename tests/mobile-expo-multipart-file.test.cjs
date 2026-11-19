@@ -100,3 +100,18 @@ test('single photo uploads validate conversation, MIME and the confirmed attachm
   assert.match(source,/histórico antes de repetir|histórico antes de tentar novamente/);
  }
 });
+
+
+test('temporary single-photo copies are cleaned if multipart form preparation throws',()=>{
+ for(const file of ['src/lib/direct-photo-attachment.ts','src/lib/chat-photo-attachment.ts']){
+  const source=read(file);
+  const start=source.indexOf('const prepared=await prepareChatPhoto(asset,extension);');
+  const end=source.indexOf('prepared.cleanup();',start);
+  assert.ok(start>0&&end>start,file);
+  const block=source.slice(start,end+25);
+  assert.match(block,/try\{\s*const form=new FormData\(\)/,file);
+  assert.match(block,/\}finally\{prepared\.cleanup\(\);\}/,file);
+  const availability=source.slice(source.indexOf('export async function'),start);
+  assert.match(availability,/credentials:'omit',redirect:'error'/,file);
+ }
+});
