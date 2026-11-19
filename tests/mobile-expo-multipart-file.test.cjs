@@ -83,14 +83,20 @@ test('private photo uploads never follow redirects with authenticated bearer tok
   assert.match(source,/Authorization:/,file);
  }
 });
-test('single photo uploads require positive message IDs and nonblank attachment receipts',()=>{
- for(const file of ['src/lib/direct-photo-attachment.ts','src/lib/chat-photo-attachment.ts']){
-  const source=read(file);
-  assert.match(source,/Number.isSafeInteger\((?:message|result)\.id\)/,file);
-  assert.match(source,/(?:message|result)\.id<=0/,file);
-  assert.match(source,/typeof (?:message|result)\.attachmentName!=='string'/,file);
-  assert.match(source,/(?:message|result)\.attachmentName\.trim\(\)/,file);
-  assert.match(source,/catch\{throw Error\('O envio não foi confirmado\./,file);
-  assert.match(source,/Confirma o histórico antes de repetir|Consulta o histórico antes de tentar novamente/,file);
+test('single photo uploads validate conversation, MIME and the confirmed attachment',()=>{
+ const helper=read('src/lib/chat-attachments-core.cjs');
+ assert.match(helper,/function confirmedSingleChatPhotoReply\(/);
+ assert.match(helper,/Number.isSafeInteger\(reply\.id\)/);
+ assert.match(helper,/reply\.attachmentMimeType!==requestedMime/);
+ assert.match(helper,/reply\.communityId===conversationId&&reply\.kind==='CHAT'/);
+ assert.match(helper,/reply\.sessionId===conversationId/);
+ assert.match(helper,/reply\.username2\.toLowerCase\(\)===conversationId\.toLowerCase\(\)/);
+ const direct=read('src/lib/direct-photo-attachment.ts');
+ const group=read('src/lib/chat-photo-attachment.ts');
+ assert.match(direct,/confirmedSingleChatPhotoReply\(message,'direct',peer,mime,replyToMessageId\)/);
+ assert.match(group,/confirmedSingleChatPhotoReply\(result,kind,id,asset\.mimeType\|\|'',replyId\)/);
+ for(const source of [direct,group]){
+  assert.match(source,/catch\{throw Error\('O envio não foi confirmado\./);
+  assert.match(source,/histórico antes de repetir|histórico antes de tentar novamente/);
  }
 });
