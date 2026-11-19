@@ -131,6 +131,26 @@ export default function NotificationsScreen(){
    generation.current++;statusRequest.current++;
   };
  },[load,auth.username,auth.token]));
+ async function verifyPushStatus(){
+  if(!sameAccount||!auth.token||!auth.username||pushBusyRef.current)return;
+  pushBusyRef.current=true;
+  const identity=auth.username+'|'+auth.token,revision=++statusRequest.current;
+  setPushBusy(true);setPushError('');
+  try{
+   const [registration,delivery]=await Promise.allSettled([
+    pushRegistrationStatus(auth.username,auth.token),pushDeliveryReady(auth.token)
+   ]);
+   if(account.current!==identity||statusRequest.current!==revision)return;
+   if(registration.status==='fulfilled')setPushEnabled(registration.value);
+   else setPushError('Não foi possível confirmar o registo deste dispositivo.');
+   if(delivery.status==='fulfilled')setDeliveryReady(delivery.value);
+   else setDeliveryReady(null);
+  }finally{
+   if(account.current===identity&&statusRequest.current===revision){
+    pushBusyRef.current=false;setPushBusy(false);
+   }
+  }
+ }
  async function togglePush(){
   if(!sameAccount||!auth.username||!auth.token||pushBusyRef.current)return;
   // Ignore an older status lookup while an explicit user choice is processing.
@@ -146,6 +166,18 @@ export default function NotificationsScreen(){
    }else{
     await enableMobilePush(auth.username,auth.token);
     if(account.current===identity&&pushOperation.current===operation)setPushEnabled(true);
+   }
+   // Registration and provider readiness are separate; neither proves delivery.
+   if(account.current===identity&&pushOperation.current===operation){
+    const request=++statusRequest.current;
+    try{
+     const ready=await pushDeliveryReady(auth.token);
+     if(account.current===identity&&pushOperation.current===operation&&statusRequest.current===request)
+      setDeliveryReady(ready);
+    }catch{
+     if(account.current===identity&&pushOperation.current===operation&&statusRequest.current===request)
+      setDeliveryReady(null);
+    }
    }
   }catch(e){if(account.current===identity&&pushOperation.current===operation)
    setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
@@ -354,6 +386,9 @@ export default function NotificationsScreen(){
    {deliveryReady===false?<Message tone="error">O envio push ainda não está ativo no servidor. Os avisos continuam disponíveis dentro da Jynlo, mas não serão enviados para o telemóvel.</Message>:null}
    {deliveryReady===null&&androidPushConfigured()?<Text style={styles.note}>Não foi possível confirmar se o servidor está preparado para enviar avisos push.</Text>:null}
    {androidPushConfigured()?<Button title={pushBusy?'A atualizar…':pushEnabled?'Desativar neste dispositivo':'Ativar notificações neste dispositivo'} disabled={pushBusy||(!pushEnabled&&deliveryReady===false)} onPress={()=>{void togglePush();}}/>:<Message>As notificações no ecrã já funcionam através da API. Para receber avisos com a aplicação fechada, falta configurar o Firebase Android nesta APK. Esta opção ficará disponível numa nova versão com FCM configurado.</Message>}
+   <Button secondary title={pushBusy?'A verificar…':'Verificar registo e serviço de envio'} disabled={pushBusy}
+    onPress={()=>{void verifyPushStatus();}}/>
+   {pushEnabled&&deliveryReady===true?<Text style={styles.note}>Dispositivo registado e servidor preparado para enviar. A entrega deve ser confirmada com uma notificação real.</Text>:null}
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
   <Button secondary title="Atualizar" onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
