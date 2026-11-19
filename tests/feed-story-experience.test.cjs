@@ -12,7 +12,7 @@ test('stories support left/right taps and hold-to-pause without timing out video
  assert.match(viewer,/tapZone\(-1\)/);
  assert.match(viewer,/tapZone\(1\)/);
  assert.match(viewer,/onLongPress:/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|reactionsOpen\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
  assert.match(viewer,/Animated\.timing\(progress/);
  assert.match(viewer,/animation\.stop\(\)/);
  assert.match(viewer,/remaining\.current=Math\.max\(0,1-value\)/);
@@ -43,7 +43,7 @@ test('story videos advance once at native playback completion, without looping',
  assert.match(source,/player\.addListener\('playToEnd'/);
  assert.match(source,/if\(ended\.current\)return/);
  assert.match(source,/subscription\.remove\(\)/);
- assert.match(viewer,/onEnd=\{\(\)=>go\(1\)\}/);
+ assert.match(viewer,/onEnd=\{\(\)=>\{if\(activeStoryIdRef\.current===story\.id&&activeAccount\.current===token\)go\(1\);\}\}/);
  assert.match(viewer,/key=\{story\.id\+'-'\+mediaRetry\}/);
 });
 
@@ -77,9 +77,10 @@ test('Stories open the device camera and still offer a gallery without a tall bl
  assert.match(camera,/ImagePicker\.launchCameraAsync/);
  assert.doesNotMatch(camera,/<CameraView/);
 });
-test('feed engagement actions wrap rather than overlapping on small screens',()=>{
- assert.match(feed,/postActions:\{flexDirection:'row',flexWrap:'wrap'/);
- assert.match(feed,/postAction:\{flexDirection:'row'[^}]*minHeight:44/);
+test('feed engagement actions use three equal touch targets and separate counts',()=>{
+ assert.match(feed,/postActions:\{flexDirection:'row',alignItems:'center'/);
+ assert.match(feed,/postPrimaryAction:\{flex:1,minWidth:0,minHeight:46/);
+ assert.match(feed,/postEngagementSummary:\{flexDirection:'row',alignItems:'center',flexWrap:'wrap'/);
 });
 
 test('post creation supports camera, multiple gallery assets and one-item removal',()=>{
@@ -147,7 +148,7 @@ test('feed and story text remains legible with accessible 44pt post actions',()=
  assert.match(feed,/postMeta:\{color:MUTED,fontSize:12,lineHeight:18/);
  assert.match(feed,/commentBody:\{fontSize:14,color:WHITE,lineHeight:20/);
  assert.match(feed,/storyReplyHint:\{fontSize:13,color:MUTED/);
- assert.match(feed,/postAction:\{flexDirection:'row',gap:5,alignItems:'center',minHeight:44\}/);
+ assert.match(feed,/postPrimaryAction:\{flex:1,minWidth:0,minHeight:46/);
  assert.match(feed,/publishPost\(body,media,actor,username/);
  assert.match(feed,/publishStory\(body,media,actor,username/);
 });
