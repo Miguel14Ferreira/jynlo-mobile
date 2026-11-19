@@ -294,8 +294,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
             style={styles.storyMediaRetry} onPress={()=>{
               setMediaState('loading');setMediaRetry(n=>n+1);
               if(token)void storyById(story.id,token,username).then(fresh=>{
-                if(activeAccount.current===token&&fresh.id===story.id)onUpdated(fresh);
-              }).catch(()=>{setMediaState('error');});
+                if(activeAccount.current===token&&activeStoryIdRef.current===story.id&&fresh.id===story.id)onUpdated(fresh);
+              }).catch(()=>{
+                // A failed retry for an earlier Story must never blank the next one.
+                if(activeAccount.current===token&&activeStoryIdRef.current===story.id)setMediaState('error');
+              });
             }}><Text style={styles.storyMediaRetryText}>Tentar novamente</Text></Pressable>
         </View>:null}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
