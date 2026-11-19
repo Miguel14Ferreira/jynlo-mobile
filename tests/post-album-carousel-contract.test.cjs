@@ -12,8 +12,8 @@ test('feed carousels measure their own cards rather than assuming device width',
  assert.match(carousel,/layout\.width/);
  assert.match(carousel,/<ScrollView key=\{width\+'-'\+albumIdentity\} horizontal pagingEnabled/);
  assert.match(carousel,/style=\{\{width\}\}/);
- assert.match(carousel,/contentOffset\.x\/width/);
- assert.match(carousel,/Math\.min\(items\.length-1,Math\.max\(0,index\)\)/);
+ assert.match(carousel,/Math\.round\(offset\/width\)/);
+ assert.match(carousel,/Math\.min\(items\.length-1,Math\.max\(0,next\)\)/);
  assert.match(feed,/<PostAlbumCarousel items=\{album\}/);
  assert.doesNotMatch(feed,/width:\s*Math\.max\(220,screenWidth-56\)/);
 });
@@ -62,8 +62,9 @@ test('fullscreen gallery keeps images uncropped with visible close and album con
 test('inactive videos do not mount a second player behind the carousel',()=>{
  const s=read('src/components/PostAlbumCarousel.tsx');
  assert.match(s,/index===active\?renderVideo\(uri\)/);
- assert.match(s,/videoInactive:\{height:300/);
+ assert.match(s,/height:Math\.max\(190,Math\.round\(width\*\.75\)\)/);
  assert.match(s,/onMomentumScrollEnd=\{event=>/);
+ assert.match(s,/onScrollEndDrag=\{event=>updateActive\(event\.nativeEvent\.contentOffset\.x\)\}/);
 });
 
 test('full-screen photos support swipe gestures, page buttons and rotation',()=>{
