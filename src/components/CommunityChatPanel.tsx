@@ -268,7 +268,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    setMessages(current=>mergeMessages(current,[confirmed]));
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
-   await refresh(version);
+   // A confirmed POST is complete even if a subsequent history refresh fails.
+   void refresh(version,true);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
   }finally{
@@ -388,7 +389,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    if(extraPhotos.length||selectedPhoto.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'community',id},token,[selectedPhoto,...extraPhotos],originalReplyId,captionToSend);
    else await sendChatPhoto('community',id,token,selectedPhoto,originalReplyId);
    if(version!==generation.current)return;
-   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);await refresh(version);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);
+   // Reconcile history separately after a confirmed photo/album upload.
+   void refresh(version,true);
   }catch(e){
    if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
   }finally{
