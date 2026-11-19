@@ -32,10 +32,34 @@ test('expired session status is consistent between the badge and detail informat
 test('session detail uses accessible metadata and 44pt attendance actions',()=>{
  const view=read('app/sessions/[id].tsx');
  assert.match(view,/label:\{fontSize:12,letterSpacing:\.5/);
- assert.match(view,/value:\{fontSize:16,color:C\.white,fontWeight:'800',lineHeight:23/);
+ assert.match(view,/value:\{fontSize:17,color:C\.white,fontWeight:'900',lineHeight:24/);
  assert.match(view,/attendanceButton:\{[^\n]*minHeight:44/);
  assert.match(view,/removePlayerButton:\{[^\n]*minHeight:44/);
  assert.match(view,/memberStatus:\{color:C\.muted,fontSize:13/);
  assert.match(view,/accessibilityLabel=\{'Confirmar presença de '\+p\.username\}/);
  assert.match(view,/accessibilityLabel=\{'Registar falta de '\+p\.username\}/);
+});
+
+
+test('authorized session chat is accessible near game details and remains realtime',()=>{
+ const s=read('app/sessions/[id].tsx');
+ assert.match(s,/const \[showSessionChat,setShowSessionChat\]=useState\(false\)/);
+ assert.match(s,/accessibilityLabel=\{showSessionChat\?'Fechar chat da sessão':'Abrir chat da sessão'\}/);
+ assert.match(s,/accessibilityState=\{\{expanded:showSessionChat\}\}/);
+ assert.match(s,/showSessionChat\?<SessionChatPanel embedded\/>/);
+ assert.ok(s.indexOf('showSessionChat?<SessionChatPanel embedded/>')<s.indexOf('<SessionLocationPanel'));
+ assert.match(s,/auth\.token&&detail&&\(owner\|\|detail\.joined\)/);
+ assert.match(s,/s\.status!=='CANCELLED'&&s\.status!=='COMPLETED'/);
+ assert.match(s,/setShowSessionChat\(false\);setShowParticipantRoster\(true\)/);
+});
+test('session roster has accessible disclosure without changing management permissions',()=>{
+ const s=read('app/sessions/[id].tsx');
+ assert.match(s,/const \[showParticipantRoster,setShowParticipantRoster\]=useState\(true\)/);
+ assert.match(s,/detail&&canViewRoster\(detail,auth\.username\)/);
+ assert.match(s,/accessibilityLabel=\{showParticipantRoster\?'Ocultar participantes da sessão':'Mostrar participantes da sessão'\}/);
+ assert.match(s,/accessibilityState=\{\{expanded:showParticipantRoster\}\}/);
+ assert.match(s,/showParticipantRoster\?<>/);
+ assert.match(s,/participants\.map\(p=>/);
+ assert.match(s,/owner&&\['OPEN','FULL'\]\.includes\(detail\.status\)/);
+ assert.match(s,/accessibilityLabel=\{'Confirmar presença de '\+p\.username\}/);
 });
