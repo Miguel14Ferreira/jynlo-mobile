@@ -5,6 +5,7 @@ import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import SecureChatAttachment from '../../src/components/SecureChatAttachment';
 import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
 import {confirmedDirectChatSend} from '../../src/lib/chat-send-receipt.cjs';
+import {uncertainChatSend} from '../../src/lib/chat-send-uncertainty.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
@@ -37,6 +38,7 @@ export default function DirectConversation(){
  const peer=typeof params.peer==='string'?params.peer:'';
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
+ const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
  const [storyReplies,setStoryReplies]=useState<PrivateStoryReply[]>([]);
  const storyRepliesIdentity=useRef('');
  const conversationScroll=useRef<ScrollViewInstance|null>(null);
@@ -379,6 +381,7 @@ export default function DirectConversation(){
  async function send(){
   const identity=peer+'|'+auth.token;
   if(mutationLock.current||sending||sendingNow.current||pendingWrites.current.has(identity)||blocked||!blockStatusKnown||!auth.token||!draft.trim())return;
+  if(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null))return;
   const originalDraft=draft;
   const originalReply=replyTarget;
   const submittedText=originalDraft.trim();
@@ -392,6 +395,7 @@ export default function DirectConversation(){
    if(!confirmedDirectChatSend(confirmed,auth.username||'',peer,submittedText,originalReply?.id))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current||conversation.current!==identity)return;
+   setUncertainSend(null);
    // The server confirmed the write: render it now, independent of a later GET.
    setMessages(current=>current.some(message=>message.id===confirmed.id)?current:
     [...current,confirmed].sort((left,right)=>left.id-right.id));
@@ -399,6 +403,8 @@ export default function DirectConversation(){
    if(originalReply)setReplyTarget(current=>current?.id===originalReply.id?null:current);
    void refresh(true,version);
   }catch(e){
+   if(version===generation.current&&conversation.current===identity&&uncertainChatSend(e))
+    setUncertainSend({identity,body:submittedText,replyId:originalReply?.id??null});
    if(version===generation.current&&conversation.current===identity)
     setError((e instanceof Error?e.message:'Não foi possível enviar.')+
      ' Consulta o histórico antes de repetires o envio.');
@@ -569,6 +575,8 @@ export default function DirectConversation(){
   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
+  {!blocked&&uncertainSend?.identity===(peer+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
+   onPress={()=>setUncertainSend(null)}/>:null}
   {syncWarning?<Message tone="error">{syncWarning}</Message>:null}
   {muteError?<Message tone="error">{muteError}</Message>:null}
   {muteKnown&&auth.token&&!DEMO_MODE?<View style={styles.muteRow}>
