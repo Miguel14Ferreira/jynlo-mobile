@@ -44,3 +44,22 @@ test('Story deletion confirmations cannot execute after account or story changes
  assert.match(screen,/const operation=\+\+storyMutationEpoch\.current/);
  assert.match(screen,/if\(current\(\)&&activeStoryIdRef\.current===storyId\)\{onClose\(\);onDeleted\(\);\}/);
 });
+
+
+test('changing Story releases the previous Story mutation and audience state',()=>{
+ const screen=read('app/(tabs)/index.tsx');
+ assert.match(screen,/activeStoryIdRef\.current=story\?\.id\?\?null/);
+ assert.match(screen,/storyMutationEpoch\.current\+\+;\s*submittingStory\.current=false;\s*setStoryBusy\(false\);\s*setPaused\(false\);\s*audienceRequest\.current\+\+/);
+ assert.match(screen,/setAudience\(null\);setAudienceOpen\(false\);setAudienceBusy\(false\);setAudienceError\(''\)/);
+ assert.match(screen,/\},\[story\?\.id\]\)/);
+});
+test('late media callbacks cannot mark another Story loaded or record a view',()=>{
+ const screen=read('app/(tabs)/index.tsx');
+ assert.match(screen,/if\(activeStoryIdRef\.current!==id\|\|activeAccount\.current!==actor\)return;\s*setMediaState\('ready'\)/);
+ assert.match(screen,/recordStoryView\(id,actor\)\.catch/);
+ assert.match(screen,/if\(activeAccount\.current===actor\)viewedStoryIds\.current\.delete\(id\)/);
+ assert.match(screen,/const mediaFailed=\(\)=>\{/);
+ assert.match(screen,/onPlaybackError=\{mediaFailed\}/);
+ assert.match(screen,/onError=\{mediaFailed\}/);
+ assert.match(screen,/onEnd=\{\(\)=>\{if\(activeStoryIdRef\.current===story\.id&&activeAccount\.current===token\)go\(1\);\}\}/);
+});
