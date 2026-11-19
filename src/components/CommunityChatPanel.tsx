@@ -268,7 +268,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    if(!confirmedCommunityChatSend(confirmed,id,username,message,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.');
    if(version!==generation.current)return;
-   uncertainSendRef.current=null;setUncertainSend(null);
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===originalDraft.trim()&&uncertainSendRef.current.replyId===(originalReplyId??null)){uncertainSendRef.current=null;setUncertainSend(null);}
    // The verified server receipt is already an authorized chat entry. Show it
    // immediately rather than waiting for an eventually consistent history GET.
    setMessages(current=>mergeMessages(current,[confirmed]));
@@ -439,6 +439,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
    </View>:null}
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
+  {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.</Text>:null}
   {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
@@ -556,7 +557,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
        onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
-     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
+     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
    </KeyboardAvoidingView>:null}
