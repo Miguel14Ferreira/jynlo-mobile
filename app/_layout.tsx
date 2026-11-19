@@ -1,6 +1,7 @@
 import React,{useEffect,useRef} from 'react';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
+import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
 import {Stack,useRouter} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
 import {AuthProvider,useAuth} from '../src/lib/auth';
@@ -31,8 +32,8 @@ function PushNavigation(){
       // the root navigation listener or route the user to untrusted content.
       const data=response.notification?.request?.content?.data;
       // Never execute routes supplied by a notification. Resolve against own inbox.
-      if(data?.kind!=='notification'||typeof data.id!=='number'||
-        !Number.isSafeInteger(data.id)||data.id<=0)return;
+      const id=data?.kind==='notification'?pushNotificationId(data.id):null;
+      if(!id)return;
       const identifier=response.notification?.request?.identifier;
       if(typeof identifier!=='string'||!identifier)return;
       // Notification identifiers are not globally unique across logins.
@@ -41,7 +42,7 @@ function PushNavigation(){
       try{
         // Do not acknowledge a notification before navigation succeeds. If the
         // router is not yet mounted, the same native tap can be retried.
-        router.push({pathname:'/notifications',params:{notificationId:String(data.id)}});
+        router.push({pathname:'/notifications',params:{notificationId:id}});
       }catch{
         return;
       }
