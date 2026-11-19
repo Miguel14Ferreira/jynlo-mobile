@@ -30,7 +30,7 @@ test('private calls show the remote camera with self-view PiP and safe controls'
  assert.match(s,/chooseVideoStageTracks\(tracks\.filter\(isTrackReference\)\)/);
  assert.match(s,/const \{dominant,previews,remaining\}=chooseVideoStageTracks/);
  assert.match(s,/VideoTrack trackRef=\{dominant\} style=\{styles\.video\}/);
- assert.match(s,/videoStageDimensions\(width,height,expandedVideo\)/);
+ assert.match(s,/videoStageDimensions\(wide&&showChat\?width-345:width,height,expandedVideo\)/);
  assert.match(s,/previewVideo:\{position:'absolute'/);
  assert.match(s,/accessibilityLabel=\{expandedVideo\?'Reduzir vídeo da chamada':'Ampliar vídeo da chamada'\}/);
  assert.match(s,/await room\.localParticipant\.setMicrophoneEnabled\(muted\)/);
