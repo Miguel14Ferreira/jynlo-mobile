@@ -89,6 +89,28 @@ function chatAttachmentList(message){
  const item=safeAttachment(0,message.attachmentName,message.attachmentMimeType,message.attachmentSize);
  return item?[item]:[];
 }
+/** A 2xx photo upload is not enough: the returned message must belong to
+ * the requested conversation, carry the selected MIME, and not be deleted.
+ * Do not clear a draft on an unrelated or incomplete server response.
+ */
+function confirmedSingleChatPhotoReply(reply,scope,conversationId,requestedMime,replyToId){
+ if(!reply||!Number.isSafeInteger(reply.id)||reply.id<=0||reply.deletedAt||
+  typeof reply.attachmentName!=='string'||!reply.attachmentName.trim()||
+  reply.attachmentMimeType!==requestedMime||
+  !Number.isSafeInteger(reply.attachmentSize)||reply.attachmentSize<=0||
+  reply.attachmentSize>attachmentLimit(requestedMime)||
+  (reply.replyToMessageId??null)!==(replyToId??null))return false;
+ if(scope==='community')
+  return Number.isSafeInteger(conversationId)&&conversationId>0&&
+   reply.communityId===conversationId&&reply.kind==='CHAT';
+ if(scope==='session')
+  return Number.isSafeInteger(conversationId)&&conversationId>0&&
+   reply.sessionId===conversationId&&typeof reply.senderUsername==='string'&&Boolean(reply.senderUsername.trim());
+ if(scope==='direct')
+  return typeof conversationId==='string'&&Boolean(conversationId.trim())&&
+   typeof reply.username2==='string'&&reply.username2.toLowerCase()===conversationId.toLowerCase();
+ return false;
+}
 /** Validate exactly the files the server persisted before clearing the composer. */
 function confirmedChatAlbumReply(reply,requestedMimes){
  if(!reply||!Number.isSafeInteger(reply.id)||reply.id<=0||
@@ -114,4 +136,4 @@ function recentPreviewMessageIds(messages,maxMessages=2){
   chatAttachmentList(message).some(file=>typeof file.mime==='string'&&file.mime.startsWith('image/')));
  return eligible.slice(-maxMessages).map(message=>message.id);
 }
-module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,appendChatMediaSelection,measuredPhotoSize,verifiedLocalChatMediaSize,chatAttachmentList,recentPreviewMessageIds,confirmedChatAlbumReply};
+module.exports={MAX_FILES,MAX_TOTAL_BYTES,MAX_PHOTO_BYTES,validateChatAlbum,appendChatMediaSelection,measuredPhotoSize,verifiedLocalChatMediaSize,chatAttachmentList,recentPreviewMessageIds,confirmedChatAlbumReply,confirmedSingleChatPhotoReply};
