@@ -6,7 +6,7 @@ import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {individualTournamentMatches} from '../../../../src/lib/performance-api';
 import {classificationKind} from '../../../../src/lib/competition-core.cjs';
 import {validPage,matchRound,matchScore} from '../../../../src/lib/tournament-fixtures-core.cjs';
-import {validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
+import {validateFirstFixturePage,validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {useAuth} from '../../../../src/lib/auth';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentIndividualMatch} from '../../../../src/lib/types';
@@ -32,7 +32,8 @@ export default function IndividualMatchesScreen(){
    if(['INDIVIDUAL','CHESS'].includes(classificationKind(info))){
     const result=await individualTournamentMatches(cid,tid,0,auth.token,auth.username);
     if(version!==generation.current)return;
-    setMatches(result.matches);setPage(result.page);setMore(result.hasMore);
+    const verified=validateFirstFixturePage<TournamentIndividualMatch>(result);
+    setMatches(verified.matches);setPage(verified.page);setMore(verified.hasMore);
    }
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos.');}
   finally{if(version===generation.current)setLoading(false);}
