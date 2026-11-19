@@ -8,7 +8,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('social Stories and posts send Expo File objects rather than unsupported URI dictionaries',()=>{
  const api=read('src/lib/social-feed-api.ts');
  assert.match(api,/new File\(uri\) as unknown as Blob,'jynlo-media\.'\+extension/);
- assert.match(api,/form\.append\(files\.length>1\?'files':file\.type==='video'\?'video':'image'/);
+ assert.match(api,/form\.append\(forceFilesParts\|\|files\.length>1\?'files':file\.type==='video'\?'video':'image'/);
  assert.doesNotMatch(api,/form\.append\(files\.length>1\?'files'[\s\S]{0,90}\{\s*uri,/);
  assert.match(api,/Authorization:\s*`Bearer \$\{token\}`/);
  assert.match(api,/confirmedSocialMediaReceipt\(/);
@@ -51,4 +51,25 @@ test('freshly confirmed posts are retained until the authenticated feed catches 
  assert.match(home,/recentlyConfirmedPosts\.current=\[\.\.\.recentlyConfirmedPosts\.current\.filter/);
  assert.match(home,/recentlyConfirmedStories\.current=\[\.\.\.recentlyConfirmedStories\.current\.filter/);
  assert.match(home,/recentlyConfirmedPosts\.current=\[\];recentlyConfirmedStories\.current=\[\]/);
+});
+
+
+test('replacing media uses the repeated files contract even for one file',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(api,/const confirmed=await sendMedia\(`\/api\/feed\/posts\/\$\{postId\}\/media`/);
+ assert.match(api,/files,token!,'PUT',true\)/);
+ assert.match(api,/forceFilesParts\|\|files\.length>1\?'files'/);
+});
+test('publish notices from previous accounts cannot overwrite the current feed',()=>{
+ const screen=read('app/(tabs)/index.tsx');
+ assert.match(screen,/if\(feedIdentity\.current===`\$\{username\}:\$\{actor\}`&&linkedSessionId&&created\.sessionId!==linkedSessionId\)/);
+ for(const message of [
+  'Publicação enviada. Não foi possível atualizar o feed',
+  'Story enviada. Não foi possível atualizar o feed'
+ ]){
+  const index=screen.indexOf(message);
+  assert.ok(index>0,message);
+  const before=screen.slice(Math.max(0,index-180),index);
+  assert.match(before,/if\(feedIdentity\.current===`\$\{username\}:\$\{actor\}`\)/);
+ }
 });
