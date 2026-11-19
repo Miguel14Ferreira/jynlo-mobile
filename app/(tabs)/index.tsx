@@ -1225,10 +1225,10 @@ export default function JynloFeedHome(){
       {([
         {label:'Explorar',icon:'explore',go:()=>router.push('/(tabs)/explore')},
         {label:'Equipas',icon:'community',go:()=>router.push('/teams')},
-        {label:'Torneios',icon:'tournament',go:()=>router.push('/tournaments')},
+        {label:'Torneios',icon:'tournament',go:()=>router.push('/(tabs)/tournaments')},
         {label:'Diretos',icon:'video',go:()=>router.push(auth.token?'/live':'/login')},
         {label:'Publicar',icon:'post',go:()=>requireLogin()&&openPostComposer()},
-        {label:'Comunidades',icon:'community',go:()=>router.push('/communities')}
+        {label:'Comunidades',icon:'community',go:()=>router.push('/(tabs)/communities')}
       ] as const).map(item=><Pressable key={item.label} accessibilityRole="button"
         accessibilityLabel={item.label} onPress={item.go} style={styles.jynloActionTile}>
         <View style={styles.jynloActionIcon}><JynloIcon name={item.icon} color={TEAL} size={24}/></View>
