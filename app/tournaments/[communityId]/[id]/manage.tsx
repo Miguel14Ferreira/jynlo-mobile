@@ -233,8 +233,13 @@ export default function TournamentManagerScreen(){
     {fixturesVerified&&matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
     {fixturesVerified?matches.map(m=><View key={m.id} style={styles.match}>
       <View style={styles.row}><Text style={styles.round}>{tournament.format==='LEAGUE'?`Jornada ${m.roundNumber}`:m.groupNumber!=null?`Grupo ${m.groupNumber} · Jornada ${m.roundNumber}`:`Eliminatória · Ronda ${m.roundNumber}`}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
-      <Text style={styles.matchName}>{m.home}  ·  {m.away}</Text>
-      {m.status==='COMPLETED'?<Text style={styles.result}>{m.homeScore} — {m.awayScore}</Text>:null}
+      <View style={styles.fixtureScoreRow}>
+       <Text style={styles.fixtureTeam} numberOfLines={2}>{m.home}</Text>
+       <View style={[styles.scorePill,m.status==='COMPLETED'&&styles.scorePillFinal]}>
+        <Text style={styles.scoreText}>{m.status==='COMPLETED'?`${m.homeScore??'—'} : ${m.awayScore??'—'}`:'vs'}</Text>
+       </View>
+       <Text style={[styles.fixtureTeam,styles.awayTeam]} numberOfLines={2}>{m.away}</Text>
+      </View>
       {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} writeGuard={organizerMatchWriteGuard(tournament,m,matches,groups,groups!==null)} onSave={save}/>:null}
     </View>):null}
     {fixturesVerified&&hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
@@ -254,12 +259,24 @@ export default function TournamentManagerScreen(){
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},row:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
- panel:{borderRadius:18,borderWidth:1,borderColor:C.border,padding:16,backgroundColor:C.surface,gap:13},
- heading:{fontSize:18,fontWeight:'900',color:C.white},helper:{fontSize:12,lineHeight:18,color:C.muted},round:{fontSize:12,fontWeight:'800',color:C.mint},
- match:{borderRadius:14,borderWidth:1,borderColor:C.border,padding:14,backgroundColor:C.surface2,gap:9},matchName:{fontSize:14,fontWeight:'800',color:C.white},result:{fontSize:18,fontWeight:'900',color:C.mint},
- standing:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:7,borderTopWidth:1,borderColor:C.border},
- rank:{minWidth:26,color:C.mint,fontWeight:'900'},standingName:{flex:1,color:C.white,fontWeight:'800',fontSize:13},
- standingPoints:{color:C.mint,fontWeight:'800',fontSize:13},group:{gap:8},
- editor:{gap:10},scoreRow:{flexDirection:'row',alignItems:'center',gap:10},scoreInput:{minWidth:76,minHeight:48,borderRadius:10,borderColor:C.border,borderWidth:1,color:C.white,backgroundColor:C.surface,padding:10,textAlign:'center',fontSize:17},dash:{fontSize:20,color:C.mint,fontWeight:'800'}
+const styles=StyleSheet.create({
+ title:{fontSize:27,lineHeight:34,fontWeight:'900',color:C.white,letterSpacing:-.4},
+ row:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center',justifyContent:'space-between'},
+ panel:{borderRadius:18,borderWidth:1,borderColor:'#3FC6B04D',padding:17,backgroundColor:'#082C39',gap:13},
+ heading:{fontSize:18,fontWeight:'900',color:C.white},helper:{fontSize:12,lineHeight:19,color:'#B0CED4'},
+ round:{fontSize:12,fontWeight:'900',color:'#86F3D8'},
+ match:{borderRadius:15,borderWidth:1,borderColor:'#3CC0B04D',padding:14,backgroundColor:'#0B3541',gap:13},
+ fixtureScoreRow:{flexDirection:'row',alignItems:'center',gap:9,minWidth:0},
+ fixtureTeam:{flex:1,minWidth:0,color:C.white,fontSize:14,lineHeight:19,fontWeight:'800'},
+ awayTeam:{textAlign:'right'},
+ scorePill:{minWidth:68,paddingHorizontal:10,paddingVertical:10,backgroundColor:'#153A46',borderColor:'#4A9F9D66',borderWidth:1,borderRadius:12,alignItems:'center'},
+ scorePillFinal:{backgroundColor:'#12645A',borderColor:'#53E9BB66'},
+ scoreText:{color:'#DCFFF5',fontSize:16,fontWeight:'900',fontVariant:['tabular-nums']},
+ standing:{flexDirection:'row',alignItems:'center',gap:9,paddingVertical:10,borderTopWidth:1,borderColor:'#3FB7AA30'},
+ rank:{minWidth:28,color:C.mint,fontWeight:'900'},standingName:{flex:1,minWidth:0,color:C.white,fontWeight:'800',fontSize:13},
+ standingPoints:{color:C.mint,fontWeight:'900',fontSize:13},group:{gap:10},
+ editor:{gap:11,paddingTop:10,borderTopWidth:1,borderTopColor:'#42BDB03A'},
+ scoreRow:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10},
+ scoreInput:{minWidth:76,minHeight:48,borderRadius:11,borderColor:'#41BCAF66',borderWidth:1,color:C.white,backgroundColor:'#082C3C',padding:10,textAlign:'center',fontSize:17},
+ dash:{fontSize:20,color:C.mint,fontWeight:'800'}
 });
