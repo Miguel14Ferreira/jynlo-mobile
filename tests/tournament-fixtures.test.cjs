@@ -96,3 +96,16 @@ test('performance results render validated rankings without inferring winners',(
   assert.ok(screen.includes(token),token);
  }
 });
+
+
+test('individual tournament cards use supported React Native font weights',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8');
+ assert.doesNotMatch(screen,/fontWeight:\s*['"]850['"]/);
+ assert.match(screen,/fontWeight:'800'/);
+});
+test('performance results reject invalid route IDs before requesting official data',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8');
+ assert.match(screen,/!Number\.isSafeInteger\(cid\)\|\|cid<=0\|\|!Number\.isSafeInteger\(tid\)\|\|tid<=0/);
+ assert.match(screen,/setError\('Competição inválida\.'\)/);
+ assert.match(screen,/performanceOverview\(cid,details,auth\.token,auth\.username\)/);
+});
