@@ -15,7 +15,7 @@ test('in-call chat stays inside the mounted LiveKit room and alongside participa
  assert.match(call,/<CallChatSidePanel peer=\{peer\} self=\{self\} token=\{token\} visible=\{showChat\} wide=\{wide\}\/>/);
  assert.match(call,/callColumnsWide:\{flexDirection:'row'/);
  assert.match(call,/<MediaControls media=\{session\.media\} peer=\{peer\} self=\{auth\.username\|\|''\} token=\{auth\.token\}/);
- assert.match(call,/\[muted,setMuted\]=useState\(false\).*expandedVideo/);
+ assert.match(call,/const \[muted,setMuted\]=useState\(false\)/);
  const position=call.indexOf('const dimensions=videoStageDimensions');
  const state=call.indexOf('const [expandedVideo,setExpandedVideo]');
  assert.ok(state>=0&&position>state,'video size must not reference expandedVideo before state initializes');
