@@ -41,3 +41,14 @@ test('team feed and team chat keep permissions, private media, WebSocket and fal
  assert.match(component,/ChatPdfComposer target=\{\{scope:'team',id:teamId,kind\}\}/);
  assert.doesNotMatch(component,/title="Atualizar"/);
 });
+
+test('team messages use direct-chat bubbles while team feed keeps full-width cards',()=>{
+ const component=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(component,/kind==='chat'&&styles\.chatBubble/);
+ assert.match(component,/kind==='chat'&&item\.username\?\.toLowerCase\(\)===username\.toLowerCase\(\)&&styles\.ownChatBubble/);
+ assert.match(component,/kind==='feed'&&item\.replyToId!=null/);
+ assert.match(component,/chatBubble:\{maxWidth:'89%',alignSelf:'flex-start'/);
+ assert.match(component,/ownChatBubble:\{alignSelf:'flex-end'/);
+ assert.match(component,/entry:\{borderWidth:1/);
+ assert.match(component,/historyContent:\{gap:11,paddingBottom:12,paddingHorizontal:5\}/);
+});
