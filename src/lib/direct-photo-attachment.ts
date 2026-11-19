@@ -18,7 +18,7 @@ function base(peer:string):string{
 export async function directPhotoAvailable(peer:string,token:string):Promise<boolean>{
  if(DEMO_MODE||!token)return false;
  const result=await fetch(base(peer)+'/availability',{
-  headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit'
+  headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',redirect:'error'
  });
  if(!result.ok)throw Error('Não foi possível confirmar a disponibilidade dos anexos.');
  const data=await result.json() as {available?:boolean};
@@ -37,6 +37,8 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
  if(replyToMessageId!=null&&(!Number.isSafeInteger(replyToMessageId)||replyToMessageId<=0))
   throw Error('Mensagem citada inválida.');
  const prepared=await prepareChatPhoto(asset,extension);
+ // Clean temporary picker copies even if form construction fails.
+ try{
  const form=new FormData();
  form.append('file',new File(prepared.uri) as unknown as Blob,'jynlo-chat.'+extension);
  if(replyToMessageId!=null)form.append('replyToMessageId',String(replyToMessageId));
@@ -65,5 +67,6 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
   if(error instanceof Error&&/^(A sessão|Não tens autorização|Fotografia|O armazenamento|O servidor|O envio)/.test(error.message))
    throw error;
   throw Error('Não foi possível confirmar o envio. Consulta o histórico antes de repetir.');
- }finally{clearTimeout(timer);prepared.cleanup();}
+ }finally{clearTimeout(timer);}
+ }finally{prepared.cleanup();}
 }
