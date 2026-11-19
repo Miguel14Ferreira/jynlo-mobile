@@ -11,9 +11,11 @@ test('a Story never counts a mere feed impression or the author viewing own Stor
  const api=read('src/lib/social-feed-api.ts');
  assert.match(api,/export async function recordStoryView/);
  assert.match(api,/method:'POST',body:\{\}/);
- assert.match(viewer,/if\(!ownStory&&token&&username&&!viewedStoryIds\.current\.has\(story\.id\)\)/);
+ assert.match(viewer,/if\(!ownStory&&actor&&username&&!viewedStoryIds\.current\.has\(id\)\)/);
  assert.match(viewer,/onLoad=\{mediaReady\}/);
  assert.match(viewer,/onReady=\{mediaReady\}/);
+ assert.match(viewer,/if\(activeStoryIdRef\.current!==id\|\|activeAccount\.current!==actor\)return/);
+ assert.match(viewer,/void recordStoryView\(id,actor\)/);
  const feedOnly=api.split('export async function storyFeed(')[1]?.split('export async function ')[0]||'';
  assert.doesNotMatch(feedOnly,/recordStoryView\(/);
 });
@@ -21,8 +23,9 @@ test('a Story never counts a mere feed impression or the author viewing own Stor
 test('media viewer handles loading and a real failed image/video instead of blank black screen',()=>{
  const player=read('src/components/FeedVideo.tsx');
  assert.match(viewer,/mediaState==='loading'&&uri/);
- assert.match(viewer,/onError=\{\(\)=>setMediaState\('error'\)\}/);
- assert.match(viewer,/onPlaybackError=\{\(\)=>setMediaState\('error'\)\}/);
+ assert.match(viewer,/onError=\{mediaFailed\}/);
+ assert.match(viewer,/onPlaybackError=\{mediaFailed\}/);
+ assert.match(viewer,/if\(activeStoryIdRef\.current===story\.id&&activeAccount\.current===token\)setMediaState\('error'\)/);
  assert.match(viewer,/Não foi possível mostrar esta Story/);
  assert.match(viewer,/accessibilityLabel="Voltar a carregar Story"/);
  assert.match(viewer,/storyById\(story\.id,token,username\)/);
