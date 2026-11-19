@@ -69,9 +69,14 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    owner.current=identity;generation.current++;
    setMessages([]);setDraft('');setError('');setSyncWarning('');setAccessRevoked(false);
    recentlyConfirmed.current.clear();readOwner.current='';busy.current=false;
-   sendLock.current=false;queued.current=false;
+   sendLock.current=false;setSending(false);queued.current=false;
   }
-  if(!visible)return;
+  if(!visible){
+   // The old in-flight POST is generation-scoped. Closing the panel must not
+   // leave the composer locked when the same contact's chat is opened again.
+   sendLock.current=false;setSending(false);
+   return;
+  }
   const version=++generation.current;
   let active=true;
   void load(version,false);
