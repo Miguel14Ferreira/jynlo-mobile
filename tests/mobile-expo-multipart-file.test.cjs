@@ -140,3 +140,16 @@ test('post media uploads give slow mobile connections time and never retry an un
  assert.match(api,/Não foi possível obter confirmação do servidor/);
  assert.doesNotMatch(api,/Falha de ligação durante o envio\. Verifica se foi publicado/);
 });
+
+
+test('ambiguous post uploads can be checked without a second POST or losing the draft',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/async function checkRecentlyPublishedPosts\(\)/);
+ assert.match(home,/const items=await profilePosts\(username,token,0\)/);
+ assert.match(home,/setPostVerifyItems\(items\.filter\(item=>item\.type==='POST'\)\.slice\(0,5\)\)/);
+ assert.match(home,/feedIdentity\.current===identity&&postVerifyRevision\.current===revision/);
+ const verify=home.slice(home.indexOf('async function checkRecentlyPublishedPosts'),home.indexOf('async function submitPost'));
+ assert.doesNotMatch(verify,/publishPost\(|sendMedia\(|setComposerMedia\(|changeComposerMedia\(/);
+ assert.match(home,/Ver últimas publicações/);
+ assert.match(home,/Esta lista serve apenas para verificares o perfil\. A app não repetiu o envio/);
+});
