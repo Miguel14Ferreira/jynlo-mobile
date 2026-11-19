@@ -10,14 +10,15 @@ const api=read('src/lib/social-feed-api.ts');
 
 test('stories offer server-backed like and unlike with active account context',()=>{
  assert.ok(viewer);
- assert.match(viewer,/await toggleStoryLike\(story\.id,Boolean\(story\.likedByMe\),token,username\)/);
+ assert.match(viewer,/await toggleStoryLike\(id,Boolean\(story\.likedByMe\),actor,username\)/);
  assert.match(api,/\/api\/stories\/\$\{storyId\}\/likes/);
  assert.match(api,/method:liked\?'DELETE':'POST'/);
  assert.match(viewer,/story\.likeCount\|\|0/);
+ assert.match(viewer,/activeAccount\.current===actor&&activeStoryIdRef\.current===id/);
 });
 
 test('story replies go privately to author as notifications not public comments',()=>{
- assert.match(viewer,/await replyToStory\(story\.id,message,token,username\)/);
+ assert.match(viewer,/await replyToStory\(id,message,actor,username\)/);
  assert.match(api,/\/api\/stories\/\$\{storyId\}\/replies/);
  assert.match(api,/body:\{content:message\}/);
  assert.match(viewer,/!ownStory\?<View style=\{styles\.storyReplyRow\}>/);
@@ -34,9 +35,9 @@ test('story sharing uses native share sheet without fabricated permanent URL',()
 });
 
 test('reply draft belongs to current story and videos pause while composing',()=>{
- assert.match(viewer,/React\.useEffect\(\(\)=>\{audienceRequest\.current\+\+;\s*setReplyText\(''\);setReplyFocused\(false\);setMediaState\('loading'\)/);
- assert.match(viewer,/paused\|\|replyFocused\|\|storyBusy/);
- assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
+ assert.match(viewer,/audienceRequest\.current\+\+;\s*setReplyText\(''\);setReplyFocused\(false\);setReactionsOpen\(false\);setMediaState\('loading'\)/);
+ assert.match(viewer,/paused\|\|replyFocused\|\|reactionsOpen\|\|storyBusy/);
+ assert.match(viewer,/if\(!story\|\|story\.video\|\|mediaState!=='ready'\|\|paused\|\|replyFocused\|\|reactionsOpen\|\|storyBusy\|\|audienceOpen\|\|!appActive\)return/);
 });
 
 test('story reply disables navigation while focused or in flight',()=>{
