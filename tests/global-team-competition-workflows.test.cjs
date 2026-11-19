@@ -184,3 +184,18 @@ test('competition team invitations cannot be resent after an uncertain server re
  assert.match(panel,/\[open,communityId,competitionId,type,token,refreshKey\]/);
  assert.match(panel,/disabled=\{loading\|\|!invitesVerified\}/);
 });
+
+
+test('mobile competition discovery distinguishes identically numbered competitions in different communities',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/key=\{item\.communityId\+'-'\+item\.type\+'-'\+item\.id\}/);
+ assert.match(screen,/rows\.some\(item=>item\.id===competition\.id&&item\.type===competition\.type/);
+ assert.match(screen,/&&item\.communityId===competition\.communityId&&item\.applicationsOpen/);
+});
+test('team selection stays explicit, and prior applications are shown before new submissions',()=>{
+ const screen=read('app/teams/competitions.tsx');
+ assert.match(screen,/accessibilityLabel=\{'Candidatar a equipa '\+team\.name\}/);
+ assert.match(screen,/disabled=\{busy\}/);
+ assert.match(screen,/applications\.map\(a=><View key=\{a\.id\} style=\{styles\.applicationRow\}/);
+ assert.match(screen,/!applicationsVerified\|\|!item\.applicationsOpen\|\|applied\(item,chosen\)/);
+});
