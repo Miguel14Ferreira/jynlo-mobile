@@ -33,6 +33,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
  const inlineNearBottom=useRef(false);
+ // Position the first authorized history at the newest message.
+ const firstHistoryPositionPending=useRef(true);
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
@@ -121,6 +123,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   // Wait for the current ScrollView to report both its viewport and content.
   historyViewportHeight.current=0;
   historyContentHeight.current=0;
+  firstHistoryPositionPending.current=true;
   const identity=id+'|'+auth.token;
   const changedAccountOrSession=focusedIdentity.current!==identity;
   focusedIdentity.current=identity;
@@ -419,6 +422,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    if(firstHistoryPositionPending.current)return;
     // Ignore scroll measurements from an earlier layout after history/keyboard changes.
     // A stale event must not clear the unread indicator or acknowledge newer messages.
     if(historyContentHeight.current<=0||historyViewportHeight.current<=0||
@@ -437,6 +441,11 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     }}}
    onLayout={event=>{
     historyViewportHeight.current=event.nativeEvent.layout.height;
+    if(firstHistoryPositionPending.current&&entries.length>0&&historyContentHeight.current>0){
+     firstHistoryPositionPending.current=false;
+     inlineNearBottom.current=true;
+     inlineHistoryRef.current?.scrollToEnd({animated:false});
+    }
     // Content size can be reported before the viewport layout; acknowledge only when fully visible.
     if(historyContentHeight.current>0&&historyContentHeight.current<=historyViewportHeight.current&&AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0){
      const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
@@ -448,6 +457,11 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    }}
    onContentSizeChange={(_width,height)=>{
     historyContentHeight.current=height;
+    if(firstHistoryPositionPending.current&&entries.length>0&&historyViewportHeight.current>0){
+     firstHistoryPositionPending.current=false;
+     inlineNearBottom.current=true;
+     inlineHistoryRef.current?.scrollToEnd({animated:false});
+    }
     // A short conversation can change without firing onScroll. Its entire content must fit.
     if(height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
        AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0){
