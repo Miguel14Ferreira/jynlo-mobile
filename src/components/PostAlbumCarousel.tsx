@@ -17,21 +17,24 @@ export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
  // Reset paging when a post's gallery is replaced, but not on ordinary feed refreshes.
  const albumIdentity=items.map(entry=>entry.type+':'+entry.url).join('|');
  useEffect(()=>{setActive(0);},[albumIdentity]);
+ const updateActive=(offset:number)=>{
+  if(width<=0||!items.length)return;
+  const next=Math.round(offset/width);
+  setActive(Math.min(items.length-1,Math.max(0,next)));
+ };
  return <View style={styles.frame} onLayout={event=>{
   const next=Math.round(event.nativeEvent.layout.width);
   if(next>0&&next!==width){setWidth(next);setActive(0);}
  }}>
   {width>0?<ScrollView key={width+'-'+albumIdentity} horizontal pagingEnabled
    showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"
-   onMomentumScrollEnd={event=>{
-    const index=Math.round(event.nativeEvent.contentOffset.x/width);
-    setActive(Math.min(items.length-1,Math.max(0,index)));
-   }}
+   onMomentumScrollEnd={event=>updateActive(event.nativeEvent.contentOffset.x)}
+   onScrollEndDrag={event=>updateActive(event.nativeEvent.contentOffset.x)}
    accessibilityLabel={'Álbum com '+items.length+' ficheiros'}>
    {items.map((entry,index)=>{
     const uri=uriFor(entry.url);
     return <View key={entry.url+'-'+index} style={{width}}>
-      {uri?(entry.type==='video'?(index===active?renderVideo(uri):<View style={styles.videoInactive}><JynloIcon name="video" size={26} color="#B9D8DA"/><Text style={styles.videoInactiveText}>Vídeo {index+1} de {items.length}</Text></View>):
+      {uri?(entry.type==='video'?(index===active?renderVideo(uri):<View style={[styles.videoInactive,{height:Math.max(190,Math.round(width*.75))}]}><JynloIcon name="video" size={26} color="#B9D8DA"/><Text style={styles.videoInactiveText}>Vídeo {index+1} de {items.length}</Text></View>):
         <AdaptivePostPhoto uri={uri} width={width}
           label={'Ampliar fotografia '+(index+1)+' de '+items.length}
           onExpand={()=>{const images=items.filter(item=>item.type==='image').map(item=>uriFor(item.url)).filter((value):value is string=>Boolean(value));onExpand({uris:images,index:images.indexOf(uri)});}}/>):null}
