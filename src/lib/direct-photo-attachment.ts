@@ -4,6 +4,7 @@ import {API_BASE,DEMO_MODE} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import type {DirectChatEntry} from './chat-api';
 import {prepareChatPhoto} from './chat-photo-source';
+import {confirmedSingleChatPhotoReply} from './chat-attachments-core.cjs';
 
 const MAX_BYTES=5*1024*1024;
 const PEER=/^[a-zA-Z0-9_.@-]{1,128}$/;
@@ -56,9 +57,8 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
   let message:DirectChatEntry;
   try{message=await response.json() as DirectChatEntry;}
   catch{throw Error('O envio não foi confirmado. Consulta o histórico antes de tentar novamente.');}
-  if(!message||!Number.isSafeInteger(message.id)||message.id<=0||
-     typeof message.attachmentName!=='string'||!message.attachmentName.trim())
-   throw Error('O envio não foi confirmado. Consulta o histórico antes de tentar novamente.');
+  if(!confirmedSingleChatPhotoReply(message,'direct',peer,mime,replyToMessageId))
+   throw Error('O envio não foi confirmado nesta conversa. Consulta o histórico antes de tentar novamente.');
   return message;
  }catch(error){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Consulta o histórico antes de tentar novamente.');
