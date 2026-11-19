@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const {reconcileVisibleFixtures,validateNextFixturePage}=require('../src/lib/tournament-organizer-pages.cjs');
+const {reconcileVisibleFixtures,validateFirstFixturePage,validateNextFixturePage}=require('../src/lib/tournament-organizer-pages.cjs');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
 test('reconciles all previously opened match pages and uses server pagination',async()=>{
@@ -75,4 +75,28 @@ test('organizer checks the server page before updating its pagination cursor',()
  assert.match(screen,/const checked=validateNextFixturePage<TournamentTeamMatch\|TournamentIndividualMatch>\(response,next\)/);
  assert.match(screen,/visiblePage\.current=checked\.page;setPage\(checked\.page\);setHasMore\(checked\.hasMore\)/);
  assert.match(screen,/if\(version!==generation\.current\|\|reading!==readVersion\.current\)return;\s*const items=checked\.matches\.map/);
+});
+
+
+test('first-page guard accepts an empty completed calendar but rejects broken cursors and duplicate IDs',()=>{
+ const good={page:0,hasMore:false,matches:[{id:11},{id:12}]};
+ assert.equal(validateFirstFixturePage(good),good);
+ assert.deepEqual(validateFirstFixturePage({page:0,hasMore:false,matches:[]}).matches,[]);
+ for(const response of [
+  {page:1,hasMore:false,matches:[]},
+  {page:0,hasMore:'yes',matches:[]},
+  {page:0,hasMore:true,matches:[]},
+  {page:0,hasMore:false,matches:[{id:0}]},
+  {page:0,hasMore:false,matches:[{id:8},{id:8}]},
+  {page:0,hasMore:false,matches:null}
+ ])assert.throws(()=>validateFirstFixturePage(response));
+});
+test('next-page guard also rejects duplicates within the same server page',()=>{
+ assert.throws(()=>validateNextFixturePage({page:1,hasMore:false,matches:[{id:10},{id:10}]},1),/repetidos/);
+});
+test('both mobile calendar screens validate first-page results before displaying them',()=>{
+ const team=read('app/tournaments/[communityId]/[id]/fixtures.tsx');
+ const individual=read('app/tournaments/[communityId]/[id]/matches.tsx');
+ assert.match(team,/validateFirstFixturePage<TournamentTeamMatch>\(matchData\)/);
+ assert.match(individual,/validateFirstFixturePage<TournamentIndividualMatch>\(result\)/);
 });
