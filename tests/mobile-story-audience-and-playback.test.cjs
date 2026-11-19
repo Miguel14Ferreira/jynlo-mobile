@@ -61,3 +61,10 @@ test('reactions are private replies, never fabricated public emoji counts',()=>{
  assert.match(viewer,/!ownStory\?<View style=\{styles\.storyReactions\}>/);
  assert.match(viewer,/if\(ownStory\|\|!token\|\|!username\|\|storyBusy\|\|submittingStory\.current\)return/);
 });
+
+test('late Story retry does not overwrite the media state of the next Story or account',()=>{
+ const retry=viewer.slice(viewer.indexOf('accessibilityLabel="Voltar a carregar Story"'),viewer.indexOf('story.caption?.trim()',viewer.indexOf('accessibilityLabel="Voltar a carregar Story"')));
+ assert.match(retry,/activeAccount\.current===token&&activeStoryIdRef\.current===story\.id&&fresh\.id===story\.id/);
+ assert.match(retry,/if\(activeAccount\.current===token&&activeStoryIdRef\.current===story\.id\)setMediaState\('error'\)/);
+ assert.doesNotMatch(retry,/\.catch\(\(\)=>\{setMediaState\('error'\);\}\)/);
+});
