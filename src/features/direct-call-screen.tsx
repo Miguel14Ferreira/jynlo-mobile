@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {JynloIcon} from '../components/JynloIcon';
+import CallChatSidePanel from '../components/CallChatSidePanel';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
 import {Track} from 'livekit-client';
@@ -27,13 +28,16 @@ async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
   throw Error('Para participares nesta chamada, permite o acesso ao microfone'+(media==='video'?' e à câmara':'')+' nas definições do Android.');
  }
 }
-function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void}){
+function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;onHangup:()=>void;peer:string;self:string;token:string}){
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
  const {width,height}=useWindowDimensions();
- const dimensions=videoStageDimensions(width,height,expandedVideo);
  const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
- const [expandedVideo,setExpandedVideo]=useState(false);
+ const [expandedVideo,setExpandedVideo]=useState(false),[showChat,setShowChat]=useState(false);
+ const wide=width>=720;
+ // Allow the chat column to stay beside video on wide layouts without
+ // forcing video beyond the available viewport on smaller devices.
+ const dimensions=videoStageDimensions(wide&&showChat?width-345:width,height,expandedVideo);
  const [changing,setChanging]=useState(false),[error,setError]=useState('');
  async function toggle(kind:'microphone'|'camera'){
   if(changing)return;
@@ -50,7 +54,21 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
   finally{setChanging(false);}
  }
  return <View style={styles.mediaPanel}>
-  <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
+  <View style={styles.callHeadingRow}>
+   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={showChat?'Ocultar chat da chamada':'Abrir chat da chamada'}
+    accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(current=>!current)}
+    style={[styles.chatToggle,showChat&&styles.chatToggleActive]}>
+    <JynloIcon name="chat" size={19} color={C.mint}/>
+    <Text style={styles.chatToggleText}>{showChat?'Fechar chat':'Chat'}</Text>
+   </Pressable>
+  </View>
+  <View style={styles.participants} accessibilityLabel="Participantes da chamada">
+   <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>Tu</Text></View>
+   <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{peer.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>@{peer}</Text></View>
+  </View>
+  <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide]}>
+   <View style={styles.callStageColumn}>
   {media==='video'?<View style={styles.videos}>
    {(()=>{
     const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
@@ -72,7 +90,10 @@ function MediaControls({media,onHangup}:{media:DirectCallMedia;onHangup:()=>void
      </Pressable>
     </>;
    })()}
-  </View>:<Text style={styles.note}>A ligação de áudio utiliza o LiveKit. Verifica o som do dispositivo.</Text>}
+  </View>:<View style={styles.audioCall}><Text style={styles.audioSymbol}>◉</Text><Text style={styles.note}>Chamada de voz ativa · O chat continua disponível.</Text></View>}
+   </View>
+   <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
+  </View>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.callActions}>
    <Pressable accessibilityRole="button" accessibilityLabel={muted?'Ligar microfone':'Desligar microfone'} accessibilityState={{disabled:changing}} disabled={changing}
@@ -232,7 +253,8 @@ export default function DirectCallScreen(){
   {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
    onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}>
-    <MediaControls media={session.media} onHangup={()=>{void hangup();}}/>
+    <MediaControls media={session.media} peer={peer} self={auth.username||''} token={auth.token}
+     onHangup={()=>{void hangup();}}/>
    </LiveKitRoom>:!session?<>
    {!loading&&!available?<Message>As chamadas estão indisponíveis neste momento ({providerStatus||'sem ligação ao servidor'}). O chat continua disponível.</Message>:null}
    {pending?<View style={styles.mediaPanel}>
@@ -253,6 +275,22 @@ const styles=StyleSheet.create({
  heading:{fontSize:22,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:19},
  mediaPanel:{gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface},
+ callHeadingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},
+ chatToggle:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:12,minHeight:44,
+  borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
+ chatToggleActive:{borderColor:C.mint,backgroundColor:'#0B4147'},
+ chatToggleText:{color:C.white,fontWeight:'800',fontSize:12},
+ participants:{flexDirection:'row',alignItems:'center',gap:14,flexWrap:'wrap'},
+ participant:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},
+ avatar:{height:35,width:35,borderRadius:18,alignItems:'center',justifyContent:'center',
+  backgroundColor:'#12414C',borderWidth:1,borderColor:C.mint},
+ avatarText:{fontWeight:'900',color:C.mint,fontSize:14},
+ participantName:{fontSize:12,fontWeight:'800',color:C.white},
+ callColumns:{gap:10,minWidth:0},
+ callColumnsWide:{flexDirection:'row',alignItems:'stretch'},
+ callStageColumn:{flex:1,minWidth:0},
+ audioCall:{minHeight:170,justifyContent:'center',alignItems:'center',backgroundColor:'#061B25',borderRadius:16,gap:10},
+ audioSymbol:{color:C.mint,fontSize:44,fontWeight:'900'},
  callActions:{flexDirection:'row',gap:8,alignItems:'stretch',justifyContent:'space-evenly'},
  callAction:{flex:1,minHeight:70,paddingHorizontal:5,paddingVertical:9,backgroundColor:C.surface2,borderRadius:14,justifyContent:'center',alignItems:'center',gap:5},
  callActionText:{color:C.white,fontSize:11,fontWeight:'800',textAlign:'center'},
