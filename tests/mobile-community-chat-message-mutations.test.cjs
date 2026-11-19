@@ -35,3 +35,15 @@ test('mutations lock concurrent writes and leave uncertain failures visible',()=
  assert.match(screen,/setReply\(current=>current\?\.id===message\.id\?null:current\)/);
  assert.match(screen,/await refresh\(version,true\)/);
 });
+
+
+test('chat mutations and picker cannot unlock the new account or community',()=>{
+ const screen=read('src/components/CommunityChatPanel.tsx');
+ assert.match(screen,/const mutationOwner=useRef\(''\),mutationEpoch=useRef\(0\)/);
+ assert.match(screen,/const pickerInFlight=useRef\(false\),pickerOwner=useRef\(''\),pickerEpoch=useRef\(0\)/);
+ assert.match(screen,/if\(changedAccountOrCommunity\)\{[\s\S]*?mutationEpoch\.current\+\+;mutationOwner\.current='';mutationLock\.current=false;setMutationBusy\(false\)/);
+ assert.match(screen,/pickerEpoch\.current\+\+;pickerOwner\.current='';pickerInFlight\.current=false/);
+ assert.match(screen,/mutationOwner\.current=identity;mutationLock\.current=true;setMutationBusy\(true\)/);
+ assert.match(screen,/if\(mutationOwner\.current===identity&&mutationEpoch\.current===operation\)\{\s*mutationLock\.current=false;mutationOwner\.current='';setMutationBusy\(false\)/);
+ assert.match(screen,/if\(pickerOwner\.current===identity&&pickerEpoch\.current===operation\)\{\s*pickerInFlight\.current=false;pickerOwner\.current=''/);
+});
