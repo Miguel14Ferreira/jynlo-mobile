@@ -1404,6 +1404,11 @@ export default function JynloFeedHome(){
            <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder="Conta o que aconteceu neste momento…" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
            <Text style={styles.postCaptionCount}>{composerText.length}/{maxPostLength}</Text>
           </View>
+          {postPublishError?<View style={styles.postInlineError} accessibilityRole="alert">
+            <Text style={styles.postInlineErrorTitle}>Não foi possível confirmar a publicação</Text>
+            <Text style={styles.postInlineErrorBody}>{postPublishError}</Text>
+            <Text style={styles.postInlineErrorHelp}>O rascunho foi mantido. Antes de tentares novamente, verifica se a publicação já apareceu no teu perfil.</Text>
+          </View>:null}
           {composerMedia.length?<View style={styles.postMediaPreview}>
             <Pressable accessibilityRole="button" accessibilityLabel="Remover todos os ficheiros da publicação" disabled={publishing} onPress={()=>Alert.alert('Limpar álbum?','Remover todas as fotografias e vídeos deste rascunho?',[
               {text:'Cancelar',style:'cancel'},
@@ -1437,11 +1442,7 @@ export default function JynloFeedHome(){
           </Pressable>)}
           {composerLocation.trim()&&!verifiedPostPlace&&!postPlaceLoading&&postPlaceOptions.length===0?
             <Text style={styles.storiesIntro}>Seleciona uma localização real nas sugestões para publicar.</Text>:null}
-          {postPublishError?<View style={styles.postInlineError} accessibilityRole="alert">
-            <Text style={styles.postInlineErrorTitle}>Não foi possível confirmar a publicação</Text>
-            <Text style={styles.postInlineErrorBody}>{postPublishError}</Text>
-            <Text style={styles.postInlineErrorHelp}>O rascunho foi mantido. Antes de tentares novamente, verifica se a publicação já apareceu no teu perfil.</Text>
-          </View>:null}
+
         </ScrollView>
 
         <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}>
