@@ -35,6 +35,10 @@ export default function TournamentResultsScreen(){
  const generation=useRef(0);
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current){setTournament(null);setOverview(null);setLoading(false);}return;}
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
+   if(version===generation.current){setTournament(null);setOverview(null);setError('Competição inválida.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');setTournament(null);setOverview(null);
   try{
    const details=await tournamentDetails(cid,tid,auth.token,auth.username);
