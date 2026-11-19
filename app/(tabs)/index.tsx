@@ -10,7 +10,7 @@ import {mediaRequestSource} from '../../src/lib/protected-media-source';
 import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
-import {socialFeed,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,profilePosts,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
 import type {StoryAudience} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
@@ -542,6 +542,10 @@ export default function JynloFeedHome(){
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
   const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
+  const [postVerifyLoading,setPostVerifyLoading]=useState(false);
+  const [postVerifyItems,setPostVerifyItems]=useState<FeedItem[]|null>(null);
+  const [postVerifyError,setPostVerifyError]=useState('');
+  const postVerifyRevision=useRef(0);
   const recentlyConfirmedStories=useRef<Array<{item:SocialStory;until:number}>>([]);
   const hiddenKeysRef=useRef<string[]>([]);
   const [hiddenKeys,setHiddenKeys]=useState<string[]>([]);
@@ -859,6 +863,7 @@ export default function JynloFeedHome(){
   function openPostComposer(sessionId:number|null=null){
     setComposerSessionId(sessionId);
     setPublishNotice(null);setPostPublishError('');setVerifiedPostPlace('');setPostPlaceOptions([]);
+    postVerifyRevision.current++;setPostVerifyItems(null);setPostVerifyError('');setPostVerifyLoading(false);
     postComposerRevision.current++;
     composerOpenRef.current=true;setComposerOpen(true);
   }
@@ -958,6 +963,22 @@ export default function JynloFeedHome(){
       }else if(storyComposerWasOpen&&storyComposerRef.current&&storyComposerRevision.current===storyRevision&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
     }catch(e){if(activeStoryAccount.current===actorToken)Alert.alert(source==='camera'?'Não foi possível abrir a câmara':'Não foi possível abrir a galeria',e instanceof Error?e.message:'Confirma as permissões do teu telemóvel.');}
     finally{if(activeStoryAccount.current===actorToken)mediaPickerInFlight.current=false;}
+  }
+  async function checkRecentlyPublishedPosts(){
+    const token=auth.token,username=auth.username;
+    if(!token||!username||postVerifyLoading)return;
+    const identity=`${username}:${token}`,revision=++postVerifyRevision.current;
+    setPostVerifyLoading(true);setPostVerifyError('');setPostVerifyItems(null);
+    try{
+      const items=await profilePosts(username,token,0);
+      if(feedIdentity.current===identity&&postVerifyRevision.current===revision)
+        setPostVerifyItems(items.filter(item=>item.type==='POST').slice(0,5));
+    }catch(e){
+      if(feedIdentity.current===identity&&postVerifyRevision.current===revision)
+        setPostVerifyError(e instanceof Error?e.message:'Não foi possível consultar o perfil.');
+    }finally{
+      if(feedIdentity.current===identity&&postVerifyRevision.current===revision)setPostVerifyLoading(false);
+    }
   }
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
@@ -1408,6 +1429,20 @@ export default function JynloFeedHome(){
             <Text style={styles.postInlineErrorTitle}>Não foi possível confirmar a publicação</Text>
             <Text style={styles.postInlineErrorBody}>{postPublishError}</Text>
             <Text style={styles.postInlineErrorHelp}>O rascunho foi mantido. Antes de tentares novamente, verifica se a publicação já apareceu no teu perfil.</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Consultar as minhas últimas publicações sem reenviar"
+              disabled={postVerifyLoading} onPress={()=>void checkRecentlyPublishedPosts()} style={styles.postVerifyAction}>
+              {postVerifyLoading?<ActivityIndicator color={INDIGO}/>:<Text style={styles.postVerifyActionText}>Ver últimas publicações</Text>}
+            </Pressable>
+            {postVerifyError?<Text style={styles.postInlineErrorHelp}>{postVerifyError}</Text>:null}
+            {postVerifyItems? <View style={styles.postVerifyList}>
+              <Text style={styles.postVerifyHeading}>Publicações mais recentes no teu perfil</Text>
+              {postVerifyItems.length===0?<Text style={styles.postInlineErrorHelp}>Ainda não aparecem publicações. Não é uma confirmação de que o envio falhou.</Text>:null}
+              {postVerifyItems.map(post=><View key={'verify-'+post.postId} style={styles.postVerifyItem}>
+                <Text style={styles.postVerifyItemTitle} numberOfLines={2}>{post.content?.trim()||'Publicação com fotografia ou vídeo'}</Text>
+                <Text style={styles.postInlineErrorHelp}>{Number.isFinite(Date.parse(post.createdAt))?new Date(post.createdAt).toLocaleString('pt-PT'):'Data não disponível'}</Text>
+              </View>)}
+              <Text style={styles.postInlineErrorHelp}>Esta lista serve apenas para verificares o perfil. A app não repetiu o envio.</Text>
+            </View>:null}
           </View>:null}
           {composerMedia.length?<View style={styles.postMediaPreview}>
             <Pressable accessibilityRole="button" accessibilityLabel="Remover todos os ficheiros da publicação" disabled={publishing} onPress={()=>Alert.alert('Limpar álbum?','Remover todas as fotografias e vídeos deste rascunho?',[
@@ -1679,6 +1714,11 @@ const styles=StyleSheet.create({
    postInlineErrorTitle:{fontSize:13,fontWeight:'900',color:'#FFD4D4'},
    postInlineErrorBody:{fontSize:13,lineHeight:20,color:'#FFD4D4'},
    postInlineErrorHelp:{fontSize:12,lineHeight:18,color:'#E1C9CE'},
+   postVerifyAction:{minHeight:44,borderRadius:10,backgroundColor:TEAL,paddingHorizontal:12,justifyContent:'center',alignItems:'center',alignSelf:'stretch'},
+   postVerifyActionText:{fontSize:13,color:INDIGO,fontWeight:'900'},
+   postVerifyList:{gap:8,marginTop:5},postVerifyHeading:{fontSize:12,fontWeight:'900',color:WHITE},
+   postVerifyItem:{backgroundColor:PANEL,padding:10,borderRadius:10,gap:3},
+   postVerifyItemTitle:{fontSize:13,fontWeight:'800',color:WHITE},
    publishProgressHint:{color:MUTED,fontSize:13,lineHeight:20,textAlign:'center',paddingHorizontal:8},
    composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:13},countText:{color:MUTED,fontSize:12},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{borderWidth:1,borderColor:BORDER,borderRadius:14,overflow:'hidden',backgroundColor:'#020A10'},postMediaPreviewImage:{width:'100%',height:255,backgroundColor:'#020A10'},postMediaPreviewFooter:{gap:8,paddingHorizontal:10,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:13,flex:1},
   latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:14},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:'#225763',borderRadius:21,padding:16,gap:14},postTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:2},postName:{color:WHITE,fontSize:15,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:23},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',borderTopColor:'#225763',borderTopWidth:1,paddingTop:12,rowGap:8,columnGap:14},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
