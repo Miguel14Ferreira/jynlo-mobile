@@ -18,32 +18,46 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  const [syncWarning,setSyncWarning]=useState(''),[accessRevoked,setAccessRevoked]=useState(false);
  const identity=peer+'|'+self+'|'+token;
  const generation=useRef(0),owner=useRef(''),busy=useRef(false),queued=useRef(false),sendLock=useRef(false);
+ // Preserve an acknowledged POST only until the server GET includes it (or 45s).
+ const recentlyConfirmed=useRef(new Map<number,{message:DirectChatEntry;at:number}>());
+ const readOwner=useRef('');
  const list=useRef<ScrollView|null>(null);
  const load=useCallback(async(version:number,silent=true)=>{
   if(!visible||!token||!peer||accessRevoked)return;
   if(busy.current){queued.current=true;return;}
   busy.current=true;
+  readOwner.current=identity+'|'+version;
   if(!silent)setLoading(true);
   try{
    const rows=await directChatHistory(peer,token);
    if(generation.current!==version||owner.current!==identity)return;
    if(!Array.isArray(rows))throw Error('Histórico da conversa inválido.');
-   setMessages(current=>{
-    // A stale GET must not remove a locally displayed server-confirmed send.
+   setMessages(()=>{
+    // The API is authoritative for deletes, edits and moderation.
+    // Only a newly acknowledged POST may survive a lagging GET.
     const byId=new Map<number,DirectChatEntry>();
-    for(const row of [...current,...rows])if(Number.isSafeInteger(row.id)&&row.id>0)byId.set(row.id,row);
+    const serverIds=new Set<number>();
+    for(const row of rows)if(Number.isSafeInteger(row.id)&&row.id>0){
+     byId.set(row.id,row);serverIds.add(row.id);
+    }
+    const now=Date.now();
+    for(const [id,entry] of recentlyConfirmed.current){
+     if(serverIds.has(id)||now-entry.at>45_000){recentlyConfirmed.current.delete(id);continue;}
+     byId.set(id,entry.message);
+    }
     return [...byId.values()].sort((a,b)=>a.id-b.id).slice(-60);
    });
    setSyncWarning('');setAccessRevoked(false);
   }catch(e){
    if(generation.current===version&&owner.current===identity){
     if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
-     setMessages([]);setDraft('');setAccessRevoked(true);
+     setMessages([]);setDraft('');recentlyConfirmed.current.clear();setAccessRevoked(true);
      setError('Já não tens acesso ao chat deste contacto.');
     }else setSyncWarning('Sem ligação ao histórico. As mensagens apresentadas podem estar desatualizadas.');
    }
   }finally{
-   busy.current=false;
+   if(readOwner.current!==identity+'|'+version)return;
+   busy.current=false;readOwner.current='';
    if(generation.current===version&&owner.current===identity){
     setLoading(false);
     if(queued.current){queued.current=false;void load(version,true);}
@@ -54,6 +68,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   if(owner.current!==identity){
    owner.current=identity;generation.current++;
    setMessages([]);setDraft('');setError('');setSyncWarning('');setAccessRevoked(false);
+   recentlyConfirmed.current.clear();readOwner.current='';busy.current=false;
    sendLock.current=false;queued.current=false;
   }
   if(!visible)return;
@@ -71,7 +86,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   const resume=AppState.addEventListener('change',state=>{
    if(active&&state==='active'&&generation.current===version)void load(version,true);
   });
-  return()=>{active=false;generation.current++;stop();clearInterval(timer);resume.remove();queued.current=false;};
+  return()=>{active=false;generation.current++;stop();clearInterval(timer);resume.remove();queued.current=false;readOwner.current='';busy.current=false;};
  },[identity,visible,peer,self,token,load]);
  async function send(){
   if(!visible||accessRevoked||sendLock.current||!token||!draft.trim())return;
@@ -82,6 +97,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    if(!confirmedDirectChatSend(confirmed,self,peer,body))
     throw Error('O servidor não confirmou a mensagem. Consulta o histórico antes de repetir.');
    if(generation.current!==version||owner.current!==actor)return;
+   recentlyConfirmed.current.set(confirmed.id,{message:confirmed,at:Date.now()});
    setMessages(current=>current.some(m=>m.id===confirmed.id)?current:
     [...current,confirmed].sort((a,b)=>a.id-b.id).slice(-60));
    setDraft(current=>current.trim()===body?'':current);
