@@ -392,10 +392,12 @@ export default function DirectConversation(){
    if(!confirmedDirectChatSend(confirmed,auth.username||'',peer,submittedText,originalReply?.id))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current||conversation.current!==identity)return;
-   // Preserve anything typed while the previous message was being sent.
+   // The server confirmed the write: render it now, independent of a later GET.
+   setMessages(current=>current.some(message=>message.id===confirmed.id)?current:
+    [...current,confirmed].sort((left,right)=>left.id-right.id));
    setDraft(current=>current===originalDraft?'':current);
    if(originalReply)setReplyTarget(current=>current?.id===originalReply.id?null:current);
-   await refresh(false,version);
+   void refresh(true,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError((e instanceof Error?e.message:'Não foi possível enviar.')+
@@ -469,7 +471,9 @@ export default function DirectConversation(){
    if(extraPhotos.length||photo.type==='video'||captionToSend.trim())await sendChatPhotoAlbum({scope:'direct',id:peer},auth.token,[photo,...extraPhotos],originalReplyId,captionToSend);
     else await sendDirectPhoto(peer,auth.token,photo,originalReplyId);
    if(version!==generation.current||conversation.current!==identity)return;
-   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReplyTarget(current=>current?.id===originalReplyId?null:current);await refresh(false,version);
+   setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReplyTarget(current=>current?.id===originalReplyId?null:current);
+   // Confirmed photo/album upload and later history synchronization are separate operations.
+   void refresh(true,version);
   }catch(e){
    if(version===generation.current&&conversation.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível enviar a fotografia.');
