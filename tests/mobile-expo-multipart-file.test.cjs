@@ -153,3 +153,22 @@ test('ambiguous post uploads can be checked without a second POST or losing the 
  assert.match(home,/Ver últimas publicações/);
  assert.match(home,/Esta lista serve apenas para verificares o perfil\. A app não repetiu o envio/);
 });
+
+
+test('uncertain post failures require an explicit choice before a second upload',()=>{
+ const {uncertainPostOutcome}=require('../src/lib/post-publish-uncertainty.cjs');
+ for(const s of ['Não foi possível obter confirmação do servidor.','O envio demorou demasiado tempo.',
+  'O servidor respondeu, mas a ligação interrompeu-se antes de confirmar o resultado.',
+  'O servidor Jynlo não conseguiu confirmar o envio. Verifica se foi publicado antes de repetir.'])
+  assert.equal(uncertainPostOutcome(s),true,s);
+ for(const s of ['O servidor rejeitou um dos ficheiros. (HTTP 415)',
+  'Os ficheiros excedem o tamanho permitido pelo servidor. (HTTP 413)',
+  'Escolhe uma localização das sugestões ou limpa o campo.',null])
+  assert.equal(uncertainPostOutcome(s),false,String(s));
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/if\(!requireLogin\(\)\|\|postInFlight\.current\|\|!postRetryAcknowledged/);
+ assert.match(home,/setPostRetryAcknowledged\(!uncertainPostOutcome\(message\)\)/);
+ assert.match(home,/setPostRetryAcknowledged\(true\);setVerifiedPostPlace/);
+ assert.match(home,/Já confirmei no perfil · Permitir novo envio/);
+ assert.match(home,/disabled=\{\(!composerMedia\.length&&!composerText\.trim\(\)\)\|\|publishing\|\|!postRetryAcknowledged\}/);
+});
