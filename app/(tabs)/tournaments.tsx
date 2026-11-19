@@ -1,4 +1,4 @@
-import React,{useCallback,useMemo,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -12,23 +12,34 @@ type Entry={communityId:number;communityName:string;tournament:JynloTournament};
 export default function TournamentsScreen(){
  const auth=useAuth(),router=useRouter();const [items,setItems]=useState<Entry[]>([]);
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+ const requestVersion=useRef(0);
  const [query,setQuery]=useState(''),[status,setStatus]=useState('ALL'),[sport,setSport]=useState('ALL');
+ // Invalidate old account data before showing a new authenticated tournament list.
+ useEffect(()=>{requestVersion.current++;setItems([]);setError('');setLoading(true);},[auth.token,auth.username]);
  const load=useCallback(async()=>{
+   const version=++requestVersion.current;
    if(!auth.token||!auth.username){setItems([]);setLoading(false);return;}
    setLoading(true);setError('');
-   try{setItems(await myTournaments(auth.token,auth.username));}
-   catch(e){setError(e instanceof Error?e.message:'Não foi possível carregar os torneios.');}
-   finally{setLoading(false);}
+   try{
+     const next=await myTournaments(auth.token,auth.username);
+     if(version===requestVersion.current)setItems(next);
+   }catch(e){
+     if(version===requestVersion.current){
+       setItems([]);setError(e instanceof Error?e.message:'Não foi possível carregar os torneios.');
+     }
+   }finally{if(version===requestVersion.current)setLoading(false);}
  },[auth.token,auth.username]);
- useFocusEffect(useCallback(()=>{void load();},[load]));
+ useFocusEffect(useCallback(()=>{void load();return()=>{requestVersion.current++;};},[load]));
  const sports=useMemo(()=>availableSports(items),[items]);
  const filtered=useMemo(()=>filterTournaments(items,{query,status,sport}),[items,query,status,sport]);
  return <Page><Brand subtitle="A COMPETIÇÃO ACONTECE AQUI"/><DemoBanner/>
-  <Eyebrow>ALÉM DA PRIMEIRA SESSÃO</Eyebrow><Text style={styles.title}>Torneios</Text>
-  <Text style={styles.sub}>Encontra as competições das tuas comunidades e a classificação certa para cada modalidade.</Text>
+  <View style={styles.intro}>
+   <Eyebrow>AS COMPETIÇÕES DAS TUAS COMUNIDADES</Eyebrow>
+   <Text style={styles.title}>Torneios</Text>
+   <Text style={styles.sub}>Acompanha competições, resultados e classificações por modalidade.</Text>
+  </View>
   {!auth.token?<Button title="Entrar para ver torneios" onPress={()=>router.push('/login')}/>:null}
   {auth.token?<Button title="Criar torneio" onPress={()=>router.push('/tournaments/create')}/>:null}
-  <Button title="Explorar equipas" onPress={()=>router.push('/teams')}/>
   {auth.token?<View style={styles.filters}>
     <TextInput style={styles.search} value={query} onChangeText={setQuery} autoCorrect={false}
       placeholder="Procurar torneio, comunidade ou desporto…" placeholderTextColor={C.muted}
@@ -66,15 +77,26 @@ export default function TournamentsScreen(){
   {!loading&&!error?filtered.map(x=><Pressable accessibilityRole="button" accessibilityLabel={'Abrir torneio '+x.tournament.name} key={`${x.communityId}-${x.tournament.id}`}
     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(x.communityId),id:String(x.tournament.id)}})}
     style={styles.card}>
-    <View style={styles.row}><Text style={styles.sport}>{sportIcon(x.tournament.sport)}</Text><View style={{flex:1}}><Text style={styles.name}>{x.tournament.name}</Text><Text style={styles.sub}>{x.communityName}</Text></View><Text style={styles.arrow}>›</Text></View>
-    <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>
-    <Text style={styles.sub}>{x.tournament.status==='DRAFT'?'Em preparação':x.tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'} · {x.tournament.sport}</Text>
+    <View style={styles.row}>
+      <View style={styles.sportMark}><Text style={styles.sport}>{sportIcon(x.tournament.sport)}</Text></View>
+      <View style={styles.cardCopy}><Text numberOfLines={2} style={styles.name}>{x.tournament.name}</Text>
+       <Text numberOfLines={1} style={styles.sub}>{x.communityName}</Text></View>
+      <Text style={styles.arrow}>›</Text>
+    </View>
+    <View style={styles.cardMeta}>
+      <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>
+      <Text style={[styles.status,x.tournament.status==='IN_PROGRESS'&&styles.statusActive]}>{x.tournament.status==='DRAFT'?'Em preparação':x.tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}</Text>
+    </View>
+    <Text style={styles.sportDetail}>{x.tournament.sport}</Text>
   </Pressable>):null}
   {auth.token&&items.length>0?<Message>As classificações respeitam as regras disponíveis para cada modalidade. Algumas provas podem ter funcionalidades limitadas no mobile.</Message>:null}
  </Page>;
 }
-const styles=StyleSheet.create({recovery:{gap:10},title:{fontSize:28,fontWeight:'900',color:C.white},sub:{fontSize:14,lineHeight:21,color:C.muted},card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:19,padding:17,gap:12},
- row:{flexDirection:'row',alignItems:'center',gap:12},sport:{fontSize:27},name:{fontSize:17,fontWeight:'900',color:C.white},arrow:{fontSize:30,color:C.mint},classification:{color:C.mint,fontWeight:'800',fontSize:12},
+const styles=StyleSheet.create({recovery:{gap:10},intro:{gap:7,paddingVertical:4},title:{fontSize:28,fontWeight:'900',color:C.white,letterSpacing:-0.5},sub:{fontSize:13,lineHeight:20,color:'#B6D8DC'},
+ card:{backgroundColor:'#092D3A',borderColor:'#3BC3AF52',borderWidth:1,borderRadius:18,padding:17,gap:13,minWidth:0},
+ row:{flexDirection:'row',alignItems:'center',gap:12},sportMark:{width:53,height:53,borderRadius:15,backgroundColor:'#114C54',borderColor:'#48DBBD55',borderWidth:1,alignItems:'center',justifyContent:'center'},sport:{fontSize:26},cardCopy:{flex:1,minWidth:0,gap:4},name:{fontSize:17,fontWeight:'900',color:C.white,lineHeight:22},arrow:{fontSize:28,color:C.mint},
+ cardMeta:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:11,borderTopWidth:1,borderTopColor:'#3CB4A53A'},
+ classification:{color:'#9AF7DF',fontWeight:'800',fontSize:12,flexShrink:1},status:{color:'#C4DDE0',backgroundColor:'#17414B',borderRadius:20,paddingHorizontal:10,paddingVertical:6,fontWeight:'800',fontSize:11,overflow:'hidden'},statusActive:{color:'#072D2C',backgroundColor:'#5BE7C0'},sportDetail:{color:'#93BDC6',fontSize:12,fontWeight:'700'},
  filters:{gap:10,marginTop:6},
  search:{minHeight:52,paddingHorizontal:15,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,color:C.white,borderRadius:16,fontSize:14},
  filterLabel:{color:C.muted,fontWeight:'800',fontSize:12,letterSpacing:1.1},
