@@ -61,3 +61,20 @@ test('ecrãs existem e equipas navegam para a página própria',()=>{
  assert.match(fixturesScreen,/teamTournamentGroups/);
  assert.match(fixturesScreen,/knockoutStarted/);
 });
+
+
+test('changing account clears private fixtures before reading new competition data',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8');
+ assert.match(screen,/if\(!auth\.token\|\|!auth\.username\)/);
+ assert.match(screen,/setTournament\(null\);setGroups\(null\);setMatches\(\[\]\);setHasMore\(false\)/);
+ assert.match(screen,/version!==generation\.current/);
+ assert.match(screen,/setActive\('GROUP'\)/);
+});
+test('group standings show real server points and accessible team links',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8');
+ assert.match(screen,/groups\.groups\.map\(g=>/);
+ assert.match(screen,/accessibilityLabel=\{'Ver equipa '\+row\.teamName\}/);
+ assert.match(screen,/\{row\.points\} pts/);
+ assert.match(screen,/\{row\.played\} J/);
+ assert.match(screen,/groups\?\.knockoutStarted/);
+});
