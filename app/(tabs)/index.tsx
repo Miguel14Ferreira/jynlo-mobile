@@ -212,11 +212,18 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     Alert.alert('Eliminar Story?', 'Esta Story será removida antes das 24 horas. A ação é definitiva.', [
       {text:'Cancelar',style:'cancel',onPress:()=>setPaused(false)},
       {text:'Eliminar',style:'destructive',onPress:()=>{
-        if(submittingStory.current)return;
+        // A confirmation opened by an old account or Story is no longer valid.
+        if(submittingStory.current||activeAccount.current!==actorToken||activeStoryIdRef.current!==storyId)return;
         submittingStory.current=true;setStoryBusy(true);
-        void deleteStory(storyId,actorToken).then(()=>{if(activeAccount.current===actorToken){onClose();onDeleted();}})
-          .catch(e=>{if(activeAccount.current===actorToken)Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a eliminação.');})
-          .finally(()=>{submittingStory.current=false;setStoryBusy(false);setPaused(false);});
+        const operation=++storyMutationEpoch.current;
+        const current=()=>activeAccount.current===actorToken&&storyMutationEpoch.current===operation;
+        void deleteStory(storyId,actorToken).then(()=>{
+          if(current()&&activeStoryIdRef.current===storyId){onClose();onDeleted();}
+        }).catch(e=>{
+          if(current()&&activeStoryIdRef.current===storyId)Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a eliminação.');
+        }).finally(()=>{
+          if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+        });
       }}
     ]);
   }
