@@ -9,6 +9,7 @@ import {applyTeamToCompetition,discoverTeamCompetitions,myTeamApplications,
 import {C} from '../../src/lib/theme';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
+import {JynloIcon} from '../../src/components/JynloIcon';
 
 export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
@@ -113,7 +114,9 @@ export default function TeamCompetitionDiscovery(){
  };
  return <Page>
   <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
-  <Button secondary title="← Equipas" onPress={()=>router.push('/teams')}/>
+  <Pressable accessibilityRole="button" accessibilityLabel="Voltar às equipas" onPress={()=>router.push('/teams')} style={styles.backAction}>
+   <JynloIcon name="back" size={19} color={C.mint}/><Text style={styles.backActionText}>As tuas equipas</Text>
+  </Pressable>
   <View style={styles.intro}>
    <Text style={styles.introLabel}>COMPETIÇÕES · EQUIPAS</Text>
    <Text style={styles.title}>Encontrar competições</Text>
@@ -134,7 +137,9 @@ export default function TeamCompetitionDiscovery(){
   {!auth.token&&!loading?<Message>Inicia sessão para escolher uma equipa, consultar candidaturas e pedir participação.</Message>:null}
   {!loading&&!!auth.token&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
   {teams.length>0?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Escolher a minha equipa</Text>
+   <View style={styles.selectionHeading}><Text style={styles.subtitle}>Escolher a minha equipa</Text>
+    <Text style={styles.selectionCount}>{teams.length} {teams.length===1?'equipa':'equipas'}</Text></View>
+   <Text style={styles.note}>Seleciona o plantel que queres inscrever. Só as equipas que administras aparecem aqui.</Text>
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
      accessibilityLabel={'Candidatar a equipa '+team.name}
      accessibilityState={{selected:chosen===team.id}} disabled={busy}
@@ -148,7 +153,9 @@ export default function TeamCompetitionDiscovery(){
      </View>
      <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary}
        pattern={team.kitPattern} size={44}/>
-     <Text style={styles.choiceState}>{chosen===team.id?'✓':'○'}</Text>
+     <View style={[styles.choiceCheck,chosen===team.id&&styles.choiceCheckActive]}>
+      {chosen===team.id?<JynloIcon name="check" active size={21} color={C.mint}/>:null}
+     </View>
     </View>
    </Pressable>)}
   </View>:null}
@@ -160,6 +167,9 @@ export default function TeamCompetitionDiscovery(){
    </View>)}
   </View>:null}
   {!loading&&rows.length===0&&!error?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
+  {rows.length>0?<View style={styles.resultHeading}>
+    <Text style={styles.subtitle}>Competições disponíveis</Text><Text style={styles.selectionCount}>{rows.length}</Text>
+   </View>:null}
   {rows.map(item=><View key={item.communityId+'-'+item.type+'-'+item.id} style={styles.competitionCard}>
     <View style={styles.competitionTop}>
      <Text style={styles.competitionType}>{item.type==='TOURNAMENT'?'TORNEIO':'CAMPEONATO'}</Text>
@@ -167,6 +177,7 @@ export default function TeamCompetitionDiscovery(){
     </View>
     <Text style={styles.competitionTitle}>{item.name}</Text>
     <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
+    {!chosen&&auth.token?<Text style={styles.selectionHint}>Escolhe uma equipa acima para pedir participação.</Text>:null}
     <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
       disabled={!auth.token||!chosen||busy||loading||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
@@ -175,6 +186,14 @@ export default function TeamCompetitionDiscovery(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ backAction:{alignSelf:'flex-start',minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:12},
+ backActionText:{color:C.mint,fontWeight:'800',fontSize:13},
+ selectionHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
+ selectionCount:{color:C.mint,fontWeight:'900',fontSize:12},
+ resultHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:9},
+ selectionHint:{fontSize:12,color:'#B3D3DB',lineHeight:19},
+ choiceCheck:{height:27,width:27,borderRadius:14,borderWidth:1,borderColor:'#58848A',alignItems:'center',justifyContent:'center'},
+ choiceCheckActive:{borderColor:C.mint,backgroundColor:'#0D5752'},
  intro:{padding:17,borderWidth:1,borderColor:'#3AC7B34A',borderRadius:18,backgroundColor:'#092C3A',gap:8},
  introLabel:{fontSize:11,fontWeight:'900',letterSpacing:1.5,color:'#6DEED3'},
  searchPanel:{padding:15,borderWidth:1,borderColor:'#38BDA74A',backgroundColor:'#072733',borderRadius:17,gap:11},
