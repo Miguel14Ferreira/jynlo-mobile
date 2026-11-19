@@ -61,7 +61,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
   try{
    const response=await expoFetch(API_BASE+path,{
     method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
-    credentials:'omit',body:form,signal:controller.signal
+    credentials:'omit',redirect:'error',body:form,signal:controller.signal
    });
    if(!response.ok){
     if(response.status===401)throw Error('A sessão expirou. Inicia sessão novamente.');
