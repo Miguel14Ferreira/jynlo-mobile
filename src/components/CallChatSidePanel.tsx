@@ -121,6 +121,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    <View style={styles.avatar}><Text style={styles.avatarLetter}>{peer.slice(0,1).toUpperCase()}</Text></View>
    <View style={{flex:1}}><Text style={styles.title}>Chat da chamada</Text>
     <Text style={styles.subtitle}>Conversa privada com @{peer} · histórico Jynlo</Text></View>
+   <View style={styles.liveBadge}><View style={styles.liveDot}/><Text style={styles.liveLabel}>Na chamada</Text></View>
   </View>
   {loading?<ActivityIndicator color={C.mint}/>:null}
   {syncWarning?<Text style={styles.warning}>{syncWarning}</Text>:null}
@@ -156,13 +157,16 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
 const styles=StyleSheet.create({
  container:{gap:10,borderRadius:16,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,padding:12,minWidth:0},
  wide:{width:312,minHeight:340,maxHeight:600},
- narrow:{minHeight:270,maxHeight:360},
- header:{flexDirection:'row',alignItems:'center',gap:10},
+ narrow:{minHeight:320,maxHeight:480},
+ header:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'},
+ liveBadge:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:8,paddingVertical:6,borderRadius:12,backgroundColor:'#123D3B'},
+ liveDot:{width:7,height:7,borderRadius:4,backgroundColor:C.mint},
+ liveLabel:{color:C.mint,fontSize:10,fontWeight:'800'},
  avatar:{height:38,width:38,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:C.surface2,borderWidth:1,borderColor:C.mint},
  avatarLetter:{color:C.mint,fontWeight:'900',fontSize:17},
  title:{color:C.white,fontSize:15,fontWeight:'900'},
  subtitle:{color:C.muted,fontSize:11,lineHeight:16},
- history:{flexGrow:1,minHeight:120},
+ history:{flexGrow:1,minHeight:160},
  historyContent:{gap:8,paddingVertical:5},
  empty:{color:C.muted,fontSize:12,textAlign:'center',padding:12},
  bubble:{maxWidth:'89%',paddingHorizontal:11,paddingVertical:8,borderRadius:13,gap:3},
