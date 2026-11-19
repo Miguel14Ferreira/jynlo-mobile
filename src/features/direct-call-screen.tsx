@@ -59,7 +59,7 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
    <Pressable accessibilityRole="button" accessibilityLabel={showChat?'Ocultar chat da chamada':'Abrir chat da chamada'}
     accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(current=>!current)}
     style={[styles.chatToggle,showChat&&styles.chatToggleActive]}>
-    <JynloIcon name="chat" size={19} color={C.mint}/>
+    <JynloIcon name="messages" size={19} color={C.mint}/>
     <Text style={styles.chatToggleText}>{showChat?'Fechar chat':'Chat'}</Text>
    </Pressable>
   </View>
