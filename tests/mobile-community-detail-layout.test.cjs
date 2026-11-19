@@ -1,0 +1,43 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+
+test('community mobile detail has accessibly labelled dashboard navigation',()=>{
+ const src=read('app/communities/[id].tsx');
+ assert.match(src,/useState<'OVERVIEW'\|'SESSIONS'\|'CHAT'\|'MEMBERS'\|'MANAGE'>\('OVERVIEW'\)/);
+ assert.match(src,/accessibilityLabel="Secções da comunidade"/);
+ for(const tab of ['OVERVIEW','SESSIONS','CHAT','MEMBERS'])
+  assert.match(src,new RegExp("id:'"+tab+"'"));
+ assert.match(src,/owner\?<Pressable accessibilityRole="tab" accessibilityState=\{\{selected:activeSection==='MANAGE'\}\}/);
+ assert.match(src,/setActiveSection\('OVERVIEW'\)/);
+});
+test('community private data stays protected and main content keeps its existing flows',()=>{
+ const src=read('app/communities/[id].tsx');
+ assert.match(src,/role&&activeSection==='MEMBERS'\?<View style=\{styles\.section\}>/);
+ assert.match(src,/owner&&activeSection==='MANAGE'\?<View style=\{styles\.section\}>/);
+ assert.match(src,/owner&&activeSection==='MANAGE'&&requestsError/);
+ assert.match(src,/owner&&activeSection==='MANAGE'&&requests\.length>0/);
+ assert.match(src,/role&&activeSection==='CHAT'\?<View style=\{styles\.section\}>/);
+ assert.match(src,/role&&activeSection==='SESSIONS'\?<View style=\{styles\.section\}>/);
+ assert.match(src,/auth\.token && \(role \? activeSection==='OVERVIEW' : community\.visibility==='PUBLIC'\)/);
+ assert.match(src,/<CommunityTeamsPanel communityId=\{id\} isOrganizer=\{owner\} token=\{auth\.token\}/);
+ assert.match(src,/<CommunityChatPanel embedded\/>/);
+ assert.match(src,/pendingCommunityRequests\(id,auth\.token,auth\.username\)/);
+ assert.match(src,/communitySessions\(id,auth\.token,auth\.username\)/);
+ assert.match(src,/Criar sessão nesta comunidade/);
+ assert.match(src,/Ver competições por modalidade/);
+ assert.match(src,/Resultados e classificações/);
+ assert.match(src,/Criar torneio nesta comunidade/);
+ assert.match(src,/Ver diretos da comunidade/);
+});
+test('public community joining stays available without exposing member-only navigation',()=>{
+ const src=read('app/communities/[id].tsx');
+ assert.match(src,/!role&&auth\.token&&community\.visibility==='PUBLIC'/);
+ assert.match(src,/!role&&auth\.token&&community\.visibility==='PRIVATE'/);
+ assert.match(src,/\{role\?<View style=\{styles\.sectionNav\}/);
+ assert.match(src,/teamDestination&&!role&&myRequest/);
+ assert.match(src,/setCommunity\(null\);setSessions\(\[\]\)/);
+});
