@@ -1578,6 +1578,13 @@ export default function JynloFeedHome(){
            <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="settings" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Localização, amigos e mais opções</Text></View>
            <JynloIcon name={storyDetailsOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
           </Pressable>
+          {!storyDetailsOpen&&(storyPublishCommunityId!==null||storyLocation.trim()||storyTags.trim())?<View style={styles.storyEditorSummary}>
+           <Text style={styles.storiesIntro} numberOfLines={2}>{[
+            storyPublishCommunityId!==null?('Comunidade: '+(storyManagedCommunities.find(group=>group.id===storyPublishCommunityId)?.name||'selecionada')):'O meu perfil',
+            storyLocation.trim()?('Local: '+storyLocation.trim()):null,
+            storyMentionUsernames(storyTags).length?('Amigos: '+storyMentionUsernames(storyTags).map(name=>'@'+name).join(', ')):null
+           ].filter(Boolean).join(' · ')}</Text>
+          </View>:null}
           {storyDetailsOpen?<View style={styles.storyEditorAdvanced}>
           <Text style={styles.storiesIntro}>Publicar como</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
@@ -1650,6 +1657,7 @@ export default function JynloFeedHome(){
           })}
           </View>:null}
         </ScrollView>
+        {!storyMedia?<Text style={styles.storyUploadHint}>Escolhe uma fotografia ou um vídeo para publicares a Story.</Text>:null}
         {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Verifica se a Story já foi publicada antes de repetires.</Text></View>:null}
         <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" accessibilityState={{disabled:!storyMedia||storyPublishing,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}>
           <View style={styles.publishButtonContent}>{storyPublishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{storyPublishing?'A enviar Story…':'Publicar Story'}</Text></View>
@@ -1662,6 +1670,8 @@ export default function JynloFeedHome(){
 }
 const styles=StyleSheet.create({
  storyCaptionBlock:{gap:8,paddingVertical:5},
+ storyEditorSummary:{paddingHorizontal:12,paddingVertical:9,borderLeftWidth:3,borderLeftColor:TEAL,backgroundColor:'#0A3540',borderRadius:10},
+ storyUploadHint:{fontSize:12,color:MUTED,textAlign:'center',paddingVertical:5},
  storyEditorDisclosure:{minHeight:52,paddingHorizontal:13,paddingVertical:10,borderRadius:14,borderWidth:1,
   borderColor:'#3FC6B077',backgroundColor:'#0C3541',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12},
  storyEditorDisclosureCopy:{flexDirection:'row',alignItems:'center',gap:9,flex:1,minWidth:0},
