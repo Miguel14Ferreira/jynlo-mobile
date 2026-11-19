@@ -38,6 +38,9 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
  // Allow the chat column to stay beside video on wide layouts without
  // forcing video beyond the available viewport on smaller devices.
  const dimensions=videoStageDimensions(wide&&showChat?width-345:width,height,expandedVideo);
+ // Reserve usable message space when the call chat opens on a phone.
+ const compactChatVideo=!wide&&showChat;
+ const stageHeight=compactChatVideo?Math.min(dimensions.stageHeight,Math.max(150,Math.round(height*.27))):dimensions.stageHeight;
  const [changing,setChanging]=useState(false),[error,setError]=useState('');
  async function toggle(kind:'microphone'|'camera'){
   if(changing)return;
@@ -67,18 +70,18 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>Tu</Text></View>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{peer.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>@{peer}</Text></View>
   </View>
-  <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide]}>
+  <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide,compactChatVideo&&styles.callColumnsChatOpen]}>
    <View style={styles.callStageColumn}>
   {media==='video'?<View style={styles.videos}>
    {(()=>{
     const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
     return <>
-     <View style={[styles.videoStage,{height:dimensions.stageHeight}]}>
+     <View style={[styles.videoStage,{height:stageHeight}]}>
       {dominant?<View style={styles.mainVideo}>
        <VideoTrack trackRef={dominant} style={styles.video}/>
        <Text style={styles.videoTag}>{dominant.participant.isLocal?'Tu':'Participante'}</Text>
       </View>:<View style={styles.videoFallback}><Text style={styles.note}>A aguardar vídeo dos participantes…</Text></View>}
-      {previews.map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.previewVideo,{width:dimensions.previewWidth,height:dimensions.previewHeight}]}>
+      {previews.map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.previewVideo,{width:compactChatVideo?Math.min(dimensions.previewWidth,96):dimensions.previewWidth,height:compactChatVideo?Math.min(dimensions.previewHeight,76):dimensions.previewHeight}]}>
        <VideoTrack trackRef={track} style={styles.video}/>
        <Text style={styles.previewTag}>{track.participant.isLocal?'Tu':'Participante'}</Text>
       </View>)}
@@ -95,7 +98,7 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
    <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
-  <View style={styles.callActions}>
+  <View style={[styles.callActions,compactChatVideo&&styles.callActionsCompact]}>
    <Pressable accessibilityRole="button" accessibilityLabel={muted?'Ligar microfone':'Desligar microfone'} accessibilityState={{disabled:changing}} disabled={changing}
     onPress={()=>{void toggle('microphone');}} style={styles.callAction}>
     <JynloIcon name="microphone" size={23} color={muted?C.muted:C.mint}/>
@@ -288,6 +291,8 @@ const styles=StyleSheet.create({
  participantName:{fontSize:12,fontWeight:'800',color:C.white},
  callColumns:{gap:10,minWidth:0},
  callColumnsWide:{flexDirection:'row',alignItems:'stretch'},
+ callColumnsChatOpen:{gap:6},
+ callActionsCompact:{marginTop:2},
  callStageColumn:{flex:1,minWidth:0},
  audioCall:{minHeight:170,justifyContent:'center',alignItems:'center',backgroundColor:'#061B25',borderRadius:16,gap:10},
  audioSymbol:{color:C.mint,fontSize:44,fontWeight:'900'},
