@@ -89,27 +89,6 @@ export default function DiscoverScreen(){
      <Text style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
    </View>
-   <View style={styles.shortcuts}>
-     <Pressable style={styles.createShortcut} onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})} accessibilityRole="button" accessibilityLabel="Criar uma sessão desportiva">
-       <JynloIcon name="plus" size={29} color={MobileTheme.colors.background}/>
-       <View style={{flex:1,gap:3}}><Text style={styles.createShortcutTitle}>Organizar um jogo</Text><Text style={styles.createShortcutSub}>Cria uma sessão e convida jogadores</Text></View>
-       <Text style={styles.createShortcutArrow}>›</Text>
-     </Pressable>
-     <View style={styles.destinationRow}>
-       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/teams')} accessibilityRole="button" accessibilityLabel="Explorar equipas">
-         <JynloIcon name="tournament" size={23} color={MobileTheme.colors.accent}/>
-         <Text style={styles.destinationText} numberOfLines={1}>Equipas</Text>
-       </Pressable>
-       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/(tabs)/communities')} accessibilityRole="button" accessibilityLabel="Explorar comunidades desportivas">
-         <JynloIcon name="community" size={23} color={MobileTheme.colors.accent}/>
-         <Text style={styles.destinationText} numberOfLines={1}>Comunidades</Text>
-       </Pressable>
-       <Pressable style={styles.destinationShortcut} onPress={()=>router.push('/venues')} accessibilityRole="button" accessibilityLabel="Encontrar recintos desportivos">
-         <JynloIcon name="venue" size={23} color={MobileTheme.colors.accent}/>
-         <Text style={styles.destinationText} numberOfLines={1}>Recintos</Text>
-       </Pressable>
-     </View>
-   </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    <Text style={styles.filterLabel}>MODALIDADE · {SPORTS.length} DESPORTOS</Text>
    <Pressable style={styles.sportSelector} accessibilityRole="button" accessibilityState={{expanded:sportPickerVisible}}
