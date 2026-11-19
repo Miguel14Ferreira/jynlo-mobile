@@ -37,7 +37,7 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
-  const response=await expoFetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',body:form,signal:controller.signal});
+  const response=await expoFetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',redirect:'error',body:form,signal:controller.signal});
   if(!response.ok){
    if(kind==='session'&&response.status===409)
     throw Error('O chat da sessão está encerrado. Confirma o estado do jogo.');
@@ -45,8 +45,12 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
     throw Error('Já não tens permissão para enviar nesta conversa.');
    throw Error('O servidor recusou o envio ('+response.status+').');
   }
-  const result=await response.json() as CommunityChatEntry|SessionChatEntry;
-  if(!Number.isSafeInteger(result.id)||!result.attachmentName)throw Error('Envio não confirmado.');
+  let result:CommunityChatEntry|SessionChatEntry;
+  try{result=await response.json() as CommunityChatEntry|SessionChatEntry;}
+  catch{throw Error('O envio não foi confirmado. Confirma o histórico antes de repetir.');}
+  if(!result||!Number.isSafeInteger(result.id)||result.id<=0||
+    typeof result.attachmentName!=='string'||!result.attachmentName.trim())
+   throw Error('O envio não foi confirmado. Confirma o histórico antes de repetir.');
   return result;
  }catch(e){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Confirma o histórico antes de repetir.');
