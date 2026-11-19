@@ -78,3 +78,21 @@ test('group standings show real server points and accessible team links',()=>{
  assert.match(screen,/\{row\.played\} J/);
  assert.match(screen,/groups\?\.knockoutStarted/);
 });
+
+
+test('individual match screen preserves confirmed server scores and clears stale pages',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8');
+ assert.match(screen,/matchScore\(m\)/);
+ assert.match(screen,/m\.status==='COMPLETED'&&styles\.scoreBoxFinal/);
+ assert.match(screen,/setTournament\(null\);setMatches\(\[\]\);setMore\(false\);setPage\(0\)/);
+ assert.match(screen,/if\(version===generation\.current\)\{paging\.current=false;setBusy\(false\);\}/);
+});
+test('performance results render validated rankings without inferring winners',()=>{
+ const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8');
+ assert.match(screen,/validatedRank\(rank\)/);
+ assert.match(screen,/style=\{styles\.positionBox\}/);
+ assert.match(screen,/style=\{styles\.performance\} numberOfLines=\{2\}/);
+ for(const token of ['formatPoints(row.championshipPoints)','formatSeconds(row.bestSeconds)','formatMetres(row.bestMetres)','finalPublished']){
+  assert.ok(screen.includes(token),token);
+ }
+});
