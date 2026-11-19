@@ -63,3 +63,16 @@ test('the call chat respects server deletions while retaining recent acknowledge
  assert.match(panel,/readOwner\.current!==identity\+'\|'\+version/);
  assert.doesNotMatch(panel,/for\(const row of \[\.\.\.current,\.\.\.rows\]\)/);
 });
+
+test('phone calls prioritize readable chat without leaving the LiveKit room',()=>{
+ const call=read('src/features/direct-call-screen.tsx');
+ const panel=read('src/components/CallChatSidePanel.tsx');
+ assert.match(call,/const compactChatVideo=!wide&&showChat/);
+ assert.match(call,/Math\.min\(dimensions\.stageHeight,Math\.max\(150,Math\.round\(height\*\.27\)\)\)/);
+ assert.match(call,/height:stageHeight/);
+ assert.match(call,/compactChatVideo&&styles\.callColumnsChatOpen/);
+ assert.match(call,/compactChatVideo\?Math\.min\(dimensions\.previewWidth,96\)/);
+ assert.match(panel,/narrow:\{minHeight:320,maxHeight:480\}/);
+ assert.match(panel,/Na chamada/);
+ assert.match(panel,/style=\{styles\.history\}/);
+});
