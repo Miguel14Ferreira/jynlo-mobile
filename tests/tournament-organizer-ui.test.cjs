@@ -155,3 +155,14 @@ test('organizer fixture cards show only confirmed results and preserve write gua
  assert.match(screen,/organizerMatchWriteGuard\(tournament,m,matches,groups,groups!==null\)/);
  assert.match(screen,/fixturesVerified\?matches\.map/);
 });
+
+
+test('tournament detail invalidates stale standings before retry and ignores overlapping reads',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8');
+ assert.match(screen,/const generation=useRef\(0\),requestVersion=useRef\(0\)/);
+ assert.match(screen,/const request=\+\+requestVersion\.current/);
+ assert.match(screen,/setTournament\(null\);setOrganizerRole\(null\);setTable\(null\);setTableError\(''\);setError\(''\)/);
+ assert.match(screen,/if\(version!==generation\.current\|\|request!==requestVersion\.current\)return/);
+ assert.match(screen,/if\(version===generation\.current&&request===requestVersion\.current\)setTable\(standings\)/);
+ assert.match(screen,/if\(version===generation\.current&&request===requestVersion\.current\)setLoading\(false\)/);
+});
