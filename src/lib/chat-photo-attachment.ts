@@ -15,7 +15,7 @@ function photoUrl(kind:ChatKind,id:number):string{
 export async function chatPhotoAvailable(kind:ChatKind,id:number,token:string):Promise<boolean>{
  if(DEMO_MODE||!token)return false;
  const response=await fetch(photoUrl(kind,id)+'/availability',{
-  headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit'
+  headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',redirect:'error'
  });
  if(!response.ok)return false;
  return ((await response.json()) as {available?:boolean}).available===true;
@@ -32,6 +32,8 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  if(!extension)throw Error('Formato de fotografia não suportado.');
  if(replyId!=null&&(!Number.isSafeInteger(replyId)||replyId<=0))throw Error('Resposta inválida.');
  const prepared=await prepareChatPhoto(asset,extension);
+ // Clean temporary picker copies even if form construction fails.
+ try{
  const form=new FormData();
  form.append('file',new File(prepared.uri) as unknown as Blob,'jynlo-chat.'+extension);
  if(replyId!=null)form.append('replyToMessageId',String(replyId));
@@ -55,5 +57,6 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
  }catch(e){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Confirma o histórico antes de repetir.');
   throw e instanceof Error?e:Error('Falha no envio. Confirma o histórico antes de repetir.');
- }finally{clearTimeout(timer);prepared.cleanup();}
+ }finally{clearTimeout(timer);}
+ }finally{prepared.cleanup();}
 }
