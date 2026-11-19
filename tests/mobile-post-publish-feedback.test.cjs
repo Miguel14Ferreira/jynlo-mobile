@@ -46,7 +46,7 @@ test('new stories remain visible in the public feed until the server listing cat
 
 test('slow media uploads show active progress feedback for posts and Stories',()=>{
  assert.match(feed,/accessibilityState=\{\{disabled:\(!composerMedia\.length&&!composerText\.trim\(\)\)\|\|publishing\|\|!postRetryAcknowledged,busy:publishing\}\}/);
- assert.match(feed,/accessibilityState=\{\{disabled:!storyMedia\|\|storyPublishing,busy:storyPublishing\}\}/);
+ assert.match(feed,/accessibilityState=\{\{disabled:!storyMedia\|\|storyPublishing\|\|!storyRetryAcknowledged,busy:storyPublishing\}\}/);
  assert.match(feed,/publishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
  assert.match(feed,/storyPublishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
  assert.match(feed,/A enviar publicação…/);
