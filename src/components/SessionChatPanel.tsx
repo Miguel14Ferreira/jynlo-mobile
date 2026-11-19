@@ -249,7 +249,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     [...current,confirmed].sort((a,b)=>a.id-b.id));
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
-   await refresh(false,version);
+   // The server already confirmed the write; history is a separate read.
+   // A slow/offline GET must never report the acknowledged POST as failed.
+   void refresh(true,version);
   }catch(e){
    if(version!==generation.current||activeChat.current!==identity)return;
    if(e instanceof ApiError&&[401,403,404,409,410].includes(e.status)){
@@ -361,7 +363,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    else await sendChatPhoto('session',id,auth.token,photo,originalReplyId);
    if(version!==generation.current)return;
    setPhoto(null);setExtraPhotos([]);setAttachmentCaption(current=>current===captionToSend?'':current);setReply(current=>current?.id===originalReplyId?null:current);
-   await refresh(false,version);
+   // The server already confirmed the write; history is a separate read.
+   // A slow/offline GET must never report the acknowledged POST as failed.
+   void refresh(true,version);
   }catch(e){
    if(version===generation.current&&activeChat.current===identity){
     // Multipart failures may surface as text instead of ApiError. Never
