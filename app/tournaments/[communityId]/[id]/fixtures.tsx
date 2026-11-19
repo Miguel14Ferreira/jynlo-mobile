@@ -18,7 +18,14 @@ export default function TeamFixturesScreen(){
  const [loading,setLoading]=useState(true),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),paging=useRef(false);
  const load=useCallback(async(version=generation.current)=>{
-  if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
+  if(!auth.token||!auth.username){
+   if(version===generation.current){setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setPage(0);setLoadingMore(false);setLoading(false);}
+   return;
+  }
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
+   if(version===generation.current){setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setError('Competição inválida.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setPage(0);
   try{
    const t=await tournamentDetails(cid,tid,auth.token,auth.username);
@@ -36,7 +43,9 @@ export default function TeamFixturesScreen(){
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  paging.current=false;
+  paging.current=false;setLoadingMore(false);setActive('GROUP');
+  // Clear prior account/competition data before any authorized read completes.
+  setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setPage(0);
   void load(version);
   return()=>{generation.current++;};
  },[load]));
@@ -49,12 +58,14 @@ export default function TeamFixturesScreen(){
    if(version!==generation.current)return;
    setMatches(previous=>[...previous,...part.matches.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(part.page);setHasMore(part.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{paging.current=false;setLoadingMore(false);}
+  finally{if(version===generation.current){paging.current=false;setLoadingMore(false);}}
  }
  const teamPage=(teamId:number)=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(teamId)}});
  const renderMatches=(entries:TournamentTeamMatch[])=>entries.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>);
  return <Page><DemoBanner/><Eyebrow>TORNEIO · JOGOS</Eyebrow>
-   <Text style={styles.title}>{tournament?.name||'Grupos e eliminatórias'}</Text>
+   <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · JYNLO</Text><Text style={styles.title}>{tournament?.name||'Grupos e eliminatórias'}</Text>
+    {tournament?<Text style={styles.heroInfo}>{tournament.sport||'Multidesporto'} · {tournament.format==='GROUP_KNOCKOUT'?'Grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Eliminatórias':'Liga'}</Text>:null}
+   </View>
    {!auth.token?<Button title="Entrar para consultar os jogos" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
    {!loading&&tournament&&!canListMatches(tournament)?<Message>Esta competição tem um sistema próprio de resultados. Não vamos apresentar resultados de jogos genéricos para esta modalidade.</Message>:null}
@@ -66,9 +77,9 @@ export default function TeamFixturesScreen(){
       {active==='GROUP'?<>
         {groups?.groups.length?groups.groups.map(g=><View key={g.groupNumber} style={styles.group}>
           <Text style={styles.heading}>Grupo {g.groupNumber}</Text>
-          {g.standings.map(row=><Pressable key={row.teamId} onPress={()=>teamPage(row.teamId)} style={styles.standing} accessibilityRole="button">
-            <Text style={styles.rank}>{row.position}.</Text><Text style={styles.team}>{row.teamName}</Text>
-            <Text style={styles.points}>{row.played} J · {row.points} pts</Text>
+          {g.standings.map(row=><Pressable key={row.teamId} onPress={()=>teamPage(row.teamId)} style={styles.standing} accessibilityRole="button" accessibilityLabel={'Ver equipa '+row.teamName}>
+            <View style={styles.rankPill}><Text style={styles.rank}>{row.position}</Text></View><Text style={styles.team} numberOfLines={2}>{row.teamName}</Text>
+            <View style={styles.pointsBlock}><Text style={styles.points}>{row.points} pts</Text><Text style={styles.played}>{row.played} J</Text></View>
           </Pressable>)}
           {split.groups.find(x=>x.number===g.groupNumber)?.matches.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>)||null}
         </View>):<Message>Os grupos ainda não têm uma classificação publicada pelo servidor.</Message>}
@@ -88,9 +99,20 @@ export default function TeamFixturesScreen(){
    <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
 }
-const styles=StyleSheet.create({title:{fontSize:28,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'900',color:C.white},
- tabs:{flexDirection:'row',gap:9},tab:{flex:1,padding:11,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center'},
- tabActive:{backgroundColor:C.mint,borderColor:C.mint},tabText:{fontSize:12,fontWeight:'800',color:C.white},tabTextActive:{color:C.background},
- group:{borderRadius:18,padding:14,backgroundColor:C.surface2,gap:11},standing:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderBottomWidth:1,borderColor:C.border},
- rank:{fontSize:13,fontWeight:'900',color:C.mint,width:24},team:{fontSize:13,fontWeight:'800',color:C.white,flex:1},points:{fontSize:12,color:C.muted}
+const styles=StyleSheet.create({
+ hero:{padding:17,borderRadius:18,borderWidth:1,borderColor:'#3CD8BA55',backgroundColor:'#082C3B',gap:8},
+ heroLabel:{color:'#79F2D8',fontWeight:'900',fontSize:11,letterSpacing:1.3},
+ heroInfo:{color:'#A6D9D5',fontSize:13,fontWeight:'700',lineHeight:19},
+ title:{fontSize:26,lineHeight:33,fontWeight:'900',color:C.white,letterSpacing:-.4},
+ heading:{fontSize:18,fontWeight:'900',color:C.white},
+ tabs:{flexDirection:'row',gap:8,padding:5,borderRadius:15,backgroundColor:'#062634',borderWidth:1,borderColor:'#3DAEAA55'},
+ tab:{flex:1,minWidth:0,minHeight:46,paddingHorizontal:6,paddingVertical:10,borderRadius:11,backgroundColor:'transparent',alignItems:'center',justifyContent:'center'},
+ tabActive:{backgroundColor:'#41E1BE'},
+ tabText:{fontSize:12,fontWeight:'800',color:'#B6DADE',textAlign:'center'},tabTextActive:{color:'#062E31'},
+ group:{borderRadius:17,padding:15,borderWidth:1,borderColor:'#3EC4B34D',backgroundColor:'#092D3B',gap:12},
+ standing:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:10,borderBottomWidth:1,borderColor:'#3AB7A732',minWidth:0},
+ rankPill:{width:31,height:31,borderRadius:10,alignItems:'center',justifyContent:'center',backgroundColor:'#10574F'},
+ rank:{fontSize:13,fontWeight:'900',color:'#9DFFE5'},
+ team:{fontSize:13,fontWeight:'800',color:C.white,flex:1,minWidth:0,lineHeight:18},
+ pointsBlock:{minWidth:57,alignItems:'flex-end',gap:3},points:{fontSize:13,fontWeight:'900',color:'#76F4D4'},played:{fontSize:10,fontWeight:'700',color:'#ABCCD0'}
 });
