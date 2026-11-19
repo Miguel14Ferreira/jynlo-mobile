@@ -38,7 +38,7 @@ test('call chat revokes old account messages and never fabricates call-only hist
  assert.match(panel,/const identity=peer\+'\|'\+self\+'\|'\+token/);
  assert.match(panel,/generation\.current!==version\|\|owner\.current!==identity/);
  assert.match(panel,/\[401,403,404,410\]\.includes\(e\.status\)/);
- assert.match(panel,/setMessages\(\[\]\);setDraft\(''\);setAccessRevoked\(true\)/);
+ assert.match(panel,/setMessages\(\[\]\);setDraft\(''\);recentlyConfirmed\.current\.clear\(\);setAccessRevoked\(true\)/);
  assert.match(panel,/if\(!visible\|\|accessRevoked\|\|sendLock\.current/);
  assert.match(panel,/const rows=await directChatHistory/);
  assert.doesNotMatch(panel,/markDirectRead\(/);
