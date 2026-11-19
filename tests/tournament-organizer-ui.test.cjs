@@ -137,3 +137,21 @@ test('organizer calendar distinguishes group stage, knockout round and league ma
  for(const label of ['Jornada ${m.roundNumber}','Grupo ${m.groupNumber} · Jornada ${m.roundNumber}','Eliminatória · Ronda ${m.roundNumber}'])
   assert.ok(screen.includes(label),label);
 });
+
+
+test('competition detail keeps official standings legible without computing local results',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8');
+ assert.match(screen,/tournamentTable\(communityId,result,auth\.token,auth\.username\)/);
+ assert.match(screen,/standingsColumns\(kind\)/);
+ assert.match(screen,/style=\{styles\.standingIdentity\}/);
+ assert.match(screen,/style=\{styles\.pointsBox\}/);
+ assert.match(screen,/table\.source/);
+ assert.doesNotMatch(screen,/setTable\(.*\.reduce\(/);
+});
+test('organizer fixture cards show only confirmed results and preserve write guards',()=>{
+ const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ assert.match(screen,/style=\{styles\.fixtureScoreRow\}/);
+ assert.match(screen,/m\.status==='COMPLETED'\?\x60\$\{m\.homeScore\?\?'—'\} : \$\{m\.awayScore\?\?'—'\}\x60:'vs'/);
+ assert.match(screen,/organizerMatchWriteGuard\(tournament,m,matches,groups,groups!==null\)/);
+ assert.match(screen,/fixturesVerified\?matches\.map/);
+});
