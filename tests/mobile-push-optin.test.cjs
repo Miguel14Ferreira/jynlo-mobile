@@ -81,6 +81,17 @@ test('push switch verifies server ownership before displaying enabled state',()=
  assert.match(screen,/pushRegistrationStatus\(auth\.username,auth\.token\)/);
 });
 
+test('EAS push-test APK refuses silent Firebase-free builds',()=>{
+ const eas=JSON.parse(read('eas.json'));
+ const profile=eas.build['push-test'];
+ assert.equal(profile.environment,'preview');
+ assert.equal(profile.env.JYNLO_REQUIRE_NATIVE_PUSH,'1');
+ assert.equal(profile.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
+ const config=read('app.config.js');
+ assert.match(config,/process\.env\.JYNLO_REQUIRE_NATIVE_PUSH === '1' && !firebaseConfigFile/);
+ assert.match(config,/a APK push-test exige GOOGLE_SERVICES_JSON/);
+});
+
 test('push-test APK profile always uses real Jynlo API and remains an explicit build',()=>{
  const eas=JSON.parse(read('eas.json'));
  const profile=eas.build['push-test'];
