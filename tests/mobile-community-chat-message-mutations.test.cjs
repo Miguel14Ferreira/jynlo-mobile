@@ -47,3 +47,14 @@ test('chat mutations and picker cannot unlock the new account or community',()=>
  assert.match(screen,/if\(mutationOwner\.current===identity&&mutationEpoch\.current===operation\)\{\s*mutationLock\.current=false;mutationOwner\.current='';setMutationBusy\(false\)/);
  assert.match(screen,/if\(pickerOwner\.current===identity&&pickerEpoch\.current===operation\)\{\s*pickerInFlight\.current=false;pickerOwner\.current=''/);
 });
+
+
+test('confirmed community messages and photo uploads do not await history refresh',()=>{
+ const screen=read('src/components/CommunityChatPanel.tsx');
+ assert.match(screen,/setMessages\(current=>mergeMessages\(current,\[confirmed\]\)\);/);
+ assert.match(screen,/setDraft\(current=>current===originalDraft\?'':current\)/);
+ assert.match(screen,/A confirmed POST is complete even if a subsequent history refresh fails/);
+ assert.match(screen,/Reconcile history separately after a confirmed photo\/album upload/);
+ assert.equal((screen.match(/void refresh\(version,true\);/g)||[]).length>=2,true);
+ assert.doesNotMatch(screen,/setReply\(current=>current\?\.id===originalReplyId\?null:current\);\s*await refresh\(version\)/);
+});
