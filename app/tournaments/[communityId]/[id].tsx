@@ -18,8 +18,12 @@ export default function TournamentDetailScreen(){
  const [organizerRole,setOrganizerRole]=useState<string|null>(null);
  const [table,setTable]=useState<TournamentTable|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [tableError,setTableError]=useState('');
- const generation=useRef(0);
+ const generation=useRef(0),requestVersion=useRef(0);
  const load=useCallback(async(version=generation.current)=>{
+  const request=++requestVersion.current;
+  if(version!==generation.current)return;
+  // Invalidate previous private results before every explicit reload, not just focus.
+  setTournament(null);setOrganizerRole(null);setTable(null);setTableError('');setError('');
   if(!auth.token||!auth.username){
    if(version===generation.current)setLoading(false);
    return;
@@ -28,29 +32,29 @@ export default function TournamentDetailScreen(){
    if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
    return;
   }
-  setLoading(true);setError('');setTableError('');
+  setLoading(true);
   try{
    const [result,community]=await Promise.all([
     tournamentDetails(communityId,id,auth.token,auth.username),
     communityDetails(communityId,auth.token,auth.username)
    ]);
-   if(version!==generation.current)return;
+   if(version!==generation.current||request!==requestVersion.current)return;
    if(community.id!==communityId)throw Error('A comunidade devolvida não corresponde à selecionada.');
    if(!('myRole' in community)||!community.myRole)throw Error('Já não pertences a esta comunidade.');
    setOrganizerRole(community.myRole);
    setTournament(result);
    try{
     const standings=await tournamentTable(communityId,result,auth.token,auth.username);
-    if(version===generation.current)setTable(standings);
+    if(version===generation.current&&request===requestVersion.current)setTable(standings);
    }catch(e){
-    if(version===generation.current){
+    if(version===generation.current&&request===requestVersion.current){
      setTable(null);
      setTableError(e instanceof Error?e.message:'Não foi possível carregar a classificação.');
     }
    }
   }catch(e){
-   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');
-  }finally{if(version===generation.current)setLoading(false);}
+   if(version===generation.current&&request===requestVersion.current)setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');
+  }finally{if(version===generation.current&&request===requestVersion.current)setLoading(false);}
  },[communityId,id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
