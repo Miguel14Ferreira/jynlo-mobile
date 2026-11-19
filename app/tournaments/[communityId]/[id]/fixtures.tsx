@@ -7,6 +7,7 @@ import {useAuth} from '../../../../src/lib/auth';
 import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {teamTournamentGroups,teamTournamentMatches} from '../../../../src/lib/tournament-fixtures-api';
 import {canListMatches,splitTeamMatches} from '../../../../src/lib/tournament-fixtures-core.cjs';
+import {validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamGroups,TournamentTeamMatch} from '../../../../src/lib/types';
 export default function TeamFixturesScreen(){
@@ -54,8 +55,9 @@ export default function TeamFixturesScreen(){
  async function more(){if(!auth.token||!auth.username||paging.current||loadingMore||!hasMore||loading)return;
   const version=generation.current;
   paging.current=true;setLoadingMore(true);setError('');
-  try{const next=page+1,part=await teamTournamentMatches(cid,tid,next,auth.token,auth.username);
+  try{const next=page+1,response=await teamTournamentMatches(cid,tid,next,auth.token,auth.username);
    if(version!==generation.current)return;
+   const part=validateNextFixturePage<TournamentTeamMatch>(response,next);
    setMatches(previous=>[...previous,...part.matches.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(part.page);setHasMore(part.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
   finally{if(version===generation.current){paging.current=false;setLoadingMore(false);}}
