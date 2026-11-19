@@ -40,8 +40,8 @@ test('multi-media posts show accessible current position and pagination dots',()
 
 test('album editor adapts preview width and allows long filenames to wrap without hiding controls',()=>{
  const feed=read('app/(tabs)/index.tsx');
- assert.match(feed,/width:Math\.min\(260,Math\.max\(165,screenWidth-72\)\)/);
- assert.match(feed,/numberOfLines=\{2\}>\{i===0\?'Capa/);
+ assert.match(feed,/width:composerMedia\.length===1\?Math\.max\(200,screenWidth-68\):Math\.max\(200,screenWidth-92\)/);
+ assert.match(feed,/i===0\?' · Capa':''/);
  assert.match(feed,/postMediaPreviewFooter:\{gap:8/);
  assert.match(feed,/accessibilityLabel=\{\x60Mover ficheiro \$\{i\+1\} para trás\x60\}/);
  assert.match(feed,/accessibilityLabel=\{\x60Remover ficheiro \$\{i\+1\}\x60\}/);
