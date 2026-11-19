@@ -34,8 +34,8 @@ test('old account Story actions cannot mutate the new account or show stale comp
  const viewer=feed.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0];
  assert.match(viewer,/const activeAccount=useRef\(token\)/);
  assert.match(viewer,/activeAccount\.current=token/);
- assert.match(viewer,/if\(activeAccount\.current===token\)onUpdated\(updated\)/);
- assert.match(viewer,/if\(activeAccount\.current!==token\)return/);
- assert.match(viewer,/if\(activeAccount\.current===actorToken\)\{onClose\(\);onDeleted\(\);\}/);
- assert.match(viewer,/Resposta privada, guardada para o autor/);
+ assert.match(viewer,/if\(current\(\)&&activeStoryIdRef\.current===id\)onUpdated\(updated\)/);
+ assert.match(viewer,/activeAccount\.current!==actorToken\|\|activeStoryIdRef\.current!==storyId\)return/);
+ assert.match(viewer,/if\(current\(\)&&activeStoryIdRef\.current===storyId\)\{onClose\(\);onDeleted\(\);\}/);
+ assert.match(viewer,/A tua resposta ficou guardada em privado/);
 });
