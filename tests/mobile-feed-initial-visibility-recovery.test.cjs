@@ -20,3 +20,17 @@ test('feed cannot expose a prior account’s hidden posts while preferences relo
  const markReady=screen.indexOf('hiddenReadyRef.current=true;setHiddenReady(true)',read);
  assert.ok(read>0&&ignoreStale>read&&markReady>ignoreStale,'stale loads must not mark a new account ready');
 });
+
+
+test('failed hidden-post storage reads must never unlock visible posts',()=>{
+ const begin=screen.indexOf('if(!hiddenReadyRef.current){',screen.indexOf('const fetches=await Promise.allSettled'));
+ const end=screen.indexOf("if(fetches[0].status==='rejected')",begin);
+ const block=screen.slice(begin,end);
+ assert.match(block,/if\(fetches\[3\]\.status==='fulfilled'\)/);
+ assert.match(block,/hiddenKeysRef\.current=stored;setHiddenKeys\(stored\)/);
+ assert.match(block,/hiddenReadyRef\.current=true;setHiddenReady\(true\)/);
+ assert.match(block,/else\{[\s\S]*?setError\('Não foi possível ler as publicações ocultadas/);
+ assert.equal(block.split('hiddenReadyRef.current=true').length-1,1);
+ assert.match(screen,/const visiblePosts=identityMatches&&hiddenReady\?posts\.filter/);
+ assert.match(screen,/onPress=\{\(\)=>void load\(\)\}/);
+});
