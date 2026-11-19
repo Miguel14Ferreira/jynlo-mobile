@@ -428,7 +428,7 @@ export default function TeamDetail(){
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
-  <Button title="← Equipas" onPress={()=>router.push('/teams')}/>
+  <View style={styles.backRow}><Pressable accessibilityRole="button" accessibilityLabel="Voltar às equipas" onPress={()=>router.push('/teams')} style={styles.backLink}><Text style={styles.backLabel}>‹  Equipas</Text></Pressable><Text style={styles.backContext}>PERFIL DA EQUIPA</Text></View>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!loading&&!saving?<Button secondary title="Tentar novamente" onPress={()=>void load(false,true)}/>:null}
@@ -437,7 +437,7 @@ export default function TeamDetail(){
   {team?<><View style={styles.header}>
     <Text style={styles.eyebrow}>JYNLO · EQUIPA DESPORTIVA</Text>
     <View style={styles.heroIdentity}>
-      <TeamBrandAvatar team={team} size={78}/>
+      <TeamBrandAvatar team={team} size={94}/>
       <View style={styles.heroCopy}>
         <Text style={styles.title}>{team.name}</Text>
         <Text style={styles.heroSubtitle}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text>
@@ -631,7 +631,11 @@ export default function TeamDetail(){
  </Page>;
 }
 const styles=StyleSheet.create({
- header:{padding:20,backgroundColor:'#0A3340',borderColor:'#2A7A79',borderWidth:1,borderRadius:22,gap:13},
+ header:{padding:22,backgroundColor:'#092F3B',borderColor:'#2A7A79',borderWidth:1,borderRadius:24,gap:16},
+ backRow:{minHeight:48,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
+ backLink:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ backLabel:{fontSize:14,color:C.mint,fontWeight:'900'},
+ backContext:{fontSize:10,color:C.muted,fontWeight:'800',letterSpacing:1.2}, 
  kitPreview:{flexDirection:'row',alignItems:'center',gap:9},
  kitPatternRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
  kitPatternCard:{flex:1,minWidth:90,minHeight:94,alignItems:'center',justifyContent:'center',padding:8,gap:7,borderWidth:1,
@@ -645,14 +649,14 @@ const styles=StyleSheet.create({
  swatchSelected:{borderWidth:4,borderColor:C.mint},
 
  eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1.1,color:C.mint},
- heroIdentity:{flexDirection:'row',alignItems:'center',gap:14},
+ heroIdentity:{flexDirection:'row',alignItems:'center',gap:16,paddingVertical:3},
  heroCrest:{width:74,height:74,borderRadius:19,backgroundColor:'#168D86',alignItems:'center',justifyContent:'center'},
  heroCrestText:{color:'#052C32',fontSize:32,fontWeight:'900'},
  heroCopy:{flex:1,gap:5},
  heroSubtitle:{color:'#C5F4E9',fontWeight:'700',fontSize:14,lineHeight:21},
  description:{color:'#D1E4E8',fontSize:14,lineHeight:21},
- statsRow:{flexDirection:'row',gap:8},
- statCard:{flex:1,alignItems:'center',paddingVertical:12,paddingHorizontal:5,backgroundColor:'#104655',borderWidth:1,borderColor:'#347C84',borderRadius:12,gap:3},
+ statsRow:{flexDirection:'row',flexWrap:'wrap',gap:9},
+ statCard:{flexGrow:1,flexBasis:88,alignItems:'center',paddingVertical:15,paddingHorizontal:8,backgroundColor:'#104655',borderWidth:1,borderColor:'#347C84',borderRadius:16,gap:4},
  statNumber:{color:C.white,fontSize:22,fontWeight:'900'},
  statLabel:{color:'#C9E4E8',fontSize:12,fontWeight:'700',textAlign:'center'},
  heroAction:{backgroundColor:C.mint,padding:13,borderRadius:12,alignItems:'center'},
@@ -670,7 +674,7 @@ const styles=StyleSheet.create({
  tabSelected:{borderColor:C.mint,backgroundColor:'#123C42'},tabText:{fontSize:14,fontWeight:'800',color:C.muted},tabTextSelected:{color:C.mint},
  communityLink:{flex:1,gap:3,minHeight:44,justifyContent:'center'},historyLink:{padding:12,borderRadius:11,borderWidth:1,borderColor:C.border,gap:4},
  removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:13,fontWeight:'800',color:C.white},
- title:{fontSize:27,fontWeight:'900',color:C.white},
+ title:{fontSize:27,lineHeight:33,fontWeight:'900',color:C.white,letterSpacing:-.6},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
  panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:16,gap:10},
