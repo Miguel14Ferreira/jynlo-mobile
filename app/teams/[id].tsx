@@ -9,6 +9,7 @@ import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import SportsTeamChallengesPanel from '../../src/components/SportsTeamChallengesPanel';
 import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
@@ -511,23 +512,26 @@ export default function TeamDetail(){
     <Text style={styles.heading}>O espaço da equipa</Text>
     <Text style={styles.note}>Acompanha as novidades, conversa com o plantel e consulta as conquistas.</Text>
     <View style={styles.quickLinks}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir publicações da equipa"
-       onPress={()=>setActiveTab('FEED')} style={styles.quickLink}>
-      <Text style={styles.quickLinkSymbol}>▧</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir publicações da equipa" onPress={()=>setActiveTab('FEED')} style={styles.quickLink}>
+      <View style={styles.quickLinkIcon}><JynloIcon name="post" color={C.mint} size={23}/></View>
       <Text style={styles.quickLinkText}>Publicações</Text>
-      <Text style={styles.quickLinkMeta}>Novidades do plantel</Text>
+      <Text style={styles.quickLinkMeta}>{team.feedEnabled?'Novidades do plantel':'Feed desativado'}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da equipa"
-       onPress={()=>setActiveTab('CHAT')} style={styles.quickLink}>
-      <Text style={styles.quickLinkSymbol}>◉</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da equipa" onPress={()=>setActiveTab('CHAT')} style={styles.quickLink}>
+      <View style={styles.quickLinkIcon}><JynloIcon name="messages" color={C.mint} size={23}/></View>
       <Text style={styles.quickLinkText}>Chat</Text>
-      <Text style={styles.quickLinkMeta}>{team.chatEnabled?'Conversa da equipa':'Indisponível'}</Text>
+      <Text style={styles.quickLinkMeta}>{team.chatEnabled?'Conversa da equipa':'Chat desativado'}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir troféus e histórico da equipa"
-       onPress={()=>setActiveTab('TROPHIES')} style={styles.quickLink}>
-      <Text style={styles.quickLinkSymbol}>★</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir troféus e histórico da equipa" onPress={()=>setActiveTab('TROPHIES')} style={styles.quickLink}>
+      <View style={styles.quickLinkIcon}><JynloIcon name="tournament" color={C.mint} size={23}/></View>
       <Text style={styles.quickLinkText}>Troféus</Text>
       <Text style={styles.quickLinkMeta}>Títulos e histórico</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Explorar competições para esta equipa"
+       onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})} style={styles.quickLink}>
+      <View style={styles.quickLinkIcon}><JynloIcon name="championship" color={C.mint} size={23}/></View>
+      <Text style={styles.quickLinkText}>Competições</Text>
+      <Text style={styles.quickLinkMeta}>Procurar desafios</Text>
      </Pressable>
     </View>
    </View>:null}
@@ -695,7 +699,8 @@ const styles=StyleSheet.create({
  heroSecondaryText:{color:'#B2FFE8',fontSize:13,fontWeight:'900'},
  heroActionLabel:{color:'#053039',fontWeight:'900'},
  quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:9},
- quickLink:{flexGrow:1,flexBasis:'28%',minWidth:92,minHeight:120,padding:12,borderRadius:14,borderColor:'#49CEBA66',borderWidth:1,backgroundColor:'#0D3A43',gap:5},
+ quickLink:{flexGrow:1,flexBasis:'42%',minWidth:132,minHeight:122,padding:13,borderRadius:14,borderColor:'#49CEBA66',borderWidth:1,backgroundColor:'#0D3A43',gap:6},
+ quickLinkIcon:{width:38,height:38,alignItems:'center',justifyContent:'center',borderRadius:12,backgroundColor:'#14514D'},
  quickLinkSymbol:{fontSize:23,color:C.mint,fontWeight:'900'},
  quickLinkText:{fontSize:13,color:C.white,fontWeight:'900'},
  quickLinkMeta:{fontSize:11,lineHeight:16,color:'#B8D9DB'},
