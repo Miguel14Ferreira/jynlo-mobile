@@ -80,8 +80,15 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const activeStoryIdRef=useRef<number|null>(null);
   const audienceRequest=useRef(0);
   const submittingStory=useRef(false);
+  const storyMutationEpoch=useRef(0);
   const activeAccount=useRef(token);
   activeAccount.current=token;
+  React.useEffect(()=>{
+    // Previous-account completions must never alter the current Story modal.
+    storyMutationEpoch.current++;
+    submittingStory.current=false;
+    setStoryBusy(false);
+  },[token]);
   React.useEffect(()=>{viewedStoryIds.current.clear();},[token]);
   const longPress=useRef(false);
   const touchStartY=useRef<number|null>(null);
@@ -168,30 +175,35 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   const sendQuickReaction=async(emoji:string)=>{
     if(ownStory||!token||!username||storyBusy||submittingStory.current)return;
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
-    const id=story.id,actor=token;
+    const id=story.id,actor=token,operation=++storyMutationEpoch.current;
+    const current=()=>activeAccount.current===actor&&storyMutationEpoch.current===operation;
     try{await replyToStory(id,emoji,actor,username);
-      if(activeAccount.current===actor)Alert.alert('Reação enviada',emoji+' A reação foi enviada em privado ao autor.');
-    }catch(e){if(activeAccount.current===actor)Alert.alert('Reação',e instanceof Error?e.message:'Não foi possível confirmar a reação.');}
-    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+      if(current()&&activeStoryIdRef.current===id)Alert.alert('Reação enviada',emoji+' A reação foi enviada em privado ao autor.');
+    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Reação',e instanceof Error?e.message:'Não foi possível confirmar a reação.');}
+    finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   };
   async function toggleLike(){
     if(!story||!token||!username||submittingStory.current)return;
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
-    try{const updated=await toggleStoryLike(story.id,Boolean(story.likedByMe),token,username);if(activeAccount.current===token)onUpdated(updated);}
-    catch(e){if(activeAccount.current===token)Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
-    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+    const id=story.id,actor=token,operation=++storyMutationEpoch.current;
+    const current=()=>activeAccount.current===actor&&storyMutationEpoch.current===operation;
+    try{const updated=await toggleStoryLike(id,Boolean(story.likedByMe),actor,username);if(current()&&activeStoryIdRef.current===id)onUpdated(updated);}
+    catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
+    finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   }
   async function sendReply(){
     const message=replyText.trim();
     if(!story||!token||!username||ownStory||!message||submittingStory.current)return;
     submittingStory.current=true;setStoryBusy(true);pauseProgress();
+    const id=story.id,actor=token,operation=++storyMutationEpoch.current;
+    const current=()=>activeAccount.current===actor&&storyMutationEpoch.current===operation;
     try{
-      await replyToStory(story.id,message,token,username);
-      if(activeAccount.current!==token)return;
-      setReplyText(current=>current.trim()===message?'':current);
+      await replyToStory(id,message,actor,username);
+      if(!current()||activeStoryIdRef.current!==id)return;
+      setReplyText(value=>value.trim()===message?'':value);
       Alert.alert('Resposta enviada','A tua resposta ficou guardada em privado. O autor recebe um aviso se tiver as notificações ativadas.');
-    }catch(e){if(activeAccount.current===token)Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
-    finally{submittingStory.current=false;setStoryBusy(false);setPaused(false);}
+    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
+    finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   }
   function confirmDeleteStory(){
     if(!story||!story.canDelete||!token||submittingStory.current)return;
