@@ -34,6 +34,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
  const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
+ const uncertainSendRef=useRef<{identity:string;body:string;replyId:number|null}|null>(null);
  // Keep embedded message history readable as the Android keyboard opens.
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
@@ -256,7 +257,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  async function send(){
   const identity=id+'|'+auth.token;
   if(mutationLock.current||sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity)||revokedRef.current||!auth.token||!auth.username||!draft.trim())return;
-  if(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))return;
+  if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===draft.trim()&&uncertainSendRef.current.replyId===(reply?.id??null))return;
   const version=generation.current,token=auth.token,username=auth.username;
   const originalDraft=draft,originalReplyId=reply?.id;
   const message=originalDraft.trim();
@@ -267,7 +268,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    if(!confirmedCommunityChatSend(confirmed,id,username,message,originalReplyId))
     throw Error('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.');
    if(version!==generation.current)return;
-   setUncertainSend(null);
+   uncertainSendRef.current=null;setUncertainSend(null);
    // The verified server receipt is already an authorized chat entry. Show it
    // immediately rather than waiting for an eventually consistent history GET.
    setMessages(current=>mergeMessages(current,[confirmed]));
@@ -277,7 +278,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    void refresh(version,true);
   }catch(e){
    if(version===generation.current&&activeChat.current===identity&&uncertainChatSend(e))
-    setUncertainSend({identity,body:originalDraft.trim(),replyId:originalReplyId??null});
+    {const uncertain={identity,body:originalDraft.trim(),replyId:originalReplyId??null};uncertainSendRef.current=uncertain;setUncertainSend(uncertain);}
    if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
   }finally{
    pendingWrites.current.delete(identity);
@@ -439,7 +440,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    </View>:null}
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
   {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
-   onPress={()=>setUncertainSend(null)}/>:null}
+   onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
    {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
