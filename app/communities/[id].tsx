@@ -22,6 +22,7 @@ export default function CommunityDetailScreen(){
   const teamDestination=Number.isSafeInteger(id)&&id>0&&returnTo.startsWith('/tournaments/'+id+'/')?returnTo:null;
   const auth=useAuth(),router=useRouter();
   const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
+  const [activeSection,setActiveSection]=useState<'OVERVIEW'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
@@ -73,7 +74,7 @@ export default function CommunityDetailScreen(){
     const version=++generation.current;
     // Never show another community or account while the new request is pending.
     setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);setMyRequestError('');
-    setError('');setNotice('');setBusy(false);
+    setError('');setNotice('');setBusy(false);setActiveSection('OVERVIEW');
     void reload(version);
     return ()=>{generation.current++;};
   },[reload]));
@@ -160,7 +161,40 @@ export default function CommunityDetailScreen(){
       {teamDestination&&role?<Button title="Continuar para a equipa do convite" onPress={()=>router.replace(teamDestination as any)}/>:null}
       {teamDestination&&!role&&myRequest?<Message>O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.</Message>:null}
       {teamDestination&&!role&&auth.token&&!loading?<Button secondary title="Verificar aprovação da comunidade" disabled={busy} onPress={()=>{void reload();}}/>:null}
-      {role?<View style={styles.section}>
+      {role?<View style={styles.sectionNav} accessibilityLabel="Secções da comunidade">
+        {([{id:'OVERVIEW',label:'Visão geral'},{id:'SESSIONS',label:'Sessões'},{id:'CHAT',label:'Chat'},{id:'MEMBERS',label:'Membros'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
+         accessibilityState={{selected:activeSection===tab.id}} onPress={()=>setActiveSection(tab.id)}
+         style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
+         <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
+        </Pressable>)}
+        {owner?<Pressable accessibilityRole="tab" accessibilityState={{selected:activeSection==='MANAGE'}}
+          onPress={()=>setActiveSection('MANAGE')} style={[styles.sectionTab,activeSection==='MANAGE'&&styles.sectionTabSelected]}>
+          <Text style={[styles.sectionTabText,activeSection==='MANAGE'&&styles.sectionTabTextSelected]}>Gerir</Text>
+        </Pressable>:null}
+      </View>:null}
+      {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
+        <Text style={styles.sectionTitle}>O espaço da comunidade</Text>
+        <Text style={styles.muted}>Encontra os próximos jogos, acompanha a conversa e organiza a tua comunidade.</Text>
+        <View style={styles.quickLinks}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ver próximas sessões da comunidade" onPress={()=>setActiveSection('SESSIONS')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>Sessões</Text>
+           <Text style={styles.quickLinkDescription}>{sessionsError?'Por confirmar':sessions.length+' agendadas'}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da comunidade" onPress={()=>setActiveSection('CHAT')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>◉</Text><Text style={styles.quickLinkTitle}>Chat</Text>
+           <Text style={styles.quickLinkDescription}>Conversar em tempo real</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Ver membros da comunidade" onPress={()=>setActiveSection('MEMBERS')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>♙</Text><Text style={styles.quickLinkTitle}>Membros</Text>
+           <Text style={styles.quickLinkDescription}>{(community as CommunityGroup).memberCount} jogadores</Text>
+          </Pressable>
+        </View>
+        <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
+        {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
+        {owner?<Button secondary title="Criar torneio nesta comunidade" onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id)}})}/>:null}
+      </View>:null}
+      {role&&activeSection==='MEMBERS'?<View style={styles.section}>
         <View style={styles.header}><Text style={styles.sectionTitle}>Membros</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
         {(community as CommunityGroup).members.map(m=><View key={m.profileId+':'+m.username} style={styles.member}>
           <View style={styles.avatar}><Text style={styles.avatarText}>{m.username.charAt(0).toUpperCase()}</Text></View>
@@ -168,9 +202,9 @@ export default function CommunityDetailScreen(){
             <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · Organizador':m.role==='ADMIN'?' · Administrador':''}</Text></View>
         </View>)}
       </View>:null}
-      {auth.token && (role || community.visibility==='PUBLIC')?
+      {auth.token && (role ? activeSection==='OVERVIEW' : community.visibility==='PUBLIC')?
         <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
-      {owner?<View style={styles.section}>
+      {owner&&activeSection==='MANAGE'?<View style={styles.section}>
         <Eyebrow>FAZ A COMUNIDADE CRESCER</Eyebrow>
         <Text style={styles.sectionTitle}>Convidar pessoas</Text>
         <Text style={styles.muted}>Envia um convite a uma conta Jynlo existente. A adesão só acontece quando o destinatário aceitar.</Text>
@@ -180,31 +214,28 @@ export default function CommunityDetailScreen(){
         <Button title={busy?'A enviar…':'Enviar convite'} disabled={busy||inviteName.trim().length<2} onPress={()=>{void sendInvite();}}/>
         <Button secondary title="Partilhar ligação da comunidade" onPress={()=>{void share();}}/>
       </View>:null}
-      {owner&&requestsError?<View style={styles.section}><Message tone="error">{requestsError}</Message><Button secondary title="Tentar carregar pedidos novamente" disabled={loading||busy} onPress={()=>{void reload();}}/></View>:null}
-      {owner&&requests.length>0?<View style={styles.section}>
+      {owner&&activeSection==='MANAGE'&&requestsError?<View style={styles.section}><Message tone="error">{requestsError}</Message><Button secondary title="Tentar carregar pedidos novamente" disabled={loading||busy} onPress={()=>{void reload();}}/></View>:null}
+      {owner&&activeSection==='MANAGE'&&requests.length>0?<View style={styles.section}>
         <Text style={styles.sectionTitle}>Pedidos para entrar</Text>
         {requests.map(r=><View key={r.id} style={styles.request}>
           <Text style={styles.memberName}>@{r.requesterUsername}</Text>
           <Button title={busy?'A aprovar…':'Aprovar'} disabled={busy} onPress={()=>{void approve(r.id);}}/>
         </View>)}
       </View>:null}
-      {role?<View style={styles.section}>
+      {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
         <Eyebrow>TRANSMISSÕES EM DIRETO</Eyebrow>
         <Text style={styles.sectionTitle}>Lives da comunidade</Text>
         <Text style={styles.muted}>Assiste aos jogos e treinos em direto. O servidor confirma quem pode transmitir.</Text>
         <Button secondary title="Ver diretos da comunidade" onPress={()=>router.push({pathname:'/communities/[id]/live',params:{id:String(id)}})}/>
       </View>:null}
-      {role?<View style={styles.section}>
+      {role&&activeSection==='CHAT'?<View style={styles.section}>
         <Eyebrow>A CONVERSA CONTINUA</Eyebrow>
         <Text style={styles.sectionTitle}>Juntos, mesmo fora do campo</Text>
         <CommunityChatPanel embedded/>
-        <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
-        <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
-        {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
-        {owner?<Button secondary title="Criar torneio nesta comunidade" onPress={()=>router.push({pathname:"/tournaments/create",params:{communityId:String(id)}})}/>:null}
       </View>:null}
-      {role?<View style={styles.section}>
+      {role&&activeSection==='SESSIONS'?<View style={styles.section}>
         <Text style={styles.sectionTitle}>Próximas sessões</Text>
+        <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
         {sessionsError?<Button secondary title="Tentar carregar sessões novamente" disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
         {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
@@ -234,6 +265,14 @@ const styles=StyleSheet.create({
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   heading:{flexShrink:1,color:C.white,fontSize:25,fontWeight:'900',lineHeight:30},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
   section:{padding:16,borderRadius:18,backgroundColor:'#092D3B',borderWidth:1,borderColor:'#3BC8B344',gap:13},
+  sectionNav:{flexDirection:'row',flexWrap:'wrap',gap:7,padding:6,borderRadius:15,backgroundColor:'#061F2C',borderWidth:1,borderColor:C.border},
+  sectionTab:{minHeight:44,paddingHorizontal:12,justifyContent:'center',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:'#235460',backgroundColor:'#092F3D'},
+  sectionTabSelected:{backgroundColor:C.mint,borderColor:C.mint},
+  sectionTabText:{fontSize:12,fontWeight:'800',color:'#C4E1DF'},sectionTabTextSelected:{color:'#052C30'},
+  quickLinks:{flexDirection:'row',gap:9,flexWrap:'wrap'},
+  quickLink:{flexGrow:1,flexBasis:'29%',minWidth:96,minHeight:114,padding:11,borderRadius:13,borderWidth:1,borderColor:'#3CC8B366',backgroundColor:'#0A3B43',gap:5},
+  quickLinkIcon:{fontSize:22,color:C.mint,fontWeight:'900'},quickLinkTitle:{fontSize:13,color:C.white,fontWeight:'900'},
+  quickLinkDescription:{fontSize:11,lineHeight:16,color:C.muted},
   communitySessionRow:{gap:9},
   sectionTitle:{color:C.white,fontSize:20,fontWeight:'900'},member:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:7,borderBottomWidth:1,borderBottomColor:'#45B9AE24'},
   avatar:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:'#49D8BF66',alignItems:'center',justifyContent:'center',backgroundColor:'#105B5B'},
