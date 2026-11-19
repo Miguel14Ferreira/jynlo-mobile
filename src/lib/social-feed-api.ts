@@ -334,13 +334,18 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
      form.append(forceFilesParts||files.length>1?'files':file.type==='video'?'video':'image',new File(uri) as unknown as Blob,'jynlo-media.'+extension);
    }
    const controller=new AbortController();
-   const timeout=setTimeout(()=>controller.abort(),90000);
+   // A large permitted album over mobile data may legitimately take longer
+   // than a Story. Never auto-retry an uncertain multipart POST.
+   const uploadTimeoutMs=path.startsWith('/api/feed/posts')?180000:90000;
+   const timeout=setTimeout(()=>controller.abort(),uploadTimeoutMs);
+   let responseReceived=false;
    try{
      const response=await expoFetch(`${API_BASE}${path}`,{method,signal:controller.signal,
        // Never follow redirects with an authenticated multipart upload.
        // Expo's native fetch supports redirect:'error' but not web-only cache options.
        credentials:'omit',redirect:'error',
        headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},body:form});
+     responseReceived=true;
      if(!response.ok){
        const detail=response.status===401?'A sessão expirou. Volta a entrar na Jynlo.':
          response.status===403?'Não tens autorização para publicar este conteúdo.':
@@ -365,8 +370,11 @@ async function sendMedia(path:string,fields:Record<string,string>,files:MobileMe
    }catch(e){
      if(e instanceof ApiError)throw e;
      if(e instanceof Error&&e.message.startsWith('O servidor respondeu'))throw e;
-     if(controller.signal.aborted)throw new Error('O envio excedeu 90 segundos. Verifica se foi publicado antes de repetir.');
-     throw new Error('Falha de ligação durante o envio. Verifica se foi publicado antes de repetires.');
+     if(controller.signal.aborted)
+       throw new Error('O envio demorou demasiado tempo. Confirma no perfil se foi publicado antes de repetires.');
+     if(responseReceived)
+       throw new Error('O servidor respondeu, mas a ligação interrompeu-se antes de confirmar o resultado. Confirma no perfil antes de repetir.');
+     throw new Error('Não foi possível obter confirmação do servidor. Verifica a ligação móvel ou Wi-Fi e confirma no perfil antes de repetires.');
    }finally{clearTimeout(timeout);}
  }finally{
    for(const file of temporary){try{if(file.exists)file.delete();}catch{}}
