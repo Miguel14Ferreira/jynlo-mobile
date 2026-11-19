@@ -35,6 +35,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  // Never auto-scroll older messages unless the composer has keyboard focus.
  const inlineHistoryRef=useRef<ScrollViewInstance|null>(null);
  const inlineNearBottom=useRef(false);
+ // Position the first authorized history at the latest messages, never re-jump later.
+ const firstHistoryPositionPending=useRef(true);
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
@@ -139,6 +141,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    // The current ScrollView must measure its viewport and content again.
    historyViewportHeight.current=0;
    historyContentHeight.current=0;
+   firstHistoryPositionPending.current=true;
    const identity=id+'|'+auth.token;
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
@@ -428,6 +431,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     }}}
    onLayout={event=>{
     historyViewportHeight.current=event.nativeEvent.layout.height;
+    if(firstHistoryPositionPending.current&&messages.length>0&&historyContentHeight.current>0){
+     firstHistoryPositionPending.current=false;
+     inlineNearBottom.current=true;
+     inlineHistoryRef.current?.scrollToEnd({animated:false});
+    }
     // Content size can be reported before the viewport layout; acknowledge only when fully visible.
     if(historyContentHeight.current>0&&historyContentHeight.current<=historyViewportHeight.current&&AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
      const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
@@ -439,6 +447,13 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    }}
    onContentSizeChange={(_width,height)=>{
     historyContentHeight.current=height;
+    // Follow the most recent message only on the first authorized history load.
+    // Later updates honor the user's position in earlier messages.
+    if(firstHistoryPositionPending.current&&messages.length>0&&historyViewportHeight.current>0){
+     firstHistoryPositionPending.current=false;
+     inlineNearBottom.current=true;
+     inlineHistoryRef.current?.scrollToEnd({animated:false});
+    }
     // A short conversation can change without firing onScroll. Its entire content must fit.
     if(height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
        AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
