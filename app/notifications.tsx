@@ -86,7 +86,7 @@ export default function NotificationsScreen(){
    account.current=identity;setItems([]);setInvites([]);setCommunityInvites([]);
    // Invalidate in-flight mutations started by the previous account.
    pushOperation.current++;inviteOperation.current++;notificationRevision.current++;
-   notificationLock.current=false;setNotificationBusy(false);setUnreadOnly(false);
+   notificationLock.current=false;pushBusyRef.current=false;setNotificationBusy(false);setUnreadOnly(false);
    inviteDecisionInFlight.current=null;
    // An old request finishing after account change cannot clear the new account's lock.
    // The in-flight native enrollment is cancelled by auth logout/expiry.
@@ -150,8 +150,11 @@ export default function NotificationsScreen(){
   }catch(e){if(account.current===identity&&pushOperation.current===operation)
    setPushError(e instanceof Error?e.message:'Não foi possível atualizar as notificações push.');}
   finally{
-   pushBusyRef.current=false;
-   if(account.current===identity&&pushOperation.current===operation)setPushBusy(false);
+   // Completion from the previous account must not unlock a new push operation.
+   if(account.current===identity&&pushOperation.current===operation){
+    pushBusyRef.current=false;
+    setPushBusy(false);
+   }
   }
  }
  async function decide(invite:PendingSessionInvite,accept:boolean){
