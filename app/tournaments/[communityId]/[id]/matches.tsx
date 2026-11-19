@@ -18,7 +18,11 @@ export default function IndividualMatchesScreen(){
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),paging=useRef(false);
  const load=useCallback(async(version=generation.current)=>{
-  if(!auth.token||!auth.username){if(version===generation.current){setLoading(false);setTournament(null);setMatches([]);}return;}
+  if(!auth.token||!auth.username){if(version===generation.current){setLoading(false);setTournament(null);setMatches([]);setMore(false);setPage(0);setBusy(false);}return;}
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
+   if(version===generation.current){setTournament(null);setMatches([]);setMore(false);setError('Competição inválida.');setLoading(false);}
+   return;
+  }
   setLoading(true);setError('');setTournament(null);setMatches([]);setMore(false);setPage(0);
   try{
    const info=await tournamentDetails(cid,tid,auth.token,auth.username);
@@ -34,7 +38,7 @@ export default function IndividualMatchesScreen(){
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  paging.current=false;
+  paging.current=false;setBusy(false);setTournament(null);setMatches([]);setMore(false);setPage(0);
   void load(version);
   return()=>{generation.current++;};
  },[load]));
@@ -46,19 +50,23 @@ export default function IndividualMatchesScreen(){
    if(version!==generation.current)return;
    setMatches(existing=>[...existing,...data.matches.filter(m=>!existing.some(x=>x.id===m.id))]);setPage(data.page);setMore(data.hasMore);
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
-  finally{paging.current=false;setBusy(false);}
+  finally{if(version===generation.current){paging.current=false;setBusy(false);}}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIO · INDIVIDUAL</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
+  <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · INDIVIDUAL</Text><Text style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
+   {tournament?<Text style={styles.heroSubtitle}>{tournament.sport||'Multidesporto'} · Jogos e resultados confirmados</Text>:null}
+  </View>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!loading&&tournament&&!supported?<Message>Esta modalidade não utiliza o calendário de confrontos individuais. Consulta a sua classificação específica.</Message>:null}
   {!loading&&supported&&matches.length===0?<Message>Ainda não existem jogos individuais publicados.</Message>:null}
   {!loading&&supported?matches.map(m=><View key={m.id} style={styles.card}>
    <View style={styles.row}><Badge text={matchRound(m)}/><Badge text={m.status==='COMPLETED'?'Concluído':'Por disputar'}/></View>
-   <View style={styles.match}><Text style={styles.player}>{m.homeUsername||'Jogador não indicado'}</Text>
-    <Text style={styles.score}>{matchScore(m)}</Text>
-    <Text style={styles.player}>{m.awayUsername||'Jogador não indicado'}</Text></View>
+   <View style={styles.match}>
+    <Text style={styles.player} numberOfLines={2}>{m.homeUsername||'Jogador não indicado'}</Text>
+    <View style={[styles.scoreBox,m.status==='COMPLETED'&&styles.scoreBoxFinal]}><Text style={styles.score}>{matchScore(m)}</Text></View>
+    <Text style={[styles.player,styles.awayPlayer]} numberOfLines={2}>{m.awayUsername||'Jogador não indicado'}</Text>
+   </View>
   </View>):null}
   {more?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy} onPress={()=>{void next();}}/>:null}
   <Message>Os confrontos e resultados são devolvidos pelo backend. Não calculamos vencedores, classificações nem rondas automaticamente.</Message>
@@ -66,4 +74,17 @@ export default function IndividualMatchesScreen(){
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
 }
-const styles=StyleSheet.create({title:{color:C.white,fontSize:28,fontWeight:'900'},card:{backgroundColor:C.surface,padding:16,borderWidth:1,borderColor:C.border,borderRadius:17,gap:14},row:{flexDirection:'row',flexWrap:'wrap',gap:8},match:{gap:10,alignItems:'center'},player:{fontSize:15,fontWeight:'800',color:C.white},score:{fontSize:20,fontWeight:'900',color:C.mint}});
+const styles=StyleSheet.create({
+ hero:{padding:17,borderWidth:1,borderColor:'#37C8AF5A',backgroundColor:'#082D3C',borderRadius:19,gap:9},
+ heroLabel:{fontSize:11,fontWeight:'900',letterSpacing:1.2,color:'#8AF3D9'},
+ heroSubtitle:{fontSize:13,color:'#ACD7DB',lineHeight:19},
+ title:{color:C.white,fontSize:27,lineHeight:33,fontWeight:'900',letterSpacing:-.5},
+ card:{backgroundColor:'#0A3340',padding:15,borderWidth:1,borderColor:'#3DC4B04D',borderRadius:17,gap:13},
+ row:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ match:{flexDirection:'row',gap:8,alignItems:'center',minWidth:0},
+ player:{flex:1,minWidth:0,fontSize:13,lineHeight:18,fontWeight:'850',color:C.white,textAlign:'right'},
+ awayPlayer:{textAlign:'left'},
+ scoreBox:{width:118,minHeight:51,paddingHorizontal:7,paddingVertical:9,justifyContent:'center',alignItems:'center',backgroundColor:'#153D48',borderWidth:1,borderColor:'#409CA054',borderRadius:12},
+ scoreBoxFinal:{backgroundColor:'#115D55',borderColor:'#4CDAB66B'},
+ score:{fontSize:14,lineHeight:19,textAlign:'center',fontWeight:'900',color:'#B4FFE7'}
+});
