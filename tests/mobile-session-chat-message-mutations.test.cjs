@@ -35,3 +35,20 @@ test('session mutation lifecycle guards concurrent sends and preserves failed dr
  assert.match(screen,/setReply\(current=>current\?\.id===message.id\?null:current\)/);
  assert.match(screen,/const renderedMessages=.*\.map\(m=><View/);
 });
+
+
+test('confirmed session chat messages and photo uploads do not await a history read',()=>{
+ const screen=read('src/components/SessionChatPanel.tsx');
+ const send=screen.slice(screen.indexOf('async function send(){'),screen.indexOf('function ownMessage('));
+ const photo=screen.slice(screen.indexOf('async function uploadPhoto(){'),screen.indexOf('const recentPhotoIds=',screen.indexOf('async function uploadPhoto(){')));
+ assert.match(send,/const confirmed=await postSessionChat\(/);
+ assert.match(send,/confirmedSessionChatSend\(confirmed,id/);
+ assert.match(send,/setEntries\(current=>current\.some\(entry=>entry\.id===confirmed\.id\)/);
+ assert.match(send,/void refresh\(true,version\)/);
+ assert.doesNotMatch(send,/await refresh\(false,version\)/);
+ assert.match(photo,/await sendChatPhotoAlbum\(/);
+ assert.match(photo,/else await sendChatPhoto\(/);
+ assert.match(photo,/void refresh\(true,version\)/);
+ assert.doesNotMatch(photo,/await refresh\(false,version\)/);
+ assert.match(screen,/The server already confirmed the write; history is a separate read/);
+});
