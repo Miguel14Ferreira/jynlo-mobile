@@ -149,7 +149,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   // Drive both the visible progress bar and photo advancement from one animation.
   // Pausing resumes from the remaining duration rather than restarting 6 seconds.
   React.useEffect(()=>{
-    if(!story||story.video||mediaState!=='ready'||paused||replyFocused||storyBusy||audienceOpen||!appActive)return;
+    if(!story||story.video||mediaState!=='ready'||paused||replyFocused||reactionsOpen||storyBusy||audienceOpen||!appActive)return;
     const animation=Animated.timing(progress,{toValue:1,duration:Math.max(50,6000*remaining.current),useNativeDriver:false});
     animation.start(({finished})=>{
       if(finished){
@@ -160,7 +160,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       }
     });
     return ()=>{animation.stop();};
-  },[story?.id,story?.video,mediaState,paused,replyFocused,storyBusy,audienceOpen,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
+  },[story?.id,story?.video,mediaState,paused,replyFocused,reactionsOpen,storyBusy,audienceOpen,appActive,index,currentKey,groups,activeGroup?.key,onClose,progress]);
   if(!group||!activeGroup||!story)return null;
   const uri=mediaSource(story.mediaUrl);
   const ownStory=story.authorUsername.toLowerCase()===username?.toLowerCase();
@@ -276,7 +276,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?
         <MediaVideo key={story.id+'-'+mediaRetry} uri={uri} story muted={storyMuted}
-          paused={paused||replyFocused||storyBusy||audienceOpen||!appActive||mediaState==='error'}
+          paused={paused||replyFocused||reactionsOpen||storyBusy||audienceOpen||!appActive||mediaState==='error'}
           onReady={mediaReady} onPlaybackError={mediaFailed}
           onEnd={()=>{if(activeStoryIdRef.current===story.id&&activeAccount.current===token)go(1);}}/>:
         <Image key={story.id+'-'+mediaRetry} source={mediaRequestSource(uri,token)}
@@ -340,7 +340,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       </View>:null}
       {!ownStory?<View style={styles.storyReactions}>
         <Pressable accessibilityRole="button" accessibilityLabel={reactionsOpen?'Ocultar reações à Story':'Mostrar reações à Story'}
-         accessibilityState={{expanded:reactionsOpen}} disabled={storyBusy} onPress={()=>setReactionsOpen(value=>!value)}
+         accessibilityState={{expanded:reactionsOpen}} disabled={storyBusy} onPress={()=>{if(!reactionsOpen)pauseProgress();else setPaused(false);setReactionsOpen(value=>!value);}}
          style={styles.storyReactionDisclosure}>
          <JynloIcon name="like" color={TEAL} size={18}/>
          <Text style={styles.storyReactionsTitle}>Reagir em privado</Text>
