@@ -16,7 +16,7 @@ import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityM
 export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
- const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'>('OVERVIEW');
+ const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'|'BRANDING'>('OVERVIEW');
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [brokenAvatars,setBrokenAvatars]=useState<Record<number,boolean>>({});
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
@@ -451,15 +451,21 @@ export default function TeamDetail(){
     <View style={styles.statsRow}>
       <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
       <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{standaloneTrophies.length+championshipHonours.length}</Text><Text style={styles.statLabel}>Troféus</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'}</Text><Text style={styles.statLabel}>Troféus</Text></View>
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel="Encontrar competições para esta equipa"
-      style={styles.heroAction}
-      onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}>
-      <Text style={styles.heroActionLabel}>Explorar competições  →</Text>
-    </Pressable>
+    <View style={styles.heroActions}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Encontrar competições para esta equipa"
+       style={[styles.heroAction,{flex:1}]}
+       onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}>
+       <Text style={styles.heroActionLabel}>Explorar competições →</Text>
+     </Pressable>
+     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel="Personalizar emblema e equipamento"
+       onPress={()=>setActiveTab('BRANDING')} style={styles.heroSecondaryAction}>
+       <Text style={styles.heroSecondaryText}>Personalizar</Text>
+     </Pressable>:null}
+    </View>
    </View>
-   {isOwner&&activeTab==='OVERVIEW'?<View style={styles.panel}>
+   {isOwner&&activeTab==='BRANDING'?<View style={styles.panel}>
     <Text style={styles.heading}>Identidade da equipa</Text>
     <Text style={styles.note}>Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.</Text>
     {!brandingVerified?<Text style={styles.note}>Identidade por confirmar. Recarrega os dados antes de editar.</Text>:null}
@@ -495,7 +501,7 @@ export default function TeamDetail(){
       onPress={()=>void updateBranding('KIT')}/>
    </View>:null}
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
-    {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'},{id:'CHALLENGES',label:'Desafios'}] as const).map(tab=>
+    {([...([{id:'OVERVIEW',label:'Plantel'},{id:'TROPHIES',label:'Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Chat'},{id:'CHALLENGES',label:'Desafios'}] as const),...(isOwner?[{id:'BRANDING' as const,label:'Identidade'}]:[])]).map(tab=>
      <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
       onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
       <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
@@ -659,7 +665,10 @@ const styles=StyleSheet.create({
  statCard:{flex:1,minWidth:0,alignItems:'center',paddingVertical:12,paddingHorizontal:5,backgroundColor:'#0A3640',borderWidth:1,borderColor:'#3CC8AC55',borderRadius:14,gap:4},
  statNumber:{color:C.white,fontSize:22,fontWeight:'900'},
  statLabel:{color:'#C9E4E8',fontSize:12,fontWeight:'700',textAlign:'center'},
- heroAction:{backgroundColor:C.mint,padding:13,borderRadius:12,alignItems:'center'},
+ heroActions:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:9},
+ heroAction:{backgroundColor:C.mint,padding:13,borderRadius:12,alignItems:'center',justifyContent:'center',minHeight:46},
+ heroSecondaryAction:{minHeight:46,justifyContent:'center',alignItems:'center',paddingHorizontal:15,borderRadius:12,borderColor:'#5CE6D3',borderWidth:1,backgroundColor:'#0B3943'},
+ heroSecondaryText:{color:'#B2FFE8',fontSize:13,fontWeight:'900'},
  heroActionLabel:{color:'#053039',fontWeight:'900'},
  roster:{gap:8},
  playerCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,flexDirection:'row',alignItems:'center',gap:11},
