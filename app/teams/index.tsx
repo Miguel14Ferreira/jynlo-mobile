@@ -19,6 +19,8 @@ export default function TeamsScreen(){
  const [createOpen,setCreateOpen]=useState(false);
  const [submittedQuery,setSubmittedQuery]=useState('');
  const joinedOnly=joined.filter(team=>!owned.some(owner=>owner.id===team.id));
+ // Do not repeat the same club in owned, joined and public discovery sections.
+ const discoveredOnly=teams.filter(team=>!owned.some(owner=>owner.id===team.id)&&!joined.some(member=>member.id===team.id));
  const requestVersion=useRef(0),actionVersion=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
  useEffect(()=>{savingRef.current=saving;},[saving]);
@@ -169,19 +171,27 @@ export default function TeamsScreen(){
   {invites.length>0?<View style={styles.section}>
    <Text style={styles.heading}>Convites para equipas</Text>
    {invites.map(x=><View key={x.teamId} style={styles.card}>
-     <Text style={styles.heading}>{x.teamName}</Text>
-     <Button title="Aceitar convite" disabled={saving} onPress={()=>void respond(x.teamId,true)}/>
-     <Button title="Recusar convite" disabled={saving} onPress={()=>void respond(x.teamId,false)}/>
+     <View style={styles.inviteIdentity}><View style={styles.inviteSymbol}><JynloIcon name="community" size={23} color={C.mint}/></View>
+       <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{x.teamName}</Text><Text style={styles.note}>Convite para integrares o plantel</Text></View>
+     </View>
+     <View style={styles.inviteActions}>
+       <View style={styles.inviteButton}><Button title="Aceitar" disabled={saving} onPress={()=>void respond(x.teamId,true)}/></View>
+       <View style={styles.inviteButton}><Button title="Recusar" secondary disabled={saving} onPress={()=>void respond(x.teamId,false)}/></View>
+     </View>
    </View>)}
   </View>:null}
   {competitionInvites.length>0?<View style={styles.section}>
    <Text style={styles.heading}>Convites para competições</Text>
    {competitionInvites.map(x=><View key={x.id} style={styles.card}>
-    <Text style={styles.heading}>{x.teamName}</Text>
-    <Text style={styles.note}>{x.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · Convite pendente</Text>
-    <Text style={styles.note}>Aceitar confirma o interesse da equipa; a inscrição competitiva é concluída pelo organizador.</Text>
-    <Button title="Aceitar convite" disabled={saving} onPress={()=>void respondCompetition(x.id,true)}/>
-    <Button title="Recusar convite" disabled={saving} onPress={()=>void respondCompetition(x.id,false)}/>
+    <View style={styles.inviteIdentity}><View style={styles.inviteSymbol}><JynloIcon name="tournament" size={23} color={C.mint}/></View>
+      <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{x.teamName}</Text>
+      <Text style={styles.note}>{x.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · Convite pendente</Text></View>
+    </View>
+    <Text style={styles.note}>Aceitar confirma o interesse da equipa; a inscrição é concluída pelo organizador.</Text>
+    <View style={styles.inviteActions}>
+      <View style={styles.inviteButton}><Button title="Aceitar" disabled={saving} onPress={()=>void respondCompetition(x.id,true)}/></View>
+      <View style={styles.inviteButton}><Button title="Recusar" secondary disabled={saving} onPress={()=>void respondCompetition(x.id,false)}/></View>
+    </View>
    </View>)}
   </View>:null}
   {auth.token?<View style={styles.section}>
@@ -219,8 +229,8 @@ export default function TeamsScreen(){
        placeholder="Nome, modalidade ou cidade" placeholderTextColor={C.muted} accessibilityLabel="Pesquisar equipas"
        returnKeyType="search" onSubmitEditing={search}/>
     <Button title="Pesquisar" secondary onPress={search}/>
-    {loading?<Loader/>:teams.length===0?<View style={styles.empty}><Text style={styles.note}>{submittedQuery?'Não encontrámos equipas para esta pesquisa. Experimenta outra modalidade ou cidade.':'Ainda não há equipas disponíveis para descobrir.'}</Text></View>:
-      teams.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
+    {loading?<Loader/>:discoveredOnly.length===0?<View style={styles.empty}><Text style={styles.note}>{submittedQuery?'Não encontrámos equipas para esta pesquisa. Experimenta outra modalidade ou cidade.':'Ainda não há equipas disponíveis para descobrir.'}</Text></View>:
+      discoveredOnly.map(team=><Pressable key={team.id} style={({pressed})=>[styles.card,pressed&&styles.pressed]}
         accessibilityRole="button" accessibilityLabel={'Ver equipa '+team.name}
         onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
         <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
@@ -250,6 +260,10 @@ const styles=StyleSheet.create({
  count:{backgroundColor:'#0E5B54',color:'#ADFFE9',fontWeight:'900',fontSize:12,borderRadius:15,
   paddingHorizontal:11,paddingVertical:5,overflow:'hidden'},
  card:{padding:16,borderRadius:17,borderWidth:1,borderColor:'#3CC5AD4D',backgroundColor:'#0C3844',gap:10,minHeight:94,justifyContent:'center'},
+ inviteIdentity:{flexDirection:'row',alignItems:'center',gap:11,minWidth:0},
+ inviteSymbol:{width:46,height:46,borderRadius:14,backgroundColor:'#14514D',alignItems:'center',justifyContent:'center'},
+ inviteActions:{flexDirection:'row',alignItems:'stretch',gap:8,flexWrap:'wrap'},
+ inviteButton:{flex:1,minWidth:112},
  teamRow:{flexDirection:'row',alignItems:'center',gap:14,minWidth:0},
  teamIcon:{width:48,height:48,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:'#204639'},
  teamCopy:{flex:1,minWidth:0,gap:3},
