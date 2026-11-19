@@ -61,3 +61,17 @@ test('read-only PDF completion remains scoped to the current conversation',()=>{
  assert.match(screen,/if\(conversation\.current!==peer\+'\|'\+auth\.token\)return/);
  assert.match(screen,/await refresh\(true,generation\.current\)/);
 });
+
+
+test('confirmed direct messages and photo uploads do not depend on a second GET',()=>{
+ const textSend=screen.slice(screen.indexOf('async function send()'),screen.indexOf('async function prepareLocation()'));
+ assert.match(textSend,/confirmedDirectChatSend\(confirmed/);
+ assert.match(textSend,/setMessages\(current=>current\.some\(message=>message\.id===confirmed\.id\)/);
+ assert.match(textSend,/void refresh\(true,version\)/);
+ assert.doesNotMatch(textSend,/await refresh\(false,version\)/);
+ assert.match(upload,/await sendChatPhotoAlbum\(/);
+ assert.match(upload,/else await sendDirectPhoto\(/);
+ assert.match(upload,/void refresh\(true,version\)/);
+ assert.doesNotMatch(upload,/await refresh\(false,version\)/);
+ assert.match(upload,/Confirmed photo\/album upload and later history synchronization are separate operations/);
+});
