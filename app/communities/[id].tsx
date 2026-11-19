@@ -135,17 +135,22 @@ export default function CommunityDetailScreen(){
     {error&&!community&&!loading?<Button secondary title="Tentar carregar comunidade novamente" disabled={busy} onPress={()=>{void reload();}}/>:null}
     {!!notice?<Message>{notice}</Message>:null}
     {community?<>
-      <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
-      <View style={styles.banner}>
-        <Text style={styles.bannerIcon}>{communitySports(community)[0]==='Futebol'?'⚽':communitySports(community)[0]==='Karting'?'🏎️':communitySports(community)[0]==='Voleibol'?'🏐':'🤝'}</Text>
-        <Text style={styles.bannerText}>{describeCommunitySports(community,3)} · {role?'Fazes parte deste grupo':'Descobre esta comunidade'}</Text>
+      <View style={styles.identityCard}>
+        <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
+        <View style={styles.identityHeading}>
+          <View style={styles.identityMark}><Text style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text></View>
+          <View style={styles.identityCopy}>
+            <Text style={styles.heading}>{community.name}</Text>
+            <Text style={styles.identityStatus}>{role?'Fazes parte desta comunidade':'Descobre esta comunidade'}</Text>
+          </View>
+        </View>
+        <Text style={styles.subtitle}>{community.description||'Mais do que desporto, uma forma de encontrar pessoas.'}</Text>
+        <View style={styles.header}>
+          <Text style={styles.identitySports}>{describeCommunitySports(community,3)}</Text>
+          <Badge text={community.visibility==='PRIVATE'?'Privada':'Pública'}/>
+        </View>
+        {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       </View>
-      <View style={styles.header}>
-        <Text style={styles.heading}>{community.name}</Text>
-        <Badge text={community.visibility==='PRIVATE'?'Privada':'Pública'}/>
-      </View>
-      <Text style={styles.subtitle}>{community.description||'Mais do que desporto, uma forma de encontrar pessoas.'}</Text>
-      {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?'A confirmar…':'Juntar-me à comunidade'} disabled={busy} onPress={()=>{void take('join');}}/>:null}
       {!role&&myRequestError?<Message tone="error">{myRequestError}</Message>:null}
       {!role&&myRequestError?<Button secondary title="Verificar estado do pedido novamente" disabled={busy||loading} onPress={()=>{void reload();}}/>:null}
@@ -214,17 +219,24 @@ export default function CommunityDetailScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+  identityCard:{backgroundColor:'#082D3A',borderWidth:1,borderColor:'#37CBB366',borderRadius:22,padding:19,gap:14,overflow:'hidden'},
+  identityHeading:{flexDirection:'row',alignItems:'center',gap:14,minWidth:0},
+  identityMark:{width:69,height:69,borderRadius:19,borderWidth:1,borderColor:'#4AE4C47F',backgroundColor:'#0F615F',alignItems:'center',justifyContent:'center'},
+  identityInitial:{color:'#C5FFEE',fontSize:30,fontWeight:'900'},
+  identityCopy:{flex:1,minWidth:0,gap:5},
+  identityStatus:{fontSize:12,fontWeight:'700',color:'#90E9D4'},
+  identitySports:{flex:1,minWidth:0,fontSize:13,color:'#A5EAD9',fontWeight:'700',lineHeight:20},
   sportList:{flexDirection:'row',flexWrap:'wrap',gap:7},
-  sportPill:{paddingHorizontal:11,paddingVertical:9,borderRadius:11,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
+  sportPill:{paddingHorizontal:10,paddingVertical:8,borderRadius:11,backgroundColor:'#0E4B52',borderWidth:1,borderColor:'#49D1B655'},
   sportText:{fontSize:14,color:C.mint,fontWeight:'700'},
   banner:{padding:14,backgroundColor:C.surface2,borderRadius:18,alignItems:'center',gap:7},
   bannerIcon:{fontSize:32},bannerText:{color:C.mint,fontWeight:'800',fontSize:14,lineHeight:21,textAlign:'center'},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
-  heading:{flex:1,color:C.white,fontSize:27,fontWeight:'900'},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
-  section:{padding:15,borderRadius:18,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,gap:12},
+  heading:{flexShrink:1,color:C.white,fontSize:25,fontWeight:'900',lineHeight:30},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
+  section:{padding:16,borderRadius:18,backgroundColor:'#092D3B',borderWidth:1,borderColor:'#3BC8B344',gap:13},
   communitySessionRow:{gap:9},
-  sectionTitle:{color:C.white,fontSize:20,fontWeight:'900'},member:{flexDirection:'row',gap:12,alignItems:'center'},
-  avatar:{width:42,height:42,borderRadius:15,alignItems:'center',justifyContent:'center',backgroundColor:C.surface2},
+  sectionTitle:{color:C.white,fontSize:20,fontWeight:'900'},member:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:7,borderBottomWidth:1,borderBottomColor:'#45B9AE24'},
+  avatar:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:'#49D8BF66',alignItems:'center',justifyContent:'center',backgroundColor:'#105B5B'},
   avatarText:{fontSize:18,color:C.mint,fontWeight:'800'},memberName:{fontSize:15,color:C.white,fontWeight:'800'},
   muted:{fontSize:14,color:C.muted,lineHeight:21},input:{minHeight:52,paddingHorizontal:14,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.background,color:C.white,fontSize:15},
   request:{padding:12,backgroundColor:C.surface2,borderRadius:12,gap:12}
