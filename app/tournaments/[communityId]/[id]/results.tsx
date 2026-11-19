@@ -12,9 +12,9 @@ import type {JynloTournament,TournamentPerformanceOverview,PerformanceRound} fro
 
 function RankingRow({rank,name,main,sub}:{rank:number;name:string;main:string;sub:string}){
  return <View style={styles.ranking}>
-  <Text style={styles.position}>{validatedRank(rank)}.</Text>
-  <View style={styles.athlete}><Text style={styles.name}>{name}</Text><Text style={styles.note}>{sub}</Text></View>
-  <Text style={styles.performance}>{main}</Text>
+  <View style={styles.positionBox}><Text style={styles.position}>{validatedRank(rank)}</Text></View>
+  <View style={styles.athlete}><Text style={styles.name} numberOfLines={2}>{name}</Text><Text style={styles.note}>{sub}</Text></View>
+  <Text style={styles.performance} numberOfLines={2}>{main}</Text>
  </View>;
 }
 function EventRounds({rounds,title}:{rounds:PerformanceRound[];title:string}){
@@ -54,8 +54,10 @@ export default function TournamentResultsScreen(){
  },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
  return <Page><DemoBanner/><Eyebrow>RESULTADOS DA COMPETIÇÃO</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
-  {tournament?<View style={styles.badges}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={label(kind)}/></View>:null}
+  <View style={styles.hero}><Text style={styles.heroLabel}>RESULTADOS · JYNLO</Text>
+   <Text style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
+   {tournament?<View style={styles.badges}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={label(kind)}/></View>:null}
+  </View>
   {!auth.token?<Button title="Entrar para ver resultados" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!loading&&tournament&&!isPerformanceKind(kind)?<Message>Esta modalidade tem outro formato de competição. Consulta o ecrã principal do torneio.</Message>:null}
@@ -117,5 +119,19 @@ export default function TournamentResultsScreen(){
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
 }
-const styles=StyleSheet.create({title:{color:C.white,fontSize:28,fontWeight:'900'},badges:{flexDirection:'row',flexWrap:'wrap',gap:8},panel:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,padding:16,borderRadius:18,gap:12},heading:{color:C.white,fontSize:18,fontWeight:'900'},
- ranking:{flexDirection:'row',alignItems:'center',borderTopColor:C.border,borderTopWidth:1,paddingTop:13,gap:8},position:{fontSize:17,fontWeight:'900',color:C.mint,minWidth:28},athlete:{flex:1,gap:3},name:{fontSize:14,color:C.white,fontWeight:'800'},performance:{fontSize:14,color:C.mint,fontWeight:'900'},note:{fontSize:12,color:C.muted,lineHeight:18},round:{paddingTop:12,borderTopWidth:1,borderTopColor:C.border,gap:5}});
+const styles=StyleSheet.create({
+ hero:{padding:18,gap:10,borderRadius:19,backgroundColor:'#082D3B',borderWidth:1,borderColor:'#3FCAB559'},
+ heroLabel:{fontSize:11,fontWeight:'900',letterSpacing:1.3,color:'#7EF1D6'},
+ title:{color:C.white,fontSize:27,fontWeight:'900',lineHeight:33,letterSpacing:-.4},
+ badges:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ panel:{backgroundColor:'#092C3A',borderColor:'#38BFB04D',borderWidth:1,padding:16,borderRadius:18,gap:13},
+ heading:{color:C.white,fontSize:18,fontWeight:'900'},
+ ranking:{flexDirection:'row',alignItems:'center',borderTopColor:'#43B6AB38',borderTopWidth:1,paddingVertical:12,gap:11,minWidth:0},
+ positionBox:{width:35,height:35,alignItems:'center',justifyContent:'center',borderRadius:11,backgroundColor:'#105B55'},
+ position:{fontSize:15,fontWeight:'900',color:'#A1FFE1'},
+ athlete:{flex:1,minWidth:0,gap:4},
+ name:{fontSize:14,lineHeight:19,color:C.white,fontWeight:'800'},
+ performance:{maxWidth:103,flexShrink:1,fontSize:14,textAlign:'right',lineHeight:19,color:'#79F3D4',fontWeight:'900',fontVariant:['tabular-nums']},
+ note:{fontSize:12,color:'#A9C8D0',lineHeight:18},
+ round:{paddingTop:12,borderTopWidth:1,borderTopColor:'#3FB8AA38',gap:5}
+});
