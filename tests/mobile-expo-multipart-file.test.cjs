@@ -36,7 +36,9 @@ test('media upload retains user draft when server confirmation is uncertain',()=
  assert.match(home,/postInFlight\.current=true/);
  assert.match(home,/storyInFlight\.current=true/);
  assert.match(home,/if\(unchanged\)\{/);
- assert.match(home,/Alert\.alert\('Publicação',message\)/);
+ assert.match(home,/setPostPublishError\(message\)/);
+ assert.match(home,/postInlineError/);
+ assert.doesNotMatch(home,/Alert\.alert\('Publicação',message\)/);
  assert.match(home,/Alert\.alert\('Story',message\)/);
 });
 
@@ -114,4 +116,27 @@ test('temporary single-photo copies are cleaned if multipart form preparation th
   const availability=source.slice(source.indexOf('export async function'),start);
   assert.match(availability,/credentials:'omit',redirect:'error'/,file);
  }
+});
+
+
+test('mobile post composer keeps caption visible, full-width media, compact controls and inline errors',()=>{
+ const home=read('app/(tabs)/index.tsx');
+ const composer=home.slice(home.indexOf('<Modal visible={identityMatches&&composerOpen}'),home.indexOf('<Modal visible={identityMatches&&storyComposer}'));
+ assert.ok(composer.length>2000);
+ assert.ok(composer.indexOf('style={styles.postCaptionBlock}')<composer.indexOf('style={styles.postMediaPreview}'));
+ assert.match(composer,/styles\.postMediaPosition/);
+ assert.match(composer,/composerMedia\.length===1\?Math\.max\(200,screenWidth-68\)/);
+ assert.match(composer,/composerMedia\.length>1\?<Pressable/);
+ assert.match(composer,/postPublishError\?<View style=\{styles\.postInlineError\}/);
+ assert.doesNotMatch(composer,/media\.fileName/);
+ assert.doesNotMatch(composer,/style=\{styles\.errorBox\}/);
+ assert.match(home,/mediaChooseButton:\{flex:1,minHeight:76/);
+});
+test('post media uploads give slow mobile connections time and never retry an uncertain POST',()=>{
+ const api=read('src/lib/social-feed-api.ts');
+ assert.match(api,/uploadTimeoutMs=path\.startsWith\('\/api\/feed\/posts'\)\?180000:90000/);
+ assert.match(api,/responseReceived=true/);
+ assert.match(api,/if\(responseReceived\)[\s\S]*?antes de confirmar o resultado/);
+ assert.match(api,/Não foi possível obter confirmação do servidor/);
+ assert.doesNotMatch(api,/Falha de ligação durante o envio\. Verifica se foi publicado/);
 });
