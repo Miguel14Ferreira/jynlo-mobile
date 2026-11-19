@@ -2,6 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
 import {directChatHistory,sendDirectChat,type DirectChatEntry} from '../lib/chat-api';
+import {ApiError} from '../lib/api';
 import {confirmedDirectChatSend} from '../lib/chat-send-receipt.cjs';
 import {observeDirectChat} from '../lib/direct-chat-realtime';
 
@@ -14,12 +15,12 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false);
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
- const [syncWarning,setSyncWarning]=useState('');
+ const [syncWarning,setSyncWarning]=useState(''),[accessRevoked,setAccessRevoked]=useState(false);
  const identity=peer+'|'+self+'|'+token;
  const generation=useRef(0),owner=useRef(''),busy=useRef(false),queued=useRef(false),sendLock=useRef(false);
  const list=useRef<ScrollView|null>(null);
  const load=useCallback(async(version:number,silent=true)=>{
-  if(!visible||!token||!peer)return;
+  if(!visible||!token||!peer||accessRevoked)return;
   if(busy.current){queued.current=true;return;}
   busy.current=true;
   if(!silent)setLoading(true);
@@ -33,10 +34,14 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
     for(const row of [...current,...rows])if(Number.isSafeInteger(row.id)&&row.id>0)byId.set(row.id,row);
     return [...byId.values()].sort((a,b)=>a.id-b.id).slice(-60);
    });
-   setSyncWarning('');
-  }catch{
-   if(generation.current===version&&owner.current===identity)
-    setSyncWarning('Sem ligação ao histórico. As mensagens apresentadas podem estar desatualizadas.');
+   setSyncWarning('');setAccessRevoked(false);
+  }catch(e){
+   if(generation.current===version&&owner.current===identity){
+    if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
+     setMessages([]);setDraft('');setAccessRevoked(true);
+     setError('Já não tens acesso ao chat deste contacto.');
+    }else setSyncWarning('Sem ligação ao histórico. As mensagens apresentadas podem estar desatualizadas.');
+   }
   }finally{
    busy.current=false;
    if(generation.current===version&&owner.current===identity){
@@ -44,11 +49,11 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
     if(queued.current){queued.current=false;void load(version,true);}
    }
   }
- },[peer,token,identity,visible]);
+ },[peer,token,identity,visible,accessRevoked]);
  useEffect(()=>{
   if(owner.current!==identity){
    owner.current=identity;generation.current++;
-   setMessages([]);setDraft('');setError('');setSyncWarning('');
+   setMessages([]);setDraft('');setError('');setSyncWarning('');setAccessRevoked(false);
    sendLock.current=false;queued.current=false;
   }
   if(!visible)return;
@@ -69,7 +74,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   return()=>{active=false;generation.current++;stop();clearInterval(timer);resume.remove();queued.current=false;};
  },[identity,visible,peer,self,token,load]);
  async function send(){
-  if(!visible||sendLock.current||!token||!draft.trim())return;
+  if(!visible||accessRevoked||sendLock.current||!token||!draft.trim())return;
   const body=draft.trim(),version=generation.current,actor=owner.current;
   sendLock.current=true;setSending(true);setError('');
   try{
@@ -116,12 +121,12 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   </ScrollView>
   {error?<Text accessibilityRole="alert" style={styles.warning}>{error}</Text>:null}
   <View style={styles.composer}>
-   <TextInput value={draft} onChangeText={setDraft} editable={!sending}
+   <TextInput value={draft} onChangeText={setDraft} editable={!sending&&!accessRevoked}
     placeholder="Mensagem para o chat…" placeholderTextColor={C.muted}
     multiline maxLength={2000} style={styles.input} accessibilityLabel="Escrever mensagem na chamada"/>
    <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem durante a chamada"
-    disabled={sending||!draft.trim()} onPress={()=>{void send();}}
-    style={[styles.send,(sending||!draft.trim())&&styles.disabled]}>
+    disabled={sending||accessRevoked||!draft.trim()} onPress={()=>{void send();}}
+    style={[styles.send,(sending||accessRevoked||!draft.trim())&&styles.disabled]}>
     <Text style={styles.sendText}>{sending?'…':'Enviar'}</Text>
    </Pressable>
   </View>
