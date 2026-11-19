@@ -100,3 +100,11 @@ test('both mobile calendar screens validate first-page results before displaying
  assert.match(team,/validateFirstFixturePage<TournamentTeamMatch>\(matchData\)/);
  assert.match(individual,/validateFirstFixturePage<TournamentIndividualMatch>\(result\)/);
 });
+
+
+test('calendar screens do not mistake API failure for an empty tournament',()=>{
+ const team=read('app/tournaments/[communityId]/[id]/fixtures.tsx');
+ const individual=read('app/tournaments/[communityId]/[id]/matches.tsx');
+ assert.match(team,/canListMatches\(tournament\)&&\(!error\|\|matches\.length>0\)/);
+ assert.match(individual,/matches\.length===0&&!error\?<Message>Ainda não existem jogos individuais publicados/);
+});
