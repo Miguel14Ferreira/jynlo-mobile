@@ -29,12 +29,16 @@ import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
 import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
 import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
+import {myStoryReplies,type PrivateStoryReply} from '../../src/lib/social-feed-api';
+import {storyReplyKind} from '../../src/lib/story-reply-display.cjs';
 
 export default function DirectConversation(){
  const params=useLocalSearchParams<{peer:string}>();
  const peer=typeof params.peer==='string'?params.peer:'';
  const auth=useAuth(),router=useRouter();
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
+ const [storyReplies,setStoryReplies]=useState<PrivateStoryReply[]>([]);
+ const storyRepliesIdentity=useRef('');
  const conversationScroll=useRef<ScrollViewInstance|null>(null);
  const nearBottom=useRef(false);
  const historyViewportMeasured=useRef(false);
@@ -87,6 +91,19 @@ export default function DirectConversation(){
  const safetyInFlight=useRef(false);
  const [showReport,setShowReport]=useState(false);
  const [reportReason,setReportReason]=useState('');
+ // Keep Story replies separate from the direct-chat read receipt and chat history.
+ useFocusEffect(useCallback(()=>{
+  const account=(auth.token||'')+'|'+(auth.username||'')+'|'+peer;
+  storyRepliesIdentity.current=account;setStoryReplies([]);
+  let active=true;
+  if(auth.token&&auth.username&&peer&&blockStatusKnown&&!blocked){
+   void myStoryReplies(auth.token,0,auth.username).then(replies=>{
+    if(active&&storyRepliesIdentity.current===account)
+     setStoryReplies(replies.filter(item=>item.senderUsername.toLowerCase()===peer.toLowerCase()).slice(0,3));
+   }).catch(()=>{/* The authenticated direct chat remains usable without Story history. */});
+  }
+  return()=>{active=false;storyRepliesIdentity.current='';};
+ },[auth.token,auth.username,peer,blockStatusKnown,blocked]));
  const refresh:(silent?:boolean,version?:number)=>Promise<void>=useCallback(async(silent=false,version=generation.current)=>{
   if(refreshing.current===version){
    // A send may finish while the 15-second history poll is still running.
@@ -583,6 +600,28 @@ export default function DirectConversation(){
    </View>:null}
    </>:null}
   </View>:null}
+  {auth.token&&auth.username&&blockStatusKnown&&!blocked&&
+   storyRepliesIdentity.current===auth.token+'|'+auth.username+'|'+peer&&storyReplies.length>0?
+   <View style={styles.storyRepliesSection}>
+    <Text style={styles.storyRepliesHeading}>Reações às tuas Stories</Text>
+    <Text style={styles.note}>Respostas privadas desta pessoa, ligadas às Stories de origem.</Text>
+    {storyReplies.map(item=><View key={'story-reply-'+item.id} style={styles.storyReplyCard}>
+     <View style={styles.storyReplyContext}>
+      <Text style={styles.storyReplyContextTitle}>◉ À tua Story</Text>
+      <Text style={styles.storyReplyContextDate}>{Number.isFinite(Date.parse(item.createdAt))?new Date(item.createdAt).toLocaleString('pt-PT'):'Resposta recebida'}</Text>
+     </View>
+     {storyReplyKind(item.content)==='reaction'?
+      <Text style={styles.storyReplyEmoji}>{item.content}</Text>:
+      <Text style={styles.storyReplyText}>{item.content}</Text>}
+     <Pressable accessibilityRole="button" accessibilityLabel="Ver Story original, se disponível"
+      onPress={()=>router.push({pathname:'/',params:{storyId:String(item.storyId)}})}
+      style={styles.storyReplyLink}><Text style={styles.storyReplyLinkText}>Ver Story original ›</Text></Pressable>
+    </View>)}
+    <Pressable accessibilityRole="button" accessibilityLabel="Ver todas as reações às tuas Stories"
+     onPress={()=>router.push('/stories/replies')} style={styles.storyAllLink}>
+     <Text style={styles.storyReplyLinkText}>Ver todas as respostas ›</Text>
+    </Pressable>
+   </View>:null}
   {!loading&&!error&&messages.length===0?<Message>Ainda não existem mensagens nesta conversa.</Message>:null}
   {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
    <Text style={styles.sender}>{m.username1}</Text>
@@ -697,6 +736,16 @@ export default function DirectConversation(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ storyRepliesSection:{padding:12,gap:8,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
+ storyRepliesHeading:{fontSize:15,fontWeight:'900',color:C.white},
+ storyReplyCard:{padding:12,borderRadius:13,gap:9,backgroundColor:C.surface2,borderLeftWidth:3,borderLeftColor:C.mint},
+ storyReplyContext:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:6,flexWrap:'wrap'},
+ storyReplyContextTitle:{fontSize:12,fontWeight:'900',color:C.mint},
+ storyReplyContextDate:{fontSize:10,color:C.muted},
+ storyReplyEmoji:{fontSize:32,color:C.white},storyReplyText:{fontSize:14,lineHeight:21,color:C.white},
+ storyReplyLink:{alignSelf:'flex-start',minHeight:38,justifyContent:'center'},
+ storyAllLink:{alignSelf:'flex-start',minHeight:40,justifyContent:'center'},
+ storyReplyLinkText:{color:C.mint,fontSize:12,fontWeight:'800'},
  editPanel:{gap:9,padding:12,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:145,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:12},
  muteRow:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
  muteTitle:{color:C.white,fontSize:13,fontWeight:'800'},
