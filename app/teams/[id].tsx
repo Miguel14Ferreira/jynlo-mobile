@@ -507,6 +507,30 @@ export default function TeamDetail(){
     <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
       onPress={()=>void updateBranding('KIT')}/>
    </View>:null}
+   {activeTab==='OVERVIEW'?<View style={styles.panel}>
+    <Text style={styles.heading}>O espaço da equipa</Text>
+    <Text style={styles.note}>Acompanha as novidades, conversa com o plantel e consulta as conquistas.</Text>
+    <View style={styles.quickLinks}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir publicações da equipa"
+       onPress={()=>setActiveTab('FEED')} style={styles.quickLink}>
+      <Text style={styles.quickLinkSymbol}>▧</Text>
+      <Text style={styles.quickLinkText}>Publicações</Text>
+      <Text style={styles.quickLinkMeta}>Novidades do plantel</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da equipa"
+       onPress={()=>setActiveTab('CHAT')} style={styles.quickLink}>
+      <Text style={styles.quickLinkSymbol}>◉</Text>
+      <Text style={styles.quickLinkText}>Chat</Text>
+      <Text style={styles.quickLinkMeta}>{team.chatEnabled?'Conversa da equipa':'Indisponível'}</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Abrir troféus e histórico da equipa"
+       onPress={()=>setActiveTab('TROPHIES')} style={styles.quickLink}>
+      <Text style={styles.quickLinkSymbol}>★</Text>
+      <Text style={styles.quickLinkText}>Troféus</Text>
+      <Text style={styles.quickLinkMeta}>Títulos e histórico</Text>
+     </Pressable>
+    </View>
+   </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({rosterVerified?members.length:'—'})</Text>
     {!rosterVerified?<Text style={styles.note}>Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.</Text>:null}
     {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
@@ -670,6 +694,11 @@ const styles=StyleSheet.create({
  heroSecondaryAction:{minHeight:46,justifyContent:'center',alignItems:'center',paddingHorizontal:15,borderRadius:12,borderColor:'#5CE6D3',borderWidth:1,backgroundColor:'#0B3943'},
  heroSecondaryText:{color:'#B2FFE8',fontSize:13,fontWeight:'900'},
  heroActionLabel:{color:'#053039',fontWeight:'900'},
+ quickLinks:{flexDirection:'row',flexWrap:'wrap',gap:9},
+ quickLink:{flexGrow:1,flexBasis:'28%',minWidth:92,minHeight:120,padding:12,borderRadius:14,borderColor:'#49CEBA66',borderWidth:1,backgroundColor:'#0D3A43',gap:5},
+ quickLinkSymbol:{fontSize:23,color:C.mint,fontWeight:'900'},
+ quickLinkText:{fontSize:13,color:C.white,fontWeight:'900'},
+ quickLinkMeta:{fontSize:11,lineHeight:16,color:'#B8D9DB'},
  roster:{gap:8},
  playerCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,flexDirection:'row',alignItems:'center',gap:11},
  playerAvatar:{height:42,width:42,borderRadius:21,backgroundColor:'#167A7D',alignItems:'center',justifyContent:'center',overflow:'hidden'},
