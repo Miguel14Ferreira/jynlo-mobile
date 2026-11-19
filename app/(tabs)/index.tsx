@@ -1208,39 +1208,22 @@ export default function JynloFeedHome(){
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
-    <View style={styles.jynloDiscoverPanel}>
-      <Text style={styles.jynloDiscoverEyebrow}>ENCONTRA O TEU DESPORTO</Text>
-      <Text style={styles.jynloDiscoverTitle}>Encontra as tuas pessoas.</Text>
-      <Text style={styles.jynloDiscoverSub}>Descobre jogos, junta a tua equipa e partilha os melhores momentos.</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Criar uma nova sessão desportiva"
-        onPress={()=>router.push(auth.token?'/sessions/create':'/login')}
-        style={styles.jynloDiscoverPrimary}>
-        <JynloIcon name="session" size={19} color={INDIGO}/>
-        <Text style={styles.jynloDiscoverPrimaryText}>Criar sessão</Text>
-        <JynloIcon name="chevron-right" size={19} color={INDIGO}/>
-      </Pressable>
-    </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}
-      accessibilityLabel="Acessos rápidos Jynlo" contentContainerStyle={styles.jynloActionRail}>
-      {([
-        {label:'Explorar',icon:'explore',go:()=>router.push('/(tabs)/explore')},
-        {label:'Equipas',icon:'community',go:()=>router.push('/teams')},
-        {label:'Torneios',icon:'tournament',go:()=>router.push('/(tabs)/tournaments')},
-        {label:'Diretos',icon:'video',go:()=>router.push(auth.token?'/live':'/login')},
-        {label:'Publicar',icon:'post',go:()=>requireLogin()&&openPostComposer()},
-        {label:'Comunidades',icon:'community',go:()=>router.push('/(tabs)/communities')}
-      ] as const).map(item=><Pressable key={item.label} accessibilityRole="button"
-        accessibilityLabel={item.label} onPress={item.go} style={styles.jynloActionTile}>
-        <View style={styles.jynloActionIcon}><JynloIcon name={item.icon} color={TEAL} size={24}/></View>
-        <Text style={styles.jynloActionText}>{item.label}</Text>
-      </Pressable>)}
-    </ScrollView>
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"/>
       {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>A tua story</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
         <View style={styles.storyRing}><CircleAvatar name={group.name} image={group.avatar} size={57}/></View><Text style={styles.storyItemName} numberOfLines={1}>{group.name}</Text></Pressable>)}</ScrollView>
         :<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={()=>requireLogin()&&openStoryComposer()} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><JynloIcon name={auth.token?'plus':'camera'} color={TEAL} size={23}/></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
     </View>
+    {auth.token?<Pressable accessibilityRole="button"
+      accessibilityLabel="Criar publicação no Feed" onPress={()=>openPostComposer()}
+      style={styles.feedComposerPrompt}>
+      <CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={39}/>
+      <View style={styles.feedComposerCopy}>
+        <Text style={styles.feedComposerTitle}>Em que estás a pensar?</Text>
+        <Text style={styles.feedComposerHint}>Partilha fotografias, vídeos e momentos desportivos</Text>
+      </View>
+      <JynloIcon name="post" color={TEAL} size={23}/>
+    </Pressable>:null}
     {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>:null}
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
     <AttendanceDigest/>
@@ -1573,6 +1556,12 @@ const styles=StyleSheet.create({
   justifyContent:'center',alignItems:'center'},
  jynloActionText:{fontSize:12,fontWeight:'800',color:WHITE,textAlign:'center'},
 
+ feedComposerPrompt:{flexDirection:'row',alignItems:'center',gap:12,minHeight:72,
+  paddingHorizontal:13,paddingVertical:12,marginTop:5,marginBottom:12,
+  borderWidth:1,borderColor:'#235965',borderRadius:17,backgroundColor:'#082D39'},
+ feedComposerCopy:{flex:1,minWidth:0,gap:4},
+ feedComposerTitle:{fontSize:14,fontWeight:'800',color:WHITE},
+ feedComposerHint:{fontSize:12,lineHeight:17,color:MUTED},
  storyStylePanel:{gap:9,padding:12,borderWidth:1,borderColor:BORDER,borderRadius:14,backgroundColor:PANEL},
  storyStyleTitle:{fontSize:15,fontWeight:'900',color:WHITE},
  storyStyleLabel:{fontSize:12,fontWeight:'800',color:MUTED},
