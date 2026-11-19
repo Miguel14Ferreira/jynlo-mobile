@@ -25,6 +25,7 @@ import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 import ChatSearchPanel from './ChatSearchPanel';
+import ChatReplyPreview from './ChatReplyPreview';
 export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -394,7 +395,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
       {ownMessage(m)&&!closed?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} style={styles.messageAction} onPress={()=>messageOptions(m)}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
      </View>
     </View>
-    {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
+    {m.replyToText?<View style={styles.quote}><Text numberOfLines={1} style={styles.quoteAuthor}>{m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText}</Text></View>:null}
     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
     {!m.deletedAt&&chatLocationUrl(m.body)?
@@ -532,8 +533,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar edição" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
-    {reply?<View style={styles.editor}><Text style={styles.note}>A responder a {reply.senderUsername}</Text>
-     <Button title="Cancelar resposta" secondary onPress={()=>setReply(null)}/></View>:null}
+    {reply?<ChatReplyPreview sender={reply.senderUsername} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
     <View style={styles.composer}>
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel="Mensagem da sessão" placeholder="Escreve uma mensagem"
@@ -552,8 +552,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
 }
 const styles=StyleSheet.create({
  inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
- inlineHistory:{height:290,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.background},
- inlineHistoryKeyboard:{height:168},
+ inlineHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
+ inlineHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
  olderMessages:{padding:10,alignItems:'center'},
  newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:9,borderRadius:20,backgroundColor:C.mint},
  newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
@@ -563,7 +563,9 @@ const styles=StyleSheet.create({
  title:{fontSize:26,fontWeight:'900',color:C.white},note:{fontSize:12,color:C.muted},
  message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:12,fontWeight:'800',color:C.mint},
- quote:{color:C.muted,fontSize:12},body:{color:C.white,fontSize:15},time:{color:C.muted,fontSize:10,textAlign:'right'},
+ quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:3},
+ quoteAuthor:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,lineHeight:18,color:C.muted},
+ body:{color:C.white,fontSize:15,lineHeight:21},time:{color:C.muted,fontSize:10,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  muteRow:{padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface,gap:8},
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
