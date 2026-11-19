@@ -96,6 +96,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const composerFocused=useRef(false);
  const [keyboardOpen,setKeyboardOpen]=useState(false);
  const nearLatest=useRef(true),latestId=useRef(0);
+ const initialChatPositionPending=useRef(true);
  const [unseenBelow,setUnseenBelow]=useState(false);
  useEffect(()=>{
   const open=Keyboard.addListener(Platform.OS==='ios'?'keyboardWillShow':'keyboardDidShow',()=>{
@@ -162,7 +163,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setSearchResults([]);setSearchActive(false);setSearching(false);
   setBrokenAuthorAvatars({});setCollapsedFeedPosts(new Set());
-  latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
+  latestId.current=0;nearLatest.current=true;initialChatPositionPending.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);reactionBusyContentId.current=null;
   setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
@@ -322,7 +323,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   reactionBusyRef.current=false;reactionBusyContentId.current=null;choosing.current=false;
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
-  latestId.current=0;nearLatest.current=true;setUnseenBelow(false);
+  latestId.current=0;nearLatest.current=true;initialChatPositionPending.current=true;setUnseenBelow(false);
   accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');
   setEntries([]);setOlderEntries([]);olderRef.current=[];olderExhausted.current=false;setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
@@ -779,14 +780,19 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    contentContainerStyle={styles.historyContent}
    scrollEventThrottle={100}
    onScroll={event=>{
-    if(kind!=='chat'||searchActive)return;
+    if(kind!=='chat'||searchActive||initialChatPositionPending.current)return;
     const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     nearLatest.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-85;
     if(nearLatest.current)setUnseenBelow(false);
    }}
    onContentSizeChange={()=>{
-    if(kind==='chat'&&!searchActive&&nearLatest.current)
-     historyRef.current?.scrollToEnd({animated:false});
+    if(kind!=='chat'||searchActive)return;
+    if(initialChatPositionPending.current){
+     if(visibleEntries.length===0)return;
+     initialChatPositionPending.current=false;
+     nearLatest.current=true;
+    }
+    if(nearLatest.current)historyRef.current?.scrollToEnd({animated:false});
    }}>
   {kind==='feed'&&!searchActive&&(hasOlderPosts||olderBusy||!!olderError)?<View style={styles.historyLoadMore}>
    <Pressable accessibilityRole="button" disabled={olderBusy||loading||sending} onPress={()=>void loadOlderPosts()} style={styles.attachmentButton}>
