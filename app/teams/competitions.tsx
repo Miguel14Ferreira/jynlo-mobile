@@ -114,13 +114,18 @@ export default function TeamCompetitionDiscovery(){
  return <Page>
   <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
   <Button secondary title="← Equipas" onPress={()=>router.push('/teams')}/>
-  <Text style={styles.title}>Encontrar competições</Text>
-  <Text style={styles.note}>Torneios e campeonatos de comunidades públicas que aceitam candidaturas de equipas.</Text>
+  <View style={styles.intro}>
+   <Text style={styles.introLabel}>COMPETIÇÕES · EQUIPAS</Text>
+   <Text style={styles.title}>Encontrar competições</Text>
+   <Text style={styles.note}>Descobre torneios e campeonatos que aceitam candidaturas. Escolhe a tua equipa antes de participar.</Text>
+  </View>
+  <View style={styles.searchPanel}>
   <TextInput style={styles.input} placeholder="Nome da competição ou comunidade" placeholderTextColor={C.muted}
     value={query} onChangeText={setQuery} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
   <TextInput style={styles.input} placeholder="Modalidade" placeholderTextColor={C.muted}
     value={sport} onChangeText={setSport} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
   <Button title="Pesquisar competições" onPress={search} disabled={loading}/>
+  </View>
   {error?<Message tone="error">{error}</Message>:null}
   {(!applicationsVerified||!ownedVerified)&&auth.token&&!loading?<Button secondary
     title="Verificar novamente candidaturas e equipas" disabled={busy} onPress={()=>void load()}/>:null}
@@ -131,29 +136,37 @@ export default function TeamCompetitionDiscovery(){
   {teams.length>0?<View style={styles.panel}>
    <Text style={styles.subtitle}>Escolher a minha equipa</Text>
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
-     accessibilityState={{selected:chosen===team.id}} onPress={()=>setChosen(team.id)}
+     accessibilityLabel={'Candidatar a equipa '+team.name}
+     accessibilityState={{selected:chosen===team.id}} disabled={busy}
+     onPress={()=>setChosen(team.id)}
      style={[styles.choice,chosen===team.id&&styles.chosen]}>
     <View style={styles.teamIdentity}>
-     <TeamBrandAvatar team={team} size={44}/>
+     <TeamBrandAvatar team={team} size={52}/>
      <View style={styles.teamNameBlock}>
-      <Text style={styles.name} numberOfLines={2}>{chosen===team.id?'● ':'○ '}{team.name}</Text>
+      <Text style={styles.name} numberOfLines={2}>{team.name}</Text>
       <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'}</Text>
      </View>
      <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary}
        pattern={team.kitPattern} size={44}/>
+     <Text style={styles.choiceState}>{chosen===team.id?'✓':'○'}</Text>
     </View>
    </Pressable>)}
   </View>:null}
   {applications.length>0?<View style={styles.panel}>
    <Text style={styles.subtitle}>Pedidos já enviados</Text>
-   {applications.map(a=><Text key={a.id} style={styles.note}>{a.teamName} · {a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado · inscrição por confirmar':'Recusado'}</Text>)}
+   {applications.map(a=><View key={a.id} style={styles.applicationRow}>
+    <Text style={styles.applicationTeam} numberOfLines={2}>{a.teamName}</Text>
+    <Text style={styles.applicationStatus}>{a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado · inscrição por confirmar':'Recusado'}</Text>
+   </View>)}
   </View>:null}
   {!loading&&rows.length===0&&!error?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
-  {rows.map(item=><View key={item.type+'-'+item.id} style={styles.panel}>
-    <Text style={styles.note}>{item.type==='TOURNAMENT'?'Torneio':'Campeonato'} · {item.communityName}</Text>
-    <Text style={styles.subtitle}>{item.name}</Text>
-    <Text style={styles.note}>{item.sport||'Modalidade não indicada'}</Text>
-    {!item.applicationsOpen?<Text style={styles.note}>Candidaturas encerradas</Text>:null}
+  {rows.map(item=><View key={item.communityId+'-'+item.type+'-'+item.id} style={styles.competitionCard}>
+    <View style={styles.competitionTop}>
+     <Text style={styles.competitionType}>{item.type==='TOURNAMENT'?'TORNEIO':'CAMPEONATO'}</Text>
+     <Text style={[styles.competitionStatus,!item.applicationsOpen&&styles.competitionStatusClosed]}>{item.applicationsOpen?'Candidaturas abertas':'Encerradas'}</Text>
+    </View>
+    <Text style={styles.competitionTitle}>{item.name}</Text>
+    <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
     <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
       disabled={!auth.token||!chosen||busy||loading||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
@@ -162,14 +175,28 @@ export default function TeamCompetitionDiscovery(){
  </Page>;
 }
 const styles=StyleSheet.create({
- title:{fontSize:28,fontWeight:'900',color:C.white},
+ intro:{padding:17,borderWidth:1,borderColor:'#3AC7B34A',borderRadius:18,backgroundColor:'#092C3A',gap:8},
+ introLabel:{fontSize:11,fontWeight:'900',letterSpacing:1.5,color:'#6DEED3'},
+ searchPanel:{padding:15,borderWidth:1,borderColor:'#38BDA74A',backgroundColor:'#072733',borderRadius:17,gap:11},
+ title:{fontSize:27,fontWeight:'900',color:C.white,lineHeight:33},
  subtitle:{fontSize:17,fontWeight:'900',color:C.white},
  name:{fontSize:14,fontWeight:'700',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:19},
  input:{minHeight:48,padding:13,backgroundColor:C.surface,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:13},
- panel:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:17,padding:15,gap:10},
- choice:{borderRadius:10,borderWidth:1,borderColor:C.border,padding:10},
+ panel:{backgroundColor:'#092D3B',borderWidth:1,borderColor:'#3CC7B44A',borderRadius:17,padding:16,gap:12},
+ competitionCard:{backgroundColor:'#0A303E',borderWidth:1,borderColor:'#3FC4B552',borderRadius:18,padding:17,gap:12},
+ competitionTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8},
+ competitionType:{fontSize:11,fontWeight:'900',letterSpacing:1,color:'#80F4DD'},
+ competitionStatus:{fontSize:11,fontWeight:'800',color:'#07362D',backgroundColor:'#56E3C0',overflow:'hidden',borderRadius:20,paddingVertical:6,paddingHorizontal:10},
+ competitionStatusClosed:{backgroundColor:'#31434C',color:'#D2DFE4'},
+ competitionTitle:{fontSize:18,fontWeight:'900',color:C.white,lineHeight:24},
+ competitionCommunity:{color:'#B3D3DB',fontSize:13,lineHeight:20},
+ applicationRow:{paddingVertical:10,borderBottomWidth:1,borderBottomColor:'#4CBCA532',gap:4},
+ applicationTeam:{fontWeight:'800',fontSize:14,color:C.white},
+ applicationStatus:{color:'#9FE8D5',fontSize:12,lineHeight:19},
+ choice:{borderRadius:14,borderWidth:1,borderColor:'#3FC4B54D',padding:12,backgroundColor:'#0D3542',minHeight:72},
+ choiceState:{fontSize:22,fontWeight:'900',color:C.mint}, 
  teamIdentity:{flexDirection:'row',gap:11,alignItems:'center'},
  teamNameBlock:{flex:1,minWidth:0,gap:3},
- chosen:{borderColor:C.mint}
+ chosen:{borderColor:C.mint,backgroundColor:'#0C4A4D'}
 });
