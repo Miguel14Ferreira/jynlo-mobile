@@ -586,9 +586,15 @@ export default function JynloFeedHome(){
     }
      if(fetches[4].status==='fulfilled')setMyProfilePhoto(value(4,null as {profilePicUrl?:string|null}|null)?.profilePicUrl||null);
     if(!hiddenReadyRef.current){
-      const stored=value(3,[] as string[]);
-      hiddenKeysRef.current=stored;setHiddenKeys(stored);
-      hiddenReadyRef.current=true;setHiddenReady(true);
+      // Failure to read local visibility preferences must never be treated
+      // as an empty hidden list: preserve the user's choice across refreshes.
+      if(fetches[3].status==='fulfilled'){
+        const stored=value(3,[] as string[]);
+        hiddenKeysRef.current=stored;setHiddenKeys(stored);
+        hiddenReadyRef.current=true;setHiddenReady(true);
+      }else{
+        setError('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.');
+      }
     }
     if(fetches[0].status==='rejected')
       setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
