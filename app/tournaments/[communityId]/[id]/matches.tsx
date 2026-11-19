@@ -62,7 +62,7 @@ export default function IndividualMatchesScreen(){
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!loading&&tournament&&!supported?<Message>Esta modalidade não utiliza o calendário de confrontos individuais. Consulta a sua classificação específica.</Message>:null}
-  {!loading&&supported&&matches.length===0?<Message>Ainda não existem jogos individuais publicados.</Message>:null}
+  {!loading&&supported&&matches.length===0&&!error?<Message>Ainda não existem jogos individuais publicados.</Message>:null}
   {!loading&&supported?matches.map(m=><View key={m.id} style={styles.card}>
    <View style={styles.row}><Badge text={matchRound(m)}/><Badge text={m.status==='COMPLETED'?'Concluído':'Por disputar'}/></View>
    <View style={styles.match}>
