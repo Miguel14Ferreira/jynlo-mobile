@@ -31,7 +31,7 @@ test('failed uploads keep drafts and show a persistent error on post and story e
  assert.match(feed,/const \[postPublishError,setPostPublishError\]=useState\(''\),\[storyPublishError,setStoryPublishError\]=useState\(''\)/);
  assert.match(feed,/setPostPublishError\(message\)/);
  assert.match(feed,/setStoryPublishError\(message\)/);
- assert.match(feed,/postPublishError\?<View style=\{styles\.errorBox\} accessibilityRole="alert"/);
+ assert.match(feed,/postPublishError\?<View style=\{styles\.postInlineError\} accessibilityRole="alert"/);
  assert.match(feed,/storyPublishError\?<View style=\{styles\.errorBox\} accessibilityRole="alert"/);
  assert.match(feed,/O rascunho continua aqui/);
  assert.match(feed,/postInFlight\.current=true;setPublishing\(true\);setPostPublishError\(''\)/);
@@ -45,7 +45,7 @@ test('new stories remain visible in the public feed until the server listing cat
 });
 
 test('slow media uploads show active progress feedback for posts and Stories',()=>{
- assert.match(feed,/accessibilityState=\{\{disabled:\(!composerMedia\.length&&!composerText\.trim\(\)\)\|\|publishing,busy:publishing\}\}/);
+ assert.match(feed,/accessibilityState=\{\{disabled:\(!composerMedia\.length&&!composerText\.trim\(\)\)\|\|publishing\|\|!postRetryAcknowledged,busy:publishing\}\}/);
  assert.match(feed,/accessibilityState=\{\{disabled:!storyMedia\|\|storyPublishing,busy:storyPublishing\}\}/);
  assert.match(feed,/publishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
  assert.match(feed,/storyPublishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
