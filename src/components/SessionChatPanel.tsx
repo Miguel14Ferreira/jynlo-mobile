@@ -135,6 +135,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   const pending=pendingWrites.current.get(identity);
   pendingRefresh.current=false;
   if(changedAccountOrSession){
+   uncertainSendRef.current=null;setUncertainSend(null);
    lastAcknowledgedMessageId.current=0;
    // Preserve unsent text, replies and selected media on ordinary refocus.
    // Clear everything only when the session or authenticated account changed.
