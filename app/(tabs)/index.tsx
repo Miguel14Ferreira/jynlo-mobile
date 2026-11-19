@@ -19,6 +19,7 @@ import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
+import {uncertainPostOutcome} from '../../src/lib/post-publish-uncertainty.cjs';
 import {sharedPostLink} from '../../src/lib/shared-post-link.cjs';
 import {cancellationNotice} from '../../src/lib/session-cancellation-notice.cjs';
 import {pickerMediaMime} from '../../src/lib/picker-media-format.cjs';
@@ -542,6 +543,7 @@ export default function JynloFeedHome(){
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
   const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
+  const [postRetryAcknowledged,setPostRetryAcknowledged]=useState(true);
   const [postVerifyLoading,setPostVerifyLoading]=useState(false);
   const [postVerifyItems,setPostVerifyItems]=useState<FeedItem[]|null>(null);
   const [postVerifyError,setPostVerifyError]=useState('');
@@ -862,7 +864,7 @@ export default function JynloFeedHome(){
 
   function openPostComposer(sessionId:number|null=null){
     setComposerSessionId(sessionId);
-    setPublishNotice(null);setPostPublishError('');setVerifiedPostPlace('');setPostPlaceOptions([]);
+    setPublishNotice(null);setPostPublishError('');setPostRetryAcknowledged(true);setVerifiedPostPlace('');setPostPlaceOptions([]);
     postVerifyRevision.current++;setPostVerifyItems(null);setPostVerifyError('');setPostVerifyLoading(false);
     postComposerRevision.current++;
     composerOpenRef.current=true;setComposerOpen(true);
@@ -981,7 +983,7 @@ export default function JynloFeedHome(){
     }
   }
   async function submitPost(){
-    if(!requireLogin()||postInFlight.current||(!composerMedia.length&&!composerText.trim()))return;
+    if(!requireLogin()||postInFlight.current||!postRetryAcknowledged||(!composerMedia.length&&!composerText.trim()))return;
     if(composerLocation.trim()&&verifiedPostPlace!==composerLocation.trim()){
       setPostPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
     }
@@ -1027,6 +1029,7 @@ export default function JynloFeedHome(){
       if(feedIdentity.current===`${username}:${actor}`){
         const message=e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.';
         setPostPublishError(message);
+        setPostRetryAcknowledged(!uncertainPostOutcome(message));
       }
     }finally{if(feedIdentity.current===`${username}:${actor}`){postInFlight.current=false;setPublishing(false);}}
   }
@@ -1434,6 +1437,10 @@ export default function JynloFeedHome(){
               {postVerifyLoading?<ActivityIndicator color={INDIGO}/>:<Text style={styles.postVerifyActionText}>Ver últimas publicações</Text>}
             </Pressable>
             {postVerifyError?<Text style={styles.postInlineErrorHelp}>{postVerifyError}</Text>:null}
+            {!postRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel="Já confirmei no perfil, permitir novo envio"
+             onPress={()=>setPostRetryAcknowledged(true)} style={styles.postRetryConfirmAction}>
+             <Text style={styles.postRetryConfirmText}>Já confirmei no perfil · Permitir novo envio</Text>
+            </Pressable>:null}
             {postVerifyItems? <View style={styles.postVerifyList}>
               <Text style={styles.postVerifyHeading}>Publicações mais recentes no teu perfil</Text>
               {postVerifyItems.length===0?<Text style={styles.postInlineErrorHelp}>Ainda não aparecem publicações. Não é uma confirmação de que o envio falhou.</Text>:null}
@@ -1480,8 +1487,8 @@ export default function JynloFeedHome(){
 
         </ScrollView>
 
-        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing)&&{opacity:.45}]}>
-          <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{publishing?'A enviar publicação…':'Partilhar publicação'}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?'Partilhar publicação':'Verificar o envio antes de repetir'} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
+          <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{publishing?'A enviar publicação…':postRetryAcknowledged?'Partilhar publicação':'Confirma primeiro o envio'}</Text></View>
         </Pressable>
         {publishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>A enviar para a Jynlo. Mantém este ecrã aberto; a publicação só será confirmada quando o servidor responder.</Text>:null}
         </KeyboardAvoidingView>
@@ -1716,6 +1723,8 @@ const styles=StyleSheet.create({
    postInlineErrorHelp:{fontSize:12,lineHeight:18,color:'#E1C9CE'},
    postVerifyAction:{minHeight:44,borderRadius:10,backgroundColor:TEAL,paddingHorizontal:12,justifyContent:'center',alignItems:'center',alignSelf:'stretch'},
    postVerifyActionText:{fontSize:13,color:INDIGO,fontWeight:'900'},
+   postRetryConfirmAction:{minHeight:44,borderRadius:10,borderColor:'#DDA7A7',borderWidth:1,paddingHorizontal:10,justifyContent:'center',alignItems:'center'},
+   postRetryConfirmText:{fontSize:12,color:'#FFE2E2',fontWeight:'800',textAlign:'center'},
    postVerifyList:{gap:8,marginTop:5},postVerifyHeading:{fontSize:12,fontWeight:'900',color:WHITE},
    postVerifyItem:{backgroundColor:PANEL,padding:10,borderRadius:10,gap:3},
    postVerifyItemTitle:{fontSize:13,fontWeight:'800',color:WHITE},
