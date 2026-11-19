@@ -151,6 +151,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
    if(changedAccountOrCommunity){
+    uncertainSendRef.current=null;setUncertainSend(null);
     // The new conversation must never inherit locks from another account.
     mutationEpoch.current++;mutationOwner.current='';mutationLock.current=false;setMutationBusy(false);
     pickerEpoch.current++;pickerOwner.current='';pickerInFlight.current=false;
