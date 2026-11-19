@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import {Alert,AppState,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -494,13 +494,13 @@ export default function TeamDetail(){
     <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
       onPress={()=>void updateBranding('KIT')}/>
    </View>:null}
-   <View style={styles.tabBar}>
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
     {([{id:'OVERVIEW',label:'Plantel e clube'},{id:'TROPHIES',label:'🏆 Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Mensagens'},{id:'CHALLENGES',label:'Desafios'}] as const).map(tab=>
      <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
       onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
       <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
      </Pressable>)}
-   </View>
+   </ScrollView>
    {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({rosterVerified?members.length:'—'})</Text>
     {!rosterVerified?<Text style={styles.note}>Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.</Text>:null}
     {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
@@ -631,7 +631,7 @@ export default function TeamDetail(){
  </Page>;
 }
 const styles=StyleSheet.create({
- header:{padding:22,backgroundColor:'#092F3B',borderColor:'#2A7A79',borderWidth:1,borderRadius:24,gap:16},
+ header:{padding:22,backgroundColor:'#082D3B',borderColor:'#35BCA66A',borderWidth:1,borderRadius:23,gap:15,overflow:'hidden'},
  backRow:{minHeight:48,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
  backLink:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  backLabel:{fontSize:14,color:C.mint,fontWeight:'900'},
@@ -649,14 +649,14 @@ const styles=StyleSheet.create({
  swatchSelected:{borderWidth:4,borderColor:C.mint},
 
  eyebrow:{fontSize:12,fontWeight:'900',letterSpacing:1.1,color:C.mint},
- heroIdentity:{flexDirection:'row',alignItems:'center',gap:16,paddingVertical:3},
+ heroIdentity:{flexDirection:'row',alignItems:'center',gap:17,paddingVertical:10,paddingHorizontal:2},
  heroCrest:{width:74,height:74,borderRadius:19,backgroundColor:'#168D86',alignItems:'center',justifyContent:'center'},
  heroCrestText:{color:'#052C32',fontSize:32,fontWeight:'900'},
  heroCopy:{flex:1,gap:5},
  heroSubtitle:{color:'#C5F4E9',fontWeight:'700',fontSize:14,lineHeight:21},
  description:{color:'#D1E4E8',fontSize:14,lineHeight:21},
- statsRow:{flexDirection:'row',flexWrap:'wrap',gap:9},
- statCard:{flexGrow:1,flexBasis:88,alignItems:'center',paddingVertical:15,paddingHorizontal:8,backgroundColor:'#104655',borderWidth:1,borderColor:'#347C84',borderRadius:16,gap:4},
+ statsRow:{flexDirection:'row',flexWrap:'nowrap',gap:8},
+ statCard:{flex:1,minWidth:0,alignItems:'center',paddingVertical:12,paddingHorizontal:5,backgroundColor:'#0A3640',borderWidth:1,borderColor:'#3CC8AC55',borderRadius:14,gap:4},
  statNumber:{color:C.white,fontSize:22,fontWeight:'900'},
  statLabel:{color:'#C9E4E8',fontSize:12,fontWeight:'700',textAlign:'center'},
  heroAction:{backgroundColor:C.mint,padding:13,borderRadius:12,alignItems:'center'},
@@ -669,15 +669,15 @@ const styles=StyleSheet.create({
  playerInfo:{flex:1,gap:2},
  playerName:{color:C.white,fontSize:14,fontWeight:'800'},
  empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
- tabBar:{flexDirection:'row',flexWrap:'wrap',gap:8},
- tab:{minHeight:45,minWidth:'47%',flexGrow:1,paddingHorizontal:10,paddingVertical:11,borderWidth:1,borderColor:C.border,borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
- tabSelected:{borderColor:C.mint,backgroundColor:'#123C42'},tabText:{fontSize:14,fontWeight:'800',color:C.muted},tabTextSelected:{color:C.mint},
+ tabBar:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:6,paddingRight:12},
+ tab:{minHeight:44,paddingHorizontal:17,paddingVertical:11,borderWidth:1,borderColor:'#317C80',borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:'#092D3B'},
+ tabSelected:{borderColor:C.mint,backgroundColor:'#1BCFB6'},tabText:{fontSize:13,fontWeight:'800',color:'#C1DADF'},tabTextSelected:{color:'#052D32'},
  communityLink:{flex:1,gap:3,minHeight:44,justifyContent:'center'},historyLink:{padding:12,borderRadius:11,borderWidth:1,borderColor:C.border,gap:4},
  removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:13,fontWeight:'800',color:C.white},
  title:{fontSize:27,lineHeight:33,fontWeight:'900',color:C.white,letterSpacing:-.6},
  note:{fontSize:13,color:C.muted,lineHeight:20},
  heading:{fontSize:17,fontWeight:'800',color:C.white},
- panel:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:16,gap:10},
+ panel:{padding:16,borderWidth:1,borderColor:'#3CBDA94D',backgroundColor:'#082C3B',borderRadius:17,gap:12},
  input:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,color:C.white,padding:12,minHeight:48,fontSize:15},
  candidate:{padding:10,borderColor:C.border,borderWidth:1,borderRadius:10,gap:5}
 });
