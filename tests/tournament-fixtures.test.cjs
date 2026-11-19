@@ -109,3 +109,16 @@ test('performance results reject invalid route IDs before requesting official da
  assert.match(screen,/setError\('Competição inválida\.'\)/);
  assert.match(screen,/performanceOverview\(cid,details,auth\.token,auth\.username\)/);
 });
+
+
+test('both participant and team calendars reject broken pagination from the server',()=>{
+ const root=path.join(__dirname,'../app/tournaments/[communityId]/[id]');
+ const team=fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8');
+ const individual=fs.readFileSync(path.join(root,'matches.tsx'),'utf8');
+ for(const screen of [team,individual]){
+  assert.match(screen,/import \{validateNextFixturePage\} from/);
+  assert.match(screen,/version!==generation\.current\)return/);
+ }
+ assert.match(team,/validateNextFixturePage<TournamentTeamMatch>\(response,next\)/);
+ assert.match(individual,/validateNextFixturePage<TournamentIndividualMatch>\(response,p\)/);
+});
