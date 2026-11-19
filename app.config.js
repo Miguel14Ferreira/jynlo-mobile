@@ -23,6 +23,9 @@ module.exports = ({config}) => {
   // Set GOOGLE_SERVICES_JSON as an EAS file environment variable holding the
   // Android Firebase google-services.json. Do not commit service account keys.
   const firebaseConfigFile = (process.env.GOOGLE_SERVICES_JSON || '').trim();
+  // Explicit push-test profiles must not silently build an APK without FCM.
+  if (process.env.JYNLO_REQUIRE_NATIVE_PUSH === '1' && !firebaseConfigFile)
+    throw new Error('BUILD BLOQUEADO: a APK push-test exige GOOGLE_SERVICES_JSON no ambiente EAS preview.');
   // A Play testing release without Firebase cannot receive native FCM pushes.
   // Fail at build configuration time rather than silently shipping a broken opt-in.
   if (storeBuild && !firebaseConfigFile)
