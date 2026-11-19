@@ -68,6 +68,8 @@ function SectionHeader({eyebrow,title,action,onPress}:{eyebrow?:string;title:str
 
 function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{group:StoriesGroup|null;groups:StoriesGroup[];onClose:()=>void;onDeleted:()=>void;onUpdated:(story:SocialStory)=>void;token:string|null;username:string|null}){
   const router=useRouter();
+  const {height:viewerHeight}=useWindowDimensions();
+  const [reactionsOpen,setReactionsOpen]=useState(false);
   const [currentKey,setCurrentKey]=useState<string|null>(null);
   const [index,setIndex]=useState(0);
   const [paused,setPaused]=useState(false);
@@ -110,7 +112,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     setStoryBusy(false);
     setPaused(false);
     audienceRequest.current++;
-    setReplyText('');setReplyFocused(false);setMediaState('loading');setMediaRetry(0);
+    setReplyText('');setReplyFocused(false);setReactionsOpen(false);setMediaState('loading');setMediaRetry(0);
     setAudience(null);setAudienceOpen(false);setAudienceBusy(false);setAudienceError('');
   },[story?.id]);
   React.useEffect(()=>{
@@ -313,7 +315,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           }
          }}/>
       </View>
-      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text><Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text></View>
+      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text>{viewerHeight>=720?<Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text>:null}</View>
       <View style={styles.storyEngagement}>
         {ownStory?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"
           disabled={audienceBusy} onPress={()=>void loadAudience()} style={[styles.storyEngagementAction,styles.storyViewsAction]}>
@@ -326,25 +328,31 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?'Retirar gosto da Story':'Gostar da Story'} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
           <JynloIcon name="like" size={20} color={story.likedByMe?'#FF778C':WHITE} active={story.likedByMe}/><Text style={styles.storyEngagementText}>{story.likeCount||0}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={styles.storyEngagementAction}><Text style={styles.storyEngagementText}>↗ Partilhar</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={[styles.storyEngagementAction,styles.storyActionWithIcon]}><JynloIcon name="share" color={WHITE} size={19}/><Text style={styles.storyEngagementText}>Partilhar</Text></Pressable>
       </View>
       {!ownStory?<View style={styles.storyReplyRow}>
         <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>{progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});setReplyFocused(true);}} onBlur={()=>setReplyFocused(false)}
           placeholder="Responder em privado à Story…" placeholderTextColor={MUTED} maxLength={500}
           accessibilityLabel="Resposta privada ao autor da Story" style={styles.storyReplyInput}/>
         <Pressable accessibilityRole="button" accessibilityLabel="Enviar resposta privada à Story" disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
-          <Text style={styles.storyReplySendText}>{storyBusy?'…':'Enviar'}</Text>
+          {storyBusy?<ActivityIndicator size="small" color={INDIGO}/>:<JynloIcon name="send" size={21} color={INDIGO}/>}
         </Pressable>
       </View>:null}
       {!ownStory?<View style={styles.storyReactions}>
-        <Text style={styles.storyReactionsTitle}>Reagir em privado</Text>
-        <View style={styles.storyReactionRow}>{['❤️','🔥','👏','😂','😮','⚽'].map(emoji=>
+        <Pressable accessibilityRole="button" accessibilityLabel={reactionsOpen?'Ocultar reações à Story':'Mostrar reações à Story'}
+         accessibilityState={{expanded:reactionsOpen}} disabled={storyBusy} onPress={()=>setReactionsOpen(value=>!value)}
+         style={styles.storyReactionDisclosure}>
+         <JynloIcon name="like" color={TEAL} size={18}/>
+         <Text style={styles.storyReactionsTitle}>Reagir em privado</Text>
+         <JynloIcon name={reactionsOpen?'chevron-up':'chevron-down'} color={TEAL} size={18}/>
+        </Pressable>
+        {reactionsOpen?<View style={styles.storyReactionRow}>{['❤️','🔥','👏','😂','😮','⚽'].map(emoji=>
           <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Reagir à Story com '+emoji}
             disabled={storyBusy} onPress={()=>void sendQuickReaction(emoji)} style={styles.storyReactionButton}>
             <Text style={styles.storyReactionEmoji}>{emoji}</Text>
-          </Pressable>)}</View>
+          </Pressable>)}</View>:null}
       </View>:null}
-      {!ownStory?<Text style={styles.storyReplyHint}>O autor pode ver que visualizaste esta Story. As reações e respostas são privadas.</Text>:null}
+      {!ownStory&&viewerHeight>=720?<Text style={styles.storyReplyHint}>O autor pode ver que visualizaste esta Story. As reações e respostas são privadas.</Text>:null}
       {audienceOpen&&ownStory?<View style={styles.storyAudiencePanel}>
         <View style={styles.storyAudienceHeader}>
           <Text style={styles.storyAudienceTitle}>Quem viu a tua Story</Text>
@@ -1773,7 +1781,9 @@ const styles=StyleSheet.create({
   storyMediaRetry:{paddingHorizontal:22,paddingVertical:12,borderRadius:14,backgroundColor:TEAL,minHeight:44,justifyContent:'center'},
   storyMediaRetryText:{color:INDIGO,fontWeight:'900'},
   storyViewsAction:{flexGrow:1,flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#123641'},
-  storyReactions:{gap:8,paddingVertical:7},
+  storyReactions:{gap:8,paddingVertical:4},
+  storyReactionDisclosure:{flexDirection:'row',alignItems:'center',gap:8,alignSelf:'flex-start',minHeight:44,paddingHorizontal:12,borderWidth:1,borderColor:BORDER,borderRadius:17},
+  storyActionWithIcon:{flexDirection:'row',alignItems:'center',gap:7},
   storyReactionsTitle:{color:MUTED,fontSize:12,fontWeight:'800'},
   storyReactionRow:{flexDirection:'row',justifyContent:'space-between',gap:5},
   storyReactionButton:{minWidth:44,minHeight:44,borderRadius:16,backgroundColor:'#12313B',borderWidth:1,borderColor:BORDER,alignItems:'center',justifyContent:'center'},
