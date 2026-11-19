@@ -5,6 +5,7 @@ import type {ImagePickerAsset} from 'expo-image-picker';
 import type {CommunityChatEntry} from './types';
 import type {SessionChatEntry} from './session-chat-api';
 import {prepareChatPhoto} from './chat-photo-source';
+import {confirmedSingleChatPhotoReply} from './chat-attachments-core.cjs';
 
 type ChatKind='community'|'session';
 function photoUrl(kind:ChatKind,id:number):string{
@@ -48,9 +49,8 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
   let result:CommunityChatEntry|SessionChatEntry;
   try{result=await response.json() as CommunityChatEntry|SessionChatEntry;}
   catch{throw Error('O envio não foi confirmado. Confirma o histórico antes de repetir.');}
-  if(!result||!Number.isSafeInteger(result.id)||result.id<=0||
-    typeof result.attachmentName!=='string'||!result.attachmentName.trim())
-   throw Error('O envio não foi confirmado. Confirma o histórico antes de repetir.');
+  if(!confirmedSingleChatPhotoReply(result,kind,id,asset.mimeType||'',replyId))
+   throw Error('O servidor não confirmou o anexo nesta conversa. Confirma o histórico antes de repetir.');
   return result;
  }catch(e){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Confirma o histórico antes de repetir.');
