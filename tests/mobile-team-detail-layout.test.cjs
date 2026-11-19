@@ -1,0 +1,29 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+
+test('team identity management is a separate owner-only tab after the navigation',()=>{
+ const source=read('app/teams/[id].tsx');
+ assert.match(source,/useState<'OVERVIEW'\|'TROPHIES'\|'FEED'\|'CHAT'\|'CHALLENGES'\|'BRANDING'>/);
+ assert.match(source,/isOwner\?\[\{id:'BRANDING' as const,label:'Identidade'\}\]:\[\]/);
+ assert.match(source,/isOwner&&activeTab==='BRANDING'\?<View style=\{styles\.panel\}>/);
+ const tabs=source.indexOf('accessibilityLabel="Secções da equipa"');
+ const panel=source.indexOf("isOwner&&activeTab==='BRANDING'?<View");
+ const roster=source.indexOf("activeTab==='OVERVIEW'?<View");
+ assert.ok(tabs>0&&panel>tabs&&roster>panel,'branding content follows tab controls');
+ assert.doesNotMatch(source,/isOwner&&activeTab==='OVERVIEW'\?<View style=\{styles\.panel\}>\s*<Text style=\{styles\.heading\}>Identidade da equipa/);
+});
+test('team public statistics are verified and owner actions are accessible',()=>{
+ const source=read('app/teams/[id].tsx');
+ assert.match(source,/trophiesVerified\?standaloneTrophies\.length\+championshipHonours\.length:'—'/);
+ assert.match(source,/rosterVerified\?members\.length:'—'/);
+ assert.match(source,/communitiesVerified\?communities\.filter/);
+ assert.match(source,/accessibilityLabel="Personalizar emblema e equipamento"/);
+ assert.match(source,/onPress=\{\(\)=>setActiveTab\('BRANDING'\)\}/);
+ assert.match(source,/accessibilityLabel="Encontrar competições para esta equipa"/);
+ assert.match(source,/activeTab==='FEED'/);
+ assert.match(source,/activeTab==='CHAT'/);
+});
