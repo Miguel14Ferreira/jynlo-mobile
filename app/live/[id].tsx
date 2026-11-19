@@ -16,16 +16,21 @@ import {
 } from '../../src/lib/personal-live-api';
 
 let globalsReady=false;
-function LiveVideoStage({host}:{host:boolean}){
+function LiveVideoStage({host,expanded}:{host:boolean;expanded:boolean}){
  const tracks=useTracks([Track.Source.Camera]);
- const videos=tracks.filter(isTrackReference);
- return <View style={styles.videoStage}>
-  {videos.length?videos.map(track=><View key={track.participant.identity+'|'+track.source} style={styles.videoTile}>
+ const videos=tracks.filter(isTrackReference).sort((a,b)=>Number(a.participant.isLocal)-Number(b.participant.isLocal));
+ const dominant=videos[0],previews=videos.slice(1);
+ return <View style={[styles.videoStage,expanded&&styles.videoStageExpanded]}>
+  {dominant?<View style={styles.videoMain}>
+    <VideoTrack trackRef={dominant} style={styles.video}/>
+    <Text style={styles.videoLabel}>{dominant.participant.isLocal?'A tua câmara':'Em direto'}</Text>
+   </View>:<View style={styles.videoPlaceholder}><Text style={styles.placeholderText}>
+    {host?'A transmitir. Ativa a câmara se ainda não apareceu imagem.':'À espera da imagem do apresentador…'}
+   </Text></View>}
+  {previews.map(track=><View key={track.participant.identity+'|'+track.source} style={styles.videoPreview}>
     <VideoTrack trackRef={track} style={styles.video}/>
-    <Text style={styles.videoLabel}>{track.participant.isLocal?'A tua câmara':'Em direto'}</Text>
-   </View>):<View style={styles.videoPlaceholder}><Text style={styles.placeholderText}>
-   {host?'A transmitir. Ativa a câmara se ainda não apareceu imagem.':'À espera da imagem do apresentador…'}
-  </Text></View>}
+    <Text style={styles.videoPreviewLabel}>{track.participant.isLocal?'Tu':'Convidado'}</Text>
+   </View>)}
  </View>;
 }
 function BroadcastControls({publisher}:{publisher:boolean}){
@@ -68,6 +73,7 @@ export default function PersonalLiveRoom(){
  const [messages,setMessages]=useState<PersonalLiveMessage[]>([]);
  const [controls,setControls]=useState<PersonalLiveControls|null>(null);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false),[showChat,setShowChat]=useState(true);
+ const [expandedVideo,setExpandedVideo]=useState(false);
  const [requesting,setRequesting]=useState(false),[moderating,setModerating]=useState(false);
  const active=useRef(false),endingRef=useRef(false),sendLock=useRef(false);
  const connectionRole=useRef<PersonalLiveConnection['role']|null>(null),switchingRole=useRef(false);
@@ -79,7 +85,7 @@ export default function PersonalLiveRoom(){
    setLoading(false);setError('Direto inválido ou sessão expirada.');
    return()=>{active.current=false;};
   }
-  setLoading(true);setError('');
+  setLoading(true);setError('');setExpandedVideo(false);setShowChat(true);
   void joinPersonalLive(auth.token,id).then(async value=>{
    if(!active.current)return;
    if(!globalsReady){registerGlobals();globalsReady=true;}
@@ -201,13 +207,23 @@ export default function PersonalLiveRoom(){
    token={connection.token} connect audio={host||role==='GUEST'} video={host||role==='GUEST'}
    onDisconnected={()=>{if(active.current&&!endingRef.current&&connectionRole.current===role)setError('A ligação ao vídeo terminou. Volta à lista para entrar novamente.');}}
    onError={e=>{if(active.current)setError('Erro na transmissão: '+e.message);}}>
-   <LiveVideoStage host={host}/>
+   <LiveVideoStage host={host} expanded={expandedVideo}/>
    <BroadcastControls publisher={host||role==='GUEST'}/>
   </LiveKitRoom>:null}
   {connection?<View style={styles.actions}>
-   <Button title={host?(ending?'A terminar…':'Terminar direto'):'Sair do direto'}
-    danger={host} disabled={ending} onPress={host?end:leave}/>
-   <Button title={showChat?'Ocultar chat':'Mostrar chat'} secondary onPress={()=>setShowChat(value=>!value)}/>
+   <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?'Reduzir vídeo do direto':'Ampliar vídeo do direto'}
+    accessibilityState={{selected:expandedVideo}} onPress={()=>setExpandedVideo(value=>!value)}
+    style={[styles.stageAction,expandedVideo&&styles.stageActionSelected]}>
+    <Text style={styles.stageActionText}>{expandedVideo?'Reduzir vídeo':'Ampliar vídeo'}</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={showChat?'Ocultar chat do direto':'Mostrar chat do direto'}
+    accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(value=>!value)} style={styles.stageAction}>
+    <Text style={styles.stageActionText}>{showChat?'Ocultar chat':'Mostrar chat'}</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={host?'Terminar direto para todos':'Sair do direto'}
+    disabled={ending} onPress={host?end:leave} style={[styles.stageAction,styles.endAction]}>
+    <Text style={styles.stageActionText}>{host?(ending?'A terminar…':'Terminar direto'):'Sair do direto'}</Text>
+   </Pressable>
   </View>:null}
   {connection&&!host&&!controls?.isGuest?<View style={styles.panel}>
     <Text style={styles.note}>{controls?.requestStatus==='PENDING'
@@ -254,12 +270,23 @@ const styles=StyleSheet.create({
  control:{minHeight:44,padding:10,borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,justifyContent:'center'},
  controlLabel:{color:C.white,fontWeight:'800',fontSize:12},
  requestRow:{gap:8,paddingVertical:8,borderBottomWidth:1,borderColor:C.border},
- videoStage:{minHeight:235,backgroundColor:'#021017',borderRadius:15,overflow:'hidden',gap:7},
- videoTile:{height:280},video:{width:'100%',height:'100%'},
- videoLabel:{position:'absolute',bottom:9,left:12,color:C.white,fontWeight:'800',backgroundColor:'#142A32',padding:6,borderRadius:7},
- videoPlaceholder:{minHeight:235,alignItems:'center',justifyContent:'center',padding:15},
+ videoStage:{height:370,backgroundColor:'#021017',borderRadius:18,overflow:'hidden',position:'relative'},
+ videoStageExpanded:{height:510},
+ videoMain:{width:'100%',height:'100%'},video:{width:'100%',height:'100%'},
+ videoPreview:{position:'absolute',right:12,bottom:12,width:112,height:150,overflow:'hidden',
+  borderRadius:13,borderWidth:2,borderColor:C.mint,backgroundColor:'#021017'},
+ videoPreviewLabel:{position:'absolute',bottom:4,left:5,fontSize:11,fontWeight:'900',
+  color:C.white,backgroundColor:'#102932D9',paddingHorizontal:5,paddingVertical:3,borderRadius:5},
+ videoLabel:{position:'absolute',top:10,left:12,color:C.white,fontWeight:'800',backgroundColor:'#142A32',padding:6,borderRadius:7},
+ videoPlaceholder:{flex:1,alignItems:'center',justifyContent:'center',padding:15},
  placeholderText:{color:C.muted,textAlign:'center',fontSize:14},
- actions:{gap:8},panel:{padding:13,gap:11,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:15},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ stageAction:{flexGrow:1,minHeight:46,alignItems:'center',justifyContent:'center',paddingHorizontal:10,
+  borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
+ stageActionSelected:{borderColor:C.mint,backgroundColor:'#0E4D50'},
+ endAction:{borderColor:'#C47E85',backgroundColor:'#713A42'},
+ stageActionText:{color:C.white,fontWeight:'800',fontSize:12,textAlign:'center'},
+ panel:{padding:13,gap:11,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:15},
  note:{fontSize:13,lineHeight:19,color:C.muted},
  message:{flexDirection:'row',flexWrap:'wrap',gap:6,paddingBottom:9,borderBottomWidth:1,borderBottomColor:C.border},
  author:{color:C.mint,fontSize:13,fontWeight:'900'},messageText:{color:C.white,fontSize:13,flexShrink:1},
