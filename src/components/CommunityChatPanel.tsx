@@ -70,11 +70,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const [reply,setReply]=useState<CommunityChatEntry|null>(null);
  const [editing,setEditing]=useState<CommunityChatEntry|null>(null),[editText,setEditText]=useState('');
  const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
+ const mutationOwner=useRef(''),mutationEpoch=useRef(0);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
- const pickerInFlight=useRef(false);
+ const pickerInFlight=useRef(false),pickerOwner=useRef(''),pickerEpoch=useRef(0);
  const [attachmentCaption,setAttachmentCaption]=useState('');
  const focusedIdentity=useRef('');
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
@@ -146,6 +147,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
    if(changedAccountOrCommunity){
+    // The new conversation must never inherit locks from another account.
+    mutationEpoch.current++;mutationOwner.current='';mutationLock.current=false;setMutationBusy(false);
+    pickerEpoch.current++;pickerOwner.current='';pickerInFlight.current=false;
     lastAcknowledgedMessageId.current=0;
     // Keep local drafts when refocusing the same community, but never cross accounts.
     setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');
@@ -302,7 +306,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   if(!text||text.length>2000||text.startsWith('[JYNLO:GIPHY:1]')){
    setError('A edição deve conter entre 1 e 2000 caracteres.');return;
   }
-  mutationLock.current=true;setMutationBusy(true);setError('');
+  const operation=++mutationEpoch.current;
+  mutationOwner.current=identity;mutationLock.current=true;setMutationBusy(true);setError('');
   try{
    const updated=await editCommunityChatMessage(id,original.id,text,auth.token,auth.username);
    if(version!==generation.current||activeChat.current!==identity)return;
@@ -313,13 +318,18 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
-  }finally{mutationLock.current=false;setMutationBusy(false);}
+  }finally{
+   if(mutationOwner.current===identity&&mutationEpoch.current===operation){
+    mutationLock.current=false;mutationOwner.current='';setMutationBusy(false);
+   }
+  }
  }
  async function deleteMessage(message:CommunityChatEntry){
   if(!ownMessage(message)||!auth.token||!auth.username||mutationLock.current||
    sendingNow.current||uploadingNow.current)return;
   const version=generation.current,identity=id+'|'+auth.token;
-  mutationLock.current=true;setMutationBusy(true);setError('');
+  const operation=++mutationEpoch.current;
+  mutationOwner.current=identity;mutationLock.current=true;setMutationBusy(true);setError('');
   try{
    const updated=await deleteCommunityChatMessageForEveryone(id,message.id,auth.token,auth.username);
    if(version!==generation.current||activeChat.current!==identity)return;
@@ -331,7 +341,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
-  }finally{mutationLock.current=false;setMutationBusy(false);}
+  }finally{
+   if(mutationOwner.current===identity&&mutationEpoch.current===operation){
+    mutationLock.current=false;mutationOwner.current='';setMutationBusy(false);
+   }
+  }
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   const identity=id+'|'+auth.token;
@@ -340,7 +354,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   const remaining=4-current.length;
   if(remaining<=0){setError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
   const version=generation.current,token=auth.token;
-  pickerInFlight.current=true;setError('');
+  const operation=++pickerEpoch.current;
+  pickerOwner.current=identity;pickerInFlight.current=true;setError('');
   try{
    const ImagePicker=await import('expo-image-picker');
    if(source==='camera'&&!await ensureChatCameraPermission())return;
@@ -356,7 +371,11 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
     setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');
-  }finally{pickerInFlight.current=false;}
+  }finally{
+   if(pickerOwner.current===identity&&pickerEpoch.current===operation){
+    pickerInFlight.current=false;pickerOwner.current='';
+   }
+  }
  }
  async function uploadPhoto(){
   const identity=id+'|'+auth.token;
