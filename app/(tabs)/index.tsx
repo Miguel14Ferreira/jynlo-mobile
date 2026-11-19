@@ -556,6 +556,7 @@ export default function JynloFeedHome(){
   const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
   const [postRetryAcknowledged,setPostRetryAcknowledged]=useState(true);
+  const [storyRetryAcknowledged,setStoryRetryAcknowledged]=useState(true);
   const [postVerifyLoading,setPostVerifyLoading]=useState(false);
   const [postVerifyItems,setPostVerifyItems]=useState<FeedItem[]|null>(null);
   const [postVerifyError,setPostVerifyError]=useState('');
@@ -882,7 +883,7 @@ export default function JynloFeedHome(){
     composerOpenRef.current=true;setComposerOpen(true);
   }
   function openStoryComposer(){
-    setPublishNotice(null);setStoryPublishError('');setVerifiedStoryPlace('');setStoryPlaceOptions([]);
+    setPublishNotice(null);setStoryPublishError('');setStoryRetryAcknowledged(true);setVerifiedStoryPlace('');setStoryPlaceOptions([]);
     setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);setStoryEditorOpenedAt(new Date().toISOString());
@@ -897,7 +898,7 @@ export default function JynloFeedHome(){
       setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-      setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
+      setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);setStoryRetryAcknowledged(true);
     };
     if(storyMedia||storyCaption.trim()||storyLocation.trim()||storyTags.trim()){
       Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
@@ -1046,7 +1047,7 @@ export default function JynloFeedHome(){
     }finally{if(feedIdentity.current===`${username}:${actor}`){postInFlight.current=false;setPublishing(false);}}
   }
   async function submitStory(){
-    if(!requireLogin()||storyInFlight.current||!storyMedia)return;
+    if(!requireLogin()||storyInFlight.current||!storyRetryAcknowledged||!storyMedia)return;
     const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance},showTime=showStoryTime,altText=storyAltText;
     if(storyLocation.trim()&&verifiedStoryPlace!==storyLocation.trim()){
       setStoryPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
@@ -1097,6 +1098,7 @@ export default function JynloFeedHome(){
       if(feedIdentity.current===`${username}:${actor}`){
         const message=e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.';
         setStoryPublishError(message);
+        setStoryRetryAcknowledged(!uncertainPostOutcome(message));
         Alert.alert('Story',message);
       }
     }finally{if(feedIdentity.current===`${username}:${actor}`){storyInFlight.current=false;setStoryPublishing(false);}}
@@ -1697,8 +1699,15 @@ export default function JynloFeedHome(){
           </View>:null}
         </ScrollView>
         {!storyMedia?<Text style={styles.storyUploadHint}>Escolhe uma fotografia ou um vídeo para publicares a Story.</Text>:null}
-        {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert"><Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text><Text style={styles.mutedText}>O rascunho continua aqui. Verifica se a Story já foi publicada antes de repetires.</Text></View>:null}
-        <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" accessibilityState={{disabled:!storyMedia||storyPublishing,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing}>
+        {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert">
+          <Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text>
+          <Text style={styles.mutedText}>O rascunho continua aqui. Verifica as tuas Stories antes de repetires o envio.</Text>
+          {!storyRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel="Já confirmei as minhas Stories, permitir novo envio"
+            onPress={()=>setStoryRetryAcknowledged(true)} style={styles.postRetryConfirmAction}>
+            <Text style={styles.postRetryConfirmText}>Já confirmei as minhas Stories · Permitir novo envio</Text>
+          </Pressable>:null}
+        </View>:null}
+        <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" accessibilityState={{disabled:!storyMedia||storyPublishing||!storyRetryAcknowledged,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing||!storyRetryAcknowledged)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing||!storyRetryAcknowledged}>
           <View style={styles.publishButtonContent}>{storyPublishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{storyPublishing?'A enviar Story…':'Publicar Story'}</Text></View>
         </Pressable>
         {storyPublishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>A enviar para a Jynlo. Não feches este ecrã até receberes a confirmação.</Text>:null}
