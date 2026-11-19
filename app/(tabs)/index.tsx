@@ -970,7 +970,8 @@ export default function JynloFeedHome(){
     postInFlight.current=true;setPublishing(true);setPostPublishError('');
     try{
       const created=await publishPost(body,media,actor,username,place,linkedSessionId??undefined);
-      if(linkedSessionId&&created.sessionId!==linkedSessionId)
+      // Do not display a previous account's session association in a new account.
+      if(feedIdentity.current===`${username}:${actor}`&&linkedSessionId&&created.sessionId!==linkedSessionId)
         Alert.alert('Publicação enviada','O servidor confirmou a publicação, mas não a associação à sessão. Não voltes a enviar sem verificar o teu feed.');
       // Show the server-confirmed item immediately. A delayed feed refresh must
       // never make a successful post look as if it vanished.
@@ -996,7 +997,10 @@ export default function JynloFeedHome(){
           Alert.alert('Publicação enviada','As alterações feitas durante o envio ficaram guardadas no editor. Podes criar outra publicação.');
         }
         // Refresh failure must not be interpreted as a failed published POST.
-        void load().catch(()=>setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
+        void load().catch(()=>{
+          if(feedIdentity.current===`${username}:${actor}`)
+            setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.');
+        });
       }
     }catch(e){
       if(feedIdentity.current===`${username}:${actor}`){
@@ -1049,7 +1053,10 @@ export default function JynloFeedHome(){
         }else{
           Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
         }
-        void load().catch(()=>setError('Story enviada. Não foi possível atualizar o feed.'));
+        void load().catch(()=>{
+          if(feedIdentity.current===`${username}:${actor}`)
+            setError('Story enviada. Não foi possível atualizar o feed.');
+        });
       }
     }catch(e){
       if(feedIdentity.current===`${username}:${actor}`){
