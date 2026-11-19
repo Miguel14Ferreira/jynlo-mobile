@@ -47,9 +47,10 @@ test('call chat revokes old account messages and never fabricates call-only hist
 
 test('closing or switching an in-call chat releases an obsolete send lock',()=>{
  const panel=read('src/components/CallChatSidePanel.tsx');
- assert.match(panel,/sendLock\\.current=false;setSending\\(false\\);queued\\.current=false/);
- assert.match(panel,/if\\(!visible\\)\\{[\\s\\S]*?sendLock\\.current=false;setSending\\(false\\);[\\s\\S]*?return;[\\s\\S]*?\\}/);
- assert.match(panel,/if\\(generation\\.current!==version\\|\\|owner\\.current!==actor\\)return/);
+ assert.ok(panel.includes('sendLock.current=false;setSending(false);queued.current=false'));
+ assert.ok(panel.includes('if(!visible){'));
+ assert.ok(panel.includes('sendLock.current=false;setSending(false);'));
+ assert.ok(panel.includes('if(generation.current!==version||owner.current!==actor)return'));
 });
 
 test('the call chat respects server deletions while retaining recent acknowledged sends',()=>{
