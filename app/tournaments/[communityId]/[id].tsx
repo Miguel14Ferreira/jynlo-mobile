@@ -63,9 +63,12 @@ export default function TournamentDetailScreen(){
  return <Page><DemoBanner/><Eyebrow>COMPETIÇÃO JYNLO</Eyebrow>
    {!auth.token?<Button title="Entrar para ver torneio" onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-   {tournament?<><Text style={styles.title}>{tournament.name}</Text>
+   {tournament?<><View style={styles.hero}>
+     <Text style={styles.heroEyebrow}>TORNEIO · JYNLO</Text>
+     <Text style={styles.title}>{tournament.name}</Text>
      <View style={styles.line}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={tournament.status==='IN_PROGRESS'?'A decorrer':tournament.status==='DRAFT'?'Em preparação':'Concluído'}/></View>
-     <Text style={styles.heading}>{label(kind)}</Text>
+     <Text style={styles.heroKind}>{label(kind)}</Text>
+    </View>
      {officialOutcome?<View style={styles.panel}>
       <Text style={styles.heading}>{officialOutcome.title}</Text>
       <Text style={styles.meta}>{officialOutcome.detail}</Text>
@@ -73,15 +76,17 @@ export default function TournamentDetailScreen(){
      {tableError?<Message tone="error">A classificação não está disponível: {tableError}</Message>:null}
      {tableError?<Button secondary title="Tentar carregar novamente" onPress={()=>{void load();}}/>:null}
      {table?<View style={styles.panel}>
+       <View style={styles.sectionHeading}><Text style={styles.heading}>Classificação</Text><Text style={styles.sectionCount}>{table.rows.length} {table.rows.length===1?'participante':'participantes'}</Text></View>
        <Text style={styles.columns}>{standingsColumns(kind).join('   ·   ')}</Text>
        {table.rows.map((row,i)=>{
         const r=row as unknown as Record<string,unknown>;
         const name=String(r.teamName??r.fullName??r.displayName??r.username??'Participante');
         const points=kind==='CHESS'?formatChessPoints(r.points):r.points;
-        return <View key={i} style={styles.standing}><Text style={styles.position}>{String(r.position)}.</Text>
-          <View style={{flex:1}}><Text style={styles.name}>{name}</Text>
+        return <View key={i} style={styles.standing}>
+          <View style={styles.positionBox}><Text style={styles.position}>{String(r.position??i+1)}</Text></View>
+          <View style={styles.standingIdentity}><Text numberOfLines={2} style={styles.name}>{name}</Text>
             <Text style={styles.meta}>{`${r.played??'—'} ${kind==='CHESS'?'partidas':'jogos'} · ${r.won??'—'} vitórias · ${r.drawn??'—'} empates · ${r.lost??'—'} derrotas`}</Text></View>
-          <Text style={styles.points}>{points==null?'—':String(points)} {kind==='CHESS'?'pontos':'pts'}</Text>
+          <View style={styles.pointsBox}><Text style={styles.points}>{points==null?'—':String(points)}</Text><Text style={styles.pointsLabel}>{kind==='CHESS'?'pontos':'pts'}</Text></View>
         </View>;
        })}
        {table.rows.length===0?<Text style={styles.meta}>Ainda não existem resultados para apresentar.</Text>:null}
@@ -99,7 +104,23 @@ export default function TournamentDetailScreen(){
    </>:null}
  </Page>;
 }
-const styles=StyleSheet.create({title:{color:C.white,fontSize:29,fontWeight:'900'},line:{flexDirection:'row',gap:8,flexWrap:'wrap'},heading:{color:C.white,fontSize:20,fontWeight:'900'},
- panel:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:18,padding:16,gap:11},columns:{fontSize:11,color:C.mint,fontWeight:'800'},
- standing:{flexDirection:'row',alignItems:'center',borderTopColor:C.border,borderTopWidth:1,paddingTop:12,gap:9},position:{width:23,color:C.mint,fontWeight:'900',fontSize:18},
- name:{color:C.white,fontWeight:'800',fontSize:14},meta:{fontSize:11,color:C.muted,marginTop:4},points:{color:C.mint,fontWeight:'900',fontSize:13},source:{color:C.muted,fontSize:10,marginTop:10}});
+const styles=StyleSheet.create({
+ hero:{gap:12,padding:19,borderWidth:1,borderColor:'#40D4B958',borderRadius:20,backgroundColor:'#0A303D'},
+ heroEyebrow:{fontSize:11,color:'#72F2D8',letterSpacing:1.4,fontWeight:'900'},
+ title:{color:C.white,fontSize:28,lineHeight:34,fontWeight:'900',letterSpacing:-0.6},
+ line:{flexDirection:'row',gap:8,flexWrap:'wrap'},heroKind:{color:'#BBE2E1',fontSize:14,fontWeight:'700'},
+ sectionHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},
+ sectionCount:{color:'#99DDCE',fontSize:12,fontWeight:'800'},
+ heading:{color:C.white,fontSize:19,fontWeight:'900'},
+ panel:{backgroundColor:'#082B3A',borderColor:'#3DC4B04D',borderWidth:1,borderRadius:18,padding:16,gap:12},
+ columns:{fontSize:11,color:'#98E6D6',fontWeight:'800',lineHeight:17},
+ standing:{flexDirection:'row',alignItems:'center',borderTopColor:'#3BAEAB34',borderTopWidth:1,paddingVertical:12,gap:11,minWidth:0},
+ positionBox:{width:34,height:34,borderRadius:11,backgroundColor:'#135E59',alignItems:'center',justifyContent:'center'},
+ position:{color:'#A0FFE3',fontWeight:'900',fontSize:15},
+ standingIdentity:{flex:1,minWidth:0,gap:4},name:{color:C.white,fontWeight:'800',fontSize:14,lineHeight:19},
+ meta:{fontSize:11,color:'#ACCAD2',lineHeight:16},
+ pointsBox:{minWidth:50,paddingHorizontal:7,alignItems:'center',gap:3},
+ points:{color:'#7FF5D6',fontWeight:'900',fontSize:18},
+ pointsLabel:{color:'#B5D2DA',fontSize:10,fontWeight:'800'},
+ source:{color:C.muted,fontSize:10,marginTop:10,lineHeight:16}
+});
