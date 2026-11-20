@@ -128,7 +128,7 @@ test('embedded team chat and feed keep a compact single composer toolbar',()=>{
  assert.match(screen,/activeTab==='CHAT'\?<View/);
  assert.match(screen,/activeTab==='FEED'\?<View/);
  assert.match(panel,/style=\{\[styles\.input,kind==='chat'&&styles\.chatInput\]\}/);
- assert.match(panel,/chatInput:\{minHeight:48,maxHeight:120\}/);
+ assert.match(panel,/chatInput:\{flex:1,minWidth:0,minHeight:48,maxHeight:120\}/);
  assert.match(panel,/\{attachmentsEnabled\?<>/);
  assert.match(panel,/onPress=\{\(\)=>void composeLocation\(\)\}/);
  assert.match(panel,/clearInterval\(timer\)/);
