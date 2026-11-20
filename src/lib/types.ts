@@ -223,6 +223,7 @@ export interface MySessions {created:SessionSummary[];joined:SessionSummary[];wa
 export interface SocialStory {
   id:number; authorUsername:string; displayName:string; avatarUrl:string|null;
   communityId:number|null;communityName:string|null;communityPhotoUrl:string|null;
+  teamId?:number|null;teamName?:string|null;teamLogoUrl?:string|null;
   caption:string|null;mediaUrl:string;video:boolean;createdAt:string;expiresAt:string;
   canDelete:boolean;likeCount?:number;likedByMe?:boolean;
   textX?:number|null;textY?:number|null;textRotation?:number|null;textZoom?:number|null;
