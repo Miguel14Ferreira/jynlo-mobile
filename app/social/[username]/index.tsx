@@ -114,7 +114,9 @@ export default function PublicSocialProfile(){
      [activity.activitiesCompleted,'Atividades'],
      [activity.peoplePlayedWith,'Pessoas com quem jogou'],
      [activity.sportsPractised,'Modalidades'],
-     [activity.eventsCreated,'Eventos organizados']
+     [activity.eventsCreated,'Eventos organizados'],
+     [activity.participantsMobilized,'Participantes mobilizados'],
+     [activity.communitiesJoined,'Comunidades']
     ] as const).map(([count,label])=><View key={label} style={styles.activityCard}>
      <Text style={styles.activityNumber}>{Math.max(0,Number(count)||0)}</Text>
      <Text style={styles.activityLabel}>{label}</Text>
