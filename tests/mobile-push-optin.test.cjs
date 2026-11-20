@@ -45,10 +45,10 @@ test('push taps navigate only to the authenticated notification inbox',()=>{
  assert.match(layout,/Notifications\.addNotificationResponseReceivedListener\(open\)/);
  assert.match(layout,/Notifications\.getLastNotificationResponse\(\)/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
- assert.match(layout,/data\?\.kind!=='notification'/);
- assert.match(layout,/Number\.isSafeInteger\(data\.id\)/);
+ assert.match(layout,/data\?\.kind==='notification'\?pushNotificationId\(data\.id\):null/);
+ assert.match(layout,/pushNotificationId\(data\.id\)/);
  assert.match(layout,/lastHandled\.current===handledKey/);
- assert.match(layout,/pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}/);
+ assert.match(layout,/pathname:'\/notifications',params:\{notificationId:id\}/);
  assert.doesNotMatch(layout,/router\.push\(data/);
 });
 
