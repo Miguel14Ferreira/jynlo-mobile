@@ -73,6 +73,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
  const [reply,setReply]=useState<CommunityChatEntry|null>(null);
+ const [expandedMessageActions,setExpandedMessageActions]=useState<number|null>(null);
  const [editing,setEditing]=useState<CommunityChatEntry|null>(null),[editText,setEditText]=useState('');
  const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const mutationOwner=useRef(''),mutationEpoch=useRef(0);
@@ -417,11 +418,28 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
         onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
         <Text style={styles.sender}>{m.username}</Text>
        </Pressable>
-       <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
-        {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={18} color={C.mint}/><Text style={styles.quoteTitle}>Responder</Text></View></Pressable>:null}
-        {ownMessage(m)&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
-       </View>
+       {!m.deletedAt&&!accessRevoked?
+        <Pressable accessibilityRole="button" accessibilityLabel={'Mostrar ações da mensagem de @'+m.username}
+         accessibilityState={{expanded:expandedMessageActions===m.id}}
+         onPress={()=>setExpandedMessageActions(current=>current===m.id?null:m.id)}
+         style={styles.replyAction}>
+          <JynloIcon name="more" size={21} color={C.mint}/>
+        </Pressable>:null}
      </View>
+     {expandedMessageActions===m.id&&!m.deletedAt&&!accessRevoked?
+      <View style={styles.contextActions}>
+        <Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username}
+          onPress={()=>{setReply(m);setExpandedMessageActions(null);}} style={styles.replyAction}>
+          <JynloIcon name="reply" size={18} color={C.mint}/>
+          <Text style={styles.quoteTitle}>Responder</Text>
+        </Pressable>
+        {ownMessage(m)?<Pressable accessibilityRole="button" accessibilityLabel="Editar ou eliminar a minha mensagem"
+          disabled={mutationBusy} onPress={()=>{setExpandedMessageActions(null);messageOptions(m);}}
+          style={styles.replyAction}>
+          <JynloIcon name="more" size={20} color={C.mint}/>
+          <Text style={styles.quoteTitle}>Mais opções</Text>
+        </Pressable>:null}
+      </View>:null}
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
      {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
      <ChatMentionText body={m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>
@@ -580,7 +598,10 @@ const styles=StyleSheet.create({inline:{gap:12,padding:14,borderWidth:1,borderCo
  olderMessages:{padding:10,alignItems:'center'},
  newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:9,borderRadius:20,backgroundColor:C.mint},
  newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
- iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},editInput:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:12,color:C.white,minHeight:52,maxHeight:150},replyAction:{minHeight:38,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
+ iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},editInput:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:12,color:C.white,minHeight:52,maxHeight:150},contextActions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:7,
+  paddingVertical:4,paddingHorizontal:6,borderWidth:1,borderColor:C.border,borderRadius:10,
+  backgroundColor:C.surface,alignSelf:'flex-end',flexWrap:'wrap'},
+ replyAction:{minHeight:38,flexDirection:'row',alignItems:'center',gap:5,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
  message:{padding:12,borderRadius:17,backgroundColor:'#0D3945',borderWidth:1,borderColor:'#3BB2AE52',gap:6,maxWidth:'88%',alignSelf:'flex-start',borderBottomLeftRadius:5},
  mine:{backgroundColor:'#12554D',borderColor:'#3CBB9B80',alignSelf:'flex-end',borderBottomLeftRadius:17,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
