@@ -473,7 +473,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      inlineHistoryRef.current?.scrollToEnd({animated:false});
     }
     // Content size can be reported before the viewport layout; acknowledge only when fully visible.
-    if(historyContentHeight.current>0&&historyContentHeight.current<=historyViewportHeight.current&&AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
+    if(!firstHistoryPositionPending.current&&inlineNearBottom.current&&!unseenBelow&&historyContentHeight.current>0&&historyContentHeight.current<=historyViewportHeight.current&&AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
      const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
     if(latest>lastAcknowledgedMessageId.current){
      lastAcknowledgedMessageId.current=latest;
@@ -491,15 +491,15 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      inlineHistoryRef.current?.scrollToEnd({animated:false});
     }
     // A short conversation can change without firing onScroll. Its entire content must fit.
-    if(height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
-       AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
+    if(!firstHistoryPositionPending.current&&inlineNearBottom.current&&!unseenBelow&&height<=historyViewportHeight.current&&historyViewportHeight.current>0&&
+        AppState.currentState==='active'&&!accessRevoked&&auth.token&&auth.username&&Number.isSafeInteger(id)&&id>0){
      const latest=messages.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
      if(latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
       void markCommunityRead(id,latest,auth.token,auth.username).catch(()=>{if(lastAcknowledgedMessageId.current===latest)lastAcknowledgedMessageId.current=0;});
      }
     }
-    if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});
+    if(inlineNearBottom.current&&composerFocused.current&&!unseenBelow)inlineHistoryRef.current?.scrollToEnd({animated:true});
    }}
    contentContainerStyle={{gap:8,padding:8}}>
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
