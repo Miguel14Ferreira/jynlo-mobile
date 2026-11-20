@@ -40,6 +40,17 @@ export async function publicSportsActivity(username:string,token:string|null):Pr
  return request<PublicSportsActivity>(`/api/profiles/${user}/activity`,{token});
 }
 
+export type PublicCompletedParticipation={
+ tournamentId:number;tournamentName:string;
+ communityId:number;communityName:string;
+ sport:string|null;completedAt:string;individualChampion:boolean;
+};
+export async function publicCompletedParticipations(username:string,token:string|null):Promise<PublicCompletedParticipation[]>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('É necessário iniciar sessão.');
+ return request<PublicCompletedParticipation[]>(`/api/profile/${user}/completed-individual-participations`,{token});
+}
+
 export type PublicIndividualTitle={
  tournamentId:number;tournamentName:string;
  communityId:number;communityName:string;
