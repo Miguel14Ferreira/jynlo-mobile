@@ -9,7 +9,7 @@ import {parseFavoriteSports} from '../../src/lib/favorite-sports.cjs';
 import ProfilePosts from '../../src/components/ProfilePosts';
 import ProfilePrivacySettings from '../../src/components/ProfilePrivacySettings';
 import {JynloIcon} from '../../src/components/JynloIcon';
-import {followStatus,publicSportsActivity,type PublicSportsActivity,type FollowStatus} from '../../src/lib/social-relations-api';
+import {followStatus,publicSportsActivity,publicCompletedParticipations,type PublicCompletedParticipation,type PublicSportsActivity,type FollowStatus} from '../../src/lib/social-relations-api';
 import {joinedSportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
@@ -31,6 +31,7 @@ export default function ProfileScreen(){
   const [profileError,setProfileError]=useState(false);
   const [socialCounts,setSocialCounts]=useState<FollowStatus|null>(null);
   const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
+  const [completedParticipations,setCompletedParticipations]=useState<PublicCompletedParticipation[]>([]);
   const [showAllAchievements,setShowAllAchievements]=useState(false);
   const [verifiedTeams,setVerifiedTeams]=useState<SportsTeam[]>([]);
   const [verifiedCommunities,setVerifiedCommunities]=useState<CommunityGroup[]>([]);
@@ -38,12 +39,16 @@ export default function ProfileScreen(){
   const [membershipsError,setMembershipsError]=useState(false);
   useFocusEffect(useCallback(()=>{
     // Clear private profile details on account change and screen transitions.
-    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);setShowAllAchievements(false);
+    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);setCompletedParticipations([]);setShowAllAchievements(false);
     setVerifiedTeams([]);setVerifiedCommunities([]);setMembershipsError(false);setMembershipsLoading(false);
     if(!auth.token||DEMO_MODE){setProfileLoading(false);return;}
     let active=true;setProfileLoading(true);
     if(auth.username){
       void followStatus(auth.username,auth.token).then(counts=>{if(active)setSocialCounts(counts);}).catch(()=>{});
+      void publicCompletedParticipations(auth.username,auth.token)
+        .then(result=>{if(active&&Array.isArray(result))setCompletedParticipations(result.filter(item=>
+          Number.isSafeInteger(item.tournamentId)&&item.tournamentId>0&&
+          Number.isSafeInteger(item.communityId)&&item.communityId>0));}).catch(()=>{});
       void publicSportsActivity(auth.username,auth.token).then(stats=>{if(active)setActivity(stats);})
         .catch(()=>{/* Never display guessed stats or achievements. */});
     }
@@ -129,6 +134,20 @@ export default function ProfileScreen(){
         <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
       </Pressable>:null}
     </View>
+    {auth.token&&auth.username&&!DEMO_MODE&&completedParticipations.length>0?
+      <View style={styles.history}>
+       <Text style={styles.historyTitle}>Competições individuais concluídas</Text>
+       <Text style={styles.historyHint}>Participações confirmadas em torneios públicos. Sem classificações presumidas.</Text>
+       {completedParticipations.map(entry=><Pressable key={'competition-'+entry.tournamentId}
+         accessibilityRole="button" accessibilityLabel={'Ver competição '+entry.tournamentName}
+         style={styles.competitionCard}
+         onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(entry.communityId)}})}>
+         <Text style={styles.membershipName}>{entry.tournamentName}</Text>
+         <Text style={styles.historyHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
+         <Text style={styles.competitionResult}>{entry.individualChampion?'🏆 Campeão individual':'Participação confirmada'}</Text>
+         <Text style={styles.historyHint}>{entry.completedAt?.slice(0,7)||''}</Text>
+       </Pressable>)}
+      </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE&&activity?<View style={styles.history}>
       <Text style={styles.historyTitle}>O meu histórico desportivo</Text>
       <Text style={styles.historyHint}>Resultados e conquistas registados na Jynlo.</Text>
@@ -232,6 +251,8 @@ export default function ProfileScreen(){
 }
 const styles=StyleSheet.create({
   history:{padding:16,gap:10,borderWidth:1,borderColor:C.border,borderRadius:MobileTheme.radius.xl,backgroundColor:C.surface},
+  competitionCard:{padding:13,gap:6,minHeight:80,borderRadius:12,backgroundColor:C.raised,borderWidth:1,borderColor:C.border},
+  competitionResult:{fontSize:12,fontWeight:'800',color:C.mint},
   historyTitle:{fontSize:16,fontWeight:'900',color:C.white},
   historyHint:{fontSize:12,color:C.muted,lineHeight:17},
   historyGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},
