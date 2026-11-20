@@ -41,7 +41,7 @@ test('stale follow writes cannot release the lock for a different profile or log
  assert.match(screen,/finally\{if\(request===version\.current\)\{inFlight\.current=false;setBusy\(false\);\}\}/);
  assert.doesNotMatch(screen,/finally\{inFlight\.current=false;if\(request===version\.current\)setBusy\(false\);\}/);
  assert.match(screen,/const request=version\.current,original=status\.followedByMe/);
- assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);setAffiliations\(null\);\}/);
+ assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);setAffiliations\(null\);setActivity\(null\);\}/);
 });
 
 test('public profile identity never waits for follow or privacy requests',()=>{
