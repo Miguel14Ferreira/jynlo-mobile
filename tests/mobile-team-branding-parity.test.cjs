@@ -61,7 +61,7 @@ test('background refresh preserves mobile kit drafts and crest fallback',()=>{
  assert.match(screen,/if\(!kitEditedRef\.current\)/);
  assert.match(screen,/if\(mode==='KIT'\|\|!kitEditedRef\.current\)/);
  assert.match(studio,/if\(dirty\)return/);
- assert.match(studio,/key=\{team\.id\}/);
+ assert.match(screen,/key=\{team\.id\}/);
  assert.match(crest,/onError=\{\(\)=>setImageFailed\(true\)\}/);
  assert.match(crest,/useEffect\(\(\)=>\{setImageFailed\(false\);\},\[source\]\)/);
 });
