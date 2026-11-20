@@ -14,16 +14,18 @@ test('all mobile team directory surfaces reuse real club crest and palette',()=>
  assert.match(avatar,/\(team\.name\|\|'E'\)\.charAt\(0\)\.toUpperCase\(\)/);
 });
 
-test('owner-only kit editing requires verified roster and current team identity',()=>{
+test('owner-only kit editing uses the server kit contract and verified team identity',()=>{
  const screen=read('app/teams/[id].tsx');
+ const studio=read('src/components/TeamKitStudio.tsx');
  assert.match(screen,/const isOwner=rosterVerified&&/);
  assert.match(screen,/!isOwner\|\|!brandingVerified\|\|saving\|\|actionRef\.current/);
- assert.match(screen,/if\(version!==requestVersion\.current\)return/);
  assert.match(screen,/setBrandingVerified\(false\)/);
- assert.match(screen,/setSportsTeamKit\(teamId,kitPrimary,kitSecondary,auth\.token,kitPattern\)/);
- assert.match(screen,/Guardar equipamento/);
- assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
- assert.match(screen,/accessibilityState=\{\{selected:kitSecondary===color\}\}/);
+ assert.match(screen,/<TeamKitStudio key=\{team\.id\}/);
+ assert.match(screen,/setSportsTeamKit\(teamId,selectedKit\?\.primary\.primary\|\|kitPrimary/);
+ assert.match(studio,/Guardar os equipamentos/);
+ assert.match(studio,/SLOTS/);
+ assert.match(studio,/setDirty\(true\)/);
+ assert.match(studio,/onSave\(/);
 });
 
 test('logo upload uses validated gallery media, proper MIME, bearer and no JSON header',()=>{
@@ -51,20 +53,18 @@ test('client never renders untrusted schemes or unscoped relative team media pat
 });
 
 
-test('background team refresh cannot overwrite unsaved kit palette and failed crest uses initials',()=>{
+test('background refresh preserves mobile kit drafts and crest fallback',()=>{
  const screen=read('app/teams/[id].tsx');
+ const studio=read('src/components/TeamKitStudio.tsx');
  const crest=read('src/components/TeamBrandAvatar.tsx');
  assert.match(screen,/const kitEditedRef=useRef\(false\)/);
  assert.match(screen,/if\(!kitEditedRef\.current\)/);
- assert.match(screen,/kitEditedRef\.current=true;setKitPrimary\(color\)/);
- assert.match(screen,/kitEditedRef\.current=true;setKitSecondary\(color\)/);
- assert.match(screen,/kitEditedRef\.current=false/);
  assert.match(screen,/if\(mode==='KIT'\|\|!kitEditedRef\.current\)/);
- assert.match(screen,/Não foi possível abrir a galeria do dispositivo/);
+ assert.match(studio,/if\(dirty\)return/);
+ assert.match(studio,/key=\{team\.id\}/);
  assert.match(crest,/onError=\{\(\)=>setImageFailed\(true\)\}/);
  assert.match(crest,/useEffect\(\(\)=>\{setImageFailed\(false\);\},\[source\]\)/);
 });
-
 
 test('team detail paints public identity before slow honours or membership finish',()=>{
  const screen=read('app/teams/[id].tsx');
@@ -76,18 +76,24 @@ test('team detail paints public identity before slow honours or membership finis
 });
 
 
-test('official plain, striped and diagonal kit choices have visible mobile previews',()=>{
+test('mobile editor supports all web kit designs, garments and three slots',()=>{
  const screen=read('app/teams/[id].tsx');
  const api=read('src/lib/sports-teams-api.ts');
+ const studio=read('src/components/TeamKitStudio.tsx');
  const preview=read('src/components/TeamKitPreview.tsx');
- for(const pattern of ['PLAIN','STRIPES','DIAGONAL']){
-  assert.ok(screen.includes("id:'"+pattern+"'"),pattern);
+ for(const pattern of ['PLAIN','STRIPES','DIAGONAL','HOOPS','HALVES','CHEVRON']){
+  assert.ok(studio.includes("id:'"+pattern+"'"),pattern);
   assert.ok(preview.includes("'"+pattern+"'"),pattern);
  }
- assert.match(api,/kitPattern\?: TeamKitPattern \| null/);
- assert.match(api,/token,method:'PUT',body:\{primary,secondary,pattern\}/);
- assert.match(screen,/setKitPattern\(identity\.kitPattern\|\|'PLAIN'\)/);
- assert.match(screen,/kitEditedRef\.current=true;setKitPattern\(option\.id\)/);
- assert.match(screen,/accessibilityState=\{\{selected:kitPattern===option\.id\}\}/);
- assert.match(screen,/TeamKitPreview primary=\{kitPrimary\} secondary=\{kitSecondary\} pattern=\{option\.id\}/);
+ for(const garment of ['jersey','singlet','vest','polo','cycling','rashguard'])
+  assert.ok(studio.includes("id:'"+garment+"'"),garment);
+ for(const variant of ['PRIMARY','ALTERNATE','TRAINING'])
+  assert.ok(studio.includes("id:'"+variant+"'"),variant);
+ assert.match(api,/kitVariants\?: TeamKitVariant\[\] \| null/);
+ assert.match(api,/crestDesign\?: string \| null/);
+ assert.match(api,/options\?:\{garment:TeamKitGarment/);
+ assert.match(api,/body:\{primary,secondary,pattern,\.\.\.\(options\|\|\{\}\)\}/);
+ assert.match(screen,/variants:selectedKit\.variants/);
+ assert.match(studio,/TeamKitPreview primary=\{current\.primary\}/);
+ assert.match(studio,/onSave\(/);
 });
