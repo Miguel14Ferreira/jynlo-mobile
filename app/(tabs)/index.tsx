@@ -33,6 +33,7 @@ import PostAlbumCarousel from '../../src/components/PostAlbumCarousel';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {storyMentionFriends,searchStoryMentionProfiles,type StoryFriend} from '../../src/lib/social-relations-api';
 import {myCommunities} from '../../src/lib/community-api';
+import {mySportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import {searchSocialPlaces,socialPlaceLabel,type SocialPlace} from '../../src/lib/social-place-search';
@@ -402,6 +403,8 @@ export default function JynloFeedHome(){
   const [storyPlaceOptions,setStoryPlaceOptions]=useState<SocialPlace[]>([]),[verifiedStoryPlace,setVerifiedStoryPlace]=useState(''),[storyPlaceLoading,setStoryPlaceLoading]=useState(false);
   const [storyFriendSearch,setStoryFriendSearch]=useState('');
   const [storyPublishCommunityId,setStoryPublishCommunityId]=useState<number|null>(null);
+  const [storyPublishTeamId,setStoryPublishTeamId]=useState<number|null>(null);
+  const [storyManagedTeams,setStoryManagedTeams]=useState<SportsTeam[]>([]);
   const [storyManagedCommunities,setStoryManagedCommunities]=useState<CommunityGroup[]>([]);
   const [storyManagedCommunitiesLoading,setStoryManagedCommunitiesLoading]=useState(false);
   const [storyManagedCommunitiesError,setStoryManagedCommunitiesError]=useState('');
@@ -481,11 +484,14 @@ export default function JynloFeedHome(){
   },[storyComposer,storyLocation,verifiedStoryPlace,auth.token]);
   useEffect(()=>{
     if(!storyComposer||!auth.token||!auth.username){
-      setStoryManagedCommunities([]);setStoryManagedCommunitiesLoading(false);
+      setStoryManagedCommunities([]);setStoryManagedTeams([]);setStoryManagedCommunitiesLoading(false);
       setStoryManagedCommunitiesError('');return;
     }
     let active=true;
     setStoryManagedCommunitiesLoading(true);setStoryManagedCommunitiesError('');
+    setStoryManagedTeams([]);
+    void mySportsTeams(auth.token).then(teams=>{if(active)setStoryManagedTeams(teams);})
+      .catch(()=>{if(active)setStoryManagedTeams([]);});
     void myCommunities(auth.token,auth.username).then(groups=>{
       if(!active)return;
       setStoryManagedCommunities(groups.filter(group=>group.visibility==='PUBLIC'&&
@@ -592,7 +598,7 @@ export default function JynloFeedHome(){
       setStoryViewer(null);storyComposerRevision.current++;storyComposerRef.current=false;setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       storyCaptionRef.current='';storyMediaRef.current=null;
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-      setStoryPublishCommunityId(null);setStoryManagedCommunities([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
+      setStoryPublishCommunityId(null);setStoryPublishTeamId(null);setStoryManagedCommunities([]);setStoryManagedTeams([]);setStorySearchedProfiles([]);setStoryFriendSearch('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});setStoryAppearance({color:'white',background:'dark',font:'modern'});setShowStoryTime(false);setStoryAltText('');setExpandedPostImage(null);
       postComposerRevision.current++;composerOpenRef.current=false;setComposerOpen(false);setComposerSessionId(null);changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');
       setExpandedComments(null);setComments([]);setCommentText('');setCommentsLoading(false);setEditingComment(null);setEditCommentDraft('');setCommentWriteBusy(null);setBusyPost(null);
@@ -1056,13 +1062,17 @@ export default function JynloFeedHome(){
     let details:StoryDetails;
     try{details=prepareStoryDetails(locationDraft,tagsDraft);}catch(e){Alert.alert('Story',e instanceof Error?e.message:'Verifica a localização e as identificações.');return;}
     const selectedCommunityId=storyPublishCommunityId;
+    const selectedTeamId=storyPublishTeamId;
+    if(selectedTeamId!==null&&(!storyManagedTeams.some(team=>team.id===selectedTeamId)||selectedCommunityId!==null)){
+      setStoryPublishError('Já não tens permissão para publicar esta Story como equipa.');return;
+    }
     if(selectedCommunityId!==null&&!storyManagedCommunities.some(group=>group.id===selectedCommunityId)){
       setStoryPublishError('Já não tens permissão para publicar Stories nesta comunidade.');return;
     }
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
     try{
-      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText);
+      const created=await publishStory(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText,selectedTeamId);
       if(feedIdentity.current===`${username}:${actor}`){
         recentlyConfirmedStories.current=[...recentlyConfirmedStories.current.filter(entry=>entry.item.id!==created.id),{item:created,until:Date.now()+120000}];
         setOwnStories(current=>[created,...current.filter(item=>item.id!==created.id)]);
@@ -1075,7 +1085,7 @@ export default function JynloFeedHome(){
         const currentGeometry=storyGeometryRef.current;
         const unchanged=storyCaptionRef.current===body&&storyMediaRef.current?.uri===media.uri&&
           storyLocationRef.current===locationDraft&&storyTagsRef.current===tagsDraft&&
-          storyPublishCommunityId===selectedCommunityId&&
+          storyPublishCommunityId===selectedCommunityId&&storyPublishTeamId===selectedTeamId&&
           currentGeometry.x===geometry.x&&currentGeometry.y===geometry.y&&
           currentGeometry.rotation===geometry.rotation&&currentGeometry.zoom===geometry.zoom&&
           storyAppearance.color===appearance.color&&storyAppearance.background===appearance.background&&storyAppearance.font===appearance.font&&showStoryTime===showTime&&storyAltText===altText;
@@ -1085,7 +1095,7 @@ export default function JynloFeedHome(){
           setStoryMedia(null);storyMediaRef.current=null;setStoryComposer(false);
           setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
           setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-          setStoryPublishCommunityId(null);
+          setStoryPublishCommunityId(null);setStoryPublishTeamId(null);
         }else{
           Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
         }
@@ -1619,9 +1629,9 @@ export default function JynloFeedHome(){
            <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="settings" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Localização, amigos e mais opções</Text></View>
            <JynloIcon name={storyDetailsOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
           </Pressable>
-          {!storyDetailsOpen&&(storyPublishCommunityId!==null||storyLocation.trim()||storyTags.trim())?<View style={styles.storyEditorSummary}>
+          {!storyDetailsOpen&&(storyPublishCommunityId!==null||storyPublishTeamId!==null||storyLocation.trim()||storyTags.trim())?<View style={styles.storyEditorSummary}>
            <Text style={styles.storiesIntro} numberOfLines={2}>{[
-            storyPublishCommunityId!==null?('Comunidade: '+(storyManagedCommunities.find(group=>group.id===storyPublishCommunityId)?.name||'selecionada')):'O meu perfil',
+            storyPublishTeamId!==null?('Equipa: '+(storyManagedTeams.find(team=>team.id===storyPublishTeamId)?.name||'selecionada')):storyPublishCommunityId!==null?('Comunidade: '+(storyManagedCommunities.find(group=>group.id===storyPublishCommunityId)?.name||'selecionada')):'O meu perfil',
             storyLocation.trim()?('Local: '+storyLocation.trim()):null,
             storyMentionUsernames(storyTags).length?('Amigos: '+storyMentionUsernames(storyTags).map(name=>'@'+name).join(', ')):null
            ].filter(Boolean).join(' · ')}</Text>
@@ -1629,19 +1639,25 @@ export default function JynloFeedHome(){
           {storyDetailsOpen?<View style={styles.storyEditorAdvanced}>
           <Text style={styles.storiesIntro}>Publicar como</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
-            disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(null)}
+            disabled={storyPublishing} onPress={()=>{setStoryPublishCommunityId(null);setStoryPublishTeamId(null);}}
             style={styles.storyFriendOption}>
             <JynloIcon name="profile" size={19} color={TEAL}/>
-            <Text style={styles.storyFriendName}>{storyPublishCommunityId===null?'✓  ':''}O meu perfil</Text>
+            <Text style={styles.storyFriendName}>{storyPublishCommunityId===null&&storyPublishTeamId===null?'✓  ':''}O meu perfil</Text>
           </Pressable>
           {storyManagedCommunitiesLoading?<Text style={styles.storiesIntro}>A carregar comunidades…</Text>:null}
           {storyManagedCommunitiesError?<Text style={styles.storiesIntro}>{storyManagedCommunitiesError}</Text>:null}
           {storyManagedCommunities.map(group=><Pressable key={group.id} accessibilityRole="button"
             accessibilityLabel={'Publicar Story na comunidade '+group.name}
-            disabled={storyPublishing} onPress={()=>setStoryPublishCommunityId(group.id)}
+            disabled={storyPublishing} onPress={()=>{setStoryPublishCommunityId(group.id);setStoryPublishTeamId(null);}}
             style={styles.storyFriendOption}>
             <JynloIcon name="community" size={19} color={TEAL}/>
             <Text style={styles.storyFriendName}>{storyPublishCommunityId===group.id?'✓  ':''}{group.name}</Text>
+          </Pressable>)}
+          {storyManagedTeams.map(team=><Pressable key={'team-'+team.id} accessibilityRole="button"
+            accessibilityLabel={'Publicar Story como equipa '+team.name} disabled={storyPublishing}
+            onPress={()=>{setStoryPublishTeamId(team.id);setStoryPublishCommunityId(null);}} style={styles.storyFriendOption}>
+            <JynloIcon name="team" size={19} color={TEAL}/>
+            <Text style={styles.storyFriendName}>{storyPublishTeamId===team.id?'✓  ':''}{team.name} · Equipa</Text>
           </Pressable>)}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyAltText}
             onChangeText={setStoryAltText} maxLength={350} multiline
