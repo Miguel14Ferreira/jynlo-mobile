@@ -63,3 +63,15 @@ for (const {name,file} of panels) {
     assert.match(viewport,/if\(inlineNearBottom\.current&&composerFocused\.current&&!unseenBelow\)inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
   });
 }
+
+for (const {name,file} of panels) {
+  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const scrollStart = source.indexOf('onScroll={event=>');
+  const layoutStart = source.indexOf('onLayout={event=>',scrollStart);
+  const scroll = source.slice(scrollStart,layoutStart);
+  test(name+' keeps unread marker until the last message is actually visible',()=>{
+    assert.match(scroll,/const lastMessageVisible=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-4/);
+    assert.match(scroll,/if\(lastMessageVisible\)setUnseenBelow\(false\)/);
+    assert.doesNotMatch(scroll,/if\(inlineNearBottom\.current\)\{\s*setUnseenBelow\(false\)/);
+  });
+}
