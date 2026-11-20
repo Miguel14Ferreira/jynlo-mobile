@@ -11,6 +11,7 @@ import type {ImagePickerAsset} from 'expo-image-picker';
 import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
 import {observeTeamContent} from '../lib/team-content-realtime';
 import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
+import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -750,6 +751,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     {kind==='feed'?<Text style={styles.buttonText}>{sending?'A publicar…':'Publicar'}</Text>:null}
    </Pressable>
   </View>
+  <ChatMentionSuggestions draft={draft} token={token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
  </>;
  if(accessRevoked)return <View style={styles.panel}>
   <Text style={styles.title}>Conversa indisponível</Text>
@@ -805,12 +807,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   </View>:null}
   {visibleEntries.map(item=><View key={item.id} style={[styles.entry,kind==='chat'&&styles.chatBubble,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='chat'&&item.username?.toLowerCase()===username.toLowerCase()&&styles.ownChatBubble,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
-    <View style={styles.authorAvatar}>
+    <Pressable accessibilityRole="button" accessibilityLabel={'Abrir perfil de @'+item.username}
+      onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})} style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
       <Image source={{uri:teamPlayerAvatarUri(item.profilePicUrl)!}} style={styles.authorAvatarPhoto}
        onError={()=>setBrokenAuthorAvatars(prev=>({...prev,[item.id]:true}))}/>:
       <Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text>}
-    </View>
+    </Pressable>
     <View style={{flex:1}}>
      <Pressable accessibilityRole="link" accessibilityLabel={'Abrir perfil de @'+item.username}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})}
@@ -819,7 +822,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>
    </View>
    {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
-   <Text style={styles.body}>{item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body}</Text>
+   <ChatMentionText body={item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body} style={styles.body}/>
    {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
    {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
     onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
