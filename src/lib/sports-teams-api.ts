@@ -175,8 +175,9 @@ export async function setSportsTeamKit(
  });
 }
 /** Uses the shared validated image storage. A timeout is uncertain: never auto-retry. */
+export type GeneratedTeamCrestImage={uri:string;type:'image';mimeType:'image/png';fileSize?:number};
 export async function uploadSportsTeamLogo(
- id:number,asset:ImagePickerAsset,token:string
+ id:number,asset:ImagePickerAsset|GeneratedTeamCrestImage,token:string,crestDesign?:string
 ):Promise<SportsTeam>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar o logótipo.');
  validId(id);
@@ -189,6 +190,10 @@ export async function uploadSportsTeamLogo(
  const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':mime==='image/gif'?'gif':'jpg';
  const form=new FormData();
  form.append('logo',{uri:asset.uri,name:'jynlo-team.'+ext,type:mime} as unknown as Blob);
+ if(crestDesign){
+  if(crestDesign.length>8192)throw Error('O desenho do emblema ultrapassa o limite.');
+  form.append('crestDesign',crestDesign);
+ }
  const controller=new AbortController();
  const timer=setTimeout(()=>controller.abort(),30000);
  try{
