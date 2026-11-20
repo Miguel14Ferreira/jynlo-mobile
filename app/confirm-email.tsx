@@ -33,7 +33,7 @@ export default function ConfirmEmailScreen(){
   <Brand subtitle="CONFIRMAÇÃO DE CONTA"/>
   <Eyebrow>VALIDAÇÃO DO EMAIL</Eyebrow>
   <Text style={styles.headline}>Confirma o teu endereço.</Text>
-  <Text style={styles.hint}>Recebeste uma ligação de confirmação por email. Podes introduzir aqui o token da ligação para confirmar diretamente na app.</Text>
+  <Text style={styles.hint}>Recebeste uma ligação de confirmação por email. Se a ligação não abrir a app, copia o código que vem no email e cola-o aqui.</Text>
   {error?<Message tone="error">{error}</Message>:null}
   {message?<Message>{message}</Message>:null}
   <Text style={styles.label}>Token de confirmação</Text>

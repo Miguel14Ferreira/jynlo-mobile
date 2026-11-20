@@ -28,5 +28,5 @@ test('tournament closure requires all loaded matches complete and no further pag
  assert.match(source,/fixturesVerified&&matches\.length>0&&!hasMore&&matches\.every\(m=>m\.status==='COMPLETED'\)/);
  assert.match(source,/disabled=\{busy\|\|syncing\|\|!allVisibleFinished\}/);
  assert.match(source,/canCompleteTournament\(role,tournament\)/);
- assert.match(source,/O backend valida a classificação e o campeão antes de fechar/);
+ assert.match(source,/A classificação e o campeão são confirmados antes de fechar/);
 });

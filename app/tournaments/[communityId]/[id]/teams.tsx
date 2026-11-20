@@ -98,7 +98,7 @@ export default function TeamsScreen(){
    <Text style={styles.teamName}>Nova equipa</Text>
    <TextInput accessibilityLabel="Nome da equipa" value={newName} onChangeText={setNewName} style={styles.input} maxLength={100} placeholder="Nome da equipa" placeholderTextColor={C.muted}/>
    <Button title={busy?'A guardar…':'Criar equipa'} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
-   <Text style={styles.note}>A criação exige permissões de organizador e é validada pelo backend.</Text>
+   <Text style={styles.note}>Só a organização do torneio pode criar equipas.</Text>
   </View>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<CompetitionTeamSearch communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<TeamCompetitionApplications communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}

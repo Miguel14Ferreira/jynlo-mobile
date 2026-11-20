@@ -142,7 +142,7 @@ export default function RelayManagement(){
    </View>
    <View style={s.panel}><Text style={s.heading}>Finalistas · {data.finalists.length}</Text>
     {data.finalPublished?data.finalists.map(f=><Text key={f.teamId} style={s.note}>{f.seed}. {f.teamName} · {f.qualifyingSeconds} s</Text>):
-     <><Text style={s.note}>O backend seleciona até oito equipas pelos tempos válidos e verifica empates na última vaga.</Text>
+     <><Text style={s.note}>Passam à final até oito equipas, pelos melhores tempos válidos. Empates na última vaga são verificados.</Text>
       <Button title="Publicar final" disabled={!editable||busy||t.status!=='IN_PROGRESS'||data.qualifyingStandings.length<2} onPress={confirmPublish}/></>}
    </View>
    <View style={s.panel}><Text style={s.heading}>Decisões de júri</Text>

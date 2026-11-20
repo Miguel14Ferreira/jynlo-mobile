@@ -25,7 +25,7 @@ const EVENT_LABELS:Record<string,string>={
 const MODEL_HINTS:Record<string,string>={
  NUMERIC_INDIVIDUAL:'Confrontos individuais, resultados numéricos e pontuação por vitória/empate/derrota.',
  NUMERIC_TEAM:'Jogos entre equipas, com calendário, classificações e possibilidade de grupos/eliminatórias.',
- CHESS_HALF_POINTS:'Vitória vale 1, empate vale ½ e derrota 0. Regras internas da API: 2/1/0.',
+ CHESS_HALF_POINTS:'Vitória vale 1, empate vale ½ e derrota 0.',
  RACE_POINTS:'Classificação pelos resultados das corridas associadas, não por golos nem vitórias em jogos.',
  SWIM_BEST_TIME:'Comparação pelo melhor tempo da mesma prova de piscina de 50 m.',
  CANOE_BEST_TIME:'Comparação pelo melhor tempo de uma distância K1.',

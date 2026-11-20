@@ -110,7 +110,7 @@ export default function TournamentEventsScreen(){
   {!loading&&overview&&kind?<>
    <View style={styles.badges}><Badge text={tournament?.sport||'Modalidade'}/>
     <Badge text={tournament?.status==='DRAFT'?'Em preparação':tournament?.status==='IN_PROGRESS'?'A decorrer':'Concluído'}/></View>
-   <Message>A classificação é calculada pelo backend com os resultados oficiais das jornadas. A app não cria tempos, marcas ou posições.</Message>
+   <Message>A classificação é calculada com os resultados oficiais de cada jornada.</Message>
    {DEMO_MODE?<Message>Esta é uma demonstração isolada: associar e retirar provas está desativado.</Message>:null}
    {tournament?.status==='COMPLETED'?<Message>O campeonato está concluído. As provas e resultados estão apenas para consulta.</Message>:null}
    {overview.kind==='RACE'&&tournament?.status==='DRAFT'&&collections.linked.length===0?<>

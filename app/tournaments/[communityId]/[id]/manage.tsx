@@ -246,7 +246,7 @@ export default function TournamentManagerScreen(){
    </View>:null}
    {canFinish?<View style={styles.panel}>
     <Text style={styles.heading}>Encerrar a liga</Text>
-    <Text style={styles.helper}>Apenas quando todos os jogos estiverem concluídos. O backend valida a classificação e o campeão antes de fechar.</Text>
+    <Text style={styles.helper}>Só disponível quando todos os jogos estiverem concluídos. A classificação e o campeão são confirmados antes de fechar.</Text>
     <Button danger title={busy?'A processar…':'Encerrar liga'} disabled={busy||syncing||!allVisibleFinished} onPress={finish}/>
     {!allVisibleFinished?<Text style={styles.helper}>Conclui os jogos pendentes e carrega todas as páginas para desbloquear esta ação.</Text>:null}
    </View>:null}

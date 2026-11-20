@@ -97,7 +97,7 @@ export default function TeamFixturesScreen(){
       {matches.length===0?<Message>Ainda não há jogos gerados para este torneio.</Message>:null}
     </>}
     {hasMore?<Button secondary title={loadingMore?'A carregar…':'Carregar mais jogos'} disabled={loadingMore} onPress={()=>{void more();}}/>:null}
-    <Message>Os resultados, grupos e progressão da competição são sempre os devolvidos pelo backend da Jynlo. Não calculamos qualificação nem vencedores no telemóvel.</Message>
+    <Message>Os grupos, resultados e apuramentos são atualizados à medida que a organização regista os jogos.</Message>
    </>:null}
    <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;
