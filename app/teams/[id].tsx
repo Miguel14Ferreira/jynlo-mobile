@@ -608,19 +608,28 @@ export default function TeamDetail(){
       <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})} style={styles.playerAvatar}>
        {teamPlayerAvatarUri(m.profilePicUrl)&&!brokenAvatars[m.profileId]
-        ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={{width:'100%',height:'100%',borderRadius:24}}
+        ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={{width:'100%',height:'100%',borderRadius:27}}
           onError={()=>setBrokenAvatars(previous=>({...previous,[m.profileId]:true}))}/>
         :<Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text>}
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`} style={styles.playerInfo}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
-       <Text style={styles.playerName}>@{m.username}</Text>
-       <Text style={styles.note}>{m.role==='OWNER'?'Responsável':'Jogador'} · Ver perfil</Text>
+       <Text numberOfLines={1} style={styles.playerName}>{m.fullName||m.username}</Text>
+       <Text numberOfLines={1} style={styles.playerHandle}>@${m.username}</Text>
+       {m.bio?<Text numberOfLines={2} style={styles.playerBio}>{m.bio}</Text>:null}
       </Pressable>
-      {isOwner&&m.role!=='OWNER'?<Pressable accessibilityRole="button" accessibilityLabel={`Remover @${m.username} da equipa`}
-       disabled={saving} onPress={()=>removePlayer(m)} style={styles.removeAction}>
-       <Text style={styles.removeText}>Remover</Text>
-      </Pressable>:null}
+      <View style={styles.playerTrailing}>
+       <Text style={[styles.playerRole,m.role==='OWNER'&&styles.playerOwner]}>{m.role==='OWNER'?'Responsável':'Jogador'}</Text>
+       <View style={styles.playerActions}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Ver perfil de @${m.username}`}
+         onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}
+         style={styles.playerProfileAction}><JynloIcon name="chevron-right" size={18} color={C.mint}/></Pressable>
+        {isOwner&&m.role!=='OWNER'?<Pressable accessibilityRole="button" accessibilityLabel={`Remover @${m.username} da equipa`}
+         disabled={saving} onPress={()=>removePlayer(m)} style={styles.playerRemoveAction}>
+         <JynloIcon name="remove" size={17} color="#FFBFC6"/>
+        </Pressable>:null}
+       </View>
+      </View>
     </View>):null}
     </View>
     {rosterVerified&&isMember&&!isOwner?<Pressable accessibilityRole="button"
@@ -780,12 +789,23 @@ const styles=StyleSheet.create({
  quickLinkText:{fontSize:13,color:C.white,fontWeight:'900'},
  quickLinkMeta:{fontSize:11,lineHeight:16,color:'#B8D9DB'},
  roster:{gap:8},
- playerCard:{backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderRadius:12,padding:10,flexDirection:'row',alignItems:'center',gap:11},
- playerAvatar:{height:42,width:42,borderRadius:21,backgroundColor:'#167A7D',alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ playerCard:{backgroundColor:'#103B47',borderWidth:1,borderColor:'#398C8A75',borderRadius:16,padding:13,flexDirection:'row',alignItems:'center',gap:12,minHeight:98},
+ playerAvatar:{height:54,width:54,borderRadius:27,backgroundColor:'#167A7D',borderWidth:2,borderColor:'#55D9BD7C',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  playerAvatarPhoto:{width:42,height:42,borderRadius:21},
  playerAvatarText:{color:C.white,fontWeight:'900',fontSize:17},
  playerInfo:{flex:1,gap:2},
- playerName:{color:C.white,fontSize:14,fontWeight:'800'},
+ playerName:{color:C.white,fontSize:15,fontWeight:'900'},
+ playerHandle:{color:'#8EDACB',fontSize:12},
+ playerBio:{color:'#BBD3D7',fontSize:12,lineHeight:17,marginTop:2},
+ playerTrailing:{alignItems:'flex-end',justifyContent:'space-between',alignSelf:'stretch',gap:10},
+ playerRole:{color:'#C6E5E7',fontSize:10,fontWeight:'800',borderRadius:20,overflow:'hidden',
+  borderWidth:1,borderColor:'#3978847E',backgroundColor:'#184652',paddingHorizontal:8,paddingVertical:4},
+ playerOwner:{backgroundColor:'#155B53',borderColor:'#46CBA6',color:'#BCFBEA'},
+ playerActions:{flexDirection:'row',gap:6,alignItems:'center'},
+ playerProfileAction:{height:38,width:38,borderRadius:10,alignItems:'center',justifyContent:'center',
+  backgroundColor:'#164853',borderWidth:1,borderColor:'#3E797D'},
+ playerRemoveAction:{height:38,width:38,borderRadius:10,alignItems:'center',justifyContent:'center',
+  borderWidth:1,borderColor:'#9A6668',backgroundColor:'#3A2630'},
  empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
  tabBar:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:6,paddingRight:12},
  tab:{minHeight:44,paddingHorizontal:15,paddingVertical:11,borderWidth:1,borderColor:'#317C80',borderRadius:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:7,backgroundColor:'#092D3B'},
