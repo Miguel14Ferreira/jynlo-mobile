@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
 import {C} from '../lib/theme';
 import {directChatHistory,sendDirectChat,type DirectChatEntry} from '../lib/chat-api';
 import {ApiError} from '../lib/api';
@@ -32,7 +33,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  const visibleError=sameConversation?error:'';
  const visibleSyncWarning=sameConversation?syncWarning:'';
  const readOwner=useRef('');
- const list=useRef<ScrollView|null>(null);
+ const list=useRef<ScrollViewInstance|null>(null);
  const nearBottom=useRef(true),firstHistoryPositionPending=useRef(true);
  const previousLatestMessageId=useRef(0);
  const [unseenBelow,setUnseenBelow]=useState(false);
@@ -131,7 +132,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   sendLock.current=true;setSending(true);setError('');
   try{
    const confirmed=await sendDirectChat(peer,body,token);
-   if(!confirmedDirectChatSend(confirmed,self,peer,body))
+   if(!confirmedDirectChatSend(confirmed,self,peer,body,null))
     throw Error('O servidor não confirmou a mensagem. Consulta o histórico antes de repetir.');
    if(owner.current!==actor)return;
    if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===body){
