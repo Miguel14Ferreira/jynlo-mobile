@@ -31,13 +31,14 @@ export default function ProfileScreen(){
   const [profileError,setProfileError]=useState(false);
   const [socialCounts,setSocialCounts]=useState<FollowStatus|null>(null);
   const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
+  const [showAllAchievements,setShowAllAchievements]=useState(false);
   const [verifiedTeams,setVerifiedTeams]=useState<SportsTeam[]>([]);
   const [verifiedCommunities,setVerifiedCommunities]=useState<CommunityGroup[]>([]);
   const [membershipsLoading,setMembershipsLoading]=useState(false);
   const [membershipsError,setMembershipsError]=useState(false);
   useFocusEffect(useCallback(()=>{
     // Clear private profile details on account change and screen transitions.
-    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);
+    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);setShowAllAchievements(false);
     setVerifiedTeams([]);setVerifiedCommunities([]);setMembershipsError(false);setMembershipsLoading(false);
     if(!auth.token||DEMO_MODE){setProfileLoading(false);return;}
     let active=true;setProfileLoading(true);
@@ -63,6 +64,7 @@ export default function ProfileScreen(){
     return()=>{active=false;};
   },[auth.token,auth.username]));
   const favoriteSports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
+  const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
   const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||auth.username||'Visitante';
   const location=[profile?.location?.trim(),profile?.country?.trim()].filter(Boolean).join(' · ');
   const [showDelete,setShowDelete]=useState(false);
@@ -143,12 +145,18 @@ export default function ProfileScreen(){
         <Text style={styles.historyHint}>{label}</Text>
        </View>)}
       </View>
-      {activity.achievements?.length?<View style={styles.historyTrophies}>
+      {earnedAchievements.length>0?<View style={styles.historyTrophies}>
        <Text style={styles.historyTitle}>Conquistas</Text>
        <View style={styles.historyBadges}>
-        {activity.achievements.filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code)).map(code=>
+        {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
          <Text key={code} style={styles.historyBadge}>{achievementLabels[code]}</Text>)}
        </View>
+       {earnedAchievements.length>3?<Pressable accessibilityRole="button"
+         accessibilityLabel={showAllAchievements?'Mostrar menos conquistas':'Ver todas as conquistas'}
+         accessibilityState={{expanded:showAllAchievements}}
+         style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
+         <Text style={styles.showAchievementsText}>{showAllAchievements?'Mostrar menos':'Ver todas as conquistas'} ({earnedAchievements.length})</Text>
+       </Pressable>:null}
       </View>:null}
     </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE?<View style={styles.memberships}>
@@ -230,6 +238,8 @@ const styles=StyleSheet.create({
   historyStat:{flexBasis:'46%',flexGrow:1,minHeight:84,justifyContent:'center',gap:4,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.raised,padding:12},
   historyValue:{fontSize:23,fontWeight:'900',color:C.mint},
   historyTrophies:{gap:9,marginTop:7},
+  showAchievements:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:4},
+  showAchievementsText:{color:C.mint,fontSize:13,fontWeight:'800'},
   historyBadges:{flexDirection:'row',flexWrap:'wrap',gap:8},
   historyBadge:{color:C.white,fontSize:12,fontWeight:'800',backgroundColor:C.raised,borderWidth:1,borderColor:C.border,padding:10,borderRadius:10},
   memberships:{padding:16,gap:10,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:MobileTheme.radius.xl},
