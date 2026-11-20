@@ -232,9 +232,14 @@ export default function CommunityDetailScreen(){
       {role&&activeSection==='MEMBERS'?<View style={styles.section}>
         <View style={styles.header}><Text style={styles.sectionTitle}>Membros</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
         {(community as CommunityGroup).members.map(m=><View key={m.profileId+':'+m.username} style={styles.member}>
-          <View style={styles.avatar}><Text style={styles.avatarText}>{m.username.charAt(0).toUpperCase()}</Text></View>
-          <View style={{flex:1}}><Text style={styles.memberName}>{m.fullName||m.username}</Text>
-            <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · Organizador':m.role==='ADMIN'?' · Administrador':''}</Text></View>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+            onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}
+            style={styles.avatar}><Text style={styles.avatarText}>{m.username.charAt(0).toUpperCase()}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+            onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})} style={{flex:1}}>
+            <Text style={styles.memberName}>{m.fullName||m.username}</Text>
+            <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · Organizador':m.role==='ADMIN'?' · Administrador':''}</Text>
+          </Pressable>
         </View>)}
       </View>:null}
       {auth.token && (role ? activeSection==='OVERVIEW' : community.visibility==='PUBLIC')?
