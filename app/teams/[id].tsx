@@ -756,7 +756,7 @@ const styles=StyleSheet.create({
  kitFocusTitle:{fontSize:17,color:C.white,fontWeight:'900'},
  kitFocusSubtitle:{fontSize:12,color:C.muted,textAlign:'center'},
  kitPatternRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
- kitPatternCard:{flex:1,minWidth:90,minHeight:94,alignItems:'center',justifyContent:'center',padding:8,gap:7,borderWidth:1,
+ kitPatternCard:{flexBasis:'46%',flexGrow:1,minWidth:0,minHeight:112,alignItems:'center',justifyContent:'center',padding:8,gap:7,borderWidth:1,
   borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
  kitPatternSelected:{borderColor:C.mint,borderWidth:2,backgroundColor:'#123C42'},
  kitPatternText:{fontSize:13,fontWeight:'800',color:C.white,textAlign:'center'},
