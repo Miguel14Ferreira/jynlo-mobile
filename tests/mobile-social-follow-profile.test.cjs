@@ -111,3 +111,14 @@ test('own mobile profile loads real sporting history without blocking identity',
  assert.match(own,/activity\.communitiesJoined/);
  assert.match(own,/Object\.prototype\.hasOwnProperty\.call\(achievementLabels,code\)/);
 });
+
+test('earned badge showcase shows three by default and expands only verified extra badges',()=>{
+ const own=read('app/(tabs)/profile.tsx');
+ assert.match(own,/earnedAchievements\.slice\(0,3\)/);
+ assert.match(own,/earnedAchievements\.length>3/);
+ assert.match(own,/accessibilityState=\{\{expanded:showAllAchievements\}\}/);
+ assert.match(own,/setShowAllAchievements\(false\)/);
+ assert.match(screen,/earnedAchievements\.slice\(0,3\)/);
+ assert.match(screen,/earnedAchievements\.length>3/);
+ assert.match(screen,/setShowAllAchievements\(false\)/);
+});
