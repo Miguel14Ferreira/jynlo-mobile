@@ -604,12 +604,13 @@ export default function TeamDetail(){
     {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
     <View style={styles.roster}>
     {rosterVerified?members.map(m=><View key={m.profileId} style={styles.playerCard}>
-      <View style={styles.playerAvatar}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+       onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})} style={styles.playerAvatar}>
        {teamPlayerAvatarUri(m.profilePicUrl)&&!brokenAvatars[m.profileId]
         ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={{width:'100%',height:'100%',borderRadius:24}}
           onError={()=>setBrokenAvatars(previous=>({...previous,[m.profileId]:true}))}/>
         :<Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text>}
-      </View>
+      </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`} style={styles.playerInfo}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
        <Text style={styles.playerName}>@{m.username}</Text>
