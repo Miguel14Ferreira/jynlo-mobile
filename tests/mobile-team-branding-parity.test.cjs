@@ -40,7 +40,7 @@ test('logo upload uses validated gallery media, proper MIME, bearer and no JSON 
  assert.match(api,/controller\.signal\.aborted/);
  assert.match(api,/finally\{clearTimeout\(timer\);\}/);
  assert.match(screen,/ImagePicker\.launchImageLibraryAsync/);
- assert.match(screen,/uploadSportsTeamLogo\(teamId,asset!,auth\.token\)/);
+ assert.match(screen,/uploadSportsTeamLogo\(teamId,asset!,auth\.token,crestDesign\)/);
  assert.match(screen,/removeSportsTeamLogo\(teamId,auth\.token\)/);
 });
 
