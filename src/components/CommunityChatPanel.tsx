@@ -28,6 +28,7 @@ import {listConversationMutes,isConversationMuted,setConversationMuted} from '..
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
+import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
 import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
@@ -412,7 +413,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const reactions=useChatReactions('community',String(id),auth.token,(embedded?messages.slice(-historyLimit):messages).map(m=>m.id),!accessRevoked);
  const renderedMessages=(embedded?messages.slice(-historyLimit):messages).map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
-       <Text style={styles.sender}>{m.username}</Text>
+       <Pressable accessibilityRole="button" accessibilityLabel={'Abrir perfil de @'+m.username}
+        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
+        <Text style={styles.sender}>{m.username}</Text>
+       </Pressable>
        <View style={{flexDirection:'row',alignItems:'center',gap:5}}>
         {!m.deletedAt&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username} onPress={()=>setReply(m)} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={18} color={C.mint}/><Text style={styles.quoteTitle}>Responder</Text></View></Pressable>:null}
         {ownMessage(m)&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel="Opções da minha mensagem" disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
@@ -420,7 +424,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      </View>
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
      {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
-     <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
+     <ChatMentionText body={m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>
      {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
@@ -561,6 +565,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
        maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
        onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
+     <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
      <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
