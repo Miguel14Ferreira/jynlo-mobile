@@ -1,0 +1,42 @@
+name: Jynlo Android preview - pedido controlado pelo GitHub
+
+# Executado no Expo EAS, NAO no GitHub Actions.
+# Builds so podem ser pedidas por um commit na develop com o marcador abaixo.
+# Outros commits, incluindo os da auditoria, nao iniciam builds nem gastam creditos.
+on:
+  push:
+    branches:
+      - develop
+    if: ${{ contains(github.commit_message, '[jynlo-build-android]') }}
+  workflow_dispatch: {}
+
+jobs:
+  preflight:
+    name: Validar Jynlo antes da APK
+    environment: preview
+    env:
+      EXPO_PUBLIC_JYNLO_API_URL: https://desporto24-preview-api.onrender.com
+      JYNLO_REQUIRE_REAL_API: '1'
+    steps:
+      - uses: eas/checkout
+      - uses: eas/install_node_modules
+      - name: Verificar identidade e configuracao da app
+        run: |
+          git rev-parse HEAD
+          node scripts/check-eas-project.cjs
+          node scripts/verify-release.cjs
+      - name: Validar TypeScript
+        run: npm run typecheck
+      - name: Executar testes e contratos
+        run: npm run test:all
+      - name: Gerar bundle Android com Metro
+        run: npx expo export --platform android --output-dir /tmp/jynlo-android-preview-bundle
+
+  build_android:
+    name: APK Android preview sem publicacao
+    needs: [preflight]
+    environment: preview
+    type: build
+    params:
+      platform: android
+      profile: preview
