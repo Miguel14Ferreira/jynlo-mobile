@@ -40,6 +40,19 @@ export async function createCommunity(input:CommunityCreateRequest,token:string,
   if(DEMO_MODE)return demo.create(payload,username) as CommunityGroup;
   return request<CommunityGroup>(root,{token,method:'POST',body:payload});
 }
+export type CommunityFollowState={count:number;following:boolean};
+/** Following a public community does NOT join its private member chat. */
+export async function communityFollowState(id:number,token:string,username:string):Promise<CommunityFollowState>{
+  auth(token,username);
+  if(DEMO_MODE)return {count:0,following:false};
+  return request<CommunityFollowState>(`${root}/${uid(id)}/followers`,{token});
+}
+export async function setCommunityFollow(id:number,token:string,username:string,following:boolean):Promise<CommunityFollowState>{
+  auth(token,username);
+  if(DEMO_MODE)throw new Error('Seguir comunidades não está disponível no modo de demonstração.');
+  return request<CommunityFollowState>(`${root}/${uid(id)}/followers/me`,
+    {token,method:following?'PUT':'DELETE',body:following?{}:undefined});
+}
 export async function joinPublicCommunity(id:number,token:string,username:string):Promise<CommunityGroup>{
   auth(token,username);if(DEMO_MODE)return demo.joinPublic(uid(id),username) as CommunityGroup;
   return request<CommunityGroup>(`${root}/${uid(id)}/join`,{token,method:'POST',body:null});
