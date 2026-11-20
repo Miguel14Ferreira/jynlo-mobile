@@ -175,7 +175,7 @@ test('team feed comment composer stays beside the post and uses private authenti
  assert.match(panel,/replyTo===item\.id/);
  assert.match(panel,/A comentar publicação de @/);
  assert.match(panel,/replyTo===null\|\|!\(searchActive\?searchResults:allFeedEntries\)\.some/);
- assert.match(panel,/onPress=\{\(\)=>switchReply\(item\.id\)\}/);
+ assert.match(panel,/switchReply\(item\.id\)/);
  assert.match(panel,/sendTeamContent\(teamId,kind,message,token,submittedReply\)/);
  assert.match(panel,/pendingWrites\.current\.has\(writeKey\)/);
  assert.match(panel,/accessRevokedRef\.current/);
@@ -401,4 +401,16 @@ test('team identity kit controls meet minimum touch sizing and readable labels',
  assert.match(screen,/tabText:\{fontSize:14/);
  assert.match(screen,/accessibilityLabel=\{'Cor principal '\+color\}/);
  assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
+});
+
+test('mobile team chat uses contextual message actions and compact editing like unified chats',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/expandedMessageActions,setExpandedMessageActions/);
+ assert.match(panel,/accessibilityLabel=\{'Mostrar ações da mensagem de @'\+item\.username\}/);
+ assert.match(panel,/kind==='feed'\|\|expandedMessageActions===item\.id/);
+ assert.match(panel,/onPress=\{\(\)=>\{setExpandedMessageActions\(null\);switchReply\(item\.id\);\}\}/);
+ assert.match(panel,/composerInputRef\.current\?\.focus\(\)/);
+ assert.match(panel,/styles\.editSave/);
+ assert.match(panel,/editDraft\.trim\(\)===item\.body\.trim\(\)/);
+ assert.match(panel,/styles\.replyQuote/);
 });
