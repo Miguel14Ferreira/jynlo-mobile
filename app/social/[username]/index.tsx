@@ -5,11 +5,19 @@ import {Button,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import ProfilePosts from '../../../src/components/ProfilePosts';
-import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,type PublicProfileAffiliations,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
+import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,publicSportsActivity,type PublicSportsActivity,type PublicProfileAffiliations,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
 import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/profile-privacy-api';
 import {MobileTheme} from '../../../src/lib/theme';
 const T=MobileTheme.colors;
+const achievementLabels:Record<string,string>={
+ FIRST_ACTIVITY:'🏅 Primeira atividade',
+ TEN_ACTIVITIES:'🔥 10 atividades',
+ EXPLORER:'🌍 Explorador',
+ ORGANIZER:'👥 Organizador',
+ COMMUNITY_BUILDER:'🤝 Criador de comunidades',
+ REGULAR:'📅 Regular'
+};
 export default function PublicSocialProfile(){
  const {username}=useLocalSearchParams<{username:string}>();
  const name=typeof username==='string'&&/^[a-zA-Z0-9_.@-]{1,128}$/.test(username)?username:'';
@@ -18,11 +26,12 @@ export default function PublicSocialProfile(){
  const [status,setStatus]=useState<FollowStatus|null>(null);
  const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
  const [affiliations,setAffiliations]=useState<PublicProfileAffiliations|null>(null);
+ const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const version=useRef(0),inFlight=useRef(false);
  const own=!!name&&name.toLowerCase()===auth.username?.toLowerCase();
  useFocusEffect(useCallback(()=>{
-  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
+  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
   // The public identity is the critical path. Followers and private-content
   // permissions update separately so a slow endpoint cannot freeze the hero.
@@ -37,13 +46,21 @@ export default function PublicSocialProfile(){
   void profilePrivacyStatus(auth.token,name).then(value=>{
    if(request===version.current)setPrivacy(value);
   }).catch(()=>{/* Fail closed: do not reveal private posts without permission. */});
+  // Only display detailed sporting activity after the server has confirmed
+  // that this viewer can see this profile's content.
+  void profilePrivacyStatus(auth.token,name).then(privacyResult=>{
+   if(request!==version.current||!privacyResult.canViewContent)return;
+   void publicSportsActivity(name,auth.token).then(value=>{
+    if(request===version.current)setActivity(value);
+   }).catch(()=>{/* Never invent a score or a trophy. */});
+  }).catch(()=>{});
   if(!own)void publicProfileAffiliations(name,auth.token).then(value=>{
    if(request===version.current)setAffiliations({
     teams:(value.teams||[]).filter(t=>Number.isSafeInteger(t.id)&&t.id>0),
     communities:(value.communities||[]).filter(g=>Number.isSafeInteger(g.id)&&g.id>0)
    });
   }).catch(()=>{/* No fallback to /joined or /mine: fail closed. */});
-  return()=>{version.current++;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);};
+  return()=>{version.current++;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);};
  },[name,auth.token,auth.username]));
  async function toggle(){
   if(!name||own||!auth.token||!status||inFlight.current)return;
@@ -93,6 +110,30 @@ export default function PublicSocialProfile(){
     <Text style={styles.name}>Perfil privado</Text>
     <Text style={styles.sub}>Segue esta pessoa e aguarda a aprovação para veres as suas publicações e stories.</Text>
    </View>:null}
+  {profile&&privacy?.canViewContent&&activity?<View style={styles.discovery}>
+   <Text style={styles.discoveryTitle}>Histórico desportivo</Text>
+   <Text style={styles.discoveryHint}>Estatísticas calculadas pela Jynlo.</Text>
+   <View style={styles.activityGrid}>
+    {([
+     [activity.activitiesCompleted,'Atividades'],
+     [activity.peoplePlayedWith,'Pessoas com quem jogou'],
+     [activity.sportsPractised,'Modalidades'],
+     [activity.eventsCreated,'Eventos organizados']
+    ] as const).map(([count,label])=><View key={label} style={styles.activityCard}>
+     <Text style={styles.activityNumber}>{Math.max(0,Number(count)||0)}</Text>
+     <Text style={styles.activityLabel}>{label}</Text>
+    </View>)}
+   </View>
+   {activity.achievements?.length>0?<View style={styles.achievementSection}>
+    <Text style={styles.discoveryTitle}>Conquistas</Text>
+    <View style={styles.achievementList}>
+     {activity.achievements.filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code)).map(code=>
+      <View key={code} style={styles.achievementBadge}>
+       <Text style={styles.achievementLabel}>{achievementLabels[code]}</Text>
+      </View>)}
+    </View>
+   </View>:null}
+  </View>:null}
   {profile&&affiliations&&(affiliations.teams.length>0||affiliations.communities.length>0)?
    <View style={styles.discovery}>
     <Text style={styles.discoveryTitle}>Equipas e comunidades públicas</Text>
@@ -133,6 +174,14 @@ export default function PublicSocialProfile(){
 }
 const styles=StyleSheet.create({
  discovery:{padding:16,gap:8,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.xl},
+ activityGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},
+ activityCard:{width:'47%',minWidth:120,flexGrow:1,minHeight:83,justifyContent:'center',gap:5,padding:12,borderWidth:1,borderColor:T.border,borderRadius:12,backgroundColor:T.raised},
+ activityNumber:{color:T.accent,fontSize:23,fontWeight:'900'},
+ activityLabel:{color:T.muted,fontSize:12,fontWeight:'700'},
+ achievementSection:{gap:9,marginTop:9},
+ achievementList:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ achievementBadge:{borderWidth:1,borderColor:T.border,borderRadius:10,backgroundColor:T.raised,paddingHorizontal:10,paddingVertical:8},
+ achievementLabel:{color:T.text,fontSize:12,fontWeight:'800'},
  discoveryTitle:{fontSize:16,fontWeight:'900',color:T.text},
  discoveryHint:{fontSize:12,lineHeight:18,color:T.muted},
  discoveryLinks:{gap:8,marginTop:3},
