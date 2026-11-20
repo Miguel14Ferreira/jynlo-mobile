@@ -74,7 +74,7 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
  const [project,setProject]=useState<TeamCrestDesign>(()=>parseTeamCrest(design));
  const [selected,setSelected]=useState<string|null>(null);
  const [seq,setSeq]=useState(0),[notice,setNotice]=useState(''),[exporting,setExporting]=useState(false);
- const previewRef=useRef<View>(null);
+ const previewRef=useRef<React.ElementRef<typeof View>|null>(null);
  const pointerRef=useRef<string|null>(null);
  const projectRef=useRef(project);projectRef.current=project;
  const layers=project.layers||[];
@@ -109,7 +109,8 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
   if(disabled||!selected)return;
   const from=layers.findIndex(l=>l.id===selected),to=from+direction;
   if(from<0||to<0||to>=layers.length)return;
-  const list=[...layers];[list[from],list[to]]=[list[to],list[from]];
+  const list=[...layers];const first=list[from]!,second=list[to]!;
+  list[from]=second;list[to]=first;
   update({layers:list});
  };
  const dragAt=(pageX:number,pageY:number,first:boolean)=>{
