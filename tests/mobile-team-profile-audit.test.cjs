@@ -392,15 +392,23 @@ test('stale historical team post responses cannot overwrite successful author ed
  assert.match(panel,/setOlderEntries\(previous=>\{\s*const next=previous\.map\(tombstone\)/);
 });
 
-test('team identity kit controls meet minimum touch sizing and readable labels',()=>{
+test('team identity kit and crest studios keep touch-friendly controls and clear labels',()=>{
  const screen=read('app/teams/[id].tsx');
- assert.match(screen,/swatch:\{width:44,height:44/);
- assert.match(screen,/kitPatternCard:\{flexBasis:'46%',flexGrow:1,minWidth:0,minHeight:112/);
- assert.match(screen,/kitPatternText:\{fontSize:13/);
+ const kit=read('src/components/TeamKitStudio.tsx');
+ const crest=read('src/components/TeamCrestStudio.tsx');
+ assert.match(screen,/<TeamKitStudio key=\{team\.id\}/);
+ assert.match(screen,/<TeamCrestStudio key=\{'crest-'\+team\.id\}/);
+ assert.match(kit,/minHeight:44/);
+ assert.match(kit,/accessibilityRole="button"/);
+ assert.match(kit,/accessibilityState=\{\{selected:current\.pattern===item\.id\}\}/);
+ assert.match(kit,/Cor principal/);
+ assert.match(kit,/Cor secundária/);
+ assert.match(kit,/Cor de destaque/);
+ assert.match(crest,/accessibilityRole="button"/);
+ assert.match(crest,/accessibilityState=\{\{selected:selected===layer\.id\}\}/);
+ assert.match(crest,/width:'100%',maxWidth:300,aspectRatio:320\/360/);
  assert.match(screen,/statLabel:\{color:'#C9E4E8',fontSize:12/);
  assert.match(screen,/tabText:\{fontSize:13/);
- assert.match(screen,/accessibilityLabel=\{'Cor principal '\+color\}/);
- assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
 });
 
 test('mobile team chat uses contextual message actions and compact editing like unified chats',()=>{
