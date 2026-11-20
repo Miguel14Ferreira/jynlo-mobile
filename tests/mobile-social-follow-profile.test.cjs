@@ -153,3 +153,11 @@ test('own profile displays only verified completed public competition participat
  assert.match(own,/entry\.individualChampion\?'🏆 Campeão individual':'Participação confirmada'/);
  assert.match(own,/pathname:'\/communities\/\[id\]'/);
 });
+
+test('completed league win-draw-loss is shown only if the backend verifies all three counts',()=>{
+ const own=read('app/(tabs)/profile.tsx');
+ const api=read('src/lib/social-relations-api.ts');
+ assert.match(api,/wins:number\|null;draws:number\|null;losses:number\|null/);
+ assert.match(screen,/entry\.wins!=null&&entry\.draws!=null&&entry\.losses!=null/);
+ assert.match(own,/entry\.wins!=null&&entry\.draws!=null&&entry\.losses!=null/);
+});
