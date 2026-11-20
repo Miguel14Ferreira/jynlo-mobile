@@ -18,7 +18,7 @@ export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
  const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'|'BRANDING'>('OVERVIEW');
- const tabRail=useRef<ScrollView|null>(null),tabPositions=useRef<Record<string,number>>({});
+ const tabRail=useRef<React.ElementRef<typeof ScrollView>|null>(null),tabPositions=useRef<Record<string,number>>({});
  // Quick links can select a tab outside the visible horizontal rail.
  useEffect(()=>{
   const position=tabPositions.current[activeTab];
