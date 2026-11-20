@@ -764,7 +764,7 @@ export default function CreateSessionScreen(){
         ?{latitude:venueChosen.latitude,longitude:venueChosen.longitude}:null)
       :(typeof form.latitude==='number'&&typeof form.longitude==='number'&&form.locationConfirmed===true&&validCoordinates(form.latitude,form.longitude)
         ?{latitude:form.latitude,longitude:form.longitude}:null)}
-    venueName={venueChosen?.id===form.venueId?venueChosen.name:null}
+    venueName={venueChosen && venueChosen.id===form.venueId ? venueChosen.name : null}
     address={form.address} city={form.city}
     onEdit={()=>setStep(1)}/>
    <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
