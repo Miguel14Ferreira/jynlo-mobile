@@ -1,12 +1,12 @@
 import React,{useCallback,useRef,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Button,Loader,Message,Page} from '../../../src/components/UI';
-import {useAuth} from '../../../src/lib/auth';
-import {C} from '../../../src/lib/theme';
-import {ensureLiveCapturePermissions} from '../../../src/lib/live-capture-permissions';
+import {Button,Loader,Message,Page} from '../../../../src/components/UI';
+import {useAuth} from '../../../../src/lib/auth';
+import {C} from '../../../../src/lib/theme';
+import {ensureLiveCapturePermissions} from '../../../../src/lib/live-capture-permissions';
 import {communityLiveCapabilities,communityLiveEvents,scheduleCommunityLive,startCommunityLive,
- type CommunityLiveCapabilities,type CommunityLiveEvent} from '../../../src/lib/community-live-api';
+ type CommunityLiveCapabilities,type CommunityLiveEvent} from '../../../../src/lib/community-live-api';
 
 export default function CommunityLivesScreen(){
  const {id:rawId}=useLocalSearchParams<{id:string}>(),id=Number(rawId);
