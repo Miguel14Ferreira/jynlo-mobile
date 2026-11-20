@@ -21,7 +21,7 @@ export default function StoryTextPlacement({caption,geometry,appearance,onChange
  const palette={white:'#ffffff',black:'#020617',yellow:'#fef08a',mint:'#5eead4',pink:'#f9a8d4',blue:'#93c5fd'};
  const color=palette[appearance?.color||'white'];
  const background=appearance?.background==='none'?'transparent':
-   appearance?.background==='light'||(appearance?.background!=='light'&&appearance?.color==='black')
+   appearance?.background==='light'||appearance?.color==='black'
     ?'rgba(255,255,255,.88)':'rgba(2,15,24,.8)';
  const fontFamily=appearance?.font==='classic'?'serif':appearance?.font==='mono'?'monospace':undefined;
  const [area,setArea]=useState({width:340,height:320});
