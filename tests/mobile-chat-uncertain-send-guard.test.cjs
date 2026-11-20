@@ -40,3 +40,14 @@ for(const chat of chats)test(chat.path+' blocks a repeated unconfirmed write unt
  assert.doesNotMatch(send,/\n   uncertainSendRef\.current=null;setUncertainSend\(null\);\n   \/\/ /);
 
 });
+
+test('identity changes clear old pending retry state without clearing it on ordinary refocus',()=>{
+ const session=source('src/components/SessionChatPanel.tsx');
+ const community=source('src/components/CommunityChatPanel.tsx');
+ const direct=source('app/messages/[peer].tsx');
+ assert.match(session,/if\(changedAccountOrSession\)\{\s*uncertainSendRef\.current=null;setUncertainSend\(null\)/);
+ assert.match(community,/if\(changedAccountOrCommunity\)\{\s*uncertainSendRef\.current=null;setUncertainSend\(null\)/);
+ assert.match(direct,/if\(conversation\.current!==identity\)\{\s*uncertainSendRef\.current=null;setUncertainSend\(null\)/);
+ for(const s of [session,community,direct])
+  assert.match(s,/uncertainSend\?\.identity===/);
+});
