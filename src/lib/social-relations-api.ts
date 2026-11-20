@@ -44,6 +44,7 @@ export type PublicCompletedParticipation={
  tournamentId:number;tournamentName:string;
  communityId:number;communityName:string;
  sport:string|null;completedAt:string;individualChampion:boolean;
+ wins:number|null;draws:number|null;losses:number|null;
 };
 export async function publicCompletedParticipations(username:string,token:string|null):Promise<PublicCompletedParticipation[]>{
  const user=usernamePath(username);
