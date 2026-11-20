@@ -10,7 +10,8 @@ import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel'
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
 import TeamKitStudio from '../../src/components/TeamKitStudio';
-import type {TeamKitDesign,TeamKitVariant} from '../../src/lib/sports-teams-api';
+import TeamCrestStudio from '../../src/components/TeamCrestStudio';
+import type {TeamKitDesign,TeamKitVariant,GeneratedTeamCrestImage} from '../../src/lib/sports-teams-api';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SportsTeamChallengesPanel from '../../src/components/SportsTeamChallengesPanel';
 import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
@@ -419,8 +420,9 @@ export default function TeamDetail(){
     {id:'HOOPS',label:'Riscas horizontais'},{id:'HALVES',label:'Metades'},{id:'CHEVRON',label:'V frontal'}
   ];
  const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
- const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset,
-  selectedKit?:{primary:TeamKitDesign;variants:TeamKitVariant[]})=>{
+ const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',
+  asset?:ImagePicker.ImagePickerAsset|GeneratedTeamCrestImage,
+  selectedKit?:{primary:TeamKitDesign;variants:TeamKitVariant[]},crestDesign?:string)=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
   const version=requestVersion.current;
   const action=++actionGeneration.current;
@@ -435,7 +437,7 @@ export default function TeamDetail(){
         variants:selectedKit.variants}:undefined)
     :mode==='REMOVE'
     ?await removeSportsTeamLogo(teamId,auth.token)
-    :await uploadSportsTeamLogo(teamId,asset!,auth.token);
+    :await uploadSportsTeamLogo(teamId,asset!,auth.token,crestDesign);
    if(version!==requestVersion.current)return;
    setTeam(result);setBrandingVerified(true);
    // Changing the crest must not silently discard unsaved kit choices.
@@ -544,6 +546,9 @@ export default function TeamDetail(){
     <Text style={styles.heading}>Identidade da equipa</Text>
     <Text style={styles.note}>Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.</Text>
     {!brandingVerified?<Text style={styles.note}>Identidade por confirmar. Recarrega os dados antes de editar.</Text>:null}
+    <TeamCrestStudio key={'crest-'+team.id} teamId={team.id} teamName={team.name}
+      design={team.crestDesign} disabled={saving||!brandingVerified}
+      onSave={(asset,design)=>void updateBranding('LOGO',asset,undefined,design)}/>
     <Button title="Escolher logótipo da galeria" secondary disabled={saving||!brandingVerified} onPress={()=>void pickLogo()}/>
     {team.logoUrl?<Button title="Remover logótipo" secondary disabled={saving||!brandingVerified}
       onPress={()=>Alert.alert('Remover logótipo?','O emblema atual será removido da equipa.',[
