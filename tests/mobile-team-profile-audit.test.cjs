@@ -288,13 +288,15 @@ test('team feed preloads only four recent post photos; chat retains inline media
 });
 
 
-test('team feed offers compact likes and optional reactions while private chat keeps full emoji toolbar',()=>{
+test('team feed offers likes while private chat shows compact used reactions and optional picker',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/feedReactionPickerId,setFeedReactionPickerId/);
  assert.match(panel,/kind==='feed'\?<>/);
  assert.match(panel,/onPress=\{\(\)=>void react\(item,'❤️'\)\}/);
  assert.match(panel,/Object\.values\(reactions\[item\.id\]\?\.counts\|\|\{\}\)\.reduce/);
- assert.match(panel,/\(kind==='chat'\|\|feedReactionPickerId===item\.id\)\?emojis\.map/);
+ assert.match(panel,/kind==='chat'\\?<>/);
+ assert.match(panel,/emojis\\.filter\\(emoji=>\\(reactions\\[item\\.id\\]\\?\\.counts\\?\\.\\[emoji\\]/);
+ assert.match(panel,/feedReactionPickerId===item\\.id\\?emojis\\.map/);
  assert.match(panel,/accessibilityState=\{\{expanded:feedReactionPickerId===item\.id/);
  assert.match(panel,/setFeedReactionPickerId\(null\)/);
  assert.match(panel,/teamReactionSummaries\(teamId,kind,ids,token\)/);
