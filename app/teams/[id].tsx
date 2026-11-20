@@ -536,6 +536,12 @@ export default function TeamDetail(){
        {text:'Cancelar',style:'cancel'},
        {text:'Remover',style:'destructive',onPress:()=>void updateBranding('REMOVE')}
       ])}/>:null}
+    <View style={styles.kitFocus}>
+      <Text style={styles.kitFocusEyebrow}>PRÉ-VISUALIZAÇÃO DO EQUIPAMENTO</Text>
+      <TeamKitPreview primary={kitPrimary} secondary={kitSecondary} pattern={kitPattern} size={210}/>
+      <Text style={styles.kitFocusTitle}>{kitPatterns.find(option=>option.id===kitPattern)?.label||'Lisa'}</Text>
+      <Text style={styles.kitFocusSubtitle}>As cores e o modelo mudam antes de guardar.</Text>
+    </View>
     <Text style={styles.kitLabel}>Desenho da camisola</Text>
     <View style={styles.kitPatternRow}>{kitPatterns.map(option=><Pressable key={option.id}
       accessibilityRole="button" accessibilityLabel={'Modelo '+option.label}
@@ -727,6 +733,12 @@ const styles=StyleSheet.create({
  backLabel:{fontSize:14,color:C.mint,fontWeight:'900'},
  backContext:{fontSize:10,color:C.muted,fontWeight:'800',letterSpacing:1.2}, 
  kitPreview:{flexDirection:'row',alignItems:'center',gap:9},
+ kitFocus:{alignItems:'center',justifyContent:'center',gap:8,paddingVertical:18,
+  paddingHorizontal:12,borderRadius:18,borderWidth:1,borderColor:'#328d8f',
+  backgroundColor:'#092A39'},
+ kitFocusEyebrow:{color:C.mint,fontSize:11,letterSpacing:1.1,fontWeight:'850',textAlign:'center'},
+ kitFocusTitle:{fontSize:17,color:C.white,fontWeight:'900'},
+ kitFocusSubtitle:{fontSize:12,color:C.muted,textAlign:'center'},
  kitPatternRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
  kitPatternCard:{flex:1,minWidth:90,minHeight:94,alignItems:'center',justifyContent:'center',padding:8,gap:7,borderWidth:1,
   borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
