@@ -52,3 +52,13 @@ test('public profile identity never waits for follow or privacy requests',()=>{
  assert.match(screen,/if\(request===version\.current\)setLoading\(false\)/);
  assert.match(screen,/profile&&privacy\?\.canViewContent/);
 });
+
+test('public profile links to native sessions teams and communities without claiming membership',()=>{
+ assert.match(screen,/accessibilityLabel="Procurar sessões desportivas"/);
+ assert.match(screen,/router\.push\('\/explore'\)/);
+ assert.match(screen,/accessibilityLabel="Explorar equipas"/);
+ assert.match(screen,/router\.push\('\/teams'\)/);
+ assert.match(screen,/accessibilityLabel="Explorar comunidades"/);
+ assert.match(screen,/router\.push\('\/communities'\)/);
+ assert.match(screen,/\{profile\?<View style=\{styles\.discovery\}>/);
+});
