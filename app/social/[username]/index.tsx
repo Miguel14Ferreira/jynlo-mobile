@@ -27,11 +27,12 @@ export default function PublicSocialProfile(){
  const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
  const [affiliations,setAffiliations]=useState<PublicProfileAffiliations|null>(null);
  const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
+ const [showAllAchievements,setShowAllAchievements]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const version=useRef(0),inFlight=useRef(false);
  const own=!!name&&name.toLowerCase()===auth.username?.toLowerCase();
  useFocusEffect(useCallback(()=>{
-  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
+  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);setShowAllAchievements(false);setError('');setLoading(true);inFlight.current=false;setBusy(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
   // The public identity is the critical path. Followers and private-content
   // permissions update separately so a slow endpoint cannot freeze the hero.
@@ -74,6 +75,7 @@ export default function PublicSocialProfile(){
  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||name;
  const image=resolveJynloMedia(profile?.profilePicUrl);
  const sports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
+ const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
  return <Page>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -122,14 +124,20 @@ export default function PublicSocialProfile(){
      <Text style={styles.activityLabel}>{label}</Text>
     </View>)}
    </View>
-   {activity.achievements?.length>0?<View style={styles.achievementSection}>
+   {earnedAchievements.length>0?<View style={styles.achievementSection}>
     <Text style={styles.discoveryTitle}>Conquistas</Text>
     <View style={styles.achievementList}>
-     {activity.achievements.filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code)).map(code=>
+     {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
       <View key={code} style={styles.achievementBadge}>
        <Text style={styles.achievementLabel}>{achievementLabels[code]}</Text>
       </View>)}
     </View>
+    {earnedAchievements.length>3?<Pressable accessibilityRole="button"
+     accessibilityState={{expanded:showAllAchievements}}
+     accessibilityLabel={showAllAchievements?'Mostrar menos conquistas':'Ver todas as conquistas'}
+     style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
+     <Text style={styles.showAchievementsText}>{showAllAchievements?'Mostrar menos':'Ver todas as conquistas'} ({earnedAchievements.length})</Text>
+    </Pressable>:null}
    </View>:null}
   </View>:null}
   {profile&&affiliations&&(affiliations.teams.length>0||affiliations.communities.length>0)?
@@ -177,6 +185,8 @@ const styles=StyleSheet.create({
  activityNumber:{color:T.accent,fontSize:23,fontWeight:'900'},
  activityLabel:{color:T.muted,fontSize:12,fontWeight:'700'},
  achievementSection:{gap:9,marginTop:9},
+ showAchievements:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:4},
+ showAchievementsText:{color:T.accent,fontSize:13,fontWeight:'800'},
  achievementList:{flexDirection:'row',flexWrap:'wrap',gap:8},
  achievementBadge:{borderWidth:1,borderColor:T.border,borderRadius:10,backgroundColor:T.raised,paddingHorizontal:10,paddingVertical:8},
  achievementLabel:{color:T.text,fontSize:12,fontWeight:'800'},
