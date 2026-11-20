@@ -410,12 +410,14 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
     throw Error('O servidor não confirmou o autor ou conteúdo da publicação. Verifica o perfil antes de repetir.');
   return confirmed;
 }
-export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails,appearance?:StoryTextAppearance,showTime=false,altText=''):Promise<SocialStory>{
+export async function publishStory(caption:string,file:MobileMedia,token:string|null,username:string|null,communityId?:number|null,geometry?:StoryTextGeometry,details?:StoryDetails,appearance?:StoryTextAppearance,showTime=false,altText='',teamId:number|null=null):Promise<SocialStory>{
   requireViewer(token,username);const error=validateMedia(file.mimeType,file.fileSize||1,true);if(error)throw new Error(error);
   if(caption.length>180)throw new Error('A legenda do Story pode ter até 180 caracteres.');
   if(altText.trim().length>350)throw new Error('A descrição acessível da Story pode ter até 350 caracteres.');
   // A selected community must be a real numeric resource, never an invalid
   // negative/NaN ID that silently changes the publishing destination.
+  if(teamId!=null&&(!Number.isSafeInteger(teamId)||teamId<=0))throw new Error('Equipa de destino inválida.');
+  if(communityId!=null&&teamId!=null)throw new Error('Escolhe apenas uma entidade para a Story.');
   if(communityId!=null&&(!Number.isSafeInteger(communityId)||communityId<=0))
     throw new Error('Comunidade de destino inválida. Escolhe-a novamente.');
   if(geometry&&(![geometry.x,geometry.y,geometry.rotation,geometry.zoom].every(Number.isFinite)||
@@ -426,12 +428,12 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
   if(appearance&&(!(['white','black','yellow','mint','pink','blue'] as string[]).includes(appearance.color)||
     !(['dark','light','none'] as string[]).includes(appearance.background)||
     !(['modern','classic','mono'] as string[]).includes(appearance.font)))throw Error('Estilo de texto da Story inválido.');
-  if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,
+  if(DEMO_MODE){const item:SocialStory={id:nextDemoStoryId++,authorUsername:username!,displayName:username!,avatarUrl:null,communityId:communityId||null,communityName:null,communityPhotoUrl:null,teamId,teamName:null,teamLogoUrl:null,
     caption:caption.trim(),mediaUrl:file.uri,video:file.type==='video',createdAt:nowIso(),expiresAt:tomorrow(),canDelete:true,
     textX:geometry?.x??null,textY:geometry?.y??null,textRotation:geometry?.rotation??null,textZoom:geometry?.zoom??null,
     locationLabel:safeDetails.locationLabel||null,taggedUsernames:safeDetails.taggedUsernames||null,
     textColor:appearance?.color||'white',textBackground:appearance?.background||'dark',textFont:appearance?.font||'modern',showTime,altText:altText.trim()||null};demoStories.unshift(item);return item;}
-  const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),
+  const confirmed=await sendMedia('/api/stories',{caption:caption.trim(),...(communityId?{communityId:String(communityId)}:{}),...(teamId?{teamId:String(teamId)}:{}),
     ...(geometry?{textX:String(geometry.x),textY:String(geometry.y),textRotation:String(geometry.rotation),textZoom:String(geometry.zoom)}:{}),
     ...(appearance?{textColor:appearance.color,textBackground:appearance.background,textFont:appearance.font}:{}),
     showTime:String(showTime),
@@ -440,7 +442,8 @@ export async function publishStory(caption:string,file:MobileMedia,token:string|
     ...(safeDetails.taggedUsernames?{taggedUsernames:safeDetails.taggedUsernames}:{})},[file],token!);
   if(!confirmedStoryAuthorReceipt(confirmed,username!,caption)||
      !confirmedStoryDetailsReceipt(confirmed,safeDetails)||
-     !confirmedStoryDestinationReceipt(confirmed,communityId??null))
+     !confirmedStoryDestinationReceipt(confirmed,communityId??null)||
+     ((confirmed as SocialStory).teamId??null)!==(teamId??null))
     throw Error('O servidor não confirmou o destino ou conteúdo da Story. Verifica o teu perfil ou comunidade antes de repetir.');
   return confirmed;
 }
