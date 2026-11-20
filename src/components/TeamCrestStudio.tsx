@@ -330,7 +330,7 @@ const styles=StyleSheet.create({
  studio:{backgroundColor:'#0A2735',borderRadius:16,borderWidth:1,borderColor:'#3A8E83',padding:13,gap:12},
  title:{color:'#F2FFF8',fontWeight:'800',fontSize:20},note:{fontSize:12,color:'#B7D7D7',lineHeight:18},
  previewBackground:{backgroundColor:'#123D47',borderRadius:14,alignItems:'center',padding:8,gap:5},
- preview:{width:300,height:338},label:{fontWeight:'700',fontSize:13,color:'#E9FFF7'},
+ preview:{width:'100%',maxWidth:300,aspectRatio:320/360},label:{fontWeight:'700',fontSize:13,color:'#E9FFF7'},
  choices:{flexDirection:'row',flexWrap:'wrap',gap:7},
  option:{backgroundColor:'#14505A',borderColor:'#377F82',borderWidth:1,borderRadius:9,padding:9,minHeight:40,justifyContent:'center'},
  active:{borderColor:'#50F5D0',backgroundColor:'#207C78'},controlText:{color:'#F0FFFA',fontWeight:'600',fontSize:12},
