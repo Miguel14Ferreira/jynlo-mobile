@@ -122,3 +122,14 @@ test('earned badge showcase shows three by default and expands only verified ext
  assert.match(screen,/earnedAchievements\.length>3/);
  assert.match(screen,/setShowAllAchievements\(false\)/);
 });
+
+test('competitive profile titles use bounded verified public champion snapshots',()=>{
+ const apiSource=read('src/lib/social-relations-api.ts');
+ assert.match(apiSource,/\/api\/profile\/\$\{user\}\/individual-titles/);
+ assert.match(screen,/publicIndividualTitles\(name,auth\.token\)/);
+ assert.match(screen,/request===version\.current&&Array\.isArray\(value\)/);
+ assert.match(screen,/setTitles\(\[\]\)/);
+ assert.match(screen,/profile&&titles\.length>0/);
+ assert.match(screen,/pathname:'\/communities\/\[id\]'/);
+ assert.match(screen,/Number\.isSafeInteger\(t\.tournamentId\)/);
+});
