@@ -390,7 +390,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
 export default function JynloFeedHome(){
   const router=useRouter();const auth=useAuth();
   const {width:screenWidth,height:screenHeight}=useWindowDimensions();
-  const {compose,storyId,momentSession}=useLocalSearchParams<{compose?:string;storyId?:string;momentSession?:string}>();
+  const {compose,storyId,momentSession,teamStory}=useLocalSearchParams<{compose?:string;storyId?:string;momentSession?:string;teamStory?:string}>();
   const activeStoryAccount=useRef<string|null>(auth.token);
   activeStoryAccount.current=auth.token;
   const [unreadNotifications,setUnreadNotifications]=useState(0);
@@ -671,14 +671,28 @@ export default function JynloFeedHome(){
   useEffect(()=>{
     if(momentSession || (compose!=='post'&&compose!=='story'))return;
     if(!auth.ready)return;
-    router.setParams({compose:undefined});
+    router.setParams({compose:undefined,teamStory:undefined});
     if(!auth.token||!auth.username){
       router.push({pathname:'/login',params:{redirect:'/'}});
       return;
     }
     if(compose==='post')openPostComposer();
-    else openStoryComposer();
-  },[compose,momentSession,auth.ready,auth.token,auth.username,router]);
+    else {
+      openStoryComposer();
+      // The URL is not an authorization grant: only preselect owned teams.
+      if(teamStory&&/^[1-9][0-9]*$/.test(teamStory)&&Number.isSafeInteger(Number(teamStory))){
+        const requestedId=Number(teamStory),actor=auth.token;
+        void mySportsTeams(actor).then(teams=>{
+          if(activeStoryAccount.current!==actor||!storyComposerRef.current)return;
+          if(teams.some(team=>team.id===requestedId))setStoryPublishTeamId(requestedId);
+          else setStoryPublishError('Já não tens autorização para publicar como esta equipa.');
+        }).catch(()=>{
+          if(activeStoryAccount.current===actor&&storyComposerRef.current)
+            setStoryPublishError('Não foi possível confirmar a equipa. Escolhe-a novamente.');
+        });
+      }
+    }
+  },[compose,momentSession,teamStory,auth.ready,auth.token,auth.username,router]);
   useEffect(()=>{
     if(!momentSession||!auth.ready)return;
     // Consume the intent before fetching eligibility; no automatic posts.
