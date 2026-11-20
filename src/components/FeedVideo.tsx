@@ -48,7 +48,7 @@ export default function FeedVideo({uri,story=false,paused=false,muted=false,onEn
 }
 const styles=StyleSheet.create({
  videoFill:{width:'100%',height:'100%'},
- videoError:{...StyleSheet.absoluteFillObject,backgroundColor:'#06131D',alignItems:'center',justifyContent:'center',padding:20},
+ videoError:{...StyleSheet.absoluteFill,backgroundColor:'#06131D',alignItems:'center',justifyContent:'center',padding:20},
  videoErrorText:{color:'#fff',textAlign:'center',fontSize:14},
  storyVideo:{width:'100%',height:'100%'},
  postVideo:{width:'100%',height:300,borderRadius:12,backgroundColor:'#020A10'}
