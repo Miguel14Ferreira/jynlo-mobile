@@ -88,3 +88,15 @@ test('public profile affiliations use the backend projection and never private m
  assert.doesNotMatch(screen,/joinedSportsTeams\(/);
  assert.doesNotMatch(screen,/myCommunities\(/);
 });
+
+test('sports history waits for verified profile privacy and never invents achievements',()=>{
+ const apiSource=read('src/lib/social-relations-api.ts');
+ assert.match(apiSource,/\/api\/profiles\/\$\{user\}\/activity/);
+ assert.match(screen,/if\(value\.canViewContent\)void publicSportsActivity\(name,auth\.token\)/);
+ assert.match(screen,/profile&&privacy\?\.canViewContent&&activity/);
+ assert.match(screen,/request===version\.current\)setActivity\(activityValue\)/);
+ assert.match(screen,/Object\.prototype\.hasOwnProperty\.call\(achievementLabels,code\)/);
+ assert.match(screen,/activity\.participantsMobilized/);
+ assert.match(screen,/activity\.communitiesJoined/);
+ assert.match(screen,/setActivity\(null\)/);
+});
