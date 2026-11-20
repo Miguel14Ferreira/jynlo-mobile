@@ -10,6 +10,9 @@ import ProfilePosts from '../../src/components/ProfilePosts';
 import ProfilePrivacySettings from '../../src/components/ProfilePrivacySettings';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {followStatus,type FollowStatus} from '../../src/lib/social-relations-api';
+import {joinedSportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
+import {myCommunities} from '../../src/lib/community-api';
+import type {CommunityGroup} from '../../src/lib/types';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -22,12 +25,27 @@ export default function ProfileScreen(){
   const [profileLoading,setProfileLoading]=useState(false);
   const [profileError,setProfileError]=useState(false);
   const [socialCounts,setSocialCounts]=useState<FollowStatus|null>(null);
+  const [verifiedTeams,setVerifiedTeams]=useState<SportsTeam[]>([]);
+  const [verifiedCommunities,setVerifiedCommunities]=useState<CommunityGroup[]>([]);
+  const [membershipsLoading,setMembershipsLoading]=useState(false);
+  const [membershipsError,setMembershipsError]=useState(false);
   useFocusEffect(useCallback(()=>{
     // Clear private profile details on account change and screen transitions.
     setProfile(null);setProfileError(false);setSocialCounts(null);
+    setVerifiedTeams([]);setVerifiedCommunities([]);setMembershipsError(false);setMembershipsLoading(false);
     if(!auth.token||DEMO_MODE){setProfileLoading(false);return;}
     let active=true;setProfileLoading(true);
     if(auth.username)void followStatus(auth.username,auth.token).then(counts=>{if(active)setSocialCounts(counts);}).catch(()=>{});
+    if(auth.username){
+      setMembershipsLoading(true);
+      void Promise.allSettled([joinedSportsTeams(auth.token),myCommunities(auth.token,auth.username)])
+        .then(([teams,communities])=>{
+          if(!active)return;
+          if(teams.status==='fulfilled')setVerifiedTeams(teams.value.filter(t=>Number.isSafeInteger(t.id)&&t.id>0));
+          if(communities.status==='fulfilled')setVerifiedCommunities(communities.value.filter(g=>Number.isSafeInteger(g.id)&&g.id>0&&g.myRole!==null));
+          setMembershipsError(teams.status==='rejected'||communities.status==='rejected');
+        }).finally(()=>{if(active)setMembershipsLoading(false);});
+    }
     void request<ProfilePresentation>('/api/profile/me/mobile',{token:auth.token})
       .then(result=>{if(active)setProfile(result);})
       .catch(()=>{if(active)setProfileError(true);})
@@ -99,6 +117,35 @@ export default function ProfileScreen(){
         <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
       </Pressable>:null}
     </View>
+    {auth.token&&auth.username&&!DEMO_MODE?<View style={styles.memberships}>
+      <Text style={styles.membershipsTitle}>As minhas equipas e comunidades</Text>
+      <Text style={styles.membershipsHint}>Associações confirmadas pela tua conta Jynlo.</Text>
+      {membershipsLoading?<Text style={styles.membershipsHint}>A verificar associações…</Text>:<>
+        {verifiedTeams.length>0?<View style={styles.membershipList}>
+          <Text style={styles.membershipsGroupTitle}>EQUIPAS</Text>
+          {verifiedTeams.map(team=><Pressable key={'team-'+team.id} accessibilityRole="button"
+            accessibilityLabel={'Abrir equipa '+team.name}
+            onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}
+            style={styles.membershipCard}>
+            <Text style={styles.membershipName}>{team.name}</Text>
+            <Text style={styles.membershipsHint}>{team.sport||'Equipa desportiva'}</Text>
+          </Pressable>)}
+        </View>:null}
+        {verifiedCommunities.length>0?<View style={styles.membershipList}>
+          <Text style={styles.membershipsGroupTitle}>COMUNIDADES</Text>
+          {verifiedCommunities.map(group=><Pressable key={'community-'+group.id} accessibilityRole="button"
+            accessibilityLabel={'Abrir comunidade '+group.name}
+            onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})}
+            style={styles.membershipCard}>
+            <Text style={styles.membershipName}>{group.name}</Text>
+            <Text style={styles.membershipsHint}>{group.sport||'Comunidade desportiva'}</Text>
+          </Pressable>)}
+        </View>:null}
+        {!verifiedTeams.length&&!verifiedCommunities.length&&!membershipsError?
+          <Text style={styles.membershipsHint}>Ainda não tens associações confirmadas.</Text>:null}
+        {membershipsError?<Text style={styles.membershipsHint}>Não foi possível verificar todas as associações.</Text>:null}
+      </>}
+    </View>:null}
     {auth.token&&!DEMO_MODE?<ProfilePrivacySettings token={auth.token}/>:null}
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
     <Pressable accessibilityRole="button" accessibilityLabel="Mostrar mais opções do perfil" accessibilityState={{expanded:moreOptionsOpen}}
@@ -142,6 +189,13 @@ export default function ProfileScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+  memberships:{padding:16,gap:10,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:MobileTheme.radius.xl},
+  membershipsTitle:{fontSize:17,fontWeight:'900',color:C.white},
+  membershipsHint:{fontSize:12,lineHeight:18,color:C.muted},
+  membershipsGroupTitle:{fontSize:12,fontWeight:'900',color:C.mint,letterSpacing:.7},
+  membershipList:{gap:8},
+  membershipCard:{minHeight:55,padding:12,justifyContent:'center',gap:3,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.raised},
+  membershipName:{fontSize:14,fontWeight:'800',color:C.white},
  moreOptionsAction:{minHeight:MobileTheme.touchTarget,paddingHorizontal:14,paddingVertical:12,borderWidth:1,borderColor:C.border,borderRadius:MobileTheme.radius.lg,backgroundColor:C.surface,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  moreOptionsLabel:{flexDirection:'row',alignItems:'center',gap:9},
  moreOptionsText:{fontSize:14,fontWeight:'800',color:C.white},
