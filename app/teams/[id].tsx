@@ -413,7 +413,8 @@ export default function TeamDetail(){
   }finally{releaseAction(action);}
  };
  const kitPatterns:ReadonlyArray<{id:TeamKitPattern;label:string}>=[
-   {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas'},{id:'DIAGONAL',label:'Faixa diagonal'}
+   {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas verticais'},{id:'DIAGONAL',label:'Faixa diagonal'},
+    {id:'HOOPS',label:'Riscas horizontais'},{id:'HALVES',label:'Metades'},{id:'CHEVRON',label:'V frontal'}
   ];
  const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
  const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset)=>{
