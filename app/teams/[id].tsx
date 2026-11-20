@@ -9,6 +9,8 @@ import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
+import TeamKitStudio from '../../src/components/TeamKitStudio';
+import type {TeamKitDesign,TeamKitVariant} from '../../src/lib/sports-teams-api';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SportsTeamChallengesPanel from '../../src/components/SportsTeamChallengesPanel';
 import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
@@ -417,14 +419,20 @@ export default function TeamDetail(){
     {id:'HOOPS',label:'Riscas horizontais'},{id:'HALVES',label:'Metades'},{id:'CHEVRON',label:'V frontal'}
   ];
  const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
- const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset)=>{
+ const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',asset?:ImagePicker.ImagePickerAsset,
+  selectedKit?:{primary:TeamKitDesign;variants:TeamKitVariant[]})=>{
   if(!auth.token||!team||!isOwner||!brandingVerified||saving||actionRef.current)return;
   const version=requestVersion.current;
   const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
   try{
    const result=mode==='KIT'
-    ?await setSportsTeamKit(teamId,kitPrimary,kitSecondary,auth.token,kitPattern)
+    ?await setSportsTeamKit(teamId,selectedKit?.primary.primary||kitPrimary,
+       selectedKit?.primary.secondary||kitSecondary,auth.token,
+       selectedKit?.primary.pattern||kitPattern,
+       selectedKit?{garment:selectedKit.primary.garment,accent:selectedKit.primary.accent,
+        playerName:selectedKit.primary.playerName,playerNumber:selectedKit.primary.playerNumber,
+        variants:selectedKit.variants}:undefined)
     :mode==='REMOVE'
     ?await removeSportsTeamLogo(teamId,auth.token)
     :await uploadSportsTeamLogo(teamId,asset!,auth.token);
@@ -542,36 +550,8 @@ export default function TeamDetail(){
        {text:'Cancelar',style:'cancel'},
        {text:'Remover',style:'destructive',onPress:()=>void updateBranding('REMOVE')}
       ])}/>:null}
-    <View style={styles.kitFocus}>
-      <Text style={styles.kitFocusEyebrow}>PRÉ-VISUALIZAÇÃO DO EQUIPAMENTO</Text>
-      <TeamKitPreview primary={kitPrimary} secondary={kitSecondary} pattern={kitPattern} size={210}/>
-      <Text style={styles.kitFocusTitle}>{kitPatterns.find(option=>option.id===kitPattern)?.label||'Lisa'}</Text>
-      <Text style={styles.kitFocusSubtitle}>As cores e o modelo mudam antes de guardar.</Text>
-    </View>
-    <Text style={styles.kitLabel}>Desenho da camisola</Text>
-    <View style={styles.kitPatternRow}>{kitPatterns.map(option=><Pressable key={option.id}
-      accessibilityRole="button" accessibilityLabel={'Modelo '+option.label}
-      accessibilityState={{selected:kitPattern===option.id}}
-      disabled={saving||!brandingVerified}
-      onPress={()=>{kitEditedRef.current=true;setKitPattern(option.id);}}
-      style={[styles.kitPatternCard,kitPattern===option.id&&styles.kitPatternSelected]}>
-      <TeamKitPreview primary={kitPrimary} secondary={kitSecondary} pattern={option.id} size={56}/>
-      <Text style={styles.kitPatternText}>{option.label}</Text>
-    </Pressable>)}</View>
-    <Text style={styles.kitLabel}>Cor principal</Text>
-    <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'primary'+color}
-      accessibilityRole="button" accessibilityLabel={'Cor principal '+color}
-      accessibilityState={{selected:kitPrimary===color}}
-      disabled={saving||!brandingVerified} onPress={()=>{kitEditedRef.current=true;setKitPrimary(color);}}
-      style={[styles.swatch,{backgroundColor:color},kitPrimary===color&&styles.swatchSelected]}/>)}</View>
-    <Text style={styles.kitLabel}>Cor secundária</Text>
-    <View style={styles.swatchRow}>{kitOptions.map(color=><Pressable key={'secondary'+color}
-      accessibilityRole="button" accessibilityLabel={'Cor secundária '+color}
-      accessibilityState={{selected:kitSecondary===color}}
-      disabled={saving||!brandingVerified} onPress={()=>{kitEditedRef.current=true;setKitSecondary(color);}}
-      style={[styles.swatch,{backgroundColor:color},kitSecondary===color&&styles.swatchSelected]}/>)}</View>
-    <Button title={saving?'A guardar…':'Guardar equipamento'} disabled={saving||!brandingVerified}
-      onPress={()=>void updateBranding('KIT')}/>
+    <TeamKitStudio key={team.id} team={team} disabled={saving||!brandingVerified}
+      onSave={(primary,variants)=>void updateBranding('KIT',undefined,{primary,variants})}/>
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}>
     <Text style={styles.heading}>O espaço da equipa</Text>
