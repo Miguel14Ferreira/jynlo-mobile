@@ -123,7 +123,9 @@ export default function PersonalLiveRoom(){
     switchingRole.current=true;
     void (async()=>{
      await ensureLiveCapturePermissions();
-     return joinPersonalLive(auth.token,id);
+     const token=auth.token;
+     if(!token)throw new Error('Inicia sessão para entrar no direto.');
+     return joinPersonalLive(token,id);
     })().then(next=>{
      if(active.current&&next.role==='GUEST'){connectionRole.current='GUEST';setConnection(next);}
     }).catch(()=>{if(active.current)setChatError('A aprovação foi recebida, mas o vídeo ainda não ligou.');})
