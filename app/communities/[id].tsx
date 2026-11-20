@@ -6,10 +6,11 @@ import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
 import {
-  acceptCommunityRequest,communityDetails,communitySessions,inviteCommunityMember,
+  acceptCommunityRequest,communityDetails,communitySessions,communityFollowState,setCommunityFollow,inviteCommunityMember,
   joinPublicCommunity,myPendingCommunityRequest,pendingCommunityRequests,requestCommunityMembership
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
+import type {CommunityFollowState} from '../../src/lib/community-api';
 import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
 import {C} from '../../src/lib/theme';
@@ -22,6 +23,9 @@ export default function CommunityDetailScreen(){
   const teamDestination=Number.isSafeInteger(id)&&id>0&&returnTo.startsWith('/tournaments/'+id+'/')?returnTo:null;
   const auth=useAuth(),router=useRouter();
   const [community,setCommunity]=useState<CommunityGroup|CommunitySummary|null>(null);
+  const [followState,setFollowState]=useState<CommunityFollowState|null>(null);
+  const [followBusy,setFollowBusy]=useState(false);
+  const [followError,setFollowError]=useState('');
   const [activeSection,setActiveSection]=useState<'OVERVIEW'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
@@ -37,11 +41,18 @@ export default function CommunityDetailScreen(){
       if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
       return;
     }
-    setLoading(true);setError('');setCommunity(null);setMyRequest(null);setMyRequestError('');setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
+    setLoading(true);setError('');setCommunity(null);setFollowState(null);setFollowError('');setFollowBusy(false);setMyRequest(null);setMyRequestError('');setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
     try{
       const c=await communityDetails(id,auth.token,auth.username);
       if(version!==generation.current)return;
       setCommunity(c);
+      if(c.visibility==='PUBLIC'&&auth.token&&auth.username){
+        void communityFollowState(id,auth.token,auth.username).then(state=>{
+          if(version===generation.current)setFollowState(state);
+        }).catch(()=>{
+          if(version===generation.current)setFollowError('Seguidores temporariamente indisponíveis.');
+        });
+      }
       if(auth.token&&auth.username&&isMember(c)){
         setMyRequest(null);
         try{
@@ -73,13 +84,30 @@ export default function CommunityDetailScreen(){
   useFocusEffect(useCallback(()=>{
     const version=++generation.current;
     // Never show another community or account while the new request is pending.
-    setCommunity(null);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);setMyRequestError('');
+    setCommunity(null);setFollowState(null);setFollowError('');setFollowBusy(false);setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');setMyRequest(null);setMyRequestError('');
     setError('');setNotice('');setBusy(false);setActiveSection('OVERVIEW');
     void reload(version);
     return ()=>{generation.current++;};
   },[reload]));
   const role=community&&isMember(community)?community.myRole:null;
   const owner=role==='OWNER'||role==='ADMIN';
+  async function toggleFollow(){
+    if(!auth.token||!auth.username||!community||community.visibility!=='PUBLIC'||!followState||followBusy)return;
+    const previous=followState,version=generation.current;
+    setFollowBusy(true);setFollowError('');
+    try{
+      const next=await setCommunityFollow(id,auth.token,auth.username,!previous.following);
+      if(version!==generation.current)return;
+      setFollowState(next);
+    }catch{
+      if(version!==generation.current)return;
+      setFollowState(null);setFollowError('Não foi possível confirmar. Verifica o estado antes de tentares novamente.');
+      try{
+        const actual=await communityFollowState(id,auth.token,auth.username);
+        if(version===generation.current)setFollowState(actual);
+      }catch{/* Keep the last operation uncertain rather than guessing success. */}
+    }finally{if(version===generation.current)setFollowBusy(false);}
+  }
   async function take(action:'join'|'request'){
     if(!auth.token||!auth.username){router.push({pathname:'/login',params:{redirect:`/communities/${id}`}});return;}
     if(busy)return;
@@ -152,6 +180,13 @@ export default function CommunityDetailScreen(){
         </View>
         {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       </View>
+      {community.visibility==='PUBLIC'&&auth.token&&followState?<View style={styles.section}>
+        <Text style={styles.subtitle}>{followState.count} {followState.count===1?'seguidor':'seguidores'}</Text>
+        <Button secondary title={followBusy?'A atualizar…':followState.following?'A seguir ✓':'Seguir comunidade +'}
+          disabled={followBusy} onPress={()=>{void toggleFollow();}}/>
+        <Text style={styles.subtitle}>Seguir não dá acesso ao chat reservado aos membros.</Text>
+      </View>:null}
+      {!!followError&&community.visibility==='PUBLIC'?<Message tone="error">{followError}</Message>:null}
       {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?'A confirmar…':'Juntar-me à comunidade'} disabled={busy} onPress={()=>{void take('join');}}/>:null}
       {!role&&myRequestError?<Message tone="error">{myRequestError}</Message>:null}
       {!role&&myRequestError?<Button secondary title="Verificar estado do pedido novamente" disabled={busy||loading} onPress={()=>{void reload();}}/>:null}
