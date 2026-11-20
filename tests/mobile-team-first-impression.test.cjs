@@ -350,12 +350,12 @@ test('team feed and chat use native camera, gallery and authenticated PDF compos
 test('team chat has its own scrollable history without moving a reader away from old messages',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/ScrollView ref=\{historyRef\} nestedScrollEnabled/);
- assert.match(panel,/style=\{kind==='chat'\?styles\.chatHistory:styles\.feedHistory\}/);
+ assert.match(panel,/style=\{kind==='chat'\?\[styles\.chatHistory,keyboardOpen&&styles\.chatHistoryKeyboard\]:styles\.feedHistory\}/);
  assert.match(panel,/nearLatest\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-85/);
  assert.match(panel,/latest>latestId\.current&&latestId\.current>0&&!nearLatest\.current/);
  assert.match(panel,/accessibilityLabel="Ver mensagens novas"/);
  assert.match(panel,/historyRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
- assert.match(panel,/if\(kind==='chat'&&!searchActive&&nearLatest\.current\)/);
+ assert.match(panel,/if\(kind==='chat'&&composerFocused\.current&&nearLatest\.current\)/);
 });
 
 
