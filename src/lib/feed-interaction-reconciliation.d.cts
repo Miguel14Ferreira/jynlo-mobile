@@ -16,9 +16,9 @@ export declare function rememberCommentFloor(
 export declare function reconcileCommentCounts(
  floors:Map<number,PendingCommentFloor>,posts:FeedItem[],now?:number
 ):{floors:Map<number,PendingCommentFloor>;posts:FeedItem[]};
-export interface PendingPostEdit {content:string;location:string|null;until:number;}
+export interface PendingPostEdit {content:string;location:string|null;until:number;mediaReplaced?:boolean;imageUrl?:string|null;videoUrl?:string|null;extraMedia?:unknown;}
 export declare function rememberPostEdit(
- edits:Map<number,PendingPostEdit>,post:FeedItem,now?:number
+ edits:Map<number,PendingPostEdit>,post:FeedItem,now?:number,mediaReplaced?:boolean
 ):Map<number,PendingPostEdit>;
 export declare function reconcilePostEdits(
  edits:Map<number,PendingPostEdit>,posts:FeedItem[],now?:number
