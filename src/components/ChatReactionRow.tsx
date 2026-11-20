@@ -1,7 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
-import {JynloIcon} from './JynloIcon';
 import {CHAT_REACTION_EMOJIS,changeChatReaction,chatReactionParticipants,listChatReactions} from '../lib/chat-reactions-api';
 import type {ChatReactionEmoji,ChatReactionKind,ChatReactionSummary} from '../lib/chat-reactions-api';
 
@@ -99,8 +98,7 @@ export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,on
     <Pressable accessibilityRole="button" accessibilityLabel={open?'Fechar reações':'Reagir à mensagem'}
       accessibilityState={{expanded:open,disabled:busy}} disabled={busy}
       onPress={()=>setOpen(previous=>!previous)} style={styles.add}>
-      <JynloIcon name="like" size={16} color={C.mint}/>
-      <Text style={styles.addLabel}>+</Text>
+      <Text style={styles.addLabel}>☺ +</Text>
     </Pressable>
    </View>
    {open?<View style={styles.picker}>
@@ -114,11 +112,17 @@ export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,on
  </View>;
 }
 const styles=StyleSheet.create({
- container:{gap:6,marginTop:5},row:{flexDirection:'row',alignItems:'center',gap:5,flexWrap:'wrap'},
- chip:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,paddingVertical:5,paddingHorizontal:9,minHeight:32,justifyContent:'center'},
- selected:{borderColor:C.mint},chipText:{fontSize:12,color:C.white},
- add:{width:36,height:36,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:1,borderRadius:18,borderWidth:1,borderColor:C.border},
- addLabel:{fontSize:14,color:C.mint,fontWeight:'800'},picker:{flexDirection:'row',gap:5,flexWrap:'wrap'},
- choice:{minWidth:39,height:39,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface},
+ container:{gap:5,marginTop:5,alignSelf:'flex-start'},
+ row:{flexDirection:'row',alignItems:'center',gap:5,flexWrap:'wrap'},
+ chip:{borderWidth:1,borderColor:'#478681',backgroundColor:'#163E49',borderRadius:20,paddingVertical:4,paddingHorizontal:10,minHeight:30,justifyContent:'center'},
+ selected:{borderColor:C.mint,backgroundColor:'#195A53'},
+ chipText:{fontSize:12,color:C.white,fontWeight:'700'},
+ add:{minWidth:36,minHeight:30,paddingHorizontal:8,flexDirection:'row',alignItems:'center',
+  justifyContent:'center',borderRadius:18,borderWidth:1,borderColor:'#447D80',backgroundColor:'#123D49'},
+ addLabel:{fontSize:12,color:C.mint,fontWeight:'800'},
+ picker:{flexDirection:'row',gap:5,flexWrap:'wrap',backgroundColor:'#0D3441',
+  borderWidth:1,borderColor:'#4B9991',borderRadius:16,padding:7},
+ choice:{minWidth:38,height:38,justifyContent:'center',alignItems:'center',
+  borderWidth:1,borderColor:'#4A8386',borderRadius:12,backgroundColor:'#153F4B'},
  choiceText:{fontSize:20}
 });
