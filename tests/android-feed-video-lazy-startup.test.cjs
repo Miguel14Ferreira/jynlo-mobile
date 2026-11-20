@@ -8,8 +8,8 @@ test('feed startup does not eagerly initialize the Expo native video player',()=
  assert.doesNotMatch(feed,/^import .*from 'expo-video';/m);
  assert.match(feed,/const FeedVideo=lazy\(\(\)=>import\('\.\.\/\.\.\/src\/components\/FeedVideo'\)\)/);
  assert.match(feed,/<Suspense fallback=\{<View style=\{story\?styles\.storyVideo:styles\.postVideo\}\/>\}>/);
- assert.match(feed,/<FeedVideo uri=\{uri\} story=\{story\} paused=\{paused\} muted=\{muted\} onEnd=\{onEnd\}\/>/);
- assert.match(feed,/<MediaVideo key=\{story.id\} uri=\{uri\} story muted=\{storyMuted\} paused=/);
+ assert.match(feed,/<FeedVideo uri=\{uri\} story=\{story\} paused=\{paused\} muted=\{muted\} onEnd=\{onEnd\} onReady=\{onReady\} onPlaybackError=\{onPlaybackError\}\/>/);
+ assert.match(feed,/<MediaVideo key=\{story.id\+'-'\+mediaRetry\} uri=\{uri\} story muted=\{storyMuted\}[\s\S]*?paused=/);
 });
 
 test('on-demand video playback advances Stories exactly once, never crops ordinary posts',()=>{
@@ -18,9 +18,10 @@ test('on-demand video playback advances Stories exactly once, never crops ordina
  assert.match(video,/p\.loop=false/);
  assert.match(video,/if\(story\)\{p\.muted=muted;p\.play\(\);\}/);
  assert.match(video,/ended\.current=true/);
- assert.match(video,/contentFit=\{story\?'cover':'contain'\} nativeControls=\{!story\}/);
+ assert.match(video,/contentFit="contain" nativeControls=\{!story\}/);
  assert.match(video,/postVideo:\{width:'100%',height:300,borderRadius:12,backgroundColor:/);
  assert.match(video,/storyVideo:\{width:'100%',height:'100%'\}/);
+ assert.match(video,/useEffect\(\(\)=>\{ended\.current=false;readyOnce\.current=false;setVideoFailed\(false\);\},\[uri,token\]\)/);
 });
 
 test('code checks remain explicit and build-free while GitHub hosted quota is exhausted',()=>{
