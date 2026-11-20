@@ -34,7 +34,7 @@ export function ChatMentionSuggestions({draft,token,onChange,disabled=false}:{
   if(!term||!token||disabled){setLoading(false);return()=>{active=false;};}
   const timeout=setTimeout(()=>{
    void searchStoryMentionProfiles(term,token).then(people=>{
-    if(active)setOptions(people.filter(p=>p.username.toLowerCase().includes(term.toLowerCase())).slice(0,8));
+    if(active)setOptions(people.filter(p=>p.username.toLowerCase().includes(term.toLowerCase())).slice(0,5));
    }).catch(()=>{if(active)setOptions([]);})
     .finally(()=>{if(active)setLoading(false);});
   },250);
