@@ -75,3 +75,16 @@ for (const {name,file} of panels) {
     assert.doesNotMatch(scroll,/if\(inlineNearBottom\.current\)\{\s*setUnseenBelow\(false\)/);
   });
 }
+
+for (const {name,file} of panels) {
+  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  test(name+' jump-to-latest waits for viewport confirmation before clearing unread',()=>{
+    const jump = source.match(/onPress=\{\(\)=>\{[^}]*inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\);\}\}/g) || [];
+    assert.ok(jump.length>=1,'expected jump-to-latest action');
+    for(const handler of jump){
+      assert.doesNotMatch(handler,/setUnseenBelow\(false\)/);
+      assert.doesNotMatch(handler,/inlineNearBottom\.current=true/);
+    }
+    assert.match(source,/if\(lastMessageVisible\)setUnseenBelow\(false\)/);
+  });
+}
