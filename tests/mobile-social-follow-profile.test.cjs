@@ -41,7 +41,7 @@ test('stale follow writes cannot release the lock for a different profile or log
  assert.match(screen,/finally\{if\(request===version\.current\)\{inFlight\.current=false;setBusy\(false\);\}\}/);
  assert.doesNotMatch(screen,/finally\{inFlight\.current=false;if\(request===version\.current\)setBusy\(false\);\}/);
  assert.match(screen,/const request=version\.current,original=status\.followedByMe/);
- assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);\}/);
+ assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);setAffiliations\(null\);\}/);
 });
 
 test('public profile identity never waits for follow or privacy requests',()=>{
@@ -75,4 +75,16 @@ test('own mobile profile uses authenticated own-membership APIs and never shows 
  assert.match(ownProfile,/pathname:'\/teams\/\[id\]'/);
  assert.match(ownProfile,/pathname:'\/communities\/\[id\]'/);
  assert.match(ownProfile,/return\(\)=>\{active=false;\}/);
+});
+
+test('public profile affiliations use the backend projection and never private member APIs',()=>{
+ const source=read('src/lib/social-relations-api.ts');
+ assert.match(source,/\/api\/profile\/\$\{user\}\/public-affiliations/);
+ assert.match(screen,/publicProfileAffiliations\(name,auth\.token\)/);
+ assert.match(screen,/if\(!own\)void publicProfileAffiliations/);
+ assert.match(screen,/setAffiliations\(null\)/);
+ assert.match(screen,/affiliations\.teams\.map\(team=>/);
+ assert.match(screen,/affiliations\.communities\.map\(group=>/);
+ assert.doesNotMatch(screen,/joinedSportsTeams\(/);
+ assert.doesNotMatch(screen,/myCommunities\(/);
 });
