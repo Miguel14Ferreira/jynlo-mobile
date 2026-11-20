@@ -21,10 +21,10 @@ export default function TeamKitPreview({primary,secondary,pattern='PLAIN',
    borderTopLeftRadius:6*unit,borderTopRightRadius:6*unit};
  return <View accessibilityLabel={'Equipamento '+(choice==='STRIPES'?'às riscas verticais':choice==='DIAGONAL'?'com faixa diagonal':choice==='HOOPS'?'às riscas horizontais':choice==='HALVES'?'em metades':choice==='CHEVRON'?'em V':'liso')}
   style={{width:size,height:size,position:'relative'}}>
-   {!sleeveless?<View style={[styles.sleeve,{backgroundColor:main,left:2*unit,top:15*unit,
+   {!sleeveless?<><View style={[styles.sleeve,{backgroundColor:main,left:2*unit,top:15*unit,
      width:18*unit,height:18*unit,transform:[{rotate:'19deg'}]}]}/>
    <View style={[styles.sleeve,{backgroundColor:main,right:2*unit,top:15*unit,
-     width:18*unit,height:18*unit,transform:[{rotate:'-19deg'}]}]}/>:null}
+     width:18*unit,height:18*unit,transform:[{rotate:'-19deg'}]}]}/></>:null}
    <View style={[styles.torso,shirtStyle,
     sleeveless&&{width:35*unit,left:14.5*unit,borderTopLeftRadius:11*unit,borderTopRightRadius:11*unit},
     {backgroundColor:main}]}>
