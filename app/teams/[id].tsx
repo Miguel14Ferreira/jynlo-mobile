@@ -505,6 +505,11 @@ export default function TeamDetail(){
        onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}>
        <Text style={styles.heroActionLabel}>Explorar competições →</Text>
      </Pressable>
+     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel="Publicar Story em nome da equipa"
+       onPress={()=>router.push({pathname:'/',params:{compose:'story',teamStory:String(teamId)}})}
+       style={styles.heroSecondaryAction}>
+       <Text style={styles.heroSecondaryText}>Criar Story</Text>
+     </Pressable>:null}
      {isOwner?<Pressable accessibilityRole="button" accessibilityLabel="Personalizar emblema e equipamento"
        onPress={()=>setActiveTab('BRANDING')} style={styles.heroSecondaryAction}>
        <Text style={styles.heroSecondaryText}>Personalizar</Text>
