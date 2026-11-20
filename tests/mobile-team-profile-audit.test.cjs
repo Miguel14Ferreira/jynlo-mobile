@@ -146,9 +146,9 @@ test('team feed has a top post editor and reverse-chronological cards while chat
  assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
  assert.match(panel,/\?orderedTeamFeed\(searchActive\?searchResults:allFeedEntries,collapsedFeedPosts,searchActive,replyTo\)/);
- assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
- assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
- assert.match(panel,/if\(accessRevoked\)return/);
+ assert.ok(panel.includes("kind==='chat'?<>"));
+ assert.ok(panel.includes("emojis.filter(emoji=>(reactions[item.id]?.counts?.[emoji]||0)>0)"));
+ assert.ok(panel.includes("feedReactionPickerId===item.id?emojis.map"));
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
 });
 
