@@ -143,3 +143,13 @@ test('completed individual competitions never invent a podium or final placement
  assert.match(screen,/participations\.length>0/);
  assert.match(screen,/Number\.isSafeInteger\(t\.tournamentId\)/);
 });
+
+test('own profile displays only verified completed public competition participations',()=>{
+ const own=read('app/(tabs)/profile.tsx');
+ assert.match(own,/publicCompletedParticipations\(auth\.username,auth\.token\)/);
+ assert.match(own,/setCompletedParticipations\(\[\]\)/);
+ assert.match(own,/completedParticipations\.length>0/);
+ assert.match(own,/Number\.isSafeInteger\(item\.tournamentId\)/);
+ assert.match(own,/entry\.individualChampion\?'🏆 Campeão individual':'Participação confirmada'/);
+ assert.match(own,/pathname:'\/communities\/\[id\]'/);
+});
