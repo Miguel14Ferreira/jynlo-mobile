@@ -41,7 +41,7 @@ test('stale follow writes cannot release the lock for a different profile or log
  assert.match(screen,/finally\{if\(request===version\.current\)\{inFlight\.current=false;setBusy\(false\);\}\}/);
  assert.doesNotMatch(screen,/finally\{inFlight\.current=false;if\(request===version\.current\)setBusy\(false\);\}/);
  assert.match(screen,/const request=version\.current,original=status\.followedByMe/);
- assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);setAffiliations\(null\);setActivity\(null\);setTitles\(\[\]\);\}/);
+ assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);setAffiliations\(null\);setActivity\(null\);setTitles\(\[\]\);setParticipations\(\[\]\);\}/);
 });
 
 test('public profile identity never waits for follow or privacy requests',()=>{
@@ -131,5 +131,15 @@ test('competitive profile titles use bounded verified public champion snapshots'
  assert.match(screen,/setTitles\(\[\]\)/);
  assert.match(screen,/profile&&titles\.length>0/);
  assert.match(screen,/pathname:'\/communities\/\[id\]'/);
+ assert.match(screen,/Number\.isSafeInteger\(t\.tournamentId\)/);
+});
+
+test('completed individual competitions never invent a podium or final placement',()=>{
+ const api=read('src/lib/social-relations-api.ts');
+ assert.match(api,/\/api\/profile\/\$\{user\}\/completed-individual-participations/);
+ assert.match(screen,/publicCompletedParticipations\(name,auth\.token\)/);
+ assert.match(screen,/setParticipations\(\[\]\)/);
+ assert.match(screen,/entry\.individualChampion\?'🏆 Campeão individual':'Participação confirmada'/);
+ assert.match(screen,/participations\.length>0/);
  assert.match(screen,/Number\.isSafeInteger\(t\.tournamentId\)/);
 });
