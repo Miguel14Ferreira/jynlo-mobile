@@ -11,11 +11,11 @@ type Props={
 export default function TeamKitPreview({primary,secondary,pattern='PLAIN',size=64}:Props){
  const main=safeTeamKitColor(primary,'#19CBB6');
  const contrast=safeTeamKitColor(secondary,'#F0FAFB');
- const choice:TeamKitPattern=pattern==='STRIPES'||pattern==='DIAGONAL'?pattern:'PLAIN';
+ const choice:TeamKitPattern=['PLAIN','STRIPES','DIAGONAL','HOOPS','HALVES','CHEVRON'].includes(pattern||'')?(pattern||'PLAIN'):'PLAIN';
  const unit=size/64;
  const shirtStyle={width:38*unit,height:47*unit,left:13*unit,top:13*unit,
    borderTopLeftRadius:6*unit,borderTopRightRadius:6*unit};
- return <View accessibilityLabel={'Equipamento '+(choice==='STRIPES'?'às riscas':choice==='DIAGONAL'?'com faixa diagonal':'liso')}
+ return <View accessibilityLabel={'Equipamento '+(choice==='STRIPES'?'às riscas verticais':choice==='DIAGONAL'?'com faixa diagonal':choice==='HOOPS'?'às riscas horizontais':choice==='HALVES'?'em metades':choice==='CHEVRON'?'em V':'liso')}
   style={{width:size,height:size,position:'relative'}}>
    <View style={[styles.sleeve,{backgroundColor:main,left:2*unit,top:15*unit,
      width:18*unit,height:18*unit,transform:[{rotate:'19deg'}]}]}/>
@@ -26,6 +26,16 @@ export default function TeamKitPreview({primary,secondary,pattern='PLAIN',size=6
       {Array.from({length:7},(_,i)=><View key={i} style={{flex:1,
        backgroundColor:i%2?contrast:main}}/>)}
     </View>:null}
+    {choice==='HOOPS'?<View style={{flex:1,flexDirection:'column'}}>
+      {Array.from({length:8},(_,i)=><View key={i} style={{flex:1,backgroundColor:i%2?contrast:main}}/>)}
+    </View>:null}
+    {choice==='HALVES'?<View style={{position:'absolute',right:0,top:0,bottom:0,width:'50%',backgroundColor:contrast}}/>:null}
+    {choice==='CHEVRON'?<>
+      <View style={{position:'absolute',height:7*unit,width:31*unit,top:13*unit,left:-4*unit,
+        backgroundColor:contrast,transform:[{rotate:'31deg'}]}}/>
+      <View style={{position:'absolute',height:7*unit,width:31*unit,top:13*unit,right:-4*unit,
+        backgroundColor:contrast,transform:[{rotate:'-31deg'}]}}/>
+    </>:null}
     {choice==='DIAGONAL'?<View style={{
       position:'absolute',width:15*unit,height:95*unit,left:12*unit,top:-23*unit,
       backgroundColor:contrast,transform:[{rotate:'38deg'}]
