@@ -134,6 +134,7 @@ export default function PublicSocialProfile(){
      </View>
      <View style={styles.competitionResult}>
       <Text style={styles.competitionStatus}>{entry.individualChampion?'🏆 Campeão individual':'Participação confirmada'}</Text>
+      {entry.wins!=null&&entry.draws!=null&&entry.losses!=null?<Text style={styles.competitionStatus}>{entry.wins}V · {entry.draws}E · {entry.losses}D</Text>:null}
       <Text style={styles.discoveryHint}>{entry.completedAt?.slice(0,7)||''}</Text>
      </View>
    </Pressable>)}
