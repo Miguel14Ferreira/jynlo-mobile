@@ -543,7 +543,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return '@'+original.username+': '+original.body.slice(0,110);
  };
  const react=async(item:TeamContentEntry,emoji:string)=>{
-  if(kind==='feed')setFeedReactionPickerId(null);
+  setFeedReactionPickerId(null);
   if(item.deleted||reactionBusyRef.current||accessRevokedRef.current)return;
   reactionBusyRef.current=true;reactionBusyContentId.current=item.id;setReactionBusyId(item.id);setError('');
   const current=version.current;
@@ -855,7 +855,22 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
       style={styles.reactionButton}><Text style={styles.reactionLabel}>☺ Reagir</Text></Pressable>
     </>:null}
-    {(kind==='chat'||feedReactionPickerId===item.id)?emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
+    {kind==='chat'?<>
+      <Pressable accessibilityRole="button" accessibilityLabel={'Reagir à mensagem de @'+item.username}
+       accessibilityState={{expanded:feedReactionPickerId===item.id,disabled:reactionBusyId!==null}}
+       disabled={reactionBusyId!==null} onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
+       style={[styles.reactionButton,styles.reactionToggle]}>
+       <Text style={styles.reactionLabel}>☺ +</Text>
+      </Pressable>
+      {emojis.filter(emoji=>(reactions[item.id]?.counts?.[emoji]||0)>0).map(emoji=><Pressable
+        key={'summary-'+emoji} accessibilityRole="button" accessibilityLabel={'Reação '+emoji}
+        accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId!==null}}
+        disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
+        style={[styles.reactionButton,styles.reactionSummary,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
+        <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]}</Text>
+      </Pressable>)}
+    </>:null}
+    {feedReactionPickerId===item.id?emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
       accessibilityLabel={'Reagir com '+emoji}
       accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
       disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
@@ -935,6 +950,8 @@ const styles=StyleSheet.create({
  searchButton:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:11},
  reactionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},
  reactionButton:{borderWidth:1,borderColor:C.border,borderRadius:20,paddingHorizontal:9,paddingVertical:6},
+ reactionToggle:{backgroundColor:'#103B46',borderColor:'#326A74',paddingHorizontal:11,minHeight:32},
+ reactionSummary:{backgroundColor:'#163F4B',borderColor:'#468B8D',paddingHorizontal:8,paddingVertical:4},
  reactionSelected:{borderColor:C.mint,backgroundColor:'#104D50'},
  reactionLabel:{color:C.white,fontSize:12},
  selectedMedia:{gap:8},
