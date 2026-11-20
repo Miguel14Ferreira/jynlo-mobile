@@ -19,8 +19,8 @@ function groupStories(mine,entries,at=Date.now()){
     if(!Number.isFinite(expiry)||expiry<=at)continue;
     if(story.communityId==null&&(typeof story.authorUsername!=='string'||!story.authorUsername.trim()))continue;
     seen.add(story.id);
-    const key=story.communityId!=null?`community:${story.communityId}`:`person:${story.authorUsername.toLowerCase()}`;
-    if(!groups.has(key))groups.set(key,{key,name:story.communityId!=null?(story.communityName||story.displayName):`@${story.authorUsername.replace(/^@/,'')}`,avatar:story.communityPhotoUrl||story.avatarUrl,stories:[]});
+    const key=story.teamId!=null?`team:${story.teamId}`:story.communityId!=null?`community:${story.communityId}`:`person:${story.authorUsername.toLowerCase()}`;
+    if(!groups.has(key))groups.set(key,{key,name:story.teamId!=null?(story.teamName||story.displayName):story.communityId!=null?(story.communityName||story.displayName):`@${story.authorUsername.replace(/^@/,'')}`,avatar:story.teamLogoUrl||story.communityPhotoUrl||story.avatarUrl,stories:[]});
     groups.get(key).stories.push(story);
   }
   return [...groups.values()].map(group=>({...group,stories:group.stories.sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt))}));
