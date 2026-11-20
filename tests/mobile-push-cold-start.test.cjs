@@ -11,8 +11,8 @@ test('cold-start notification is retained until authentication is available',()=
  assert.ok(authGuard>=0,'authentication guard is required');
  assert.ok(consumed>authGuard,'do not consume notification before authentication');
  assert.match(source,/if\(!auth\.ready\)return/);
- assert.match(source,/data\?\.kind!=='notification'/);
- assert.match(source,/Number\.isSafeInteger\(data\.id\)/);
+ assert.match(source,/data\?\.kind==='notification'\?pushNotificationId\(data\.id\):null/);
+ assert.match(source,/pushNotificationId\(data\.id\)/);
  assert.match(source,/router\.push\(\{pathname:'\/notifications'/);
 });
 
