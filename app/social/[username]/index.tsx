@@ -44,16 +44,12 @@ export default function PublicSocialProfile(){
    if(request===version.current)setStatus(value);
   }).catch(()=>{/* Keep follow controls hidden until status is verified. */});
   void profilePrivacyStatus(auth.token,name).then(value=>{
-   if(request===version.current)setPrivacy(value);
-  }).catch(()=>{/* Fail closed: do not reveal private posts without permission. */});
-  // Only display detailed sporting activity after the server has confirmed
-  // that this viewer can see this profile's content.
-  void profilePrivacyStatus(auth.token,name).then(privacyResult=>{
-   if(request!==version.current||!privacyResult.canViewContent)return;
-   void publicSportsActivity(name,auth.token).then(value=>{
-    if(request===version.current)setActivity(value);
-   }).catch(()=>{/* Never invent a score or a trophy. */});
-  }).catch(()=>{});
+   if(request!==version.current)return;
+   setPrivacy(value);
+   if(value.canViewContent)void publicSportsActivity(name,auth.token).then(activityValue=>{
+    if(request===version.current)setActivity(activityValue);
+   }).catch(()=>{/* No inferred achievements when stats are unavailable. */});
+  }).catch(()=>{/* Fail closed: do not reveal private posts or stats. */});
   if(!own)void publicProfileAffiliations(name,auth.token).then(value=>{
    if(request===version.current)setAffiliations({
     teams:(value.teams||[]).filter(t=>Number.isSafeInteger(t.id)&&t.id>0),
