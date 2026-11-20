@@ -4,6 +4,7 @@ import {C} from '../lib/theme';
 import {directChatHistory,sendDirectChat,type DirectChatEntry} from '../lib/chat-api';
 import {ApiError} from '../lib/api';
 import {confirmedDirectChatSend} from '../lib/chat-send-receipt.cjs';
+import {uncertainChatSend} from '../lib/chat-send-uncertainty.cjs';
 import {observeDirectChat} from '../lib/direct-chat-realtime';
 
 /** This panel shares the authenticated DM history and never creates a parallel
@@ -14,6 +15,9 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
 }){
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false);
+ const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string}|null>(null);
+ const uncertainSendRef=useRef<{identity:string;body:string}|null>(null);
+ const pendingSend=useRef<{identity:string;request:number}|null>(null),sendEpoch=useRef(0);
  const [loading,setLoading]=useState(false),[error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState(''),[accessRevoked,setAccessRevoked]=useState(false);
  const identity=peer+'|'+self+'|'+token;
@@ -70,14 +74,18 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    setMessages([]);setDraft('');setError('');setSyncWarning('');setAccessRevoked(false);
    recentlyConfirmed.current.clear();readOwner.current='';busy.current=false;
    sendLock.current=false;setSending(false);queued.current=false;
+   uncertainSendRef.current=null;setUncertainSend(null);
   }
   if(!visible){
-   // The old in-flight POST is generation-scoped. Closing the panel must not
-   // leave the composer locked when the same contact's chat is opened again.
-   sendLock.current=false;setSending(false);
+   // Closing the panel does not cancel an in-flight server POST. Keep the
+   // same conversation locked until its result is known, even after reopening.
+   sendLock.current=pendingSend.current?.identity===identity;
+   setSending(sendLock.current);
    return;
   }
   const version=++generation.current;
+  sendLock.current=pendingSend.current?.identity===identity;
+  setSending(sendLock.current);
   let active=true;
   void load(version,false);
   const stop=observeDirectChat({peer,self,token,onInvalidated:()=>{
@@ -94,24 +102,35 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   return()=>{active=false;generation.current++;stop();clearInterval(timer);resume.remove();queued.current=false;readOwner.current='';busy.current=false;};
  },[identity,visible,peer,self,token,load]);
  async function send(){
-  if(!visible||accessRevoked||sendLock.current||!token||!draft.trim())return;
+  if(!visible||accessRevoked||sendLock.current||pendingSend.current?.identity===identity||!token||!draft.trim())return;
   const body=draft.trim(),version=generation.current,actor=owner.current;
+  if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===body)return;
+  const request=++sendEpoch.current;
+  pendingSend.current={identity,request};
   sendLock.current=true;setSending(true);setError('');
   try{
    const confirmed=await sendDirectChat(peer,body,token);
    if(!confirmedDirectChatSend(confirmed,self,peer,body))
     throw Error('O servidor não confirmou a mensagem. Consulta o histórico antes de repetir.');
-   if(generation.current!==version||owner.current!==actor)return;
+   if(owner.current!==actor)return;
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===body){
+    uncertainSendRef.current=null;setUncertainSend(null);
+   }
    recentlyConfirmed.current.set(confirmed.id,{message:confirmed,at:Date.now()});
    setMessages(current=>current.some(m=>m.id===confirmed.id)?current:
     [...current,confirmed].sort((a,b)=>a.id-b.id).slice(-60));
    setDraft(current=>current.trim()===body?'':current);
-   void load(version,true);
+   void load(generation.current,true);
   }catch(e){
-   if(generation.current===version&&owner.current===actor)
+   if(owner.current===actor){
+    if(uncertainChatSend(e)){
+     const uncertain={identity,body};uncertainSendRef.current=uncertain;setUncertainSend(uncertain);
+    }
     setError((e instanceof Error?e.message:'Não foi possível enviar a mensagem.')+' Verifica o histórico antes de repetir.');
+   }
   }finally{
-   if(generation.current===version&&owner.current===actor){sendLock.current=false;setSending(false);}
+   if(pendingSend.current?.request===request)pendingSend.current=null;
+   if(owner.current===actor){sendLock.current=false;setSending(false);}
   }
  }
  if(!visible)return null;
@@ -142,13 +161,20 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    })}
   </ScrollView>
   {error?<Text accessibilityRole="alert" style={styles.warning}>{error}</Text>:null}
+  {uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()?<View style={styles.retryNotice}>
+   <Text accessibilityRole="alert" style={styles.warning}>Este envio não foi confirmado. Consulta o histórico antes de repetir a mensagem.</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel="Já confirmei no histórico, permitir novo envio na chamada"
+    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);setError('');}}>
+    <Text style={styles.retryText}>Já confirmei no histórico · Permitir novo envio</Text>
+   </Pressable>
+  </View>:null}
   <View style={styles.composer}>
    <TextInput value={draft} onChangeText={setDraft} editable={!sending&&!accessRevoked}
     placeholder="Mensagem para o chat…" placeholderTextColor={C.muted}
     multiline maxLength={2000} style={styles.input} accessibilityLabel="Escrever mensagem na chamada"/>
    <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem durante a chamada"
-    disabled={sending||accessRevoked||!draft.trim()} onPress={()=>{void send();}}
-    style={[styles.send,(sending||accessRevoked||!draft.trim())&&styles.disabled]}>
+    disabled={sending||accessRevoked||!draft.trim()||(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim())} onPress={()=>{void send();}}
+    style={[styles.send,(sending||accessRevoked||!draft.trim()||(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()))&&styles.disabled]}>
     <Text style={styles.sendText}>{sending?'…':'Enviar'}</Text>
    </Pressable>
   </View>
@@ -176,6 +202,8 @@ const styles=StyleSheet.create({
  reply:{color:C.muted,fontSize:11,borderLeftWidth:2,borderLeftColor:C.mint,paddingLeft:6},
  time:{color:C.muted,fontSize:10,textAlign:'right'},
  warning:{color:'#FFC3C3',fontSize:11,lineHeight:17},
+ retryNotice:{gap:6,padding:9,borderRadius:10,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
+ retryText:{color:C.mint,fontSize:12,fontWeight:'800'},
  composer:{flexDirection:'row',alignItems:'flex-end',gap:8},
  input:{flex:1,minHeight:44,maxHeight:110,borderRadius:11,borderWidth:1,borderColor:C.border,
   color:C.white,backgroundColor:C.surface2,paddingHorizontal:11,paddingVertical:9,fontSize:13},
