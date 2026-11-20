@@ -34,3 +34,10 @@ test('route parameters are not displayed as raw screen headers',()=>{
   assert.ok(layout.includes(`<Stack.Screen name="${route}" options={{title:`),route);
  }
 });
+
+test('root stack declares every route at most once',()=>{
+ const routes=[...layout.matchAll(/<Stack\\.Screen name="([^"]+)"/g)].map(([,route])=>route);
+ assert.equal(new Set(routes).size,routes.length,
+  'Duplicate Stack.Screen names can make navigation ambiguous: '+routes.filter((route,index)=>routes.indexOf(route)!==index).join(', '));
+ assert.equal(routes.filter(route=>route==='communities/[id]/championships/events').length,1);
+});
