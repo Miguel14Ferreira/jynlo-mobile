@@ -491,7 +491,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     </Pressable>:null}{renderedMessages}
    </ScrollView>}
   {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
-    onPress={()=>{inlineNearBottom.current=true;setUnseenBelow(false);inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+    onPress={()=>{inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
   {auth.token&&!closed?<View style={styles.quickActions}>
