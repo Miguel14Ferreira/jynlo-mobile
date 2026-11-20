@@ -23,13 +23,19 @@ export default function PublicSocialProfile(){
  useFocusEffect(useCallback(()=>{
   const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setError('');setLoading(true);inFlight.current=false;setBusy(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
-  void Promise.allSettled([publicSportsProfile(name,auth.token),followStatus(name,auth.token),profilePrivacyStatus(auth.token,name)]).then(([p,s,privacyResult])=>{
-   if(request!==version.current)return;
-   if(p.status==='fulfilled')setProfile(p.value);
-   else setError('Não foi possível carregar este perfil.');
-   if(s.status==='fulfilled')setStatus(s.value);
-   if(privacyResult.status==='fulfilled')setPrivacy(privacyResult.value);
+  // The public identity is the critical path. Followers and private-content
+  // permissions update separately so a slow endpoint cannot freeze the hero.
+  void publicSportsProfile(name,auth.token).then(value=>{
+   if(request===version.current)setProfile(value);
+  }).catch(()=>{
+   if(request===version.current)setError('Não foi possível carregar este perfil.');
   }).finally(()=>{if(request===version.current)setLoading(false);});
+  void followStatus(name,auth.token).then(value=>{
+   if(request===version.current)setStatus(value);
+  }).catch(()=>{/* Keep follow controls hidden until status is verified. */});
+  void profilePrivacyStatus(auth.token,name).then(value=>{
+   if(request===version.current)setPrivacy(value);
+  }).catch(()=>{/* Fail closed: do not reveal private posts without permission. */});
   return()=>{version.current++;setProfile(null);setStatus(null);setPrivacy(null);};
  },[name,auth.token,auth.username]));
  async function toggle(){
