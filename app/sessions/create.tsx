@@ -759,7 +759,7 @@ export default function CreateSessionScreen(){
    <Text style={styles.summaryValue}>{form.city}</Text>
    {form.meetingPointInstructions?<Text style={styles.note}>Ponto de encontro: {form.meetingPointInstructions}</Text>:null}
    <SessionDraftLocationMap
-    point={form.venueId&&venueChosen?.id===form.venueId
+    point={form.venueId&&venueChosen&&venueChosen.id===form.venueId
       ?(typeof venueChosen.latitude==='number'&&typeof venueChosen.longitude==='number'&&validCoordinates(venueChosen.latitude,venueChosen.longitude)
         ?{latitude:venueChosen.latitude,longitude:venueChosen.longitude}:null)
       :(typeof form.latitude==='number'&&typeof form.longitude==='number'&&form.locationConfirmed===true&&validCoordinates(form.latitude,form.longitude)
@@ -797,7 +797,7 @@ const styles=StyleSheet.create({
  locationConfirm:{minHeight:56,justifyContent:'center',padding:10,backgroundColor:'#10483F',borderRadius:10},
 
  helpOverlay:{flex:1,justifyContent:'center',padding:22},
- helpBackdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,0.78)'},
+ helpBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.78)'},
  helpDialog:{backgroundColor:C.surface,borderColor:C.mint,borderWidth:1,borderRadius:20,padding:20,gap:15,maxHeight:'80%'},
  helpTitle:{fontSize:21,lineHeight:28,fontWeight:'900',color:C.white},
  helpScroll:{flexShrink:1},
