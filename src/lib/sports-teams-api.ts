@@ -161,7 +161,7 @@ export async function setSportsTeamKit(
   const valid=(v:TeamKitDesign)=>HEX_COLOR.test(v.primary)&&HEX_COLOR.test(v.secondary)
    &&HEX_COLOR.test(v.accent)&&accepted.includes(v.garment)
    &&['PLAIN','STRIPES','DIAGONAL','HOOPS','HALVES','CHEVRON'].includes(v.pattern)
-   &&v.playerName.length<=14&&/^[\\p{L}0-9 .'-]*$/u.test(v.playerName)
+   &&v.playerName.length<=14&&/^[\p{L}0-9 .'-]*$/u.test(v.playerName)
    &&(v.playerNumber===''||/^[0-9]{1,2}$/.test(v.playerNumber));
   const types=new Set(options.variants.map(v=>v.type));
   if(!valid({primary,secondary,pattern,garment:options.garment,accent:options.accent,
