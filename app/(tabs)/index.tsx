@@ -890,7 +890,7 @@ export default function JynloFeedHome(){
   }
   function openStoryComposer(){
     setPublishNotice(null);setStoryPublishError('');setStoryRetryAcknowledged(true);setVerifiedStoryPlace('');setStoryPlaceOptions([]);
-    setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
+    setStoryPublishCommunityId(null);setStoryPublishTeamId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);
     storyComposerRevision.current++;
     storyComposerRef.current=true;setStoryComposer(true);setStoryEditorOpenedAt(new Date().toISOString());
     setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
@@ -904,7 +904,7 @@ export default function JynloFeedHome(){
       setStoryComposer(false);setStoryMedia(null);setStoryCaption('');
       setStoryTextGeometry({x:50,y:78,rotation:0,zoom:1});
       setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
-      setStoryPublishCommunityId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);setStoryRetryAcknowledged(true);
+      setStoryPublishCommunityId(null);setStoryPublishTeamId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);setStoryRetryAcknowledged(true);
     };
     if(storyMedia||storyCaption.trim()||storyLocation.trim()||storyTags.trim()){
       Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
@@ -1656,7 +1656,7 @@ export default function JynloFeedHome(){
           {storyManagedTeams.map(team=><Pressable key={'team-'+team.id} accessibilityRole="button"
             accessibilityLabel={'Publicar Story como equipa '+team.name} disabled={storyPublishing}
             onPress={()=>{setStoryPublishTeamId(team.id);setStoryPublishCommunityId(null);}} style={styles.storyFriendOption}>
-            <JynloIcon name="team" size={19} color={TEAL}/>
+            <JynloIcon name="community" size={19} color={TEAL}/>
             <Text style={styles.storyFriendName}>{storyPublishTeamId===team.id?'✓  ':''}{team.name} · Equipa</Text>
           </Pressable>)}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyAltText}
