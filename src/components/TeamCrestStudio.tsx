@@ -224,6 +224,17 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
    accessibilityRole="button" accessibilityState={{selected:project.shape===option.id}}
    style={[styles.option,project.shape===option.id&&styles.active]}
    onPress={()=>update({shape:option.id})}><Text style={styles.controlText}>{option.label}</Text></Pressable>)}</View>
+  <Text style={styles.label}>Símbolo central (opcional)</Text>
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layerStrip}>
+   <Pressable disabled={isDisabled} accessibilityRole="button"
+    accessibilityState={{selected:project.symbol==='none'}}
+    style={[styles.option,project.symbol==='none'&&styles.active]}
+    onPress={()=>update({symbol:'none'})}><Text style={styles.controlText}>Sem símbolo</Text></Pressable>
+   {SYMBOLS.map(icon=><Pressable key={icon.id} disabled={isDisabled} accessibilityRole="button"
+    accessibilityState={{selected:project.symbol===icon.id}}
+    style={[styles.option,project.symbol===icon.id&&styles.active]}
+    onPress={()=>update({symbol:icon.id})}><Text style={styles.controlText}>{icon.label}</Text></Pressable>)}
+  </ScrollView>
   <Text style={styles.label}>Fundo</Text>
   <View style={styles.choices}>{PATTERNS.map(option=><Pressable key={option.id} disabled={isDisabled}
    accessibilityRole="button" accessibilityState={{selected:project.pattern===option.id}}
@@ -233,6 +244,16 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
   {palette('Cor do padrão',project.secondary,value=>update({secondary:value}))}
   {palette('Cor de texto',project.textColor,value=>update({textColor:value}))}
   {palette('Contorno',project.borderColor,value=>update({borderColor:value}))}
+  <View style={styles.numbers}>
+   {numberControl('Intensidade do padrão',project.patternOpacity,0,100,10,
+     value=>update({patternOpacity:value}))}
+   {numberControl('Largura do contorno',project.borderWidth,0,14,1,
+     value=>update({borderWidth:value}))}
+   {project.symbol!=='none'?numberControl('Tamanho do símbolo',project.symbolSize,30,112,4,
+     value=>update({symbolSize:value})):null}
+   {project.symbol!=='none'?numberControl('Posição do símbolo',project.symbolY,85,205,5,
+     value=>update({symbolY:value})):null}
+  </View>
   <View style={styles.row}>
    <Pressable style={[styles.option,project.showInitials&&styles.active]} disabled={isDisabled}
     onPress={()=>update({showInitials:!project.showInitials})}>
@@ -244,6 +265,12 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
   {project.showInitials?<TextInput editable={!isDisabled} style={styles.input}
    value={project.customInitials} maxLength={5} placeholder="Iniciais (opcional)"
    placeholderTextColor="#A2C6CC" onChangeText={value=>update({customInitials:value})}/>:null}
+  {project.showInitials?<View style={styles.numbers}>
+   {numberControl('Tamanho das iniciais',project.initialsSize,16,54,2,
+     value=>update({initialsSize:value}))}
+   {numberControl('Posição das iniciais',project.initialsY,165,265,5,
+     value=>update({initialsY:value}))}
+  </View>:null}
   <TextInput editable={!isDisabled} style={styles.input} value={project.caption} maxLength={22}
    placeholder="Texto inferior opcional" placeholderTextColor="#A2C6CC"
    onChangeText={value=>update({caption:value})}/>
@@ -278,6 +305,8 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
     {numberControl('Tamanho',selectedLayer.size,18,110,4,v=>updateLayer(selectedLayer.id,{size:v}))}
     {numberControl('Rotação',selectedLayer.rotation,-180,180,15,v=>updateLayer(selectedLayer.id,{rotation:v}))}
     {numberControl('Opacidade',selectedLayer.opacity,0,100,10,v=>updateLayer(selectedLayer.id,{opacity:v}))}
+    {numberControl('Horizontal',selectedLayer.x,24,296,8,v=>updateLayer(selectedLayer.id,{x:v}))}
+    {numberControl('Vertical',selectedLayer.y,24,330,8,v=>updateLayer(selectedLayer.id,{y:v}))}
    </View>
    <View style={styles.choices}>
     <Pressable style={styles.option} disabled={isDisabled} onPress={()=>reorder(-1)}>
