@@ -8,7 +8,7 @@ const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ago
 const pad=(value:number)=>String(value).padStart(2,'0');
 const YEARS=Array.from({length:103},(_,index)=>new Date().getUTCFullYear()-18-index);
 const YEAR_PAGE_SIZE=20;
-const MAX_YEAR=YEARS[0];
+const MAX_YEAR=new Date().getUTCFullYear()-18;
 
 export default function BirthDatePicker({onChange,disabled=false}:{onChange:(isoDate:string)=>void;disabled?:boolean}){
  const [day,setDay]=useState<number|null>(null);
