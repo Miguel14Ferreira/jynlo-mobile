@@ -18,6 +18,12 @@ export default function TeamDetail(){
  const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
  const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'|'BRANDING'>('OVERVIEW');
+ const tabRail=useRef<ScrollView|null>(null),tabPositions=useRef<Record<string,number>>({});
+ // Quick links can select a tab outside the visible horizontal rail.
+ useEffect(()=>{
+  const position=tabPositions.current[activeTab];
+  if(typeof position==='number')tabRail.current?.scrollTo({x:Math.max(0,position-22),animated:true});
+ },[activeTab]);
  const [members,setMembers]=useState<SportsTeamMember[]>([]),[searchName,setSearchName]=useState('');
  const [brokenAvatars,setBrokenAvatars]=useState<Record<number,boolean>>({});
  const [candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]);
@@ -466,10 +472,18 @@ export default function TeamDetail(){
      </Pressable>:null}
     </View>
    </View>
-   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
-    {([...([{id:'OVERVIEW',label:'Plantel'},{id:'TROPHIES',label:'Troféus'},{id:'FEED',label:'Publicações'},{id:'CHAT',label:'Chat'},{id:'CHALLENGES',label:'Desafios'}] as const),...(isOwner?[{id:'BRANDING' as const,label:'Identidade'}]:[])]).map(tab=>
-     <Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===tab.id}}
+   <ScrollView ref={tabRail} horizontal showsHorizontalScrollIndicator={false}
+    contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
+    {([...([{id:'OVERVIEW',label:'Plantel',icon:'community'},{id:'TROPHIES',label:'Troféus',icon:'tournament'},
+      {id:'FEED',label:'Publicações',icon:'post'},{id:'CHAT',label:'Chat',icon:'messages'},
+      {id:'CHALLENGES',label:'Desafios',icon:'championship'}] as const),
+      ...(isOwner?[{id:'BRANDING' as const,label:'Identidade',icon:'settings' as const}]:[])]).map(tab=>
+     <Pressable key={tab.id} accessibilityRole="tab" accessibilityLabel={tab.label}
+      accessibilityState={{selected:activeTab===tab.id}}
+      onLayout={event=>{tabPositions.current[tab.id]=event.nativeEvent.layout.x;}}
       onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
+      <JynloIcon name={tab.icon} size={17} active={activeTab===tab.id}
+       color={activeTab===tab.id?'#052D32':'#C1DADF'}/>
       <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
      </Pressable>)}
    </ScrollView>
@@ -713,7 +727,7 @@ const styles=StyleSheet.create({
  playerName:{color:C.white,fontSize:14,fontWeight:'800'},
  empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
  tabBar:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:6,paddingRight:12},
- tab:{minHeight:44,paddingHorizontal:17,paddingVertical:11,borderWidth:1,borderColor:'#317C80',borderRadius:12,alignItems:'center',justifyContent:'center',backgroundColor:'#092D3B'},
+ tab:{minHeight:44,paddingHorizontal:15,paddingVertical:11,borderWidth:1,borderColor:'#317C80',borderRadius:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:7,backgroundColor:'#092D3B'},
  tabSelected:{borderColor:C.mint,backgroundColor:'#1BCFB6'},tabText:{fontSize:13,fontWeight:'800',color:'#C1DADF'},tabTextSelected:{color:'#052D32'},
  communityLink:{flex:1,gap:3,minHeight:44,justifyContent:'center'},historyLink:{padding:12,borderRadius:11,borderWidth:1,borderColor:C.border,gap:4},
  removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:13,fontWeight:'800',color:C.white},
