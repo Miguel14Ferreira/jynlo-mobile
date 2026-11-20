@@ -34,7 +34,7 @@ test('malformed native push responses cannot dereference missing notification da
  assert.match(callback,/response\.notification\?\.request\?\.content\?\.data/);
  assert.match(callback,/response\.notification\?\.request\?\.identifier/);
  assert.match(callback,/typeof identifier!=='string'\|\|!identifier/);
- assert.match(callback,/data\?\.kind!=='notification'/);
+ assert.match(callback,/data\?\.kind==='notification'\?pushNotificationId\(data\.id\):null/);
 });
 
 test('unavailable native listener removal cannot interrupt navigator teardown',()=>{
