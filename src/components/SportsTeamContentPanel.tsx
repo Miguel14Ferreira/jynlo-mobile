@@ -95,6 +95,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
+ const composerInputRef=useRef<TextInput|null>(null);
  const composerFocused=useRef(false);
  const [keyboardOpen,setKeyboardOpen]=useState(false);
  const nearLatest=useRef(true),latestId=useRef(0);
@@ -401,7 +402,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const switchReply=(id:number|null)=>{
   if(sendingNow.current||accessRevokedRef.current)return;
-  if(kind!=='feed'){setReplyTo(current=>current===id?null:id);return;}
+  if(kind!=='feed'){
+   setReplyTo(current=>current===id?null:id);
+   if(id!==null)requestAnimationFrame(()=>composerInputRef.current?.focus());
+   return;
+  }
   if(id!==null)setCollapsedFeedPosts(previous=>{const next=new Set(previous);next.delete(id);return next;});
   if(replyTo===null)feedRootDraft.current={draft,media};
   else feedCommentDrafts.current.set(replyTo,{draft,media});
@@ -740,7 +745,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </View>
   </View>:null}
   <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
-   <TextInput multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
+   <TextInput ref={composerInputRef} multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
     onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
     placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
