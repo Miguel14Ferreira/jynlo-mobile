@@ -30,7 +30,7 @@ test('in-call chat uses real authenticated direct messages and realtime invalida
  assert.match(panel,/setMessages\(current=>current\.some\(m=>m\.id===confirmed\.id\)/);
  assert.match(panel,/void load\(version,true\)/);
  assert.doesNotMatch(panel,/await load\(version,true\)/);
- assert.match(panel,/onContentSizeChange=\{\(\)=>list\.current\?\.scrollToEnd/);
+ assert.match(panel,/onContentSizeChange=\{\(\)=>\{/);
  assert.match(panel,/O servidor não confirmou a mensagem/);
 });
 test('call chat revokes old account messages and never fabricates call-only history',()=>{
@@ -87,4 +87,22 @@ test('phone calls prioritize readable chat without leaving the LiveKit room',()=
  assert.match(panel,/narrow:\{minHeight:320,maxHeight:480\}/);
  assert.match(panel,/Na chamada/);
  assert.match(panel,/style=\{styles\.history\}/);
+});
+
+test('in-call chat keeps the reader in place and signals new messages without forced scrolling',()=>{
+ const panel=read('src/components/CallChatSidePanel.tsx');
+ assert.ok(panel.includes('const nearBottom=useRef(true),firstHistoryPositionPending=useRef(true)'));
+ assert.ok(panel.includes('const [unseenBelow,setUnseenBelow]=useState(false)'));
+ assert.ok(panel.includes('latest>previousLatestMessageId.current'));
+ assert.ok(panel.includes('!nearBottom.current&&!firstHistoryPositionPending.current'));
+ assert.ok(panel.includes('onScroll={event=>{'));
+ assert.ok(panel.includes('if(firstHistoryPositionPending.current)return;'));
+ assert.ok(panel.includes('nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90'));
+ assert.ok(panel.includes('if(nearBottom.current)setUnseenBelow(false)'));
+ assert.ok(panel.includes('}else if(nearBottom.current){'));
+ assert.ok(panel.includes('accessibilityLabel="Ir para as mensagens novas da chamada"'));
+ assert.ok(panel.includes('Novas mensagens · Ver mais recentes'));
+ assert.ok(panel.includes('list.current?.scrollToEnd({animated:true})'));
+ assert.ok(panel.includes('previousLatestMessageId.current=0;setUnseenBelow(false)'));
+ assert.ok(!panel.includes('onContentSizeChange={()=>list.current?.scrollToEnd'));
 });
