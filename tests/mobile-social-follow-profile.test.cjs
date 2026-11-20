@@ -100,3 +100,14 @@ test('sports history waits for verified profile privacy and never invents achiev
  assert.match(screen,/activity\.communitiesJoined/);
  assert.match(screen,/setActivity\(null\)/);
 });
+
+test('own mobile profile loads real sporting history without blocking identity',()=>{
+ const own=read('app/(tabs)/profile.tsx');
+ assert.match(own,/publicSportsActivity\(auth\.username,auth\.token\)/);
+ assert.match(own,/if\(active\)setActivity\(stats\)/);
+ assert.match(own,/setActivity\(null\)/);
+ assert.match(own,/auth\.token&&auth\.username&&!DEMO_MODE&&activity/);
+ assert.match(own,/activity\.participantsMobilized/);
+ assert.match(own,/activity\.communitiesJoined/);
+ assert.match(own,/Object\.prototype\.hasOwnProperty\.call\(achievementLabels,code\)/);
+});
