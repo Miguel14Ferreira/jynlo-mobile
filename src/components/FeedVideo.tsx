@@ -16,7 +16,8 @@ export default function FeedVideo({uri,story=false,paused=false,muted=false,onEn
  const ended=useRef(false);
  const readyOnce=useRef(false);
  const [videoFailed,setVideoFailed]=useState(false);
- useEffect(()=>{ended.current=false;readyOnce.current=false;setVideoFailed(false);},[uri]);
+ // A protected media URL can be the same across accounts; playback state cannot.
+ useEffect(()=>{ended.current=false;readyOnce.current=false;setVideoFailed(false);},[uri,token]);
  useEffect(()=>{
   if(!story)return;
   if(player.status==='readyToPlay'&&!readyOnce.current){readyOnce.current=true;onReady?.();}
