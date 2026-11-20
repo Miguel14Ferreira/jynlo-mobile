@@ -28,6 +28,18 @@ export async function publicProfileAffiliations(username:string,token:string|nul
  return request<PublicProfileAffiliations>(`/api/profile/${user}/public-affiliations`,{token});
 }
 
+/** Public, server-calculated sports activity; not editable trophy claims. */
+export type PublicSportsActivity={
+ activitiesCompleted:number;peoplePlayedWith:number;sportsPractised:number;
+ eventsCreated:number;participantsMobilized:number;communitiesJoined:number;
+ achievements:string[];
+};
+export async function publicSportsActivity(username:string,token:string|null):Promise<PublicSportsActivity>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('É necessário iniciar sessão.');
+ return request<PublicSportsActivity>(`/api/profiles/${user}/activity`,{token});
+}
+
 export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number;requestPending?:boolean;privateProfile?:boolean};
 export type PublicSportsProfile=SocialPerson&{
  bio?:string|null;location?:string|null;country?:string|null;
