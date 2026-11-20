@@ -443,7 +443,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     // Near-bottom is for auto-follow; a read receipt requires the actual end to be visible.
     const lastMessageVisible=contentOffset.y+layoutMeasurement.height>=contentSize.height-4;
     if(inlineNearBottom.current){
-     setUnseenBelow(false);
+     // Keep the unread marker until the newest message is actually visible.
+     if(lastMessageVisible)setUnseenBelow(false);
      const latest=entries.reduce((max,item)=>Number.isSafeInteger(item.id)?Math.max(max,item.id):max,0);
      if(lastMessageVisible&&AppState.currentState==='active'&&!closed&&auth.token&&Number.isSafeInteger(id)&&id>0&&latest>lastAcknowledgedMessageId.current){
       lastAcknowledgedMessageId.current=latest;
