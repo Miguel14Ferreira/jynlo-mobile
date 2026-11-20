@@ -3,6 +3,25 @@ import type {ImagePickerAsset} from 'expo-image-picker';
 
 /** Independent team; tournament teams remain competition-specific. */
 export type TeamKitPattern='PLAIN'|'STRIPES'|'DIAGONAL'|'HOOPS'|'HALVES'|'CHEVRON';
+export type TeamKitKind='PRIMARY'|'ALTERNATE'|'TRAINING';
+export type TeamKitGarment='jersey'|'singlet'|'vest'|'polo'|'cycling'|'rashguard';
+export type TeamKitVariant={
+ type:'ALTERNATE'|'TRAINING';
+ primary:string;secondary:string;pattern:TeamKitPattern;garment:TeamKitGarment;
+ accent:string;playerName:string;playerNumber:string;
+};
+export type TeamKitDesign=Omit<TeamKitVariant,'type'>;
+export type TeamCrestLayer={
+ id:string;kind:'text'|'symbol';text:string;symbol:string;
+ x:number;y:number;size:number;rotation:number;color:string;opacity:number;
+};
+export type TeamCrestDesign={
+ version:1|2;shape:string;symbol:string;pattern:string;
+ primary:string;secondary:string;textColor:string;borderColor:string;
+ patternOpacity:number;borderWidth:number;symbolSize:number;symbolY:number;
+ showInitials:boolean;innerBorder:boolean;initialsSize:number;initialsY:number;
+ customInitials:string;caption:string;layers?:TeamCrestLayer[];
+};
 export interface SportsTeam {
   id: number;
   slug: string;
@@ -17,6 +36,12 @@ export interface SportsTeam {
   kitPrimary?: string | null;
   kitSecondary?: string | null;
   kitPattern?: TeamKitPattern | null;
+  kitGarment?: TeamKitGarment | null;
+  kitAccent?: string | null;
+  kitPlayerName?: string | null;
+  kitPlayerNumber?: string | null;
+  kitVariants?: TeamKitVariant[] | null;
+  crestDesign?: string | null;
 }
 export interface TeamChampionshipHonour {
   championshipId:number;
@@ -125,13 +150,28 @@ export function teamLogoUri(input:string|null|undefined):string|null {
  return null;
 }
 export async function setSportsTeamKit(
- id:number,primary:string,secondary:string,token:string,pattern:TeamKitPattern='PLAIN'
+ id:number,primary:string,secondary:string,token:string,pattern:TeamKitPattern='PLAIN',
+ options?:{garment:TeamKitGarment;accent:string;playerName:string;playerNumber:string;variants:TeamKitVariant[]}
 ):Promise<SportsTeam>{
  if(!token||DEMO_MODE)throw Error('Inicia sessão para personalizar a equipa.');
  if(!HEX_COLOR.test(primary)||!HEX_COLOR.test(secondary))
   throw Error('Escolhe duas cores válidas.');
+ if(options){
+  const accepted=['jersey','singlet','vest','polo','cycling','rashguard'];
+  const valid=(v:TeamKitDesign)=>HEX_COLOR.test(v.primary)&&HEX_COLOR.test(v.secondary)
+   &&HEX_COLOR.test(v.accent)&&accepted.includes(v.garment)
+   &&['PLAIN','STRIPES','DIAGONAL','HOOPS','HALVES','CHEVRON'].includes(v.pattern)
+   &&v.playerName.length<=14&&/^[\\p{L}0-9 .'-]*$/u.test(v.playerName)
+   &&(v.playerNumber===''||/^[0-9]{1,2}$/.test(v.playerNumber));
+  const types=new Set(options.variants.map(v=>v.type));
+  if(!valid({primary,secondary,pattern,garment:options.garment,accent:options.accent,
+    playerName:options.playerName,playerNumber:options.playerNumber})||
+    options.variants.length>2||types.size!==options.variants.length||
+    options.variants.some(v=>!['ALTERNATE','TRAINING'].includes(v.type)||!valid(v)))
+   throw Error('Revê as cores, os equipamentos e os nomes/números antes de guardar.');
+ }
  return request<SportsTeam>('/api/teams/'+validId(id)+'/kit',{
-  token,method:'PUT',body:{primary,secondary,pattern}
+  token,method:'PUT',body:{primary,secondary,pattern,...(options||{})}
  });
 }
 /** Uses the shared validated image storage. A timeout is uncertain: never auto-retry. */
