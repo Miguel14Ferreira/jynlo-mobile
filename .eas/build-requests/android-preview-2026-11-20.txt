@@ -1,0 +1,8 @@
+Jynlo Android preview build request
+Requested branch: develop
+Expo account: tmf14s-team
+Expo project: jynlo
+Build profile: preview
+Submission: disabled
+Purpose: Run preflight checks and, if they pass, generate a standalone Android test APK.
+This marker file is inert; the commit message [jynlo-build-android] is the explicit EAS trigger.
