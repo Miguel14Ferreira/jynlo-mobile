@@ -2,7 +2,7 @@ import {API_BASE,DEMO_MODE,request} from './api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 
 /** Independent team; tournament teams remain competition-specific. */
-export type TeamKitPattern='PLAIN'|'STRIPES'|'DIAGONAL';
+export type TeamKitPattern='PLAIN'|'STRIPES'|'DIAGONAL'|'HOOPS'|'HALVES'|'CHEVRON';
 export interface SportsTeam {
   id: number;
   slug: string;
