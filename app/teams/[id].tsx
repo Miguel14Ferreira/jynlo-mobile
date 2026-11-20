@@ -528,7 +528,7 @@ export default function TeamDetail(){
       onLayout={event=>{tabPositions.current[tab.id]=event.nativeEvent.layout.x;}}
       onPress={()=>setActiveTab(tab.id)} style={[styles.tab,activeTab===tab.id&&styles.tabSelected]}>
       <JynloIcon name={tab.icon} size={17} active={activeTab===tab.id}
-       color={activeTab===tab.id?'#052D32':'#C1DADF'}/>
+       color={activeTab===tab.id?'#BCFFF0':'#B4D6DE'}/>
       <Text style={[styles.tabText,activeTab===tab.id&&styles.tabTextSelected]}>{tab.label}</Text>
      </Pressable>)}
    </ScrollView>
@@ -807,9 +807,9 @@ const styles=StyleSheet.create({
  playerRemoveAction:{height:38,width:38,borderRadius:10,alignItems:'center',justifyContent:'center',
   borderWidth:1,borderColor:'#9A6668',backgroundColor:'#3A2630'},
  empty:{padding:16,alignItems:'center',borderWidth:1,borderStyle:'dashed',borderColor:C.border,borderRadius:12},
- tabBar:{flexDirection:'row',alignItems:'center',gap:7,paddingVertical:6,paddingRight:12},
- tab:{minHeight:44,paddingHorizontal:15,paddingVertical:11,borderWidth:1,borderColor:'#317C80',borderRadius:12,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:7,backgroundColor:'#092D3B'},
- tabSelected:{borderColor:C.mint,backgroundColor:'#1BCFB6'},tabText:{fontSize:13,fontWeight:'800',color:'#C1DADF'},tabTextSelected:{color:'#052D32'},
+ tabBar:{flexDirection:'row',alignItems:'center',gap:7,padding:8,borderWidth:1,borderColor:'#31CCC952',borderRadius:14,backgroundColor:'#082D3D'},
+ tab:{minHeight:44,paddingHorizontal:14,paddingVertical:9,borderWidth:1,borderColor:'transparent',borderRadius:10,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:7,backgroundColor:'transparent'},
+ tabSelected:{borderColor:'#27E7CCB0',backgroundColor:'#126D73'},tabText:{fontSize:13,fontWeight:'800',color:'#B4D6DE'},tabTextSelected:{color:'#BCFFF0'},
  communityLink:{flex:1,gap:3,minHeight:44,justifyContent:'center'},historyLink:{padding:12,borderRadius:11,borderWidth:1,borderColor:C.border,gap:4},
  removeAction:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderRadius:8,borderWidth:1,borderColor:C.border},removeText:{fontSize:13,fontWeight:'800',color:C.white},
  title:{fontSize:27,lineHeight:33,fontWeight:'900',color:C.white,letterSpacing:-.6},
