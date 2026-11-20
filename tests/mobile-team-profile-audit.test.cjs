@@ -6,7 +6,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
 test('team profile has focused tabs with active state and avoids mixing chat with roster',()=>{
  const screen=read('app/teams/[id].tsx');
- for(const name of ['Plantel e clube','🏆 Troféus','Publicações','Mensagens'])assert.ok(screen.includes(name),name);
+ for(const name of ['Plantel','Troféus','Publicações','Chat'])assert.ok(screen.includes(name),name);
  for(const tab of ['OVERVIEW','TROPHIES','FEED','CHAT'])assert.ok(screen.includes("activeTab==='"+tab+"'"));
  assert.match(screen,/accessibilityRole="tab"/);
  assert.match(screen,/accessibilityState=\{\{selected:activeTab===tab\.id\}\}/);
@@ -395,10 +395,10 @@ test('stale historical team post responses cannot overwrite successful author ed
 test('team identity kit controls meet minimum touch sizing and readable labels',()=>{
  const screen=read('app/teams/[id].tsx');
  assert.match(screen,/swatch:\{width:44,height:44/);
- assert.match(screen,/kitPatternCard:\{flex:1,minWidth:90,minHeight:94/);
+ assert.match(screen,/kitPatternCard:\{flexBasis:'46%',flexGrow:1,minWidth:0,minHeight:112/);
  assert.match(screen,/kitPatternText:\{fontSize:13/);
  assert.match(screen,/statLabel:\{color:'#C9E4E8',fontSize:12/);
- assert.match(screen,/tabText:\{fontSize:14/);
+ assert.match(screen,/tabText:\{fontSize:13/);
  assert.match(screen,/accessibilityLabel=\{'Cor principal '\+color\}/);
  assert.match(screen,/accessibilityState=\{\{selected:kitPrimary===color\}\}/);
 });
@@ -423,4 +423,11 @@ test('team chat loads automatically, uses WebSocket events, and avoids excessive
  assert.match(panel,/if\(!socketOnline\|\|pollTicks%4===0\)void refresh\(true,current,true\)/);
  assert.match(panel,/\},15000\)/);
  assert.doesNotMatch(panel,/\},5000\)/);
+});
+
+test('mobile team tabs follow the same segmented navigation visual language as communities',()=>{
+ const screen=read('app/teams/[id].tsx');
+ assert.match(screen,/tabBar:\{flexDirection:'row',alignItems:'center',gap:7,padding:8/);
+ assert.match(screen,/tabSelected:\{borderColor:'#27E7CCB0',backgroundColor:'#126D73'/);
+ assert.match(screen,/tabTextSelected:\{color:'#BCFFF0'/);
 });
