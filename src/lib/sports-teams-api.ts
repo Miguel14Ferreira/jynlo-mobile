@@ -74,6 +74,18 @@ export async function mySportsTeams(token: string): Promise<SportsTeam[]> {
   if (!token || DEMO_MODE) return [];
   return request<SportsTeam[]>('/api/teams/mine', {token});
 }
+export interface SportsTeamFollowState {count:number;following:boolean}
+/** Followers can view public identity/stories, but cannot access the squad chat. */
+export async function sportsTeamFollowState(id:number,token:string):Promise<SportsTeamFollowState>{
+  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar os seguidores.');
+  return request<SportsTeamFollowState>('/api/teams/'+validId(id)+'/followers',{token});
+}
+export async function setSportsTeamFollow(id:number,token:string,following:boolean):Promise<SportsTeamFollowState>{
+  if(!token||DEMO_MODE)throw Error('Inicia sessão para seguir a equipa.');
+  return request<SportsTeamFollowState>('/api/teams/'+validId(id)+'/followers/me',{
+    token,method:following?'PUT':'DELETE',...(following?{body:{}}:{})
+  });
+}
 export async function sportsTeamDetail(id: number, token?: string): Promise<SportsTeam> {
   return request<SportsTeam>('/api/teams/' + validId(id), {token});
 }
