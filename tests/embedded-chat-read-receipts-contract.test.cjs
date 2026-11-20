@@ -48,3 +48,18 @@ for (const {name,file,receipt,list,denied} of panels) {
     }
   });
 }
+
+for (const {name,file} of panels) {
+  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const start = source.indexOf('onScroll={event=>');
+  const end = source.indexOf('contentContainerStyle=',start);
+  const viewport = source.slice(start,end);
+  test(name+' distinguishes auto-follow proximity from visible-end acknowledgement',()=>{
+    assert.match(viewport,/inlineNearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-90/);
+    assert.match(viewport,/const lastMessageVisible=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-4/);
+    assert.match(viewport,/if\(lastMessageVisible&&AppState\.currentState==='active'/);
+  });
+  test(name+' never auto-follows content changes without composer focus or with unread messages below',()=>{
+    assert.match(viewport,/if\(inlineNearBottom\.current&&composerFocused\.current&&!unseenBelow\)inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
+  });
+}
