@@ -414,3 +414,13 @@ test('mobile team chat uses contextual message actions and compact editing like 
  assert.match(panel,/editDraft\.trim\(\)===item\.body\.trim\(\)/);
  assert.match(panel,/styles\.replyQuote/);
 });
+
+test('team chat loads automatically, uses WebSocket events, and avoids excessive recovery polling',()=>{
+ const panel=read('src/components/SportsTeamContentPanel.tsx');
+ assert.match(panel,/void refresh\(false,current\)/);
+ assert.match(panel,/onInvalidated:\(\)=>\{if\(version\.current===current/);
+ assert.match(panel,/socketOnline&&!wasOnline&&sawSocketOnline/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%4===0\)void refresh\(true,current,true\)/);
+ assert.match(panel,/\},15000\)/);
+ assert.doesNotMatch(panel,/\},5000\)/);
+});
