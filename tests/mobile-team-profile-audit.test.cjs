@@ -146,9 +146,9 @@ test('team feed has a top post editor and reverse-chronological cards while chat
  assert.match(panel,/styles\.inlineCommentComposer/);
  assert.match(panel,/\{kind==='chat'\?composer:null\}/);
  assert.match(panel,/\?orderedTeamFeed\(searchActive\?searchResults:allFeedEntries,collapsedFeedPosts,searchActive,replyTo\)/);
- assert.ok(panel.includes("kind==='chat'?<>"));
- assert.ok(panel.includes("emojis.filter(emoji=>(reactions[item.id]?.counts?.[emoji]||0)>0)"));
- assert.ok(panel.includes("feedReactionPickerId===item.id?emojis.map"));
+ assert.match(panel,/kind==='chat'\?'Responder à mensagem':'Comentar publicação'/);
+ assert.match(panel,/kind==='chat'\?'Mensagem eliminada':'Publicação eliminada'/);
+ assert.match(panel,/if\(accessRevoked\)return/);
  assert.match(panel,/teamContentHistory\(teamId,kind,token\)/);
 });
 
@@ -294,9 +294,9 @@ test('team feed offers likes while private chat shows compact used reactions and
  assert.match(panel,/kind==='feed'\?<>/);
  assert.match(panel,/onPress=\{\(\)=>void react\(item,'❤️'\)\}/);
  assert.match(panel,/Object\.values\(reactions\[item\.id\]\?\.counts\|\|\{\}\)\.reduce/);
- assert.match(panel,/kind==='chat'\\?<>/);
- assert.match(panel,/emojis\\.filter\\(emoji=>\\(reactions\\[item\\.id\\]\\?\\.counts\\?\\.\\[emoji\\]/);
- assert.match(panel,/feedReactionPickerId===item\\.id\\?emojis\\.map/);
+ assert.ok(panel.includes("kind==='chat'?<>"));
+ assert.ok(panel.includes("emojis.filter(emoji=>(reactions[item.id]?.counts?.[emoji]||0)>0)"));
+ assert.ok(panel.includes("feedReactionPickerId===item.id?emojis.map"));
  assert.match(panel,/accessibilityState=\{\{expanded:feedReactionPickerId===item\.id/);
  assert.match(panel,/setFeedReactionPickerId\(null\)/);
  assert.match(panel,/teamReactionSummaries\(teamId,kind,ids,token\)/);
