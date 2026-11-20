@@ -47,7 +47,11 @@ function PushNavigation(){
         return;
       }
       lastHandled.current=handledKey;
-      try{nativeNotifications.clearLastNotificationResponse();}catch{
+      try{
+        // Some native implementations return a Promise: catch asynchronous
+        // cleanup failures too, without holding up authenticated navigation.
+        void Promise.resolve(nativeNotifications.clearLastNotificationResponse()).catch(()=>{});
+      }catch{
         // An unavailable native module must never break inbox navigation.
       }
     }
