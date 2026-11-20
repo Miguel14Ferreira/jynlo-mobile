@@ -71,7 +71,8 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
  };
  const save=()=>{
   const all=[primary,...variants];
-  if(all.some(v=>v.playerName.trim().length>14||!/^\p{L}[\p{L}0-9 .'-]*$/u.test(v.playerName.trim())&&v.playerName.trim()!=='')){
+  if(all.some(v=>v.playerName.trim().length>14||
+    (v.playerName.trim()!==''&&!/^[\p{L}0-9 .'-]+$/u.test(v.playerName.trim())))){
    setWarning('O nome deve conter até 14 letras, números e espaços.');return;
   }
   if(all.some(v=>v.playerNumber.trim()!==''&&!/^[0-9]{1,2}$/.test(v.playerNumber.trim()))){
@@ -155,7 +156,7 @@ const styles=StyleSheet.create({
  preview:{backgroundColor:'#123844',alignItems:'center',padding:13,gap:5,borderRadius:14},
  sideRow:{flexDirection:'row',gap:8,alignSelf:'stretch'},side:{flex:1,padding:10,alignItems:'center',borderRadius:9,borderWidth:1,borderColor:'#2F7781'},
  sideActive:{backgroundColor:'#27606B'},light:{color:'#E4FAF7',fontWeight:'600',fontSize:12},
- label:{fontWeight:'750',color:'#F1FFFA',fontSize:13,marginBottom:6},
+ label:{fontWeight:'700',color:'#F1FFFA',fontSize:13,marginBottom:6},
  choices:{flexDirection:'row',flexWrap:'wrap',gap:7},choice:{padding:10,borderWidth:1,borderColor:'#376F76',borderRadius:10},
  choiceActive:{borderColor:'#4CE1C7',backgroundColor:'#194E54'},
  patterns:{gap:7,paddingBottom:5},pattern:{width:105,alignItems:'center',padding:8,borderWidth:1,borderColor:'#356D77',borderRadius:11,gap:4},
@@ -164,7 +165,7 @@ const styles=StyleSheet.create({
  nameRow:{flexDirection:'row',gap:9},nameField:{flex:1},numberField:{width:83},
  input:{borderWidth:1,borderColor:'#487D82',borderRadius:10,backgroundColor:'#102D3A',color:'#FFFFFF',padding:12,fontSize:15},
  remove:{alignItems:'center',padding:10,borderRadius:9,borderWidth:1,borderColor:'#AD6C7A'},
- removeText:{color:'#FFE3E4',fontWeight:'650'},warning:{color:'#FFD0B6',fontSize:13},
+ removeText:{color:'#FFE3E4',fontWeight:'700'},warning:{color:'#FFD0B6',fontSize:13},
  save:{padding:14,backgroundColor:'#43D9BE',borderRadius:11,alignItems:'center'},
  saveText:{fontWeight:'800',color:'#082B33'},disabled:{opacity:.5}
 });
