@@ -95,7 +95,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [collapsedFeedPosts,setCollapsedFeedPosts]=useState<Set<number>>(()=>new Set());
  const [brokenAuthorAvatars,setBrokenAuthorAvatars]=useState<Record<number,boolean>>({});
  const historyRef=useRef<ScrollViewInstance|null>(null);
- const composerInputRef=useRef<TextInput|null>(null);
+ const composerInputRef=useRef<React.ElementRef<typeof TextInput>|null>(null);
  const composerFocused=useRef(false);
  const [keyboardOpen,setKeyboardOpen]=useState(false);
  const nearLatest=useRef(true),latestId=useRef(0);
