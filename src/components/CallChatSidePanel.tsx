@@ -26,6 +26,16 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  const recentlyConfirmed=useRef(new Map<number,{message:DirectChatEntry;at:number}>());
  const readOwner=useRef('');
  const list=useRef<ScrollView|null>(null);
+ const nearBottom=useRef(true),firstHistoryPositionPending=useRef(true);
+ const previousLatestMessageId=useRef(0);
+ const [unseenBelow,setUnseenBelow]=useState(false);
+ // Only newer IDs count as incoming messages; edits and history refreshes do not.
+ useEffect(()=>{
+  const latest=messages.reduce((max,message)=>Number.isSafeInteger(message.id)?Math.max(max,message.id):max,0);
+  if(latest>previousLatestMessageId.current&&previousLatestMessageId.current>0&&
+     !nearBottom.current&&!firstHistoryPositionPending.current)setUnseenBelow(true);
+  previousLatestMessageId.current=latest;
+ },[messages]);
  const load=useCallback(async(version:number,silent=true)=>{
   if(!visible||!token||!peer||accessRevoked)return;
   if(busy.current){queued.current=true;return;}
@@ -74,6 +84,8 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    setMessages([]);setDraft('');setError('');setSyncWarning('');setAccessRevoked(false);
    recentlyConfirmed.current.clear();readOwner.current='';busy.current=false;
    sendLock.current=false;setSending(false);queued.current=false;
+   nearBottom.current=true;firstHistoryPositionPending.current=true;
+   previousLatestMessageId.current=0;setUnseenBelow(false);
    uncertainSendRef.current=null;setUncertainSend(null);
   }
   if(!visible){
@@ -84,6 +96,8 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    return;
   }
   const version=++generation.current;
+  nearBottom.current=true;firstHistoryPositionPending.current=true;
+  previousLatestMessageId.current=0;setUnseenBelow(false);
   sendLock.current=pendingSend.current?.identity===identity;
   setSending(sendLock.current);
   let active=true;
@@ -145,8 +159,23 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   {loading?<ActivityIndicator color={C.mint}/>:null}
   {syncWarning?<Text style={styles.warning}>{syncWarning}</Text>:null}
   <ScrollView ref={list} style={styles.history} contentContainerStyle={styles.historyContent}
-   keyboardShouldPersistTaps="handled" nestedScrollEnabled
-   onContentSizeChange={()=>list.current?.scrollToEnd({animated:false})}>
+   keyboardShouldPersistTaps="handled" nestedScrollEnabled scrollEventThrottle={100}
+   onScroll={event=>{
+    if(firstHistoryPositionPending.current)return;
+    const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    nearBottom.current=contentOffset.y+layoutMeasurement.height>=contentSize.height-90;
+    if(nearBottom.current)setUnseenBelow(false);
+   }}
+   onContentSizeChange={()=>{
+    if(!messages.length)return;
+    if(firstHistoryPositionPending.current){
+     firstHistoryPositionPending.current=false;
+     nearBottom.current=true;
+     list.current?.scrollToEnd({animated:false});
+    }else if(nearBottom.current){
+     list.current?.scrollToEnd({animated:false});
+    }
+   }}>
    {!loading&&messages.length===0?<Text style={styles.empty}>Ainda não há mensagens nesta conversa.</Text>:null}
    {messages.map(message=>{
     const mine=message.username1.toLowerCase()===self.toLowerCase();
@@ -160,6 +189,11 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
     </View>;
    })}
   </ScrollView>
+  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ir para as mensagens novas da chamada"
+   onPress={()=>{nearBottom.current=true;setUnseenBelow(false);list.current?.scrollToEnd({animated:true});}}
+   style={styles.newMessagesAction}>
+   <Text style={styles.newMessagesText}>Novas mensagens · Ver mais recentes</Text>
+  </Pressable>:null}
   {error?<Text accessibilityRole="alert" style={styles.warning}>{error}</Text>:null}
   {uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()?<View style={styles.retryNotice}>
    <Text accessibilityRole="alert" style={styles.warning}>Este envio não foi confirmado. Consulta o histórico antes de repetir a mensagem.</Text>
@@ -202,6 +236,8 @@ const styles=StyleSheet.create({
  reply:{color:C.muted,fontSize:11,borderLeftWidth:2,borderLeftColor:C.mint,paddingLeft:6},
  time:{color:C.muted,fontSize:10,textAlign:'right'},
  warning:{color:'#FFC3C3',fontSize:11,lineHeight:17},
+ newMessagesAction:{paddingVertical:9,paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.mint,alignItems:'center',backgroundColor:C.surface2},
+ newMessagesText:{color:C.mint,fontSize:12,fontWeight:'800'},
  retryNotice:{gap:6,padding:9,borderRadius:10,backgroundColor:C.surface2,borderWidth:1,borderColor:C.border},
  retryText:{color:C.mint,fontSize:12,fontWeight:'800'},
  composer:{flexDirection:'row',alignItems:'flex-end',gap:8},
