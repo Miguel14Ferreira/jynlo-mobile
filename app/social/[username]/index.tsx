@@ -86,10 +86,34 @@ export default function PublicSocialProfile(){
     <Text style={styles.name}>Perfil privado</Text>
     <Text style={styles.sub}>Segue esta pessoa e aguarda a aprovação para veres as suas publicações e stories.</Text>
    </View>:null}
+  {profile?<View style={styles.discovery}>
+   <Text style={styles.discoveryTitle}>Continuar a descobrir</Text>
+   <Text style={styles.discoveryHint}>Encontra sessões, equipas e comunidades na Jynlo.</Text>
+   <View style={styles.discoveryLinks}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Procurar sessões desportivas"
+     style={styles.discoveryLink} onPress={()=>router.push('/explore')}>
+     <Text style={styles.discoveryLinkText}>⌖  Procurar sessões</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Explorar equipas"
+     style={styles.discoveryLink} onPress={()=>router.push('/teams')}>
+     <Text style={styles.discoveryLinkText}>♜  Explorar equipas</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Explorar comunidades"
+     style={styles.discoveryLink} onPress={()=>router.push('/communities')}>
+     <Text style={styles.discoveryLinkText}>♧  Explorar comunidades</Text>
+    </Pressable>
+   </View>
+  </View>:null}
   {profile&&privacy?.canViewContent?<ProfilePosts username={name} token={auth.token}/>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
+ discovery:{padding:16,gap:8,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.xl},
+ discoveryTitle:{fontSize:16,fontWeight:'900',color:T.text},
+ discoveryHint:{fontSize:12,lineHeight:18,color:T.muted},
+ discoveryLinks:{gap:8,marginTop:3},
+ discoveryLink:{minHeight:48,justifyContent:'center',paddingHorizontal:14,backgroundColor:T.raised,borderRadius:12,borderWidth:1,borderColor:T.border},
+ discoveryLinkText:{fontSize:14,fontWeight:'800',color:T.accent},
  hero:{padding:18,gap:17,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.xl},
  identity:{flexDirection:'row',alignItems:'center',gap:14},avatar:{height:72,width:72,borderRadius:36,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
  photo:{width:'100%',height:'100%'},letter:{fontSize:27,fontWeight:'900',color:T.accent},
