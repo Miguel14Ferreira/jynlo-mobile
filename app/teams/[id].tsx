@@ -601,7 +601,7 @@ export default function TeamDetail(){
     {rosterVerified?members.map(m=><View key={m.profileId} style={styles.playerCard}>
       <View style={styles.playerAvatar}>
        {teamPlayerAvatarUri(m.profilePicUrl)&&!brokenAvatars[m.profileId]
-        ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={styles.playerAvatarPhoto}
+        ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={{width:'100%',height:'100%',borderRadius:24}}
           onError={()=>setBrokenAvatars(previous=>({...previous,[m.profileId]:true}))}/>
         :<Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text>}
       </View>
@@ -727,7 +727,7 @@ const styles=StyleSheet.create({
  header:{padding:22,backgroundColor:'#082D3B',borderColor:'#35BCA66A',borderWidth:1,borderRadius:23,gap:15,overflow:'hidden'},
  followSection:{gap:8},
  followRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12},
- followCount:{fontSize:14,fontWeight:'850',color:C.mint},
+ followCount:{fontSize:14,fontWeight:'800',color:C.mint},
  backRow:{minHeight:48,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
  backLink:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  backLabel:{fontSize:14,color:C.mint,fontWeight:'900'},
@@ -736,7 +736,7 @@ const styles=StyleSheet.create({
  kitFocus:{alignItems:'center',justifyContent:'center',gap:8,paddingVertical:18,
   paddingHorizontal:12,borderRadius:18,borderWidth:1,borderColor:'#328d8f',
   backgroundColor:'#092A39'},
- kitFocusEyebrow:{color:C.mint,fontSize:11,letterSpacing:1.1,fontWeight:'850',textAlign:'center'},
+ kitFocusEyebrow:{color:C.mint,fontSize:11,letterSpacing:1.1,fontWeight:'800',textAlign:'center'},
  kitFocusTitle:{fontSize:17,color:C.white,fontWeight:'900'},
  kitFocusSubtitle:{fontSize:12,color:C.muted,textAlign:'center'},
  kitPatternRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
