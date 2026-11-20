@@ -125,6 +125,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const feedRootDraft=useRef<{draft:string;media:ImagePickerAsset[]}>({draft:'',media:[]});
  const feedCommentDrafts=useRef(new Map<number,{draft:string;media:ImagePickerAsset[]}>());
  const [editingId,setEditingId]=useState<number|null>(null);
+ const [expandedMessageActions,setExpandedMessageActions]=useState<number|null>(null);
  const [editDraft,setEditDraft]=useState('');
  const [attachmentsEnabled,setAttachmentsEnabled]=useState(false);
  const [media,setMedia]=useState<ImagePickerAsset[]>([]);
@@ -168,7 +169,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   latestId.current=0;nearLatest.current=true;initialChatPositionPending.current=true;setUnseenBelow(false);
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';searchPendingRef.current=false;searchRecheckRef.current=false;
   reactionVersion.current++;setReactions({});setFeedReactionPickerId(null);reactionBusyContentId.current=null;
-  setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+  setDraft('');setReplyTo(null);setEditingId(null);setExpandedMessageActions(null);setEditDraft('');
   feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
   const message=failure.status===409?'O chat ou feed da equipa foi desativado pelo responsável.':'Já não tens acesso a esta conversa.';
@@ -330,7 +331,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setEntries([]);setOlderEntries([]);olderRef.current=[];olderExhausted.current=false;setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setBrokenAuthorAvatars({});
-  if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setEditDraft('');
+  if(changedConversation){setDraft('');setReplyTo(null);setEditingId(null);setExpandedMessageActions(null);setEditDraft('');
    feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();}
   setError('');setSyncWarning('');
   searchVersion.current++;searchActiveRef.current=false;searchQueryRef.current='';
@@ -821,7 +822,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
     </View>
    </View>
-   {item.replyToId?<Text style={styles.sub}>↳ {replyPreview(item.replyToId)}</Text>:null}
+   {item.replyToId?<View style={styles.replyQuote}><JynloIcon name="reply" size={14} color={C.mint}/><Text numberOfLines={2} style={styles.replyQuoteText}>{replyPreview(item.replyToId)}</Text></View>:null}
    <ChatMentionText body={item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body} style={styles.body}/>
    {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
    {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
@@ -878,19 +879,36 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       <Text style={styles.reactionLabel}>{emoji} {reactions[item.id]?.counts?.[emoji]||''}</Text>
     </Pressable>):null}
    </View>:null}
-   {!item.deleted?<View style={styles.actions}>
-    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction} disabled={sending} onPress={()=>switchReply(item.id)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
-    {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Editar mensagem da equipa':'Editar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>{setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
-    {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Eliminar mensagem da equipa':'Eliminar publicação da equipa'} style={styles.entryAction} disabled={sending} onPress={()=>remove(item)}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
-   </View>:null}
+   {!item.deleted?<>
+    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={'Mostrar ações da mensagem de @'+item.username}
+     accessibilityState={{expanded:expandedMessageActions===item.id,disabled:sending}} disabled={sending}
+     onPress={()=>setExpandedMessageActions(current=>current===item.id?null:item.id)}
+     style={styles.messageMore}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
+    {(kind==='feed'||expandedMessageActions===item.id)?<View style={[styles.actions,kind==='chat'&&styles.contextActions]}>
+     <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction}
+      disabled={sending} onPress={()=>{setExpandedMessageActions(null);switchReply(item.id);}}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+     {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel="Editar mensagem" style={styles.entryAction} disabled={sending}
+      onPress={()=>{setExpandedMessageActions(null);setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
+     {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar mensagem" style={styles.entryAction} disabled={sending}
+      onPress={()=>{setExpandedMessageActions(null);remove(item);}}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
+    </View>:null}
+   </>:null}
    {kind==='feed'&&replyTo===item.id?<View style={styles.inlineCommentComposer}>
     <Text style={styles.commentContext}>A comentar publicação de @{item.username}</Text>
     {composer}
    </View>:null}
    {editingId===item.id?<View style={styles.editBox}>
-    <TextInput multiline maxLength={2000} style={styles.input} value={editDraft} onChangeText={setEditDraft} editable={!sending} accessibilityLabel="Editar mensagem"/>
-    <Pressable disabled={sending||!editDraft.trim()} onPress={()=>void update()}><Text style={styles.actionText}>Guardar alteração</Text></Pressable>
-    <Pressable onPress={()=>setEditingId(null)}><Text style={styles.actionText}>Cancelar</Text></Pressable>
+    <TextInput multiline maxLength={2000} style={styles.editInput} value={editDraft} onChangeText={setEditDraft}
+     editable={!sending} accessibilityLabel="Editar mensagem"/>
+    <View style={styles.editActions}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Cancelar edição" disabled={sending}
+      onPress={()=>{setEditingId(null);setEditDraft('');}} style={styles.editCancel}><Text style={styles.editCancelText}>Cancelar</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Guardar edição"
+      disabled={sending||!editDraft.trim()||editDraft.trim()===item.body.trim()}
+      onPress={()=>void update()} style={[styles.editSave,(sending||!editDraft.trim()||editDraft.trim()===item.body.trim())&&styles.editDisabled]}>
+      <Text style={styles.editSaveText}>{sending?'A guardar…':'✓ Guardar'}</Text>
+     </Pressable>
+    </View>
    </View>:null}
   </View>)}
   </ScrollView>
@@ -944,7 +962,22 @@ const styles=StyleSheet.create({
  entryAction:{minWidth:40,minHeight:40,alignItems:'center',justifyContent:'center',borderRadius:11,borderWidth:1,borderColor:C.border,backgroundColor:'#153B45'},
  sharedGif:{width:'100%',height:190,borderRadius:12,backgroundColor:'#102E38'},
  mapLink:{flexDirection:'row',alignSelf:'flex-start',alignItems:'center',gap:8,padding:9,borderWidth:1,borderColor:C.border,borderRadius:11},
- editBox:{gap:10},
+ editBox:{gap:10,borderWidth:1,borderColor:'#388F87',borderRadius:12,padding:10,backgroundColor:'#0A323D'},
+ editInput:{minHeight:70,maxHeight:170,borderWidth:1,borderColor:'#4B8987',borderRadius:10,
+  padding:11,color:C.white,textAlignVertical:'top',backgroundColor:'#061F2E',fontSize:14},
+ editActions:{flexDirection:'row',justifyContent:'flex-end',gap:8,alignItems:'center'},
+ editCancel:{minHeight:40,justifyContent:'center',paddingHorizontal:13,borderRadius:10,borderWidth:1,borderColor:'#3C7D86'},
+ editCancelText:{color:'#CEE8E6',fontWeight:'700'},
+ editSave:{minHeight:40,justifyContent:'center',paddingHorizontal:14,borderRadius:10,backgroundColor:C.mint},
+ editSaveText:{color:'#06313B',fontWeight:'800'},
+ editDisabled:{opacity:.45},
+ messageMore:{alignSelf:'flex-end',minHeight:36,minWidth:40,alignItems:'center',justifyContent:'center',
+  borderRadius:9,borderWidth:1,borderColor:'#2E6B70',backgroundColor:'#103D49'},
+ contextActions:{alignSelf:'flex-end',padding:5,backgroundColor:'#153E4C',borderWidth:1,
+  borderColor:'#397F87',borderRadius:12,gap:5},
+ replyQuote:{flexDirection:'row',alignItems:'center',gap:7,padding:8,borderLeftWidth:3,
+  borderLeftColor:C.mint,borderRadius:8,backgroundColor:'#092D39'},
+ replyQuoteText:{flex:1,color:'#C5E7E5',fontSize:12,lineHeight:17},
  searchRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  searchInput:{flexGrow:1,flexBasis:160,minWidth:0,borderWidth:1,borderColor:C.border,borderRadius:10,padding:9,color:C.white},
  searchButton:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.border,borderRadius:11},
