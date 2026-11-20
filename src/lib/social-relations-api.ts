@@ -18,6 +18,16 @@ export async function postLikers(postId:number,token:string|null):Promise<Social
  return request<SocialPerson[]>(`/api/feed/posts/${postId}/likers`,{token});
 }
 
+export type PublicProfileAffiliations={
+ teams:Array<{id:number;name:string;sport:string|null}>;
+ communities:Array<{id:number;name:string;sport:string|null}>;
+};
+export async function publicProfileAffiliations(username:string,token:string|null):Promise<PublicProfileAffiliations>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('É necessário iniciar sessão para consultar as filiações públicas.');
+ return request<PublicProfileAffiliations>(`/api/profile/${user}/public-affiliations`,{token});
+}
+
 export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number;requestPending?:boolean;privateProfile?:boolean};
 export type PublicSportsProfile=SocialPerson&{
  bio?:string|null;location?:string|null;country?:string|null;
