@@ -62,3 +62,17 @@ test('public profile links to native sessions teams and communities without clai
  assert.match(screen,/router\.push\('\/communities'\)/);
  assert.match(screen,/\{profile\?<View style=\{styles\.discovery\}>/);
 });
+
+test('own mobile profile uses authenticated own-membership APIs and never shows unverified association',()=>{
+ const ownProfile=read('app/(tabs)/profile.tsx');
+ assert.match(ownProfile,/joinedSportsTeams\(auth\.token\)/);
+ assert.match(ownProfile,/myCommunities\(auth\.token,auth\.username\)/);
+ assert.match(ownProfile,/Promise\.allSettled\(/);
+ assert.match(ownProfile,/teams\.status==='fulfilled'/);
+ assert.match(ownProfile,/communities\.status==='fulfilled'/);
+ assert.match(ownProfile,/membershipsError/);
+ assert.match(ownProfile,/auth\.token&&auth\.username&&!DEMO_MODE\?<View style=\{styles\.memberships\}>/);
+ assert.match(ownProfile,/pathname:'\/teams\/\[id\]'/);
+ assert.match(ownProfile,/pathname:'\/communities\/\[id\]'/);
+ assert.match(ownProfile,/return\(\)=>\{active=false;\}/);
+});
