@@ -20,7 +20,7 @@ test('follow status, follow and unfollow reuse authenticated backend endpoints',
 test('public profile is guarded against stale responses and repeated writes',()=>{
  assert.match(screen,/useFocusEffect\(useCallback\(\(\)=>\{/);
  assert.match(screen,/\+\+version\.current/);
- assert.match(screen,/request!==version\.current/);
+ assert.match(screen,/request===version\.current/);
  assert.match(screen,/inFlight\.current\)return/);
  assert.match(screen,/!name\|\|own\|\|!auth\.token\|\|!status/);
  assert.match(screen,/await changeFollow\(name,shouldFollow,auth\.token\)/);
