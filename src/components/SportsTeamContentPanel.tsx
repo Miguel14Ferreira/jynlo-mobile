@@ -355,18 +355,29 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // Authenticated WebSocket signals trigger immediate HTTP refresh. Polling
   // remains a fallback for disconnected devices and missed events.
   let socketOnline=false;
+  let sawSocketOnline=false;
   const stopObserving=observeTeamContent({teamId,kind,token,
    onInvalidated:()=>{if(version.current===current&&AppState.currentState==='active')void refresh(true,current,true);},
-   onStatus:status=>{if(version.current===current){socketOnline=status==='online';setConnection(status);}}
+   onStatus:status=>{
+    if(version.current!==current)return;
+    const wasOnline=socketOnline;
+    socketOnline=status==='online';
+    setConnection(status);
+    // Reconcile immediately after reconnecting. The first connection already
+    // has its initial history request, so do not send another on startup.
+    if(socketOnline&&!wasOnline&&sawSocketOnline&&AppState.currentState==='active')
+     void refresh(true,current,true);
+    if(socketOnline)sawSocketOnline=true;
+   }
   });
   let pollTicks=0;
   const timer=setInterval(()=>{
-   // Even a connected socket can miss a server event: reconcile once every
-   // 30 seconds online, and every 5 seconds while disconnected.
+   // WebSocket invalidations remain immediate. Use fewer safety-net requests:
+   // every 60 seconds online, every 15 seconds while disconnected.
    if(AppState.currentState!=='active')return;
    pollTicks++;
-   if(!socketOnline||pollTicks%6===0)void refresh(true,current,true);
-  },5000);
+   if(!socketOnline||pollTicks%4===0)void refresh(true,current,true);
+  },15000);
   const resume=AppState.addEventListener('change',state=>{
    if(state==='active')void refresh(true,current,true);
   });
