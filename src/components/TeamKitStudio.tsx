@@ -78,9 +78,10 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
   if(all.some(v=>v.playerNumber.trim()!==''&&!/^[0-9]{1,2}$/.test(v.playerNumber.trim()))){
    setWarning('O número deve conter um ou dois algarismos.');return;
   }
+  // Keep the draft until the server confirms it: an uncertain upload must not
+  // silently restore the old team design while the request is in flight.
   onSave({...primary,playerName:primary.playerName.trim(),playerNumber:primary.playerNumber.trim()},
    variants.map(v=>({...v,playerName:v.playerName.trim(),playerNumber:v.playerNumber.trim()})));
-  setDirty(false);
  };
  return <View style={styles.studio}>
   <Text style={styles.title}>Estúdio de equipamentos</Text>
