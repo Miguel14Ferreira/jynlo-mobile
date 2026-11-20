@@ -1,7 +1,7 @@
 import React,{useCallback,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Brand,Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
+import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
 import {ApiError,DEMO_MODE,request} from '../../../src/lib/api';
 import {venueDetails} from '../../../src/lib/parity-api';
@@ -114,7 +114,7 @@ export default function SuggestVenueEditScreen(){
    }
   }finally{setBusy(false);}
  }
- return <Page><Brand subtitle="MELHORAR OS RECINTOS"/><Eyebrow>SUGERIR CORREÇÃO</Eyebrow>
+ return <Page><Eyebrow>SUGERIR CORREÇÃO</Eyebrow>
   {!auth.token||DEMO_MODE?<Message>Inicia sessão com uma conta real para sugerires alterações.</Message>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {completed?<Message>Sugestão enviada para análise. As informações do recinto não são alteradas imediatamente.</Message>:null}

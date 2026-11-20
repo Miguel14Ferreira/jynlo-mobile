@@ -153,7 +153,13 @@ export default function CreateTournamentScreen(){
   <Text style={styles.sub}>Escolhe uma das modalidades da comunidade. O formato e a classificação dependem da prova, nunca de uma tabela genérica de futebol.</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&auth.token&&communities.length===0?<Message>Não tens permissões para criar torneios nesta comunidade. Confirma que és proprietário ou administrador.</Message>:null}
+  {!loading&&auth.token&&communities.length===0?(scopedToCommunity
+   ?<Message>Só quem administra esta comunidade pode criar torneios nela.</Message>
+   :<View style={styles.panel}>
+     <Text style={styles.emptyTitle}>Cria primeiro a tua comunidade</Text>
+     <Text style={styles.emptyText}>Cada torneio pertence a uma comunidade, onde ficam as inscrições, os jogos e a classificação. Demora menos de um minuto.</Text>
+     <Button title="Criar comunidade e torneio" onPress={()=>router.push({pathname:'/communities/create',params:{next:'tournament'}})}/>
+    </View>):null}
   {!loading&&communities.length>0?<><View style={styles.panel}>
    <Text style={styles.heading}>1. Comunidade</Text>
    {scopedToCommunity?<Text style={styles.helper}>{selected?.name||'Comunidade selecionada'} · estás a criar um torneio nesta comunidade.</Text>:<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
@@ -234,6 +240,8 @@ export default function CreateTournamentScreen(){
 const styles=StyleSheet.create({
  title:{color:C.white,fontSize:30,fontWeight:'900'},
  sub:{color:C.muted,fontSize:13,lineHeight:19},
+ emptyTitle:{color:C.white,fontSize:18,fontWeight:'900'},
+ emptyText:{color:C.muted,fontSize:14,lineHeight:20},
  panel:{gap:13,padding:17,borderRadius:20,backgroundColor:C.surface,borderColor:C.border,borderWidth:1},
  heading:{color:C.white,fontSize:18,fontWeight:'900'},
  helper:{color:C.muted,fontSize:12,lineHeight:18},

@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
+import {Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {createSportsTeam,discoverSportsTeams,mySportsTeams,joinedSportsTeams,mySportsTeamInvitations,respondSportsTeamInvitation,SportsTeam,SportsTeamInvitation} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
@@ -145,7 +145,7 @@ export default function TeamsScreen(){
    if(action===actionVersion.current){savingRef.current=false;setSaving(false);}
   }
  };
- return <Page><Brand subtitle="AS TUAS EQUIPAS"/><DemoBanner/>
+ return <Page><DemoBanner/>
   <View style={styles.hero}>
    <View style={styles.heroHeading}><View style={styles.heroEmblem}><JynloIcon name="community" size={25} color={C.mint}/></View>
     <View style={styles.heroCopy}><Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text><Text style={styles.title}>As tuas equipas</Text></View></View>

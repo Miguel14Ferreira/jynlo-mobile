@@ -1,7 +1,7 @@
 import React,{useCallback,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../src/components/UI';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {venues} from '../src/lib/parity-api';
 import {C} from '../src/lib/theme';
 import {DEMO_MODE} from '../src/lib/api';
@@ -15,7 +15,7 @@ export default function VenuesScreen(){
   try{const result=await venues({name:term,city});setList(result.venues);}catch(e){setError(e instanceof Error?e.message:'Não foi possível pesquisar recintos.');}finally{setLoading(false);}
  },[term,city]);
  useFocusEffect(useCallback(()=>{void search();},[search]));
- return <Page><Brand subtitle="ONDE PRATICAR"/><DemoBanner/><Eyebrow>RECINTOS DESPORTIVOS</Eyebrow>
+ return <Page><DemoBanner/><Eyebrow>RECINTOS DESPORTIVOS</Eyebrow>
  <Text style={styles.heading}>Encontra o teu <Text style={{color:C.mint}}>próximo campo.</Text></Text>
  <TextInput value={term} onChangeText={setTerm} placeholder="Nome do recinto" placeholderTextColor={C.muted} style={styles.input}/>
  <TextInput value={city} onChangeText={setCity} placeholder="Cidade" placeholderTextColor={C.muted} style={styles.input}/>

@@ -1,7 +1,7 @@
 import React from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {useLocalSearchParams} from 'expo-router';
-import {Brand,Eyebrow,Page} from '../src/components/UI';
+import {Eyebrow,Page} from '../src/components/UI';
 import {legalDocument} from '../src/lib/legal-content';
 import type {LegalKind} from '../src/lib/legal-content';
 import {C} from '../src/lib/theme';
@@ -12,7 +12,7 @@ export default function LegalScreen(){
   ?(params.document==='terms'?'terms':'delete'):'privacy';
  const document=legalDocument(kind);
  return <Page>
-  <Brand subtitle="INFORMAÇÃO LEGAL"/>
+  
   <Eyebrow>JYNLO · PILOTO</Eyebrow>
   <Text style={styles.title}>{document.title}</Text>
   <Text style={styles.intro}>{document.intro}</Text>

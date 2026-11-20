@@ -1,7 +1,7 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
-import {Page,Brand,DemoBanner,Loader,Message} from '../src/components/UI';
+import {Page,DemoBanner,Loader,Message} from '../src/components/UI';
 import {discoverPeople,resolveJynloMedia} from '../src/lib/social-feed-api';
 import {useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
@@ -29,7 +29,7 @@ export default function DiscoverPeople(){
     return()=>{generation.current++;setPeople([]);};
   },[load]));
   const filtered=useMemo(()=>people.filter(p=>(`${p.username} ${p.displayName} ${p.sport||''} ${p.city||''}`).toLowerCase().includes(query.trim().toLowerCase())),[people,query]);
-  return <Page><Brand subtitle="AS TUAS PESSOAS"/><DemoBanner/>
+  return <Page><DemoBanner/>
     <Text style={styles.title}>Pessoas para conhecer</Text>
     <Text style={styles.note}>Descobre desportistas na Jynlo. Só vês o que cada pessoa decidiu partilhar.</Text>
     <TextInput style={styles.search} placeholder="Pesquisar por nome ou modalidade…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery} accessibilityLabel="Pesquisar desportistas"/>

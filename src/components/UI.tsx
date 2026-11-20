@@ -120,8 +120,8 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
 }
 const styles=StyleSheet.create({
   page:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},content:{paddingHorizontal:16,paddingTop:16,paddingBottom:88,gap:16},
-  brandRow:{flexDirection:'row',alignItems:'center',gap:12,marginBottom:8},logo:{width:45,height:45,borderRadius:13},
-  brandTitle:{fontSize:26,fontWeight:'900',letterSpacing:3,color:C.white},brandSubtitle:{color:C.muted,fontSize:12,letterSpacing:1.1},
+  brandRow:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:4},logo:{width:34,height:34,borderRadius:10},
+  brandTitle:{fontSize:20,fontWeight:'900',letterSpacing:2.4,color:C.white},brandSubtitle:{color:C.muted,fontSize:11,letterSpacing:1},
   demoBanner:{padding:13,borderRadius:14,backgroundColor:'#15362F',borderWidth:1,borderColor:'#306B59',gap:4},
   demoText:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:0.8},demoSub:{fontSize:13,lineHeight:19,color:'#C0D9D1'},
   eyebrow:{fontSize:12,color:C.mint,fontWeight:'800',letterSpacing:1.5,textTransform:'uppercase'},

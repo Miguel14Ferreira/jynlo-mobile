@@ -3,7 +3,7 @@ import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
+import {Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
 import {myNotifications,markNotificationRead,deleteMyNotification,deleteAllMyNotifications} from '../src/lib/notifications-api';
@@ -329,7 +329,7 @@ export default function NotificationsScreen(){
    try{router.setParams({notificationId:''});}catch{/* Navigation already succeeded. */}
   }
  },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
- return <Page><Brand subtitle="NÃO PERDAS O PRÓXIMO JOGO"/><DemoBanner/>
+ return <Page><DemoBanner/>
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites, novidades desportivas e atividade social.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}

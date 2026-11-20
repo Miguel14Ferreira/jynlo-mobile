@@ -1,7 +1,7 @@
 import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../src/components/UI';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../src/components/UI';
 import {mySessions} from '../src/lib/parity-api';
 import {useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
@@ -37,7 +37,7 @@ export default function MySessionsScreen(){
  const sections=organizeMySessions(loadedIdentity===identity?data:null);
  const upcomingCount=sections.upcoming.reduce((sum,section)=>sum+section.items.length,0);
  const historyCount=sections.history.reduce((sum,section)=>sum+section.items.length,0);
- return <Page><Brand subtitle="A TUA ATIVIDADE"/><DemoBanner/><Eyebrow>MINHAS SESSÕES</Eyebrow>
+ return <Page><DemoBanner/><Eyebrow>MINHAS SESSÕES</Eyebrow>
  <Text style={styles.heading}>Os teus próximos <Text style={{color:C.mint}}>desafios.</Text></Text>
  <Button title="Criar sessão" onPress={()=>auth.token?router.push('/sessions/create'):router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>
  {!auth.token?<><Message>Estás a explorar como visitante. Inicia sessão para consultares as sessões que criaste, confirmaste ou em que aguardas vaga.</Message>

@@ -33,7 +33,13 @@ test('tournament is gated by owned or administrated communities, not membership 
  assert.match(tabs,/groups\.filter\(c=>c\.myRole==='OWNER'\|\|c\.myRole==='ADMIN'\)/);
  assert.match(tabs,/eligible\.length>0/);
  assert.match(tabs,/checkError\?/);
- assert.match(tabs,/Para criar torneios, precisas de administrar uma comunidade/);
+ // Tournament is a primary create action; the create screen itself only offers
+ // owned/administrated communities and otherwise guides the organiser to create one.
+ assert.match(tabs,/accessibilityLabel="Criar torneio"[^>]*onPress=\{\(\)=>action\('tournament'\)\}/);
+ const tournamentCreate=read('app/tournaments/create.tsx');
+ assert.match(tournamentCreate,/c\.myRole==='OWNER'\|\|c\.myRole==='ADMIN'/);
+ assert.match(tournamentCreate,/Criar comunidade e torneio/);
+ assert.match(read('app/communities/create.tsx'),/thenTournament\)router\.replace\(\{pathname:'\/tournaments\/create'/);
  assert.match(tabs,/Várias provas numa época · comunidade que administras/);
 });
 

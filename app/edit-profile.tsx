@@ -2,7 +2,7 @@ import React,{useCallback,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
+import {Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {DEMO_MODE,request} from '../src/lib/api';
 import {C} from '../src/lib/theme';
@@ -125,7 +125,7 @@ export default function EditProfileScreen(){
   }catch(e){setError('Não foi possível guardar. Verifica os dados e tenta novamente.');}
   finally{setBusy(false);}
  }
- return <Page><Brand subtitle="O TEU PERFIL"/><Eyebrow>EDITAR DADOS</Eyebrow>
+ return <Page><Eyebrow>EDITAR DADOS</Eyebrow>
   {!auth.token||DEMO_MODE?<Message>Inicia sessão numa conta real para editar o perfil.</Message>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
