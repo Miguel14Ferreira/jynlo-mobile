@@ -43,3 +43,12 @@ test('stale follow writes cannot release the lock for a different profile or log
  assert.match(screen,/const request=version\.current,original=status\.followedByMe/);
  assert.match(screen,/return\(\)=>\{version\.current\+\+;setProfile\(null\);setStatus\(null\);setPrivacy\(null\);\}/);
 });
+
+test('public profile identity never waits for follow or privacy requests',()=>{
+ assert.doesNotMatch(screen,/Promise\.allSettled\(/);
+ assert.match(screen,/publicSportsProfile\(name,auth\.token\)\.then\(value=>\{/);
+ assert.match(screen,/followStatus\(name,auth\.token\)\.then\(value=>\{/);
+ assert.match(screen,/profilePrivacyStatus\(auth\.token,name\)\.then\(value=>\{/);
+ assert.match(screen,/if\(request===version\.current\)setLoading\(false\)/);
+ assert.match(screen,/profile&&privacy\?\.canViewContent/);
+});
