@@ -15,8 +15,8 @@ test('Android native notification listener errors cannot interrupt root navigati
 
 test('native notification cleanup failing cannot stop opening authenticated inbox',()=>{
  const callback=layout.slice(layout.indexOf('function open(response:'),layout.indexOf('let listener:ReturnType'));
- assert.match(callback,/try\{nativeNotifications\.clearLastNotificationResponse\(\);\}catch\{/);
- assert.match(callback,/router\.push\(\{pathname:'\/notifications',params:\{notificationId:String\(data\.id\)\}\}\)/);
+ assert.match(callback,/void Promise\.resolve\(nativeNotifications\.clearLastNotificationResponse\(\)\)\.catch\(\(\)=>\{\}\)/);
+ assert.match(callback,/router\.push\(\{pathname:'\/notifications',params:\{notificationId:id\}\}\)/);
  assert.ok(callback.indexOf("router.push({pathname:'/notifications'")<callback.indexOf('clearLastNotificationResponse()'),
   'Do not clear a native tap until inbox navigation succeeds');
 });
@@ -24,7 +24,7 @@ test('native notification cleanup failing cannot stop opening authenticated inbo
 test('push navigation remains gated behind restored authentication',()=>{
  assert.match(layout,/if\(!auth\.ready\)return/);
  assert.match(layout,/if\(!auth\.token\|\|!auth\.username\)return/);
- assert.match(layout,/data\?\.kind!=='notification'/);
+ assert.match(layout,/data\?\.kind==='notification'\?pushNotificationId\(data\.id\):null/);
  assert.match(layout,/lastHandled\.current===handledKey/);
  assert.match(layout,/const handledKey=auth\.username\+'\|'\+auth\.token\+'\|'\+identifier/);
 });
