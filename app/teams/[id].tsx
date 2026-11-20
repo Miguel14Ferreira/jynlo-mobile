@@ -63,6 +63,7 @@ export default function TeamDetail(){
   }catch{
    if(version===followVersion.current){
     setFollowerState(null);setFollowError('Não foi possível confirmar. Verifica o estado antes de tentares novamente.');
+    setFollowBusy(false);
     void loadFollowers();
    }
   }finally{if(version===followVersion.current)setFollowBusy(false);}
