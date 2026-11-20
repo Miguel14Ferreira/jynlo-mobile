@@ -4,7 +4,7 @@ import {Alert,AppState,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {teamPlayerAvatarUri,setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
+import {sportsTeamFollowState,setSportsTeamFollow,type SportsTeamFollowState,teamPlayerAvatarUri,setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
@@ -40,6 +40,33 @@ export default function TeamDetail(){
  const [brandingVerified,setBrandingVerified]=useState(false);
  const kitEditedRef=useRef(false);
  const [notice,setNotice]=useState(''),[rosterVerified,setRosterVerified]=useState(false);
+ const [followerState,setFollowerState]=useState<SportsTeamFollowState|null>(null);
+ const [followBusy,setFollowBusy]=useState(false),[followError,setFollowError]=useState('');
+ const followVersion=useRef(0);
+ const loadFollowers=useCallback(async()=>{
+  const version=++followVersion.current;
+  if(!auth.token||!Number.isSafeInteger(teamId)||teamId<=0){setFollowerState(null);return;}
+  try{
+   const result=await sportsTeamFollowState(teamId,auth.token);
+   if(version===followVersion.current)setFollowerState(result);
+  }catch{
+   if(version===followVersion.current){setFollowerState(null);setFollowError('Seguidores indisponíveis.');}
+  }
+ },[teamId,auth.token]);
+ async function toggleFollow(){
+  if(!auth.token||!followerState||followBusy)return;
+  const version=++followVersion.current;
+  setFollowBusy(true);setFollowError('');
+  try{
+   const actual=await setSportsTeamFollow(teamId,auth.token,!followerState.following);
+   if(version===followVersion.current)setFollowerState(actual);
+  }catch{
+   if(version===followVersion.current){
+    setFollowerState(null);setFollowError('Não foi possível confirmar. Verifica o estado antes de tentares novamente.');
+    void loadFollowers();
+   }
+  }finally{if(version===followVersion.current)setFollowBusy(false);}
+ }
  const [searchComplete,setSearchComplete]=useState(false),[searching,setSearching]=useState(false);
  const requestVersion=useRef(0),searchVersion=useRef(0),actionRef=useRef(false),actionGeneration=useRef(0);
  const reading=useRef<number|null>(null),savingRef=useRef(false);
@@ -47,7 +74,7 @@ export default function TeamDetail(){
  // A new account or team must not inherit the previous team's private roster,
  // pending invitations, memberships, messages, or unsaved kit edits.
  useEffect(()=>{
-  requestVersion.current++;searchVersion.current++;actionGeneration.current++;
+  requestVersion.current++;searchVersion.current++;actionGeneration.current++;followVersion.current++;
   actionRef.current=false;savingRef.current=false;setSaving(false);
   reading.current=null;kitEditedRef.current=false;
   setTeam(null);setMembers([]);setBrokenAvatars({});setPendingPlayers([]);setCommunities([]);
@@ -58,6 +85,7 @@ export default function TeamDetail(){
   setRosterVerified(false);setPendingVerified(false);setCommunitiesVerified(false);
   setBrandingVerified(false);setActiveTab('OVERVIEW');
   setKitPrimary('#19CBB6');setKitSecondary('#F0FAFB');setKitPattern('PLAIN');
+  setFollowerState(null);setFollowError('');setFollowBusy(false);
   setNotice('');setMembershipNote('');setError('');setLoading(true);
  },[teamId,auth.token]);
  const load=useCallback(async(silent=false,force=false)=>{
@@ -120,18 +148,19 @@ export default function TeamDetail(){
  },[teamId,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
   void load();
+  void loadFollowers();
   const timer=setInterval(()=>{
    if(AppState.currentState==='active'&&!savingRef.current)void load(true);
   },60000);
   const resume=AppState.addEventListener('change',state=>{
-   if(state==='active'&&!savingRef.current)void load(true);
+   if(state==='active'&&!savingRef.current){void load(true);void loadFollowers();}
   });
   return ()=>{
    clearInterval(timer);resume.remove();
    requestVersion.current++;searchVersion.current++;actionGeneration.current++;
    actionRef.current=false;savingRef.current=false;
   };
- },[load]));
+ },[load,loadFollowers]));
  const loadTrophies=useCallback(async(force=false)=>{
   if(!Number.isSafeInteger(teamId)||teamId<=0)return;
   if(trophiesRequested.current&&!force)return;
@@ -455,6 +484,15 @@ export default function TeamDetail(){
       <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary} pattern={team.kitPattern} size={48}/>
       <Text style={styles.heroSubtitle}>Equipamento · {kitPatterns.find(p=>p.id===(team.kitPattern||'PLAIN'))?.label||'Lisa'}</Text>
     </View>
+    {auth.token?<View style={styles.followSection}>
+      {followerState?<View style={styles.followRow}>
+        <Text style={styles.followCount}>{followerState.count} {followerState.count===1?'seguidor':'seguidores'}</Text>
+        <Button secondary title={followBusy?'A atualizar…':followerState.following?'A seguir ✓':'Seguir equipa +'}
+          disabled={followBusy} onPress={()=>{void toggleFollow();}}/>
+      </View>:null}
+      {followError?<Message tone="error">{followError}</Message>:null}
+      {followError&&!followerState?<Button secondary title="Atualizar seguidores" onPress={()=>{setFollowError('');void loadFollowers();}}/>:null}
+    </View>:null}
     <View style={styles.statsRow}>
       <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
       <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
@@ -680,6 +718,9 @@ export default function TeamDetail(){
 }
 const styles=StyleSheet.create({
  header:{padding:22,backgroundColor:'#082D3B',borderColor:'#35BCA66A',borderWidth:1,borderRadius:23,gap:15,overflow:'hidden'},
+ followSection:{gap:8},
+ followRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12},
+ followCount:{fontSize:14,fontWeight:'850',color:C.mint},
  backRow:{minHeight:48,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
  backLink:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  backLabel:{fontSize:14,color:C.mint,fontWeight:'900'},
