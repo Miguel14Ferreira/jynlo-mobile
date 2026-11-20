@@ -45,12 +45,24 @@ test('call chat revokes old account messages and never fabricates call-only hist
 });
 
 
-test('closing or switching an in-call chat releases an obsolete send lock',()=>{
+test('closing and reopening the call chat never releases an unconfirmed server POST',()=>{
  const panel=read('src/components/CallChatSidePanel.tsx');
- assert.ok(panel.includes('sendLock.current=false;setSending(false);queued.current=false'));
- assert.ok(panel.includes('if(!visible){'));
- assert.ok(panel.includes('sendLock.current=false;setSending(false);'));
- assert.ok(panel.includes('if(generation.current!==version||owner.current!==actor)return'));
+ assert.match(panel,/const pendingSend=useRef<\\{identity:string;request:number\\}\\|null>\\(null\\)/);
+ assert.match(panel,/if\\(!visible\\)\\{[\\s\\S]*?sendLock\\.current=pendingSend\\.current\\?\\.identity===identity/);
+ assert.match(panel,/pendingSend\\.current=\\{identity,request\\}/);
+ assert.match(panel,/pendingSend\\.current\\?\\.request===request\\)pendingSend\\.current=null/);
+ assert.match(panel,/owner\\.current!==actor\\)return/);
+ assert.match(panel,/setDraft\\(current=>current\\.trim\\(\\)===body\\?'':current\\)/);
+});
+test('uncertain in-call messages cannot be duplicated before explicit history confirmation',()=>{
+ const panel=read('src/components/CallChatSidePanel.tsx');
+ assert.match(panel,/import \\{uncertainChatSend\\} from/);
+ assert.match(panel,/uncertainSendRef\\.current\\?\\.identity===identity&&uncertainSendRef\\.current\\.body===body\\)return/);
+ assert.match(panel,/if\\(uncertainChatSend\\(e\\)\\)/);
+ assert.match(panel,/uncertainSendRef\\.current=uncertain;setUncertainSend\\(uncertain\\)/);
+ assert.match(panel,/Este envio não foi confirmado/);
+ assert.match(panel,/Já confirmei no histórico · Permitir novo envio/);
+ assert.match(panel,/uncertainSend\\?\\.identity===identity&&uncertainSend\\.body===draft\\.trim\\(\\)/);
 });
 
 test('the call chat respects server deletions while retaining recent acknowledged sends',()=>{
