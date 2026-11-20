@@ -40,6 +40,17 @@ export async function publicSportsActivity(username:string,token:string|null):Pr
  return request<PublicSportsActivity>(`/api/profiles/${user}/activity`,{token});
 }
 
+export type PublicIndividualTitle={
+ tournamentId:number;tournamentName:string;
+ communityId:number;communityName:string;
+ sport:string|null;completedAt:string;
+};
+export async function publicIndividualTitles(username:string,token:string|null):Promise<PublicIndividualTitle[]>{
+ const user=usernamePath(username);
+ if(!token||DEMO_MODE)throw new Error('É necessário iniciar sessão.');
+ return request<PublicIndividualTitle[]>(`/api/profile/${user}/individual-titles`,{token});
+}
+
 export type FollowStatus={followedByMe:boolean;followsMe:boolean;followers:number;following:number;requestPending?:boolean;privateProfile?:boolean};
 export type PublicSportsProfile=SocialPerson&{
  bio?:string|null;location?:string|null;country?:string|null;
