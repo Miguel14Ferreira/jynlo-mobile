@@ -39,7 +39,7 @@ test('call chat revokes old account messages and never fabricates call-only hist
  assert.match(panel,/generation\.current!==version\|\|owner\.current!==identity/);
  assert.match(panel,/\[401,403,404,410\]\.includes\(e\.status\)/);
  assert.match(panel,/setMessages\(\[\]\);setDraft\(''\);recentlyConfirmed\.current\.clear\(\);setAccessRevoked\(true\)/);
- assert.match(panel,/if\(!visible\|\|accessRevoked\|\|sendLock\.current/);
+ assert.match(panel,/if\(!visible\|\|owner\.current!==identity\|\|accessRevoked\|\|sendLock\.current/);
  assert.match(panel,/const rows=await directChatHistory/);
  assert.doesNotMatch(panel,/markDirectRead\(/);
 });
@@ -105,4 +105,22 @@ test('in-call chat keeps the reader in place and signals new messages without fo
  assert.ok(panel.includes('list.current?.scrollToEnd({animated:true})'));
  assert.ok(panel.includes('previousLatestMessageId.current=0;setUnseenBelow(false)'));
  assert.ok(!panel.includes('onContentSizeChange={()=>list.current?.scrollToEnd'));
+});
+
+test('in-call private history and composer are isolated before account-switch effects run',()=>{
+ const panel=read('src/components/CallChatSidePanel.tsx');
+ assert.ok(panel.includes('const sameConversation=owner.current===identity'));
+ assert.ok(panel.includes('const visibleMessages=sameConversation?messages:[]'));
+ assert.ok(panel.includes("const visibleDraft=sameConversation?draft:''"));
+ assert.ok(panel.includes("const visibleError=sameConversation?error:''"));
+ assert.ok(panel.includes("const visibleSyncWarning=sameConversation?syncWarning:''"));
+ assert.ok(panel.includes('visibleMessages.map(message=>'));
+ assert.ok(panel.includes('!loading&&visibleMessages.length===0'));
+ assert.ok(panel.includes('if(!visible||owner.current!==identity||accessRevoked'));
+ assert.ok(panel.includes('value={visibleDraft}'));
+ assert.ok(panel.includes('editable={sameConversation&&!sending&&!accessRevoked}'));
+ assert.ok(panel.includes('disabled={!sameConversation||sending||accessRevoked'));
+ assert.ok(panel.includes('sameConversation&&unseenBelow?'));
+ assert.ok(panel.includes('sameConversation&&uncertainSend?.identity===identity'));
+ assert.ok(!panel.includes('{messages.map(message=>'));
 });
