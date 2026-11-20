@@ -145,6 +145,7 @@ export default function ProfileScreen(){
          <Text style={styles.membershipName}>{entry.tournamentName}</Text>
          <Text style={styles.historyHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
          <Text style={styles.competitionResult}>{entry.individualChampion?'🏆 Campeão individual':'Participação confirmada'}</Text>
+         {entry.wins!=null&&entry.draws!=null&&entry.losses!=null?<Text style={styles.competitionResult}>{entry.wins}V · {entry.draws}E · {entry.losses}D</Text>:null}
          <Text style={styles.historyHint}>{entry.completedAt?.slice(0,7)||''}</Text>
        </Pressable>)}
       </View>:null}
