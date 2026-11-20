@@ -103,7 +103,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  },[identity,visible,peer,self,token,load]);
  async function send(){
   if(!visible||accessRevoked||sendLock.current||pendingSend.current?.identity===identity||!token||!draft.trim())return;
-  const body=draft.trim(),version=generation.current,actor=owner.current;
+  const body=draft.trim(),actor=owner.current;
   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===body)return;
   const request=++sendEpoch.current;
   pendingSend.current={identity,request};
