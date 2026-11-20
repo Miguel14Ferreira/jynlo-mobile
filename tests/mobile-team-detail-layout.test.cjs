@@ -8,7 +8,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 test('team identity management is a separate owner-only tab after the navigation',()=>{
  const source=read('app/teams/[id].tsx');
  assert.match(source,/useState<'OVERVIEW'\|'TROPHIES'\|'FEED'\|'CHAT'\|'CHALLENGES'\|'BRANDING'>/);
- assert.match(source,/isOwner\?\[\{id:'BRANDING' as const,label:'Identidade'\}\]:\[\]/);
+ assert.match(source,/isOwner\?\[\{id:'BRANDING' as const,label:'Identidade',icon:'settings' as const\}\]:\[\]/);
  assert.match(source,/isOwner&&activeTab==='BRANDING'\?<View style=\{styles\.panel\}>/);
  const tabs=source.indexOf('accessibilityLabel="Secções da equipa"');
  const panel=source.indexOf("isOwner&&activeTab==='BRANDING'?<View");
@@ -36,6 +36,19 @@ test('club dashboard provides accessible direct access to content, chat and hono
   assert.ok(source.includes('accessibilityLabel="'+label+'"'));
   assert.ok(source.includes("onPress={()=>setActiveTab('"+tab+"')}"));
  }
- assert.match(source,/team\.chatEnabled\?'Conversa da equipa':'Indisponível'/);
+ assert.match(source,/team\.chatEnabled\?'Conversa da equipa':'Chat desativado'/);
  assert.match(source,/quickLinks:\{flexDirection:'row',flexWrap:'wrap'/);
+});
+
+test('team section rail uses native iconography and keeps selected hidden tabs visible',()=>{
+ const source=read('app/teams/[id].tsx');
+ assert.ok(source.includes('ref={tabRail} horizontal'));
+ assert.ok(source.includes("tabPositions.current[tab.id]=event.nativeEvent.layout.x"));
+ assert.ok(source.includes('tabRail.current?.scrollTo({x:Math.max(0,position-22),animated:true})'));
+ assert.ok(source.includes('accessibilityLabel={tab.label}'));
+ assert.ok(source.includes('<JynloIcon name={tab.icon}'));
+ assert.ok(source.includes("icon:'messages'"));
+ assert.ok(source.includes("icon:'post'"));
+ assert.ok(source.includes("icon:'tournament'"));
+ assert.ok(source.includes("icon:'settings' as const"));
 });
