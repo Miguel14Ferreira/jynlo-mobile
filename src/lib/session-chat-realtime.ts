@@ -5,11 +5,16 @@ type Status='connecting'|'online'|'offline';
 /** A socket event is only a hint; the caller must fetch authorized HTTP history.
  * Never trust or display message bodies from a WebSocket event directly.
  */
+export function observePrivateGroup(options:{groupId:number;token:string;onInvalidated:()=>void;onStatus?:(status:Status)=>void;}):()=>void{
+ return observeSessionChat({sessionId:options.groupId,token:options.token,onInvalidated:options.onInvalidated,onStatus:options.onStatus,
+  eventType:'PRIVATE_GROUP',matches:e=>e.groupId===options.groupId});
+}
 export function observeSessionChat(options:{
  sessionId:number;token:string;onInvalidated:()=>void;
  onStatus?:(status:Status)=>void;
+ eventType?:'PRIVATE_GROUP';matches?:(envelope:Record<string,unknown>)=>boolean;
 }):()=>void{
- const {sessionId,token,onInvalidated,onStatus}=options;
+ const {sessionId,token,onInvalidated,onStatus,eventType,matches}=options;
  if(DEMO_MODE||!token||!Number.isSafeInteger(sessionId)||sessionId<=0)return()=>{};
  let active=true,attempt=0,socket:WebSocket|null=null;
  let reconnect:ReturnType<typeof setTimeout>|null=null;
@@ -37,7 +42,13 @@ export function observeSessionChat(options:{
     if(!authenticated){authenticated=true;attempt=0;onStatus?.('online');onInvalidated();}
     return;
    }
-   if(!authenticated||envelope.type!=='SESSION_CHAT_MESSAGE')return;
+   if(!authenticated)return;
+   if(eventType==='PRIVATE_GROUP'){
+    // Group events (message or roster change) are hints only; history is fetched over HTTP.
+    if((envelope.type==='PRIVATE_GROUP_MESSAGE'||envelope.type==='PRIVATE_GROUP_UPDATED')&&matches?.(envelope))onInvalidated();
+    return;
+   }
+   if(envelope.type!=='SESSION_CHAT_MESSAGE')return;
    const message=envelope.message;
    if(!message||typeof message!=='object')return;
    if((message as Record<string,unknown>).sessionId!==sessionId)return;

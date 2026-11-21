@@ -89,6 +89,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:"Em direto"}}/>
     <Stack.Screen name="messages/[peer]" options={{title:"Chat privado"}}/>
     <Stack.Screen name="messages/call" options={{title:"Chamada privada"}}/>
+    <Stack.Screen name="groups/index" options={{title:"Conversas de grupo"}}/>
+    <Stack.Screen name="groups/[id]" options={{title:"Grupo"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
     <Stack.Screen name="tournaments/create" options={{title:"Criar torneio"}}/>
     <Stack.Screen name="teams/index" options={{title:"Equipas"}}/>
