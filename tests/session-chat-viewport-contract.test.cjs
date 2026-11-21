@@ -31,7 +31,7 @@ test('session chat opens newest history once per focus, like the community chat'
   assert.match(view,/if\(inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\)/);
  }
  const scroll=source.slice(source.indexOf('onScroll={event=>'),source.indexOf('onLayout={event=>'));
- assert.match(scroll,/if\(firstHistoryPositionPending\.current\)return/);
+ assert.match(scroll,/if\(firstHistoryPositionPending\.current(?:\|\|initialAutoScrollPending\.current)?\)return/);
  const layout=source.slice(source.indexOf('onLayout={event=>'),source.indexOf('contentContainerStyle={{gap:8,padding:8}}'));
  assert.match(layout,/firstHistoryPositionPending\.current=false/);
  assert.match(layout,/entries\.length>0&&historyContentHeight\.current>0/);
