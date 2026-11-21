@@ -26,11 +26,11 @@ test('PDF API uses private authenticated scoped endpoints and signed PDF bytes',
  assert.match(api,/asset\.size>MAX_BYTES/);
  assert.match(api,/bytes\[0\]!==37/);
  assert.match(api,/bytes\[4\]!==45/);
- assert.match(api,/form\.append\(target\.scope==='team'\?'files':'file'/);
+ assert.match(api,/form\.append\(target\.scope==='team'\|\|target\.scope==='private'\?'files':'file'/);
  assert.match(api,/Authorization:'Bearer '\+token/);
  assert.match(api,/credentials:'omit',redirect:'error'/);
  assert.match(api,/controller\.abort\(\)/);
- assert.match(api,/target\.scope==='team'\?result\.attachments/);
+ assert.match(api,/target\.scope==='team'\|\|target\.scope==='private'\?result\.attachments/);
  assert.match(api,/result\.attachmentMimeType!=='application\/pdf'/);
  assert.doesNotMatch(api,/\/media\//);
 });

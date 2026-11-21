@@ -7,7 +7,7 @@ import {useFocusEffect} from 'expo-router';
 import {API_BASE,DEMO_MODE} from '../lib/api';
 import {C} from '../lib/theme';
 
-type Scope='direct'|'community'|'session'|'team';
+type Scope='direct'|'community'|'session'|'team'|'private';
 type Props={scope:Scope;conversationId:string|number;messageId:number;token:string|null;
  name:string;mime:string|null|undefined;size:number|null|undefined;index?:number;autoPreview?:boolean;
  kind?:'chat'|'feed';onAuthorizationError?:(status:number)=>void};
@@ -33,6 +33,7 @@ function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0,ki
  if(!Number.isSafeInteger(numeric)||numeric<=0||String(numeric)!==String(id))
   throw Error('Conversa inválida.');
  if(scope==='team')return '/api/teams/'+numeric+'/'+kind+'/attachments/'+messageId+'/'+index;
+ if(scope==='private')return '/api/private-groups/'+numeric+'/messages/'+messageId+'/attachments/'+index;
  return '/api/'+(scope==='community'?'communities':'sessions')+'/'+numeric+
   '/messages/attachments/'+messageId+(index?'/'+index:'');
 }

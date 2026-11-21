@@ -7,7 +7,7 @@ export type ChatSearchHit={
 };
 export type ChatSearchResponse={results:ChatSearchHit[];hasMore:boolean;page:number};
 function queryParams(kind:ChatReactionKind,id:string){
- if(!['direct','community','session'].includes(kind))throw Error('Conversa inválida.');
+ if(!['direct','community','session','private'].includes(kind))throw Error('Conversa inválida.');
  if(kind==='direct'){
   if(!/^[A-Za-z0-9._-]{1,128}$/.test(id))throw Error('Contacto inválido.');
  }else if(!/^[1-9][0-9]{0,15}$/.test(id)||!Number.isSafeInteger(Number(id)))throw Error('Conversa inválida.');

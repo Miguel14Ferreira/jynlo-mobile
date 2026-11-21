@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Stack,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {FriendPicker} from '../../src/components/FriendPicker';
@@ -10,10 +10,22 @@ import {C} from '../../src/lib/theme';
 import {markPrivateGroupRead} from '../../src/lib/chat-api';
 import {uploadGroupPhoto} from '../../src/lib/private-group-photo';
 import type {ImagePickerAsset} from 'expo-image-picker';
-import {getGroup,groupMessages,sendGroupMessage,renameGroup,addGroupMembers,removeGroupMember} from '../../src/lib/private-groups-api';
+import {getGroup,groupMessages,sendGroupMessage,renameGroup,addGroupMembers,removeGroupMember,editGroupMessage,deleteGroupMessage,groupAttachmentsAvailable} from '../../src/lib/private-groups-api';
+import {JynloIcon} from '../../src/components/JynloIcon';
+import SecureChatAttachment from '../../src/components/SecureChatAttachment';
+import ChatPdfComposer from '../../src/components/ChatPdfComposer';
+import ChatReplyPreview from '../../src/components/ChatReplyPreview';
+import ChatSearchPanel from '../../src/components/ChatSearchPanel';
+import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
+import {chatAttachmentList,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
+import {sendChatPhotoAlbum} from '../../src/lib/chat-photo-album';
+import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
+import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
+import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
+import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
 import {observePrivateGroup} from '../../src/lib/session-chat-realtime';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
-import {isCreator,isMine,membersLabel,mergeMessages,validateGroupMessage,validateGroupTitle,MAX_MEMBERS,MAX_MESSAGE,
+import {isCreator,isMine,membersLabel,mergeMessages,validateGroupMessage,validateGroupTitle,MAX_MEMBERS,MAX_MESSAGE,editableGroupMessage,replyQuote,
  type PrivateGroup,type PrivateGroupMessage} from '../../src/lib/private-groups-core.cjs';
 
 const time=(iso:string)=>{const d=new Date(iso);return Number.isNaN(d.getTime())?'':
@@ -35,6 +47,13 @@ export default function GroupChatScreen(){
  const [renameTitle,setRenameTitle]=useState(''),[picked,setPicked]=useState<string[]>([]),[busy,setBusy]=useState(false);
  const [muted,setMuted]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const generation=useRef(0),sendInFlight=useRef(false);
+ // Same message actions as the other chats: reply, react, edit (15 min), delete, files, location, search.
+ const [replyTarget,setReplyTarget]=useState<{id:number;sender:string;text:string}|null>(null);
+ const [editing,setEditing]=useState<PrivateGroupMessage|null>(null),[editText,setEditText]=useState('');
+ const [filesAvailable,setFilesAvailable]=useState(false);
+ const [media,setMedia]=useState<ImagePickerAsset[]>([]),[caption,setCaption]=useState(''),[mediaBusy,setMediaBusy]=useState(false);
+ const [locationBusy,setLocationBusy]=useState(false);
+ const reactions=useChatReactions('private',String(groupId),auth.token,messages.filter(m=>!m.deleted).map(m=>m.id),!!auth.token&&!gone);
  const creator=isCreator(group,me);
 
  const refresh=useCallback(async(full:boolean)=>{
@@ -59,6 +78,7 @@ export default function GroupChatScreen(){
  useFocusEffect(useCallback(()=>{
   setLoading(true);void refresh(true);
   if(auth.token)listConversationMutes(auth.token).then(m=>setMuted(isConversationMuted(m,'private',String(groupId)))).catch(()=>{});
+  if(auth.token)groupAttachmentsAvailable(groupId,auth.token).then(setFilesAvailable).catch(()=>setFilesAvailable(false));
   const stop=auth.token?observePrivateGroup({groupId,token:auth.token,onInvalidated:()=>{void refresh(false);}}):()=>{};
   return()=>{generation.current++;stop();};
  },[refresh,auth.token,groupId]));
@@ -74,9 +94,77 @@ export default function GroupChatScreen(){
   if(sendInFlight.current||!auth.token)return;
   let text:string;try{text=validateGroupMessage(draft);}catch(e){setActionError(e instanceof Error?e.message:'');return;}
   sendInFlight.current=true;setSending(true);setActionError('');
-  try{const m=await sendGroupMessage(groupId,text,auth.token);setDraft('');setMessages(prev=>mergeMessages(prev,[m]));}
+  try{const m=await sendGroupMessage(groupId,text,auth.token,replyTarget?.id);setDraft('');setReplyTarget(null);setMessages(prev=>mergeMessages(prev,[m]));}
   catch(e){setActionError((e instanceof Error?e.message:'Não foi possível enviar a mensagem.')+' A mensagem ficou na caixa; confirma a conversa antes de reenviar.');void refresh(false);}
   finally{sendInFlight.current=false;setSending(false);}
+ }
+ function messageOptions(m:PrivateGroupMessage){
+  if(m.deleted||busy)return;
+  const own=isMine(m,me);
+  if(!own&&!creator)return;
+  const items:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
+  if(editableGroupMessage(m,me))items.push({text:'Editar mensagem',onPress:()=>{setEditing(m);setEditText(m.text);setReplyTarget(null);}});
+  items.push({text:'Apagar para todos',style:'destructive',onPress:()=>Alert.alert('Apagar mensagem para todos?',
+   'O conteúdo ficará identificado como apagado no grupo.',[{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>{void removeMessage(m);}}])});
+  items.push({text:'Cancelar',style:'cancel'});
+  Alert.alert(own?'A minha mensagem':'Mensagem do grupo',own?'Seleciona uma ação.':'Como criador do grupo, podes apagar esta mensagem.',items);
+ }
+ async function saveEdit(){
+  if(!editing||!auth.token||busy)return;
+  let text:string;try{text=validateGroupMessage(editText);}catch(e){setActionError(e instanceof Error?e.message:'');return;}
+  setBusy(true);setActionError('');
+  try{const m=await editGroupMessage(groupId,editing.id,text,auth.token);setMessages(prev=>mergeMessages(prev,[m]));setEditing(null);setEditText('');}
+  catch(e){setActionError(e instanceof ApiError&&e.status===409?'Já não é possível editar: só até 15 minutos após o envio.':'Não foi possível editar a mensagem.');}
+  finally{setBusy(false);}
+ }
+ async function removeMessage(m:PrivateGroupMessage){
+  if(!auth.token||busy)return;
+  setBusy(true);setActionError('');
+  try{await deleteGroupMessage(groupId,m.id,auth.token);setMessages(prev=>prev.map(x=>x.id===m.id?{...x,deleted:true,text:'',attachments:[]}:x));}
+  catch{setActionError('Não foi possível apagar a mensagem.');}
+  finally{setBusy(false);}
+ }
+ async function chooseMedia(source:'gallery'|'camera'){
+  if(mediaBusy||!filesAvailable)return;
+  const remaining=4-media.length;
+  if(remaining<=0){setActionError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
+  setActionError('');
+  try{
+   const ImagePicker=await import('expo-image-picker');
+   if(source==='camera'&&!await ensureChatCameraPermission())return;
+   const selected=source==='camera'?
+    await ImagePicker.launchCameraAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,videoMaxDuration:30}):
+    await ImagePicker.launchImageLibraryAsync({mediaTypes:['images','videos'],quality:0.8,exif:false,base64:false,allowsMultipleSelection:true,selectionLimit:remaining});
+   if(selected.canceled||!selected.assets?.length)return;
+   for(const asset of selected.assets){if(asset.type==='image')validateChatPhoto(asset);}
+   const result=appendChatMediaSelection(media,selected.assets);
+   if(result.error)throw Error(result.error);
+   setMedia(result.items as ImagePickerAsset[]);
+  }catch(e){setActionError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');}
+ }
+ async function sendMedia(){
+  if(mediaBusy||!media.length||!auth.token)return;
+  setMediaBusy(true);setActionError('');
+  try{await sendChatPhotoAlbum({scope:'private',id:groupId},auth.token,media,replyTarget?.id,caption);
+   setMedia([]);setCaption('');setReplyTarget(null);await refresh(false);}
+  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível enviar os ficheiros.');}
+  finally{setMediaBusy(false);}
+ }
+ function prepareLocation(){
+  if(locationBusy)return;
+  Alert.alert('Partilhar localização atual?','A Jynlo só consulta a localização nesta ação. O link fica na mensagem para reveres antes de enviar ao grupo.',[
+   {text:'Cancelar',style:'cancel'},
+   {text:'Continuar',onPress:()=>{
+    setLocationBusy(true);setActionError('');
+    void (async()=>{
+     const Location=await import('expo-location');
+     const permission=await Location.requestForegroundPermissionsAsync();
+     if(permission.status!=='granted')throw Error('Não autorizaste o acesso à localização.');
+     const point=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
+     const url='https://www.google.com/maps?q='+point.coords.latitude.toFixed(5)+','+point.coords.longitude.toFixed(5);
+     setDraft(previous=>[previous.trim(),url].filter(Boolean).join('\n'));
+    })().catch(e=>setActionError(e instanceof Error?e.message:'Não foi possível obter a localização.')).finally(()=>setLocationBusy(false));
+   }}]);
  }
  async function doRename(){
   if(busy||!auth.token)return;
@@ -178,12 +266,62 @@ export default function GroupChatScreen(){
    {hasMore?<Pressable accessibilityRole="button" disabled={loadingOlder} onPress={()=>{void older();}} style={styles.more}>
     {loadingOlder?<ActivityIndicator color={C.mint}/>:<Text style={styles.moreText}>Carregar mensagens anteriores</Text>}</Pressable>:null}
    {!loading&&!messages.length?<Text style={[styles.muted,{textAlign:'center',paddingVertical:16}]}>Ainda não há mensagens neste grupo.</Text>:null}
-   {messages.map(m=>{const mine=isMine(m,me);return <View key={m.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
+   {auth.token?<ChatSearchPanel kind="private" conversationId={String(groupId)} token={auth.token}/>:null}
+   {messages.map(m=>{const mine=isMine(m,me);const quote=replyQuote(messages,m);const gif=!m.deleted?giphyImageUrl(m.text):null;
+    const files=chatAttachmentList({...m,deletedAt:m.deleted?m.createdAt:null});
+    const location=!m.deleted?chatLocationUrl(m.text):null;
+    const onlyFileName=files.length>0&&(!m.text||m.text.startsWith('📎 '));
+    return <View key={m.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
     {!mine?<Text style={styles.sender}>{group.members.find(x=>x.username.toLowerCase()===m.sender.toLowerCase())?.displayName||m.sender}</Text>:null}
-    <Text style={[styles.text,mine&&{color:C.background}]} selectable>{m.text}</Text>
-    <Text style={[styles.time,mine&&{color:'#0B3B36'}]}>{time(m.createdAt)}</Text>
+    {quote?<Text style={[styles.quote,mine&&{color:'#0B3B36',borderLeftColor:'#0B3B36'}]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
+    {m.deleted?<Text style={[styles.text,styles.deleted,mine&&{color:'#0B3B36'}]}>Mensagem apagada</Text>:
+     gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel="GIF enviado no grupo"/>:
+     onlyFileName?null:<Text style={[styles.text,mine&&{color:C.background}]} selectable>{m.text}</Text>}
+    {files.map(file=><SecureChatAttachment key={file.index} index={file.index} scope="private" conversationId={groupId} messageId={m.id}
+     token={auth.token} name={file.name} mime={file.mime} size={file.size} onAuthorizationError={()=>{void refresh(true);}}/>)}
+    {location?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps"
+     onPress={()=>void Linking.openURL(location).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))} style={styles.msgAction}>
+     <JynloIcon name="location" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>Abrir localização no mapa</Text></Pressable>:null}
+    {!m.deleted?<View style={styles.msgActions}>
+     <Pressable accessibilityRole="button" accessibilityLabel={'Responder à mensagem de '+m.sender}
+      onPress={()=>{setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||'Anexo').slice(0,150)});}} style={styles.msgAction}>
+      <JynloIcon name="reply" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>Responder</Text></Pressable>
+     {mine||creator?<Pressable accessibilityRole="button" accessibilityLabel="Opções da mensagem" disabled={busy} onPress={()=>messageOptions(m)} style={styles.msgAction}>
+      <JynloIcon name="more" size={18} color={mine?C.background:C.mint}/></Pressable>:null}
+    </View>:null}
+    {!m.deleted?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
+    <Text style={[styles.time,mine&&{color:'#0B3B36'}]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · editada':''}</Text>
    </View>;})}
    {actionError?<Message tone="error">{actionError}</Message>:null}
+   {editing?<View style={styles.panel}>
+    <Text style={styles.label}>Editar mensagem · até 15 minutos após o envio</Text>
+    <TextInput multiline maxLength={MAX_MESSAGE} value={editText} onChangeText={setEditText} editable={!busy} style={styles.input} accessibilityLabel="Editar mensagem"/>
+    <Button title={busy?'A guardar…':'Guardar edição'} disabled={busy||!editText.trim()} onPress={()=>{void saveEdit();}}/>
+    <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>{setEditing(null);setEditText('');}}/>
+   </View>:null}
+   {replyTarget?<ChatReplyPreview sender={replyTarget.sender} body={replyTarget.text} onCancel={()=>setReplyTarget(null)} disabled={sending||mediaBusy}/>:null}
+   {media.length?<View style={styles.panel}>
+    <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
+     {media.map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={mediaBusy}
+      onPress={()=>setMedia(list=>list.filter((_,i)=>i!==index))} style={{width:80,gap:3}}>
+      {file.type==='video'?<View style={styles.videoThumb}><JynloIcon name="video" color={C.white} size={19}/></View>:<Image source={{uri:file.uri}} style={{width:80,height:80,borderRadius:10}}/>}
+      <Text style={styles.muted}>Remover</Text></Pressable>)}
+    </View>
+    <Text style={styles.muted}>{media.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB.</Text>
+    <TextInput multiline maxLength={2000} value={caption} onChangeText={setCaption} editable={!mediaBusy} placeholder="Legenda (opcional)" placeholderTextColor={C.muted} style={styles.input} accessibilityLabel="Legenda dos anexos"/>
+    <Button title={mediaBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={mediaBusy} onPress={()=>{void sendMedia();}}/>
+    <Button secondary title="Cancelar anexos" disabled={mediaBusy} onPress={()=>{setMedia([]);setCaption('');}}/>
+   </View>:null}
+   <View style={styles.tools}>
+    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos" disabled={mediaBusy||sending||media.length>=4}
+     onPress={()=>{void chooseMedia('gallery');}} style={styles.tool}><JynloIcon name="gallery" size={23} color={C.mint}/></Pressable>:null}
+    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={mediaBusy||sending||media.length>=4}
+     onPress={()=>{void chooseMedia('camera');}} style={styles.tool}><JynloIcon name="camera" size={23} color={C.mint}/></Pressable>:null}
+    {filesAvailable?<ChatPdfComposer compact target={{scope:'private',id:groupId}} token={auth.token} enabled={!sending&&!mediaBusy} replyId={replyTarget?.id}
+     onSent={async()=>{setReplyTarget(null);await refresh(false);}}/>:null}
+    <Pressable accessibilityRole="button" accessibilityLabel={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending}
+     onPress={prepareLocation} style={styles.tool}><JynloIcon name="location" size={23} color={C.mint}/></Pressable>
+   </View>
    <View style={styles.compose}>
     <TextInput value={draft} onChangeText={setDraft} multiline maxLength={MAX_MESSAGE} editable={!sending}
      placeholder="Escreve uma mensagem ao grupo…" placeholderTextColor={C.muted} style={styles.composeInput} accessibilityLabel="Mensagem para o grupo"/>
@@ -196,6 +334,15 @@ export default function GroupChatScreen(){
 }
 const styles=StyleSheet.create({
  header:{flexDirection:'row',alignItems:'center',gap:12},
+ quote:{color:C.muted,fontSize:12,lineHeight:17,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8,marginBottom:4},
+ deleted:{fontStyle:'italic',opacity:.75},
+ gif:{width:220,height:160,borderRadius:12},
+ msgActions:{flexDirection:'row',justifyContent:'flex-end',gap:6},
+ msgAction:{flexDirection:'row',alignItems:'center',gap:5,minHeight:36,paddingHorizontal:6},
+ msgActionText:{color:C.mint,fontSize:12,fontWeight:'800'},
+ tools:{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'},
+ tool:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},
+ videoThumb:{width:80,height:80,borderRadius:10,backgroundColor:'#173039',alignItems:'center',justifyContent:'center'},
  avatar:{width:52,height:52,borderRadius:26,backgroundColor:'#124B48',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  avatarImg:{width:52,height:52},title:{color:C.white,fontSize:22,fontWeight:'900'},muted:{color:C.muted,fontSize:13,lineHeight:19},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
