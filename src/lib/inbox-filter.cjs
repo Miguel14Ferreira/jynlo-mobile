@@ -10,7 +10,7 @@ function filterInbox(items,query='',unreadOnly=false){
   if(unreadOnly&&!(Number.isFinite(item.unreadCount)&&item.unreadCount>0))return false;
   if(!needle)return true;
   return [item.id,item.latestText,item.latestSender,
-   item.kind==='direct'?'mensagem privada':item.kind==='private'?'grupo':item.kind==='community'?'comunidade':'sessao',item.title]
+   item.kind==='direct'?'mensagem privada':item.kind==='private'?'grupo':item.kind==='team'?'equipa':item.kind==='community'?'comunidade':'sessao',item.title]
    .some(value=>normalize(value).includes(needle));
  });
 }

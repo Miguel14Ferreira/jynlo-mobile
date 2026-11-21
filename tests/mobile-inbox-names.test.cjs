@@ -15,7 +15,7 @@ test('the mobile inbox displays real community and session names, not raw IDs',(
  assert.match(api,/filterAuthorizedSummaries\('session',allowed,summaries,'Sessão desportiva'\)/);
  assert.match(api,/session\.sport/);
  assert.match(api,/session\.city/);
- assert.match(screen,/item\.title\|\|\(item\.kind==='community'\?'Comunidade':item\.kind==='private'\?'Grupo':'Sessão desportiva'\)/);
+ assert.match(screen,/item\.title\|\|\(item\.kind==='community'\?'Comunidade':item\.kind==='private'\?'Grupo':item\.kind==='team'\?'Equipa':'Sessão desportiva'\)/);
  assert.doesNotMatch(screen,/'Comunidade #'\+item\.id/);
  assert.doesNotMatch(screen,/'Sessão #'\+item\.id/);
 });

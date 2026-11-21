@@ -39,6 +39,7 @@ function notificationDestination(item){
  const isMessage=type.includes('CHAT')||type.includes('MESSAGE')||type.includes('DIRECT');
  if(isMessage){
   // Checked first: a group alert names the sender but must open the group, not a direct chat.
+  if(validId(item.sportsTeamId))return {kind:'team-chat',id:String(item.sportsTeamId)};
   if(validId(item.privateGroupId))return {kind:'group-chat',id:String(item.privateGroupId)};
   if(validId(item.sessionId))return {kind:'session-chat',id:String(item.sessionId)};
   if(validId(item.communityId))return {kind:'community-chat',id:String(item.communityId)};

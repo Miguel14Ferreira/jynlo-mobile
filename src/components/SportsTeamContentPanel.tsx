@@ -10,6 +10,7 @@ import {ApiError} from '../lib/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {sendChatPhotoAlbum} from '../lib/chat-photo-album';
 import {observeTeamContent} from '../lib/team-content-realtime';
+import {markTeamChatRead} from '../lib/chat-api';
 import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
@@ -81,6 +82,7 @@ function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,search
 }
 
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
+ const lastMarked=useRef(0);
  const router=useRouter();
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
  const [olderEntries,setOlderEntries]=useState<TeamContentEntry[]>([]);
@@ -251,6 +253,11 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    accessRevokedRef.current=false;setAccessRevoked(false);
    setBlockReason('Já não tens acesso a esta conversa.');setError('');
    setEntries(history);
+   if(kind==='chat'){
+    // Seeing the chat moves the server read cursor, so the Messages badge clears.
+    const newest=history.reduce((max,row)=>Math.max(max,row.id),0);
+    if(newest>0&&newest>lastMarked.current){lastMarked.current=newest;void markTeamChatRead(teamId,newest,token).catch(()=>{lastMarked.current=0;});}
+   }
    if(kind==='feed'){
     setOlderEntries(previous=>previous.filter(old=>!history.some(row=>row.id===old.id)));
     if(history.length<100){

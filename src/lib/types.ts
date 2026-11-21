@@ -166,12 +166,12 @@ export interface CommunityChatEntry {
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
  attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
-export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
+export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private'|'team';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
 
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {
  id:number;subject:string;message:string;createdAt:string;read:boolean;
- type:string|null;communityId?:number|null;competitionTournamentId?:number|null;sessionId:number|null;postId?:number|null;storyId?:number|null;relatedUsername?:string|null;privateGroupId?:number|null;
+ type:string|null;communityId?:number|null;competitionTournamentId?:number|null;sessionId:number|null;postId?:number|null;storyId?:number|null;relatedUsername?:string|null;privateGroupId?:number|null;sportsTeamId?:number|null;
 }
 /** Matches and group standings exactly as supplied by the Jynlo team tournament backend. */
 export interface TournamentTeamMatch {

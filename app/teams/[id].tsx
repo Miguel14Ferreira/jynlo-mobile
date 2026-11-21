@@ -7,6 +7,7 @@ import {useAuth} from '../../src/lib/auth';
 import {sportsTeamFollowState,setSportsTeamFollow,type SportsTeamFollowState,teamPlayerAvatarUri,setSportsTeamKit,uploadSportsTeamLogo,removeSportsTeamLogo,safeTeamKitColor,setSportsTeamFeatures,sportsTeamDetail,sportsTeamMembers,inviteSportsTeamMember,findSportsTeamPlayers,SportsTeam,SportsTeamMember,SportsTeamPlayerCandidate,removeSportsTeamMember,deleteSportsTeam,sportsTeamHistory,sportsTeamChampionshipHonours,pendingSportsTeamPlayers,type TeamPendingPlayerInvitation,type TeamCompetitionHistory,type TeamChampionshipHonour} from '../../src/lib/sports-teams-api';
 import {C} from '../../src/lib/theme';
 import SportsTeamContentPanel from '../../src/components/SportsTeamContentPanel';
+import {isConversationMuted,listConversationMutes,setConversationMuted} from '../../src/lib/conversation-mutes-api';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
 import TeamKitStudio from '../../src/components/TeamKitStudio';
@@ -18,9 +19,10 @@ import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
 
 export default function TeamDetail(){
- const {id}=useLocalSearchParams<{id:string}>(),router=useRouter(),auth=useAuth();
+ const {id,tab}=useLocalSearchParams<{id:string;tab?:string}>(),router=useRouter(),auth=useAuth();
  const teamId=Number(id);const [team,setTeam]=useState<SportsTeam|null>(null);
- const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'|'BRANDING'>('OVERVIEW');
+ // Alerts and the Messages list open the team chat directly.
+ const [activeTab,setActiveTab]=useState<'OVERVIEW'|'TROPHIES'|'FEED'|'CHAT'|'CHALLENGES'|'BRANDING'>(tab==='CHAT'?'CHAT':tab==='FEED'?'FEED':'OVERVIEW');
  const tabRail=useRef<React.ElementRef<typeof ScrollView>|null>(null),tabPositions=useRef<Record<string,number>>({});
  // Quick links can select a tab outside the visible horizontal rail.
  useEffect(()=>{
@@ -471,6 +473,21 @@ export default function TeamDetail(){
  };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
  const isMember=rosterVerified&&!!auth.token&&!!auth.username&&members.some(m=>m.username.toLowerCase()===auth.username!.toLowerCase());
+ // Per-conversation mute for the team chat, like groups and communities.
+ const [chatMuted,setChatMuted]=useState(false),[chatMuteBusy,setChatMuteBusy]=useState(false);
+ useEffect(()=>{
+  if(!auth.token||!Number.isSafeInteger(teamId)||teamId<=0)return;
+  let active=true;
+  listConversationMutes(auth.token).then(list=>{if(active)setChatMuted(isConversationMuted(list,'team',String(teamId)));}).catch(()=>{});
+  return()=>{active=false;};
+ },[auth.token,teamId]);
+ async function toggleChatMute(){
+  if(!auth.token||chatMuteBusy)return;
+  setChatMuteBusy(true);
+  try{await setConversationMuted('team',String(teamId),!chatMuted,auth.token);setChatMuted(!chatMuted);}
+  catch{Alert.alert('Chat da equipa','Não foi possível alterar o silêncio desta conversa.');}
+  finally{setChatMuteBusy(false);}
+ }
  const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId)&&
    !pendingPlayers.some(invite=>invite.profileId===p.profileId));
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
@@ -715,6 +732,9 @@ export default function TeamDetail(){
       isOwner={isOwner&&rosterVerified} sport={team.sport}/>
    </View>:null}
    {activeTab==='CHAT'?<View style={styles.panel}><Text style={styles.heading}>Mensagens da equipa</Text>
+    {team.chatEnabled&&isMember&&auth.token?<Pressable accessibilityRole="button" disabled={chatMuteBusy} onPress={()=>{void toggleChatMute();}}
+     accessibilityLabel={chatMuted?'Ativar avisos do chat da equipa':'Silenciar o chat da equipa'} style={styles.muteChip}>
+     <Text style={styles.muteText}>{chatMuted?'🔕 Ativar avisos':'🔔 Silenciar'}</Text></Pressable>:null}
     {!team.chatEnabled?<Text style={styles.note}>O chat da equipa está desativado.</Text>:null}
     {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} disabled={saving} onPress={()=>void feature('chatEnabled')}/>:null}
     {team.chatEnabled&&isMember&&auth.token&&auth.username?
@@ -725,6 +745,8 @@ export default function TeamDetail(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ muteChip:{alignSelf:'flex-start',minHeight:44,justifyContent:'center',paddingHorizontal:14,borderRadius:999,borderWidth:1,borderColor:C.border},
+ muteText:{color:C.white,fontWeight:'800'},
  header:{padding:22,backgroundColor:'#082D3B',borderColor:'#35BCA66A',borderWidth:1,borderRadius:23,gap:15,overflow:'hidden'},
  followSection:{gap:8},
  followRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12},
