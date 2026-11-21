@@ -12,6 +12,7 @@ import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
+import {PostGameCommunities} from '../../src/components/PostGameCommunities';
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
@@ -576,6 +577,8 @@ export default function SessionScreen(){
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token} game={detail}/>:null}
+      {detail&&detail.status==='COMPLETED'&&detail.joined&&auth.token&&auth.username?
+        <PostGameCommunities sessionId={id} token={auth.token} username={auth.username}/>:null}
       {detail&&auth.token&&detail.canSharePublicly===true?
         <SessionMemoriesPanel sessionId={id} token={auth.token}
           canSharePublicly={true} completed={detail.status==='COMPLETED'}
