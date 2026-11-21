@@ -470,3 +470,11 @@ export async function restoreFeedPost(postId:number,token:string):Promise<void>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para gerires publicações ocultas.');
  await request<void>(`/api/feed/posts/${feedPostId(postId)}/hide`,{token,method:'DELETE'});
 }
+
+/** Community feed post with 1+ photos or videos; the server checks membership. */
+export async function publishCommunityPostWithMedia(communityId:number,content:string,files:MobileMedia[],token:string):Promise<unknown>{
+  if(!Number.isSafeInteger(communityId)||communityId<=0)throw Error('Comunidade inválida.');
+  if(content.trim().length>1000)throw Error('A publicação não pode exceder 1000 caracteres.');
+  if(!files.length)throw Error('Não foi selecionado nenhum ficheiro.');
+  return sendMedia('/api/communities/'+communityId+'/posts',content.trim()?{content:content.trim()}:{},files,token);
+}
