@@ -85,7 +85,7 @@ export default function EditSession(){
   {error?<Message tone="error">{error}</Message>:null}
   {!loading&&session&&draft?<View style={styles.form}>
    <Badge text="Organizador"/>
-   <Text style={styles.help}>As alterações são guardadas no servidor e aplicam-se à sessão existente. A API decide se o estado atual permite modificá-la.</Text>
+   <Text style={styles.help}>As alterações aplicam-se a esta sessão. Algumas não são possíveis depois de a sessão começar.</Text>
    <Text style={styles.label}>Modalidade</Text>
    <Pressable style={styles.picker} disabled={busy} onPress={()=>setSportPicker(!sportPicker)}>
     <Text style={styles.pickerText}>{draft.sport}  ▾</Text>

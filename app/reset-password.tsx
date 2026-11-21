@@ -26,7 +26,7 @@ export default function ResetPasswordScreen(){
  async function finishReset(){
   if(requestInFlight.current)return;
   if(!token.trim()||password.length<8||password.length>128||password!==confirmPassword){
-   setError('Introduz o token recebido e duas palavras-passe iguais (8 a 128 caracteres).');return;
+   setError('Introduz o código recebido por email e duas palavras-passe iguais (8 a 128 caracteres).');return;
   }
   requestInFlight.current=true;setBusy(true);setError('');setMessage('');
   try{await confirmNativePasswordReset(token,password);setPassword('');setConfirmPassword('');setToken('');
@@ -44,7 +44,7 @@ export default function ResetPasswordScreen(){
   <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none"
    autoComplete="email" keyboardType="email-address" placeholder="o.teu@email.com" placeholderTextColor={C.muted}/>
   <Button title={busy?'A enviar…':'Enviar email de recuperação'} onPress={()=>{void requestReset();}} disabled={busy||!email.trim()}/>
-  <Text style={styles.hint}>Recebeste um link de recuperação? Introduz abaixo o token indicado nesse link e escolhe a nova palavra-passe.</Text>
+  <Text style={styles.hint}>Recebeste um link de recuperação? Introduz abaixo o código indicado nesse email e escolhe a nova palavra-passe.</Text>
   <Text style={styles.label}>Token de recuperação</Text>
   <TextInput style={styles.input} value={token} onChangeText={setToken} autoCapitalize="none" autoCorrect={false} placeholderTextColor={C.muted} placeholder="Token do email"/>
   <Text style={styles.label}>Nova palavra-passe</Text>

@@ -83,7 +83,7 @@ export default function SessionCompetitionResultScreen(){
      if(payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)||payload.scoreA!==undefined){
       let capabilities:Awaited<ReturnType<typeof competitionSessionCapabilities>>;
       try{capabilities=await competitionSessionCapabilities(communityId,sessionId,token);}
-      catch{throw Error('O servidor ainda não confirmou o suporte a golos e assistências. Nenhuma jornada foi enviada. Atualiza o backend ou deixa as estatísticas em branco.');}
+      catch{throw Error('Ainda não é possível registar golos e assistências. Nenhuma jornada foi enviada. Deixa os golos e assistências em branco e tenta outra vez.');}
       if(version!==generation.current||actor!==identityRef.current)return null;
       if(capabilities?.version!==1||
          (payload.players.some(player=>player.goals!==undefined||player.assists!==undefined)&&capabilities.footballGoalsAssists!==true)||
@@ -115,7 +115,7 @@ export default function SessionCompetitionResultScreen(){
   <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
   <Text style={styles.title}>Resultado da sessão</Text>
   <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
-  <Message>{football?(scoreSupported?'Regista o marcador oficial e, se souberes, os golos e assistências dos jogadores. Não são inferidos dados em falta.':'O backend ainda não confirmou suporte ao marcador oficial. Podes registar vitória ou empate, sem criar pontuações fictícias.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
+  <Message>{football?(scoreSupported?'Regista o marcador oficial e, se souberes, os golos e assistências dos jogadores. Não são inferidos dados em falta.':'Ainda não é possível registar o marcador. Podes registar vitória ou empate.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!busy&&auth.token?<Button secondary title="Verificar novamente" onPress={()=>{void load();}}/>:null}

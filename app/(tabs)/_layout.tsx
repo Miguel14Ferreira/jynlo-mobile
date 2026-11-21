@@ -101,6 +101,9 @@ export default function TabsLayout(){
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
        </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel="Criar torneio" accessibilityHint="Organiza um torneio ou liga numa comunidade tua" style={[styles.actionCard,styles.teamCard]} onPress={()=>action('tournament')}>
+        <View style={styles.teamIcon}><JynloIcon name="championship" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>Torneio</Text><Text style={styles.actionHint}>Liga, eliminatórias ou grupos, com classificação automática</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
+       </Pressable>
        <Pressable accessibilityRole="button" accessibilityLabel="Criar uma equipa" style={[styles.actionCard,styles.teamCard]} onPress={()=>action('team')}>
         <View style={styles.teamIcon}><JynloIcon name="tournament" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>Equipa</Text><Text style={styles.actionHint}>Cria a tua equipa e gere o plantel</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
        </Pressable>
@@ -113,10 +116,7 @@ export default function TabsLayout(){
       <Pressable accessibilityRole="button" accessibilityLabel="Sugerir um recinto desportivo" style={styles.secondaryAction} onPress={()=>action('venue')}>
        <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Acrescenta um espaço desportivo à Jynlo</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
       </Pressable>
-      {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>A verificar as tuas comunidades…</Text></View>:checkError?<Text style={styles.info}>Não foi possível confirmar as permissões para torneios. Abre novamente este menu para tentar.</Text>:eligible.length>0?
-       <Pressable accessibilityRole="button" style={styles.secondaryAction} onPress={()=>action('tournament')}>
-        <JynloIcon name="tournament" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar torneio</Text><Text style={styles.secondaryHint}>Escolhe uma comunidade que administras</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
-       </Pressable>:<Text style={styles.info}>Para criar torneios, precisas de administrar uma comunidade. Podes criar uma acima.</Text>
+      {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>A verificar as tuas comunidades…</Text></View>:checkError?<Text style={styles.info}>Não foi possível verificar as tuas comunidades. Abre novamente este menu para tentar.</Text>:null
        :<Text style={styles.info}>Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.</Text>}
       {auth.token&&auth.username&&!checking&&!checkError&&eligible.length>0?<>
        <Pressable accessibilityRole="button" accessibilityLabel="Criar campeonato" style={styles.secondaryAction} onPress={openChampionshipPicker}>

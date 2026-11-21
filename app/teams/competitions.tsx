@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
+import {Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {mySportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
 import {applyTeamToCompetition,discoverTeamCompetitions,myTeamApplications,
@@ -113,7 +113,7 @@ export default function TeamCompetitionDiscovery(){
   }
  };
  return <Page>
-  <Brand subtitle="COMPETIÇÕES PARA EQUIPAS"/><DemoBanner/>
+  <DemoBanner/>
   <Pressable accessibilityRole="button" accessibilityLabel="Voltar às equipas" onPress={()=>router.push('/teams')} style={styles.backAction}>
    <JynloIcon name="back" size={19} color={C.mint}/><Text style={styles.backActionText}>As tuas equipas</Text>
   </Pressable>

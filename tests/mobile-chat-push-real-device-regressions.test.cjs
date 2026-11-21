@@ -47,7 +47,7 @@ test('push activation cannot claim Firebase readiness without client config',()=
  assert.match(conf,/nativePushConfigured: Boolean\(firebaseConfigFile\)/);
  assert.match(push,/Constants\.expoConfig\?\.extra\?\.nativePushConfigured===true/);
  assert.match(screen,/androidPushConfigured\(\)\?<Button/);
- assert.match(screen,/falta configurar o Firebase Android nesta APK/);
+ assert.match(screen,/Os avisos com a app fechada chegam numa próxima versão/);
 });
 
 test('private chat replies use server-verified quoted messages without cross-thread leaks',()=>{

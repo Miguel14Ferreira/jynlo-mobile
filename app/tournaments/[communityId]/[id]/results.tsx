@@ -67,7 +67,7 @@ export default function TournamentResultsScreen(){
   {!loading&&tournament&&!isPerformanceKind(kind)?<Message>Esta modalidade tem outro formato de competição. Consulta o ecrã principal do torneio.</Message>:null}
   {overview?.kind==='RACE'?<>
    <View style={styles.panel}><Text style={styles.heading}>Campeonato · pilotos</Text>
-    <Text style={styles.note}>Pontuação por corrida atribuída pelo backend. Não calculamos posições nesta app.</Text>
+    <Text style={styles.note}>Pontuação por corrida, de acordo com os resultados oficiais.</Text>
     {overview.data.standings.length===0?<Message>Ainda não há classificações de corridas.</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.playerId??'piloto'}-${i}`}
      rank={row.position} name={displayPerson(row.fullName,row.username)} main={formatPoints(row.championshipPoints)}
      sub={`${row.races} corridas · ${row.podiums} pódios${row.penaltyPoints?` · ${row.penaltyPoints} penalizações`:''}`}/>)}
@@ -118,7 +118,7 @@ export default function TournamentResultsScreen(){
       <Text style={styles.note}>{h.decisionStatus==='DISQUALIFIED'?'Desqualificada':h.decisionStatus==='VALID'?formatSeconds(h.elapsedSeconds):'Estado por confirmar'}</Text>
      </View>)}
    </View>
-   <Message>Finalistas, decisões e resultados da final vêm exclusivamente do backend; a app não promove equipas automaticamente.</Message>
+   <Message>Os finalistas e os resultados da final aparecem quando a organização os confirmar.</Message>
   </>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;

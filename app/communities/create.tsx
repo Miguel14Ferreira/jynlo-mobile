@@ -1,6 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useRouter} from 'expo-router';
+import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {createCommunity,creationQuota} from '../../src/lib/community-api';
 import {normalizeCommunityInput} from '../../src/lib/community-core.cjs';
@@ -10,6 +10,8 @@ import {SPORTS} from '../../src/lib/sports';
 import type {CommunityCreationQuota,CommunityVisibility} from '../../src/lib/types';
 export default function CommunityCreateScreen(){
   const router=useRouter();const auth=useAuth();
+  const params=useLocalSearchParams<{next?:string}>();
+  const thenTournament=params.next==='tournament';
   const [name,setName]=useState('');const [description,setDescription]=useState('');
   const [selectedSports,setSelectedSports]=useState<string[]>([]);const [sportQuery,setSportQuery]=useState('');
   const [visibility,setVisibility]=useState<CommunityVisibility>('PRIVATE');
@@ -31,13 +33,14 @@ export default function CommunityCreateScreen(){
     try{
       const payload=normalizeCommunityInput({name,description,sport:selectedSports[0]||null,sports:selectedSports,visibility});
       const created=await createCommunity(payload,auth.token,auth.username);
-      router.replace({pathname:'/communities/[id]',params:{id:String(created.id),created:'1'}});
+      if(thenTournament)router.replace({pathname:'/tournaments/create',params:{communityId:String(created.id),...(selectedSports[0]?{sport:selectedSports[0]}:{})}});
+      else router.replace({pathname:'/communities/[id]',params:{id:String(created.id),created:'1'}});
     }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a comunidade. Verifica as tuas comunidades antes de repetir.');}
     finally{setSaving(false);}
   }
   return <Page><DemoBanner/><Eyebrow>CRIAR COMUNIDADE</Eyebrow>
     <Text style={styles.title}>Tudo começa com <Text style={{color:C.mint}}>uma boa malta.</Text></Text>
-    <Text style={styles.subtitle}>Dá um nome ao grupo, escolhe o desporto e convida pessoas para jogar.</Text>
+    <Text style={styles.subtitle}>{thenTournament?'Primeiro, a comunidade onde o torneio vai viver. A seguir passas logo à criação do torneio.':'Dá um nome ao grupo, escolhe o desporto e convida pessoas para jogar.'}</Text>
     {!auth.token?<Message>Precisas de iniciar sessão para criares uma comunidade.</Message>:null}
     {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/>:null}
     {quotaLoading&&auth.token?<Loader/>:null}

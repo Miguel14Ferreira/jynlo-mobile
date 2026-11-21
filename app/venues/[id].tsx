@@ -2,7 +2,7 @@ import React,{useCallback,useState} from 'react';
 import {Image,Linking,StyleSheet,Text,View} from 'react-native';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {useLocalSearchParams,useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {venueDetails,venuePhotos,venueRatingSummary,venueSportConditions} from '../../src/lib/parity-api';
 import {C} from '../../src/lib/theme';
 import {DEMO_MODE} from '../../src/lib/api';
@@ -107,7 +107,7 @@ export default function VenueDetailScreen(){
     String(venue.latitude)+','+String(venue.longitude)):null;
  const site=safeHttps(venue?.website);
  return <Page>
-  <Brand subtitle="RECINTOS"/><DemoBanner/><Eyebrow>DETALHE DO RECINTO</Eyebrow>
+  <DemoBanner/><Eyebrow>DETALHE DO RECINTO</Eyebrow>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {extraError?<Message>Algumas informações adicionais não estão disponíveis neste momento.</Message>:null}

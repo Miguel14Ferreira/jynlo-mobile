@@ -454,7 +454,7 @@ export default function CreateSessionScreen(){
   </Pressable>)}</View>
   <Text style={styles.note}>Etapa {step+1} de 4 · {stepLabels[step]}</Text>
   {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
-  {DEMO_MODE?<Message>Na demonstração a criação real está desativada. Liga a app à API Jynlo para publicar.</Message>:null}
+  {DEMO_MODE?<Message>Na demonstração não são criadas sessões reais.</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {createdId&&confirmedCreation.current?.identity===communityLoadIdentity.current?
    <View style={{gap:9}}>

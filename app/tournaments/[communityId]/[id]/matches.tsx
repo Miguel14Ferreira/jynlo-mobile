@@ -72,7 +72,7 @@ export default function IndividualMatchesScreen(){
    </View>
   </View>):null}
   {more?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy} onPress={()=>{void next();}}/>:null}
-  <Message>Os confrontos e resultados são devolvidos pelo backend. Não calculamos vencedores, classificações nem rondas automaticamente.</Message>
+  <Message>Os confrontos e resultados aparecem aqui assim que forem registados pela organização.</Message>
   {supported?<Button secondary title="Participantes e inscrições" onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/participants",params:{communityId:String(cid),id:String(tid)}})}/>:null}
   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
  </Page>;

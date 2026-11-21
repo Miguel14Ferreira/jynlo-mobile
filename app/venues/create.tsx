@@ -1,7 +1,7 @@
 import React,{useCallback,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
+import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE,request} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
@@ -79,7 +79,7 @@ export default function CreateVenueScreen(){
   }finally{setBusy(false);}
  }
  return <Page>
-  <Brand subtitle="NOVO RECINTO"/><DemoBanner/><Eyebrow>SUGERIR NOVO RECINTO</Eyebrow>
+  <DemoBanner/><Eyebrow>SUGERIR NOVO RECINTO</Eyebrow>
   <Message>O novo recinto será analisado pelos moderadores antes de aparecer publicamente na Jynlo. Não é publicado automaticamente.</Message>
   {!auth.token||DEMO_MODE?<Message>Inicia sessão com uma conta real para sugerires um recinto.</Message>:null}
   {loading?<Loader/>:null}

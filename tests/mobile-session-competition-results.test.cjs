@@ -178,7 +178,7 @@ test('result editor negotiates football fields at load and preserves legacy winn
  assert.match(view,/setPlayerStatsSupported\(football&&capabilities\?\.version===1&&capabilities.footballGoalsAssists===true\)/);
  assert.match(view,/setPlayerStatsSupported\(false\)/);
  assert.match(view,/football&&playerStatsSupported\?roster.filter\(player=>player.selected\)/);
- assert.match(view,/O backend ainda não confirmou suporte ao marcador oficial/);
+ assert.match(view,/Ainda não é possível registar o marcador/);
  assert.match(view,/Podes registar vitória ou empate/);
  assert.match(view,/return recordCompetitionSessionResult\(communityId,sessionId,token,payload\)/);
 });

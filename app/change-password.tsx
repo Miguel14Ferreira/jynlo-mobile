@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useRouter} from 'expo-router';
-import {Brand,Button,Eyebrow,Message,Page} from '../src/components/UI';
+import {Button,Eyebrow,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {DEMO_MODE,request} from '../src/lib/api';
 import {C} from '../src/lib/theme';
@@ -32,7 +32,7 @@ export default function ChangePasswordScreen(){
   }finally{setBusy(false);}
  }
  return <Page>
-  <Brand subtitle="SEGURANÇA DA CONTA"/>
+  
   <Eyebrow>ALTERAR PALAVRA-PASSE</Eyebrow>
   <Text style={styles.title}>Protege a tua conta.</Text>
   {!auth.token||DEMO_MODE?<Message>Inicia sessão numa conta real para alterar a palavra-passe.</Message>:null}
