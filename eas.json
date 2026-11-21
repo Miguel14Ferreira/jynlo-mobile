@@ -1,6 +1,6 @@
 {
   "cli": {
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
@@ -45,7 +45,8 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "environment": "production"
+      "environment": "production",
+      "autoIncrement": true
     },
     "diagnostic": {
       "distribution": "internal",
@@ -66,7 +67,8 @@
       "env": {
         "JYNLO_REQUIRE_REAL_API": "1"
       },
-      "ios": {}
+      "ios": {},
+      "autoIncrement": true
     }
   },
   "submit": {
