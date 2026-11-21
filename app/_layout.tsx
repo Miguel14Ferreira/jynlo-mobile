@@ -81,6 +81,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="sessions/[id]" options={{title:'Detalhes da sessão'}}/>
     <Stack.Screen name="sessions/[id]/edit" options={{title:'Editar sessão'}}/>
     <Stack.Screen name="sessions/[id]/chat" options={{title:'Chat da sessão'}}/>
+    <Stack.Screen name="communities/index" options={{title:"Comunidades"}}/>
+    <Stack.Screen name="tournaments/index" options={{title:"Torneios"}}/>
     <Stack.Screen name="communities/create" options={{title:"Criar comunidade"}}/>
     <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>
     <Stack.Screen name="communities/invites" options={{title:"Convites"}}/>
@@ -89,6 +91,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:"Em direto"}}/>
     <Stack.Screen name="messages/[peer]" options={{title:"Chat privado"}}/>
     <Stack.Screen name="messages/call" options={{title:"Chamada privada"}}/>
+    <Stack.Screen name="groups/index" options={{title:"Conversas de grupo"}}/>
+    <Stack.Screen name="groups/[id]" options={{title:"Grupo"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
     <Stack.Screen name="tournaments/create" options={{title:"Criar torneio"}}/>
     <Stack.Screen name="teams/index" options={{title:"Equipas"}}/>
@@ -107,6 +111,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="posts/[postId]/index" options={{title:"Publicação"}}/>
     <Stack.Screen name="posts/[postId]/likers" options={{title:"Quem gostou"}}/>
     <Stack.Screen name="feed" options={{title:"Feed"}}/>
+    <Stack.Screen name="feed-hidden" options={{title:"Publicações ocultas"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>
     <Stack.Screen name="venues/create" options={{title:"Sugerir recinto"}}/>
@@ -123,6 +128,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]/championships/events" options={{title:"Provas do campeonato"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/events" options={{title:'Eventos do torneio'}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:'Estafetas do torneio'}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:"Provas"}}/>
+    <Stack.Screen name="notification-settings" options={{title:"Gerir notificações"}}/>
     <Stack.Screen name="communities/[id]/championships/fixture" options={{title:"Calendário do campeonato"}}/>
     <Stack.Screen name="communities/[id]/results" options={{title:"Resultados da comunidade"}}/>
     <Stack.Screen name="sessions/[id]/result" options={{title:"Resultado da sessão"}}/>
@@ -130,6 +137,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
     <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
+    <Stack.Screen name="security-mfa" options={{title:'Verificação em dois passos'}}/>
     <Stack.Screen name="edit-profile" options={{title:'Editar perfil'}}/>
     <Stack.Screen name="register" options={{title:'Criar conta'}}/>
     <Stack.Screen name="confirm-email" options={{title:'Confirmar email'}}/>

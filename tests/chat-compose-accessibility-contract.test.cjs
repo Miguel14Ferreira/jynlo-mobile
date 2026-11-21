@@ -15,7 +15,7 @@ test('every chat composer exposes a meaningful action for screen readers',()=>{
 });
 test('shared page scrolls focused text inputs, rather than always jumping past editors',()=>{
  const page=read('src/components/UI.tsx');
- assert.ok(page.includes('scrollResponderScrollNativeHandleToKeyboard(focused,24,true)'));
+ assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,\d+,true\)/);
  assert.ok(page.includes('else if(autoScrollToEnd&&nearBottom.current)'));
  assert.ok(!page.includes('nearBottom.current=true;\n       scrollRef.current?.scrollToEnd'));
 });

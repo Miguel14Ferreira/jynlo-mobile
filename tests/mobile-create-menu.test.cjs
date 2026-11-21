@@ -22,10 +22,10 @@ test('creation options reuse existing routes and require authentication',()=>{
  assert.match(tabs,/router\.push\('\/tournaments\/create'\)/);
  assert.match(tabs,/router\.push\(\{pathname:'\/teams',params:\{create:'1'\}\}\)/);
  assert.match(tabs,/params:\{compose:destination\}/);
- assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string;momentSession\?:string\}>\(\)/);
+ assert.match(feed,/useLocalSearchParams<\{compose\?:string;storyId\?:string;momentSession\?:string(;teamStory\?:string)?\}>\(\)/);
  assert.match(feed,/if\(compose==='post'\)openPostComposer\(\)/);
- assert.match(feed,/else openStoryComposer\(\)/);
- assert.match(feed,/router\.setParams\(\{compose:undefined\}\)/);
+ assert.match(feed,/else \{?\s*openStoryComposer\(\)/);
+ assert.match(feed,/router\.setParams\(\{compose:undefined(,teamStory:undefined)?\}\)/);
  assert.ok(feed.indexOf('useFocusEffect(useCallback(()=>{if(!auth.ready')<feed.indexOf('  // The central + action reuses'), 'initial identity reset precedes opening composer');
 });
 test('tournament is gated by owned or administrated communities, not membership alone',()=>{

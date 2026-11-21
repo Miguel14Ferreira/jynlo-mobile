@@ -275,8 +275,11 @@ test('late native call actions cannot unlock a newer account or screen generatio
 
 test('LiveKit VideoTrack accepts one merged ViewStyle object rather than a React Native style array',()=>{
  const screen=read('src/features/direct-call-screen.tsx');
- assert.match(screen,/<VideoTrack trackRef=\{track\} style=\{\{\.\.\.styles\.video,\.\.\.\(track\.participant\.isLocal\?styles\.localVideo:\{\}\)\}\}\/>/);
+ // Video stage: one dominant camera plus small previews; each VideoTrack gets a single style object.
+ const stage=read('src/lib/video-stage-layout.cjs');
+ assert.match(screen,/<VideoTrack trackRef=\{dominant\} style=\{styles\.video\}\/>/);
+ assert.match(screen,/<VideoTrack trackRef=\{track\} style=\{styles\.video\}\/>/);
  assert.doesNotMatch(screen,/<VideoTrack[^>]*style=\{\[/);
- assert.match(screen,/sort\(\(a,b\)=>Number\(a\.participant\.isLocal\)-Number\(b\.participant\.isLocal\)\)/);
- assert.match(screen,/localVideo:\{height:130\}/);
+ // Remote participants lead; the SDK-owned array is copied, never reordered in place.
+ assert.match(stage,/\[\.\.\.selected\]\.sort\(\(a,b\)=>Number\(a\.participant\.isLocal\)-Number\(b\.participant\.isLocal\)\)/);
 });

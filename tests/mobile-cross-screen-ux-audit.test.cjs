@@ -26,12 +26,7 @@ test('discovery, inbox, profile and tournament filters remain usable on touch de
  const explore=read('app/(tabs)/explore.tsx');
  const inbox=read('app/(tabs)/messages.tsx');
  const profile=read('app/(tabs)/profile.tsx');
- const tournaments=read('app/(tabs)/tournaments.tsx');
- assert.match(explore,/destinationRow:\{flexDirection:'row',alignItems:'stretch',gap:8\}/);
- assert.match(explore,/destinationShortcut:\{flex:1,minWidth:0,minHeight:76/);
- for(const destination of ['Explorar equipas','Explorar comunidades desportivas','Encontrar recintos desportivos'])
-  assert.ok(explore.includes(destination),destination);
- assert.ok(explore.indexOf('<View style={styles.destinationRow}>')<explore.indexOf('accessibilityLabel="Filtrar por cidade"'));
+ const tournaments=read('app/tournaments/index.tsx');
  assert.match(explore,/chip:\{minHeight:44,justifyContent:'center'/);
  assert.match(explore,/accessibilityLabel="Repetir pesquisa de sessões"/);
  assert.match(explore,/onPress=\{\(\)=>\{void load\(\);\}\}/);
@@ -41,12 +36,12 @@ test('discovery, inbox, profile and tournament filters remain usable on touch de
  assert.match(tournaments,/chip:\{minHeight:44,justifyContent:'center'/);
 });
 test('tournament empty, error and filtered states all offer recovery',()=>{
- const screen=read('app/(tabs)/tournaments.tsx');
+ const screen=read('app/tournaments/index.tsx');
  for(const phrase of ['Tentar novamente','Descobrir comunidades','Limpar filtros'])
   assert.ok(screen.includes(phrase),phrase);
  assert.match(screen,/setQuery\(''\);setStatus\('ALL'\);setSport\('ALL'\)/);
  assert.match(screen,/accessibilityLabel=\{'Abrir torneio '\+x\.tournament\.name\}/);
- assert.match(screen,/router\.push\('\/\(tabs\)\/communities'\)/);
+ assert.match(screen,/router\.push\('\/communities'\)/);
 });
 test('session participation status and confirmed team rows remain readable',()=>{
  const screen=read('app/sessions/[id].tsx');

@@ -17,10 +17,12 @@ test('community chat UI supports quoted reply selection, rendering and cancellat
  assert.match(screen,/\[reply,setReply\]=useState<CommunityChatEntry\|null>\(null\)/);
  assert.match(screen,/const renderedMessages=.*\.map\(m=><View/);
  assert.match(screen,/accessibilityLabel=\{'Responder a '\+m.username\}/);
- assert.match(screen,/onPress=\{\(\)=>setReply\(m\)\}/);
+ assert.match(screen,/onPress=\{\(\)=>\{setReply\(m\);setExpandedMessageActions\(null\);\}\}/);
  assert.match(screen,/m\.replyToSender/);
  assert.match(screen,/m\.replyToText/);
- assert.match(screen,/accessibilityLabel="Cancelar resposta"/);
+ // Cancelling a reply uses the shared preview component.
+ assert.match(screen,/<ChatReplyPreview [^>]*onCancel=\{\(\)=>setReply\(null\)\}/);
+ assert.match(read('src/components/ChatReplyPreview.tsx'),/accessibilityLabel="Cancelar resposta à mensagem"/);
  assert.match(screen,/setReply\(null\)/);
 });
 test('all community reply send paths preserve selected message and clear only after success',()=>{

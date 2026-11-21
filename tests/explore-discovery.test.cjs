@@ -23,8 +23,12 @@ test('Pesquisa de cidade usa debounce e ignora resultados atrasados',()=>{
 });
 test('Explorar mostra Comunidades aos visitantes e preserva login na criação de sessão',()=>{
  const file=read('app/(tabs)/explore.tsx');
- assert.ok(file.includes("router.push('/(tabs)/communities')"));
+ // Explore is now only "find games"; creating lives in the central Criar tab
+ // (which sends guests to login), and Communities open from Home "Próximos jogos".
+ const tabs=read('app/(tabs)/_layout.tsx');
  assert.doesNotMatch(file,/🏆 Torneios/);
- assert.match(file,/redirect:'\/sessions\/create'/);
+ assert.match(tabs,/if\(!auth\.token\|\|!auth\.username\)\{\s*router\.push\(\{pathname:'\/login',params:\{redirect:'\/'\}\}\);/);
+ assert.match(tabs,/if\(destination==='session'\)router\.push\('\/sessions\/create'\)/);
+ assert.ok(read('src/features/home-up-next.tsx').includes("router.push('/communities')"));
  assert.equal(require('../src/lib/routes.cjs').safeRedirect('/sessions/create'),'/sessions/create');
 });

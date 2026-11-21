@@ -35,7 +35,7 @@ test('team chat keeps input accessible without jumping away from earlier message
 test('team feed and team chat keep permissions, private media, WebSocket and fallback',()=>{
  const component=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(component,/observeTeamContent\(\{teamId,kind,token/);
- assert.match(component,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current,true\)/);
+ assert.match(component,/if\(!socketOnline\|\|pollTicks%[46]===0\)void refresh\(true,current,true\)/);
  assert.match(component,/teamPrivateAttachmentsAvailable\(teamId,kind,token\)/);
  assert.match(component,/onAuthorizationError=\{status=>\{revokeIfUnauthorized/);
  assert.match(component,/ChatPdfComposer target=\{\{scope:'team',id:teamId,kind\}\}/);

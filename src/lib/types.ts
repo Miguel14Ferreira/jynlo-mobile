@@ -20,6 +20,8 @@ export interface SessionSummary {
   audience?: 'COMMUNITY_ONLY' | 'PUBLIC';
   joinedByViewer?: boolean;
   waitlistedByViewer?: boolean;
+  /** Level the session is aimed at; null = all levels. */
+  skillLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | null;
   status: SessionStatus;
 }
 export interface PublicSessionPreview {
@@ -59,6 +61,9 @@ export interface SessionDetail extends SessionSummary {
   playFormat?: 'INDIVIDUAL'|'PAIRS'|null;
   registrationOpeningMode?: 'IMMEDIATE' | 'SCHEDULED' | 'MANUAL' | null;
   registrationOpensAt?: string | null;
+  /** Organizer-reported problem after kick-off (problemDetails only reaches the organizer). */
+  problemType?: 'NOT_OCCURRED' | 'VENUE_PROBLEM' | 'OTHER' | null;
+  problemDetails?: string | null;
 }
 export interface SessionParticipant {
   id: number;
@@ -91,7 +96,7 @@ export interface LoginResponse {
   token: string | null;
   profile: { username?: string } | null;
 }
-export interface SessionFilters { sport?: string; city?: string; availableOnly?: boolean; latitude?: number; longitude?: number; radiusKm?: number; sort?: 'date' | 'distance'; }
+export interface SessionFilters { sport?: string; city?: string; availableOnly?: boolean; skillLevel?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'; latitude?: number; longitude?: number; radiusKm?: number; sort?: 'date' | 'distance'; }
 
 export type CommunityVisibility = 'PUBLIC' | 'PRIVATE';
 export type CommunityRole = 'OWNER' | 'ADMIN' | 'MEMBER';
@@ -161,12 +166,12 @@ export interface CommunityChatEntry {
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
  attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
-export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
+export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
 
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {
  id:number;subject:string;message:string;createdAt:string;read:boolean;
- type:string|null;communityId?:number|null;competitionTournamentId?:number|null;sessionId:number|null;postId?:number|null;storyId?:number|null;relatedUsername?:string|null;
+ type:string|null;communityId?:number|null;competitionTournamentId?:number|null;sessionId:number|null;postId?:number|null;storyId?:number|null;relatedUsername?:string|null;privateGroupId?:number|null;
 }
 /** Matches and group standings exactly as supplied by the Jynlo team tournament backend. */
 export interface TournamentTeamMatch {

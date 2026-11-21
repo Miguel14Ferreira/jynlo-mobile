@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,reportSessionProblem,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -12,14 +12,21 @@ import {sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
+import {PostGameCommunities} from '../../src/components/PostGameCommunities';
+import {FutureExclusionSheet} from '../../src/components/FutureExclusionSheet';
+import {canManage as canManageFutureExclusion} from '../../src/lib/future-exclusion.cjs';
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
 import SessionMemoriesPanel from '../../src/components/SessionMemoriesPanel';
 import SessionLocationPanel from '../../src/components/SessionLocationPanel';
+import SessionPaymentsPanel from '../../src/components/SessionPaymentsPanel';
+import PreviousUnpaidWarning from '../../src/components/PreviousUnpaidWarning';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
+import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
+import {AddToCalendarButton} from '../../src/components/AddToCalendarButton';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -29,6 +36,7 @@ function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   </View>;
 }
 
+const PROBLEM_LABELS:Record<'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER',string>={NOT_OCCURRED:'O jogo não aconteceu',VENUE_PROBLEM:'Problema com o recinto',OTHER:'Outro problema'};
 export default function SessionScreen(){
   const {id:rawId,guest:rawGuest}=useLocalSearchParams<{id:string;guest?:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
@@ -49,6 +57,7 @@ export default function SessionScreen(){
   const [removingParticipantId,setRemovingParticipantId]=useState<number|null>(null);
   const [rosterFeedback,setRosterFeedback]=useState('');
   const attendanceInFlight=useRef(false);
+  const [exclusionFor,setExclusionFor]=useState<SessionParticipant|null>(null);
   const [attendanceParticipantId,setAttendanceParticipantId]=useState<number|null>(null);
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -56,6 +65,8 @@ export default function SessionScreen(){
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const [adminToolsOpen,setAdminToolsOpen]=useState(false);
+  const [problemType,setProblemType]=useState<'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER'|null>(null);
+  const [problemNote,setProblemNote]=useState('');
   const [showSessionChat,setShowSessionChat]=useState(false);
   const [showParticipantRoster,setShowParticipantRoster]=useState(true);
   const [teamSource,setTeamSource]=useState<'AUTO'|'RANDOM'>('AUTO');
@@ -527,6 +538,7 @@ export default function SessionScreen(){
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||'Local a confirmar'}</Text></View>
+        {detail?<Text style={styles.levelLine}>🎯 {levelLabel(detail.skillLevel)}</Text>:null}
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
           <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(detail.communityId)}})}>
             <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="community" size={17} color={C.mint}/><Text style={styles.communityLink}>Abrir comunidade associada</Text><JynloIcon name="chevron-right" size={16} color={C.mint}/></View>
@@ -568,6 +580,8 @@ export default function SessionScreen(){
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<=Date.now()?
         <SessionOfficialResultCard sessionId={id} token={auth.token} game={detail}/>:null}
+      {detail&&detail.status==='COMPLETED'&&detail.joined&&auth.token&&auth.username?
+        <PostGameCommunities sessionId={id} token={auth.token} username={auth.username}/>:null}
       {detail&&auth.token&&detail.canSharePublicly===true?
         <SessionMemoriesPanel sessionId={id} token={auth.token}
           canSharePublicly={true} completed={detail.status==='COMPLETED'}
@@ -586,6 +600,8 @@ export default function SessionScreen(){
       </View>:null}
 
       {detail?.joined&&!['CANCELLED','COMPLETED'].includes(s.status||'')&&Date.parse(s.gameDate||'')>Date.now()?<Message>✓ A tua inscrição está confirmada.</Message>:null}
+      {auth.token&&detail&&(owner||detail.joined)&&Number(s.priceAmount)>0&&Number.isSafeInteger(id)&&id>0
+       ?<SessionPaymentsPanel sessionId={id} token={auth.token}/>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
       {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>Esta sessão terminou ou foi cancelada. Podes continuar a explorar outras sessões públicas.</Message>:null}
@@ -602,6 +618,31 @@ export default function SessionScreen(){
       {auth.token&&detail&&action.kind==='SCHEDULED'?<Message>Inscrições programadas{openAt?` para ${openAt}`:''}.</Message>:null}
       {auth.token&&detail&&action.kind==='CLOSED'&&!owner?<Message>Não é possível participar neste momento.</Message>:null}
       {auth.token&&detail&&canLeave(detail)?<Button danger title="Cancelar a minha presença" disabled={busy} onPress={leave}/>:null}
+      {auth.token&&owner&&detail?.problemType?<Message>Problema já reportado: {PROBLEM_LABELS[detail.problemType]}{detail.problemDetails?' · '+detail.problemDetails:''}</Message>:null}
+      {auth.token&&owner&&detail&&!detail.problemType&&(detail.status==='OPEN'||detail.status==='FULL')
+        &&Number.isFinite(Date.parse(detail.gameDate))&&Date.parse(detail.gameDate)<=Date.now()?<View style={styles.panel}>
+        <Eyebrow>CORREU ALGUMA COISA MAL?</Eyebrow>
+        <Text style={styles.hint}>Só o organizador vê isto. Se o jogo não aconteceu, a sessão é cancelada e não conta para presenças nem classificações.</Text>
+        <View style={styles.levelRow}>
+         {(['NOT_OCCURRED','VENUE_PROBLEM','OTHER'] as const).map(type=><Pressable key={type} accessibilityRole="radio"
+           accessibilityState={{checked:problemType===type,disabled:busy}} disabled={busy} onPress={()=>setProblemType(type)}
+           style={[styles.levelChip,problemType===type&&styles.levelChipSelected]}>
+           <Text style={[styles.levelChipText,problemType===type&&styles.levelChipTextSelected]}>{PROBLEM_LABELS[type]}</Text>
+          </Pressable>)}
+        </View>
+        {problemType?<TextInput style={styles.input} value={problemNote} onChangeText={setProblemNote} maxLength={500} editable={!busy}
+          placeholder={problemType==='OTHER'?'Explica o que aconteceu (obrigatório)':'Detalhes (opcional)'} placeholderTextColor={C.muted}
+          accessibilityLabel="Detalhes do problema"/>:null}
+        {problemType?<Button danger={problemType==='NOT_OCCURRED'} title={busy?'A enviar…':problemType==='NOT_OCCURRED'?'Confirmar que o jogo não aconteceu':'Reportar problema'}
+          disabled={busy} onPress={()=>{
+           const type=problemType,note=problemNote,token=auth.token!;
+           const send=()=>{void perform(async()=>{await reportSessionProblem(id,token,type,note);setProblemType(null);setProblemNote('');},
+             type==='NOT_OCCURRED'?'Registado: o jogo não aconteceu. A sessão foi cancelada.':'Problema reportado.');};
+           if(type!=='NOT_OCCURRED'){send();return;}
+           Alert.alert('O jogo não aconteceu?','A sessão é cancelada e não conta para presenças nem classificações. Não dá para desfazer.',[
+            {text:'Voltar',style:'cancel'},{text:'Confirmar',style:'destructive',onPress:send}]);
+          }}/>:null}
+      </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
         <Button title="Editar dados da sessão" secondary disabled={busy||loading}
@@ -609,7 +650,17 @@ export default function SessionScreen(){
         <Button title="Partilhar convite da sessão" secondary onPress={share}/>
         <Button title={adminToolsOpen?'Ocultar ferramentas avançadas':'Mostrar ferramentas avançadas'} secondary onPress={()=>setAdminToolsOpen(open=>!open)}/>
         {adminToolsOpen?<View style={styles.editor}>
+        {detail.registrationOpeningMode==='MANUAL'&&Number.isSafeInteger(id)&&id>0?<PreviousUnpaidWarning sessionId={id} token={auth.token}/>:null}
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
+        <Eyebrow>NÍVEL DA SESSÃO</Eyebrow>
+        <View style={styles.levelRow}>
+         {sessionChoices().map(choice=>{const selected=(detail.skillLevel||'')===choice.value;
+          return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected,disabled:busy}}
+           disabled={busy||selected} style={[styles.levelChip,selected&&styles.levelChipSelected]}
+           onPress={()=>{void perform(()=>updateSessionSkillLevel(id,auth.token!,choice.value||null),'Nível atualizado: '+choice.label+'.');}}>
+           <Text style={[styles.levelChipText,selected&&styles.levelChipTextSelected]}>{choice.label}</Text>
+          </Pressable>;})}
+        </View>
         <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
         {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}
           onPress={()=>{setMeetingDraft(detail.meetingPointInstructions||'');setEditMeetingPoint(true);}}/>:
@@ -736,17 +787,30 @@ export default function SessionScreen(){
                 style={({pressed})=>[styles.removePlayerButton,{opacity:pressed||removingParticipantId!==null?0.6:1}]}>
                 <Text style={styles.removePlayerLabel}>{removingParticipantId===p.id?'A remover…':'Remover'}</Text>
               </Pressable>:null}
+            {auth.token&&!DEMO_MODE&&canManageFutureExclusion(auth.username,detail.creatorUsername,p.username)?
+              <Pressable accessibilityRole="button" accessibilityLabel={'Inscrições futuras de '+p.username}
+                disabled={busy||loading} onPress={()=>setExclusionFor(p)} style={styles.futureButton}>
+                <Text style={styles.futureLabel}>Futuras</Text>
+              </Pressable>:null}
           </View>;
         })}
         </>:null}
       </View>:null}
+      {(detail?.joined||owner)&&detail&&detail.status!=='CANCELLED'?
+        <AddToCalendarButton session={detail} exactAddress={safeExactAddress(detail,auth.username)} onError={setFeedback}/>:null}
       <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
 
+    {auth.token&&owner?<FutureExclusionSheet sessionId={id} participant={exclusionFor} token={auth.token} onClose={()=>setExclusionFor(null)}/>:null}
     <Pressable onPress={()=>router.back()}><Text style={styles.back}>← Voltar</Text></Pressable>
   </Page>;
 }
 const styles=StyleSheet.create({
+ levelLine:{color:C.mint,fontSize:13,fontWeight:'800'},
+ levelRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ levelChip:{minHeight:40,paddingHorizontal:14,justifyContent:'center',borderRadius:20,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
+ levelChipSelected:{borderColor:C.mint,backgroundColor:C.mint},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},levelChipTextSelected:{color:C.background},
  cancelledHeading:{color:'#ffb2bf',fontSize:17,fontWeight:'800'},
   guestInvitePanel:{gap:10,padding:16,borderRadius:16,borderWidth:1,borderColor:C.mint,backgroundColor:C.surface},
    hero:{backgroundColor:'#092F3B',borderWidth:1,borderColor:'#2C7C79',borderRadius:24,padding:21,gap:13},
@@ -792,5 +856,7 @@ const styles=StyleSheet.create({
   attendanceAbsent:{color:'#FFB8B8',fontSize:13,fontWeight:'700'},
   removePlayerButton:{paddingHorizontal:11,minHeight:44,justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.danger},
   removePlayerLabel:{color:'#FFB8B8',fontSize:12,fontWeight:'800'},
+  futureButton:{paddingHorizontal:10,minHeight:44,justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.border},
+  futureLabel:{color:C.muted,fontSize:12,fontWeight:'800'},
   back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
 });

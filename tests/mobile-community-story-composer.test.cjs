@@ -13,7 +13,7 @@ test('Mobile offers a personal destination and public communities the user manag
 test('Publishing a Story sends the explicitly selected destination to the server',()=>{
  assert.match(source,/const selectedCommunityId=storyPublishCommunityId/);
  assert.match(source,/!storyManagedCommunities\.some\(group=>group\.id===selectedCommunityId\)/);
- assert.match(source,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText\)/);
+ assert.match(source,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText,selectedTeamId\)/);
  assert.match(api,/communityId\?\{communityId:String\(communityId\)\}/);
 });
 test('Story composer resets the community on a new or discarded draft',()=>{
@@ -22,7 +22,7 @@ test('Story composer resets the community on a new or discarded draft',()=>{
 });
 
 test('Story targeting and profile suggestions cannot survive an account switch',()=>{
- assert.match(source,/setStoryPublishCommunityId\(null\);setStoryManagedCommunities\(\[\]\);setStorySearchedProfiles\(\[\]\);setStoryFriendSearch\(''\)/);
+ assert.match(source,/setStoryPublishCommunityId\(null\);setStoryPublishTeamId\(null\);setStoryManagedCommunities\(\[\]\);setStoryManagedTeams\(\[\]\);setStorySearchedProfiles\(\[\]\);setStoryFriendSearch\(''\)/);
  assert.match(source,/let active=true;/);
  assert.match(source,/if\(active\)setStorySearchedProfiles\(profiles\)/);
  assert.match(source,/if\(active\)setStoryManagedCommunitiesLoading\(false\)/);

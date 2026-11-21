@@ -64,8 +64,7 @@ function changeCommunityMode(form,mode){
  if(!['INDEPENDENT','SINGLE','SHARED'].includes(mode))throw Error('Tipo de sessão inválido.');
  const cleared={...form,communityId:null,communityShareIds:[],seasonGame:false,
   communityRankingsEnabled:false,confirmActivateRankings:false,
-  registrationOpeningMode:'IMMEDIATE',registrationDay:'',registrationTime:'',
-  recurrence:'NONE',additionalWeeklySlots:[]};
+  registrationOpeningMode:'IMMEDIATE',registrationDay:'',registrationTime:''};
  if(mode==='SHARED')return {...cleared,privateGame:false,password:''};
  return cleared;
 }
@@ -165,12 +164,17 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  }
  const recurrence=input.recurrence??'NONE';
  if(!['NONE','WEEKLY','BIWEEKLY'].includes(recurrence))throw Error('Repetição inválida.');
- if(!hasCommunity&&recurrence!=='NONE')throw Error('As sessões recorrentes exigem uma comunidade.');
  let recurrenceOccurrences=null,recurrenceTimeZone=null;
  if(recurrence!=='NONE'){
   const text=String(input.recurrenceOccurrences??'').trim();
-  if(!/^(?:[2-9]|[1-4][0-9]|5[0-2])$/.test(text))throw Error('Escolhe entre 2 e 52 repetições.');
+  // Communities plan up to 52 games; independent organisers up to 12 (about three months).
+  const maxSessions=hasCommunity?52:12;
+  if(!/^[1-9][0-9]?$/.test(text)||Number(text)<2||Number(text)>maxSessions)
+   throw Error('Escolhe entre 2 e '+maxSessions+' repetições.');
   recurrenceOccurrences=Number(text);
+  const perCycle=recurrence==='WEEKLY'&&Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots.length+1:1;
+  if(recurrenceOccurrences*perCycle>maxSessions)
+   throw Error('O plano pode ter no máximo '+maxSessions+' sessões'+(hasCommunity?'.':' sem comunidade.'));
   const zone=String(input.recurrenceTimeZone||'').trim();
   if(!zone||zone.length>64)throw Error('Não foi possível identificar o fuso horário para repetir sessões.');
   try{new Intl.DateTimeFormat('en-US',{timeZone:zone});}
@@ -199,7 +203,9 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:shareIds.slice(),
   seasonCompetitionCommunityId:seasonGame?communityId:null,confirmActivateRankings:seasonGame&&!rankingsEnabled&&confirmActivateRankings,
-  meetingPointInstructions:meetingPointInstructions||null,minParticipants
+  meetingPointInstructions:meetingPointInstructions||null,minParticipants,
+  // Only sent when chosen, so "all levels" keeps the previous payload shape.
+  ...(['BEGINNER','INTERMEDIATE','ADVANCED'].includes(input.skillLevel)?{skillLevel:input.skillLevel}:{})
  };
 }
 module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,detachVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,isValidCustomSport,createSessionPayload};

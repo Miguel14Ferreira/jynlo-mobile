@@ -12,11 +12,14 @@ import {C} from '../../src/lib/theme';
 import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
 import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
-import {venues} from '../../src/lib/parity-api';
+import {venues,venueDetails} from '../../src/lib/parity-api';
+import {myPresets,createPreset,updatePreset,deletePreset} from '../../src/lib/session-preset-api';
+import {presetFromForm,formFromPreset,presetNotesText,validatePresetName,MAX_PRESETS,type SessionPreset} from '../../src/lib/session-preset-core.cjs';
 import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview,validCoordinates} from '../../src/lib/session-location-api';
 import type {SessionCoordinates} from '../../src/lib/session-location-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
+import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
 
 function emptySessionForm():CreateSessionForm{
  return {sport:'',day:'',time:'',city:'',address:'',latitude:null,longitude:null,locationConfirmed:false,
@@ -282,6 +285,88 @@ export default function CreateSessionScreen(){
   };
  },[loadCommunities,auth.username,auth.token,requestedCommunityId]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ // Presets ("perfis de sessões") are shared with the web and never hold dates, passwords or photos.
+ const [presets,setPresets]=useState<SessionPreset[]>([]);
+ const [presetId,setPresetId]=useState<number|null>(null);
+ const [presetName,setPresetName]=useState('');
+ const [presetBusy,setPresetBusy]=useState(false);
+ const [presetMessage,setPresetMessage]=useState(''),[presetError,setPresetError]=useState('');
+ const [presetNotes,setPresetNotes]=useState<string[]>([]);
+ const [presetConfirmDelete,setPresetConfirmDelete]=useState(false);
+ const presetRevision=useRef(0),presetIdentity=useRef('');
+ const untemplated=useRef<null|{form:CreateSessionForm;communityMode:'INDEPENDENT'|'SINGLE'|'SHARED';hasExistingPlayers:boolean}>(null);
+ useFocusEffect(useCallback(()=>{
+  let live=true;
+  // Only a different account clears the chosen preset; returning to the screen keeps the draft as it is.
+  if(presetIdentity.current!==(auth.token||'')){presetIdentity.current=auth.token||'';
+   setPresets([]);setPresetId(null);setPresetName('');setPresetMessage('');setPresetNotes([]);untemplated.current=null;}
+  setPresetError('');
+  if(auth.token&&!DEMO_MODE)myPresets(auth.token).then(list=>{if(live)setPresets(Array.isArray(list)?list:[]);})
+   .catch(()=>{if(live)setPresetError('Não foi possível carregar os perfis de sessões.');});
+  return()=>{live=false;};
+ },[auth.token]));
+ function resetLocationUi(){
+  locationRequest.current++;setMapsLink('');setVerifiedMapsLink('');setLocationAccuracy(null);setLocationMessage('');setLocationLoading(false);
+  setVenueChosen(null);clearVenueSearch();setVenueQuery('');setVenueCityQuery('');
+ }
+ function applyPreset(id:number|null){
+  if(busy||presetBusy)return;
+  const revision=++presetRevision.current;
+  setPresetConfirmDelete(false);setPresetError('');setPresetMessage('');setPresetNotes([]);
+  preselectionOverridden.current=true;
+  if(id===null){
+   const d=untemplated.current;setPresetId(null);setPresetName('');
+   if(d){resetLocationUi();setLocationMode('saved');setForm(d.form);setCommunityMode(d.communityMode);setHasExistingPlayers(d.hasExistingPlayers);}
+   untemplated.current=null;return;
+  }
+  const preset=presets.find(p=>p.id===id);if(!preset)return;
+  let next:ReturnType<typeof formFromPreset>;
+  try{next=formFromPreset(emptySessionForm(),preset.settings,{sports:SPORTS,communityIds:communities.map(c=>c.id)});}
+  catch(e){setPresetError(e instanceof Error?e.message:'Não foi possível aplicar o perfil.');return;}
+  if(!untemplated.current)untemplated.current={form,communityMode,hasExistingPlayers};
+  const chosenCommunity=communities.find(c=>c.id===next.form.communityId);
+  resetLocationUi();setCustomSportMode(false);setSportSearch('');setShowSportResults(false);setExtraDay('');setExtraTime('');
+  setPresetId(id);setPresetName(preset.name);
+  setCommunityMode(next.communityMode);setHasExistingPlayers(next.hasExistingPlayers);setLocationMode(next.locationMode);
+  if(next.mapsLink){setMapsLink(next.mapsLink);setVerifiedMapsLink(next.mapsLink);}
+  setForm({...next.form,communityRankingsEnabled:!!chosenCommunity?.rankingsEnabled});
+  setPresetNotes(presetNotesText(next.notes));
+  setPresetMessage('Configuração aplicada. Escolhe agora o dia e a hora do próximo jogo.');
+  if(next.venueId){
+   const sport=next.form.sport;
+   venueDetails(next.venueId,auth.token).then(v=>{
+    if(revision!==presetRevision.current)return;
+    if(!venueSupportsSport(v,sport)){setPresetError('O recinto guardado não tem esta modalidade. Escolhe outro recinto.');return;}
+    useVenue(v);
+   }).catch(()=>{if(revision===presetRevision.current)setPresetError('Este recinto guardado já não está disponível. Escolhe outro recinto.');});
+  }
+ }
+ async function savePreset(update:boolean){
+  if(presetBusy||busy||!auth.token)return;
+  setPresetError('');setPresetMessage('');
+  let name:string,settings:ReturnType<typeof presetFromForm>;
+  try{name=validatePresetName(presetName);settings=presetFromForm(form,{hasExistingPlayers,locationMode,verifiedMapsLink});}
+  catch(e){setPresetError(e instanceof Error?e.message:'Confirma os dados do perfil.');return;}
+  if(!update&&presets.length>=MAX_PRESETS){setPresetError('Já tens 20 perfis. Elimina um antes de criares outro.');return;}
+  if(update&&presetId===null)return;
+  setPresetBusy(true);
+  try{
+   const saved=update?await updatePreset(presetId!,name,settings,auth.token):await createPreset(name,settings,auth.token);
+   setPresets(prev=>[saved,...prev.filter(p=>p.id!==saved.id)]);setPresetId(saved.id);setPresetName(saved.name);
+   setPresetMessage(update?'Perfil atualizado.':'Perfil guardado na tua conta.');
+  }catch(e){setPresetError((e instanceof Error?e.message:'Não foi possível guardar o perfil.')+' Confirma a lista de perfis antes de tentar de novo.');}
+  finally{setPresetBusy(false);}
+ }
+ async function removePreset(){
+  if(presetBusy||presetId===null||!auth.token)return;
+  if(!presetConfirmDelete){setPresetConfirmDelete(true);return;}
+  setPresetBusy(true);setPresetError('');
+  try{await deletePreset(presetId,auth.token);const gone=presetId;
+   setPresets(prev=>prev.filter(p=>p.id!==gone));setPresetId(null);setPresetName('');untemplated.current=null;
+   setPresetConfirmDelete(false);setPresetMessage('Perfil eliminado. Os dados que já estão no formulário mantêm-se.');}
+  catch(e){setPresetError(e instanceof Error?e.message:'Não foi possível eliminar o perfil.');}
+  finally{setPresetBusy(false);}
+ }
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
   if(key==='city'||key==='address'){
     clearVenueSearch();
@@ -308,7 +393,7 @@ export default function CreateSessionScreen(){
    const sport=allowed.includes(prev.sport)?prev.sport:allowed.length===1&&typeof allowed[0]==='string'?allowed[0]:'';
    return {...prev,communityId:null,communityShareIds:next,sport,venueId:null,privateGame:false,password:'',
     seasonGame:false,confirmActivateRankings:false,communityRankingsEnabled:false,
-    ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const,recurrence:'NONE' as const,additionalWeeklySlots:[]}:null)};
+    ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const}:null)};
   });
  }
  const availableSports=availableSessionSports(communityMode==='SINGLE'?(selectedCommunity?[selectedCommunity]:[]):
@@ -464,6 +549,24 @@ export default function CreateSessionScreen(){
   {communityError?<Message tone="error">{communityError}</Message>:null}
   {communityError&&auth.token&&auth.username?<Button secondary title="Voltar a carregar comunidades" disabled={busy} onPress={()=>{void loadCommunities();}}/>:null}
   {step===0?<>
+  {auth.token&&!DEMO_MODE&&(presets.length||presetError)?<View style={styles.panel}>
+   <Text style={styles.presetKicker}>PERFIS DE SESSÕES</Text>
+   <Text style={styles.heading}>Reutilizar uma configuração</Text>
+   <Text style={styles.note}>Escolhe uma configuração habitual e altera apenas os detalhes deste jogo. A data e a hora ficam sempre por preencher.</Text>
+   <View style={styles.presetChips}>
+    <Pressable accessibilityRole="radio" accessibilityState={{checked:presetId===null,disabled:busy||presetBusy}} disabled={busy||presetBusy}
+     onPress={()=>applyPreset(null)} style={[styles.presetChip,presetId===null&&styles.presetChipOn]}>
+     <Text style={[styles.presetChipText,presetId===null&&styles.presetChipTextOn]}>Criar sem perfil</Text></Pressable>
+    {presets.map(p=><Pressable key={p.id} accessibilityRole="radio" accessibilityState={{checked:presetId===p.id,disabled:busy||presetBusy}}
+     disabled={busy||presetBusy} onPress={()=>applyPreset(p.id)} style={[styles.presetChip,presetId===p.id&&styles.presetChipOn]}>
+     <Text style={[styles.presetChipText,presetId===p.id&&styles.presetChipTextOn]} numberOfLines={1}>{p.name}</Text></Pressable>)}
+   </View>
+   {presetMessage?<Message>{presetMessage}</Message>:null}
+   {presetNotes.map(n=><Text key={n} style={styles.note}>• {n}</Text>)}
+   {presetError?<Message tone="error">{presetError}</Message>:null}
+   {presetId!==null?<Button danger={presetConfirmDelete} secondary={!presetConfirmDelete} disabled={busy||presetBusy}
+    title={presetConfirmDelete?'Confirmar eliminação do perfil':'Eliminar este perfil'} onPress={()=>{void removePreset();}}/>:null}
+  </View>:null}
   <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
    {form.sport?<Badge text={form.sport}/>:null}
    {!customSportMode?<TextInput style={styles.input} value={sportSearch}
@@ -669,6 +772,15 @@ export default function CreateSessionScreen(){
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
    {field('Preço por participante (€)','price','0','decimal-pad')}
    {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
+   <Text style={styles.label}>Nível da sessão</Text>
+   <View style={styles.levelRow}>
+    {sessionChoices().map(choice=>{const selected=(form.skillLevel||'')===choice.value;
+     return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected}} disabled={busy}
+      style={[styles.levelChip,selected&&styles.levelChipSelected]} onPress={()=>patch('skillLevel',choice.value)}>
+      <Text style={[styles.levelChipText,selected&&styles.levelChipTextSelected]}>{choice.label}</Text>
+     </Pressable>;})}
+   </View>
+   <Text style={styles.note}>Ajuda quem procura jogos ao seu nível. Deixa “Todos os níveis” se qualquer pessoa é bem-vinda.</Text>
    <Text style={styles.label}>Como vais reunir os jogadores?</Text>
    <View style={styles.playerChoices}>
     <Pressable accessibilityRole="radio" accessibilityState={{checked:!hasExistingPlayers}} disabled={busy}
@@ -695,12 +807,14 @@ export default function CreateSessionScreen(){
    <Text style={styles.label}>Repetição</Text>
    <View style={styles.inline}>
     <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
-    <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy||!hasCommunity} onPress={()=>patch('recurrence','WEEKLY')}/>
-    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy||!hasCommunity} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
+    <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy} onPress={()=>patch('recurrence','WEEKLY')}/>
+    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
    </View>
    {form.recurrence!=='NONE'?<>
-    {field('Número de ciclos (2 a 52)','recurrenceOccurrences','4','numeric')}
-    <Text style={styles.note}>O primeiro horário é a data indicada acima. O servidor valida os próximos ciclos e garante no máximo 52 sessões.</Text>
+    {field('Número de ciclos (2 a '+(hasCommunity?52:12)+')','recurrenceOccurrences','4','numeric')}
+    <Text style={styles.note}>{hasCommunity
+     ?'O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.'
+     :'Repete o mesmo jogo, até 12 sessões (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.'}</Text>
     {form.recurrence==='WEEKLY'?<View style={styles.field}>
      <Text style={styles.label}>Mais horários na primeira semana (até seis adicionais)</Text>
      {(form.additionalWeeklySlots||[]).map((slot,index)=><View key={index} style={styles.option}>
@@ -769,7 +883,7 @@ export default function CreateSessionScreen(){
     onEdit={()=>setStep(1)}/>
    <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
    <Text style={styles.summaryTitle}>Participação e regras</Text>
-   <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
+   <Text style={styles.summaryValue}>Nível: {levelLabel(form.skillLevel)} · Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
    <Text style={styles.summaryValue}>{hasExistingPlayers?'Vou completar um grupo existente':'Vou encontrar jogadores na Jynlo'}</Text>
    <Text style={styles.summaryValue}>Preço: {form.price||'0'} € · {sharedIds.length?'Apenas membros das comunidades':form.privateGame?'Privada com palavra-passe':selectedCommunity?'Apenas membros da comunidade':'Pública'}</Text>
    <Text style={styles.summaryValue}>Inscrições: {form.registrationOpeningMode==='SCHEDULED'?'Abertura '+form.registrationDay+' às '+form.registrationTime:form.registrationOpeningMode==='MANUAL'?'Abertura manual':'Abertura imediata'}</Text>
@@ -779,6 +893,17 @@ export default function CreateSessionScreen(){
    <Button secondary title="Editar participação e inscrições" disabled={busy} onPress={()=>setStep(2)}/>
    <Message>O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta a sessão criada antes de tentares repetir a operação se houver uma falha de ligação.</Message>
   </View>:null}
+  {step===3&&auth.token&&!DEMO_MODE?<View style={styles.panel}>
+   <Text style={styles.presetKicker}>PERFIS DE SESSÕES</Text>
+   <Text style={styles.heading}>{presetId!==null?'Atualizar o perfil':'Guardar como perfil'}</Text>
+   <Text style={styles.note}>Guarda a modalidade, o recinto, os jogadores e as preferências para voltares a criar este jogo. Datas, horas e palavras-passe não são guardadas. Não cria um jogo.</Text>
+   <TextInput style={styles.input} value={presetName} onChangeText={v=>{setPresetName(v);setPresetError('');}} maxLength={70}
+    placeholder="Ex.: Futsal de sexta-feira" placeholderTextColor={C.muted} editable={!busy&&!presetBusy} accessibilityLabel="Nome do perfil"/>
+   {presetError?<Message tone="error">{presetError}</Message>:null}
+   {presetMessage&&!presetMessage.startsWith('Configuração')?<Message>{presetMessage}</Message>:null}
+   {presetId!==null?<Button secondary title={presetBusy?'A guardar…':'Atualizar perfil'} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(true);}}/>:null}
+   <Button secondary title={presetBusy?'A guardar…':'Guardar novo perfil'} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(false);}}/>
+  </View>:null}
   <View style={styles.actions}>
    {step>0?<Button secondary title="Anterior" disabled={busy} onPress={()=>{setStep(current=>Math.max(0,current-1));setError('');}}/>:null}
    {step<3?<Button title="Continuar" disabled={busy} onPress={nextStep}/>:
@@ -787,7 +912,11 @@ export default function CreateSessionScreen(){
   <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
  </Page>;
 }
-const styles=StyleSheet.create({
+const styles=StyleSheet.create({presetKicker:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1.2},
+ presetChips:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ presetChip:{minHeight:40,maxWidth:'100%',justifyContent:'center',paddingHorizontal:14,borderRadius:999,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ presetChipOn:{borderColor:C.mint,backgroundColor:'#124B48'},presetChipText:{color:C.white,fontWeight:'800',fontSize:14},presetChipTextOn:{color:C.mint},
+
  locationOptions:{gap:12,padding:12,borderRadius:15,backgroundColor:C.surface2,borderColor:C.border,borderWidth:1},
  locationModes:{gap:8},
  locationModeButton:{minHeight:48,paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,justifyContent:'center',alignItems:'center'},
@@ -817,6 +946,10 @@ const styles=StyleSheet.create({
  input:{borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface2,color:C.white,padding:13,minHeight:48,fontSize:15},
  inline:{flexDirection:'row',gap:10,flexWrap:'wrap'},
  playerChoices:{gap:9},
+ levelRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ levelChip:{minHeight:40,paddingHorizontal:14,justifyContent:'center',borderRadius:20,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
+ levelChipSelected:{borderColor:C.mint,backgroundColor:C.mint},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},levelChipTextSelected:{color:C.background},
  playerChoice:{borderWidth:1,borderColor:C.border,borderRadius:13,padding:14,gap:5,backgroundColor:C.surface2},
  playerChoiceSelected:{borderColor:C.mint},
  playerChoiceTitle:{fontWeight:'900',color:C.white,fontSize:14},

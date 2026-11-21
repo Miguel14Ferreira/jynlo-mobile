@@ -288,6 +288,7 @@ export default function NotificationsScreen(){
     case 'session':router.push({pathname:'/sessions/[id]',params:{id:destination.id!}});break;
     case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
     case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
+    case 'group-chat':router.push({pathname:'/groups/[id]',params:{id:destination.id!}});break;
     case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
     case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
     case 'social-post':router.push({pathname:'/posts/[postId]',params:{postId:destination.id!}});break;
@@ -334,6 +335,7 @@ export default function NotificationsScreen(){
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites, novidades desportivas e atividade social.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
+  {sameAccount?<Button secondary title="Gerir notificações" onPress={()=>router.push('/notification-settings')}/>:null}
   {sameAccount?<Button secondary title="Respostas privadas às minhas Stories" onPress={()=>router.push('/stories/replies')}/>:null}
   {loading?<Loader/>:null}
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}

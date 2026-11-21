@@ -20,7 +20,8 @@ test('inline chats have independently scrollable history and show earlier messag
   const src=read('src/components/'+name+'ChatPanel.tsx');
   assert.match(src,/\{<ScrollView ref=\{inlineHistoryRef\} style=\{\[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard\]\} nestedScrollEnabled/);
   assert.match(src,/setHistoryLimit\(count=>count\+40\)/);
-  assert.match(src,/inlineHistory:\{height:290,/);
+  // Fixed, bounded height (resized in the redesign) so the page keeps scrolling.
+  assert.match(src,/inlineHistory:\{height:\d+,maxHeight:\d+,/);
   assert.match(src,/return embedded\?<View style=\{styles.inline\}>/);
  }
 });

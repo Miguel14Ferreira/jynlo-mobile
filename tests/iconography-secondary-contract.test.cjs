@@ -19,7 +19,7 @@ test('profile and explore use unified vector icons without Unicode location mark
  const explore=read('app/(tabs)/explore.tsx');
  assert.match(profile,/name="location"/);
  assert.match(profile,/name="chevron-right"/);
- for(const name of ['plus','venue','location','search','chevron-right'])
+ for(const name of ['location','search'])
    assert.ok(explore.includes('name="'+name+'"'),name);
  assert.doesNotMatch(explore,/⌖|⌕|＋/);
 });

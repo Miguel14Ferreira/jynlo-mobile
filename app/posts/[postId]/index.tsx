@@ -9,6 +9,8 @@ import {MobileTheme} from '../../../src/lib/theme';
 import {postMediaItems} from '../../../src/lib/post-album.cjs';
 import {sharedPostLink} from '../../../src/lib/shared-post-link.cjs';
 import PostEditSheet from '../../../src/components/PostEditSheet';
+import {ReportSheet} from '../../../src/components/ReportSheet';
+import {reportComment,reportPost} from '../../../src/lib/user-safety-api';
 import AdaptivePostPhoto from '../../../src/components/AdaptivePostPhoto';
 import ProtectedPostMedia from '../../../src/components/ProtectedPostMedia';
 import {mediaRequestSource} from '../../../src/lib/protected-media-source';
@@ -20,6 +22,7 @@ export default function NotificationPost(){
  const id=typeof postId==='string'&&/^[1-9][0-9]*$/.test(postId)?Number(postId):NaN;
  const valid=Number.isSafeInteger(id)&&id>0;
  const auth=useAuth(),router=useRouter();
+ const [reportTarget,setReportTarget]=useState<{kind:'post'}|{kind:'comment';commentId:number;author:string}|null>(null);
  const {width:screenWidth}=useWindowDimensions();
  const [expandedImage,setExpandedImage]=useState<string|null>(null);
  const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
@@ -160,6 +163,11 @@ export default function NotificationPost(){
      <Text style={styles.note}>{post.commentCount} comentários</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" onPress={()=>{void sharePost();}} style={styles.action}><Text style={styles.link}>↗ Partilhar</Text></Pressable>
     </View>
+    {auth.token&&auth.username&&post.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
+     <Pressable accessibilityRole="button" accessibilityLabel="Denunciar publicação" disabled={busy} onPress={()=>setReportTarget({kind:'post'})} style={styles.privacy}>
+      <Text style={[styles.link,{color:T.danger}]}>Denunciar publicação</Text>
+      <Text style={styles.note}>Se esta publicação for ofensiva ou enganadora, a equipa Jynlo revê-a.</Text>
+     </Pressable>:null}
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
      <Pressable accessibilityRole="button" accessibilityLabel="Editar texto e localização da publicação" disabled={busy} onPress={()=>setEditingPost(post)} style={styles.privacy}>
       <Text style={styles.link}>Editar publicação</Text>
@@ -193,6 +201,9 @@ export default function NotificationPost(){
      {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
       <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={busy}
        onPress={()=>{setEditingComment(c.id);setEditDraft(c.content);}}><Text style={styles.link}>Editar</Text></Pressable>:null}
+     {auth.token&&auth.username&&c.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
+      <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar comentário de @'+c.authorUsername}
+       onPress={()=>setReportTarget({kind:'comment',commentId:c.id,author:c.authorUsername})}><Text style={[styles.link,{color:T.danger}]}>Denunciar</Text></Pressable>:null}
     </View>
    </View>):null}
    {post&&auth.token?<View style={styles.editor}>
@@ -202,6 +213,12 @@ export default function NotificationPost(){
     </Pressable>
    </View>:null}
   </ScrollView>
+  <ReportSheet visible={!!reportTarget&&!!post} title={reportTarget?.kind==='comment'?'Denunciar comentário':'Denunciar publicação'}
+   subject={reportTarget?.kind==='comment'?'Comentário de @'+reportTarget.author:post?'Publicação de @'+post.authorUsername:''}
+   onClose={()=>setReportTarget(null)}
+   onSubmit={async reason=>{const target=reportTarget;if(!target||!post?.postId||!auth.token)return;
+    if(target.kind==='comment')await reportComment(post.postId,target.commentId,reason,auth.token);
+    else await reportPost(post.postId,reason,auth.token);}}/>
   <PostEditSheet post={editingPost&&post&&editingPost.postId===post.postId?editingPost:null} token={auth.token} username={auth.username}
    onClose={()=>setEditingPost(null)} onSaved={updated=>{setPost(current=>current?.postId===updated.postId?updated:current);setEditingPost(null);}}/>
   <Modal visible={!!expandedImage&&!!post&&!!auth.token} transparent animationType="fade" onRequestClose={()=>setExpandedImage(null)}>

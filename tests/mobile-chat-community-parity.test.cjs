@@ -48,8 +48,10 @@ test('member community links to session creation with authenticated preselection
 
 test('private conversation polls while focused and never retries sends automatically',()=>{
  const screen=read('app/messages/[peer].tsx');
- assert.match(screen,/setInterval\(\(\)=>\{\s*if\(AppState\.currentState==='active'&&!sendingNow\.current\)void refresh\(true,version\);\s*\},15000\)/);
- assert.match(screen,/clearInterval\(timer\);resume\.remove\(\)/);
+ // WebSocket first: poll every 5 s only while offline, otherwise reconcile every 30 s.
+ assert.match(screen,/setInterval\(\(\)=>\{\s*if\(active&&(version===generation\.current|generation\.current===version)&&AppState\.currentState==='active'&&!sendingNow\.current\)\{\s*pollTicks\+\+;\s*if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,version\);\s*\}\s*\},5000\)/);
+ // The private chat also closes its WebSocket on blur.
+ assert.match(screen,/clearInterval\(timer\);(disconnect\(\);)?resume\.remove\(\)/);
  assert.match(screen,/received\?\.remove\(\)/);
  assert.match(screen,/if\(refreshing\.current===version\)/);
  assert.match(screen,/if\(!silent\)\{setLoading\(true\);setError\(''\);\}/);
@@ -168,11 +170,12 @@ test('confirmed outbound community and session messages appear before history re
  const session=read('src/components/SessionChatPanel.tsx');
  const verifiedCommunity=community.indexOf('if(!confirmedCommunityChatSend(confirmed,');
  const visibleCommunity=community.indexOf('setMessages(current=>mergeMessages(current,[confirmed]))',verifiedCommunity);
- const reloadCommunity=community.indexOf('await refresh(version);',visibleCommunity);
+ // Reconciliation is now fire-and-forget: a failed refresh cannot undo a confirmed send.
+ const reloadCommunity=community.indexOf('void refresh(version,true);',visibleCommunity);
  assert.ok(verifiedCommunity>=0&&visibleCommunity>verifiedCommunity&&reloadCommunity>visibleCommunity);
  const verifiedSession=session.indexOf('if(!confirmedSessionChatSend(confirmed,');
  const visibleSession=session.indexOf('setEntries(current=>current.some(entry=>entry.id===confirmed.id)',verifiedSession);
- const reloadSession=session.indexOf('await refresh(false,version);',visibleSession);
+ const reloadSession=session.indexOf('void refresh(true,version);',visibleSession);
  assert.ok(verifiedSession>=0&&visibleSession>verifiedSession&&reloadSession>visibleSession);
  assert.ok(community.includes('if(version!==generation.current)return;'));
  assert.ok(session.includes('if(version!==generation.current)return;'));

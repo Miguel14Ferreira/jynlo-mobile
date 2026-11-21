@@ -251,7 +251,7 @@ test('team chat drops history fetched before a write and avoids overlapping refr
  assert.match(panel,/if\(reading\.current===expected&&readRequestVersion\.current===readRequest\)/);
  assert.match(panel,/pendingRefresh\.current=false/);
  assert.match(panel,/if\(state==='active'\)void refresh\(true,current,true\)/);
- assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current,true\)/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%[46]===0\)void refresh\(true,current,true\)/);
 });
 
 test('team chat uses member-scoped WebSocket hints with polling only as fallback',()=>{
@@ -259,7 +259,7 @@ test('team chat uses member-scoped WebSocket hints with polling only as fallback
  const realtime=read('src/lib/team-content-realtime.ts');
  assert.match(panel,/observeTeamContent\(\{teamId,kind,token/);
  assert.match(panel,/onInvalidated:\(\)=>\{if\(version\.current===current&&AppState\.currentState==='active'\)void refresh\(true,current,true\)/);
- assert.match(panel,/if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,current,true\)/);
+ assert.match(panel,/if\(!socketOnline\|\|pollTicks%[46]===0\)void refresh\(true,current,true\)/);
  assert.match(panel,/if\(AppState\.currentState!=='active'\)return/);
  assert.match(panel,/stopObserving\(\)/);
  assert.match(realtime,/type:'AUTH',token/);
@@ -276,7 +276,9 @@ test('confirmed joined squads are listed separately from owned team identities',
  assert.match(screen,/auth\.token\?joinedSportsTeams\(auth\.token\):Promise\.resolve\(\[\]\)/);
  assert.match(screen,/memberTeams\.status==='fulfilled'/);
  assert.match(screen,/Equipas onde és jogador/);
- assert.match(screen,/joined\.map\(team=><Pressable/);
+ // Joined squads exclude teams the user already owns (no duplicated cards).
+ assert.match(screen,/const joinedOnly=joined\.filter\(team=>!owned\.some\(owner=>owner\.id===team\.id\)\)/);
+ assert.match(screen,/joinedOnly\.map\(team=><Pressable/);
  assert.match(screen,/params:\{id:String\(team\.id\)\}/);
 });
 
@@ -428,11 +430,11 @@ test('team chat aligns compact controls with other chats and preserves same-team
  for(const name of ['search','close','reply','edit','remove','gallery','camera','send'])
   assert.ok(panel.includes('name="'+name+'"'),name);
  for(const label of ['Pesquisar mensagens','Voltar à conversa','Responder à mensagem',
-  'Editar mensagem da equipa','Eliminar mensagem da equipa','Selecionar fotografias ou vídeos','Abrir câmara'])
+  'Editar mensagem','Eliminar mensagem','Selecionar fotografias ou vídeos','Abrir câmara'])
   assert.ok(panel.includes(label),label);
  assert.match(panel,/const changedConversation=focusedIdentity\.current!==writeKey/);
- assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\);setEditingId\(null\);setEditDraft\(''\);[\s\S]*?feedCommentDrafts\.current\.clear\(\);\}/);
- assert.match(panel,/onStatus:status=>\{if\(version\.current===current\)\{/);
+ assert.match(panel,/if\(changedConversation\)\{setDraft\(''\);setReplyTo\(null\);setEditingId\(null\);(setExpandedMessageActions\(null\);)?setEditDraft\(''\);[\s\S]*?feedCommentDrafts\.current\.clear\(\);\}/);
+ assert.match(panel,/onStatus:status=>\{\s*if\(version\.current!==current\)return;/);
  assert.match(panel,/connection==='online'\?'Em tempo real'/);
  assert.match(panel,/entryAction:\{minWidth:40,minHeight:40/);
 });

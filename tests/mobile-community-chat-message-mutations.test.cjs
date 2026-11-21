@@ -21,7 +21,9 @@ test('community chat exposes edit for own recent plain messages and delete with 
  assert.match(screen,/!message\.attachments\?\.length/);
  assert.match(screen,/Date\.now\(\)-created<=15\*60\*1000/);
  assert.match(screen,/Alert\.alert\('Apagar mensagem para todos\?'/);
- assert.match(screen,/accessibilityLabel="Opções da minha mensagem"/);
+ // Message actions sit behind a per-message "more" menu now.
+ assert.match(screen,/accessibilityLabel=\{'Mostrar ações da mensagem de @'\+m\.username\}/);
+ assert.match(screen,/accessibilityLabel="Editar ou eliminar a minha mensagem"/);
  assert.match(screen,/accessibilityLabel="Editar mensagem"/);
  assert.match(screen,/m\.editedAt\?' · editada'/);
  assert.match(screen,/m\.deletedAt\?'Mensagem removida'/);

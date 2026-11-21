@@ -67,7 +67,7 @@ export default function TournamentsScreen(){
   </View>:null}
   {!loading&&!error&&auth.token&&items.length===0?<View style={styles.recovery}>
     <Message>Ainda não existem torneios nas tuas comunidades. Junta-te a uma comunidade para os descobrires.</Message>
-    <Button secondary title="Descobrir comunidades" onPress={()=>router.push('/(tabs)/communities')}/>
+    <Button secondary title="Descobrir comunidades" onPress={()=>router.push('/communities')}/>
   </View>:null}
   {!loading&&!error&&items.length>0?<Text style={styles.count}>{filtered.length} {filtered.length===1?'torneio encontrado':'torneios encontrados'} de {items.length}</Text>:null}
   {!loading&&!error&&items.length>0&&filtered.length===0?<View style={styles.recovery}>

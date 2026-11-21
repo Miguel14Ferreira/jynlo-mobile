@@ -6,35 +6,29 @@ const path=require('node:path');
 const home=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
 const tabs=fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8');
 
+// The home became the social feed with "Próximos jogos" (PR #26). The earlier
+// hero with quick actions was removed on purpose; these tests guard the current home.
 test('Jynlo mobile home retains the officially approved logo instead of concept-art icons',()=>{
  assert.match(home,/require\('\.\.\/\.\.\/assets\/jynlo-icon\.png'\)/);
  assert.match(home,/styles\.brandName}>JYNLO/);
- assert.match(home,/jynloDiscoverPanel/);
- assert.match(home,/Encontra as tuas pessoas\./);
 });
 test('mobile home actions resolve to screens already registered in Expo Router',()=>{
- for(const name of ["Explorar","Equipas","Torneios","Diretos","Publicar","Comunidades"])
-  assert.match(home,new RegExp("label:'"+name+"'"));
- assert.match(home,/router\.push\('\/\(tabs\)\/explore'\)/);
- assert.match(home,/router\.push\('\/\(tabs\)\/tournaments'\)/);
- assert.match(home,/router\.push\('\/\(tabs\)\/communities'\)/);
- assert.match(home,/router\.push\('\/teams'\)/);
  assert.match(home,/router\.push\(auth\.token\?'\/live':'\/login'\)/);
- assert.match(tabs,/name="tournaments"/);
- assert.match(tabs,/name="communities"/);
- assert.match(tabs,/name="explore"/);
+ assert.match(home,/router\.push\('\/notifications'\)/);
+ assert.match(home,/router\.push\(auth\.token\?'\/\(tabs\)\/profile':'\/login'\)/);
+ for(const name of ['explore','profile'])assert.match(tabs,new RegExp('name="'+name+'"'));
+ // Communities is a stack screen (app/communities/index.tsx), registered in the root layout.
+ assert.ok(fs.existsSync(path.join(__dirname,'..','app/communities/index.tsx')));
 });
-test('new hero routes authenticated users to real session creation and guests to sign in',()=>{
- assert.match(home,/router\.push\(auth\.token\?'\/sessions\/create':'\/login'\)/);
- assert.match(home,/\{label:'Publicar',icon:'post',go:\(\)=>requireLogin\(\)&&openPostComposer\(\)\}/);
- assert.match(home,/accessibilityLabel="Criar uma nova sessão desportiva"/);
+test('home leads with the next games before Stories and the feed',()=>{
+ assert.match(home,/import \{HomeUpNext\} from '\.\.\/\.\.\/src\/features\/home-up-next'/);
+ assert.ok(home.indexOf('<HomeUpNext/>')>=0&&home.indexOf('<HomeUpNext/>')<home.indexOf('title="Stories"'));
+ assert.match(home,/accessibilityLabel="Criar publicação no Feed" onPress=\{\(\)=>openPostComposer\(\)\}/);
 });
 test('quick actions are accessible without blocking or replacing the existing Stories, feed or post interactions',()=>{
- assert.match(home,/accessibilityLabel="Acessos rápidos Jynlo"/);
- assert.match(home,/accessibilityRole="button"\s*accessibilityLabel=\{item\.label\}/);
- assert.match(home,/visibleStoryGroups\.map\(group/);
+ assert.match(home,/visibleStoryGroups\.length\?<ScrollView horizontal/);
+ assert.match(home,/accessibilityLabel="Criar a minha story" onPress=\{\(\)=>requireLogin\(\)&&openStoryComposer\(\)\}/);
  assert.match(home,/ListHeaderComponent=\{Header\(\)\}/);
  assert.match(home,/renderItem=\{\(\{item\}\)=><View style=\{styles\.feedCardWrap\}>/);
  assert.match(home,/style=\{styles\.postActions\}/);
- assert.match(home,/minHeight:48,backgroundColor:TEAL/);
 });

@@ -6,7 +6,7 @@ import {useAuth} from '../../../../src/lib/auth';
 import {tournamentDetails} from '../../../../src/lib/competition-api';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentParticipants,joinIndividualTournament,leaveIndividualTournament,confirmIndividualParticipant} from '../../../../src/lib/tournament-registration-api';
-import {canSeeIndividualRoster,canConfirmParticipant,ownEnrollment,participantStatus,registrationAction} from '../../../../src/lib/tournament-registration-core.cjs';
+import {entriesOpen,canSeeIndividualRoster,canConfirmParticipant,ownEnrollment,participantStatus,registrationAction} from '../../../../src/lib/tournament-registration-core.cjs';
 import {validPage} from '../../../../src/lib/tournament-fixtures-core.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament} from '../../../../src/lib/types';
@@ -83,7 +83,7 @@ export default function TournamentParticipantsScreen(){
  }
  async function mutate(which:'JOIN'|'LEAVE'|'CONFIRM',participant?:Participant,expectedVersion=generation.current){
   if(!auth.token||!auth.username||mutationRef.current||pageRef.current||loading||
-    expectedVersion!==generation.current||!tournament||tournament.status!=='DRAFT'||
+    expectedVersion!==generation.current||!tournament||!entriesOpen(tournament)||
     !canSeeIndividualRoster(tournament))return;
   if(which==='CONFIRM'&&(!participant||!canConfirmParticipant(role,tournament,participant)))return;
   if(which==='JOIN'&&registrationAction(tournament,items,auth.username,more)!=='JOIN')return;
@@ -123,6 +123,7 @@ export default function TournamentParticipantsScreen(){
   {!!notice?<Message>{notice}</Message>:null}
   {!loading&&tournament&&canSeeIndividualRoster(tournament)&&role?<>
    {tournament.status==='DRAFT'?<Message>A participação só fica confirmada quando um organizador a aprovar. As inscrições e cancelamentos encerram ao começar o torneio.</Message>
+     :entriesOpen(tournament)?<Message>As provas já começaram, mas ainda podes pedir inscrição. As provas anteriores não contam para quem entra agora.</Message>
      :<Message>O torneio já começou ou terminou. Os participantes são apresentados apenas para consulta.</Message>}
    {myEntry?<View style={styles.myCard}>
      <Text style={styles.heading}>A minha inscrição</Text>
@@ -137,7 +138,7 @@ export default function TournamentParticipantsScreen(){
       {text:'Cancelar inscrição',style:'destructive',onPress:()=>{void mutate('LEAVE',undefined,version);}}
     ]);
    }}/>:null}
-   {!myEntry&&more&&tournament.status==='DRAFT'?<Message>Carrega as páginas seguintes para confirmar se já estás inscrito antes de pedir uma nova inscrição.</Message>:null}
+   {!myEntry&&more&&entriesOpen(tournament)?<Message>Carrega as páginas seguintes para confirmar se já estás inscrito antes de pedir uma nova inscrição.</Message>:null}
    <View style={styles.panel}>
     <Text style={styles.heading}>Participantes</Text>
     {items.length===0?<Text style={styles.muted}>Ainda não existem pedidos de inscrição neste torneio.</Text>:null}

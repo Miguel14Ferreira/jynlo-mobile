@@ -20,7 +20,7 @@ test('Story composer reopens with a clean retry guard and discarding resets it',
  const opening=home.slice(home.indexOf('function openStoryComposer()'),home.indexOf('function changeComposerMedia('));
  assert.match(opening,/setStoryPublishError\(''\);setStoryRetryAcknowledged\(true\)/);
  assert.match(opening,/setStoryComposer\(false\);setStoryMedia\(null\);setStoryCaption\(''\)/);
- assert.match(opening,/setStoryPublishCommunityId\(null\);setStoryStyleOpen\(false\);setStoryDetailsOpen\(false\);setStoryRetryAcknowledged\(true\)/);
+ assert.match(opening,/setStoryPublishCommunityId\(null\);setStoryPublishTeamId\(null\);setStoryStyleOpen\(false\);setStoryDetailsOpen\(false\);setStoryRetryAcknowledged\(true\)/);
 });
 test('uncertain network or receipt failures block re-sending, but local validation failures do not',()=>{
  for(const message of [

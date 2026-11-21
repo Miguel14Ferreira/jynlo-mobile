@@ -11,7 +11,8 @@ import {useAuth} from '../../src/lib/auth';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
-import {JynloIcon} from '../../src/components/JynloIcon';
+import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
+import {filterChoices} from '../../src/lib/session-level-core.cjs';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -24,6 +25,15 @@ const validPin=(session:SessionSummary)=>session.privateGame!==true&&session.aud
  session.latitude>=-90&&session.latitude<=90&&session.longitude>=-180&&session.longitude<=180;
 const POPULAR_SPORTS=['Futebol','Padel','Basquetebol','Voleibol','Karting','Corrida'] as const;
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT').trim();
+const DISCOVER:{label:string;caption:string;icon:JynloIconName;href:string}[]=[
+ {label:'Comunidades',caption:'Clubes e grupos',icon:'community',href:'/communities'},
+ {label:'Torneios',caption:'Ligas e competições',icon:'tournament',href:'/tournaments'},
+ {label:'Recintos',caption:'Campos e pavilhões',icon:'venue',href:'/venues'},
+ {label:'Equipas',caption:'A tua e convites',icon:'championship',href:'/teams'},
+ {label:'Pessoas',caption:'Quem joga perto',icon:'profile',href:'/people'},
+ {label:'Diretos',caption:'Jogos em direto',icon:'video',href:'/live'},
+];
+
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
@@ -49,6 +59,7 @@ export default function DiscoverScreen(){
  const [city,setCity]=useState(''),[debouncedCity,setDebouncedCity]=useState('');
  const updateCity=(value:string)=>{setCity(value);setMapArea(null);};
  const [availableOnly,setAvailableOnly]=useState(true);
+ const [skillLevel,setSkillLevel]=useState<''|'BEGINNER'|'INTERMEDIATE'|'ADVANCED'>('');
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const loadVersion=useRef(0);
  useEffect(()=>{const timer=setTimeout(()=>setDebouncedCity(city.trim()),350);return()=>clearTimeout(timer);},[city]);
@@ -67,6 +78,7 @@ export default function DiscoverScreen(){
    setLoading(true);setError('');
    try{
      const next=await discoverSessions({sport:sport||undefined,city:mapArea?undefined:debouncedCity,availableOnly,
+       ...(skillLevel?{skillLevel}:{}),
        ...(mapArea?{...mapArea,sort:'distance' as const}:{})},auth.token,auth.username||undefined);
      if(version===loadVersion.current){
        setSessions(next);setSelectedPin(null);
@@ -76,7 +88,7 @@ export default function DiscoverScreen(){
    }catch(e){
      if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');}
    }finally{if(version===loadVersion.current)setLoading(false);}
- },[sport,debouncedCity,mapArea,availableOnly,auth.token,auth.username]);
+ },[sport,debouncedCity,mapArea,availableOnly,skillLevel,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{loadVersion.current++;};},[load]));
  return <SafeAreaView style={styles.page} edges={['top','left','right']}>
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
@@ -88,6 +100,15 @@ export default function DiscoverScreen(){
      <Eyebrow>O JOGO COMEÇA AQUI</Eyebrow>
      <Text style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
+   </View>
+   {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
+   <View style={styles.discover} accessibilityLabel="Descobrir mais na Jynlo">
+     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label+': '+item.caption}
+       onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
+       <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
+        <Text style={styles.discoverLabel} numberOfLines={1}>{item.label}</Text></View>
+       <Text style={styles.discoverCaption} numberOfLines={1}>{item.caption}</Text>
+     </Pressable>)}
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    {/* Full catalogue first (always visible), then the popular sports. */}
@@ -125,7 +146,15 @@ export default function DiscoverScreen(){
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
    </Pressable>
-   {(city.trim()||sport||!availableOnly||mapArea)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}}>
+   <View style={styles.levelFilter} accessibilityLabel="Filtrar por nível">
+     <Text style={styles.levelFilterLabel}>🎯 Nível</Text>
+     {filterChoices().map(choice=><Pressable key={choice.value||'any'} accessibilityRole="button"
+       accessibilityState={{selected:skillLevel===choice.value}} onPress={()=>setSkillLevel(choice.value)}
+       style={[styles.levelChip,skillLevel===choice.value&&styles.selected]}>
+       <Text style={[styles.levelChipText,skillLevel===choice.value&&{color:C.background}]}>{choice.label}</Text>
+     </Pressable>)}
+   </View>
+   {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
      <Text style={styles.resetFiltersText}>Limpar filtros</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
    <View style={styles.section}><Text style={styles.sectionTitle}>Encontrar jogos</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>
@@ -190,6 +219,14 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ discover:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ discoverTile:{flexBasis:'46%',flexGrow:1,minHeight:62,paddingHorizontal:12,paddingVertical:10,gap:3,justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ discoverHead:{flexDirection:'row',alignItems:'center',gap:8},
+ discoverLabel:{flexShrink:1,color:C.white,fontWeight:'900',fontSize:15},discoverCaption:{color:C.muted,fontSize:12},
+ levelFilter:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
+ levelFilterLabel:{color:C.white,fontWeight:'800',fontSize:14,marginRight:2},
+ levelChip:{minHeight:38,paddingHorizontal:13,justifyContent:'center',borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},
  retryPanel:{gap:10},
  retryAction:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,minHeight:48,paddingHorizontal:16,borderRadius:12,backgroundColor:C.mint},
  retryActionText:{color:C.background,fontSize:14,fontWeight:'800'},

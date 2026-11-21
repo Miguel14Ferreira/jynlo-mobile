@@ -691,7 +691,7 @@ export default function TeamDetail(){
     {isOwner&&communitiesVerified?communities.filter(m=>m.status==='PENDING_COMMUNITY').map(m=>
       <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
     {membershipNote?<Message>{membershipNote}</Message>:null}
-    {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/(tabs)/communities')}/>:null}
+    {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/communities')}/>:null}
    </View>:null}
    {activeTab==='OVERVIEW'&&isOwner?<View style={[styles.panel,{borderColor:'#A95D63',gap:10}]}>
     <Text style={styles.heading}>Administração da equipa</Text>

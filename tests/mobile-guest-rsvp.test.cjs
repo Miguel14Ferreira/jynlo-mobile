@@ -58,7 +58,8 @@ test('uncertain network response cannot create another guest RSVP on refresh',()
 test('browser fallback uses Android Custom Tabs instead of relaunching the native App Link',()=>{
  const details=read('app/sessions/[id].tsx');
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.dependencies['expo-web-browser'],'~58.0.8');
+ // Kept on the Expo SDK 58 line (minor updates are fine).
+ assert.match(pkg.dependencies['expo-web-browser'],/^~58\.\d+\.\d+$/);
  assert.match(details,/import\('expo-web-browser'\)/);
  assert.match(details,/browser\.openBrowserAsync\(url\)/);
 });

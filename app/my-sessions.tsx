@@ -7,6 +7,7 @@ import {useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
 import type {MySessions,SessionSummary} from '../src/lib/types';
 import {organizeMySessions} from '../src/lib/my-sessions-core.cjs';
+import {AttendanceHistory} from '../src/components/AttendanceHistory';
 export default function MySessionsScreen(){
  const auth=useAuth(),router=useRouter();const [data,setData]=useState<MySessions>({created:[],joined:[],waitlisted:[]});
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -62,7 +63,9 @@ export default function MySessionsScreen(){
     </View>)}
   </View>:null}
  </View>:null}
- {auth.token?<Message>Consulta as sessões futuras e o histórico. Abre uma sessão para gerir a presença, os convites e as equipas. O histórico de assiduidade individual continua pendente.</Message>:null}
+ {!loading&&!error&&auth.token&&auth.username&&loadedIdentity===identity?<AttendanceHistory token={auth.token} username={auth.username}
+   ownedSessionIds={(data.created||[]).map(s=>s.id)} onOpenSession={id=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})}/>:null}
+ {auth.token?<Message>Abre uma sessão para gerir a presença, os convites e as equipas. Se foste marcado com falta por engano, podes contestá-la no histórico de presenças.</Message>:null}
  </Page>
 }
 const styles=StyleSheet.create({heading:{color:C.white,fontWeight:'900',fontSize:28},group:{gap:16},groupTitle:{color:C.white,fontSize:21,fontWeight:'900'},section:{gap:13},sectionTitle:{color:C.white,fontWeight:'800',fontSize:17},empty:{color:C.muted,paddingVertical:8},errorSection:{gap:10},historyToggle:{minHeight:48,justifyContent:'center',alignItems:'center',paddingHorizontal:16,backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:14},historyText:{color:C.mint,fontWeight:'800',fontSize:14}});

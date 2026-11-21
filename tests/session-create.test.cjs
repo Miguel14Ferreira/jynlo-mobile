@@ -64,7 +64,11 @@ test('session creation: weekly and biweekly only for communities with a valid ti
  assert.deepEqual(weekly.additionalWeeklyGameDates,[]);
  const biweekly=createSessionPayload({...base,recurrence:'BIWEEKLY'},sports,0);
  assert.equal(biweekly.recurrence,'BIWEEKLY');
- assert.throws(()=>createSessionPayload({...base,communityId:null,recurrence:'WEEKLY'},sports,0));
+ // Independent organisers can repeat a game, up to 12 sessions.
+ const independent=createSessionPayload({...base,communityId:null,recurrence:'WEEKLY'},sports,0);
+ assert.equal(independent.recurrence,'WEEKLY');assert.equal(independent.recurrenceOccurrences,4);
+ assert.throws(()=>createSessionPayload({...base,communityId:null,recurrence:'WEEKLY',recurrenceOccurrences:'13'},sports,0),/12/);
+ assert.equal(createSessionPayload({...base,recurrence:'WEEKLY',recurrenceOccurrences:'52'},sports,0).recurrenceOccurrences,52);
  assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceOccurrences:'53'},sports,0));
  assert.throws(()=>createSessionPayload({...base,recurrence:'WEEKLY',recurrenceTimeZone:'Fake/Zone'},sports,0));
 });
@@ -152,7 +156,7 @@ test('session creation: adding a weekly slot only validates the schedule, not un
  assert.throws(()=>validateWeeklySlots('2030-06-10','18:30',[{day:'2030-06-12',time:'19:00'}],'BIWEEKLY',4,0));
 });
 
-test('session creation: switching community type clears incompatible recurring and registration state',()=>{
+test('session creation: switching community type keeps the repetition and clears community-only state',()=>{
  const {changeCommunityMode}=require('../src/lib/session-create-core.cjs');
  const previous={...valid,communityId:42,registrationOpeningMode:'SCHEDULED',
   registrationDay:'2030-06-01',registrationTime:'15:00',
@@ -164,7 +168,8 @@ test('session creation: switching community type clears incompatible recurring a
   assert.deepEqual(next.communityShareIds,[]);
   assert.equal(next.registrationOpeningMode,'IMMEDIATE');
   assert.equal(next.registrationDay,'');assert.equal(next.registrationTime,'');
-  assert.equal(next.recurrence,'NONE');assert.deepEqual(next.additionalWeeklySlots,[]);
+  // Repetition is available to everyone now; the limit is checked when sending.
+  assert.equal(next.recurrence,'WEEKLY');assert.equal(next.additionalWeeklySlots.length,1);
   assert.equal(next.seasonGame,false);assert.equal(next.confirmActivateRankings,false);
   assert.equal(next.sport,'Padel');
   assert.equal(next.privateGame,mode!=='SHARED');

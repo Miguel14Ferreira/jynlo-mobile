@@ -24,7 +24,9 @@ test('Android screens remain inside system navigation area and season help is re
  assert.match(ui,/edges=\{\['top','bottom','left','right'\]\}/);
  assert.match(create,/seasonHelpText:\{color:C\.mint/);
  assert.match(create,/seasonHead:\{gap:10/);
- assert.match(create,/equipas mais equilibradas/);
+ // Season help was rewritten in plain language (PR #26).
+ assert.match(create,/O que é um jogo de época\?/);
+ assert.match(create,/Contar para a época/);
 });
 test('profile counts and session attendance respect actual backend state',()=>{
  const profile=read('app/(tabs)/profile.tsx');
