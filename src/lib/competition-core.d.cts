@@ -1,4 +1,4 @@
-export type CompetitionKind='RACE'|'TEAM'|'INDIVIDUAL'|'TIMED'|'MEASURED'|'RELAY'|'CHESS'|'UNSUPPORTED';
+export type CompetitionKind='RACE'|'TEAM'|'INDIVIDUAL'|'TIMED'|'MEASURED'|'RELAY'|'CHESS'|'EVENT_RANKING'|'UNSUPPORTED';
 export const RACE_SPORTS:ReadonlySet<string>;
 export const TEAM_MATCH_SPORTS:ReadonlySet<string>;
 export function classificationKind(t:{sport?:string|null;scoringMode?:string|null;entryType?:string|null}):CompetitionKind;

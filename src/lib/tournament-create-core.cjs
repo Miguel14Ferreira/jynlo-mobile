@@ -15,6 +15,8 @@ const DISCIPLINES=Object.freeze({
   THROW:['SHOT_PUT','DISCUS','JAVELIN','HAMMER'],
   TRACK_RELAY:['RELAY_4X100','RELAY_4X400']
 });
+/** Individual sports without a dedicated engine: generic "classificação por provas" (same list as the web). */
+const EVENT_RANKING_SPORTS=new Set(['Aeromodelismo','Aikido','Apneia','Artes Marciais Chinesas','Atividades Subaquáticas','Bodyboard','Bowling','Breaking','Bridge','Calistenia','Canoagem','Canoagem Slalom','Columbofilia','Dança Desportiva','Escalada','Esqui','Esqui Alpino','Esqui de Fundo','Esqui Freestyle','Esqui de Montanha','Ginástica','Ginástica Artística','Ginástica Rítmica','Golfe','Halterofilismo','Hipismo','Mergulho','Natação Artística','Natação em Águas Abertas','Orientação','Paraquedismo','Parkour','Patinagem','Patinagem Artística','Pentatlo Moderno','Pesca Desportiva','Powerlifting','Skate','Snowboard','Stand Up Paddle','Surf','Tiro','Tiro com Arco','Trampolim','Triatlo','Vela','Voo Livre']);
 const RACE_EVENTS=Object.freeze({'BMX':'RACE','Ciclismo de Estrada':'ROAD_RACE','Ciclismo de Pista':'TRACK_SCRATCH'});
 function creationProfile(sport,entryType='INDIVIDUAL',athleticsMode='FIELD'){
  if(typeof sport!=='string'||!sport||!['INDIVIDUAL','TEAM'].includes(entryType))return {model:'UNAVAILABLE',events:[],formats:[]};
@@ -33,6 +35,7 @@ function creationProfile(sport,entryType='INDIVIDUAL',athleticsMode='FIELD'){
  if(sport==='Canoagem Velocidade')return {model:'CANOE_BEST_TIME',events:['CANOE_SPRINT'],formats:['LEAGUE']};
  if(RACE_SPORTS.has(sport))return {model:'RACE_POINTS',events:RACE_EVENTS[sport]?[RACE_EVENTS[sport]]:[],formats:['LEAGUE']};
  if(NUMERIC_INDIVIDUAL.has(sport))return {model:'NUMERIC_INDIVIDUAL',events:[],formats:['LEAGUE']};
+ if(EVENT_RANKING_SPORTS.has(sport))return {model:'EVENT_RANKING',events:[],formats:['LEAGUE']};
  return {model:'UNAVAILABLE',events:[],formats:[]};
 }
 function disciplineChoices(eventType){return DISCIPLINES[eventType]||[];}
@@ -89,4 +92,4 @@ function createTournamentDraft(data){
   eventType,eventDiscipline
  };
 }
-module.exports={RACE_SPORTS,DISCIPLINES,creationProfile,disciplineChoices,isNumericModel,createTournamentDraft};
+module.exports={RACE_SPORTS,EVENT_RANKING_SPORTS,DISCIPLINES,creationProfile,disciplineChoices,isNumericModel,createTournamentDraft};
