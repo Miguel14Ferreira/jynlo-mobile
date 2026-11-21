@@ -6,6 +6,7 @@ import {FriendPicker} from '../../src/components/FriendPicker';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
+import {markPrivateGroupRead} from '../../src/lib/chat-api';
 import {getGroup,groupMessages,sendGroupMessage,renameGroup,addGroupMembers,removeGroupMember} from '../../src/lib/private-groups-api';
 import {observePrivateGroup} from '../../src/lib/session-chat-realtime';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
@@ -40,6 +41,9 @@ export default function GroupChatScreen(){
    if(id!==generation.current)return;
    setGroup(g);setError('');setGone(false);
    setMessages(prev=>full?latest:mergeMessages(prev,latest));
+   // These messages are now on screen: move the server read cursor (badge and Messages list).
+   const newest=latest.reduce((max,m)=>Math.max(max,m.id),0);
+   if(newest>0)void markPrivateGroupRead(groupId,newest,auth.token).catch(()=>{});
    if(full)setHasMore(latest.length>=50);
   }catch(e){
    if(id!==generation.current)return;
