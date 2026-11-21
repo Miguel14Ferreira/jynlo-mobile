@@ -308,7 +308,7 @@ export default function CreateSessionScreen(){
    const sport=allowed.includes(prev.sport)?prev.sport:allowed.length===1&&typeof allowed[0]==='string'?allowed[0]:'';
    return {...prev,communityId:null,communityShareIds:next,sport,venueId:null,privateGame:false,password:'',
     seasonGame:false,confirmActivateRankings:false,communityRankingsEnabled:false,
-    ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const,recurrence:'NONE' as const,additionalWeeklySlots:[]}:null)};
+    ...(next.length===0?{registrationOpeningMode:'IMMEDIATE' as const}:null)};
   });
  }
  const availableSports=availableSessionSports(communityMode==='SINGLE'?(selectedCommunity?[selectedCommunity]:[]):
@@ -695,12 +695,14 @@ export default function CreateSessionScreen(){
    <Text style={styles.label}>Repetição</Text>
    <View style={styles.inline}>
     <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
-    <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy||!hasCommunity} onPress={()=>patch('recurrence','WEEKLY')}/>
-    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy||!hasCommunity} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
+    <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy} onPress={()=>patch('recurrence','WEEKLY')}/>
+    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
    </View>
    {form.recurrence!=='NONE'?<>
-    {field('Número de ciclos (2 a 52)','recurrenceOccurrences','4','numeric')}
-    <Text style={styles.note}>O primeiro horário é a data indicada acima. O servidor valida os próximos ciclos e garante no máximo 52 sessões.</Text>
+    {field('Número de ciclos (2 a '+(hasCommunity?52:12)+')','recurrenceOccurrences','4','numeric')}
+    <Text style={styles.note}>{hasCommunity
+     ?'O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.'
+     :'Repete o mesmo jogo, até 12 sessões (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.'}</Text>
     {form.recurrence==='WEEKLY'?<View style={styles.field}>
      <Text style={styles.label}>Mais horários na primeira semana (até seis adicionais)</Text>
      {(form.additionalWeeklySlots||[]).map((slot,index)=><View key={index} style={styles.option}>
