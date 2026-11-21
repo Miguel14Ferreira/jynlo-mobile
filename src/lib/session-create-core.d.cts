@@ -8,6 +8,7 @@ export interface CreateSessionForm {
  additionalWeeklySlots?:Array<{day:string;time:string}>;
  communityShareIds?:number[];
  venueId?:number|null;recurrence?:'NONE'|'WEEKLY'|'BIWEEKLY';recurrenceOccurrences?:string;recurrenceTimeZone?:string;
+ skillLevel?:''|'BEGINNER'|'INTERMEDIATE'|'ADVANCED';
 }
 export interface CreateSessionPayload{
  sport:string;gameDate:string;city:string;address:string;maxParticipants:number;
@@ -18,6 +19,7 @@ export interface CreateSessionPayload{
  communityShareIds:number[];seasonCompetitionCommunityId:number|null;confirmActivateRankings:boolean;
  meetingPointInstructions:string|null;minParticipants:number;
  googleMapsUrl?:string|null;
+ skillLevel?:'BEGINNER'|'INTERMEDIATE'|'ADVANCED';
 }
 export function formatLocalDateInput(value:string):string;
 export function formatLocalTimeInput(value:string):string;

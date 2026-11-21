@@ -52,6 +52,7 @@ function encodeFilters(filters:SessionFilters): string {
   if(filters.sport?.trim())q.set('sport',filters.sport.trim());
   if(filters.city?.trim())q.set('city',filters.city.trim());
   if(filters.availableOnly)q.set('availability','available');
+  if(filters.skillLevel&&['BEGINNER','INTERMEDIATE','ADVANCED'].includes(filters.skillLevel))q.set('skillLevel',filters.skillLevel);
   const hasMapArea=typeof filters.latitude==='number'&&typeof filters.longitude==='number'&&typeof filters.radiusKm==='number'
     &&Number.isFinite(filters.latitude)&&Number.isFinite(filters.longitude)&&Number.isFinite(filters.radiusKm)
     &&Math.abs(filters.latitude)<=90&&Math.abs(filters.longitude)<=180
@@ -139,6 +140,12 @@ export async function updateSessionMeetingPoint(id:number,token:string,instructi
  return request<SessionDetail>(`/api/sessions/${id}/meeting-point`,{
   token,method:'PATCH',body:{meetingPointInstructions:instructions.trim()||null}
  });
+}
+/** Organizer-only: level of the session (null = all levels). Never retried automatically. */
+export async function updateSessionSkillLevel(id:number,token:string,skillLevel:'BEGINNER'|'INTERMEDIATE'|'ADVANCED'|null):Promise<SessionDetail>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir o nível da sessão.');
+ if(skillLevel!==null&&!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(skillLevel))throw Error('Nível inválido.');
+ return request<SessionDetail>(`/api/sessions/${id}/skill-level`,{token,method:'PATCH',body:{skillLevel}});
 }
 export async function updateSessionExternalConfirmations(id:number,token:string,count:number):Promise<SessionDetail>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir os jogadores.');

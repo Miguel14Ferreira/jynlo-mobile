@@ -9,6 +9,7 @@ import type {SessionSummary} from '../lib/types';
 import {formatDate,money} from '../lib/format.cjs';
 import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
 import {sportIcon} from '../lib/tournament-discovery-core.cjs';
+import {isLevel,levelLabel} from '../lib/session-level-core.cjs';
 
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollViewInstance|null>(null);
@@ -101,6 +102,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
       <View style={styles.cardIdentity}>
         <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||'Local a confirmar'}</Text></View>
+        {isLevel(session.skillLevel)?<Text style={styles.cardLevel}>🎯 {levelLabel(session.skillLevel)}</Text>:null}
       </View>
       <JynloIcon name="chevron-right" size={25} color={MobileTheme.colors.accent}/>
     </View>
@@ -119,6 +121,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   </Pressable>;
 }
 const styles=StyleSheet.create({
+  cardLevel:{color:MobileTheme.colors.accent,fontSize:12,fontWeight:'800',marginTop:2},
   page:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},content:{paddingHorizontal:16,paddingTop:16,paddingBottom:88,gap:16},
   brandRow:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:4},logo:{width:34,height:34,borderRadius:10},
   brandTitle:{fontSize:20,fontWeight:'900',letterSpacing:2.4,color:C.white},brandSubtitle:{color:C.muted,fontSize:11,letterSpacing:1},
