@@ -42,3 +42,10 @@ test('app uses the shared endpoints and listens to group events only as hints',(
  assert.match(read('app/(tabs)/messages.tsx'),/router\.push\('\/groups'\)/);
  assert.match(read('app/_layout.tsx'),/name="groups\/\[id\]"/);
 });
+
+test('a group message alert opens the group, never the sender\'s direct chat',()=>{
+ const {notificationDestination}=require('../src/lib/notification-route.cjs');
+ assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',privateGroupId:5,relatedUsername:'ana'}),{kind:'group-chat',id:'5'});
+ assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',relatedUsername:'ana'}),{kind:'direct-chat',peer:'ana'});
+ assert.match(read('app/notifications.tsx'),/case 'group-chat':router\.push\(\{pathname:'\/groups\/\[id\]'/);
+});
