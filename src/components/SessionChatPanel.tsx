@@ -27,6 +27,9 @@ import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
+import {readPoll,isPollText} from '../lib/chat-poll.cjs';
+import {PollCard} from './PollCard';
+import {PollComposer} from './PollComposer';
 export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
@@ -81,6 +84,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const pickerInFlight=useRef(false),focusedIdentity=useRef('');
  const [photoReady,setPhotoReady]=useState(false),[uploading,setUploading]=useState(false);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
+ const [pollOpen,setPollOpen]=useState(false);
  const [muted,setMuted]=useState(false),[muteKnown,setMuteKnown]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const [muteError,setMuteError]=useState(''),[locationBusy,setLocationBusy]=useState(false);
  const muteWrites=useRef(new Set<string>());
@@ -284,7 +288,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  function editable(message:SessionChatEntry){
   const created=Date.parse(message.createdAt);
   return ownMessage(message)&&Boolean(message.body?.trim())&&!message.attachmentName&&
-   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&
+   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&!isPollText(message.body)&&
    Number.isFinite(created)&&created<=Date.now()&&Date.now()-created<=15*60*1000;
  }
  function messageOptions(message:SessionChatEntry){
@@ -337,6 +341,27 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     else setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
    }
   }finally{mutationLock.current=false;setMutationBusy(false);}
+ }
+ /** Sondagem: sent alone, exactly as encoded by the composer, under the same write lock. */
+ async function sendPoll(text:string){
+  setPollOpen(false);
+  const identity=id+'|'+auth.token;
+  if(!text||mutationLock.current||closed||!auth.token||sendingNow.current||pendingWrites.current.has(identity))return;
+  const version=generation.current;
+  pendingWrites.current.set(identity,'text');
+  sendingNow.current=true;setSending(true);setError('');
+  try{
+   const confirmed=await postSessionChat(id,text,auth.token);
+   if(version!==generation.current||activeChat.current!==identity)return;
+   setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:[...current,confirmed].sort((a,b)=>a.id-b.id));
+   void refresh(true,version);
+  }catch(e){
+   if(version===generation.current&&activeChat.current===identity)
+    setError((e instanceof Error?e.message:'Não foi possível enviar a sondagem.')+' Consulta o histórico antes de repetir.');
+  }finally{
+   pendingWrites.current.delete(identity);
+   if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
+  }
  }
  async function choosePhoto(source:'gallery'|'camera'='gallery'){
   if(!auth.token||!photoReady||closed||sendingNow.current||uploading||pickerInFlight.current||mutationLock.current)return;
@@ -404,7 +429,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     </View>
     {m.replyToText?<View style={styles.quote}><Text numberOfLines={1} style={styles.quoteAuthor}>{m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText}</Text></View>:null}
     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
-    <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>
+    {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="session" conversationId={id} messageId={m.id} token={auth.token}/>:
+    <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>}
     {!m.deletedAt&&chatLocationUrl(m.body)?
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
        <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
@@ -507,6 +533,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
       onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual" disabled={locationBusy||sending||uploading}
       style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem" disabled={sending}
+      style={styles.iconAction} onPress={()=>setPollOpen(true)}><Text style={{fontSize:20}}>📊</Text></Pressable>
+    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
    </View>:null}
   {false&&auth.token&&!closed?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>

@@ -29,6 +29,9 @@ import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {encodeCallUp,readCallUp} from '../lib/chat-callup.cjs';
 import {CallUpCard} from './CallUpCard';
 import {CallUpPicker} from './CallUpPicker';
+import {readPoll,isPollText} from '../lib/chat-poll.cjs';
+import {PollCard} from './PollCard';
+import {PollComposer} from './PollComposer';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
@@ -82,6 +85,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const mutationOwner=useRef(''),mutationEpoch=useRef(0);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false),[error,setError]=useState('');
  const [callUpOpen,setCallUpOpen]=useState(false);
+ const [pollOpen,setPollOpen]=useState(false);
  const historyError=useRef<string|null>(null);
  const [photo,setPhoto]=useState<ImagePicker.ImagePickerAsset|null>(null);
  const [extraPhotos,setExtraPhotos]=useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -261,10 +265,18 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    }}
   ]);
  }
+ /** Sondagem: sent alone, exactly as encoded by the composer. */
+ async function sendPoll(text:string){
+  setPollOpen(false);
+  await sendStructured(text,'Não foi possível enviar a sondagem.');
+ }
  /** Convocatória: one of my sessions, sent alone as the server envelope. */
  async function sendCallUp(sessionId:number){
   setCallUpOpen(false);
-  const text=encodeCallUp(sessionId),identity=id+'|'+auth.token;
+  await sendStructured(encodeCallUp(sessionId),'Não foi possível enviar a convocatória.');
+ }
+ async function sendStructured(text:string,failure:string){
+  const identity=id+'|'+auth.token;
   if(!text||!auth.token||!auth.username||revokedRef.current||sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity))return;
   const version=generation.current;
   sendingNow.current=true;setSending(true);setError('');
@@ -274,7 +286,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    setMessages(current=>current.some(m=>m.id===confirmed.id)?current:[...current,confirmed].sort((a,b)=>a.id-b.id));
    void refresh(version,true);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar a convocatória.')+' Confirma o histórico antes de repetir.');
+   if(version===generation.current)setError((e instanceof Error?e.message:failure)+' Confirma o histórico antes de repetir.');
   }finally{sendingNow.current=false;setSending(false);}
  }
  async function send(){
@@ -314,7 +326,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  function editable(message:CommunityChatEntry){
   const created=Date.parse(message.createdAt);
   return ownMessage(message)&&Boolean(message.body?.trim())&&!message.attachmentName&&
-   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&
+   !message.attachments?.length&&!message.body.startsWith('[JYNLO:GIPHY:1]')&&!isPollText(message.body)&&
    Number.isFinite(created)&&created<=Date.now()&&Date.now()-created<=15*60*1000;
  }
  function messageOptions(message:CommunityChatEntry){
@@ -462,7 +474,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       </View>:null}
      {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
      {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
-     {!m.deletedAt&&readCallUp(m.body)?<CallUpCard sessionId={readCallUp(m.body)!} token={auth.token} username={auth.username}/>:
+     {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="community" conversationId={id} messageId={m.id} token={auth.token}/>:
+     !m.deletedAt&&readCallUp(m.body)?<CallUpCard sessionId={readCallUp(m.body)!} token={auth.token} username={auth.username}/>:
      <ChatMentionText body={m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>}
      {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
       <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
@@ -570,6 +583,9 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     <Pressable accessibilityRole="button" accessibilityLabel="Convocatória: convocar para um dos teus jogos"
      style={styles.iconAction} disabled={sending} onPress={()=>setCallUpOpen(true)}><JynloIcon name="session" size={22} color={C.mint}/></Pressable>
     <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
+    <Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem"
+     style={styles.iconAction} disabled={sending} onPress={()=>setPollOpen(true)}><Text style={{fontSize:20}}>📊</Text></Pressable>
+    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
    </View>:null}
    {false&&auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
      onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
