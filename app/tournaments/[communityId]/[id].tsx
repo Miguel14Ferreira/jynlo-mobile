@@ -74,8 +74,6 @@ export default function TournamentDetailScreen(){
      <View style={styles.line}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={tournament.status==='IN_PROGRESS'?'A decorrer':tournament.status==='DRAFT'?'Em preparação':'Concluído'}/></View>
      <Text style={styles.heroKind}>{label(kind)}</Text>
     </View>
-     {auth.token?<PublicShareCard target={{kind:'TOURNAMENT',communityId,tournamentId:id}} name={tournament.name}
-      token={auth.token} canManage={organizerRole==='OWNER'||organizerRole==='ADMIN'}/>:null}
      {officialOutcome?<View style={styles.panel}>
       <Text style={styles.heading}>{officialOutcome.title}</Text>
       <Text style={styles.meta}>{officialOutcome.detail}</Text>
@@ -101,8 +99,10 @@ export default function TournamentDetailScreen(){
      </View>:kind==='EVENT_RANKING'?<View style={styles.panel}>
        <Text style={styles.heading}>🏅 Classificação por provas</Text>
        <Text style={styles.meta}>Cada prova conta: os lugares dão pontos e a soma decide o campeão.</Text>
-       <Button title="Ver provas e classificação" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/provas',params:{communityId:String(communityId),id:String(id)}})}/>
+       <Button title="Ver provas e classificação" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/provas',params:{communityId:String(communityId),id:String(id),name:tournament.name}})}/>
      </View>:!tableError&&!isPerformanceKind(kind)?<Message>Esta modalidade tem regras próprias. Não aplicamos classificações de futebol sem confirmação das regras.</Message>:null}
+     {auth.token?<PublicShareCard target={{kind:'TOURNAMENT',communityId,tournamentId:id}} name={tournament.name}
+      token={auth.token} canManage={organizerRole==='OWNER'||organizerRole==='ADMIN'}/>:null}
      {isPerformanceKind(kind)?<Button title={kind==='RACE'?'Ver resultados de corridas':kind==='TIMED'?'Ver tempos da prova':kind==='MEASURED'?'Ver marcas da prova':'Ver resultados das estafetas'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      {(organizerRole==='OWNER'||organizerRole==='ADMIN')&&['RACE','TIMED','MEASURED'].includes(kind)?<Button secondary title="Gerir jornadas da competição" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/events',params:{communityId:String(communityId),id:String(id)}})}/>:null}
      {kind==='RELAY'&&(organizerRole==='OWNER'||organizerRole==='ADMIN')?<Button secondary title="Gerir séries, final e júri" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/relays',params:{communityId:String(communityId),id:String(id)}})}/>:null}

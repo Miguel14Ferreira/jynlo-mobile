@@ -123,7 +123,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="communities/[id]/championships/events" options={{title:"Provas do campeonato"}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/events" options={{title:'Eventos do torneio'}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:'Estafetas do torneio'}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:"Classificação por provas"}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:"Provas"}}/>
     <Stack.Screen name="communities/[id]/championships/fixture" options={{title:"Calendário do campeonato"}}/>
     <Stack.Screen name="communities/[id]/results" options={{title:"Resultados da comunidade"}}/>
     <Stack.Screen name="sessions/[id]/result" options={{title:"Resultado da sessão"}}/>
