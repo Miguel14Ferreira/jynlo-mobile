@@ -42,6 +42,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const inlineNearBottom=useRef(false);
  // Position the first authorized history at the newest message.
  const firstHistoryPositionPending=useRef(true);
+  // Ignore scroll events caused by the initial automatic jump until a deliberate gesture/action.
+  const initialAutoScrollPending=useRef(true);
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
@@ -132,6 +134,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   historyViewportHeight.current=0;
   historyContentHeight.current=0;
   firstHistoryPositionPending.current=true;
+    initialAutoScrollPending.current=true;
   const identity=id+'|'+auth.token;
   const changedAccountOrSession=focusedIdentity.current!==identity;
   focusedIdentity.current=identity;
@@ -458,8 +461,9 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {syncWarning&&!closed?<Message>{syncWarning}</Message>:null}
   {!loading&&!closed&&!entries.length?<Message>Sem mensagens. Inicia a conversa!</Message>:null}
   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
-   onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
-    if(firstHistoryPositionPending.current)return;
+   onScrollBeginDrag={()=>{initialAutoScrollPending.current=false;}}
+    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+    if(firstHistoryPositionPending.current||initialAutoScrollPending.current)return;
     // Ignore scroll measurements from an earlier layout after history/keyboard changes.
     // A stale event must not clear the unread indicator or acknowledge newer messages.
     if(historyContentHeight.current<=0||historyViewportHeight.current<=0||
@@ -517,7 +521,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     </Pressable>:null}{renderedMessages}
    </ScrollView>}
   {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
-    onPress={()=>{inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+    onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
   {auth.token&&!closed?<View style={styles.quickActions}>
