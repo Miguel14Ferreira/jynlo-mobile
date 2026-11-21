@@ -17,6 +17,7 @@ import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordi
 import type {SessionCoordinates} from '../../src/lib/session-location-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
+import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
 
 function emptySessionForm():CreateSessionForm{
  return {sport:'',day:'',time:'',city:'',address:'',latitude:null,longitude:null,locationConfirmed:false,
@@ -669,6 +670,15 @@ export default function CreateSessionScreen(){
    {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
    {field('Preço por participante (€)','price','0','decimal-pad')}
    {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
+   <Text style={styles.label}>Nível da sessão</Text>
+   <View style={styles.levelRow}>
+    {sessionChoices().map(choice=>{const selected=(form.skillLevel||'')===choice.value;
+     return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected}} disabled={busy}
+      style={[styles.levelChip,selected&&styles.levelChipSelected]} onPress={()=>patch('skillLevel',choice.value)}>
+      <Text style={[styles.levelChipText,selected&&styles.levelChipTextSelected]}>{choice.label}</Text>
+     </Pressable>;})}
+   </View>
+   <Text style={styles.note}>Ajuda quem procura jogos ao seu nível. Deixa “Todos os níveis” se qualquer pessoa é bem-vinda.</Text>
    <Text style={styles.label}>Como vais reunir os jogadores?</Text>
    <View style={styles.playerChoices}>
     <Pressable accessibilityRole="radio" accessibilityState={{checked:!hasExistingPlayers}} disabled={busy}
@@ -771,7 +781,7 @@ export default function CreateSessionScreen(){
     onEdit={()=>setStep(1)}/>
    <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
    <Text style={styles.summaryTitle}>Participação e regras</Text>
-   <Text style={styles.summaryValue}>Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
+   <Text style={styles.summaryValue}>Nível: {levelLabel(form.skillLevel)} · Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
    <Text style={styles.summaryValue}>{hasExistingPlayers?'Vou completar um grupo existente':'Vou encontrar jogadores na Jynlo'}</Text>
    <Text style={styles.summaryValue}>Preço: {form.price||'0'} € · {sharedIds.length?'Apenas membros das comunidades':form.privateGame?'Privada com palavra-passe':selectedCommunity?'Apenas membros da comunidade':'Pública'}</Text>
    <Text style={styles.summaryValue}>Inscrições: {form.registrationOpeningMode==='SCHEDULED'?'Abertura '+form.registrationDay+' às '+form.registrationTime:form.registrationOpeningMode==='MANUAL'?'Abertura manual':'Abertura imediata'}</Text>
@@ -819,6 +829,10 @@ const styles=StyleSheet.create({
  input:{borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface2,color:C.white,padding:13,minHeight:48,fontSize:15},
  inline:{flexDirection:'row',gap:10,flexWrap:'wrap'},
  playerChoices:{gap:9},
+ levelRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ levelChip:{minHeight:40,paddingHorizontal:14,justifyContent:'center',borderRadius:20,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
+ levelChipSelected:{borderColor:C.mint,backgroundColor:C.mint},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},levelChipTextSelected:{color:C.background},
  playerChoice:{borderWidth:1,borderColor:C.border,borderRadius:13,padding:14,gap:5,backgroundColor:C.surface2},
  playerChoiceSelected:{borderColor:C.mint},
  playerChoiceTitle:{fontWeight:'900',color:C.white,fontSize:14},

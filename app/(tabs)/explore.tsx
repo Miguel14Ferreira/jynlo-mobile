@@ -12,6 +12,7 @@ import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
 import {JynloIcon} from '../../src/components/JynloIcon';
+import {filterChoices} from '../../src/lib/session-level-core.cjs';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -49,6 +50,7 @@ export default function DiscoverScreen(){
  const [city,setCity]=useState(''),[debouncedCity,setDebouncedCity]=useState('');
  const updateCity=(value:string)=>{setCity(value);setMapArea(null);};
  const [availableOnly,setAvailableOnly]=useState(true);
+ const [skillLevel,setSkillLevel]=useState<''|'BEGINNER'|'INTERMEDIATE'|'ADVANCED'>('');
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const loadVersion=useRef(0);
  useEffect(()=>{const timer=setTimeout(()=>setDebouncedCity(city.trim()),350);return()=>clearTimeout(timer);},[city]);
@@ -67,6 +69,7 @@ export default function DiscoverScreen(){
    setLoading(true);setError('');
    try{
      const next=await discoverSessions({sport:sport||undefined,city:mapArea?undefined:debouncedCity,availableOnly,
+       ...(skillLevel?{skillLevel}:{}),
        ...(mapArea?{...mapArea,sort:'distance' as const}:{})},auth.token,auth.username||undefined);
      if(version===loadVersion.current){
        setSessions(next);setSelectedPin(null);
@@ -76,7 +79,7 @@ export default function DiscoverScreen(){
    }catch(e){
      if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');}
    }finally{if(version===loadVersion.current)setLoading(false);}
- },[sport,debouncedCity,mapArea,availableOnly,auth.token,auth.username]);
+ },[sport,debouncedCity,mapArea,availableOnly,skillLevel,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{loadVersion.current++;};},[load]));
  return <SafeAreaView style={styles.page} edges={['top','left','right']}>
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
@@ -125,7 +128,15 @@ export default function DiscoverScreen(){
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
    </Pressable>
-   {(city.trim()||sport||!availableOnly||mapArea)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}}>
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}
+     accessibilityLabel="Filtrar por nível">
+     {filterChoices().map(choice=><Pressable key={choice.value||'any'} accessibilityRole="button"
+       accessibilityState={{selected:skillLevel===choice.value}} onPress={()=>setSkillLevel(choice.value)}
+       style={[styles.chip,skillLevel===choice.value&&styles.selected]}>
+       <Text style={[styles.chipText,skillLevel===choice.value&&{color:C.background}]}>{choice.value?'🎯 ':''}{choice.label}</Text>
+     </Pressable>)}
+   </ScrollView>
+   {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
      <Text style={styles.resetFiltersText}>Limpar filtros</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
    <View style={styles.section}><Text style={styles.sectionTitle}>Encontrar jogos</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>

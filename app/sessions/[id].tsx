@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -22,6 +22,7 @@ import PreviousUnpaidWarning from '../../src/components/PreviousUnpaidWarning';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
+import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -529,6 +530,7 @@ export default function SessionScreen(){
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
         <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||'Local a confirmar'}</Text></View>
+        {detail?<Text style={styles.levelLine}>🎯 {levelLabel(detail.skillLevel)}</Text>:null}
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
           <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(detail.communityId)}})}>
             <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="community" size={17} color={C.mint}/><Text style={styles.communityLink}>Abrir comunidade associada</Text><JynloIcon name="chevron-right" size={16} color={C.mint}/></View>
@@ -615,6 +617,15 @@ export default function SessionScreen(){
         {adminToolsOpen?<View style={styles.editor}>
         {detail.registrationOpeningMode==='MANUAL'&&Number.isSafeInteger(id)&&id>0?<PreviousUnpaidWarning sessionId={id} token={auth.token}/>:null}
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
+        <Eyebrow>NÍVEL DA SESSÃO</Eyebrow>
+        <View style={styles.levelRow}>
+         {sessionChoices().map(choice=>{const selected=(detail.skillLevel||'')===choice.value;
+          return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected,disabled:busy}}
+           disabled={busy||selected} style={[styles.levelChip,selected&&styles.levelChipSelected]}
+           onPress={()=>{void perform(()=>updateSessionSkillLevel(id,auth.token!,choice.value||null),'Nível atualizado: '+choice.label+'.');}}>
+           <Text style={[styles.levelChipText,selected&&styles.levelChipTextSelected]}>{choice.label}</Text>
+          </Pressable>;})}
+        </View>
         <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
         {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}
           onPress={()=>{setMeetingDraft(detail.meetingPointInstructions||'');setEditMeetingPoint(true);}}/>:
@@ -752,6 +763,11 @@ export default function SessionScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+ levelLine:{color:C.mint,fontSize:13,fontWeight:'800'},
+ levelRow:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ levelChip:{minHeight:40,paddingHorizontal:14,justifyContent:'center',borderRadius:20,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
+ levelChipSelected:{borderColor:C.mint,backgroundColor:C.mint},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},levelChipTextSelected:{color:C.background},
  cancelledHeading:{color:'#ffb2bf',fontSize:17,fontWeight:'800'},
   guestInvitePanel:{gap:10,padding:16,borderRadius:16,borderWidth:1,borderColor:C.mint,backgroundColor:C.surface},
    hero:{backgroundColor:'#092F3B',borderWidth:1,borderColor:'#2C7C79',borderRadius:24,padding:21,gap:13},

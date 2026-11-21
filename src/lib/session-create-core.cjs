@@ -203,7 +203,9 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:shareIds.slice(),
   seasonCompetitionCommunityId:seasonGame?communityId:null,confirmActivateRankings:seasonGame&&!rankingsEnabled&&confirmActivateRankings,
-  meetingPointInstructions:meetingPointInstructions||null,minParticipants
+  meetingPointInstructions:meetingPointInstructions||null,minParticipants,
+  // Only sent when chosen, so "all levels" keeps the previous payload shape.
+  ...(['BEGINNER','INTERMEDIATE','ADVANCED'].includes(input.skillLevel)?{skillLevel:input.skillLevel}:{})
  };
 }
 module.exports={formatLocalDateInput,formatLocalTimeInput,parseSessionDate,validateWeeklySlots,chooseVenueLocation,detachVenueLocation,changeCommunityMode,formatSessionLocalDateTime,describeSessionConfirmation,isValidCustomSport,createSessionPayload};
