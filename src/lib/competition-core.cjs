@@ -11,12 +11,13 @@ function classificationKind(t){
  if(mode==='FIELD_BEST_MARK')return 'MEASURED';
  if(mode==='RELAY_BEST_TIME')return 'RELAY'; // /relays, never /times
  if(mode==='CHESS_HALF_POINTS')return 'CHESS';
+ if(mode==='EVENT_RANKING')return 'EVENT_RANKING';
  if(mode)return 'UNSUPPORTED';
  if(t.entryType==='TEAM')return TEAM_MATCH_SPORTS.has(t.sport||'')?'TEAM':'UNSUPPORTED';
  if(['Futebol','Futsal','Padel','Ténis','Xadrez'].includes(t.sport||''))return 'INDIVIDUAL';
  return 'UNSUPPORTED';
 }
-function label(kind){return ({RACE:'Campeonato por pontos de corrida',TEAM:'Classificação por equipas',INDIVIDUAL:'Classificação individual',TIMED:'Melhores tempos',MEASURED:'Melhores marcas',RELAY:'Estafetas por tempo',CHESS:'Pontos de xadrez',UNSUPPORTED:'Classificação específica indisponível'})[kind]||'Classificação';}
+function label(kind){return ({RACE:'Campeonato por pontos de corrida',TEAM:'Classificação por equipas',INDIVIDUAL:'Classificação individual',TIMED:'Melhores tempos',MEASURED:'Melhores marcas',RELAY:'Estafetas por tempo',CHESS:'Pontos de xadrez',EVENT_RANKING:'Classificação por provas',UNSUPPORTED:'Classificação específica indisponível'})[kind]||'Classificação';}
 function standingsColumns(kind){
  if(kind==='RACE')return ['Pos.','Piloto','Corridas','Pódios','Pontos'];
  if(kind==='TEAM')return ['Pos.','Equipa','J','V','E','D','Pts'];

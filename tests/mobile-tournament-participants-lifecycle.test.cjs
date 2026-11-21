@@ -25,7 +25,7 @@ test('pagination is single-flight and refresh cannot append outdated participant
 test('writes validate enrollment and confirmation permissions and never retry automatically',()=>{
  assert.match(source,/mutationRef\.current\|\|pageRef\.current\|\|loading/);
  assert.match(source,/expectedVersion!==generation\.current/);
- assert.match(source,/tournament\.status!=='DRAFT'/);
+ assert.match(source,/!entriesOpen\(tournament\)/);
  assert.match(source,/which==='CONFIRM'&&\(!participant\|\|!canConfirmParticipant\(role,tournament,participant\)\)/);
  assert.match(source,/registrationAction\(tournament,items,auth\.username,more\)!=='JOIN'/);
  assert.match(source,/registrationAction\(tournament,items,auth\.username,more\)!=='LEAVE'/);

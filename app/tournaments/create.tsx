@@ -33,6 +33,7 @@ const MODEL_HINTS:Record<string,string>={
  TRACK_BEST_TIME:'Comparação pelo melhor tempo na mesma disciplina de pista.',
  FIELD_BEST_MARK:'Comparação pela melhor marca da mesma prova de salto ou lançamento.',
  RELAY_BEST_TIME:'Estafetas por tempo, com equipas de quatro atletas.',
+ EVENT_RANKING:'Classificação por provas: registas cada prova (tempo, pontuação/marca ou posições) e os lugares dão pontos — 25, 18, 15, 12, 10… Os atletas podem inscrever-se mesmo depois de começar.',
  UNAVAILABLE:'Esta modalidade existe no catálogo, mas o torneio ainda não tem um modelo de resultados validado.'
 };
 const normalized=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();

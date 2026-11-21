@@ -27,7 +27,9 @@ test('permite criar apenas em modalidades atualmente selecionadas e com modelo v
  assert.equal(communityAllowsTournamentSport(community,'Karting'),true);
  assert.equal(canCreateTournamentForSport(community,'Karting'),true);
  assert.equal(canCreateTournamentForSport(community,'Padel'),true);
- assert.equal(canCreateTournamentForSport(community,'Golfe'),false);
+ // Golf now has a validated model: "classificação por provas".
+ assert.equal(canCreateTournamentForSport(community,'Golfe'),true);
+ assert.equal(canCreateTournamentForSport(community,'Yoga'),false);
  assert.equal(canCreateTournamentForSport(community,'Futebol'),false);
 });
 test('sem scoringMode não atribui pontos de corrida só pelo nome Karting',()=>{
