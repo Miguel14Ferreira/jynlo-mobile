@@ -7,6 +7,8 @@ import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {MobileTheme} from '../../src/lib/theme';
 import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
+import {useUnreadMessages} from '../../src/lib/use-unread-messages';
+import {formatUnreadBadge} from '../../src/lib/inbox-filter.cjs';
 
 const colors=MobileTheme.colors;
 function TabSymbol({name,color,focused}:{name:JynloIconName;color:string;focused:boolean}){
@@ -17,6 +19,8 @@ function TabSymbol({name,color,focused}:{name:JynloIconName;color:string;focused
 export default function TabsLayout(){
  const insets=useSafeAreaInsets(),router=useRouter(),auth=useAuth();
  const [open,setOpen]=useState(false);
+ const unread=useUnreadMessages(auth.token,auth.username);
+ const badge=formatUnreadBadge(unread.count);
  const [eligible,setEligible]=useState<CommunityGroup[]>([]);
  const [checking,setChecking]=useState(false);
  const [checkError,setCheckError]=useState(false);
@@ -60,7 +64,7 @@ export default function TabsLayout(){
   else router.push({pathname:'/(tabs)',params:{compose:destination}});
  };
  return <>
-  <Tabs screenOptions={{
+  <Tabs screenListeners={{focus:()=>{void unread.refresh();}}} screenOptions={{
    headerShown:false,tabBarActiveTintColor:colors.accent,tabBarInactiveTintColor:colors.tabInactive,
    tabBarStyle:{backgroundColor:colors.tabBackground,borderTopColor:colors.border,height:58+Math.max(insets.bottom,0),paddingBottom:Math.max(insets.bottom,8),paddingTop:8},
    // Icons only (no truncated labels on narrow phones); each tab keeps its name for screen readers.
@@ -73,7 +77,8 @@ export default function TabsLayout(){
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu de criação" onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarAccessibilityLabel:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarAccessibilityLabel:badge?'Mensagens, '+badge+' por ler':'Mensagens',
+    tabBarBadge:badge||undefined,tabBarBadgeStyle:{backgroundColor:'#FF5A5F',color:'#FFFFFF',fontSize:10,fontWeight:'800'},tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="profile" options={{title:'Perfil',tabBarAccessibilityLabel:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
   </Tabs>
   <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
