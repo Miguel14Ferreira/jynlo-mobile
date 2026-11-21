@@ -3,6 +3,7 @@ import {ActivityIndicator,Alert,Image,Pressable,StyleSheet,Text,TextInput,View} 
 import {Stack,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {FriendPicker} from '../../src/components/FriendPicker';
+import {AvailabilityPanel} from '../../src/components/AvailabilityPanel';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
@@ -155,6 +156,7 @@ export default function GroupChatScreen(){
       disabled={busy} onPress={()=>askRemove(m.username,m.displayName)}><Text style={styles.chipX}>×</Text></Pressable>:null}
     </View>)}
    </View>
+   {auth.token?<AvailabilityPanel kind="private" targetId={groupId} token={auth.token}/>:null}
    {panel==='rename'?<View style={styles.panel}>
     <Text style={styles.label}>Nome do grupo</Text>
     <TextInput value={renameTitle} onChangeText={setRenameTitle} maxLength={90} editable={!busy} style={styles.input} accessibilityLabel="Novo nome do grupo"/>
