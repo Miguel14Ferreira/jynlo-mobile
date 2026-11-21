@@ -1,0 +1,61 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const core=require('../src/lib/availability-core.cjs');
+
+test('day options start today and are local dates',()=>{
+ const days=core.dayOptions(new Date(2026,10,21,20,0),3);
+ assert.deepEqual(days.map(d=>d.value),['2026-11-21','2026-11-22','2026-11-23']);
+ assert.deepEqual(days.map(d=>d.label),['Hoje','Amanhã','seg 23/11']);
+});
+
+test('a slot needs a valid time at least an hour ahead and within 60 days',()=>{
+ const now=new Date(2026,10,21,18,0).getTime();
+ assert.match(core.slotInstant('','10:00',now).error,/dia/);
+ assert.match(core.slotInstant('2026-11-28','25:00',now).error,/HH:mm/);
+ assert.match(core.slotInstant('2026-11-21','18:30',now).error,/1 hora/);
+ assert.match(core.slotInstant('2027-03-01','10:00',now).error,/60 dias/);
+ const ok=core.slotInstant('2026-11-28','10:00',now);
+ assert.equal(new Date(ok.iso).getTime(),new Date(2026,10,28,10,0).getTime());
+});
+
+test('adds sorted slots without duplicates, up to five',()=>{
+ let r=core.addSlot([],'2026-11-29T10:00:00.000Z');
+ r=core.addSlot(r.slots,'2026-11-28T10:00:00.000Z');
+ assert.deepEqual(r.slots,['2026-11-28T10:00:00.000Z','2026-11-29T10:00:00.000Z']);
+ assert.match(core.addSlot(r.slots,'2026-11-28T10:00:00.000Z').error,/já está/);
+ const five=['a','b','c','d','e'];
+ assert.match(core.addSlot(five,'f').error,/máximo 5/);
+});
+
+test('best slot: most yes, then most maybe; none without answers',()=>{
+ const request={members:4,answered:3,slots:[
+  {id:1,startsAt:'2026-11-28T10:00:00Z',yes:['a'],maybe:['b','c'],no:0,mine:null},
+  {id:2,startsAt:'2026-11-29T10:00:00Z',yes:['a','b'],maybe:[],no:1,mine:null},
+  {id:3,startsAt:'2026-11-30T10:00:00Z',yes:['a','b'],maybe:['c'],no:0,mine:null}]};
+ assert.equal(core.bestSlot(request).id,3);
+ assert.equal(core.bestSlot({slots:[{id:1,yes:[],maybe:[],no:2}]}),null);
+ assert.equal(core.progress(request),'3 de 4 membros responderam');
+});
+
+test('create params carry local day and time for the session form',()=>{
+ const iso=new Date(2026,10,28,9,30).toISOString();
+ assert.deepEqual(core.createParams({startsAt:iso},{communityId:'7'}),{communityId:'7',day:'2026-11-28',time:'09:30'});
+});
+
+test('the panel is shown to members of groups and communities and prefills the session form',()=>{
+ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ assert.match(read('app/groups/[id].tsx'),/<AvailabilityPanel kind="private" targetId=\{groupId\}/);
+ assert.match(read('app/communities/[id].tsx'),/<AvailabilityPanel kind="community" targetId=\{id\}/);
+ const create=read('app/sessions/create.tsx');
+ assert.match(create,/day\?:string;time\?:string/);
+ assert.match(create,/setForm\(withPresetWhen\(emptySessionForm\(\)\)\)/);
+ assert.doesNotMatch(read('src/lib/availability-api.ts'),/username=/);
+});
+
+test('availability alerts open the group or the community',()=>{
+ const {notificationDestination}=require('../src/lib/notification-route.cjs');
+ assert.deepEqual(notificationDestination({type:'AVAILABILITY_REQUEST',privateGroupId:5,relatedUsername:'ana'}),{kind:'group-chat',id:'5'});
+ assert.deepEqual(notificationDestination({type:'AVAILABILITY_REMINDER',communityId:7}),{kind:'community',id:'7'});
+});

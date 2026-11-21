@@ -17,6 +17,7 @@ import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
 import {C} from '../../src/lib/theme';
 import {PublicShareCard} from '../../src/components/PublicShareCard';
+import {AvailabilityPanel} from '../../src/components/AvailabilityPanel';
 import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary} from '../../src/lib/types';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
@@ -229,6 +230,7 @@ export default function CommunityDetailScreen(){
           </Pressable>
         </View>
         <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        {auth.token?<AvailabilityPanel kind="community" targetId={id} token={auth.token} communityId={id}/>:null}
         <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
         {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
         {isMember(community)&&community.rankingsEnabled&&auth.token?<PublicShareCard target={{kind:'RANKING',communityId:id}}
