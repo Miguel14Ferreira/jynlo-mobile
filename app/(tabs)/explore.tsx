@@ -90,12 +90,18 @@ export default function DiscoverScreen(){
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
-   <Text style={styles.filterLabel}>MODALIDADE · {SPORTS.length} DESPORTOS</Text>
-   <Pressable style={styles.sportSelector} accessibilityRole="button" accessibilityState={{expanded:sportPickerVisible}}
-      onPress={()=>setSportPickerVisible(previous=>!previous)}>
-     <Text style={styles.sportSelectorText}>{sport||'Todas as modalidades'}</Text>
-     <Text style={styles.sportChevron}>{sportPickerVisible?'⌃':'⌄'}</Text>
-   </Pressable>
+   {/* Full catalogue first (always visible), then the popular sports. */}
+   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+     <Pressable accessibilityRole="button" accessibilityState={{expanded:sportPickerVisible}}
+       accessibilityLabel={'Todos os desportos, '+SPORTS.length+' no total'}
+       onPress={()=>setSportPickerVisible(previous=>!previous)} style={[styles.chip,sportPickerVisible&&styles.selected]}>
+       <Text style={[styles.chipText,sportPickerVisible&&{color:C.background}]}>Desportos {sportPickerVisible?'⌃':'⌄'}</Text>
+     </Pressable>
+     {['',...POPULAR_SPORTS,...(sport&&!(POPULAR_SPORTS as readonly string[]).includes(sport)?[sport]:[])].map(item=><Pressable key={item||'Todas'} accessibilityRole="button"
+       accessibilityState={{selected:sport===item}} onPress={()=>{setSportPickerVisible(false);chooseSport(item);}} style={[styles.chip,sport===item&&styles.selected]}>
+       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||'Todas'}</Text>
+     </Pressable>)}
+   </ScrollView>
    {sportPickerVisible?<View style={styles.sportResults}>
      <TextInput style={styles.search} value={sportQuery} onChangeText={setSportQuery}
        placeholder="Pesquisar modalidade…" placeholderTextColor={C.muted} autoCapitalize="none"
@@ -115,12 +121,6 @@ export default function DiscoverScreen(){
        <Text style={styles.emptySport}>Não encontrámos essa modalidade. Verifica o nome.</Text>:null}
      <Text style={styles.pickerHint}>Pesquisa uma modalidade oficial ou uma sugerida pela comunidade.</Text>
    </View>:null}
-   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-     {['',...POPULAR_SPORTS].map(item=><Pressable key={item||'Todas'} accessibilityRole="button"
-       accessibilityState={{selected:sport===item}} onPress={()=>chooseSport(item)} style={[styles.chip,sport===item&&styles.selected]}>
-       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||'Todas'}</Text>
-     </Pressable>)}
-   </ScrollView>
    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:availableOnly}} style={styles.filter} onPress={()=>setAvailableOnly(!availableOnly)}>
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
