@@ -1,10 +1,10 @@
 import {DEMO_MODE,request} from './api';
 
-export type ChatPollKind='session'|'community';
+export type ChatPollKind='session'|'community'|'private'|'team';
 export interface ChatPollResult{messageId:number;counts:number[];total:number;mine:number|null}
 
 function base(kind:ChatPollKind,conversationId:number):string{
- if(kind!=='session'&&kind!=='community')throw Error('Conversa inválida.');
+ if(kind!=='session'&&kind!=='community'&&kind!=='private'&&kind!=='team')throw Error('Conversa inválida.');
  if(!Number.isSafeInteger(conversationId)||conversationId<=0)throw Error('Conversa inválida.');
  return `/api/messages/polls/${kind}/${conversationId}`;
 }

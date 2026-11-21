@@ -13,6 +13,9 @@ import {observeTeamContent} from '../lib/team-content-realtime';
 import {markTeamChatRead} from '../lib/chat-api';
 import {teamPlayerAvatarUri} from '../lib/sports-teams-api';
 import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
+import {readPoll} from '../lib/chat-poll.cjs';
+import {PollCard} from './PollCard';
+import {PollComposer} from './PollComposer';
 import {appendChatMediaSelection} from '../lib/chat-attachments-core.cjs';
 import SecureChatAttachment from './SecureChatAttachment';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -467,6 +470,17 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
   }
  };
+ const [pollOpen,setPollOpen]=useState(false);
+ /** Team chats are group chats: polls work as in sessions and communities. */
+ const sendPoll=async(text:string)=>{
+  setPollOpen(false);
+  if(kind!=='chat'||!token||sendingNow.current)return;
+  sendingNow.current=true;setSending(true);setError('');
+  try{const saved=await sendTeamContent(teamId,kind,text,token,null);
+   setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));}
+  catch(e){setError(e instanceof Error?e.message:'Não foi possível enviar a sondagem.');}
+  finally{sendingNow.current=false;setSending(false);}
+ };
  const send=async()=>{
   // One explicit publish action for text, albums and captioned media.
   if(media.length){await sendMedia();return;}
@@ -767,6 +781,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
     placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
+   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem" disabled={sending||uploading}
+    onPress={()=>setPollOpen(true)} style={styles.pollButton}><Text style={{fontSize:20}}>📊</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
     accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
     disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()}
@@ -776,6 +792,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </Pressable>
   </View>
   <ChatMentionSuggestions draft={draft} token={token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
+  {kind==='chat'?<PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>:null}
  </>;
  if(accessRevoked)return <View style={styles.panel}>
   <Text style={styles.title}>Conversa indisponível</Text>
@@ -846,7 +863,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>
    </View>
    {item.replyToId?<View style={styles.replyQuote}><JynloIcon name="reply" size={14} color={C.mint}/><Text numberOfLines={2} style={styles.replyQuoteText}>{replyPreview(item.replyToId)}</Text></View>:null}
-   <ChatMentionText body={item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body} style={styles.body}/>
+   {!item.deleted&&kind==='chat'&&readPoll(item.body)?<PollCard poll={readPoll(item.body)!} kind="team" conversationId={teamId} messageId={item.id} token={token}/>:
+   <ChatMentionText body={item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body} style={styles.body}/>}
    {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
    {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
     onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
@@ -946,6 +964,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  </View>;
 }
 const styles=StyleSheet.create({
+ pollButton:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},
  panel:{borderColor:'#3FC6B04D',borderWidth:1,borderRadius:18,padding:14,gap:12,backgroundColor:'#082B39'},
  chatHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
  chatHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
