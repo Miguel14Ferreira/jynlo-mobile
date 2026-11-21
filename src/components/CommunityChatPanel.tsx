@@ -48,6 +48,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const inlineNearBottom=useRef(false);
  // Position the first authorized history at the latest messages, never re-jump later.
  const firstHistoryPositionPending=useRef(true);
+  // Ignore scroll events caused by the initial automatic jump until a deliberate gesture/action.
+  const initialAutoScrollPending=useRef(true);
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
  const previousLatestMessageId=useRef(0);
@@ -157,6 +159,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    historyViewportHeight.current=0;
    historyContentHeight.current=0;
    firstHistoryPositionPending.current=true;
+    initialAutoScrollPending.current=true;
    const identity=id+'|'+auth.token;
    const changedAccountOrCommunity=focusedIdentity.current!==identity;
    focusedIdentity.current=identity;
@@ -502,9 +505,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
    {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
    {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
-   onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
+   onScrollBeginDrag={()=>{initialAutoScrollPending.current=false;}}
+    onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     // Initial positioning is programmatic: it must never count as a user-visible read.
-    if(firstHistoryPositionPending.current)return;
+    if(firstHistoryPositionPending.current||initialAutoScrollPending.current)return;
     // Ignore scroll measurements from an earlier layout after history/keyboard changes.
     // A stale event must not clear the unread indicator or acknowledge newer messages.
     if(historyContentHeight.current<=0||historyViewportHeight.current<=0||
@@ -564,7 +568,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    </Pressable>:null}{renderedMessages}
   </ScrollView>}
   {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
-    onPress={()=>{inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+    onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
    {auth.token&&!accessRevoked?<View style={styles.quickActions}>
