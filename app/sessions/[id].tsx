@@ -17,6 +17,7 @@ import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
 import SessionMemoriesPanel from '../../src/components/SessionMemoriesPanel';
 import SessionLocationPanel from '../../src/components/SessionLocationPanel';
+import SessionPaymentsPanel from '../../src/components/SessionPaymentsPanel';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -586,6 +587,8 @@ export default function SessionScreen(){
       </View>:null}
 
       {detail?.joined&&!['CANCELLED','COMPLETED'].includes(s.status||'')&&Date.parse(s.gameDate||'')>Date.now()?<Message>✓ A tua inscrição está confirmada.</Message>:null}
+      {auth.token&&detail&&(owner||detail.joined)&&Number(s.priceAmount)>0&&Number.isSafeInteger(id)&&id>0
+       ?<SessionPaymentsPanel sessionId={id} token={auth.token}/>:null}
       {detail?.waitlisted?<Message>Estás na lista de espera{detail.waitlistPosition?` · posição ${detail.waitlistPosition}`:''}.</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title="Entrar para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
       {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>Esta sessão terminou ou foi cancelada. Podes continuar a explorar outras sessões públicas.</Message>:null}
