@@ -103,6 +103,11 @@ export default function DiscoverScreen(){
      <Text style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
    </View>
+   <Pressable accessibilityRole="search" accessibilityLabel="Pesquisar pessoas, comunidades, equipas, recintos e jogos"
+     onPress={()=>router.push('/search' as never)} style={styles.searchEntry}>
+     <JynloIcon name="search" size={20} color={C.muted}/>
+     <Text style={styles.searchEntryText} numberOfLines={1}>Pesquisar pessoas, comunidades, recintos…</Text>
+   </Pressable>
    {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
    <View style={styles.discover} accessibilityLabel="Descobrir mais na Jynlo">
      {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label+': '+item.caption}
@@ -221,6 +226,8 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ searchEntry:{flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface,paddingHorizontal:14,minHeight:50},
+ searchEntryText:{color:C.muted,fontSize:14,flex:1},
  discover:{flexDirection:'row',flexWrap:'wrap',gap:8},
  discoverTile:{flexBasis:'46%',flexGrow:1,minHeight:62,paddingHorizontal:12,paddingVertical:10,gap:3,justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  discoverHead:{flexDirection:'row',alignItems:'center',gap:8},
