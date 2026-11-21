@@ -73,6 +73,8 @@ export default function NearbyAlertsScreen(){
        onPress={()=>set({latitude:place.latitude,longitude:place.longitude,placeLabel:place.label})}/>;})}
     </View>
     <Button secondary title={locating?'A obter localização…':'Usar a minha localização aproximada'} disabled={busy||locating} onPress={()=>{void useMyPosition();}}/>
+    {draft.latitude!==null?<Button secondary title="Apagar o local guardado" disabled={busy}
+     onPress={()=>set({enabled:false,latitude:null,longitude:null,placeLabel:null})}/>:null}
    </View>
    <View style={styles.panel}>
     <Text style={styles.heading}>Distância máxima</Text>
