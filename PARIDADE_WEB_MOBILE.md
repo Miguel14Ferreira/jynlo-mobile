@@ -33,7 +33,7 @@ eliminação da conta na app.
 | P1 | Organizador: "a sessão não aconteceu" / reportar problema (`/sessions/{id}/problems`) | Fecha corretamente sessões que não se realizaram | Feito (21/11) |
 | P2 | Disputas de presença e fiabilidade do jogador | Contestar faltas marcadas | Feito (21/11) |
 | P2 | Modelos de sessão (`/sessions/presets`) | Criar o jogo semanal mais depressa | Feito (21/11) |
-| P2 | Grupos privados (`/api/private-groups`) | Conversas de grupo fora de comunidades | Feito (21/11) — falta só mudar a foto do grupo |
+| P2 | Grupos privados (`/api/private-groups`) | Conversas de grupo fora de comunidades | Feito (21/11) |
 | P2 | Publicações ocultadas (`/feed/posts/hidden`) | Ver/repor o que se ocultou do feed | Feito (21/11) |
 | P2 | Ativar MFA na app (`/profile/me/mfa/setup`) | Ativar/desativar no Perfil › Verificação em dois passos | Feito (21/11) |
 | Só web | Gestão avançada de comunidade (épocas, disciplina, arquivos históricos, importação) e administração da plataforma | Tarefas de administrador, melhor no ecrã grande | Fica no web |

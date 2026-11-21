@@ -7,6 +7,8 @@ import {useAuth} from '../../src/lib/auth';
 import {ApiError} from '../../src/lib/api';
 import {C} from '../../src/lib/theme';
 import {markPrivateGroupRead} from '../../src/lib/chat-api';
+import {uploadGroupPhoto} from '../../src/lib/private-group-photo';
+import type {ImagePickerAsset} from 'expo-image-picker';
 import {getGroup,groupMessages,sendGroupMessage,renameGroup,addGroupMembers,removeGroupMember} from '../../src/lib/private-groups-api';
 import {observePrivateGroup} from '../../src/lib/session-chat-realtime';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
@@ -27,7 +29,8 @@ export default function GroupChatScreen(){
  const [loading,setLoading]=useState(true),[loadingOlder,setLoadingOlder]=useState(false);
  const [error,setError]=useState(''),[actionError,setActionError]=useState(''),[gone,setGone]=useState(false);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false);
- const [panel,setPanel]=useState<null|'rename'|'add'>(null);
+ const [panel,setPanel]=useState<null|'rename'|'add'|'photo'>(null);
+ const [photo,setPhoto]=useState<ImagePickerAsset|null>(null);
  const [renameTitle,setRenameTitle]=useState(''),[picked,setPicked]=useState<string[]>([]),[busy,setBusy]=useState(false);
  const [muted,setMuted]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const generation=useRef(0),sendInFlight=useRef(false);
@@ -102,6 +105,21 @@ export default function GroupChatScreen(){
    if(g)setGroup(g);else void refresh(false);}
   catch{setActionError('Não foi possível alterar os membros do grupo.');}finally{setBusy(false);}
  }
+ async function choosePhoto(){
+  if(busy)return;setActionError('');
+  try{
+   const ImagePicker=await import('expo-image-picker');
+   const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.75,exif:false,base64:false});
+   if(!result.canceled&&result.assets?.[0]){setPhoto(result.assets[0]);setPanel('photo');}
+  }catch{setActionError('Não foi possível abrir a galeria de fotografias.');}
+ }
+ async function savePhoto(){
+  if(busy||!photo||!auth.token)return;
+  setBusy(true);setActionError('');
+  try{setGroup(await uploadGroupPhoto(groupId,auth.token,photo));setPhoto(null);setPanel(null);}
+  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível alterar a fotografia do grupo.');}
+  finally{setBusy(false);}
+ }
  async function toggleMute(){
   if(muteBusy||!auth.token)return;
   setMuteBusy(true);
@@ -125,6 +143,7 @@ export default function GroupChatScreen(){
      <Text style={styles.actionText}>{muted?'🔕 Ativar notificações':'🔔 Silenciar'}</Text></Pressable>
     {creator?<>
      <Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='rename'?null:'rename');setRenameTitle(group.title);setActionError('');}} style={styles.action}><Text style={styles.actionText}>Alterar nome</Text></Pressable>
+     <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void choosePhoto();}} style={styles.action}><Text style={styles.actionText}>Alterar fotografia</Text></Pressable>
      {group.members.length<MAX_MEMBERS?<Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='add'?null:'add');setPicked([]);setActionError('');}} style={styles.action}><Text style={styles.actionText}>＋ Adicionar membros</Text></Pressable>:null}
     </>:<Pressable accessibilityRole="button" disabled={busy} onPress={()=>askRemove(me,me)} style={styles.action}><Text style={[styles.actionText,{color:C.danger}]}>Sair do grupo</Text></Pressable>}
    </View>
@@ -141,6 +160,12 @@ export default function GroupChatScreen(){
     <TextInput value={renameTitle} onChangeText={setRenameTitle} maxLength={90} editable={!busy} style={styles.input} accessibilityLabel="Novo nome do grupo"/>
     <Button title={busy?'A guardar…':'Alterar nome'} disabled={busy||renameTitle.trim().length<2} onPress={()=>{void doRename();}}/>
     <Button secondary title="Cancelar" disabled={busy} onPress={()=>setPanel(null)}/>
+   </View>:null}
+   {panel==='photo'&&photo?<View style={styles.panel}>
+    <Text style={styles.label}>Nova fotografia do grupo</Text>
+    <Image source={{uri:photo.uri}} style={styles.photoPreview} accessibilityLabel="Pré-visualização da fotografia do grupo"/>
+    <Button title={busy?'A enviar…':'Guardar fotografia'} disabled={busy} onPress={()=>{void savePhoto();}}/>
+    <Button secondary title="Cancelar" disabled={busy} onPress={()=>{setPanel(null);setPhoto(null);}}/>
    </View>:null}
    {panel==='add'&&auth.token?<View style={styles.panel}>
     <Text style={styles.muted}>Escolhe os amigos que queres juntar a esta conversa.</Text>
@@ -179,6 +204,7 @@ const styles=StyleSheet.create({
  chipText:{color:C.white,fontSize:13,fontWeight:'700'},chipX:{color:C.muted,fontSize:18,fontWeight:'800'},
  panel:{gap:10,padding:14,borderRadius:16,borderWidth:1,borderColor:C.border,backgroundColor:'#0D2A35'},
  label:{color:C.white,fontWeight:'800',fontSize:14},
+ photoPreview:{width:140,height:140,borderRadius:70,alignSelf:'center',backgroundColor:C.border},
  input:{minHeight:48,borderWidth:1,borderColor:C.border,borderRadius:12,paddingHorizontal:12,color:C.white,backgroundColor:C.surface},
  more:{minHeight:42,alignItems:'center',justifyContent:'center'},moreText:{color:C.mint,fontWeight:'800'},
  bubble:{maxWidth:'84%',paddingHorizontal:12,paddingVertical:8,borderRadius:16,gap:2},
