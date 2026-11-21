@@ -90,3 +90,16 @@ test('private groups: edit rule, reply quote and same chat tools as the other ch
   assert.ok(screen.includes(piece),piece);
  assert.match(fs.readFileSync(path.join(__dirname,'..','src/components/SecureChatAttachment.tsx'),'utf8'),/\/api\/private-groups\/'\+numeric\+'\/messages\/'\+messageId\+'\/attachments\/'\+index/);
 });
+
+test('communities have a feed in the app, like on the web',()=>{
+ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const screen=read('app/communities/[id].tsx');
+ assert.match(screen,/\{id:'FEED',label:'Feed'\}/);
+ assert.match(screen,/<CommunityFeedPanel communityId=\{id\} token=\{auth\.token\} username=\{auth\.username\} canManage=\{owner\}\/>/);
+ const api=read('src/lib/community-feed-api.ts');
+ assert.match(api,/'\/api\/communities\/'\+id\+'\/posts'/);
+ assert.match(read('src/lib/social-feed-api.ts'),/sendMedia\('\/api\/communities\/'\+communityId\+'\/posts'/);
+ const panel=read('src/components/CommunityFeedPanel.tsx');
+ assert.match(panel,/<ChatMentionText body=\{post\.body\}/);
+ assert.match(panel,/<PostAlbumCarousel items=\{album\}/);
+});

@@ -18,6 +18,7 @@ import {safeRedirect} from '../../src/lib/routes.cjs';
 import {C} from '../../src/lib/theme';
 import {PublicShareCard} from '../../src/components/PublicShareCard';
 import {AvailabilityPanel} from '../../src/components/AvailabilityPanel';
+import {CommunityFeedPanel} from '../../src/components/CommunityFeedPanel';
 import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary} from '../../src/lib/types';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
@@ -30,7 +31,7 @@ export default function CommunityDetailScreen(){
   const [followState,setFollowState]=useState<CommunityFollowState|null>(null);
   const [followBusy,setFollowBusy]=useState(false);
   const [followError,setFollowError]=useState('');
-  const [activeSection,setActiveSection]=useState<'OVERVIEW'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
+  const [activeSection,setActiveSection]=useState<'OVERVIEW'|'FEED'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
   const [audienceBusy,setAudienceBusy]=useState<number|null>(null),[audienceError,setAudienceError]=useState('');
@@ -202,7 +203,7 @@ export default function CommunityDetailScreen(){
       {teamDestination&&!role&&myRequest?<Message>O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.</Message>:null}
       {teamDestination&&!role&&auth.token&&!loading?<Button secondary title="Verificar aprovação da comunidade" disabled={busy} onPress={()=>{void reload();}}/>:null}
       {role?<View style={styles.sectionNav} accessibilityLabel="Secções da comunidade">
-        {([{id:'OVERVIEW',label:'Visão geral'},{id:'SESSIONS',label:'Sessões'},{id:'CHAT',label:'Chat'},{id:'MEMBERS',label:'Membros'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
+        {([{id:'OVERVIEW',label:'Visão geral'},{id:'FEED',label:'Feed'},{id:'SESSIONS',label:'Sessões'},{id:'CHAT',label:'Chat'},{id:'MEMBERS',label:'Membros'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
          accessibilityState={{selected:activeSection===tab.id}} onPress={()=>setActiveSection(tab.id)}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
          <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
@@ -275,6 +276,10 @@ export default function CommunityDetailScreen(){
         <Text style={styles.sectionTitle}>Lives da comunidade</Text>
         <Text style={styles.muted}>Assiste aos jogos e treinos em direto. O servidor confirma quem pode transmitir.</Text>
         <Button secondary title="Ver diretos da comunidade" onPress={()=>router.push({pathname:'/communities/[id]/live',params:{id:String(id)}})}/>
+      </View>:null}
+      {role&&activeSection==='FEED'&&auth.token&&auth.username?<View style={styles.section}>
+        <Text style={styles.sectionTitle}>Feed da comunidade</Text>
+        <CommunityFeedPanel communityId={id} token={auth.token} username={auth.username} canManage={owner}/>
       </View>:null}
       {role&&activeSection==='CHAT'?<View style={styles.section}>
         <Eyebrow>A CONVERSA CONTINUA</Eyebrow>

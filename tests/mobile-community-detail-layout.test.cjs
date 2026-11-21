@@ -13,7 +13,7 @@ function resetsInclude(source,calls){
 
 test('community mobile detail has accessibly labelled dashboard navigation',()=>{
  const src=read('app/communities/[id].tsx');
- assert.match(src,/useState<'OVERVIEW'\|'SESSIONS'\|'CHAT'\|'MEMBERS'\|'MANAGE'>\('OVERVIEW'\)/);
+ assert.match(src,/useState<'OVERVIEW'\|'FEED'\|'SESSIONS'\|'CHAT'\|'MEMBERS'\|'MANAGE'>\('OVERVIEW'\)/);
  assert.match(src,/accessibilityLabel="Secções da comunidade"/);
  for(const tab of ['OVERVIEW','SESSIONS','CHAT','MEMBERS'])
   assert.match(src,new RegExp("id:'"+tab+"'"));
