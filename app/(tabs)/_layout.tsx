@@ -75,8 +75,6 @@ export default function TabsLayout(){
     </Pressable>)}}/>
    <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="communities" options={{href:null,title:'Comunidades'}}/>
-   <Tabs.Screen name="tournaments" options={{href:null,title:'Torneios'}}/>
   </Tabs>
   <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
    <View style={styles.overlay}>

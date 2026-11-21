@@ -11,7 +11,7 @@ import {useAuth} from '../../src/lib/auth';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
-import {JynloIcon} from '../../src/components/JynloIcon';
+import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {filterChoices} from '../../src/lib/session-level-core.cjs';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
@@ -25,6 +25,15 @@ const validPin=(session:SessionSummary)=>session.privateGame!==true&&session.aud
  session.latitude>=-90&&session.latitude<=90&&session.longitude>=-180&&session.longitude<=180;
 const POPULAR_SPORTS=['Futebol','Padel','Basquetebol','Voleibol','Karting','Corrida'] as const;
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT').trim();
+const DISCOVER:{label:string;caption:string;icon:JynloIconName;href:string}[]=[
+ {label:'Comunidades',caption:'Clubes e grupos',icon:'community',href:'/communities'},
+ {label:'Torneios',caption:'Ligas e competições',icon:'tournament',href:'/tournaments'},
+ {label:'Recintos',caption:'Campos e pavilhões',icon:'venue',href:'/venues'},
+ {label:'Equipas',caption:'A tua e convites',icon:'championship',href:'/teams'},
+ {label:'Pessoas',caption:'Quem joga perto',icon:'profile',href:'/people'},
+ {label:'Diretos',caption:'Jogos em direto',icon:'video',href:'/live'},
+];
+
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
@@ -91,6 +100,15 @@ export default function DiscoverScreen(){
      <Eyebrow>O JOGO COMEÇA AQUI</Eyebrow>
      <Text style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
+   </View>
+   {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
+   <View style={styles.discover} accessibilityLabel="Descobrir mais na Jynlo">
+     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label+': '+item.caption}
+       onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
+       <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
+        <Text style={styles.discoverLabel} numberOfLines={1}>{item.label}</Text></View>
+       <Text style={styles.discoverCaption} numberOfLines={1}>{item.caption}</Text>
+     </Pressable>)}
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
    {/* Full catalogue first (always visible), then the popular sports. */}
@@ -201,6 +219,10 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ discover:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ discoverTile:{flexBasis:'46%',flexGrow:1,minHeight:62,paddingHorizontal:12,paddingVertical:10,gap:3,justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ discoverHead:{flexDirection:'row',alignItems:'center',gap:8},
+ discoverLabel:{flexShrink:1,color:C.white,fontWeight:'900',fontSize:15},discoverCaption:{color:C.muted,fontSize:12},
  levelFilter:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  levelFilterLabel:{color:C.white,fontWeight:'800',fontSize:14,marginRight:2},
  levelChip:{minHeight:38,paddingHorizontal:13,justifyContent:'center',borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
