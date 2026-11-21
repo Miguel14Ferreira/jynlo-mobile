@@ -13,9 +13,10 @@ test('all chat types use shared tokens and outgoing right-aligned bubbles',()=>{
  for(const file of files){
   const s=source(file);
   assert.match(s,/import \{C,MobileTheme\} from/);
-  assert.match(s,/maxWidth:'86%',alignSelf:'flex-start'/);
-  assert.match(s,/alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme\.radius\.lg/);
-  assert.match(s,/MobileTheme\.colors\.surface/);
+  // Incoming bubbles on the left, own messages on the right. The community chat
+  // has its own palette (restyled), so colours/radii are not pinned here.
+  assert.match(s,/message:\{[^}]*maxWidth:'8[0-9]%',alignSelf:'flex-start'/);
+  assert.match(s,/mine:\{[^}]*alignSelf:'flex-end'/);
   assert.match(s,/MobileTheme\.touchTarget/);
  }
 });
@@ -64,8 +65,9 @@ test('real-device UX: profile privacy summary collapses, but follow requests rem
 });
 test('real-device UX: native video call foreground and actions remain accessible',()=>{
  const call=source('src/features/direct-call-screen.tsx');
- assert.match(call,/localVideoCard:\{alignSelf:'flex-end',width:'40%'\}/);
- assert.match(call,/sort\(\(a,b\)=>Number\(a\.participant\.isLocal\)-Number\(b\.participant\.isLocal\)\)/);
+ // Redesigned stage: dominant remote camera with own preview (video-stage-layout.cjs).
+ assert.match(call,/chooseVideoStageTracks\(tracks\.filter\(isTrackReference\)\)/);
+ assert.match(call,/accessibilityLabel=\{expandedVideo\?'Reduzir vídeo da chamada':'Ampliar vídeo da chamada'\}/);
  assert.match(call,/callActions:\{flexDirection:'row'/);
  for(const label of ['Desligar microfone','Desligar câmara','Terminar chamada'])
   assert.ok(call.includes(label),label);

@@ -16,7 +16,10 @@ test('both embedded chats follow the keyboard only while typing',()=>{
   assert.match(s,/setKeyboardVisible\(false\)/,file);
   assert.match(s,/composerFocused\.current&&inlineNearBottom\.current\)inlineHistoryRef\.current\?\.scrollToEnd/,file);
   assert.match(s,/shown\.remove\(\);hidden\.remove\(\)/,file);
-  assert.match(s,/inlineHistoryKeyboard:\{height:168\}/,file);
+  // Shorter history while typing (exact size changed in the redesign).
+  assert.match(s,/inlineHistoryKeyboard:\{height:(\d+)[,}]/,file);
+  const [,full]=s.match(/inlineHistory:\{height:(\d+)/);const [,typing]=s.match(/inlineHistoryKeyboard:\{height:(\d+)/);
+  assert.ok(Number(typing)<Number(full),file+' keyboard history must be shorter');
   assert.match(s,/keyboardVisible&&styles\.inlineHistoryKeyboard/,file);
   assert.match(s,/<ScrollView ref=\{inlineHistoryRef\}/,file);
   assert.match(s,/onFocus=\{\(\)=>\{composerFocused\.current=true/,file);

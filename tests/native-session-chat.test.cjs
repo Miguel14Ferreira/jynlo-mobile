@@ -27,7 +27,8 @@ test('native session chat only appears for confirmed participants before kickoff
 
 test('session chat refreshes read-only while focused without overlapping a send',()=>{
  const screen=read('src/components/SessionChatPanel.tsx');
- assert.match(screen,/setInterval\(\(\)=>\{[\s\S]*?AppState\.currentState==='active'&&!sendingNow\.current\)[\s\S]*?void refresh\(true,version\);[\s\S]*?\},15000\)/);
+ // WebSocket first: poll every 5 s only while offline, otherwise reconcile every 30 s.
+ assert.match(screen,/setInterval\(\(\)=>\{\s*if\(active&&(version===generation\.current|generation\.current===version)&&AppState\.currentState==='active'&&!sendingNow\.current\)\{\s*pollTicks\+\+;\s*if\(!socketOnline\|\|pollTicks%6===0\)void refresh\(true,version\);\s*\}\s*\},5000\)/);
  assert.match(screen,/clearInterval\(timer\)/);
  assert.match(screen,/if\(refreshing\.current===version\)\{pendingRefresh\.current=true;return;\}/);
  assert.match(screen,/if\(!silent\)setLoading\(true\)/);

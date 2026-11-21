@@ -37,7 +37,11 @@ test('Expo plugin and package dependencies are configured without pretending pus
  assert.equal(pkg.dependencies['expo-notifications'],'~58.1.8');
  assert.equal(pkg.dependencies['expo-crypto'],'~58.0.7');
  assert.ok(config.expo.plugins.some(p=>Array.isArray(p)&&p[0]==='expo-notifications'));
- assert.match(read('app/notifications.tsx'),/A entrega depende também das credenciais e do serviço de envio/);
+ // The screen never claims delivery: registration ≠ delivery, and server readiness is checked.
+ const screen=read('app/notifications.tsx');
+ assert.match(screen,/O registo não garante que os avisos sejam entregues/);
+ assert.match(screen,/A entrega exige o serviço de envio operacional/);
+ assert.match(screen,/O envio push ainda não está ativo no servidor/);
 });
 
 test('push taps navigate only to the authenticated notification inbox',()=>{

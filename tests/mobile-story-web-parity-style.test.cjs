@@ -18,7 +18,7 @@ test('Story colors survive publication and are sent in the backend contract',()=
  const editor=read('app/(tabs)/index.tsx');
  const api=read('src/lib/social-feed-api.ts');
  const types=read('src/lib/types.ts');
- assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText\)/);
+ assert.match(editor,/publishStory\(body,media,actor,username,selectedCommunityId,geometry,details,appearance,showTime,altText,selectedTeamId\)/);
  assert.match(editor,/storyAppearance\.color===appearance\.color&&storyAppearance\.background===appearance\.background&&storyAppearance\.font===appearance\.font/);
  assert.match(api,/textColor:appearance\.color,textBackground:appearance\.background,textFont:appearance\.font/);
  assert.match(api,/textColor:appearance\?\.color\|\|'white'/);

@@ -16,7 +16,7 @@ test('protected media credentials are limited to Jynlo API routes',()=>{
 test('story image and video use authenticated media source',()=>{
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/mediaRequestSource\(uri,token\)/);
- assert.match(feed,/<Image source=\{mediaRequestSource\(uri,token\)\}/);
+ assert.match(feed,/<Image (key=\{[^}]+\} )?source=\{mediaRequestSource\(uri,token\)\}/);
  const video=read('src/components/FeedVideo.tsx');
  assert.match(video,/mediaRequestSource\(uri,token\)/);
  assert.match(video,/useVideoPlayer\(source,/);

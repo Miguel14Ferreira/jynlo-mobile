@@ -36,10 +36,11 @@ test('chat pages scroll focused controls into view without blindly jumping past 
  const community=read('src/components/CommunityChatPanel.tsx');
  const session=read('src/components/SessionChatPanel.tsx');
  assert.match(page,/Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
- assert.match(page,/Keyboard\.addListener\(event,/);
- assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
- assert.match(page,/else if\(autoScrollToEnd&&nearBottom\.current\)/);
- assert.match(page,/return\(\)=>subscription\.remove\(\)/);
+ // Show/hide listeners; the focused field is measured (not a blind jump to the end).
+ assert.match(page,/const shown=Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
+ assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,\d+,true\)/);
+ assert.match(page,/if\(keyboardVisible\.current\)scrollFocused\(\);\s*else if\(autoScrollToEnd&&nearBottom\.current\)/);
+ assert.match(page,/return\(\)=>\{shown\.remove\(\);hidden\.remove\(\);/);
  assert.match(community,/<ScrollView ref=\{inlineHistoryRef\}/);
  assert.match(session,/<ScrollView ref=\{inlineHistoryRef\}/);
 });
@@ -58,7 +59,8 @@ test('long forms scroll the actual focused input above the keyboard',()=>{
  const source=read('src/components/UI.tsx');
  assert.match(source,/if\(!scroll\)return/);
  assert.match(source,/TextInput\.State\.currentlyFocusedInput\?\.\(\)/);
- assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,24,true\)/);
- assert.match(source,/Keyboard\.addListener\(event,/);
- assert.match(source,/return\(\)=>subscription\.remove\(\)/);
+ assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,\d+,true\)/);
+ assert.match(source,/Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillHide':'keyboardDidHide'/);
+ // Android: extra bottom space so mid-form inputs stay reachable above the keyboard.
+ assert.match(source,/keyboardHeight>0&&\{paddingBottom:keyboardHeight\+\d+\}/);
 });

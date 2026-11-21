@@ -5,6 +5,12 @@ const fs=require('node:fs');
 const path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
+// The reset statements grew (follow state, sections); check each reset exists, in any order.
+function resetsInclude(source,calls){
+ const lines=source.split('\n').filter(line=>line.includes('setCommunity(null)'));
+ return lines.some(line=>calls.every(call=>line.includes(call)));
+}
+
 test('community mobile detail has accessibly labelled dashboard navigation',()=>{
  const src=read('app/communities/[id].tsx');
  assert.match(src,/useState<'OVERVIEW'\|'SESSIONS'\|'CHAT'\|'MEMBERS'\|'MANAGE'>\('OVERVIEW'\)/);
@@ -39,5 +45,5 @@ test('public community joining stays available without exposing member-only navi
  assert.match(src,/!role&&auth\.token&&community\.visibility==='PRIVATE'/);
  assert.match(src,/\{role\?<View style=\{styles\.sectionNav\}/);
  assert.match(src,/teamDestination&&!role&&myRequest/);
- assert.match(src,/setCommunity\(null\);setSessions\(\[\]\)/);
+ assert.ok(resetsInclude(src,['setCommunity(null)','setSessions([])']));
 });

@@ -10,7 +10,7 @@ test('review stage shows map only for the saved venue or a user-confirmed GPS po
  assert.match(screen,/import SessionDraftLocationMap/);
  assert.match(screen,/\{step===3\?<View style=\{styles.panel\}>/);
  assert.match(screen,/<SessionDraftLocationMap/);
- assert.match(screen,/form\.venueId&&venueChosen\?\.id===form\.venueId/);
+ assert.match(screen,/form\.venueId&&(venueChosen\?\.id|venueChosen&&venueChosen\.id)===form\.venueId/);
  assert.match(screen,/form\.locationConfirmed===true&&validCoordinates\(form\.latitude,form\.longitude\)/);
  assert.match(screen,/typeof venueChosen\.latitude==='number'&&typeof venueChosen\.longitude==='number'/);
  assert.match(screen,/onEdit=\{\(\)=>setStep\(1\)\}/);

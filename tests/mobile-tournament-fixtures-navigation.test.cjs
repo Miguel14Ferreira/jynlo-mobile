@@ -29,7 +29,9 @@ for(const file of [
 }
 test('team fixtures follow the backend page cursor, never guess it',()=>{
  const source=read('app/tournaments/[communityId]/[id]/fixtures.tsx');
- assert.match(source,/setPage\(matchData\.page\)/);
+ // The first page is now validated before use.
+ assert.match(source,/const verified=validateFirstFixturePage<TournamentTeamMatch>\(matchData\)/);
+ assert.match(source,/setPage\(verified\.page\)/);
  assert.match(source,/setPage\(part\.page\)/);
  assert.doesNotMatch(source,/setPage\(next\)/);
 });

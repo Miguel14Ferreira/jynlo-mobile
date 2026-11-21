@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const chat=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
-const refresh=chat.slice(chat.indexOf('const refresh:'),chat.indexOf('useFocusEffect(useCallback('));
+const refreshStart=chat.indexOf('const refresh:');
+const refresh=chat.slice(refreshStart,chat.indexOf('useFocusEffect(useCallback(',refreshStart));
 
 test('verified direct-chat authorization failures hide cached private history and composer',()=>{
  assert.match(chat,/import \{ApiError,DEMO_MODE\} from '\.\.\/\.\.\/src\/lib\/api'/);

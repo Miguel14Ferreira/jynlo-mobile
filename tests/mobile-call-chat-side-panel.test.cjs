@@ -24,7 +24,7 @@ test('in-call chat uses real authenticated direct messages and realtime invalida
  const panel=read('src/components/CallChatSidePanel.tsx');
  assert.match(panel,/directChatHistory\(peer,token\)/);
  assert.match(panel,/sendDirectChat\(peer,body,token\)/);
- assert.match(panel,/confirmedDirectChatSend\(confirmed,self,peer,body\)/);
+ assert.match(panel,/confirmedDirectChatSend\(confirmed,self,peer,body(,null)?\)/);
  assert.match(panel,/observeDirectChat\(\{peer,self,token,onInvalidated:/);
  assert.match(panel,/setInterval\(\(\)=>\{/);
  assert.match(panel,/setMessages\(current=>current\.some\(m=>m\.id===confirmed\.id\)/);

@@ -9,12 +9,13 @@ test('focus changes invalidate tournament details and ranking responses',()=>{
  assert.match(source,/const version=\+\+generation\.current/);
  assert.match(source,/return \(\)=>\{generation\.current\+\+;\}/);
  assert.match(source,/if\(version!==generation\.current\)return/);
- assert.match(source,/if\(version===generation\.current\)setTable\(standings\)/);
+ // Each explicit reload also carries its own request token.
+ assert.match(source,/if\(version===generation\.current&&request===requestVersion\.current\)setTable\(standings\)/);
 });
 test('previous tournament, account and organizer controls are cleared when opening another',()=>{
  assert.match(source,/setTournament\(null\);setOrganizerRole\(null\);setTable\(null\);setTableError\(''\);setError\(''\);setLoading\(true\)/);
- assert.match(source,/if\(version===generation\.current\)setLoading\(false\)/);
- assert.match(source,/if\(version===generation\.current\)setError\(/);
+ assert.match(source,/if\(version===generation\.current(&&request===requestVersion\.current)?\)setLoading\(false\)/);
+ assert.match(source,/if\(version===generation\.current(&&request===requestVersion\.current)?\)setError\(/);
 });
 test('details are limited to valid tournament and member community',()=>{
  assert.match(source,/Number\.isSafeInteger\(communityId\)/);

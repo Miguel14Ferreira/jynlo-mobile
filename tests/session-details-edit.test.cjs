@@ -65,7 +65,7 @@ test('mobile editing supports the server description field without corrupting ex
  assert.equal(payload.description,'Regras: levar colete');
  assert.equal(editSessionPayload({...input(),description:''},['Padel']).description,'');
  assert.throws(()=>editSessionPayload({...input(),description:'a'.repeat(1001)},['Padel']),/descrição/);
- assert.throws(()=>editSessionPayload({...input(),description:'abc\\u0000def'},['Padel']),/descrição/);
+ assert.throws(()=>editSessionPayload({...input(),description:'abc\u0000def'},['Padel']),/descrição/);
  const ui=source('app/sessions/[id]/edit.tsx');
  assert.match(ui,/Descrição da sessão \(opcional\)/);
  assert.match(ui,/value=\{draft\.description\}/);
