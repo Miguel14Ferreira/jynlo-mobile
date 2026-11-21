@@ -46,6 +46,11 @@ export default function NotificationSettingsScreen(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {error&&!draft&&auth.token?<Button secondary title="Tentar novamente" onPress={()=>{void load();}}/>:null}
+  {auth.token?<View style={styles.panel}>
+   <Text style={styles.heading}>Novos jogos perto de ti</Text>
+   <Text style={styles.note}>Escolhe um local, a distância e as modalidades para saberes quando há um jogo novo perto.</Text>
+   <Button secondary title="Configurar avisos de jogos perto" onPress={()=>router.push('/nearby-alerts')}/>
+  </View>:null}
   {draft?<>
    <View style={styles.panel}>
     <Row label="Avisos na aplicação e no telemóvel" value={draft.inAppEnabled} disabled={busy}
