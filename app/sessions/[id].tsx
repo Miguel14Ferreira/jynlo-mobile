@@ -18,6 +18,7 @@ import SessionChatPanel from '../../src/components/SessionChatPanel';
 import SessionMemoriesPanel from '../../src/components/SessionMemoriesPanel';
 import SessionLocationPanel from '../../src/components/SessionLocationPanel';
 import SessionPaymentsPanel from '../../src/components/SessionPaymentsPanel';
+import PreviousUnpaidWarning from '../../src/components/PreviousUnpaidWarning';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
@@ -612,6 +613,7 @@ export default function SessionScreen(){
         <Button title="Partilhar convite da sessão" secondary onPress={share}/>
         <Button title={adminToolsOpen?'Ocultar ferramentas avançadas':'Mostrar ferramentas avançadas'} secondary onPress={()=>setAdminToolsOpen(open=>!open)}/>
         {adminToolsOpen?<View style={styles.editor}>
+        {detail.registrationOpeningMode==='MANUAL'&&Number.isSafeInteger(id)&&id>0?<PreviousUnpaidWarning sessionId={id} token={auth.token}/>:null}
         {detail.registrationOpeningMode==='MANUAL'?<Button secondary title="Abrir inscrições" disabled={busy} onPress={()=>{void perform(()=>openSessionRegistration(id,auth.token!),'Inscrições abertas.');}}/>:null}
         <Eyebrow>INSTRUÇÕES DE CHEGADA</Eyebrow>
         {!editMeetingPoint?<Button secondary title="Editar ponto de encontro" disabled={busy}

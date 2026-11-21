@@ -26,6 +26,10 @@ export const confirmPayment=(id:number,username:string,paid:boolean,token:string
 export const remindUnpaid=(id:number,token:string|null)=>
  request<SessionPayments>(base(id)+'/remind',{token:requireToken(token),method:'POST',body:{}});
 
+export interface PreviousUnpaid{sessionId:number|null;gameDate:string|null;sport:string|null;unpaid:string[]}
+export const previousUnpaid=(id:number,token:string|null)=>
+ request<PreviousUnpaid>(base(id)+'/previous-unpaid',{token:requireToken(token)});
+
 /** 912345678 → "912 345 678". */
 export function phoneLabel(phone:string):string{
  return /^\d{9}$/.test(phone)?phone.slice(0,3)+' '+phone.slice(3,6)+' '+phone.slice(6):phone;
