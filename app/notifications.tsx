@@ -334,6 +334,7 @@ export default function NotificationsScreen(){
   <Text style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites, novidades desportivas e atividade social.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
+  {sameAccount?<Button secondary title="Gerir notificações" onPress={()=>router.push('/notification-settings')}/>:null}
   {sameAccount?<Button secondary title="Respostas privadas às minhas Stories" onPress={()=>router.push('/stories/replies')}/>:null}
   {loading?<Loader/>:null}
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}

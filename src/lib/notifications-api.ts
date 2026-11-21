@@ -1,6 +1,7 @@
 import {DEMO_MODE,request} from './api';
 import {myCommunityInvites} from './community-api';
 import type {JynloNotification} from './types';
+import {normalizePreferences,type NotificationPreferences} from './notification-preferences-core.cjs';
 export async function myNotifications(token:string,username:string):Promise<JynloNotification[]>{
  if(!token||!username)throw Error('Inicia sessão para consultar notificações.');
  if(DEMO_MODE){const pending=await myCommunityInvites(token,username);
@@ -33,4 +34,17 @@ export async function myUnreadNotificationCount(token:string):Promise<number>{
  const value=await request<number>('/api/notifications/me/unread-count',{token});
  if(!Number.isSafeInteger(value)||value<0)throw Error('Contador de notificações inválido.');
  return value;
+}
+
+/** Account-wide notification preferences (shared with the web; also apply to push). */
+export async function myNotificationPreferences(token:string):Promise<NotificationPreferences>{
+ if(!token)throw Error('Inicia sessão para continuar.');
+ if(DEMO_MODE)return {inAppEnabled:true,emailEnabled:true,disabledInAppTypes:[],disabledEmailTypes:[]};
+ return normalizePreferences(await request<unknown>('/api/notifications/me/preferences',{token}));
+}
+/** Explicit save only; never retried automatically. */
+export async function saveNotificationPreferences(prefs:NotificationPreferences,token:string):Promise<NotificationPreferences>{
+ if(!token)throw Error('Inicia sessão para continuar.');
+ if(DEMO_MODE)throw Error('Alterações desativadas nesta demonstração.');
+ return normalizePreferences(await request<unknown>('/api/notifications/me/preferences',{token,method:'PUT',body:normalizePreferences(prefs)}));
 }
