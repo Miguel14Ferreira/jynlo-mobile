@@ -2,8 +2,8 @@
 # Corre no Expo EAS (não no GitHub Actions).
 # Dispara só quando um commit no develop tem [jynlo-apk] na mensagem
 # (por exemplo, no título do merge de um PR). Os outros pushes não gastam builds.
-# Não tem gate de testes: os testes correm localmente antes de cada merge,
-# e a suite ainda tem 74 falhas antigas que bloqueariam a build.
+# Os testes correm no GitHub (workflow "Mobile tests") em cada PR e push ao develop;
+# a suite está verde desde 2026-11-21.
 name: APK de teste
 
 on:
