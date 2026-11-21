@@ -1,14 +1,19 @@
 # APK de teste ligada à API de preview, para instalar diretamente no telemóvel.
-# Dispara com uma tag que comece por "apk-" (ex.: apk-2026-11-21). Não cria branches.
+# Corre no Expo EAS (não no GitHub Actions).
+# Dispara só quando um commit no develop tem [jynlo-apk] na mensagem
+# (por exemplo, no título do merge de um PR). Os outros pushes não gastam builds.
+# Não tem gate de testes: os testes correm localmente antes de cada merge,
+# e a suite ainda tem 74 falhas antigas que bloqueariam a build.
 name: APK de teste
 
 on:
   push:
-    tags: ['apk-*']
+    branches: ['develop']
 
 jobs:
   build_apk:
     name: APK (preview)
+    if: ${{ contains(github.commit_message, '[jynlo-apk]') }}
     type: build
     params:
       platform: android
