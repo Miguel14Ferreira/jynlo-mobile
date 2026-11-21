@@ -16,3 +16,10 @@ test('payments panel never moves money and offers MB WAY or in person',()=>{
  const api=read('src/lib/session-payments-api.ts');
  assert.match(api,/\/remind/);
 });
+test('organiser sees unpaid previous game next to "Abrir inscrições"',()=>{
+ const screen=read('app/sessions/[id].tsx');
+ const warning=screen.indexOf('<PreviousUnpaidWarning sessionId={id}');
+ const open=screen.indexOf('title="Abrir inscrições"');
+ assert.ok(warning>0&&open>warning,'warning comes right before the button');
+ assert.match(read('src/lib/session-payments-api.ts'),/\/previous-unpaid/);
+});
