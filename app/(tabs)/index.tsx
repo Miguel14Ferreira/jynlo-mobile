@@ -39,6 +39,8 @@ import type {CommunityGroup} from '../../src/lib/types';
 import {prepareStoryDetails,toggleStoryMention,storyMentionUsernames} from '../../src/lib/story-details.cjs';
 import {searchSocialPlaces,socialPlaceLabel,type SocialPlace} from '../../src/lib/social-place-search';
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails,StoryTextAppearance} from '../../src/lib/types';
+import {ReportSheet} from '../../src/components/ReportSheet';
+import {blockUser,reportComment,reportPost} from '../../src/lib/user-safety-api';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
 const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
@@ -542,6 +544,9 @@ export default function JynloFeedHome(){
   const postInFlight=useRef(false),storyInFlight=useRef(false),mediaPickerInFlight=useRef(false);
   const [editingPost,setEditingPost]=useState<FeedItem|null>(null);
   const [postMenuItem,setPostMenuItem]=useState<FeedItem|null>(null);
+  // Store requirement: any post, comment or author can be reported/blocked from where it is seen.
+  const [reportTarget,setReportTarget]=useState<{kind:'post';postId:number;author:string}|{kind:'comment';postId:number;commentId:number;author:string}|null>(null);
+  const [blockedAuthors,setBlockedAuthors]=useState<string[]>([]);
   const [expandedComments,setExpandedComments]=useState<number|null>(null),[comments,setComments]=useState<SocialComment[]>([]),[commentText,setCommentText]=useState(''),[commentsLoading,setCommentsLoading]=useState(false);
   const [editingComment,setEditingComment]=useState<number|null>(null),[editCommentDraft,setEditCommentDraft]=useState('');
   const [commentWriteBusy,setCommentWriteBusy]=useState<number|null>(null);
@@ -593,6 +598,7 @@ export default function JynloFeedHome(){
       postInFlight.current=false;storyInFlight.current=false;mediaPickerInFlight.current=false;
       setPublishing(false);setStoryPublishing(false);
       confirmedRemovedFeedKeys.current.clear();verifiedPostLikes.current.clear();confirmedCommentFloors.current.clear();confirmedPostEdits.current.clear();
+      setReportTarget(null);setBlockedAuthors([]);
       recentlyConfirmedPosts.current=[];recentlyConfirmedStories.current=[];setPublishNotice(null);setConfirmedPostId(null);setPostPublishError('');setStoryPublishError('');
       setPosts([]);setStories([]);setOwnStories([]);setEditingPost(null);setPostMenuItem(null);setMyProfilePhoto(null);
       hiddenKeysRef.current=[];setHiddenKeys([]);setRecentlyHidden(null);hiddenReadyRef.current=false;setHiddenReady(false);setShowAllAttendance(false);
@@ -767,7 +773,8 @@ export default function JynloFeedHome(){
     const key=feedEntryKey(item);return !key||!hiddenKeys.includes(key);
   }):[];
   const attendanceGroups=attendanceDigest(visiblePosts,auth.username) as Array<{sessionId:number;item:FeedItem;count:number;ownActivity:FeedItem|null}>;
-  const normalPosts=visiblePosts.filter(item=>!isDigestAttendance(item));
+  const normalPosts=visiblePosts.filter(item=>!isDigestAttendance(item)
+    &&!blockedAuthors.includes(item.authorUsername.toLowerCase()));
   function persistVisibility(keys:string[],identity:string,username:string){
     hiddenKeysRef.current=keys;setHiddenKeys(keys);
     void writeHiddenFeedEntries(username,keys).catch(()=>{
@@ -786,6 +793,20 @@ export default function JynloFeedHome(){
     if(!recentlyHidden||!auth.token||!auth.username||!identityMatches)return;
     persistVisibility(showEntry(hiddenKeysRef.current,recentlyHidden),currentFeedIdentity,auth.username);
     setRecentlyHidden(null);
+  }
+  function confirmBlockAuthor(item:FeedItem){
+    const author=item.authorUsername;
+    if(!auth.token||!author)return;
+    const token=auth.token;
+    Alert.alert('Bloquear @'+author+'?','Deixas de ver as publicações desta pessoa e ela deixa de te poder contactar. Podes desbloquear no perfil dela.',[
+      {text:'Cancelar',style:'cancel'},
+      {text:'Bloquear',style:'destructive',onPress:()=>{
+        void blockUser(author,token).then(()=>{
+          setBlockedAuthors(current=>[...new Set([...current,author.toLowerCase()])]);
+          Alert.alert('Bloqueado','Já não vais ver publicações de @'+author+'.');
+        }).catch(e=>Alert.alert('Não foi possível bloquear',e instanceof Error?e.message:'Tenta novamente.'));
+      }}
+    ]);
   }
   function openPostMenu(item:FeedItem){
     if(!auth.token||!auth.username||!identityMatches||busyPost!==null)return;
@@ -1421,6 +1442,10 @@ export default function JynloFeedHome(){
                     {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
                      <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={commentWriteBusy!==null}
                       onPress={()=>{setEditingComment(c.id);setEditCommentDraft(c.content);}}><Text style={styles.commentAuthor}>Editar</Text></Pressable>:null}
+                    {auth.token&&auth.username&&c.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
+                     <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar comentário de @'+c.authorUsername}
+                      onPress={()=>setReportTarget({kind:'comment',postId:c.postId,commentId:c.id,author:c.authorUsername})}>
+                      <Text style={styles.commentReport}>Denunciar</Text></Pressable>:null}
                   </View></View>
               </View>):<Text style={styles.commentsEmpty}>Ainda não há comentários. Inicia a conversa!</Text>}
             </ScrollView>}
@@ -1428,8 +1453,16 @@ export default function JynloFeedHome(){
             <Pressable onPress={()=>expandedComments!==null&&void submitComment(expandedComments)} disabled={!auth.token||!commentText.trim()||busyPost!==null||commentsLoading} style={[styles.sendComment,(!auth.token||!commentText.trim()||busyPost!==null||commentsLoading)&&{opacity:.45}]} accessibilityRole="button" accessibilityLabel="Enviar comentário"><JynloIcon name="send" size={23} color={INDIGO}/></Pressable>
           </View>
         </SafeAreaView>
+        <ReportSheet inline visible={reportTarget?.kind==='comment'} title="Denunciar comentário"
+          subject={reportTarget?'Comentário de @'+reportTarget.author:''} onClose={()=>setReportTarget(null)}
+          onSubmit={async reason=>{const target=reportTarget;if(!target||target.kind!=='comment'||!auth.token)return;
+            await reportComment(target.postId,target.commentId,reason,auth.token);}}/>
       </KeyboardAvoidingView>
     </Modal>
+    <ReportSheet visible={reportTarget?.kind==='post'} title="Denunciar publicação"
+      subject={reportTarget?'Publicação de @'+reportTarget.author:''} onClose={()=>setReportTarget(null)}
+      onSubmit={async reason=>{const target=reportTarget;if(!target||target.kind!=='post'||!auth.token)return;
+        await reportPost(target.postId,reason,auth.token);}}/>
 
     <Modal visible={identityMatches&&!!postMenuItem} transparent animationType="fade" onRequestClose={()=>setPostMenuItem(null)}>
       <View style={styles.commentsModal}>
@@ -1447,6 +1480,15 @@ export default function JynloFeedHome(){
           {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed" style={styles.postMenuAction} onPress={()=>{
             const post=postMenuItem;setPostMenuItem(null);hideFromFeed(post);
           }}><Text style={styles.postMenuText}>Ocultar do meu feed</Text></Pressable>:null}
+          {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()!==auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?<>
+            <Pressable accessibilityRole="button" accessibilityLabel="Denunciar publicação" style={styles.postMenuAction} onPress={()=>{
+              const post=postMenuItem;setPostMenuItem(null);
+              if(post.postId)setReportTarget({kind:'post',postId:post.postId,author:post.authorUsername});
+            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Denunciar publicação</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={'Bloquear @'+postMenuItem.authorUsername} style={styles.postMenuAction} onPress={()=>{
+              const post=postMenuItem;setPostMenuItem(null);confirmBlockAuthor(post);
+            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Bloquear @{postMenuItem.authorUsername}</Text></Pressable>
+          </>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
             <Pressable accessibilityRole="button" accessibilityLabel="Editar publicação" style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);setEditingPost(post);
@@ -1845,7 +1887,7 @@ const styles=StyleSheet.create({
    postVerifyItemTitle:{fontSize:13,fontWeight:'800',color:WHITE},
    publishProgressHint:{color:MUTED,fontSize:13,lineHeight:20,textAlign:'center',paddingHorizontal:8},
    composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:13},countText:{color:MUTED,fontSize:12},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{borderWidth:1,borderColor:BORDER,borderRadius:14,overflow:'hidden',backgroundColor:'#020A10'},postMediaPreviewImage:{width:'100%',height:255,backgroundColor:'#020A10'},postMediaPreviewFooter:{gap:8,paddingHorizontal:10,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:13,flex:1},
-  latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:14},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:'#225763',borderRadius:21,padding:16,gap:14},postCardCompact:{paddingHorizontal:10,paddingVertical:13,gap:11},postTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:2},postName:{color:WHITE,fontSize:15,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:23},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',alignItems:'center',borderTopColor:'#225763',borderTopWidth:1,paddingTop:8,gap:6},postPrimaryAction:{flex:1,minWidth:0,minHeight:46,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:4,borderRadius:12,backgroundColor:'#103846'},postPrimaryLabel:{color:'#D2E5E6',fontSize:12,fontWeight:'800',flexShrink:1},postLikedLabel:{color:'#FF90AA'},postEngagementSummary:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:11},postSummaryAction:{minHeight:40,justifyContent:'center'},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
+  latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:14},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:'#225763',borderRadius:21,padding:16,gap:14},postCardCompact:{paddingHorizontal:10,paddingVertical:13,gap:11},postTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:2},postName:{color:WHITE,fontSize:15,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:23},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',alignItems:'center',borderTopColor:'#225763',borderTopWidth:1,paddingTop:8,gap:6},postPrimaryAction:{flex:1,minWidth:0,minHeight:46,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:4,borderRadius:12,backgroundColor:'#103846'},postPrimaryLabel:{color:'#D2E5E6',fontSize:12,fontWeight:'800',flexShrink:1},postLikedLabel:{color:'#FF90AA'},postEngagementSummary:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:11},postSummaryAction:{minHeight:40,justifyContent:'center'},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentReport:{color:'#FF9C9C',fontSize:12,fontWeight:'800'},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
   storyMediaStatus:{...StyleSheet.absoluteFill,justifyContent:'center',alignItems:'center',gap:12,backgroundColor:'#03131DBB'},
   storyMediaStatusText:{color:MUTED,textAlign:'center',fontSize:13,lineHeight:19},
   storyMediaFailure:{...StyleSheet.absoluteFill,justifyContent:'center',alignItems:'center',gap:13,padding:24,backgroundColor:'#061620'},
