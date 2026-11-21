@@ -38,23 +38,24 @@ eliminação da conta na app.
 | P2 | Ativar MFA na app (`/profile/me/mfa/setup`) | Ativar/desativar no Perfil › Verificação em dois passos | Feito (21/11) |
 | Só web | Gestão avançada de comunidade (épocas, disciplina, arquivos históricos, importação) e administração da plataforma | Tarefas de administrador, melhor no ecrã grande | Fica no web |
 
-## Prioridade de implementação em lotes de funcionalidades completas
+### Acrescentado depois da auditoria (21/11/2026)
 
-1. **Fundação real:** instalar dependências, resolver typecheck, build Android/iOS, testar com backend isolado e autenticação completa (incluindo login Google/MFA/logout). Sem isto não é uma app lançável.
-2. **Sessões ponta-a-ponta:** pesquisa, criação, inscrição, lista de espera, convites, recorrência, cancelamento, gestão, testes com duas contas. Preservar as regras do backend.
-3. **Social:** feed completo, perfis, amizades, chat privado/comunidade/sessão, notificações push e permissões.
-4. **Comunidades e competições:** equipas em páginas próprias, torneios individuais/equipas, grupos/eliminatórias, classificações especializadas por modalidade, épocas/estatísticas.
-5. **Recintos, qualidade e lançamento:** GPS/mapas, contactos, avaliações, contribuições, PT/EN, acessibilidade, segurança, distribuição nas lojas.
+- Conversas de grupo privadas: lista, chat, membros, fotografia; aparecem em Mensagens e no contador.
+- Avisos de mensagens de grupo e push das mensagens diretas (servidor).
+- Contador de mensagens por ler no ícone de Mensagens (sem conversas silenciadas).
+- Barra de baixo só com ícones; atalhos no Explorar (Comunidades, Torneios, Recintos, Equipas, Pessoas, Diretos).
+- Comunidades e Torneios são ecrãs normais (`/communities`, `/tournaments`), não separadores escondidos.
+- Adicionar a sessão ao calendário (Google Calendar, início e fim).
 
-## Problema da web: troca de contas
+## Como verificar alterações na app
 
-A página Angular `login.component.ts` redireciona quem já possui token válido para o feed; `menu.component.ts` faz logout (servidor + limpeza local), mas não oferece uma verdadeira gestão de múltiplas contas. Não assumir que existe «Trocar de conta». Corrigir a experiência web com um percurso claro de sair/entrar e testes de limpeza do token, WebSocket, dados da conta anterior e refresh cookie; avaliar depois se «troca rápida» merece funcionalidade própria.
+- `npm run -s typecheck` e `npm run -s test:all` (tem de dar 0 falhas).
+- Verificação visual: exportar para web (`npx expo export --platform web`) com um shim temporário do
+  `expo-secure-store` e simular a API com Playwright a 360 px. Os ecrãs com mapa nativo (sessão,
+  criar sessão) e a galeria não abrem no browser: confirmar no APK.
+- APK de teste: o título do squash-merge com `[jynlo-apk]` dispara o fluxo EAS `.eas/workflows/apk-teste.yml`.
 
-## Evidência e limites de validação
+## Pendente fora do código
 
-- Endpoints verificados na web para esta etapa: `GET /api/feed`, `POST /api/feed/posts`, `POST/DELETE /api/feed/posts/{id}/likes`, `GET/POST /api/feed/posts/{id}/comments`, `GET /api/stories`, `GET /api/stories/mine`, `POST /api/stories`, `GET /api/profile/discover`; além de `GET /api/venues/suggest`, `GET /api/venues/{id}`, `GET /api/sessions/mine`, sessões, comunidades, chat e torneios.
-- Feed v0.6: o primeiro separador é **Feed**; «Explorar» mantém a descoberta de sessões. Navegação mobile: Feed / Explorar / Comunidades / Mensagens / Perfil. Torneios continuam acessíveis a partir de Comunidades, não desaparecem do projeto.
-- O destaque desportivo na versão mobile é um recorte do próprio ecrã web fornecido; não é um novo produto inventado. As sugestões laterais da web passam para secções abaixo do feed em telemóvel.
-- Projeto mobile **ainda sem `node_modules` instalado**; a verificação `npm run typecheck` falha por ausência do Expo e tipos React. Não afirmar build Android/iOS nem testes com backend real.
-- A demonstração offline v0.6 tem uma única identidade `@atleta_demo`. Para sair e entrar é necessário utilizar o Perfil; não existe alternância rápida fictícia. Não há dados de produção.
-- **Sem alterações a produção, nem ao GitHub**: v0.6 distribuída como pacote local com plano de migração.
+- Notificações no telemóvel: no Render, `JYNLO_PUSH_ENABLED=true` e `JYNLO_PUSH_ACCESS_TOKEN` (Expo); no Android, configuração do Firebase.
+- Web, troca de contas: o login redireciona quem já tem sessão; não existe "trocar de conta". Avaliar um percurso claro de sair/entrar.
