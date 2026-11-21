@@ -13,6 +13,8 @@ import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {minimumPlayersProgress,rosterAttendanceLabel} from '../../src/lib/session-presentation.cjs';
 import {SessionOfficialResultCard} from '../../src/components/SessionOfficialResultCard';
 import {PostGameCommunities} from '../../src/components/PostGameCommunities';
+import {FutureExclusionSheet} from '../../src/components/FutureExclusionSheet';
+import {canManage as canManageFutureExclusion} from '../../src/lib/future-exclusion.cjs';
 import GuestSessionRSVP from '../../src/components/GuestSessionRSVP';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import SessionChatPanel from '../../src/components/SessionChatPanel';
@@ -55,6 +57,7 @@ export default function SessionScreen(){
   const [removingParticipantId,setRemovingParticipantId]=useState<number|null>(null);
   const [rosterFeedback,setRosterFeedback]=useState('');
   const attendanceInFlight=useRef(false);
+  const [exclusionFor,setExclusionFor]=useState<SessionParticipant|null>(null);
   const [attendanceParticipantId,setAttendanceParticipantId]=useState<number|null>(null);
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
@@ -784,6 +787,11 @@ export default function SessionScreen(){
                 style={({pressed})=>[styles.removePlayerButton,{opacity:pressed||removingParticipantId!==null?0.6:1}]}>
                 <Text style={styles.removePlayerLabel}>{removingParticipantId===p.id?'A remover…':'Remover'}</Text>
               </Pressable>:null}
+            {auth.token&&!DEMO_MODE&&canManageFutureExclusion(auth.username,detail.creatorUsername,p.username)?
+              <Pressable accessibilityRole="button" accessibilityLabel={'Inscrições futuras de '+p.username}
+                disabled={busy||loading} onPress={()=>setExclusionFor(p)} style={styles.futureButton}>
+                <Text style={styles.futureLabel}>Futuras</Text>
+              </Pressable>:null}
           </View>;
         })}
         </>:null}
@@ -793,6 +801,7 @@ export default function SessionScreen(){
       <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
 
+    {auth.token&&owner?<FutureExclusionSheet sessionId={id} participant={exclusionFor} token={auth.token} onClose={()=>setExclusionFor(null)}/>:null}
     <Pressable onPress={()=>router.back()}><Text style={styles.back}>← Voltar</Text></Pressable>
   </Page>;
 }
@@ -847,5 +856,7 @@ const styles=StyleSheet.create({
   attendanceAbsent:{color:'#FFB8B8',fontSize:13,fontWeight:'700'},
   removePlayerButton:{paddingHorizontal:11,minHeight:44,justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.danger},
   removePlayerLabel:{color:'#FFB8B8',fontSize:12,fontWeight:'800'},
+  futureButton:{paddingHorizontal:10,minHeight:44,justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.border},
+  futureLabel:{color:C.muted,fontSize:12,fontWeight:'800'},
   back:{color:C.mint,textAlign:'center',padding:10,fontWeight:'700'}
 });
