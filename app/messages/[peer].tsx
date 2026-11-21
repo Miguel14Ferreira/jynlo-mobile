@@ -27,6 +27,9 @@ import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import type {DirectChatEntry} from '../../src/lib/chat-api';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
+import {encodeCallUp,readCallUp} from '../../src/lib/chat-callup.cjs';
+import {CallUpCard} from '../../src/components/CallUpCard';
+import {CallUpPicker} from '../../src/components/CallUpPicker';
 import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
 import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
@@ -73,6 +76,7 @@ export default function DirectConversation(){
  const [editing,setEditing]=useState<DirectChatEntry|null>(null),[editText,setEditText]=useState('');
  const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
+ const [callUpOpen,setCallUpOpen]=useState(false);
  const [error,setError]=useState('');
  const [syncWarning,setSyncWarning]=useState('');
  const historyError=useRef<string|null>(null);
@@ -417,6 +421,22 @@ export default function DirectConversation(){
    }
   }
  }
+ /** Convocatória: one of my sessions, sent alone as the server envelope. */
+ async function sendCallUp(sessionId:number){
+  setCallUpOpen(false);
+  const text=encodeCallUp(sessionId),identity=peer+'|'+auth.token;
+  if(!text||!auth.token||blocked||sending||sendingNow.current||pendingWrites.current.has(identity))return;
+  const version=generation.current;
+  sendingNow.current=true;setSending(true);setError('');
+  try{
+   const confirmed=await sendDirectChat(peer,text,auth.token);
+   if(version!==generation.current||conversation.current!==identity)return;
+   setMessages(current=>current.some(m=>m.id===confirmed.id)?current:[...current,confirmed].sort((a,b)=>a.id-b.id));
+   void refresh(true,version);
+  }catch(e){
+   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar a convocatória.')+' Consulta o histórico antes de repetir.');
+  }finally{if(conversation.current===identity){sendingNow.current=false;setSending(false);}}
+ }
  async function prepareLocation(){
   const identity=peer+'|'+auth.token;
   if(!auth.token||!blockStatusKnown||blocked||locationBusy||sendingNow.current)return;
@@ -642,6 +662,7 @@ export default function DirectConversation(){
    <Text style={styles.sender}>{m.username1}</Text>
    {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
    {m.deletedAt?<Text style={styles.body}>Mensagem removida</Text>:
+    readCallUp(m.text)?<CallUpCard sessionId={readCallUp(m.text)!} token={auth.token} username={auth.username}/>:
     giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
       accessibilityLabel="GIF enviado na conversa"/>:
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
@@ -726,6 +747,10 @@ export default function DirectConversation(){
   {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button" accessibilityLabel={locationBusy?'A obter localização…':'Partilhar localização atual'}
      style={styles.iconAction} disabled={locationBusy||sending||photoBusy}
      onPress={()=>{void prepareLocation();}}><JynloIcon name="location" size={23} color={C.mint}/></Pressable>:null}
+  {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button" accessibilityLabel="Convocatória: convocar para um dos teus jogos"
+     style={styles.iconAction} disabled={sending||photoBusy}
+     onPress={()=>{setAttachmentsOpen(false);setCallUpOpen(true);}}><JynloIcon name="session" size={23} color={C.mint}/></Pressable>:null}
+  <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={id=>void sendCallUp(id)}/>
 
   </View>
   {editing&&!blocked?<View style={styles.editPanel}>
