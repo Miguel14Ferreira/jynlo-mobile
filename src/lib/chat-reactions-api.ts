@@ -1,13 +1,13 @@
 import {DEMO_MODE,request} from './api';
 
-export type ChatReactionKind='direct'|'community'|'session';
+export type ChatReactionKind='direct'|'community'|'session'|'private';
 export type ChatReactionEmoji='👍'|'❤️'|'😂'|'🎉'|'👏'|'🔥';
 export const CHAT_REACTION_EMOJIS:readonly ChatReactionEmoji[]=['👍','❤️','😂','🎉','👏','🔥'];
 export type ChatReactionSummary={messageId:number;counts:Record<string,number>;myEmoji:string|null};
 export type ChatReactionParticipant={username:string;displayName:string;profilePicUrl:string|null;emoji:string;mine:boolean};
 
 function validateConversation(kind:ChatReactionKind,id:string):string{
- if(!['direct','community','session'].includes(kind))throw Error('Tipo de chat inválido.');
+ if(!['direct','community','session','private'].includes(kind))throw Error('Tipo de chat inválido.');
  if(kind==='direct'){
   if(!/^[A-Za-z0-9._-]{1,128}$/.test(id))throw Error('Contacto inválido.');
   return encodeURIComponent(id);

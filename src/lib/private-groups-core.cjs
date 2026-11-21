@@ -41,4 +41,21 @@ function invitableFriends(friends,group,query){
  return (friends||[]).filter(f=>f&&!inGroup.has(String(f.username).toLowerCase())).filter(f=>!q||
   [f.username,f.nickname,f.fullName].some(v=>v&&String(v).toLocaleLowerCase('pt-PT').includes(q)));
 }
-module.exports={MAX_MEMBERS,MAX_MESSAGE,validateGroupTitle,validateInvitees,validateGroupMessage,mergeMessages,isCreator,isMine,membersLabel,invitableFriends};
+/** Own text message, not deleted, without files, sent less than 15 minutes ago (server rule). */
+function editableGroupMessage(message,me,now=Date.now()){
+ if(!message||message.deleted||!isMine(message,me))return false;
+ if(Array.isArray(message.attachments)&&message.attachments.length)return false;
+ if(typeof message.text!=='string'||!message.text.trim()||message.text.startsWith('[JYNLO:GIPHY:1]'))return false;
+ const created=Date.parse(message.createdAt);
+ return Number.isFinite(created)&&created<=now+60000&&now-created<=15*60*1000;
+}
+/** Short quote for a reply: who and what (the original may be older than the loaded page). */
+function replyQuote(messages,message){
+ if(!message||!Number.isSafeInteger(message.replyToId))return null;
+ const original=(messages||[]).find(m=>m&&m.id===message.replyToId);
+ if(!original)return {sender:'',text:'Mensagem anterior'};
+ if(original.deleted)return {sender:original.sender,text:'Mensagem apagada'};
+ const text=(original.text||'').trim()||((original.attachments||[])[0]?.filename)||'Anexo';
+ return {sender:original.sender,text:text.length>120?text.slice(0,120)+'…':text};
+}
+module.exports={editableGroupMessage,replyQuote,MAX_MEMBERS,MAX_MESSAGE,validateGroupTitle,validateInvitees,validateGroupMessage,mergeMessages,isCreator,isMine,membersLabel,invitableFriends};

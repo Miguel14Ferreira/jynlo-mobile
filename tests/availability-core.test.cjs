@@ -71,3 +71,22 @@ test('team chat alerts open the team chat and team chats are in Messages',()=>{
  assert.match(read('src/components/SportsTeamContentPanel.tsx'),/markTeamChatRead\(teamId,newest,token\)/);
  assert.match(read('app/teams/[id].tsx'),/setConversationMuted\('team',String\(teamId\),!chatMuted,auth\.token\)/);
 });
+
+test('private groups: edit rule, reply quote and same chat tools as the other chats',()=>{
+ const core=require('../src/lib/private-groups-core.cjs');
+ const now=Date.parse('2026-11-21T20:00:00Z');
+ const msg=(over)=>({id:1,groupId:5,sender:'ana',text:'Olá',createdAt:'2026-11-21T19:50:00Z',...over});
+ assert.equal(core.editableGroupMessage(msg(),'ANA',now),true);
+ assert.equal(core.editableGroupMessage(msg({createdAt:'2026-11-21T19:40:00Z'}),'ana',now),false);
+ assert.equal(core.editableGroupMessage(msg(),'rui',now),false);
+ assert.equal(core.editableGroupMessage(msg({attachments:[{index:0,filename:'a.jpg',mimeType:'image/jpeg',size:10}]}),'ana',now),false);
+ assert.equal(core.editableGroupMessage(msg({deleted:true}),'ana',now),false);
+ const list=[msg(),msg({id:2,replyToId:1,sender:'rui'}),msg({id:3,replyToId:99})];
+ assert.deepEqual(core.replyQuote(list,list[1]),{sender:'ana',text:'Olá'});
+ assert.deepEqual(core.replyQuote(list,list[2]),{sender:'',text:'Mensagem anterior'});
+ assert.equal(core.replyQuote(list,list[0]),null);
+ const screen=fs.readFileSync(path.join(__dirname,'..','app/groups/[id].tsx'),'utf8');
+ for(const piece of ["useChatReactions('private'",'<ChatSearchPanel kind="private"',"scope=\"private\"","scope:'private'",'ChatReplyPreview','prepareLocation','editGroupMessage','deleteGroupMessage'])
+  assert.ok(screen.includes(piece),piece);
+ assert.match(fs.readFileSync(path.join(__dirname,'..','src/components/SecureChatAttachment.tsx'),'utf8'),/\/api\/private-groups\/'\+numeric\+'\/messages\/'\+messageId\+'\/attachments\/'\+index/);
+});

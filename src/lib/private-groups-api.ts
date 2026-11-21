@@ -29,6 +29,20 @@ export async function groupMessages(id:number,token:string,beforeId?:number|null
  const r=await request<PrivateGroupMessage[]>(`${ROOT}/${gid(id)}/messages${q}`,{token:need(token)});
  return Array.isArray(r)?r:[];
 }
-export async function sendGroupMessage(id:number,text:string,token:string):Promise<PrivateGroupMessage>{
- return request<PrivateGroupMessage>(`${ROOT}/${gid(id)}/messages`,{token:need(token),method:'POST',body:{text:validateGroupMessage(text)}});
+export async function sendGroupMessage(id:number,text:string,token:string,replyToId?:number|null):Promise<PrivateGroupMessage>{
+ const reply=replyToId!=null&&Number.isSafeInteger(replyToId)&&replyToId>0?replyToId:null;
+ return request<PrivateGroupMessage>(`${ROOT}/${gid(id)}/messages`,{token:need(token),method:'POST',body:{text:validateGroupMessage(text),replyToId:reply}});
+}
+export async function editGroupMessage(id:number,messageId:number,text:string,token:string):Promise<PrivateGroupMessage>{
+ if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Mensagem inválida.');
+ return request<PrivateGroupMessage>(`${ROOT}/${gid(id)}/messages/${messageId}`,{token:need(token),method:'PUT',body:{text:validateGroupMessage(text)}});
+}
+export async function deleteGroupMessage(id:number,messageId:number,token:string):Promise<void>{
+ if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Mensagem inválida.');
+ await request<void>(`${ROOT}/${gid(id)}/messages/${messageId}`,{token:need(token),method:'DELETE'});
+}
+/** Whether private file storage is on; members only. */
+export async function groupAttachmentsAvailable(id:number,token:string):Promise<boolean>{
+ const r=await request<{available?:boolean}>(`${ROOT}/${gid(id)}/messages/attachments/availability`,{token:need(token)});
+ return r?.available===true;
 }
