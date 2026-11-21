@@ -1,14 +1,9 @@
 name: Jynlo Mobile attendance digest parity
+# Só manual: o repo é privado e cada run gasta minutos pagos do GitHub Actions.
+# Os testes correm localmente (npm run test:all) antes de cada merge.
 on:
-  push:
-    branches: [develop]
-    paths:
-      - 'src/lib/attendance-digest.cjs'
-      - 'src/lib/feed-visibility.cjs'
-      - 'tests/attendance-digest.test.cjs'
-      - 'app/(tabs)/index.tsx'
-      - '.github/workflows/mobile-attendance-digest.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

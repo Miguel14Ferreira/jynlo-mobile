@@ -1,0 +1,41 @@
+# Corre nos servidores da Expo (EAS Workflows), não gasta minutos do GitHub Actions.
+# Dispara quando o master recebe um push: master = o que vai para as lojas.
+# Android: AAB enviado para o teste interno da Play Store como RASCUNHO
+#          (só chega aos testers quando o publicares na Play Console).
+# iOS: build enviada para o TestFlight.
+name: Lojas (Play Store interno + TestFlight)
+
+on:
+  push:
+    branches: ['master']
+
+jobs:
+  build_android:
+    name: Android (AAB)
+    type: build
+    params:
+      platform: android
+      profile: play-internal
+
+  submit_android:
+    name: Enviar para teste interno (rascunho)
+    needs: [build_android]
+    type: submit
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      profile: play-internal
+
+  build_ios:
+    name: iOS
+    type: build
+    params:
+      platform: ios
+      profile: ios-testflight
+
+  submit_ios:
+    name: Enviar para TestFlight
+    needs: [build_ios]
+    type: submit
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      profile: ios-testflight
