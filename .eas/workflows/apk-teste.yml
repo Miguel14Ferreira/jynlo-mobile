@@ -1,0 +1,15 @@
+# APK de teste ligada à API de preview, para instalar diretamente no telemóvel.
+# Dispara com uma tag que comece por "apk-" (ex.: apk-2026-11-21). Não cria branches.
+name: APK de teste
+
+on:
+  push:
+    tags: ['apk-*']
+
+jobs:
+  build_apk:
+    name: APK (preview)
+    type: build
+    params:
+      platform: android
+      profile: preview

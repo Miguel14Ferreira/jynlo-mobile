@@ -2,10 +2,9 @@ name: Jynlo Mobile - Validation
 
 # Runs only when this workflow is edited on develop; never for ordinary
 # autonomous development commits. No Android APK is built.
+# Só manual: o repo é privado e cada run gasta minutos pagos do GitHub Actions.
+# Os testes correm localmente (npm run test:all) antes de cada merge.
 on:
-  push:
-    branches: [develop]
-    paths: ['.github/workflows/mobile-quality.yml']
   workflow_dispatch:
 
 permissions:
