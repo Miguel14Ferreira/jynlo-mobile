@@ -280,17 +280,35 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  }
  async function sendStructured(text:string,failure:string){
   const identity=id+'|'+auth.token;
-  if(!text||!auth.token||!auth.username||revokedRef.current||sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity))return;
-  const version=generation.current;
+  if(!text||!auth.token||!auth.username||revokedRef.current||mutationLock.current||sendingNow.current||uploadingNow.current||pendingWrites.current.has(identity))return;
+  // A timed-out structured POST may already have reached the server. Do not
+  // silently send the same poll/call-up again before the user checks history.
+  if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===text&&uncertainSendRef.current.replyId===null)return;
+  const version=generation.current,token=auth.token,username=auth.username;
+  pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
-   const confirmed=await sendCommunityMessage(id,text,auth.token,auth.username);
+   const confirmed=await sendCommunityMessage(id,text,token,username);
+   if(!confirmedCommunityChatSend(confirmed,id,username,text,null))
+    throw Error('O servidor respondeu, mas não confirmou esta mensagem.');
    if(version!==generation.current||activeChat.current!==identity)return;
-   setMessages(current=>current.some(m=>m.id===confirmed.id)?current:[...current,confirmed].sort((a,b)=>a.id-b.id));
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===text&&uncertainSendRef.current.replyId===null){
+    uncertainSendRef.current=null;setUncertainSend(null);
+   }
+   setMessages(current=>mergeMessages(current,[confirmed]));
    void refresh(version,true);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:failure)+' Confirma o histórico antes de repetir.');
-  }finally{sendingNow.current=false;setSending(false);}
+   if(version===generation.current&&activeChat.current===identity){
+    if(uncertainChatSend(e)){
+     const uncertain={identity,body:text,replyId:null};
+     uncertainSendRef.current=uncertain;setUncertainSend(uncertain);
+    }
+    setError((e instanceof Error?e.message:failure)+' Confirma o histórico antes de repetir.');
+   }
+  }finally{
+   pendingWrites.current.delete(identity);
+   if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
+  }
  }
  async function send(){
   const identity=id+'|'+auth.token;
