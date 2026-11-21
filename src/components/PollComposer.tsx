@@ -1,0 +1,54 @@
+import React,{useEffect,useState} from 'react';
+import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {C} from '../lib/theme';
+import {encodePoll,POLL_MAX_OPTION,POLL_MAX_OPTIONS,POLL_MAX_QUESTION} from '../lib/chat-poll.cjs';
+
+/** Create a sondagem: question + 2–6 options. onSend receives the encoded message. */
+export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:()=>void;onSend:(text:string)=>void}){
+ const [question,setQuestion]=useState(''),[options,setOptions]=useState(['','']),[invalid,setInvalid]=useState(false);
+ useEffect(()=>{if(visible){setQuestion('');setOptions(['','']);setInvalid(false);}},[visible]);
+ function submit(){
+  const text=encodePoll(question,options);
+  if(!text){setInvalid(true);return;}
+  onSend(text);
+ }
+ return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.overlay}>
+   <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar"/>
+   <View style={styles.sheet}>
+    <Text style={styles.title}>📊 Criar sondagem</Text>
+    <ScrollView style={{maxHeight:380}} contentContainerStyle={{gap:10}} keyboardShouldPersistTaps="handled">
+     <Text style={styles.label}>Pergunta</Text>
+     <TextInput value={question} maxLength={POLL_MAX_QUESTION} placeholder="Ex.: Que dia jogamos?" placeholderTextColor={C.muted}
+      onChangeText={value=>{setQuestion(value);setInvalid(false);}} style={styles.input} accessibilityLabel="Pergunta"/>
+     {options.map((option,index)=><View key={index} style={styles.row}>
+      <TextInput value={option} maxLength={POLL_MAX_OPTION} placeholder={'Opção '+(index+1)} placeholderTextColor={C.muted}
+       onChangeText={value=>{setOptions(current=>current.map((o,i)=>i===index?value:o));setInvalid(false);}}
+       style={[styles.input,{flex:1}]} accessibilityLabel={'Opção '+(index+1)}/>
+      {options.length>2?<Pressable accessibilityRole="button" accessibilityLabel={'Remover opção '+(index+1)} style={styles.remove}
+       onPress={()=>setOptions(current=>current.filter((_,i)=>i!==index))}><Text style={styles.removeText}>✕</Text></Pressable>:null}
+     </View>)}
+     {options.length<POLL_MAX_OPTIONS?<Pressable accessibilityRole="button" onPress={()=>setOptions(current=>[...current,''])} style={styles.add}>
+      <Text style={styles.addText}>+ Adicionar opção</Text></Pressable>:null}
+    </ScrollView>
+    {invalid?<Text style={styles.error}>Escreve a pergunta e pelo menos 2 opções diferentes.</Text>:null}
+    <Pressable accessibilityRole="button" onPress={submit} style={styles.send}><Text style={styles.sendText}>Enviar sondagem</Text></Pressable>
+   </View>
+  </KeyboardAvoidingView>
+ </Modal>;
+}
+const styles=StyleSheet.create({
+ overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.6)'},
+ sheet:{gap:12,padding:18,paddingBottom:30,borderTopLeftRadius:24,borderTopRightRadius:24,backgroundColor:C.background,borderWidth:1,borderColor:C.border},
+ title:{color:C.white,fontSize:20,fontWeight:'900'},
+ label:{color:C.muted,fontSize:13,fontWeight:'800'},
+ input:{minHeight:46,paddingHorizontal:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface,color:C.white,fontSize:15},
+ row:{flexDirection:'row',alignItems:'center',gap:8},
+ remove:{width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
+ removeText:{color:C.white,fontSize:16},
+ add:{minHeight:40,justifyContent:'center'},
+ addText:{color:C.mint,fontSize:14,fontWeight:'900'},
+ error:{color:'#ffb4a8',fontSize:13},
+ send:{minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',backgroundColor:C.mint},
+ sendText:{color:C.background,fontSize:16,fontWeight:'900'},
+});
