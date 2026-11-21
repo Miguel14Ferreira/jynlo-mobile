@@ -3,7 +3,8 @@ import {Alert,Linking,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View}
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import SessionDraftLocationMap from '../../src/components/SessionDraftLocationMap';
-import {DEMO_MODE} from '../../src/lib/api';
+import {DEMO_MODE,sessionDetail,inviteFromPreviousSession} from '../../src/lib/api';
+import {repeatFormPatch,repeatInviteMessage} from '../../src/lib/session-repeat-core.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {createSessionWithPayload} from '../../src/lib/session-create-api';
 import {createSessionPayload,isValidCustomSport,parseSessionDate,validateWeeklySlots,changeCommunityMode,formatLocalDateInput,formatLocalTimeInput,describeSessionConfirmation,chooseVenueLocation,detachVenueLocation} from '../../src/lib/session-create-core.cjs';
@@ -83,7 +84,10 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
- const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string}>();
+ const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string;repeatFrom?:string}>();
+ // "Jogar outra vez": copy a previous session of mine and invite its players after creating.
+ const repeatFrom=typeof params.repeatFrom==='string'&&/^[1-9][0-9]*$/.test(params.repeatFrom)?Number(params.repeatFrom):null;
+ const [repeatNote,setRepeatNote]=useState('');
  const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
  const preselectionOverridden=useRef(false);
@@ -263,7 +267,7 @@ export default function CreateSessionScreen(){
   }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
  useFocusEffect(useCallback(()=>{
-  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'')+'|'+presetDay+'|'+presetTime;
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'')+'|'+presetDay+'|'+presetTime+'|'+String(repeatFrom||'');
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
    confirmedCreation.current=null;setCreatedId(null);
@@ -272,6 +276,17 @@ export default function CreateSessionScreen(){
    setCommunities([]);setCommunityError('');setCommunitySearch('');
    setCommunityMode('INDEPENDENT');
    setForm(withPresetWhen(emptySessionForm()));
+   setRepeatNote('');
+   if(repeatFrom&&auth.token){
+    const repeatToken=auth.token;
+    void sessionDetail(repeatFrom,repeatToken,auth.username||undefined).then(detail=>{
+     if(communityLoadIdentity.current!==identity)return;
+     const patchFields=repeatFormPatch(detail);
+     if(!patchFields)return;
+     setForm(previous=>({...previous,...patchFields} as CreateSessionForm));
+     setRepeatNote('Copiámos o jogo anterior para '+patchFields.day+' às '+patchFields.time+'. Revê os dados; depois de criares, convidamos os jogadores da última vez.');
+    }).catch(()=>setRepeatNote('Não foi possível copiar o jogo anterior. Preenche os dados normalmente.'));
+   }
    setStep(0);setHasExistingPlayers(false);
    setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
    setExtraDay('');setExtraTime('');
@@ -287,7 +302,7 @@ export default function CreateSessionScreen(){
    communityLoadVersion.current++;venueSearchVersion.current++;
    createOperation.current++;
   };
- },[loadCommunities,auth.username,auth.token,requestedCommunityId,presetDay,presetTime]));
+ },[loadCommunities,auth.username,auth.token,requestedCommunityId,presetDay,presetTime,repeatFrom]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  // Presets ("perfis de sessões") are shared with the web and never hold dates, passwords or photos.
  const [presets,setPresets]=useState<SessionPreset[]>([]);
@@ -495,6 +510,10 @@ export default function CreateSessionScreen(){
      // The server confirmed the creation. Never POST this draft again.
      confirmedCreation.current={id:result.id,identity};
      setCreatedId(result.id);
+     if(repeatFrom&&actorToken){
+      try{const summary=await inviteFromPreviousSession(result.id,repeatFrom,actorToken);Alert.alert('Jogar outra vez',repeatInviteMessage(summary));}
+      catch{Alert.alert('Jogar outra vez','A sessão foi criada, mas não foi possível convidar os jogadores da última vez. Podes convidá-los na sessão.');}
+     }
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){
      if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current)
@@ -536,6 +555,7 @@ export default function CreateSessionScreen(){
   </Modal><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
   <Text style={styles.title}>Criar uma sessão</Text>
   <Text style={styles.note}>Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.</Text>
+  {repeatNote?<Message>{repeatNote}</Message>:null}
   <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}
    accessibilityRole="button" disabled={busy||index>step} onPress={()=>{setStep(index);setError('');}}
    style={[styles.stepChip,index===step&&styles.stepActive]}>

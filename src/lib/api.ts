@@ -243,3 +243,10 @@ export async function issueSessionGuestLink(id:number,token:string):Promise<stri
     throw Error('O servidor não confirmou uma ligação de convite válida.');
   return `https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(reply.token)}`;
 }
+
+/** "Jogar outra vez": invite the players of one of my previous sessions into a new one. */
+export async function inviteFromPreviousSession(sessionId:number,previousSessionId:number,token:string):Promise<{invited:number;skipped:number}>{
+  if(DEMO_MODE)return {invited:0,skipped:0};
+  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(previousSessionId)||previousSessionId<=0)throw Error('Sessão inválida.');
+  return request<{invited:number;skipped:number}>(`/api/sessions/${sessionId}/invites/from-session/${previousSessionId}`,{token,method:'POST',body:null});
+}

@@ -643,11 +643,19 @@ export default function SessionScreen(){
             {text:'Voltar',style:'cancel'},{text:'Confirmar',style:'destructive',onPress:send}]);
           }}/>:null}
       </View>:null}
+      {auth.token&&owner&&detail&&detail.status==='COMPLETED'?<View style={styles.panel}>
+        <Eyebrow>DEPOIS DO JOGO</Eyebrow>
+        <Text style={styles.hint}>Correu bem? Marca o próximo com as mesmas definições e convida os mesmos jogadores.</Text>
+        <Button title="Jogar outra vez" disabled={busy||loading}
+          onPress={()=>router.push({pathname:'/sessions/create',params:{repeatFrom:String(id),...(detail.communityId?{communityId:String(detail.communityId)}:{})}})}/>
+      </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
         <Button title="Editar dados da sessão" secondary disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/[id]/edit',params:{id:String(id)}})}/>
         <Button title="Partilhar convite da sessão" secondary onPress={share}/>
+        <Button title="Jogar outra vez (copiar e convidar os mesmos)" secondary disabled={busy||loading}
+          onPress={()=>router.push({pathname:'/sessions/create',params:{repeatFrom:String(id),...(detail.communityId?{communityId:String(detail.communityId)}:{})}})}/>
         <Button title={adminToolsOpen?'Ocultar ferramentas avançadas':'Mostrar ferramentas avançadas'} secondary onPress={()=>setAdminToolsOpen(open=>!open)}/>
         {adminToolsOpen?<View style={styles.editor}>
         {detail.registrationOpeningMode==='MANUAL'&&Number.isSafeInteger(id)&&id>0?<PreviousUnpaidWarning sessionId={id} token={auth.token}/>:null}
