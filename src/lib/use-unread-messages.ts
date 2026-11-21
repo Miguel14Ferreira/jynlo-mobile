@@ -3,9 +3,20 @@ import {AppState} from 'react-native';
 import {communityInbox,directInbox,sessionInbox,privateGroupInbox} from './chat-api';
 import {listConversationMutes} from './conversation-mutes-api';
 import {badgeTotal} from './unread-badge-core.cjs';
-import {DEMO_MODE} from './api';
+import {ApiError,DEMO_MODE,request} from './api';
 
 const POLL_MS=60_000;
+/** One request: the server sums every accessible conversation and skips muted ones. */
+async function serverTotal(token:string):Promise<number|null>{
+ try{
+  const r=await request<{total?:number}>('/api/messages/inbox/unread-count',{token});
+  return Number.isSafeInteger(r?.total)&&(r!.total as number)>=0?(r!.total as number):null;
+ }catch(e){
+  // Older server without the endpoint: fall back to adding the conversation summaries.
+  if(e instanceof ApiError&&(e.status===404||e.status===405))return null;
+  throw e;
+ }
+}
 /** Unread messages for the tab badge. Failures keep the last known value instead of flashing 0. */
 export function useUnreadMessages(token:string|null,username:string|null){
  const [count,setCount]=useState(0);
@@ -20,6 +31,10 @@ export function useUnreadMessages(token:string|null,username:string|null){
   if(inFlight.current===who||(!force&&now-last.current<5_000))return;
   inFlight.current=who;last.current=now;
   try{
+   let total:number|null=null;
+   try{total=await serverTotal(token);}catch{return;} // Network failure: keep the last value.
+   if(who!==identityRef.current)return;
+   if(total!==null){setCount(total);return;}
    const [direct,community,session,mutes,groups]=await Promise.allSettled([directInbox(token),communityInbox(token,username),sessionInbox(token,username),listConversationMutes(token),privateGroupInbox(token)]);
    if(who!==identityRef.current)return;
    if(direct.status==='rejected'&&community.status==='rejected'&&session.status==='rejected')return;
