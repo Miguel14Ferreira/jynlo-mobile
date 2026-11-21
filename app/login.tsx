@@ -42,7 +42,7 @@ export default function LoginScreen(){
    <DemoBanner/>
    <Eyebrow>A TUA CONTA</Eyebrow>
    {auth.username?<Message>Já tens sessão iniciada como {auth.username}. Termina essa sessão no Perfil antes de entrares com outra conta.</Message>:null}
-   <Text style={styles.headline}>Joga com a tua malta.</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.headline}>Joga com a tua malta.</Text>
    <Text style={styles.sub}>{DEMO_MODE?'Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.':'Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.'}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {auth.username?null:DEMO_MODE?<View style={styles.demoPanel}>

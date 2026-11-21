@@ -40,7 +40,7 @@ export default function FirstStepsScreen(){
  if(loading)return <Page><Loader/></Page>;
  return <Page>
   <Eyebrow>PRIMEIROS PASSOS</Eyebrow>
-  <Text style={styles.title}>O que gostas de jogar?</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>O que gostas de jogar?</Text>
   <Text style={styles.text}>Escolhe até {MAX_SPORTS} modalidades e a tua cidade. Abrimos Explorar já com os teus jogos, e quem procura parceiros na tua modalidade passa a encontrar-te. Podes mudar tudo no perfil.</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <TextInput value={filter} onChangeText={setFilter} placeholder="Procurar outra modalidade…" placeholderTextColor={C.muted}

@@ -46,7 +46,7 @@ export default function CommunitiesScreen(){
     <Brand subtitle="ENCONTRA AS TUAS PESSOAS"/><DemoBanner/>
     <View style={styles.hero}>
       <Eyebrow>JUNTOS É OUTRO JOGO</Eyebrow>
-      <Text style={styles.headline}>A tua malta.{"\n"}<Text style={{color:C.mint}}>A tua comunidade.</Text></Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.headline}>A tua malta.{"\n"}<Text style={{color:C.mint}}>A tua comunidade.</Text></Text>
       <Text style={styles.sub}>De uma sessão podem nascer amizades, equipas e grandes desafios.</Text>
     </View>
     <View style={styles.actions}>
@@ -81,7 +81,7 @@ export default function CommunitiesScreen(){
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
     {!loading&&!error&&list.length===0?<View style={styles.empty}>
-      <Text style={styles.emptyEmoji}>{mode==='mine'?'🤝':'⌕'}</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.emptyEmoji}>{mode==='mine'?'🤝':'⌕'}</Text>
       <Text style={styles.emptyTitle}>{mode==='mine'?'Ainda não tens comunidades':'Não encontrámos comunidades'}</Text>
       <Text style={styles.sub}>{mode==='mine'?'Cria a tua primeira comunidade ou explora as existentes.':'Experimenta outro nome ou pesquisa novamente.'}</Text>
       {mode==='mine'?<Button title="Explorar comunidades" secondary onPress={()=>setMode('explore')}/>:<Button title="Limpar pesquisa" secondary onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}}/>}

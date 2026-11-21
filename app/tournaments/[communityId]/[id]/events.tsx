@@ -100,7 +100,7 @@ export default function TournamentEventsScreen(){
  }
  const kind=tournament?managedKind(tournament):null;
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO DE PROVAS</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Gerir provas da competição'}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Gerir provas da competição'}</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}

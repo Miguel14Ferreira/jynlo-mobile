@@ -34,7 +34,7 @@ export default function ChangePasswordScreen(){
  return <Page>
   
   <Eyebrow>ALTERAR PALAVRA-PASSE</Eyebrow>
-  <Text style={styles.title}>Protege a tua conta.</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Protege a tua conta.</Text>
   {!auth.token||DEMO_MODE?<Message>Inicia sessão numa conta real para alterar a palavra-passe.</Message>:null}
   {saved?<Message>Palavra-passe alterada com sucesso.</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}

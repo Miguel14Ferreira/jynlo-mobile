@@ -45,7 +45,7 @@ export default function LivesScreen(){
  };
  return <Page>
   <Text style={styles.kicker}>JYNLO · EM DIRETO</Text>
-  <Text style={styles.heading}>Lives</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Lives</Text>
   <Text style={styles.note}>Assiste aos diretos da comunidade Jynlo ou inicia uma transmissão tua.</Text>
   {!auth.token?<Message>Inicia sessão para assistir e transmitir diretos.</Message>:<>
    <View style={styles.panel}>

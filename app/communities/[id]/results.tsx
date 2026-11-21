@@ -39,7 +39,7 @@ export default function CommunityResultsScreen(){
  const visibleRounds=showAll?results.rounds:results.rounds.slice(0,8);
  return <Page>
   <DemoBanner/><Eyebrow>JYNLO · RESULTADOS E CLASSIFICAÇÕES</Eyebrow>
-  <Text style={styles.title}>Histórico da comunidade</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Histórico da comunidade</Text>
   <Text style={styles.hint}>Jornadas, resultados e estatísticas oficiais, diretamente das classificações da comunidade.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {!Number.isSafeInteger(id)||id<=0?<Message tone="error">Comunidade inválida.</Message>:null}
@@ -78,7 +78,7 @@ export default function CommunityResultsScreen(){
     return <View key={round.id} style={styles.round}>
      <Text style={styles.roundTitle}>{round.name||'Jornada '+round.id}</Text>
      <Text style={styles.hint}>{round.sport||'Modalidade não indicada'} · {new Date(round.playedAt).toLocaleDateString('pt-PT')}</Text>
-     {score?<View style={styles.scoreRow}><Text style={styles.scoreSide}>Equipa A</Text><Text style={styles.score}>{score.label}</Text><Text style={styles.scoreSide}>Equipa B</Text></View>:
+     {score?<View style={styles.scoreRow}><Text style={styles.scoreSide}>Equipa A</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{score.label}</Text><Text style={styles.scoreSide}>Equipa B</Text></View>:
       <Text style={styles.hint}>Sem marcador oficial registado. Consulta os resultados individuais da jornada.</Text>}
      {contributors.length>0?<View style={styles.contributions}>{contributors.map((p,i)=><Text key={p.name+i} style={styles.hint}>
       {p.name}{p.team?' · Equipa '+p.team:''}{p.goals>0?' · '+p.goals+' golos':''}{p.assists>0?' · '+p.assists+' assistências':''}

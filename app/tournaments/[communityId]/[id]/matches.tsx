@@ -56,7 +56,7 @@ export default function IndividualMatchesScreen(){
   finally{if(version===generation.current){paging.current=false;setBusy(false);}}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIO · INDIVIDUAL</Eyebrow>
-  <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · INDIVIDUAL</Text><Text style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
+  <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · INDIVIDUAL</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
    {tournament?<Text style={styles.heroSubtitle}>{tournament.sport||'Multidesporto'} · Jogos e resultados confirmados</Text>:null}
   </View>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}

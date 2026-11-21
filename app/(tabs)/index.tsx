@@ -1266,7 +1266,7 @@ export default function JynloFeedHome(){
         const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}):null;
         const place=[group.item.city?.trim(),date].filter(Boolean).join(' · ');
         return <View key={group.sessionId} style={styles.attendanceRow}>
-          <View style={styles.attendanceCheck}><Text style={styles.attendanceCheckText}>✓</Text></View>
+          <View style={styles.attendanceCheck}><Text maxFontSizeMultiplier={1.3} style={styles.attendanceCheckText}>✓</Text></View>
           <View style={styles.attendanceDetails}>
             <Text style={styles.attendanceTitle}>{attendanceTitle(group)}</Text>
             {place?<Text style={styles.attendanceMeta}>{place}</Text>:null}
@@ -1372,12 +1372,12 @@ export default function JynloFeedHome(){
     </View>;
   }
   const Header=()=> <View style={styles.screenPad}>
-    <View style={styles.navHeader}><View style={styles.brand}><Image source={require('../../assets/jynlo-icon.png')} style={styles.brandLogo}/><Text style={styles.brandName}>JYNLO</Text></View><View style={styles.headerRight}>
+    <View style={styles.navHeader}><View style={styles.brand}><Image source={require('../../assets/jynlo-icon.png')} style={styles.brandLogo}/><Text maxFontSizeMultiplier={1.2} style={styles.brandName}>JYNLO</Text></View><View style={styles.headerRight}>
       <Pressable onPress={()=>router.push(auth.token?'/live':'/login')}
         accessibilityRole="button" accessibilityLabel="Abrir diretos Jynlo" style={styles.headerCircle}>
         <JynloIcon name="video" color={WHITE} size={22}/></Pressable>
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
-      <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
+      <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text maxFontSizeMultiplier={1.2} style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
     <HomeUpNext/>
     <View style={styles.storiesCard}>

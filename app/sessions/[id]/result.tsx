@@ -113,7 +113,7 @@ export default function SessionCompetitionResultScreen(){
  if(!valid)return <Page><Message tone="error">Sessão ou comunidade inválida.</Message></Page>;
  return <Page>
   <DemoBanner/><Eyebrow>JYNLO · APÓS O JOGO</Eyebrow>
-  <Text style={styles.title}>Resultado da sessão</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Resultado da sessão</Text>
   <Text style={styles.hint}>Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.</Text>
   <Message>{football?(scoreSupported?'Regista o marcador oficial e, se souberes, os golos e assistências dos jogadores. Não são inferidos dados em falta.':'Ainda não é possível registar o marcador. Podes registar vitória ou empate.'):'Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.'}</Message>
   {loading?<Loader/>:null}

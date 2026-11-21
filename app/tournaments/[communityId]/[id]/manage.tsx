@@ -180,7 +180,7 @@ export default function TournamentManagerScreen(){
   finally{pendingWrite.current=false;if(version===generation.current&&reading===readVersion.current)setBusy(false);}
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Gestão do torneio'}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Gestão do torneio'}</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{syncing?<Message>A sincronizar resultados e classificações oficiais…</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}{notice?<Message>{notice}</Message>:null}

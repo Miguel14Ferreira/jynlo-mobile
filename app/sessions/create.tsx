@@ -553,7 +553,7 @@ export default function CreateSessionScreen(){
     </View>
    </View>
   </Modal><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
-  <Text style={styles.title}>Criar uma sessão</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Criar uma sessão</Text>
   <Text style={styles.note}>Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.</Text>
   {repeatNote?<Message>{repeatNote}</Message>:null}
   <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}

@@ -49,9 +49,9 @@ export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:numb
   {error?<Message tone="error">{error}</Message>:null}
   {result&&loadedFor===identity?<>
    <View style={styles.scoreRow}>
-    <View style={styles.side}><Text style={styles.team}>Equipa A</Text><Text style={styles.score}>{result.scoreA??'—'}</Text></View>
+    <View style={styles.side}><Text style={styles.team}>Equipa A</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreA??'—'}</Text></View>
     <Text style={styles.separator}>–</Text>
-    <View style={styles.side}><Text style={styles.team}>Equipa B</Text><Text style={styles.score}>{result.scoreB??'—'}</Text></View>
+    <View style={styles.side}><Text style={styles.team}>Equipa B</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreB??'—'}</Text></View>
    </View>
    {game&&publicSessionResultMessage(game,result,sessionId)?<Button secondary title="Partilhar marcador oficial"
      onPress={()=>{

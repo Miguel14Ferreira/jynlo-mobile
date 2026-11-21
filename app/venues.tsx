@@ -16,7 +16,7 @@ export default function VenuesScreen(){
  },[term,city]);
  useFocusEffect(useCallback(()=>{void search();},[search]));
  return <Page><DemoBanner/><Eyebrow>RECINTOS DESPORTIVOS</Eyebrow>
- <Text style={styles.heading}>Encontra o teu <Text style={{color:C.mint}}>próximo campo.</Text></Text>
+ <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Encontra o teu <Text style={{color:C.mint}}>próximo campo.</Text></Text>
  <TextInput value={term} onChangeText={setTerm} placeholder="Nome do recinto" placeholderTextColor={C.muted} style={styles.input}/>
  <TextInput value={city} onChangeText={setCity} placeholder="Cidade" placeholderTextColor={C.muted} style={styles.input}/>
  <Button title="Pesquisar recintos" onPress={()=>{void search();}}/>

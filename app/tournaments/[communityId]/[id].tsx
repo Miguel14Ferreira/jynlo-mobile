@@ -70,7 +70,7 @@ export default function TournamentDetailScreen(){
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
    {tournament?<><View style={styles.hero}>
      <Text style={styles.heroEyebrow}>TORNEIO · JYNLO</Text>
-     <Text style={styles.title}>{tournament.name}</Text>
+     <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament.name}</Text>
      <View style={styles.line}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={tournament.status==='IN_PROGRESS'?'A decorrer':tournament.status==='DRAFT'?'Em preparação':'Concluído'}/></View>
      <Text style={styles.heroKind}>{label(kind)}</Text>
     </View>
@@ -88,7 +88,7 @@ export default function TournamentDetailScreen(){
         const name=String(r.teamName??r.fullName??r.displayName??r.username??'Participante');
         const points=kind==='CHESS'?formatChessPoints(r.points):r.points;
         return <View key={i} style={styles.standing}>
-          <View style={styles.positionBox}><Text style={styles.position}>{String(r.position??i+1)}</Text></View>
+          <View style={styles.positionBox}><Text maxFontSizeMultiplier={1.3} style={styles.position}>{String(r.position??i+1)}</Text></View>
           <View style={styles.standingIdentity}><Text numberOfLines={2} style={styles.name}>{name}</Text>
             <Text style={styles.meta}>{`${r.played??'—'} ${kind==='CHESS'?'partidas':'jogos'} · ${r.won??'—'} vitórias · ${r.drawn??'—'} empates · ${r.lost??'—'} derrotas`}</Text></View>
           <View style={styles.pointsBox}><Text style={styles.points}>{points==null?'—':String(points)}</Text><Text style={styles.pointsLabel}>{kind==='CHESS'?'pontos':'pts'}</Text></View>

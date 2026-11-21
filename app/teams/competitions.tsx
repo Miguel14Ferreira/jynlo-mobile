@@ -119,7 +119,7 @@ export default function TeamCompetitionDiscovery(){
   </Pressable>
   <View style={styles.intro}>
    <Text style={styles.introLabel}>COMPETIÇÕES · EQUIPAS</Text>
-   <Text style={styles.title}>Encontrar competições</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Encontrar competições</Text>
    <Text style={styles.note}>Descobre torneios e campeonatos que aceitam candidaturas. Escolhe a tua equipa antes de participar.</Text>
   </View>
   <View style={styles.searchPanel}>

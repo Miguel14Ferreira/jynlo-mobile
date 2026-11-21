@@ -64,7 +64,7 @@ export default function PrivateStoryReplies(){
      </View>
      <Text style={styles.storyContextArrow}>↗</Text>
     </View>
-    {isReaction?<View style={styles.reactionBubble}><Text style={styles.reactionEmoji}>{reply.content}</Text><Text style={styles.reactionLabel}>Reagiu à tua Story</Text></View>:
+    {isReaction?<View style={styles.reactionBubble}><Text maxFontSizeMultiplier={1.3} style={styles.reactionEmoji}>{reply.content}</Text><Text style={styles.reactionLabel}>Reagiu à tua Story</Text></View>:
      <Text style={styles.message}>{reply.content}</Text>}
     <View style={styles.actions}>
      <Pressable accessibilityRole="button" accessibilityLabel={'Abrir conversa privada com '+reply.senderUsername}

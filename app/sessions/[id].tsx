@@ -534,9 +534,9 @@ export default function SessionScreen(){
     {s&&!loading?<>
       <View style={styles.hero}>
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel="Fotografia da sessão"/>:null}
-        <View style={styles.top}><Text style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
+        <View style={styles.top}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?`${spots} vagas`:sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})}/></View>
-        <Text style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{s.sport||'Sessão desportiva'}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||'Local a confirmar'}</Text></View>
         {detail?<Text style={styles.levelLine}>🎯 {levelLabel(detail.skillLevel)}</Text>:null}
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
@@ -571,7 +571,7 @@ export default function SessionScreen(){
            <Text style={styles.panelHeading}>Chat da sessão</Text>
            <Text style={styles.hint}>Mensagens dos participantes confirmados · atualização em tempo real</Text>
           </View>
-          <Text style={styles.chatDisclosureSymbol}>{showSessionChat?'−':'+'}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.chatDisclosureSymbol}>{showSessionChat?'−':'+'}</Text>
          </Pressable>
          {showSessionChat?<SessionChatPanel embedded/>:null}
         </View>:null}
@@ -757,7 +757,7 @@ export default function SessionScreen(){
            <Text style={styles.rosterTitle}>Quem vai</Text>
            <Text style={styles.hint}>{rosterError?'Lista por confirmar':participants.length+' participantes visíveis'}</Text>
           </View>
-          <Text style={styles.chatDisclosureSymbol}>{showParticipantRoster?'−':'+'}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.chatDisclosureSymbol}>{showParticipantRoster?'−':'+'}</Text>
         </Pressable>
         {showParticipantRoster?<>
         {rosterError?<Text style={styles.rosterError}>{rosterError}</Text>:null}

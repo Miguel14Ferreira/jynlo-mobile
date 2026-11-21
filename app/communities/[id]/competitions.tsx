@@ -48,7 +48,7 @@ export default function CommunityCompetitions(){
  const role=community&&'myRole' in community?community.myRole:null;
  const organizer=role==='OWNER'||role==='ADMIN';
  return <Page><DemoBanner/><Eyebrow>COMPETIÇÕES POR MODALIDADE</Eyebrow>
-  <Text style={styles.heading}>Competições da comunidade</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Competições da comunidade</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -69,13 +69,13 @@ export default function CommunityCompetitions(){
      <Text style={styles.classification}>{championship.sport} · {championship.seasonLabel}</Text>
      <Text style={styles.small}>{championship.closedAt?'Encerrado':'Em curso'} · {championship.competitions.length} {championship.competitions.length===1?'torneio':'torneios'} associados</Text>
      {championship.closedAt&&championship.championDisplayName?<Text style={styles.small}>Campeão: {championship.championDisplayName}</Text>:null}</View>
-    <Text style={styles.chevron}>›</Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
    </Pressable>)}
   </View>:null}
   {!loading&&!error&&!!role&&sections.length===0?<Message>Esta comunidade ainda não tem modalidades configuradas.</Message>:null}
   {!loading&&!error&&!!role?sections.map(section=><View key={section.sport} style={styles.section}>
    <View style={styles.header}>
-    <Text style={styles.icon}>{sportIcon(section.sport)}</Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.icon}>{sportIcon(section.sport)}</Text>
     <View style={{flex:1,gap:4}}>
      <Text style={styles.sectionTitle}>{section.sport}</Text>
      <Text style={styles.small}>{section.tournaments.length} {section.tournaments.length===1?'torneio':'torneios'}</Text>
@@ -93,7 +93,7 @@ export default function CommunityCompetitions(){
       <Text style={styles.classification}>{label(tournament.kind)}</Text>
       <Text style={styles.small}>{tournament.status==='DRAFT'?'Em preparação':tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}</Text>
      </View>
-     <Text style={styles.chevron}>›</Text>
+     <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
    </Pressable>)}
    {organizer&&section.selected&&community&&canCreateTournamentForSport(community,section.sport)?
      <Button secondary title={'Criar torneio de '+section.sport} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id),sport:section.sport}})}/>:null}

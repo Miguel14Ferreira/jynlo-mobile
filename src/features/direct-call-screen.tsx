@@ -93,7 +93,7 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
      </Pressable>
     </>;
    })()}
-  </View>:<View style={styles.audioCall}><Text style={styles.audioSymbol}>◉</Text><Text style={styles.note}>Chamada de voz ativa · O chat continua disponível.</Text></View>}
+  </View>:<View style={styles.audioCall}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>Chamada de voz ativa · O chat continua disponível.</Text></View>}
    </View>
    <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
   </View>

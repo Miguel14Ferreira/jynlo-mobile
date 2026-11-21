@@ -66,7 +66,7 @@ export default function TeamFixturesScreen(){
  const teamPage=(teamId:number)=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(teamId)}});
  const renderMatches=(entries:TournamentTeamMatch[])=>entries.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>);
  return <Page><DemoBanner/><Eyebrow>TORNEIO · JOGOS</Eyebrow>
-   <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · JYNLO</Text><Text style={styles.title}>{tournament?.name||'Grupos e eliminatórias'}</Text>
+   <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · JYNLO</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Grupos e eliminatórias'}</Text>
     {tournament?<Text style={styles.heroInfo}>{tournament.sport||'Multidesporto'} · {tournament.format==='GROUP_KNOCKOUT'?'Grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Eliminatórias':'Liga'}</Text>:null}
    </View>
    {!auth.token?<Button title="Entrar para consultar os jogos" onPress={()=>router.push('/login')}/>:null}
@@ -81,7 +81,7 @@ export default function TeamFixturesScreen(){
         {groups?.groups.length?groups.groups.map(g=><View key={g.groupNumber} style={styles.group}>
           <Text style={styles.heading}>Grupo {g.groupNumber}</Text>
           {g.standings.map(row=><Pressable key={row.teamId} onPress={()=>teamPage(row.teamId)} style={styles.standing} accessibilityRole="button" accessibilityLabel={'Ver equipa '+row.teamName}>
-            <View style={styles.rankPill}><Text style={styles.rank}>{row.position}</Text></View><Text style={styles.team} numberOfLines={2}>{row.teamName}</Text>
+            <View style={styles.rankPill}><Text maxFontSizeMultiplier={1.3} style={styles.rank}>{row.position}</Text></View><Text style={styles.team} numberOfLines={2}>{row.teamName}</Text>
             <View style={styles.pointsBlock}><Text style={styles.points}>{row.points} pts</Text><Text style={styles.played}>{row.played} J</Text></View>
           </Pressable>)}
           {split.groups.find(x=>x.number===g.groupNumber)?.matches.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>)||null}

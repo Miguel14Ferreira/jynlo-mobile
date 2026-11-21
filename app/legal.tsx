@@ -14,7 +14,7 @@ export default function LegalScreen(){
  return <Page>
   
   <Eyebrow>JYNLO · PILOTO</Eyebrow>
-  <Text style={styles.title}>{document.title}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{document.title}</Text>
   <Text style={styles.intro}>{document.intro}</Text>
   <Text style={styles.note}>{document.updated}</Text>
   <Text style={styles.note}>{document.notice}</Text>

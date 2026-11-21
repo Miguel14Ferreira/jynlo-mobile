@@ -65,7 +65,7 @@ export default function CommunityInvitesScreen(){
     ]);
   }
   return <Page><DemoBanner/><Eyebrow>COMUNIDADES</Eyebrow>
-    <Text style={styles.title}>Os teus <Text style={{color:C.mint}}>convites.</Text></Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.title}>Os teus <Text style={{color:C.mint}}>convites.</Text></Text>
     <Text style={styles.sub}>Decide em que comunidades queres participar. Não entras automaticamente quando recebes um convite.</Text>
     {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/invites'}})}/>:null}
     {loading?<Loader/>:null}

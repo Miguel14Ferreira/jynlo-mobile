@@ -333,7 +333,7 @@ export default function NotificationsScreen(){
   }
  },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
  return <Page><DemoBanner/>
-  <Text style={styles.title}>Notificações</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Notificações</Text>
   <Text style={styles.note}>Convites, novidades desportivas e atividade social.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
   {sameAccount?<Button secondary title="Gerir notificações" onPress={()=>router.push('/notification-settings')}/>:null}

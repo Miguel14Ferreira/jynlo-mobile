@@ -504,7 +504,7 @@ export default function TeamDetail(){
     <View style={styles.heroIdentity}>
       <TeamBrandAvatar team={team} size={94}/>
       <View style={styles.heroCopy}>
-        <Text style={styles.title}>{team.name}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team.name}</Text>
         <Text style={styles.heroSubtitle}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text>
       </View>
     </View>

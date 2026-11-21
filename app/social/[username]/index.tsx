@@ -113,7 +113,7 @@ export default function PublicSocialProfile(){
   {!auth.token?<Button title="Entrar para ver este perfil" onPress={()=>router.push('/login')}/>:null}
   {profile?<View style={styles.hero}>
    <View style={styles.identity}>
-    <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
+    <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text maxFontSizeMultiplier={1.3} style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
     <View style={{flex:1,gap:5}}><Text style={styles.name}>{displayName}</Text><Text style={styles.handle}>@{name}</Text></View>
    </View>
    {profile.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}

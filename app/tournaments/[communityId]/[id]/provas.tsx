@@ -113,7 +113,7 @@ export default function EventRankingScreen(){
  const setRow=(index:number,patch:Partial<EventRankingDraftRow>)=>setRows(current=>current.map((r,i)=>i===index?{...r,...patch}:r));
 
  return <Page><DemoBanner/><Eyebrow>🏅 CLASSIFICAÇÃO POR PROVAS</Eyebrow>
-  <Text style={styles.title}>{tournamentName}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournamentName}</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading&&!data?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -152,7 +152,7 @@ export default function EventRankingScreen(){
      <Text style={styles.count}>{plural(data.participants.length,'atleta','atletas')}</Text></View>
     {data.table.length===0?<Text style={styles.meta}>{data.participants.length?'Ainda não há provas registadas.':'Ainda não há atletas confirmados. Os atletas inscrevem-se em "Participantes e inscrições" e um administrador confirma.'}</Text>:null}
     {data.table.map(row=><View key={row.participantId} style={styles.standing}>
-     <View style={[styles.positionBox,row.position===1&&styles.leaderBox]}><Text style={styles.position}>{row.position}</Text></View>
+     <View style={[styles.positionBox,row.position===1&&styles.leaderBox]}><Text maxFontSizeMultiplier={1.3} style={styles.position}>{row.position}</Text></View>
      <View style={styles.identity}><Text numberOfLines={2} style={styles.name}>{row.name}</Text>
       {kind!=='POSITION'&&row.best!=null?<Text style={styles.best}>{kind==='TIME'?'Melhor tempo':'Melhor marca'}: {value(row.best)}</Text>:null}
       <Text style={styles.meta}>{plural(row.events,'prova','provas')} · {plural(row.wins,'vitória','vitórias')} · {plural(row.podiums,'pódio','pódios')}</Text></View>

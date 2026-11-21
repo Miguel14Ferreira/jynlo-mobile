@@ -173,7 +173,7 @@ export default function CommunityDetailScreen(){
       <View style={styles.identityCard}>
         <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
         <View style={styles.identityHeading}>
-          <View style={styles.identityMark}><Text style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text></View>
+          <View style={styles.identityMark}><Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text></View>
           <View style={styles.identityCopy}>
             <Text style={styles.heading}>{community.name}</Text>
             <Text style={styles.identityStatus}>{role?'Fazes parte desta comunidade':'Descobre esta comunidade'}</Text>

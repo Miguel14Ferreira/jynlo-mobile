@@ -63,7 +63,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
 export function Brand({subtitle}:{subtitle?:string}){
   return <View style={styles.brandRow}>
     <Image source={require('../../assets/jynlo-icon.png')} style={styles.logo} />
-    <View><Text style={styles.brandTitle}>JYNLO</Text>{subtitle?<Text style={styles.brandSubtitle}>{subtitle}</Text>:null}</View>
+    <View style={{flexShrink:1}}><Text maxFontSizeMultiplier={1.2} style={styles.brandTitle}>JYNLO</Text>{subtitle?<Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={styles.brandSubtitle}>{subtitle}</Text>:null}</View>
   </View>;
 }
 export function DemoBanner(){return DEMO_MODE?<View style={styles.demoBanner}>
@@ -98,7 +98,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   return <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão de ${session.sport} em ${session.city||'local a confirmar'}`}
     onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
     <View style={styles.cardTop}>
-      <View style={styles.sportBox}><Text style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
+      <View style={styles.sportBox}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
       <View style={styles.cardIdentity}>
         <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||'Local a confirmar'}</Text></View>

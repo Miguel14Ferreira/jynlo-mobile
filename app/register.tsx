@@ -41,7 +41,7 @@ export default function RegisterScreen(){
  if(registered)return <Page>
   <Brand subtitle="CONTA CRIADA"/>
   <Eyebrow>CONFIRMAÇÃO POR EMAIL</Eyebrow>
-  <Text style={styles.title}>Verifica a tua caixa de correio.</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Verifica a tua caixa de correio.</Text>
   <Message>A conta foi registada. Confirma o teu email para conseguires iniciar sessão na Jynlo.</Message>
   <Button title="Confirmar email na aplicação" onPress={()=>router.replace({pathname:'/confirm-email',params:{username}})}/>
   <Button title="Voltar ao início de sessão" secondary onPress={()=>router.replace('/login')}/>
@@ -50,7 +50,7 @@ export default function RegisterScreen(){
   <Brand subtitle="JUNTA-TE À JYNLO"/>
   <DemoBanner/>
   <Eyebrow>REGISTO NA APLICAÇÃO</Eyebrow>
-  <Text style={styles.title}>Encontra as tuas pessoas.</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Encontra as tuas pessoas.</Text>
   <Text style={styles.hint}>Cria a tua conta diretamente na app. Os mesmos dados e regras são usados no website.</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.form}>
