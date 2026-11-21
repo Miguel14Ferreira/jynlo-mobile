@@ -8,7 +8,7 @@ test('community preselection is specific to the account and source community',()
  assert.match(source,/communityLoadIdentity\.current!==identity/);
  assert.match(source,/preselectionApplied\.current=false/);
  assert.match(source,/setCommunityMode\('INDEPENDENT'\)/);
- assert.match(source,/setForm\(emptySessionForm\(\)\)/);
+ assert.match(source,/setForm\(withPresetWhen\(emptySessionForm\(\)\)\)/);
  assert.match(source,/setCommunities\(\[\]\);setCommunityError\(''\);setCommunitySearch\(''\)/);
 });
 
@@ -69,7 +69,7 @@ test('switching accounts invalidates stale venue search results',()=>{
 test('changing account or source community clears all previously entered session details',()=>{
  assert.match(source,/function emptySessionForm\(\):CreateSessionForm/);
  assert.match(source,/const \[form,setForm\]=useState<CreateSessionForm>\(emptySessionForm\)/);
- assert.match(source,/setForm\(emptySessionForm\(\)\)/);
+ assert.match(source,/setForm\(withPresetWhen\(emptySessionForm\(\)\)\)/);
  assert.match(source,/setStep\(0\);setHasExistingPlayers\(false\)/);
  assert.match(source,/setSportSearch\(''\);setShowSportResults\(false\)/);
  assert.match(source,/setExtraDay\(''\);setExtraTime\(''\)/);

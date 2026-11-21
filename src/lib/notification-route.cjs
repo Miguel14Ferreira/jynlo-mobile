@@ -27,6 +27,11 @@ function notificationDestination(item){
    return {kind:'tournament',id:String(item.competitionTournamentId),communityId:String(item.communityId)};
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;
  }
+ if(type==='AVAILABILITY_REQUEST'||type==='AVAILABILITY_REMINDER'){
+  // "Quem pode?" lives on the group or community page.
+  if(validId(item.privateGroupId))return {kind:'group-chat',id:String(item.privateGroupId)};
+  return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;
+ }
  if(type==='COMMUNITY_INVITE')return {kind:'invites'};
  if(type==='COMMUNITY_JOIN_REQUEST'||type==='COMMUNITY_JOIN_ACCEPTED'||type==='COMMUNITY_JOIN_REJECTED'){
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;

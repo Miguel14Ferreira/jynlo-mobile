@@ -1,0 +1,14 @@
+export type AvailabilityAnswer='YES'|'MAYBE'|'NO';
+export type AvailabilitySlot={id:number;startsAt:string;yes:string[];maybe:string[];no:number;mine:AvailabilityAnswer|null};
+export type AvailabilityRequest={id:number;kind:'private'|'community';targetId:number;creator:string;note:string|null;createdAt:string;mine:boolean;members:number;answered:number;slots:AvailabilitySlot[]};
+export const MAX_SLOTS:number;
+export const MAX_NOTE:number;
+export const ANSWERS:readonly {value:AvailabilityAnswer;label:string}[];
+export function dayOptions(now?:Date,count?:number):{value:string;label:string}[];
+export function slotInstant(day:string,time:string,now?:number):{iso?:string;error?:string};
+export function addSlot(slots:string[],iso:string):{slots:string[];error:string};
+export function slotLabel(iso:string,now?:Date):string;
+export function bestSlot(request:AvailabilityRequest|null|undefined):AvailabilitySlot|null;
+export function createParams(slot:{startsAt:string},extra?:Record<string,string>):Record<string,string>;
+export function progress(request:AvailabilityRequest|null|undefined):string;
+export function validNote(note:string):boolean;

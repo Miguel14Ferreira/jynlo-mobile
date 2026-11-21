@@ -83,7 +83,7 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
- const params=useLocalSearchParams<{communityId?:string;sport?:string}>();
+ const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string}>();
  const requestedCommunityId=typeof params.communityId==='string'&&/^[1-9][0-9]*$/.test(params.communityId)?Number(params.communityId):null;
  const preselectionApplied=useRef(false);
  const preselectionOverridden=useRef(false);
@@ -93,6 +93,10 @@ export default function CreateSessionScreen(){
  const confirmedCreation=useRef<{id:number;identity:string}|null>(null);
  const [createdId,setCreatedId]=useState<number|null>(null);
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
+ // "Quem pode?" opens this screen with the chosen day and time already filled in.
+ const presetDay=typeof params.day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.day)?params.day:'';
+ const presetTime=typeof params.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(params.time)?params.time:'';
+ const withPresetWhen=(value:CreateSessionForm):CreateSessionForm=>presetDay&&presetTime?{...value,day:presetDay,time:presetTime}:value;
  const [step,setStep]=useState(0);
  const [showDateCalendar,setShowDateCalendar]=useState(false);
  const [showSeasonHelp,setShowSeasonHelp]=useState(false);
@@ -259,7 +263,7 @@ export default function CreateSessionScreen(){
   }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
  useFocusEffect(useCallback(()=>{
-  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'');
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'')+'|'+presetDay+'|'+presetTime;
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
    confirmedCreation.current=null;setCreatedId(null);
@@ -267,7 +271,7 @@ export default function CreateSessionScreen(){
    preselectionOverridden.current=false;
    setCommunities([]);setCommunityError('');setCommunitySearch('');
    setCommunityMode('INDEPENDENT');
-   setForm(emptySessionForm());
+   setForm(withPresetWhen(emptySessionForm()));
    setStep(0);setHasExistingPlayers(false);
    setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
    setExtraDay('');setExtraTime('');
@@ -283,7 +287,7 @@ export default function CreateSessionScreen(){
    communityLoadVersion.current++;venueSearchVersion.current++;
    createOperation.current++;
   };
- },[loadCommunities,auth.username,auth.token,requestedCommunityId]));
+ },[loadCommunities,auth.username,auth.token,requestedCommunityId,presetDay,presetTime]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  // Presets ("perfis de sessões") are shared with the web and never hold dates, passwords or photos.
  const [presets,setPresets]=useState<SessionPreset[]>([]);

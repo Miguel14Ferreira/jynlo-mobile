@@ -1,0 +1,13 @@
+export type NearbyAlertPreference={enabled:boolean;latitude:number|null;longitude:number|null;placeLabel:string|null;radiusKm:number;sports:string[]};
+export type NearbyPlace={label:string;latitude:number;longitude:number};
+export const RADII_KM:readonly number[];
+export const MAX_SPORTS:number;
+export const PLACES:readonly NearbyPlace[];
+export function emptyPreference():NearbyAlertPreference;
+export function approximate(latitude:number,longitude:number):{latitude:number;longitude:number}|null;
+export function normalizePreference(value:unknown):NearbyAlertPreference;
+export function toggleSport(preference:NearbyAlertPreference,sport:string):NearbyAlertPreference;
+export function sportSuggestions(catalog:readonly string[],search:string,chosen:readonly string[],limit?:number):string[];
+export function problem(preference:NearbyAlertPreference):string;
+export function samePreference(a:NearbyAlertPreference,b:NearbyAlertPreference):boolean;
+export function summary(preference:NearbyAlertPreference):string;

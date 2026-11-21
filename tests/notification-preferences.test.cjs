@@ -4,9 +4,9 @@ const fs=require('node:fs');const path=require('node:path');
 const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
 const core=require('../src/lib/notification-preferences-core.cjs');
 
-test('same 26 types as the web, each with a label, no duplicates',()=>{
- assert.equal(core.PREFERENCE_TYPES.length,26);
- assert.equal(new Set(core.PREFERENCE_TYPES).size,26);
+test('same 29 types as the web, each with a label, no duplicates',()=>{
+ assert.equal(core.PREFERENCE_TYPES.length,29);
+ assert.equal(new Set(core.PREFERENCE_TYPES).size,29);
  // Cross-check with the web only when both repositories are checked out side by side.
  const webFile=path.join(__dirname,'../../jynlo-web-fe/src/app/pages/notifications/notifications.component.ts');
  const web=fs.existsSync(webFile)?fs.readFileSync(webFile,'utf8'):'';

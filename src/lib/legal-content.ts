@@ -14,7 +14,7 @@ const COPY:Record<string,string>={
   'privacy.purposes.title': 'Dados e finalidades',
   'privacy.purposes.text': 'Usamos os dados de conta e perfil para autenticação, gestão da conta, descoberta de pessoas e atividades, participação em sessões, comunicação, segurança, suporte e funcionamento do piloto. Dados opcionais devem ser usados apenas quando necessários às funcionalidades escolhidas.',
   'privacy.location.title': 'Localização',
-  'privacy.location.text': 'Quando autorizas a localização do dispositivo, ela é usada para ordenar ou procurar atividades próximas. A localização do dispositivo não deve ser guardada como histórico. A localização associada a uma sessão ou recinto pode ficar guardada como parte desse conteúdo.',
+  'privacy.location.text': 'Quando autorizas a localização do dispositivo, ela é usada para ordenar ou procurar atividades próximas. A localização do dispositivo não deve ser guardada como histórico. A localização associada a uma sessão ou recinto pode ficar guardada como parte desse conteúdo. Se ligares os avisos de novos jogos perto de ti, guardamos o local que escolheres, arredondado a cerca de 1 km, a distância e as modalidades, para te avisarmos de jogos públicos próximos. Podes desligar ou apagar estes dados a qualquer momento nas notificações, e são removidos quando eliminas a conta.',
   'privacy.retention.title': 'Conservação',
   'privacy.retention.text': 'Os prazos de conservação de mensagens, presenças, contactos e contas inativas ainda serão formalizados antes da abertura pública. Durante o piloto, os dados devem ser mantidos apenas pelo período necessário ao funcionamento, segurança e validação do serviço.',
   'privacy.processors.title': 'Prestadores e subcontratantes',
