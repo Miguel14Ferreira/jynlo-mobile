@@ -233,6 +233,7 @@ export default function ProfileScreen(){
     {auth.username&&!DEMO_MODE?<><Eyebrow>GESTÃO DA CONTA</Eyebrow>
 
     <Button title="Alterar palavra-passe" secondary onPress={()=>router.push('/change-password')}/>
+    <Button title="Verificação em dois passos" secondary onPress={()=>router.push('/security-mfa')}/>
     <Button title={showDelete?'Ocultar eliminação de conta':'Eliminar a minha conta'} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>
     {showDelete?<View style={styles.deleteBox}>
       <Text style={styles.deleteWarning}>A eliminação é definitiva. As tuas publicações e os teus dados pessoais são apagados ou anonimizados. Se és proprietário de comunidades, transfere primeiro a propriedade.</Text>
