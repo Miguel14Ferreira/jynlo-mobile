@@ -62,3 +62,14 @@ test('groups appear in the Messages list and the badge, and opening a group mark
  assert.match(read('src/lib/use-unread-messages.ts'),/privateGroupInbox\(token\)/);
  assert.match(read('app/groups/[id].tsx'),/markPrivateGroupRead\(groupId,newest,auth\.token\)/);
 });
+
+test('the group creator can change the group photo (5 MB max, only after confirming)',()=>{
+ const api=read('src/lib/private-group-photo.ts');
+ assert.match(api,/\/api\/private-groups\/\$\{groupId\}\/photo/);
+ assert.match(api,/MAX_BYTES=5\*1024\*1024/);
+ assert.match(api,/form\.append\('photo'/);
+ const screen=read('app/groups/[id].tsx');
+ assert.match(screen,/Alterar fotografia/);
+ assert.match(screen,/Guardar fotografia/);
+ assert.match(screen,/uploadGroupPhoto\(groupId,auth\.token,photo\)/);
+});
