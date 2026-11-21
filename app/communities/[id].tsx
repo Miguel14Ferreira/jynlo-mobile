@@ -11,6 +11,8 @@ import {
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
+import {setCommunitySessionAudience} from '../../src/lib/community-api';
+import {canOpenToPublic,canRestrictToMembers} from '../../src/lib/community-session-audience.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
 import {C} from '../../src/lib/theme';
@@ -30,6 +32,7 @@ export default function CommunityDetailScreen(){
   const [activeSection,setActiveSection]=useState<'OVERVIEW'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
+  const [audienceBusy,setAudienceBusy]=useState<number|null>(null),[audienceError,setAudienceError]=useState('');
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
   const [requestsError,setRequestsError]=useState('');
   const [myRequest,setMyRequest]=useState<CommunityJoinRequest|null>(null);
@@ -281,9 +284,25 @@ export default function CommunityDetailScreen(){
         <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
         {sessionsError?<Button secondary title="Tentar carregar sessões novamente" disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
+        {audienceError?<Message tone="error">{audienceError}</Message>:null}
         {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
         {sessions.map(s=><View key={s.id} style={styles.communitySessionRow}>
           <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
+          {auth.token&&(canOpenToPublic(s,owner)||canRestrictToMembers(s,owner,id))?<View style={{gap:4}}>
+           <Button secondary title={audienceBusy===s.id?'A guardar…':canOpenToPublic(s,owner)?'Procurar jogadores fora da comunidade':'Só membros da comunidade'}
+            disabled={audienceBusy!==null} onPress={()=>{
+             const token=auth.token;if(!token||audienceBusy!==null)return;
+             const toPublic=canOpenToPublic(s,owner);
+             setAudienceBusy(s.id);setAudienceError('');
+             setCommunitySessionAudience(id,s.id,toPublic,token)
+              .then(updated=>setSessions(prev=>prev.map(item=>item.id===updated.id?{...item,...updated}:item)))
+              .catch(()=>setAudienceError(toPublic?'Não foi possível abrir a sessão a outros jogadores.':'Não foi possível restringir a sessão aos membros.'))
+              .finally(()=>setAudienceBusy(null));
+            }}/>
+           <Text style={styles.audienceHint}>{canOpenToPublic(s,owner)
+            ?'Os membros continuam a poder juntar-se. A sessão passa também a aparecer a outros jogadores.'
+            :'Remove a sessão da pesquisa pública. Inscrições já confirmadas não são anuladas.'}</Text>
+          </View>:null}
           {owner&&isMember(community)&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
            <Button secondary title="Registar resultado do jogo"
             onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id),sport:s.sport}})}/>:null}
@@ -293,6 +312,7 @@ export default function CommunityDetailScreen(){
   </Page>;
 }
 const styles=StyleSheet.create({
+  audienceHint:{color:C.muted,fontSize:12,lineHeight:17},
   identityCard:{backgroundColor:'#082D3A',borderWidth:1,borderColor:'#37CBB366',borderRadius:22,padding:19,gap:14,overflow:'hidden'},
   identityHeading:{flexDirection:'row',alignItems:'center',gap:14,minWidth:0},
   identityMark:{width:69,height:69,borderRadius:19,borderWidth:1,borderColor:'#4AE4C47F',backgroundColor:'#0F615F',alignItems:'center',justifyContent:'center'},

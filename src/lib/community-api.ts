@@ -93,3 +93,10 @@ export async function communitySessions(id:number,token:string,username:string):
   auth(token,username);if(DEMO_MODE)return uid(id)===930001?demoSessions({sport:'Futebol'},username).slice(0,1):[];
   return request<SessionSummary[]>(`${root}/${uid(id)}/sessions`,{token});
 }
+
+/** Owner/admin only (server-verified): members-only session also shown to other players, or back to members only. */
+export async function setCommunitySessionAudience(communityId:number,sessionId:number,toPublic:boolean,token:string):Promise<SessionSummary>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir a comunidade.');
+ if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
+ return request<SessionSummary>(`/api/communities/${communityId}/sessions/${sessionId}/${toPublic?'open-public':'restrict-members'}`,{token,method:'POST'});
+}
