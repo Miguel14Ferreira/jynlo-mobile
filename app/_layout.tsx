@@ -133,6 +133,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRoute
     <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:'Estafetas do torneio'}}/>
     <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:"Provas"}}/>
     <Stack.Screen name="notification-settings" options={{title:"Gerir notificações"}}/>
+    <Stack.Screen name="nearby-alerts" options={{title:"Jogos perto de ti"}}/>
     <Stack.Screen name="communities/[id]/championships/fixture" options={{title:"Calendário do campeonato"}}/>
     <Stack.Screen name="communities/[id]/results" options={{title:"Resultados da comunidade"}}/>
     <Stack.Screen name="sessions/[id]/result" options={{title:"Resultado da sessão"}}/>
