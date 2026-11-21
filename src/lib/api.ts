@@ -67,7 +67,9 @@ function encodeFilters(filters:SessionFilters): string {
 }
 export async function discoverSessions(filters:SessionFilters,token?:string|null,username?:string):Promise<SessionSummary[]>{
   if(DEMO_MODE)return demoSessions(filters,username);
-  return request<SessionSummary[]>(`/api/sessions?${encodeFilters(filters)}`,{token});
+  // Explorar keeps its last good list (per account) to show when there is no connection.
+  const {withOfflineSnapshot}=await import('./offline-cache');
+  return withOfflineSnapshot('explore',username||'visitor',()=>request<SessionSummary[]>(`/api/sessions?${encodeFilters(filters)}`,{token}));
 }
 export async function sessionPreview(id:number):Promise<PublicSessionPreview>{
   if(DEMO_MODE)return demoPreview(id);

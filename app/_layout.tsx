@@ -4,6 +4,8 @@ import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
 import {Stack,useRouter,usePathname,ErrorBoundary as RouterErrorBoundary,type ErrorBoundaryProps} from 'expo-router';
 import {installGlobalErrorReporting,reportClientError,setErrorRoute} from '../src/lib/client-error';
+import {OfflineBanner} from '../src/components/OfflineBanner';
+import {startNetworkMonitoring} from '../src/lib/network-status';
 import {StatusBar} from 'expo-status-bar';
 import {AuthProvider,useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
@@ -74,8 +76,9 @@ function PushNavigation(){
   return null;
 }
 installGlobalErrorReporting();
+startNetworkMonitoring();
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
-function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRouteTracker/>
+function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRouteTracker/><OfflineBanner/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
