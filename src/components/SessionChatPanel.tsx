@@ -349,18 +349,25 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  async function sendPoll(text:string){
   setPollOpen(false);
   const identity=id+'|'+auth.token;
-  if(!text||mutationLock.current||closed||!auth.token||sendingNow.current||pendingWrites.current.has(identity))return;
+  if(!text||mutationLock.current||closed||!auth.token||!auth.username||sendingNow.current||pendingWrites.current.has(identity))return;
+  // A timed-out poll may have been accepted; require history verification before retrying.
+  if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===text&&uncertainSendRef.current.replyId===null)return;
   const version=generation.current;
   pendingWrites.current.set(identity,'text');
   sendingNow.current=true;setSending(true);setError('');
   try{
    const confirmed=await postSessionChat(id,text,auth.token);
+   if(!confirmedSessionChatSend(confirmed,id,auth.username||'',text,null))
+    throw Error('O servidor respondeu, mas não confirmou a sondagem. Consulta o histórico antes de repetir.');
    if(version!==generation.current||activeChat.current!==identity)return;
+   if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===text&&uncertainSendRef.current.replyId===null){uncertainSendRef.current=null;setUncertainSend(null);}
    setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:[...current,confirmed].sort((a,b)=>a.id-b.id));
    void refresh(true,version);
   }catch(e){
-   if(version===generation.current&&activeChat.current===identity)
+   if(version===generation.current&&activeChat.current===identity){
+    if(uncertainChatSend(e)){const uncertain={identity,body:text,replyId:null};uncertainSendRef.current=uncertain;setUncertainSend(uncertain);}
     setError((e instanceof Error?e.message:'Não foi possível enviar a sondagem.')+' Consulta o histórico antes de repetir.');
+   }
   }finally{
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
