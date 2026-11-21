@@ -62,19 +62,19 @@ export default function TabsLayout(){
  return <>
   <Tabs screenOptions={{
    headerShown:false,tabBarActiveTintColor:colors.accent,tabBarInactiveTintColor:colors.tabInactive,
-   tabBarStyle:{backgroundColor:colors.tabBackground,borderTopColor:colors.border,height:64+Math.max(insets.bottom,0),paddingBottom:Math.max(insets.bottom,8),paddingTop:7},
-   tabBarLabelStyle:{fontSize:MobileTheme.typography.label,fontWeight:'800'},
+   tabBarStyle:{backgroundColor:colors.tabBackground,borderTopColor:colors.border,height:58+Math.max(insets.bottom,0),paddingBottom:Math.max(insets.bottom,8),paddingTop:8},
+   // Icons only (no truncated labels on narrow phones); each tab keeps its name for screen readers.
+   tabBarShowLabel:false,
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
-   <Tabs.Screen name="index" options={{title:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="index" options={{title:'Início',tabBarAccessibilityLabel:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarAccessibilityLabel:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:'Criar',tabBarButton:()=>(
     <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu de criação" onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
-     <Text style={styles.createLabel}>Criar</Text>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarAccessibilityLabel:'Mensagens',tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarAccessibilityLabel:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
   </Tabs>
   <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
    <View style={styles.overlay}>
@@ -138,7 +138,7 @@ const styles=StyleSheet.create({
  iconWrap:{height:30,minWidth:52,borderRadius:MobileTheme.radius.pill,alignItems:'center',justifyContent:'center'},
  iconActive:{backgroundColor:colors.surface},symbol:{fontSize:21,fontWeight:'700',textAlign:'center',includeFontPadding:false},
  createTab:{flex:1,minHeight:MobileTheme.touchTarget,alignItems:'center',justifyContent:'center',gap:2},
- createCircle:{width:49,height:49,borderRadius:25,alignItems:'center',justifyContent:'center',backgroundColor:colors.accent,marginTop:-13},
+ createCircle:{width:49,height:49,borderRadius:25,alignItems:'center',justifyContent:'center',backgroundColor:colors.accent,marginTop:-6},
  createPlus:{fontSize:32,fontWeight:'800',color:colors.background,includeFontPadding:false},
  createLabel:{fontSize:11,fontWeight:'800',color:colors.accent},
  overlay:{flex:1,justifyContent:'flex-end'},

@@ -13,3 +13,10 @@ test('communities and tournaments (no tab of their own) are reachable from Explo
  assert.doesNotMatch(tabs,/name="communities"|name="tournaments"/);
  assert.match(read('app/_layout.tsx'),/name="communities\/index"/);
 });
+
+test('tab bar shows icons only, but every tab keeps a spoken name',()=>{
+ const tabs=read('app/(tabs)/_layout.tsx');
+ assert.match(tabs,/tabBarShowLabel:false/);
+ for(const t of ['Início','Explorar','Mensagens','Perfil'])assert.ok(tabs.includes("tabBarAccessibilityLabel:'"+t+"'"),t);
+ assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
+});
