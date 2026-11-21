@@ -507,7 +507,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
    </View>);
  const content=<>
-   {!embedded?<DemoBanner/>:null}<Eyebrow>CHAT DA COMUNIDADE</Eyebrow>{!embedded?<Text style={styles.title}>{name}</Text>:null}
+   {!embedded?<DemoBanner/>:null}<Eyebrow>CHAT DA COMUNIDADE</Eyebrow>{!embedded?<Text maxFontSizeMultiplier={1.3} style={styles.title}>{name}</Text>:null}
    <ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/>
    <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
    {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}

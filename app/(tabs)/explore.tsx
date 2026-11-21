@@ -108,7 +108,7 @@ export default function DiscoverScreen(){
    <DemoBanner/>
    <View style={styles.hero}>
      <Eyebrow>O JOGO COMEÇA AQUI</Eyebrow>
-     <Text style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
+     <Text maxFontSizeMultiplier={1.3} style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
      <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
    </View>
    <Pressable accessibilityRole="search" accessibilityLabel="Pesquisar pessoas, comunidades, equipas, recintos e jogos"
@@ -121,8 +121,8 @@ export default function DiscoverScreen(){
      {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label+': '+item.caption}
        onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
        <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
-        <Text style={styles.discoverLabel} numberOfLines={1}>{item.label}</Text></View>
-       <Text style={styles.discoverCaption} numberOfLines={1}>{item.caption}</Text>
+        <Text style={styles.discoverLabel} numberOfLines={2}>{item.label}</Text></View>
+       <Text style={styles.discoverCaption} numberOfLines={2}>{item.caption}</Text>
      </Pressable>)}
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
@@ -250,7 +250,7 @@ const styles=StyleSheet.create({
  page:{flex:1,backgroundColor:MobileTheme.colors.background},content:{paddingHorizontal:MobileTheme.spacing.lg,paddingTop:MobileTheme.spacing.lg,paddingBottom:42,gap:MobileTheme.spacing.lg},
  hero:{marginTop:4,gap:8},headline:{fontSize:28,lineHeight:35,color:C.white,fontWeight:'900',letterSpacing:-0.6},
  sub:{color:C.muted,lineHeight:21,fontSize:14},
- search:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,height:54,paddingHorizontal:17,color:C.white,fontSize:15},
+ search:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,minHeight:54,paddingHorizontal:17,color:C.white,fontSize:15},
  chips:{gap:10,paddingVertical:3},chip:{minHeight:44,justifyContent:'center',paddingHorizontal:17,paddingVertical:10,borderRadius:26,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  selected:{backgroundColor:C.mint,borderColor:C.mint},chipText:{fontSize:13,fontWeight:'800',color:C.white},
  destinationRow:{flexDirection:'row',alignItems:'stretch',gap:8},

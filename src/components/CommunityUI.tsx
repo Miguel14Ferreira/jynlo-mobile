@@ -26,12 +26,12 @@ export function CommunityCard({community,onPress,memberCount,role}:{community:Co
   return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Abrir comunidade ${community.name}`}
     style={({pressed})=>[styles.card,pressed&&styles.pressed]}>
     <View style={styles.row}>
-      <View style={styles.picture}>{image?<Image source={{uri:image}} style={styles.photo} resizeMode="cover"/>:<Text style={styles.sportIcon}>{icon(sports[0]||null)}</Text>}</View>
+      <View style={styles.picture}>{image?<Image source={{uri:image}} style={styles.photo} resizeMode="cover"/>:<Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{icon(sports[0]||null)}</Text>}</View>
       <View style={styles.identity}>
         <Text numberOfLines={2} style={styles.title}>{community.name}</Text>
         <Text numberOfLines={2} style={styles.meta}>{describeCommunitySports(community)}</Text>
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.arrow}>›</Text>
     </View>
     {!!community.description&&<Text numberOfLines={2} style={styles.desc}>{community.description}</Text>}
     <View style={styles.footer}>

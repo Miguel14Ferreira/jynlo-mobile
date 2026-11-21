@@ -80,7 +80,7 @@ export default function EditSession(){
     placeholderTextColor={C.muted} keyboardType={options?.keyboardType||'default'}/>
   </View>;
  return <Page>
-  <Text style={styles.title}>Editar sessão</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Editar sessão</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {!loading&&session&&draft?<View style={styles.form}>

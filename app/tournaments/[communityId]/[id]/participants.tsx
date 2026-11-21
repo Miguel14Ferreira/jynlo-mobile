@@ -115,7 +115,7 @@ export default function TournamentParticipantsScreen(){
   }
  }
  return <Page><DemoBanner/><Eyebrow>TORNEIOS · INSCRIÇÕES</Eyebrow>
-  <Text style={styles.title}>{tournament?.name||'Participantes individuais'}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Participantes individuais'}</Text>
   {tournament?<View style={styles.row}><Badge text={tournament.sport||'Desporto'}/>
    <Badge text={tournament.status==='DRAFT'?'Inscrições em preparação':tournament.status==='IN_PROGRESS'?'Em curso':'Concluído'}/></View>:null}
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}

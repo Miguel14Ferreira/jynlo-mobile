@@ -16,7 +16,7 @@ export default function WelcomeScreen(){
   <Brand subtitle="ENCONTRA AS TUAS PESSOAS"/>
   <ImageBackground source={require('../assets/jynlo-feed-sports.png')} style={styles.hero} imageStyle={styles.heroImage}>
    <View style={styles.heroShade}><Text style={styles.eyebrow}>JYNLO · DESPORTO E COMUNIDADE</Text>
-    <Text style={styles.heroTitle}>O teu desporto começa aqui.</Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.heroTitle}>O teu desporto começa aqui.</Text>
     <Text style={styles.heroText}>Descobre onde, quando e com quem praticar desporto.</Text></View>
   </ImageBackground>
   <View style={styles.actions}>

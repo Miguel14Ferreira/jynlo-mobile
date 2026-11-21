@@ -32,7 +32,7 @@ export default function MfaScreen(){
  }
  return <Page>
    <Eyebrow>SEGURANÇA DA CONTA</Eyebrow>
-   <Text style={styles.title}>Verificação em dois passos</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Verificação em dois passos</Text>
    <Text style={styles.sub}>Introduz o código de verificação associado à tua conta Jynlo.</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {notice?<Message>{notice}</Message>:null}

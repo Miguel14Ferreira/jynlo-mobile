@@ -57,7 +57,7 @@ export default function SecurityMfaScreen(){
   placeholder="000000" placeholderTextColor={C.muted} style={styles.code} accessibilityLabel="Código de 6 dígitos"/>;
  return <Page>
   <Eyebrow>SEGURANÇA DA CONTA</Eyebrow>
-  <Text style={styles.heading}>Verificação em dois passos</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Verificação em dois passos</Text>
   <Text style={styles.sub}>Além da palavra-passe, pedimos um código de 6 dígitos de uma app autenticadora (Google Authenticator, Microsoft Authenticator ou outra) ao iniciar sessão.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/security-mfa'}})}/>:null}
   {loading?<Loader/>:null}

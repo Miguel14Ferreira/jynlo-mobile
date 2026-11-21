@@ -155,7 +155,7 @@ export default function MessagesScreen(){
  }
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <View style={styles.headerRow}>
-   <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
+   <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text maxFontSizeMultiplier={1.3} style={styles.title}>Mensagens</Text>
     <Text style={styles.sub}>Conversas privadas, grupos, comunidades e sessões, num só lugar.</Text>
    </View>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
@@ -194,14 +194,14 @@ export default function MessagesScreen(){
   </Pressable>:null}
   {sameIdentity?<Pressable accessibilityRole="button" accessibilityLabel="Ver reações e respostas privadas às minhas Stories"
    onPress={()=>router.push('/stories/replies')} style={styles.storyRepliesShortcut}>
-   <View style={styles.storyRepliesSymbol}><Text style={styles.storyRepliesEmoji}>❤️</Text></View>
+   <View style={styles.storyRepliesSymbol}><Text maxFontSizeMultiplier={1.3} style={styles.storyRepliesEmoji}>❤️</Text></View>
    <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Reações às tuas Stories</Text>
     <Text style={styles.storyRepliesCaption}>Respostas privadas, com acesso à Story e à conversa</Text></View>
    <JynloIcon name="chevron-right" size={20} color={T.accent}/>
   </Pressable>:null}
   {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Abrir conversas de grupo"
    onPress={()=>router.push('/groups')} style={styles.storyRepliesShortcut}>
-   <View style={styles.storyRepliesSymbol}><Text style={styles.storyRepliesEmoji}>👥</Text></View>
+   <View style={styles.storyRepliesSymbol}><Text maxFontSizeMultiplier={1.3} style={styles.storyRepliesEmoji}>👥</Text></View>
    <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Conversas de grupo</Text>
     <Text style={styles.storyRepliesCaption}>Grupos privados com os teus amigos, fora das comunidades</Text></View>
    <JynloIcon name="chevron-right" size={20} color={T.accent}/>

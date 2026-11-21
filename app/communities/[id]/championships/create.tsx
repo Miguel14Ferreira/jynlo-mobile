@@ -44,7 +44,7 @@ export default function CreateChampionship(){
   finally{setSaving(false);}
  }
  return <Page><DemoBanner/><Eyebrow>NOVO CAMPEONATO</Eyebrow>
-  <Text style={styles.heading}>Criar campeonato</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Criar campeonato</Text>
   <Text style={styles.hint}>Reúne várias provas da mesma modalidade numa época, com classificação geral.</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}

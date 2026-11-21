@@ -30,7 +30,7 @@ export default function DiscoverPeople(){
   },[load]));
   const filtered=useMemo(()=>people.filter(p=>(`${p.username} ${p.displayName} ${p.sport||''} ${p.city||''}`).toLowerCase().includes(query.trim().toLowerCase())),[people,query]);
   return <Page><DemoBanner/>
-    <Text style={styles.title}>Pessoas para conhecer</Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.title}>Pessoas para conhecer</Text>
     <Text style={styles.note}>Descobre desportistas na Jynlo. Só vês o que cada pessoa decidiu partilhar.</Text>
     <TextInput style={styles.search} placeholder="Pesquisar por nome ou modalidade…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery} accessibilityLabel="Pesquisar desportistas"/>
     {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

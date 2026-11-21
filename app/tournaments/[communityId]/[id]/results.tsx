@@ -12,7 +12,7 @@ import type {JynloTournament,TournamentPerformanceOverview,PerformanceRound} fro
 
 function RankingRow({rank,name,main,sub}:{rank:number;name:string;main:string;sub:string}){
  return <View style={styles.ranking}>
-  <View style={styles.positionBox}><Text style={styles.position}>{validatedRank(rank)}</Text></View>
+  <View style={styles.positionBox}><Text maxFontSizeMultiplier={1.3} style={styles.position}>{validatedRank(rank)}</Text></View>
   <View style={styles.athlete}><Text style={styles.name} numberOfLines={2}>{name}</Text><Text style={styles.note}>{sub}</Text></View>
   <Text style={styles.performance} numberOfLines={2}>{main}</Text>
  </View>;
@@ -59,7 +59,7 @@ export default function TournamentResultsScreen(){
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
  return <Page><DemoBanner/><Eyebrow>RESULTADOS DA COMPETIÇÃO</Eyebrow>
   <View style={styles.hero}><Text style={styles.heroLabel}>RESULTADOS · JYNLO</Text>
-   <Text style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
    {tournament?<View style={styles.badges}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={label(kind)}/></View>:null}
   </View>
   {!auth.token?<Button title="Entrar para ver resultados" onPress={()=>router.push('/login')}/>:null}

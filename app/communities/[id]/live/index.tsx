@@ -71,7 +71,7 @@ export default function CommunityLivesScreen(){
  };
  return <Page>
   <Text style={styles.eyebrow}>JYNLO · COMUNIDADES</Text>
-  <Text style={styles.heading}>Diretos da comunidade</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Diretos da comunidade</Text>
   <Text style={styles.muted}>Transmissões de jogos, treinos e momentos da comunidade.</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}

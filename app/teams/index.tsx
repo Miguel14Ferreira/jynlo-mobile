@@ -148,7 +148,7 @@ export default function TeamsScreen(){
  return <Page><DemoBanner/>
   <View style={styles.hero}>
    <View style={styles.heroHeading}><View style={styles.heroEmblem}><JynloIcon name="community" size={25} color={C.mint}/></View>
-    <View style={styles.heroCopy}><Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text><Text style={styles.title}>As tuas equipas</Text></View></View>
+    <View style={styles.heroCopy}><Text style={styles.heroEyebrow}>JOGA EM EQUIPA</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>As tuas equipas</Text></View></View>
    <Text style={styles.heroSub}>Encontra jogadores, cria um clube e participa em competições.</Text>
    <Pressable accessibilityRole="button" accessibilityLabel="Encontrar torneios e campeonatos" style={styles.competitionsAction} onPress={()=>router.push('/teams/competitions')}>
     <JynloIcon name="tournament" size={19} color={C.mint}/><Text style={styles.competitionsLabel}>Explorar competições</Text><JynloIcon name="chevron-right" color={C.mint} size={19}/>

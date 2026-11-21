@@ -38,7 +38,7 @@ export default function GroupsScreen(){
  }
  return <Page>
   <Eyebrow>CONVERSAS PRIVADAS</Eyebrow>
-  <Text style={styles.heading}>Conversas de grupo</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Conversas de grupo</Text>
   <Text style={styles.sub}>Conversa com os teus amigos num espaço privado, fora das comunidades.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/groups'}})}/>:null}
   {auth.token&&!creating?<Button title="＋ Criar grupo" onPress={()=>{setCreating(true);setFormError('');}}/>:null}
@@ -61,7 +61,7 @@ export default function GroupsScreen(){
    <View style={styles.avatar}>{g.photoUrl?<Image source={{uri:g.photoUrl}} style={styles.avatarImg}/>:<Text style={{fontSize:22}}>👥</Text>}</View>
    <View style={{flex:1,gap:2}}><Text style={styles.name} numberOfLines={1}>{g.title}</Text>
     <Text style={styles.sub} numberOfLines={1}>{membersLabel(g.members.length)}{g.creatorUsername.toLowerCase()===String(auth.username).toLowerCase()?' · criaste este grupo':''}</Text></View>
-   <Text style={styles.arrow}>›</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.arrow}>›</Text>
   </Pressable>)}
  </Page>;
 }

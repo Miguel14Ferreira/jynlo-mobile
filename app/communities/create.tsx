@@ -39,7 +39,7 @@ export default function CommunityCreateScreen(){
     finally{setSaving(false);}
   }
   return <Page><DemoBanner/><Eyebrow>CRIAR COMUNIDADE</Eyebrow>
-    <Text style={styles.title}>Tudo começa com <Text style={{color:C.mint}}>uma boa malta.</Text></Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.title}>Tudo começa com <Text style={{color:C.mint}}>uma boa malta.</Text></Text>
     <Text style={styles.subtitle}>{thenTournament?'Primeiro, a comunidade onde o torneio vai viver. A seguir passas logo à criação do torneio.':'Dá um nome ao grupo, escolhe o desporto e convida pessoas para jogar.'}</Text>
     {!auth.token?<Message>Precisas de iniciar sessão para criares uma comunidade.</Message>:null}
     {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/>:null}

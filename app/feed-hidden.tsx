@@ -42,7 +42,7 @@ export default function HiddenPostsScreen(){
  }
  return <Page>
   <Eyebrow>FEED</Eyebrow>
-  <Text style={styles.heading}>Publicações ocultas</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Publicações ocultas</Text>
   <Text style={styles.sub}>O que ocultaste do teu feed, nesta conta. Quem publicou não é avisado.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/feed-hidden'}})}/>:null}
   {notice?<Message>{notice}</Message>:null}

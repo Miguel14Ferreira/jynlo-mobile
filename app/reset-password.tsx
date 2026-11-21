@@ -37,7 +37,7 @@ export default function ResetPasswordScreen(){
  return <Page>
   <Brand subtitle="SEGURANÇA DA CONTA"/>
   <Eyebrow>RECUPERAR ACESSO</Eyebrow>
-  <Text style={styles.title}>Recupera a tua conta.</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Recupera a tua conta.</Text>
   {error?<Message tone="error">{error}</Message>:null}
   {message?<Message>{message}</Message>:null}
   <Text style={styles.label}>Email da tua conta</Text>

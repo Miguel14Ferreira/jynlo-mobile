@@ -66,10 +66,10 @@ export default function TeamsScreen(){
   <View style={styles.hero}>
    <View style={styles.heroHead}><View style={styles.heroIcon}><JynloIcon name="tournament" color={C.mint} size={26}/></View>
      <Text style={styles.heroTag}>TORNEIO POR EQUIPAS</Text></View>
-   <Text style={styles.title}>{tournament?.name||'Equipas do torneio'}</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Equipas do torneio'}</Text>
    <Text style={styles.heroSub}>Acompanha os plantéis, aceita convites e vê os jogos da competição.</Text>
    {tournament?.entryType==='TEAM'?<View style={styles.summary}>
-    <Text style={styles.summaryCount}>{items.length}</Text>
+    <Text maxFontSizeMultiplier={1.3} style={styles.summaryCount}>{items.length}</Text>
     <Text style={styles.summaryLabel}>{items.length===1?'equipa inscrita':'equipas inscritas'}</Text>
    </View>:null}
   </View>

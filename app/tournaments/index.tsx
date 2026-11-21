@@ -35,7 +35,7 @@ export default function TournamentsScreen(){
  return <Page><Brand subtitle="A COMPETIÇÃO ACONTECE AQUI"/><DemoBanner/>
   <View style={styles.intro}>
    <Eyebrow>AS COMPETIÇÕES DAS TUAS COMUNIDADES</Eyebrow>
-   <Text style={styles.title}>Torneios</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Torneios</Text>
    <Text style={styles.sub}>Acompanha competições, resultados e classificações por modalidade.</Text>
   </View>
   {!auth.token?<Button title="Entrar para ver torneios" onPress={()=>router.push('/login')}/>:null}
@@ -78,10 +78,10 @@ export default function TournamentsScreen(){
     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(x.communityId),id:String(x.tournament.id)}})}
     style={styles.card}>
     <View style={styles.row}>
-      <View style={styles.sportMark}><Text style={styles.sport}>{sportIcon(x.tournament.sport)}</Text></View>
+      <View style={styles.sportMark}><Text maxFontSizeMultiplier={1.3} style={styles.sport}>{sportIcon(x.tournament.sport)}</Text></View>
       <View style={styles.cardCopy}><Text numberOfLines={2} style={styles.name}>{x.tournament.name}</Text>
        <Text numberOfLines={1} style={styles.sub}>{x.communityName}</Text></View>
-      <Text style={styles.arrow}>›</Text>
+      <Text maxFontSizeMultiplier={1.3} style={styles.arrow}>›</Text>
     </View>
     <View style={styles.cardMeta}>
       <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>

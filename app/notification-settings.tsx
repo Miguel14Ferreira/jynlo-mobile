@@ -40,7 +40,7 @@ export default function NotificationSettingsScreen(){
  }
  const set=(patch:Partial<NotificationPreferences>)=>{setNotice('');setDraft(current=>current?{...current,...patch}:current);};
  return <Page><DemoBanner/><Eyebrow>NOTIFICAÇÕES</Eyebrow>
-  <Text style={styles.title}>Gerir notificações</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Gerir notificações</Text>
   <Text style={styles.sub}>Escolhe o que queres receber na aplicação (incluindo avisos no telemóvel) e por email.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}

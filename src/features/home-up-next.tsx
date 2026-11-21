@@ -84,7 +84,7 @@ export function HomeUpNext(){
 
 const styles=StyleSheet.create({
  card:{gap:10,padding:15,borderRadius:MobileTheme.radius.lg,backgroundColor:colors.surface,borderWidth:1,borderColor:colors.border,marginBottom:14},
- head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+ head:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:10},
  title:{color:colors.text,fontSize:MobileTheme.typography.title,fontWeight:'900'},
  link:{minHeight:MobileTheme.touchTarget,justifyContent:'center',paddingHorizontal:4},
  linkText:{color:colors.accent,fontSize:13,fontWeight:'800'},

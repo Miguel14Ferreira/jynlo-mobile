@@ -646,7 +646,7 @@ export default function DirectConversation(){
       <Text style={styles.storyReplyContextDate}>{Number.isFinite(Date.parse(item.createdAt))?new Date(item.createdAt).toLocaleString('pt-PT'):'Resposta recebida'}</Text>
      </View>
      {storyReplyKind(item.content)==='reaction'?
-      <Text style={styles.storyReplyEmoji}>{item.content}</Text>:
+      <Text maxFontSizeMultiplier={1.3} style={styles.storyReplyEmoji}>{item.content}</Text>:
       <Text style={styles.storyReplyText}>{item.content}</Text>}
      <Pressable accessibilityRole="button" accessibilityLabel="Ver Story original, se disponível"
       onPress={()=>router.push({pathname:'/',params:{storyId:String(item.storyId)}})}

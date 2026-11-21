@@ -109,7 +109,7 @@ export default function TournamentTeamProfileScreen(){
  const full=!!team&&team.playersPerTeam!=null&&team.players.length>=team.playersPerTeam;
  const accepting=!!tournament&&tournament.status==='DRAFT';
  return <Page><DemoBanner/><Eyebrow>TORNEIO · EQUIPA</Eyebrow>
-  <Text style={styles.title}>{team?.name||'Perfil da equipa'}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team?.name||'Perfil da equipa'}</Text>
   {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||'Multidesporto'}</Text>:null}
   {!auth.token?<><Message>Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.</Message>
    <Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}

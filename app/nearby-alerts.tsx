@@ -51,7 +51,7 @@ export default function NearbyAlertsScreen(){
  }
  const suggestions=draft?sportSuggestions(SPORTS,search,draft.sports):[];
  return <Page><DemoBanner/><Eyebrow>NOTIFICAÇÕES</Eyebrow>
-  <Text style={styles.title}>Novos jogos perto de ti</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Novos jogos perto de ti</Text>
   <Text style={styles.sub}>Recebe um aviso quando alguém cria um jogo público perto do local que escolheres. No máximo 2 por dia.</Text>
   {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}

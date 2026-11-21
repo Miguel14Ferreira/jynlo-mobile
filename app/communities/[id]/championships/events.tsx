@@ -259,5 +259,5 @@ const styles=StyleSheet.create({
  row:{flexDirection:'row',gap:10,alignItems:'center',flexWrap:'wrap'},chip:{padding:11,borderRadius:10,borderWidth:1,borderColor:C.border},chipActive:{borderColor:C.mint,backgroundColor:C.surface2},
  chipText:{color:C.white,fontWeight:'700'},fixture:{gap:9,padding:12,borderRadius:10,backgroundColor:C.surface2},
  standing:{gap:3,paddingVertical:7,borderBottomWidth:1,borderBottomColor:C.border},
- score:{fontSize:19,fontWeight:'900',color:C.mint},scoreInput:{minWidth:58,height:46,borderColor:C.border,borderWidth:1,borderRadius:8,textAlign:'center',color:C.white}
+ score:{fontSize:19,fontWeight:'900',color:C.mint},scoreInput:{minWidth:58,minHeight:46,borderColor:C.border,borderWidth:1,borderRadius:8,textAlign:'center',color:C.white}
 });

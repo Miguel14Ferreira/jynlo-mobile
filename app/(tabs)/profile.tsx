@@ -111,7 +111,7 @@ export default function ProfileScreen(){
     <View style={styles.profile}>
       <View style={styles.profileTop}>
         <View style={styles.avatar}>{profile?.profilePicUrl?<Image source={{uri:profile.profilePicUrl}} style={styles.avatarImage}/>:
-          <Text style={styles.avatarLetter}>{auth.username?.charAt(0).toUpperCase()||'?'}</Text>}</View>
+          <Text maxFontSizeMultiplier={1.3} style={styles.avatarLetter}>{auth.username?.charAt(0).toUpperCase()||'?'}</Text>}</View>
         <View style={styles.identity}>
           <Text style={styles.name} numberOfLines={2}>{displayName}</Text>
           {auth.username?<Text style={styles.handle}>@{auth.username}</Text>:null}
