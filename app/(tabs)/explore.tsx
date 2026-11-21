@@ -3,6 +3,7 @@ import {Linking,Platform,Pressable,RefreshControl,ScrollView,StyleSheet,Text,Tex
 import Constants from 'expo-constants';
 import type {Region} from 'react-native-maps';
 import {useFocusEffect,useRouter} from 'expo-router';
+import {useRefreshOnReconnect} from '../../src/lib/network-status';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/components/UI';
 import {discoverSessions} from '../../src/lib/api';
@@ -90,6 +91,7 @@ export default function DiscoverScreen(){
    }finally{if(version===loadVersion.current)setLoading(false);}
  },[sport,debouncedCity,mapArea,availableOnly,skillLevel,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{loadVersion.current++;};},[load]));
+ useRefreshOnReconnect(useCallback(()=>{void load();},[load]));
  return <SafeAreaView style={styles.page} edges={['top','left','right']}>
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
    refreshControl={<RefreshControl refreshing={loading&&sessions.length>0} onRefresh={()=>{void load();}} tintColor={C.mint}/>}

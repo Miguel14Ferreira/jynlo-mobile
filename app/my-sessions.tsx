@@ -1,6 +1,7 @@
 import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
+import {useRefreshOnReconnect} from '../src/lib/network-status';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../src/components/UI';
 import {mySessions} from '../src/lib/parity-api';
 import {useAuth} from '../src/lib/auth';
@@ -33,6 +34,7 @@ export default function MySessionsScreen(){
   void load();
   return()=>{generation.current++;setData({created:[],joined:[],waitlisted:[]});};
  },[load]));
+ useRefreshOnReconnect(useCallback(()=>{void load();},[load]));
  const open=(s:SessionSummary)=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}});
  const [showHistory,setShowHistory]=useState(false);
  const sections=organizeMySessions(loadedIdentity===identity?data:null);

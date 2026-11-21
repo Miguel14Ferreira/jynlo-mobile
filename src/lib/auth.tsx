@@ -199,6 +199,8 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     invalidatePendingPushRegistration();
     setToken(null);setUsername(null);setChallengeId(null);setPendingUsername(null);setGooglePending(null);
     setBrowsingAsGuest(false);
+    // Saved offline copies (Explorar, As minhas sessões) belong to this account.
+    void import('./offline-cache').then(m=>m.clearOfflineSnapshots()).catch(()=>{});
     // Remove local credentials before potentially slow remote revocation.
     // Treat cleanup failures as non-fatal: the user is logged out in memory.
     let localRemovalFailed=false;
