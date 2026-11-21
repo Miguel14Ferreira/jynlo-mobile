@@ -21,7 +21,7 @@ for (const {name,file,receipt,list,denied} of panels) {
   const layout = source.slice(layoutStart,contentStart);
   const content = source.slice(contentStart,contentEnd);
   test(name+' chat ignores stale scroll measurements and requires visible end before read',()=>{
-    assert.match(scroll,/if\(firstHistoryPositionPending\.current\)return/);
+    assert.match(scroll,/if\(firstHistoryPositionPending\.current(?:\|\|initialAutoScrollPending\.current)?\)return/);
     assert.match(scroll,/Math\.abs\(contentSize\.height-historyContentHeight\.current\)>2/);
     assert.match(scroll,/Math\.abs\(layoutMeasurement\.height-historyViewportHeight\.current\)>2/);
     assert.match(scroll,/lastMessageVisible=contentOffset\.y\+layoutMeasurement\.height>=contentSize\.height-4/);

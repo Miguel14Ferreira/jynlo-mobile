@@ -41,5 +41,5 @@ test('session messages show structured quotes and use readable history dimension
   assert.match(view,/inlineHistoryKeyboard:\{height:230,maxHeight:230,minHeight:120/);
  }
  assert.match(session,/<ChatPdfComposer compact target=/);
- assert.match(session,/if\(firstHistoryPositionPending\.current\)return/);
+ assert.match(session,/if\(firstHistoryPositionPending\.current(?:\|\|initialAutoScrollPending\.current)?\)return/);
 });
