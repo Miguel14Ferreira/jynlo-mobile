@@ -128,14 +128,14 @@ export default function DiscoverScreen(){
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
      <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
    </Pressable>
-   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}
-     accessibilityLabel="Filtrar por nível">
+   <View style={styles.levelFilter} accessibilityLabel="Filtrar por nível">
+     <Text style={styles.levelFilterLabel}>🎯 Nível</Text>
      {filterChoices().map(choice=><Pressable key={choice.value||'any'} accessibilityRole="button"
        accessibilityState={{selected:skillLevel===choice.value}} onPress={()=>setSkillLevel(choice.value)}
-       style={[styles.chip,skillLevel===choice.value&&styles.selected]}>
-       <Text style={[styles.chipText,skillLevel===choice.value&&{color:C.background}]}>{choice.value?'🎯 ':''}{choice.label}</Text>
+       style={[styles.levelChip,skillLevel===choice.value&&styles.selected]}>
+       <Text style={[styles.levelChipText,skillLevel===choice.value&&{color:C.background}]}>{choice.label}</Text>
      </Pressable>)}
-   </ScrollView>
+   </View>
    {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
      <Text style={styles.resetFiltersText}>Limpar filtros</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
@@ -201,6 +201,10 @@ export default function DiscoverScreen(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ levelFilter:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
+ levelFilterLabel:{color:C.white,fontWeight:'800',fontSize:14,marginRight:2},
+ levelChip:{minHeight:38,paddingHorizontal:13,justifyContent:'center',borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ levelChipText:{color:C.white,fontWeight:'800',fontSize:13},
  retryPanel:{gap:10},
  retryAction:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,minHeight:48,paddingHorizontal:16,borderRadius:12,backgroundColor:C.mint},
  retryActionText:{color:C.background,fontSize:14,fontWeight:'800'},
