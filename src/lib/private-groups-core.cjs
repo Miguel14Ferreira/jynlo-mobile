@@ -45,7 +45,7 @@ function invitableFriends(friends,group,query){
 function editableGroupMessage(message,me,now=Date.now()){
  if(!message||message.deleted||!isMine(message,me))return false;
  if(Array.isArray(message.attachments)&&message.attachments.length)return false;
- if(typeof message.text!=='string'||!message.text.trim()||message.text.startsWith('[JYNLO:GIPHY:1]'))return false;
+ if(typeof message.text!=='string'||!message.text.trim()||message.text.startsWith('[JYNLO:GIPHY:1]')||message.text.startsWith('[JYNLO:POLL:'))return false;
  const created=Date.parse(message.createdAt);
  return Number.isFinite(created)&&created<=now+60000&&now-created<=15*60*1000;
 }

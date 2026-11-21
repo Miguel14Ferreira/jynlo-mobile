@@ -17,8 +17,7 @@ e depois confirmados à mão nos ecrãs. 469 são usados pelos dois; ~158 só pe
 
 ### Já com paridade (não repetir trabalho)
 Sessões (pesquisa com nível, criação, edição, presença, espera, convites, pagamentos,
-equipas sugeridas, resultado), chats (privado, comunidade, sessão, equipa: anexos,
-respostas, reações, GIF, sondagens, pesquisa), chamadas, diretos, Feed e Stories,
+equipas sugeridas, resultado), chats (ver a tabela "Chats e feeds" abaixo), chamadas, diretos, Feed e Stories,
 perfis sociais e seguidores, comunidades (detalhe, membros, convites, competições,
 resultados, partilha pública), torneios (todos os motores, incluindo classificação
 por provas), equipas, recintos (pesquisa, detalhe, sugerir e corrigir), notificações,
@@ -46,6 +45,28 @@ eliminação da conta na app.
 - Barra de baixo só com ícones; atalhos no Explorar (Comunidades, Torneios, Recintos, Equipas, Pessoas, Diretos).
 - Comunidades e Torneios são ecrãs normais (`/communities`, `/tournaments`), não separadores escondidos.
 - Adicionar a sessão ao calendário (Google Calendar, início e fim).
+
+### Chats e feeds: comportamento igual em todo o lado (21/11/2026, 2.ª auditoria)
+
+A primeira auditoria dizia que todos os chats tinham as mesmas funções; não era verdade.
+Estado depois da correção (app e web):
+
+| | Privado | Sessão | Comunidade | Equipa | Grupo privado |
+|---|---|---|---|---|---|
+| Fotos/vídeos, PDF, localização, GIF (mostrar) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Responder, reações, editar (15 min), apagar | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pesquisa | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Sondagens | não (de propósito) | ✓ | ✓ | ✓ | ✓ |
+| Menções @ | — | ✓ | ✓ | ✓ | — |
+| Convocatória | ✓ | — (já é a sessão) | ✓ | — | — |
+| Aviso no telemóvel, contador, silenciar | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+Feeds: o feed principal tem gostos e comentários; o feed da comunidade (agora também na app) e o
+feed da equipa têm publicações com fotos/vídeos, menções, editar e apagar. Comentários/gostos no feed
+da comunidade não existem em nenhum lado (servidor incluído): decisão de produto, não falha de paridade.
+
+Outras novidades de 21/11: relatórios de erros (app e web → registos do Render, procurar `client_error`),
+avisos de novos jogos perto de ti (Gerir notificações), "Quem pode?" em grupos e comunidades.
 
 ## Como verificar alterações na app
 

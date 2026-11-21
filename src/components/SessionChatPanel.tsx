@@ -27,6 +27,7 @@ import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
 import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
+import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
 import {readPoll,isPollText} from '../lib/chat-poll.cjs';
 import {PollCard} from './PollCard';
 import {PollComposer} from './PollComposer';
@@ -440,7 +441,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     {m.replyToText?<View style={styles.quote}><Text numberOfLines={1} style={styles.quoteAuthor}>{m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText}</Text></View>:null}
     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
     {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="session" conversationId={id} messageId={m.id} token={auth.token}/>:
-    <Text style={styles.body}>{m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'}</Text>}
+    <ChatMentionText body={m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>}
     {!m.deletedAt&&chatLocationUrl(m.body)?
      <Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
        <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
@@ -591,6 +592,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
        onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
+     <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading}/>
      <Pressable accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem'} style={styles.sendAction}
        disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))}
        onPress={()=>{void send();}}><JynloIcon name="send" size={22} color={C.background}/></Pressable>

@@ -103,3 +103,15 @@ test('communities have a feed in the app, like on the web',()=>{
  assert.match(panel,/<ChatMentionText body=\{post\.body\}/);
  assert.match(panel,/<PostAlbumCarousel items=\{album\}/);
 });
+
+test('polls in group and team chats, and @mentions in session chat',()=>{
+ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ assert.match(read('src/lib/chat-poll-api.ts'),/ChatPollKind='session'\|'community'\|'private'\|'team'/);
+ assert.match(read('app/groups/[id].tsx'),/<PollCard poll=\{readPoll\(m\.text\)!\} kind="private"/);
+ assert.match(read('src/components/SportsTeamContentPanel.tsx'),/<PollCard poll=\{readPoll\(item\.body\)!\} kind="team"/);
+ const session=read('src/components/SessionChatPanel.tsx');
+ assert.match(session,/<ChatMentionSuggestions draft=\{draft\}/);
+ assert.match(session,/<ChatMentionText body=/);
+ const core=require('../src/lib/private-groups-core.cjs');
+ assert.equal(core.editableGroupMessage({id:1,groupId:5,sender:'a',text:'[JYNLO:POLL:1]Q\nA\nB',createdAt:new Date().toISOString()},'a'),false);
+});

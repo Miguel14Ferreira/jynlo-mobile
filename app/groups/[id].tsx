@@ -23,6 +23,9 @@ import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
 import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
 import {giphyImageUrl} from '../../src/lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
+import {readPoll} from '../../src/lib/chat-poll.cjs';
+import {PollCard} from '../../src/components/PollCard';
+import {PollComposer} from '../../src/components/PollComposer';
 import {observePrivateGroup} from '../../src/lib/session-chat-realtime';
 import {listConversationMutes,isConversationMuted,setConversationMuted} from '../../src/lib/conversation-mutes-api';
 import {isCreator,isMine,membersLabel,mergeMessages,validateGroupMessage,validateGroupTitle,MAX_MEMBERS,MAX_MESSAGE,editableGroupMessage,replyQuote,
@@ -52,7 +55,7 @@ export default function GroupChatScreen(){
  const [editing,setEditing]=useState<PrivateGroupMessage|null>(null),[editText,setEditText]=useState('');
  const [filesAvailable,setFilesAvailable]=useState(false);
  const [media,setMedia]=useState<ImagePickerAsset[]>([]),[caption,setCaption]=useState(''),[mediaBusy,setMediaBusy]=useState(false);
- const [locationBusy,setLocationBusy]=useState(false);
+ const [locationBusy,setLocationBusy]=useState(false),[pollOpen,setPollOpen]=useState(false);
  const reactions=useChatReactions('private',String(groupId),auth.token,messages.filter(m=>!m.deleted).map(m=>m.id),!!auth.token&&!gone);
  const creator=isCreator(group,me);
 
@@ -149,6 +152,14 @@ export default function GroupChatScreen(){
    setMedia([]);setCaption('');setReplyTarget(null);await refresh(false);}
   catch(e){setActionError(e instanceof Error?e.message:'Não foi possível enviar os ficheiros.');}
   finally{setMediaBusy(false);}
+ }
+ async function sendPoll(text:string){
+  setPollOpen(false);
+  if(sendInFlight.current||!auth.token)return;
+  sendInFlight.current=true;setSending(true);setActionError('');
+  try{const m=await sendGroupMessage(groupId,text,auth.token);setMessages(prev=>mergeMessages(prev,[m]));}
+  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível enviar a sondagem.');}
+  finally{sendInFlight.current=false;setSending(false);}
  }
  function prepareLocation(){
   if(locationBusy)return;
@@ -276,6 +287,7 @@ export default function GroupChatScreen(){
     {quote?<Text style={[styles.quote,mine&&{color:'#0B3B36',borderLeftColor:'#0B3B36'}]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
     {m.deleted?<Text style={[styles.text,styles.deleted,mine&&{color:'#0B3B36'}]}>Mensagem apagada</Text>:
      gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel="GIF enviado no grupo"/>:
+     readPoll(m.text)?<PollCard poll={readPoll(m.text)!} kind="private" conversationId={groupId} messageId={m.id} token={auth.token}/>:
      onlyFileName?null:<Text style={[styles.text,mine&&{color:C.background}]} selectable>{m.text}</Text>}
     {files.map(file=><SecureChatAttachment key={file.index} index={file.index} scope="private" conversationId={groupId} messageId={m.id}
      token={auth.token} name={file.name} mime={file.mime} size={file.size} onAuthorizationError={()=>{void refresh(true);}}/>)}
@@ -321,6 +333,9 @@ export default function GroupChatScreen(){
      onSent={async()=>{setReplyTarget(null);await refresh(false);}}/>:null}
     <Pressable accessibilityRole="button" accessibilityLabel={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending}
      onPress={prepareLocation} style={styles.tool}><JynloIcon name="location" size={23} color={C.mint}/></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem" disabled={sending}
+     onPress={()=>setPollOpen(true)} style={styles.tool}><Text style={{fontSize:20}}>📊</Text></Pressable>
+    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>
    </View>
    <View style={styles.compose}>
     <TextInput value={draft} onChangeText={setDraft} multiline maxLength={MAX_MESSAGE} editable={!sending}
