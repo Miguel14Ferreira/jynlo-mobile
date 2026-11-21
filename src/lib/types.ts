@@ -61,6 +61,9 @@ export interface SessionDetail extends SessionSummary {
   playFormat?: 'INDIVIDUAL'|'PAIRS'|null;
   registrationOpeningMode?: 'IMMEDIATE' | 'SCHEDULED' | 'MANUAL' | null;
   registrationOpensAt?: string | null;
+  /** Organizer-reported problem after kick-off (problemDetails only reaches the organizer). */
+  problemType?: 'NOT_OCCURRED' | 'VENUE_PROBLEM' | 'OTHER' | null;
+  problemDetails?: string | null;
 }
 export interface SessionParticipant {
   id: number;

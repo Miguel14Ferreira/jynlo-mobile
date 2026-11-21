@@ -147,6 +147,15 @@ export async function updateSessionSkillLevel(id:number,token:string,skillLevel:
  if(skillLevel!==null&&!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(skillLevel))throw Error('Nível inválido.');
  return request<SessionDetail>(`/api/sessions/${id}/skill-level`,{token,method:'PATCH',body:{skillLevel}});
 }
+/** Organizer-only, after kick-off. NOT_OCCURRED cancels the session on the server. Never retried. */
+export async function reportSessionProblem(id:number,token:string,type:'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER',details:string):Promise<void>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para reportar um problema.');
+ if(!['NOT_OCCURRED','VENUE_PROBLEM','OTHER'].includes(type))throw Error('Escolhe o que aconteceu.');
+ const note=details.replace(/[\u0000-\u001F\u007F]/g,' ').trim();
+ if(note.length>500)throw Error('Os detalhes podem ter até 500 caracteres.');
+ if(type==='OTHER'&&!note)throw Error('Explica brevemente o que aconteceu.');
+ await request<void>(`/api/sessions/${id}/problems`,{token,method:'POST',body:{type,details:note||null}});
+}
 export async function updateSessionExternalConfirmations(id:number,token:string,count:number):Promise<SessionDetail>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir os jogadores.');
  if(!Number.isInteger(count)||count<0||count>99)throw Error('Indica entre 0 e 99 jogadores confirmados externamente.');

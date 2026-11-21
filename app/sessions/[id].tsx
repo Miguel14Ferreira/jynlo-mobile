@@ -2,7 +2,7 @@ import React,{useCallback,useRef,useState} from 'react';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
-import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,reportSessionProblem,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -32,6 +32,7 @@ function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   </View>;
 }
 
+const PROBLEM_LABELS:Record<'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER',string>={NOT_OCCURRED:'O jogo não aconteceu',VENUE_PROBLEM:'Problema com o recinto',OTHER:'Outro problema'};
 export default function SessionScreen(){
   const {id:rawId,guest:rawGuest}=useLocalSearchParams<{id:string;guest?:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
@@ -59,6 +60,8 @@ export default function SessionScreen(){
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
   const [editExternalCount,setEditExternalCount]=useState(false),[externalDraft,setExternalDraft]=useState('');
   const [adminToolsOpen,setAdminToolsOpen]=useState(false);
+  const [problemType,setProblemType]=useState<'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER'|null>(null);
+  const [problemNote,setProblemNote]=useState('');
   const [showSessionChat,setShowSessionChat]=useState(false);
   const [showParticipantRoster,setShowParticipantRoster]=useState(true);
   const [teamSource,setTeamSource]=useState<'AUTO'|'RANDOM'>('AUTO');
@@ -608,6 +611,31 @@ export default function SessionScreen(){
       {auth.token&&detail&&action.kind==='SCHEDULED'?<Message>Inscrições programadas{openAt?` para ${openAt}`:''}.</Message>:null}
       {auth.token&&detail&&action.kind==='CLOSED'&&!owner?<Message>Não é possível participar neste momento.</Message>:null}
       {auth.token&&detail&&canLeave(detail)?<Button danger title="Cancelar a minha presença" disabled={busy} onPress={leave}/>:null}
+      {auth.token&&owner&&detail?.problemType?<Message>Problema já reportado: {PROBLEM_LABELS[detail.problemType]}{detail.problemDetails?' · '+detail.problemDetails:''}</Message>:null}
+      {auth.token&&owner&&detail&&!detail.problemType&&(detail.status==='OPEN'||detail.status==='FULL')
+        &&Number.isFinite(Date.parse(detail.gameDate))&&Date.parse(detail.gameDate)<=Date.now()?<View style={styles.panel}>
+        <Eyebrow>CORREU ALGUMA COISA MAL?</Eyebrow>
+        <Text style={styles.hint}>Só o organizador vê isto. Se o jogo não aconteceu, a sessão é cancelada e não conta para presenças nem classificações.</Text>
+        <View style={styles.levelRow}>
+         {(['NOT_OCCURRED','VENUE_PROBLEM','OTHER'] as const).map(type=><Pressable key={type} accessibilityRole="radio"
+           accessibilityState={{checked:problemType===type,disabled:busy}} disabled={busy} onPress={()=>setProblemType(type)}
+           style={[styles.levelChip,problemType===type&&styles.levelChipSelected]}>
+           <Text style={[styles.levelChipText,problemType===type&&styles.levelChipTextSelected]}>{PROBLEM_LABELS[type]}</Text>
+          </Pressable>)}
+        </View>
+        {problemType?<TextInput style={styles.input} value={problemNote} onChangeText={setProblemNote} maxLength={500} editable={!busy}
+          placeholder={problemType==='OTHER'?'Explica o que aconteceu (obrigatório)':'Detalhes (opcional)'} placeholderTextColor={C.muted}
+          accessibilityLabel="Detalhes do problema"/>:null}
+        {problemType?<Button danger={problemType==='NOT_OCCURRED'} title={busy?'A enviar…':problemType==='NOT_OCCURRED'?'Confirmar que o jogo não aconteceu':'Reportar problema'}
+          disabled={busy} onPress={()=>{
+           const type=problemType,note=problemNote,token=auth.token!;
+           const send=()=>{void perform(async()=>{await reportSessionProblem(id,token,type,note);setProblemType(null);setProblemNote('');},
+             type==='NOT_OCCURRED'?'Registado: o jogo não aconteceu. A sessão foi cancelada.':'Problema reportado.');};
+           if(type!=='NOT_OCCURRED'){send();return;}
+           Alert.alert('O jogo não aconteceu?','A sessão é cancelada e não conta para presenças nem classificações. Não dá para desfazer.',[
+            {text:'Voltar',style:'cancel'},{text:'Confirmar',style:'destructive',onPress:send}]);
+          }}/>:null}
+      </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
         <Eyebrow>FERRAMENTAS DO ORGANIZADOR</Eyebrow>
         <Button title="Editar dados da sessão" secondary disabled={busy||loading}
