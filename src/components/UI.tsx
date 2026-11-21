@@ -76,7 +76,7 @@ export function Button({title,onPress,disabled=false,secondary=false,danger=fals
   return <Pressable accessibilityRole="button" accessibilityState={{disabled}} onPress={onPress} disabled={disabled} style={({pressed})=>[
     styles.button,secondary&&styles.buttonSecondary,danger&&styles.buttonDanger,
     (pressed||disabled)&&{opacity:0.65}] }>
-    <Text style={[styles.buttonText,secondary&&styles.buttonTextSecondary]}>{title}</Text>
+    <Text style={[styles.buttonText,secondary&&styles.buttonTextSecondary,danger&&styles.buttonTextDanger]}>{title}</Text>
   </Pressable>;
 }
 export function Badge({text}:{text:string}){
@@ -128,6 +128,8 @@ const styles=StyleSheet.create({
   button:{minHeight:52,borderRadius:16,backgroundColor:C.mint,paddingVertical:14,paddingHorizontal:20,alignItems:'center',justifyContent:'center'},
   buttonSecondary:{backgroundColor:C.surface2,borderColor:C.border,borderWidth:1},buttonDanger:{backgroundColor:'#61383A'},
   buttonText:{color:C.background,fontSize:15,fontWeight:'800'},buttonTextSecondary:{color:C.white},
+  // Light text on the dark red background (dark text was unreadable).
+  buttonTextDanger:{color:'#FFE1DE'},
   badge:{borderRadius:8,paddingHorizontal:10,paddingVertical:7,backgroundColor:'#1B473E'},badgeText:{color:C.mint,fontSize:12,fontWeight:'800'},
   message:{padding:16,borderWidth:1,borderColor:C.border,borderRadius:12,backgroundColor:C.surface},
   messageText:{color:C.white,fontSize:14,lineHeight:21},

@@ -12,6 +12,7 @@ import type {EventRankingEvent,EventRankingOverview} from '../../../../src/lib/e
 import {C} from '../../../../src/lib/theme';
 
 const today=()=>new Date().toISOString().slice(0,10);
+const plural=(n:number,one:string,many:string)=>n+' '+(n===1?one:many);
 const INPUT_HINT:Record<EventRankingKind,string>={
  TIME:'Escreve o tempo de cada atleta (ex.: 62,4 ou 1:02,40). Deixa vazio quem não participou.',
  SCORE:'Escreve a pontuação ou marca de cada atleta. Deixa vazio quem não participou.',
@@ -26,7 +27,8 @@ function failure(e:unknown):string{
 
 /** "Classificação por provas": table and events for everyone; recording events for admins. */
 export default function EventRankingScreen(){
- const params=useLocalSearchParams<{communityId:string;id:string}>();
+ const params=useLocalSearchParams<{communityId:string;id:string;name?:string}>();
+ const tournamentName=typeof params.name==='string'&&params.name.trim()?params.name.trim().slice(0,120):'Classificação por provas';
  const cid=Number(params.communityId),tid=Number(params.id),router=useRouter(),auth=useAuth();
  const [data,setData]=useState<EventRankingOverview|null>(null),[role,setRole]=useState<string|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
@@ -110,8 +112,8 @@ export default function EventRankingScreen(){
  }
  const setRow=(index:number,patch:Partial<EventRankingDraftRow>)=>setRows(current=>current.map((r,i)=>i===index?{...r,...patch}:r));
 
- return <Page><DemoBanner/><Eyebrow>TORNEIO · PROVAS</Eyebrow>
-  <Text style={styles.title}>Classificação por provas</Text>
+ return <Page><DemoBanner/><Eyebrow>🏅 CLASSIFICAÇÃO POR PROVAS</Eyebrow>
+  <Text style={styles.title}>{tournamentName}</Text>
   {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
   {loading&&!data?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -119,7 +121,7 @@ export default function EventRankingScreen(){
   {data?<>
    <View style={styles.panel}>
     <View style={styles.row}><Badge text={completed?'Concluído':data.status==='IN_PROGRESS'?'A decorrer':'Em preparação'}/>
-     <Badge text={data.events.length+(data.events.length===1?' prova':' provas')}/></View>
+     <Badge text={plural(data.events.length,'prova','provas')}/></View>
     <Text style={styles.meta}>Cada prova ordena os atletas por {KIND_SHORT[kind]}. Os lugares dão pontos e a soma decide a classificação.</Text>
     <Text style={styles.meta}>Pontos por lugar: <Text style={styles.strong}>{data.pointsByPlace.join(' · ')}</Text></Text>
     {manager&&!completed&&!pointsOpen?<Button secondary disabled={busy} title="Alterar pontos por lugar" onPress={()=>{setPointsDraft(data.pointsByPlace.join(', '));setPointsOpen(true);}}/>:null}
@@ -147,12 +149,13 @@ export default function EventRankingScreen(){
 
    <View style={styles.panel}>
     <View style={styles.between}><Text style={styles.heading}>Classificação</Text>
-     <Text style={styles.count}>{data.participants.length} {data.participants.length===1?'atleta':'atletas'}</Text></View>
+     <Text style={styles.count}>{plural(data.participants.length,'atleta','atletas')}</Text></View>
     {data.table.length===0?<Text style={styles.meta}>{data.participants.length?'Ainda não há provas registadas.':'Ainda não há atletas confirmados. Os atletas inscrevem-se em "Participantes e inscrições" e um administrador confirma.'}</Text>:null}
     {data.table.map(row=><View key={row.participantId} style={styles.standing}>
      <View style={[styles.positionBox,row.position===1&&styles.leaderBox]}><Text style={styles.position}>{row.position}</Text></View>
      <View style={styles.identity}><Text numberOfLines={2} style={styles.name}>{row.name}</Text>
-      <Text style={styles.meta}>{row.events} provas · {row.wins} vitórias · {row.podiums} pódios{kind!=='POSITION'&&row.best!=null?' · melhor '+value(row.best):''}</Text></View>
+      {kind!=='POSITION'&&row.best!=null?<Text style={styles.best}>{kind==='TIME'?'Melhor tempo':'Melhor marca'}: {value(row.best)}</Text>:null}
+      <Text style={styles.meta}>{plural(row.events,'prova','provas')} · {plural(row.wins,'vitória','vitórias')} · {plural(row.podiums,'pódio','pódios')}</Text></View>
      <View style={styles.pointsBox}><Text style={styles.points}>{row.points}</Text><Text style={styles.pointsLabel}>pts</Text></View>
     </View>)}
    </View>
@@ -186,7 +189,8 @@ export default function EventRankingScreen(){
     {data.events.map(event=><View key={event.id} style={styles.event}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:expanded===event.id}}
       onPress={()=>setExpanded(expanded===event.id?null:event.id)} style={styles.eventHead}>
-      <Text style={styles.name}>{event.name}</Text>
+      <View style={styles.between}><Text style={[styles.name,{flex:1}]}>{event.name}</Text>
+       <Text style={styles.chevron}>{expanded===event.id?'▾':'▸'}</Text></View>
       <Text style={styles.meta}>{event.heldOn?event.heldOn.split('-').reverse().join('/'):''}{event.results[0]?.place===1?' · 🥇 '+event.results[0].name:''}</Text>
      </Pressable>
      {expanded===event.id?<View style={{gap:6}}>
@@ -217,7 +221,8 @@ const styles=StyleSheet.create({
  row:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  between:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'},
  heading:{color:C.white,fontSize:19,fontWeight:'900'},count:{color:'#99DDCE',fontSize:12,fontWeight:'800'},
- meta:{fontSize:12,color:'#ACCAD2',lineHeight:17},strong:{color:C.white,fontWeight:'800'},
+ meta:{fontSize:12,color:'#ACCAD2',lineHeight:17},
+ best:{fontSize:12,color:'#DDF4EF',fontWeight:'700'},strong:{color:C.white,fontWeight:'800'},
  label:{fontSize:11,color:'#98E6D6',fontWeight:'800',letterSpacing:1},
  form:{gap:10},
  input:{minHeight:44,borderWidth:1,borderColor:'#3DC4B066',borderRadius:12,paddingHorizontal:12,color:C.white,backgroundColor:'#0A3340',fontSize:15},
@@ -237,6 +242,7 @@ const styles=StyleSheet.create({
  dnf:{flexDirection:'row',alignItems:'center',gap:4},dnfText:{color:C.muted,fontSize:12,fontWeight:'700'},
  event:{borderTopWidth:1,borderTopColor:'#3BAEAB34',paddingTop:10,gap:8},
  eventHead:{gap:3,paddingVertical:4},
+ chevron:{color:C.mint,fontSize:18,fontWeight:'900'},
  result:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:4},
  resultPlace:{width:34,color:'#A0FFE3',fontWeight:'900'},
  resultPoints:{minWidth:52,textAlign:'right',color:'#7FF5D6',fontWeight:'900'}
