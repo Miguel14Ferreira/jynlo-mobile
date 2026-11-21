@@ -10,7 +10,7 @@ export function OfflineBanner(){
  const {offline,savedSince}=useNetworkStatus();
  const insets=useSafeAreaInsets();
  if(!offline)return null;
- return <View style={[styles.bar,{paddingTop:insets.top+6}]} accessibilityRole="alert" accessibilityLiveRegion="polite">
+ return <View pointerEvents="none" style={[styles.bar,{top:insets.top+6}]} accessibilityRole="alert" accessibilityLiveRegion="polite">
   <Text style={styles.text}>Sem ligação à internet.{savedSince?` A mostrar dados guardados ${savedLabel(savedSince)}.`:' Algumas ações só funcionam com rede.'}</Text>
  </View>;
 }
