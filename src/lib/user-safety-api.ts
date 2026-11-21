@@ -29,3 +29,23 @@ export async function reportUser(peer:string,reason:string,token:string):Promise
  // Do not retry an uncertain POST: the report may already have been filed.
  await request<void>(`/api/reports/users/${validPeer(peer)}`,{token,method:'POST',body:{reason:note}});
 }
+
+function validId(value:number):number{
+ if(!Number.isSafeInteger(value)||value<=0)throw new Error('Conteúdo inválido.');
+ return value;
+}
+function validReason(reason:string):string{
+ const note=reason.trim();
+ if(!note||note.length>1000)throw new Error('Descreve o motivo da denúncia (até 1000 caracteres).');
+ return note;
+}
+/** Report a feed post to Jynlo moderation. Never retried automatically. */
+export async function reportPost(postId:number,reason:string,token:string):Promise<void>{
+ requireSession(token);
+ await request<void>(`/api/feed/posts/${validId(postId)}/report`,{token,method:'POST',body:{reason:validReason(reason)}});
+}
+/** Report a comment on a feed post. Never retried automatically. */
+export async function reportComment(postId:number,commentId:number,reason:string,token:string):Promise<void>{
+ requireSession(token);
+ await request<void>(`/api/feed/posts/${validId(postId)}/comments/${validId(commentId)}/report`,{token,method:'POST',body:{reason:validReason(reason)}});
+}

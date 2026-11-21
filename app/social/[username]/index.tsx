@@ -1,5 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
-import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
@@ -9,6 +9,8 @@ import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
 import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/profile-privacy-api';
 import {MobileTheme} from '../../../src/lib/theme';
+import {ReportSheet} from '../../../src/components/ReportSheet';
+import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../../src/lib/user-safety-api';
 const T=MobileTheme.colors;
 const achievementLabels:Record<string,string>={
  FIRST_ACTIVITY:'🏅 Primeira atividade',
@@ -31,11 +33,14 @@ export default function PublicSocialProfile(){
  const [participations,setParticipations]=useState<PublicCompletedParticipation[]>([]);
  const [showAllAchievements,setShowAllAchievements]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [blocked,setBlocked]=useState<boolean|null>(null),[safetyBusy,setSafetyBusy]=useState(false),[reporting,setReporting]=useState(false);
  const version=useRef(0),inFlight=useRef(false);
  const own=!!name&&name.toLowerCase()===auth.username?.toLowerCase();
  useFocusEffect(useCallback(()=>{
   const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);setTitles([]);setParticipations([]);setShowAllAchievements(false);setError('');setLoading(true);inFlight.current=false;setBusy(false);
+  setBlocked(null);setReporting(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
+  if(!own)void userBlockStatus(name,auth.token).then(value=>{if(version.current===request)setBlocked(value);}).catch(()=>{});
   // The public identity is the critical path. Followers and private-content
   // permissions update separately so a slow endpoint cannot freeze the hero.
   void publicSportsProfile(name,auth.token).then(value=>{
@@ -88,6 +93,20 @@ export default function PublicSocialProfile(){
  const image=resolveJynloMedia(profile?.profilePicUrl);
  const sports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
  const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
+ function toggleBlock(){
+  if(!name||!auth.token||safetyBusy||blocked===null)return;
+  const token=auth.token,wasBlocked=blocked,request=version.current;
+  const run=async()=>{
+   setSafetyBusy(true);
+   try{const value=wasBlocked?await unblockUser(name,token):await blockUser(name,token);if(version.current===request)setBlocked(value);}
+   catch(e){Alert.alert('Não foi possível concluir',e instanceof Error?e.message:'Tenta novamente.');}
+   finally{if(version.current===request)setSafetyBusy(false);}
+  };
+  if(wasBlocked){void run();return;}
+  Alert.alert('Bloquear @'+name+'?','Deixas de ver o conteúdo desta pessoa e ela deixa de te poder contactar. Podes desbloquear aqui.',[
+   {text:'Cancelar',style:'cancel'},{text:'Bloquear',style:'destructive',onPress:()=>{void run();}}
+  ]);
+ }
  return <Page>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -115,6 +134,15 @@ export default function PublicSocialProfile(){
      {busy?'A confirmar…':status.followedByMe?'A seguir ✓':status.requestPending?'Pedido enviado ✓':status.privateProfile?'Pedir para seguir +':'Seguir +'}
     </Text>
    </Pressable>:!own?<Text style={styles.sub}>Não foi possível confirmar a relação de seguimento.</Text>:null}
+   {!own&&auth.token?<View style={styles.safetyRow}>
+    <Pressable accessibilityRole="button" disabled={safetyBusy||blocked===null} onPress={toggleBlock}
+     accessibilityLabel={blocked?'Desbloquear @'+name:'Bloquear @'+name} style={[styles.safetyAction,(safetyBusy||blocked===null)&&styles.disabled]}>
+     <Text style={styles.safetyText}>{safetyBusy?'A confirmar…':blocked?'Desbloquear':'Bloquear'}</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar perfil de @'+name} onPress={()=>setReporting(true)} style={styles.safetyAction}>
+     <Text style={styles.safetyText}>Denunciar</Text>
+    </Pressable>
+   </View>:null}
   </View>:null}
   {privacy?.privateProfile&&!privacy.canViewContent?<View style={styles.hero}>
     <Text style={styles.name}>Perfil privado</Text>
@@ -220,9 +248,15 @@ export default function PublicSocialProfile(){
    </View>
   </View>:null}
   {profile&&privacy?.canViewContent?<ProfilePosts username={name} token={auth.token}/>:null}
+   <ReportSheet visible={reporting&&!!name} title="Denunciar perfil" subject={'Perfil de @'+(name||'')}
+   onClose={()=>setReporting(false)}
+   onSubmit={async reason=>{if(!name||!auth.token)return;await reportUser(name,reason,auth.token);}}/>
  </Page>;
 }
 const styles=StyleSheet.create({
+ safetyRow:{flexDirection:'row',gap:10,flexWrap:'wrap'},
+ safetyAction:{minHeight:40,paddingHorizontal:14,justifyContent:'center',borderRadius:12,borderWidth:1,borderColor:'#7A3A3F',backgroundColor:'#2A161A'},
+ safetyText:{color:'#FFB8B8',fontWeight:'800',fontSize:13},
  discovery:{padding:16,gap:8,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.xl},
  activityGrid:{flexDirection:'row',flexWrap:'wrap',gap:9},
  activityCard:{width:'47%',minWidth:120,flexGrow:1,minHeight:83,justifyContent:'center',gap:5,padding:12,borderWidth:1,borderColor:T.border,borderRadius:12,backgroundColor:T.raised},

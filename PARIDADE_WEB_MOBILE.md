@@ -9,45 +9,34 @@ Data de auditoria: 03/11/2026. Fonte: `Miguel14Ferreira/desporto24FE`, branch `d
 - A Jynlo Web continua ativa. A aplicação nativa usa a **mesma API e base de dados**, respeitando permissões e quotas.
 - `demo` não é produção: nada de `Tiago/André` em modo real sem autenticação; não mostrar moradas privadas a visitantes.
 
-## Cobertura por área (não confundir «tem ecrã» com «tem todas as funções»)
+## Auditoria de 21/11/2026 (substitui a tabela antiga v0.5/v0.6)
 
-| Área na web | Mobile v0.5 | Ainda falta para paridade | Prioridade |
+Método: todos os endpoints do servidor (666) cruzados com o código do web e da app,
+e depois confirmados à mão nos ecrãs. 469 são usados pelos dois; ~158 só pelo web
+(muitos são de administração da plataforma, que fica só no web de propósito).
+
+### Já com paridade (não repetir trabalho)
+Sessões (pesquisa com nível, criação, edição, presença, espera, convites, pagamentos,
+equipas sugeridas, resultado), chats (privado, comunidade, sessão, equipa: anexos,
+respostas, reações, GIF, sondagens, pesquisa), chamadas, diretos, Feed e Stories,
+perfis sociais e seguidores, comunidades (detalhe, membros, convites, competições,
+resultados, partilha pública), torneios (todos os motores, incluindo classificação
+por provas), equipas, recintos (pesquisa, detalhe, sugerir e corrigir), notificações,
+eliminação da conta na app.
+
+### Em falta na app, por prioridade
+
+| Prioridade | O quê | Porque importa | Estado |
 |---|---|---|---|
-| Autenticação email/username + MFA | Base API | Google nativo, registo, recuperação, refresh, revogação validada | P0 |
-| Trocar entre contas | Não existe funcionalmente na web | Corrigir UX web; mobile obriga logout/login, sem alternância falsa | P0 |
-| Identidade/segurança do perfil | Perfil mínimo | Dados completos, edição, fotografia, privacidade, palavras-passe | P0 |
-| Feed de atividade | **v0.6: Feed nativo reformulado** — stories (leitura/criação), posts (texto/foto/vídeo), gostos, comentários, partilha de texto, semana e sugestões; integração API implementada no código | **Por validar em aparelho:** upload e playback; **por concluir:** resposta/remoção de Stories, report/remoção de posts, publicação ligada à sessão, layout adaptativo/testes de integração | P0 |
-| Explorar / descobrir pessoas | Lista de sugestões e pesquisa local inicial (v0.6) | Pesquisa remota com filtros, perfis completos, localização e amizades | P1 |
-| Amizades e pedidos | Não | Procurar, convidar, aceitar, bloquear, denunciar | P1 |
-| Sessões / pesquisa | Base | GPS, filtros avançados, sessões repetidas, mapa | P0 |
-| Detalhe e confirmação de sessão | **v0.7: fluxos de presença, espera, privada/password, convites, cancelamento e localização protegida** (contratos API implementados) | Validar com backend real, cobertura de todos os modos, testes em dispositivos | P0 |
-| Criar sessão | Não | Convocatória, modalidades, capacidade, comunidade, recorrência | P0 |
-| Minhas sessões | **Leitura + ações de saída e gestão no detalhe v0.7** | Histórico, assiduidade, disputas e testes de integração | P1 |
-| Comunidades — explorar | Base | Paginação, filtros de modalidades, sugestões, imagens | P1 |
-| Comunidades — criar | Base | Foto, quota detalhada, pós-criação, modo competição | P1 |
-| Comunidades — membros | Base | Funções, administração, expulsar, adesões | P1 |
-| Comunidades — convites | Base | Links e QR, partilhas nativas, convites externos, avisos | P1 |
-| Comunidades — conteúdo e feed | Não | Posts, multimédia, pesquisa, reações | P2 |
-| Chat comunidade | Texto + socket no código | Reações, imagens, GIF, áudio, respostas, busca, estados de leitura | P0 |
-| Mensagens privadas e grupos | Caixa de entrada básica | Conversas completas, grupos privados, anexos, chamadas | P0 |
-| Chamadas áudio/vídeo | Não | LiveKit, chamada recebida global, participantes, permissões | P1 |
-| Notificações | **In-app + caixa de convites de sessões v0.7** | Push iOS/Android, preferências, deep link, notificações em background | P0 |
-| Recintos — pesquisar | **Leitura inicial acrescentada** | GPS, mapa, filtros avançados, distância, paginação | P1 |
-| Recintos — detalhe | **Leitura inicial acrescentada** | Contactos, fotos, avaliação, horários, condições e verificação | P1 |
-| Recintos — contribuições | Não | Sugerir recinto, corrigir contactos, adicionar fotos, reportar | P2 |
-| Torneios individuais | Leitura inicial | Criação, inscrições, calendário, resultados, classificações | P0 |
-| Torneios equipas | Listar/criar/aderir equipa | Perfis completos das equipas, convites, calendário, jogos, gestão | P0 |
-| Formatos fase grupos + eliminatórias | Não | Sorteios, tabelas, fase de grupos, eliminatórias, critérios | P1 |
-| Karting / classificação corridas | Leitura específica | Registo de provas, sanções, pontuação e etapas | P1 |
-| Outras modalidades / regras próprias | Parcial | Adaptadores para as 121 modalidades, sem forçar futebol | P0 |
-| Estatísticas por comunidade | Não | Épocas, jogadores, comparações, líderes, importação | P1 |
-| Gestão de épocas e classificações | Não | Épocas, arquivo, importação Excel, histórico | P1 |
-| Rankings e histórico do utilizador | Não | Estatísticas individuais, troféus e histórico | P2 |
-| PT/EN | Só PT na base | Traduções completas e persistência da preferência | P1 |
-| Acessibilidade | Parcial | Leitores de ecrã, contraste, escalas, touch targets | P0 |
-| Administração, auditoria e moderação | Não | Definir o que deve estar acessível em mobile com RBAC; não expor endpoints indiscriminadamente | P2 |
-
-**Legenda:** «Base» = percurso e contratos iniciais; «Leitura inicial» = consulta limitada, sem ações avançadas; «Não» = não existe código native correspondente. Nenhuma área está validada ponta-a-ponta com backend real num dispositivo.
+| P0 | Denunciar publicação e comentário; bloquear/denunciar a partir do perfil | Obrigatório nas lojas para conteúdo de utilizadores (Apple 1.2 / Google UGC) | Feito (21/11) |
+| P1 | Preferências de notificações por tipo (`/api/notifications/me/preferences`) | O web deixa escolher que avisos receber; a app não | Por fazer |
+| P1 | Organizador: "a sessão não aconteceu" / reportar problema (`/sessions/{id}/problems`) | Fecha corretamente sessões que não se realizaram | Por fazer |
+| P2 | Disputas de presença e fiabilidade do jogador | Contestar faltas marcadas | Por fazer |
+| P2 | Modelos de sessão (`/sessions/presets`) | Criar o jogo semanal mais depressa | Por fazer |
+| P2 | Grupos privados (`/api/private-groups`) | Conversas de grupo fora de comunidades | Por fazer |
+| P2 | Publicações ocultadas (`/feed/posts/hidden`) | Ver/repor o que se ocultou do feed | Por fazer |
+| P2 | Ativar MFA na app (`/profile/me/mfa/setup`) | Hoje só pelo web | Por fazer |
+| Só web | Gestão avançada de comunidade (épocas, disciplina, arquivos históricos, importação) e administração da plataforma | Tarefas de administrador, melhor no ecrã grande | Fica no web |
 
 ## Prioridade de implementação em lotes de funcionalidades completas
 
