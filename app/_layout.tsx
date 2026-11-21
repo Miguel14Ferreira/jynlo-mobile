@@ -2,7 +2,8 @@ import React,{useEffect,useRef} from 'react';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
-import {Stack,useRouter} from 'expo-router';
+import {Stack,useRouter,usePathname,ErrorBoundary as RouterErrorBoundary,type ErrorBoundaryProps} from 'expo-router';
+import {installGlobalErrorReporting,reportClientError,setErrorRoute} from '../src/lib/client-error';
 import {StatusBar} from 'expo-status-bar';
 import {AuthProvider,useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
@@ -72,7 +73,9 @@ function PushNavigation(){
   },[auth.ready,auth.token,auth.username,router]);
   return null;
 }
-function Navigation(){const auth=useAuth();return <><PushNavigation/>
+installGlobalErrorReporting();
+function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
+function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRouteTracker/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
@@ -149,5 +152,9 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
 </>;}
 export default function RootLayout(){return <AuthProvider><Navigation/></AuthProvider>;}
 
-// Expo Router renders a recoverable error screen instead of a blank page for route exceptions.
-export {ErrorBoundary} from 'expo-router';
+// Expo Router renders a recoverable error screen instead of a blank page for
+// route exceptions; the error is reported first so we see it in the server log.
+export function ErrorBoundary(props:ErrorBoundaryProps){
+  useEffect(()=>{reportClientError(props.error,{fatal:true});},[props.error]);
+  return <RouterErrorBoundary {...props}/>;
+}

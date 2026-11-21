@@ -15,6 +15,8 @@ test('unknown deep links show a recoverable screen with an internal home route',
 });
 test('root layout registers a route error boundary',()=>{
  const code=read('app/_layout.tsx');
- assert.match(code,/export \{ErrorBoundary\} from 'expo-router'/);
+ assert.match(code,/export function ErrorBoundary\(props:ErrorBoundaryProps\)/);
+ assert.match(code,/<RouterErrorBoundary \{\.\.\.props\}\/>/);
+ assert.match(code,/reportClientError\(props\.error,\{fatal:true\}\)/);
  assert.match(code,/<AuthProvider><Navigation\/><\/AuthProvider>/);
 });
