@@ -17,6 +17,9 @@ test('Messages tab shows the badge and refreshes on focus, foreground and every 
  assert.match(tabs,/screenListeners=\{\{focus:\(\)=>\{void unread\.refresh\(\);\}\}\}/);
  const hook=read('src/lib/use-unread-messages.ts');
  assert.match(hook,/POLL_MS=60_000/);
+ // One request to the server total; the old per-source sum only if the endpoint does not exist.
+ assert.match(hook,/'\/api\/messages\/inbox\/unread-count'/);
+ assert.match(hook,/e\.status===404\|\|e\.status===405\)\)return null;/);
  // Only an account switch discards a result (an early tab-focus refresh must still count).
  assert.match(hook,/if\(who!==identityRef\.current\)return;/);
  assert.doesNotMatch(hook,/generation/);
