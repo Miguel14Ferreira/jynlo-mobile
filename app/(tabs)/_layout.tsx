@@ -9,6 +9,7 @@ import {MobileTheme} from '../../src/lib/theme';
 import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {useUnreadMessages} from '../../src/lib/use-unread-messages';
 import {formatUnreadBadge} from '../../src/lib/inbox-filter.cjs';
+import {firstStepsDue} from '../../src/lib/first-steps-api';
 
 const colors=MobileTheme.colors;
 function TabSymbol({name,color,focused}:{name:JynloIconName;color:string;focused:boolean}){
@@ -27,6 +28,12 @@ export default function TabsLayout(){
  const [chooseChampionship,setChooseChampionship]=useState(false);
  const [moreOpen,setMoreOpen]=useState(false);
  const close=useCallback(()=>{setOpen(false);setChooseChampionship(false);setMoreOpen(false);},[]);
+ // New accounts choose sports and city once; "Agora não" is remembered on this device.
+ useEffect(()=>{
+  let active=true;
+  void firstStepsDue(auth.token,auth.username).then(due=>{if(active&&due)router.push('/first-steps');});
+  return()=>{active=false;};
+ },[auth.token,auth.username,router]);
  useEffect(()=>{
   if(!open||!auth.token||!auth.username){setEligible([]);setChecking(false);return;}
   let active=true;setChecking(true);setCheckError(false);setEligible([]);

@@ -2,7 +2,7 @@ import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 
 import {Linking,Platform,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import Constants from 'expo-constants';
 import type {Region} from 'react-native-maps';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useRouter,useLocalSearchParams} from 'expo-router';
 import {useRefreshOnReconnect} from '../../src/lib/network-status';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/components/UI';
@@ -59,6 +59,14 @@ export default function DiscoverScreen(){
  const [sportPickerVisible,setSportPickerVisible]=useState(false);
  const [city,setCity]=useState(''),[debouncedCity,setDebouncedCity]=useState('');
  const updateCity=(value:string)=>{setCity(value);setMapArea(null);};
+ // Opened from first steps (or a link) with a sport and/or city: start with those filters.
+ const linked=useLocalSearchParams<{sport?:string;city?:string}>();
+ useEffect(()=>{
+  const nextSport=typeof linked.sport==='string'?linked.sport.trim():'';
+  const nextCity=typeof linked.city==='string'?linked.city.trim().slice(0,80):'';
+  if(nextSport&&SPORTS.includes(nextSport))setSport(nextSport);
+  if(nextCity){setCity(nextCity);setDebouncedCity(nextCity);setMapArea(null);}
+ },[linked.sport,linked.city]);
  const [availableOnly,setAvailableOnly]=useState(true);
  const [skillLevel,setSkillLevel]=useState<''|'BEGINNER'|'INTERMEDIATE'|'ADVANCED'>('');
  const [loading,setLoading]=useState(true),[error,setError]=useState('');

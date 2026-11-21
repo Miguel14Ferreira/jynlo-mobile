@@ -120,6 +120,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRoute
     <Stack.Screen name="feed-hidden" options={{title:"Publicações ocultas"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="search" options={{title:"Pesquisar"}}/>
+    <Stack.Screen name="first-steps" options={{title:"Primeiros passos"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>
     <Stack.Screen name="venues/create" options={{title:"Sugerir recinto"}}/>
     <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
