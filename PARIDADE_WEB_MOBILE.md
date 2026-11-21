@@ -58,4 +58,8 @@ eliminação da conta na app.
 ## Pendente fora do código
 
 - Notificações no telemóvel: no Render, `JYNLO_PUSH_ENABLED=true` e `JYNLO_PUSH_ACCESS_TOKEN` (Expo); no Android, configuração do Firebase.
-- Web, troca de contas: o login redireciona quem já tem sessão; não existe "trocar de conta". Avaliar um percurso claro de sair/entrar.
+
+## Decisões já tomadas (não repetir)
+
+- Web, troca de contas: não há "Trocar de conta" separado; foi removido por duplicar "Terminar sessão", que já leva ao formulário de entrada (teste no navbar). Proposta revista e fechada em 21/11 (PR web #826).
+- Perfil privado: exige migrar as fotografias e vídeos para armazenamento protegido no servidor antes de ligar; não fazer sem acordo do Miguel.
