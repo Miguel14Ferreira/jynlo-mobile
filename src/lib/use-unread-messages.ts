@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {communityInbox,directInbox,sessionInbox} from './chat-api';
+import {communityInbox,directInbox,sessionInbox,privateGroupInbox} from './chat-api';
 import {listConversationMutes} from './conversation-mutes-api';
 import {badgeTotal} from './unread-badge-core.cjs';
 import {DEMO_MODE} from './api';
@@ -20,11 +20,11 @@ export function useUnreadMessages(token:string|null,username:string|null){
   if(inFlight.current===who||(!force&&now-last.current<5_000))return;
   inFlight.current=who;last.current=now;
   try{
-   const [direct,community,session,mutes]=await Promise.allSettled([directInbox(token),communityInbox(token,username),sessionInbox(token,username),listConversationMutes(token)]);
+   const [direct,community,session,mutes,groups]=await Promise.allSettled([directInbox(token),communityInbox(token,username),sessionInbox(token,username),listConversationMutes(token),privateGroupInbox(token)]);
    if(who!==identityRef.current)return;
    if(direct.status==='rejected'&&community.status==='rejected'&&session.status==='rejected')return;
    const ok=<T,>(r:PromiseSettledResult<T>)=>r.status==='fulfilled'?r.value:null;
-   setCount(badgeTotal([ok(direct),ok(community),ok(session)],ok(mutes)));
+   setCount(badgeTotal([ok(direct),ok(community),ok(session),ok(groups)],ok(mutes)));
   }finally{if(inFlight.current===who)inFlight.current=null;}
  },[token,username]);
  useEffect(()=>{

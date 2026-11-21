@@ -49,3 +49,16 @@ test('a group message alert opens the group, never the sender\'s direct chat',()
  assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',relatedUsername:'ana'}),{kind:'direct-chat',peer:'ana'});
  assert.match(read('app/notifications.tsx'),/case 'group-chat':router\.push\(\{pathname:'\/groups\/\[id\]'/);
 });
+
+test('groups appear in the Messages list and the badge, and opening a group marks it read',()=>{
+ const api=read('src/lib/chat-api.ts');
+ assert.match(api,/export async function privateGroupInbox/);
+ assert.match(api,/conversations:ids\.slice\(i,i\+100\)\.map\(id=>\(\{kind:'private',id\}\)\)/);
+ assert.match(api,/!allowed\.has\(item\.id\)/);
+ assert.match(api,/body:\{kind:'private',id:String\(groupId\),lastSeenMessageId\}/);
+ const inbox=read('app/(tabs)/messages.tsx');
+ assert.match(inbox,/\['private','Grupos'\]/);
+ assert.match(inbox,/item\.kind==='private'\?router\.push\(\{pathname:'\/groups\/\[id\]'/);
+ assert.match(read('src/lib/use-unread-messages.ts'),/privateGroupInbox\(token\)/);
+ assert.match(read('app/groups/[id].tsx'),/markPrivateGroupRead\(groupId,newest,auth\.token\)/);
+});

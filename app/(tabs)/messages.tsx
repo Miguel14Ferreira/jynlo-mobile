@@ -6,7 +6,7 @@ import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
-import {communityInbox,directInbox,sessionInbox} from '../../src/lib/chat-api';
+import {communityInbox,directInbox,sessionInbox,privateGroupInbox} from '../../src/lib/chat-api';
 import {listConversationMutes,setConversationMuted,isConversationMuted,type MutedConversation} from '../../src/lib/conversation-mutes-api';
 import {pendingDirectCall,type DirectCallInvitation} from '../../src/lib/direct-call-api';
 import {myUnreadNotificationCount} from '../../src/lib/notifications-api';
@@ -30,7 +30,7 @@ export default function MessagesScreen(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('');
  const [lastSyncedAt,setLastSyncedAt]=useState<Date|null>(null);
  const [search,setSearch]=useState(''),[unreadOnly,setUnreadOnly]=useState(false);
- const [conversationKind,setConversationKind]=useState<'all'|'direct'|'community'|'session'>('all');
+ const [conversationKind,setConversationKind]=useState<'all'|'direct'|'private'|'community'|'session'>('all');
  const identity=useRef('');
  const sameIdentity=!!auth.token&&!!auth.username&&identity.current===auth.username+'|'+auth.token;
  const displayed=useMemo(()=>sameIdentity?(filterInbox(items,search,unreadOnly) as JynloInboxSummary[])
@@ -47,17 +47,18 @@ export default function MessagesScreen(){
   const initialMuteRevision=muteRevision.current;
   if(!silent){setLoading(true);setError('');setChatWarning('');}
   try{
-   const [groups,privateChats,sessionChats,requests,call,muted,unreadNotifications]=await Promise.allSettled([
+   const [groups,privateChats,sessionChats,requests,call,muted,unreadNotifications,groupChats]=await Promise.allSettled([
     communityInbox(auth.token,auth.username),directInbox(auth.token),sessionInbox(auth.token,auth.username),
     myCommunityInvites(auth.token,auth.username),pendingDirectCall(auth.token),listConversationMutes(auth.token),
-    myUnreadNotificationCount(auth.token)
+    myUnreadNotificationCount(auth.token),privateGroupInbox(auth.token)
    ]);
    if(version!==generation.current||identity.current!==auth.username+'|'+auth.token)return;
    // A failing source must not erase healthy conversations from the other source.
    setItems(previous=>[
     ...(privateChats.status==='fulfilled'?privateChats.value:previous.filter(i=>i.kind==='direct')),
     ...(groups.status==='fulfilled'?groups.value:previous.filter(i=>i.kind==='community')),
-    ...(sessionChats.status==='fulfilled'?sessionChats.value:previous.filter(i=>i.kind==='session'))
+    ...(sessionChats.status==='fulfilled'?sessionChats.value:previous.filter(i=>i.kind==='session')),
+    ...(groupChats.status==='fulfilled'?groupChats.value:previous.filter(i=>i.kind==='private'))
    ].sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0)));
    if(requests.status==='fulfilled')setInvites(requests.value);
    if(unreadNotifications.status==='fulfilled')setNotificationUnread(unreadNotifications.value);
@@ -71,6 +72,7 @@ export default function MessagesScreen(){
     ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
     ...(groups.status==='rejected'?['comunidades']:[]),
     ...(sessionChats.status==='rejected'?['sessões']:[]),
+    ...(groupChats.status==='rejected'?['grupos']:[]),
     ...(requests.status==='rejected'?['convites']:[])
    ];
    const partial=failedSources.length>0;
@@ -152,7 +154,7 @@ export default function MessagesScreen(){
  return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
   <View style={styles.headerRow}>
    <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text style={styles.title}>Mensagens</Text>
-    <Text style={styles.sub}>Conversas privadas, comunidades e sessões, num só lugar.</Text>
+    <Text style={styles.sub}>Conversas privadas, grupos, comunidades e sessões, num só lugar.</Text>
    </View>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
   </View>
@@ -161,7 +163,7 @@ export default function MessagesScreen(){
     placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
     accessibilityLabel="Pesquisar conversas pelo contacto ou mensagem"/>
    <View style={styles.filterRow}>
-    {([['all','Todas'],['direct','Privadas'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={'Filtrar conversas: '+label} accessibilityState={{selected:conversationKind===kind}}
+    {([['all','Todas'],['direct','Privadas'],['private','Grupos'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={'Filtrar conversas: '+label} accessibilityState={{selected:conversationKind===kind}}
       onPress={()=>setConversationKind(kind)} style={[styles.kindChip,conversationKind===kind&&styles.kindChipActive]}>
       <Text style={[styles.kindText,conversationKind===kind&&styles.kindTextActive]}>{label}</Text>
     </Pressable>)}
@@ -213,17 +215,18 @@ export default function MessagesScreen(){
   {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
    <Pressable
     accessibilityRole="button"
-    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.title||item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
+    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='private'?'Grupo':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.title||item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
+      item.kind==='private'?router.push({pathname:'/groups/[id]',params:{id:item.id,title:item.title||''}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
     style={({pressed})=>[styles.tile,styles.tileContent,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
     <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
-      <JynloIcon name={item.kind==='direct'?'profile':item.kind==='community'?'community':'session'} size={24} color={T.accent}/>
+      <JynloIcon name={item.kind==='direct'?'profile':item.kind==='community'||item.kind==='private'?'community':'session'} size={24} color={T.accent}/>
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
-       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?'Comunidade':'Sessão desportiva')}</Text>
+       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?'Comunidade':item.kind==='private'?'Grupo':'Sessão desportiva')}</Text>
        {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
       <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||'Abre para começar a conversa'}</Text>

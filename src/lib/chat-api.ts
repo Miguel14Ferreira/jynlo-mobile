@@ -238,3 +238,38 @@ export async function markDirectRead(peer:string,lastSeenMessageId:number,token:
   token,method:'PUT',body:{kind:'direct',id:peer.toLowerCase(),lastSeenMessageId}
  });
 }
+
+/** Private group chats: only groups listed for this account (GET /api/private-groups) are shown;
+ * the summaries response alone is never permission evidence. */
+export async function privateGroupInbox(token:string):Promise<JynloInboxSummary[]>{
+ if(!token||DEMO_MODE)return [];
+ const groups=await request<Array<{id:number;title:string}>>('/api/private-groups',{token});
+ if(!Array.isArray(groups))throw Error('Lista de grupos inválida.');
+ const allowed=new Map<string,string>();
+ for(const g of groups)if(g&&Number.isSafeInteger(g.id)&&g.id>0)allowed.set(String(g.id),typeof g.title==='string'&&g.title.trim()?g.title.trim():'Grupo');
+ if(!allowed.size)return [];
+ const ids=[...allowed.keys()];
+ const summaries:JynloInboxSummary[]=[];
+ for(let i=0;i<ids.length;i+=100){
+  const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
+   token,method:'POST',body:{conversations:ids.slice(i,i+100).map(id=>({kind:'private',id}))}
+  });
+  if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
+  summaries.push(...batch);
+ }
+ const seen=new Set<string>();const result:JynloInboxSummary[]=[];
+ for(const item of summaries){
+  if(!item||item.kind!=='private'||typeof item.id!=='string'||!allowed.has(item.id)||seen.has(item.id))continue;
+  if(!Number.isSafeInteger(item.unreadCount)||item.unreadCount<0)continue;
+  seen.add(item.id);result.push({...item,title:allowed.get(item.id)});
+ }
+ // Groups without messages yet still appear (the server may omit them on a race).
+ for(const [id,title] of allowed)if(!seen.has(id))result.push({kind:'private',id,title,latestMessageId:null,latestText:null,latestSender:null,latestAt:null,unreadCount:0});
+ return result.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
+}
+/** Server read cursor for a group: only acknowledge messages that were displayed. */
+export async function markPrivateGroupRead(groupId:number,lastSeenMessageId:number,token:string):Promise<void>{
+ if(!token||DEMO_MODE)return;
+ if(!Number.isSafeInteger(groupId)||groupId<=0||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
+ await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'private',id:String(groupId),lastSeenMessageId}});
+}

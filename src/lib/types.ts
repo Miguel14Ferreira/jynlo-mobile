@@ -166,7 +166,7 @@ export interface CommunityChatEntry {
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
  attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
-export interface JynloInboxSummary {kind:'direct'|'community'|'session';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
+export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
 
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {
