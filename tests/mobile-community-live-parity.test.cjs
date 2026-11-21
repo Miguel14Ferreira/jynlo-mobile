@@ -50,7 +50,8 @@ test('LiveKit community viewers are subscribe-only, hosts heartbeat and explicit
 test('community Live navigation is visible only to existing members',()=>{
  const community=source('app/communities/[id].tsx');
  const layout=source('app/_layout.tsx');
- assert.match(community,/\{role\?<View style=\{styles\.section\}>\s*<Eyebrow>TRANSMISSÕES EM DIRETO/);
+ // Live stays members-only, now inside the Overview section.
+ assert.match(community,/\{role&&activeSection==='OVERVIEW'\?<View style=\{styles\.section\}>\s*<Eyebrow>TRANSMISSÕES EM DIRETO/);
  assert.match(community,/pathname:'\/communities\/\[id\]\/live'/);
  assert.match(layout,/name="communities\/\[id\]\/live\/index"/);
  assert.match(layout,/name="communities\/\[id\]\/live\/\[eventId\]"/);

@@ -18,7 +18,8 @@ test('each chat checks camera authorization before invoking native capture',()=>
   const camera=source.indexOf("ImagePicker.launchCameraAsync(",guard);
   assert.ok(guard>=0&&camera>guard,filename);
   assert.match(source,/ImagePicker\.launchImageLibraryAsync\(/);
-  assert.match(source,/finally\{pickerInFlight\.current=false;\}/);
+  // Community chat releases the picker lock only for the operation that took it.
+  assert.match(source,/finally\{(pickerInFlight\.current=false;\}|\s*if\(pickerOwner\.current===identity&&pickerEpoch\.current===operation\)\{\s*pickerInFlight\.current=false;)/);
  }
 });
 test('shared permission denial provides Android settings recovery and leaves gallery independent',()=>{

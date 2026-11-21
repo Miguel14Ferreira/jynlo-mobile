@@ -15,11 +15,14 @@ test('community refresh never acknowledges history without a measured viewport',
 });
 
 test('community WebSocket delivery never acknowledges unseen messages', () => {
-  const start = source.indexOf('onMessage:(msg)=>');
-  const end = source.indexOf('// A disconnected WebSocket', start);
+  // The socket is only an invalidation hint: messages reach the UI through the
+  // authenticated HTTP refresh, which itself never acknowledges (test above).
+  const start = source.indexOf('onMessage:(_msg)=>');
+  const end = source.indexOf('// Real-time events normally', start);
   assert.ok(start >= 0 && end > start, 'WebSocket message handler must exist');
   const handler = source.slice(start, end);
-  assert.match(handler, /setMessages\(old=>mergeMessages\(old,\[msg\]\)\)/);
+  assert.match(handler, /void refresh\(version,true\)/);
+  assert.doesNotMatch(handler, /setMessages\(/);
   assert.doesNotMatch(handler, /markCommunityRead\(/);
 });
 

@@ -116,7 +116,7 @@ test('both participant and team calendars reject broken pagination from the serv
  const team=fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8');
  const individual=fs.readFileSync(path.join(root,'matches.tsx'),'utf8');
  for(const screen of [team,individual]){
-  assert.match(screen,/import \{validateNextFixturePage\} from/);
+  assert.match(screen,/import \{(validateFirstFixturePage,)?validateNextFixturePage\} from/);
   assert.match(screen,/version!==generation\.current\)return/);
  }
  assert.match(team,/validateNextFixturePage<TournamentTeamMatch>\(response,next\)/);

@@ -14,7 +14,7 @@ test('Map fallback never embeds blocked OpenStreetMap volunteer tiles',()=>{
 
 test('uploaded stories use filename extension and explicit server errors',()=>{
  const api=read('src/lib/social-feed-api.ts');
- assert.match(api,/form\.append\(files\.length>1\?'files':file\.type==='video'\?'video':'image'/);
+ assert.match(api,/form\.append\((forceFilesParts\|\|)?files\.length>1\?'files':file\.type==='video'\?'video':'image'/);
  assert.match(api,/jynlo-media\.'\+extension/);
  assert.match(api,/response\.status===413/);
  assert.match(api,/controller\.signal\.aborted/);
@@ -25,8 +25,10 @@ test('season explanations, venue images and completed attendance are privacy-saf
  const create=read('app/sessions/create.tsx');
  const details=read('app/sessions/[id].tsx');
  const venue=read('app/venues/[id].tsx');
- assert.match(create,/equipas mais equilibradas/);
- assert.match(create,/Saber mais sobre o jogo de época/);
+ // Season help was rewritten in plain language (PR #26).
+ assert.match(create,/O que é um jogo de época\?/);
+ assert.match(create,/Contar para a época/);
+ assert.match(create,/Saber mais sobre (o jogo|jogos) de época/);
  assert.match(details,/Date\.parse\(s\.gameDate\|\|''\)>Date\.now\(\)/);
  assert.match(venue,/envio de novas fotografias está temporariamente suspenso/);
 });

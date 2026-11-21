@@ -77,8 +77,11 @@ test('Play corrective build disables native shrinking without weakening API or p
  const config=require('../app.config.js');
  const oldProfile=process.env.EAS_BUILD_PROFILE;
  const oldMaps=process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY;
+ const oldFirebase=process.env.GOOGLE_SERVICES_JSON;
  try{
   process.env.EAS_BUILD_PROFILE='play-internal';
+  // Store builds also require the Firebase file (native push); EAS provides its path.
+  process.env.GOOGLE_SERVICES_JSON='/tmp/google-services.json';
   process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY='AIza'+'A'.repeat(35);
   const built=config({config:{plugins:[],android:{package:'com.jynlo.app'},extra:{}}});
   const properties=built.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-build-properties')[1].android;
@@ -87,6 +90,7 @@ test('Play corrective build disables native shrinking without weakening API or p
   assert.equal(built.android.package,'com.jynlo.app');
   assert.equal(built.extra.eas.projectId,'5628b5c4-513a-4b82-b0fb-7a50cace5cb6');
  }finally{
+  if(oldFirebase===undefined)delete process.env.GOOGLE_SERVICES_JSON;else process.env.GOOGLE_SERVICES_JSON=oldFirebase;
   if(oldProfile===undefined)delete process.env.EAS_BUILD_PROFILE;
   else process.env.EAS_BUILD_PROFILE=oldProfile;
   if(oldMaps===undefined)delete process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY;

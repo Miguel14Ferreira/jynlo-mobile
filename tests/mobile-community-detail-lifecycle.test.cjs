@@ -3,13 +3,19 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id].tsx'),'utf8');
 
+// The reset statements grew (follow state, sections); check each reset exists, in any order.
+function resetsInclude(source,calls){
+ const lines=source.split('\n').filter(line=>line.includes('setCommunity(null)'));
+ return lines.some(line=>calls.every(call=>line.includes(call)));
+}
+
 test('community loads are scoped to the focused community and authenticated session',()=>{
  assert.match(source,/const generation=useRef\(0\)/);
  assert.match(source,/const reload=useCallback\(async\(version=generation\.current\)=>/);
  assert.match(source,/if\(version!==generation\.current\)return/);
  assert.match(source,/const version=\+\+generation\.current/);
  assert.match(source,/return \(\)=>\{generation\.current\+\+;\}/);
- assert.match(source,/setCommunity\(null\);setSessions\(\[\]\);setSessionsError\(''\);setRequests\(\[\]\);setRequestsError\(''\);setMyRequest\(null\);setMyRequestError\(''\)/);
+ assert.ok(resetsInclude(source,['setCommunity(null)','setSessions([])',"setSessionsError('')",'setRequests([])',"setRequestsError('')",'setMyRequest(null)',"setMyRequestError('')"]));
 });
 test('late community sessions and membership requests cannot overwrite another community',()=>{
  assert.match(source,/const next=await communitySessions\(id,auth\.token,auth\.username\);\s*if\(version!==generation\.current\)return;\s*setSessions\(next\)/);
@@ -20,7 +26,7 @@ test('late community sessions and membership requests cannot overwrite another c
 test('community member can still create a preselected session and view competitions',()=>{
  assert.match(source,/pathname:'\/sessions\/create',params:\{communityId:String\(id\)\}/);
  assert.match(source,/pathname:'\/communities\/\[id\]\/competitions'/);
- assert.match(source,/pathname:"\/tournaments\/create",params:\{communityId:String\(id\)\}/);
+ assert.match(source,/pathname:['"]\/tournaments\/create['"],params:\{communityId:String\(id\)\}/);
 });
 
 test('old membership and invitation mutations cannot change the next community view',()=>{
@@ -39,7 +45,8 @@ test('community detail shows a retry when initial loading fails',()=>{
 test('organizer sees request loading failures and can retry',()=>{
  assert.match(source,/const \[requestsError,setRequestsError\]=useState\(''\)/);
  assert.match(source,/setRequestsError\('Não foi possível carregar os pedidos de adesão\.'\)/);
- assert.match(source,/\{owner&&requestsError\?<View style=\{styles\.section\}>/);
+ // Requests now live in the "Gerir" section of the community.
+ assert.match(source,/\{owner&&activeSection==='MANAGE'&&requestsError\?<View style=\{styles\.section\}>/);
  assert.match(source,/title="Tentar carregar pedidos novamente"/);
 });
 

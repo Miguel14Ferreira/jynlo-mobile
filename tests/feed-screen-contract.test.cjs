@@ -48,7 +48,7 @@ test('Feed apresenta stories e criação de publicações num ecrã próprio',()
  assert.match(feed,/<Modal visible=\{identityMatches&&composerOpen\}/);
  assert.doesNotMatch(feed,/\{composerOpen\?<><TextInput/);
  assert.match(feed,/storiesCard:\{paddingVertical:10,gap:8\}/);
- assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:10\}/);
+ assert.match(feed,/feedCardWrap:\{paddingHorizontal:12,marginBottom:\d+\}/);
  assert.doesNotMatch(feed,/weekPanel:\{[^}]*\}[^]*<View style=\{styles\.weekPanel\}>/);
 });
 

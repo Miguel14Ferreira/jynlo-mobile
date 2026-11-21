@@ -66,7 +66,7 @@ test('switching accounts releases old pending actions but ignores their eventual
  assert.match(screen,/const operation=\+\+inviteOperation\.current/);
  assert.match(screen,/const operation=\+\+pushOperation\.current/);
  assert.match(screen,/if\(account\.current===initialIdentity&&inviteOperation\.current===operation\)setBusyInvite\(null\)/);
- assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)setPushBusy\(false\)/);
+ assert.match(screen,/if\(account\.current===identity&&pushOperation\.current===operation\)\{\s*pushBusyRef\.current=false;\s*setPushBusy\(false\);/);
 });
 
 test('notification navigation is immediate and read receipts settle asynchronously',()=>{

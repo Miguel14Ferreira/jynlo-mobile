@@ -10,12 +10,13 @@ test('Explore uses shared mobile tokens and keeps real session navigation',()=>{
  assert.match(source,/discoverSessions\(/);
  assert.match(source,/pathname:'\/sessions\/\[id\]'/);
 });
-test('Explore prioritizes creation and venues without duplicating primary tabs',()=>{
- assert.match(source,/accessibilityLabel="Criar uma sessão desportiva"/);
- assert.match(source,/redirect:'\/sessions\/create'/);
- assert.match(source,/accessibilityLabel="Encontrar recintos desportivos"/);
+test('Explore focuses on finding games without duplicating primary tabs',()=>{
+ // Creation (sessions, venues, communities…) moved to the central Criar tab.
+ const tabs=fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8');
+ assert.match(tabs,/else if\(destination==='venue'\)router\.push\('\/venues\/create'\)/);
  assert.doesNotMatch(source,/router\.push\('\/feed'\)/);
- assert.match(source,/router\.push\('\/\(tabs\)\/communities'\)/);
+ assert.match(source,/accessibilityLabel="Filtrar por cidade"/);
+ assert.match(source,/<SessionCard key=\{s\.id\} session=\{s\}/);
 });
 test('Explore has accessible filters and reset from the empty state',()=>{
  assert.match(source,/accessibilityRole="checkbox" accessibilityState=\{\{checked:availableOnly\}\}/);

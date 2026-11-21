@@ -32,7 +32,8 @@ test('community live checks capture permissions for both immediate and scheduled
 test('a guest cannot publish before camera and microphone permission',()=>{
  const room=read('app/live/[id].tsx');
  const permission=room.indexOf('await ensureLiveCapturePermissions()');
- const token=room.indexOf('return joinPersonalLive(auth.token,id)',permission);
+ // The guest token is only requested after permissions (token re-read in between).
+ const token=room.indexOf('return joinPersonalLive(token,id)',permission);
  assert.ok(permission>0&&token>permission);
  assert.match(room,/if\(active\.current&&next\.role==='GUEST'\)/);
 });

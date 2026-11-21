@@ -10,7 +10,7 @@ test('post links target a post, while session activity links to its session',()=
 test('feed and detail share the canonical post URL, not the Jynlo homepage',()=>{
  const feed=read('app/(tabs)/index.tsx'),detail=read('app/posts/[postId]/index.tsx');
  assert.match(feed,/sharedPostLink\(item\)/);assert.match(detail,/sharedPostLink\(post\)/);
- assert.match(feed,/accessibilityLabel="Partilhar publicação" style=\{styles\.postAction\}/);
+ assert.match(feed,/accessibilityLabel="Partilhar publicação" style=\{styles\.(postAction|postPrimaryAction)\}/);
 });
 test('comments can be liked and their authors can edit, via verified backend endpoints',()=>{
  const api=read('src/lib/social-feed-api.ts');

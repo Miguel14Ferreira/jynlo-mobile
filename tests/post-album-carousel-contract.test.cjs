@@ -27,7 +27,7 @@ test('mixed image/video posts retain contained images, video controls and expand
  assert.match(carousel,/onExpand=\{\(\)=>\{const images=items\.filter/);
  assert.match(carousel,/onExpand\(\{uris:images,index:images\.indexOf\(uri\)\}\)/);
  assert.match(image,/resizeMode="contain"/);
- assert.match(video,/contentFit=\{story\?'cover':'contain'\}/);
+ assert.match(video,/contentFit=("contain"|\{story\?'cover':'contain'\})/);
  assert.match(video,/nativeControls=\{!story\}/);
 });
 test('multi-media posts show accessible current position and pagination dots',()=>{

@@ -39,7 +39,9 @@ test('community camera/gallery is lazy, bounded and ignores stale or revoked res
  assert.match(picker,/auth\.token!==token\|\|selected\.canceled/);
  assert.match(picker,/activeChat\.current!==identity\|\|revokedRef\.current\|\|!canSendPhoto/);
  assert.match(picker,/pickerInFlight\.current=true/);
- assert.match(picker,/finally\{pickerInFlight\.current=false;\}/);
+ // The lock is released only by the operation that owns it (newer pickers keep theirs).
+ assert.match(picker,/finally\{(pickerInFlight\.current=false;\}|\s*if\(pickerOwner\.current===identity&&pickerEpoch\.current===operation\)\{\s*pickerInFlight\.current=false;)/);
+ assert.match(picker,/const operation=\+\+pickerEpoch\.current/);
 });
 test('returning to a community restores pending locks instead of resending',()=>{
  assert.match(source,/pendingWrites=useRef\(new Map<string,'text'\|'photo'>\(\)\)/);
