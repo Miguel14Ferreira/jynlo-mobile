@@ -109,6 +109,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="posts/[postId]/index" options={{title:"Publicação"}}/>
     <Stack.Screen name="posts/[postId]/likers" options={{title:"Quem gostou"}}/>
     <Stack.Screen name="feed" options={{title:"Feed"}}/>
+    <Stack.Screen name="feed-hidden" options={{title:"Publicações ocultas"}}/>
     <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
     <Stack.Screen name="venues" options={{title:"Recintos"}}/>
     <Stack.Screen name="venues/create" options={{title:"Sugerir recinto"}}/>

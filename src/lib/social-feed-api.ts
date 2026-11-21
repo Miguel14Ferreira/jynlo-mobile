@@ -454,3 +454,19 @@ export async function discoverPeople(token:string|null):Promise<FeedUserSuggesti
   const raw=await request<unknown>('/api/profile/discover',{token});
   return safeDiscoveredPeople(raw);
 }
+
+/** Hidden posts are kept in the account (same list as the web), not only on this phone. */
+const feedPostId=(id:number)=>{if(!Number.isSafeInteger(id)||id<=0)throw Error('Publicação inválida.');return id;};
+export async function hiddenFeedPosts(token:string):Promise<FeedItem[]>{
+ if(DEMO_MODE||!token)return [];
+ const r=await request<FeedItem[]>('/api/feed/posts/hidden',{token});
+ return Array.isArray(r)?r.filter(i=>i&&Number.isSafeInteger(i.postId)):[];
+}
+export async function hideFeedPost(postId:number,token:string):Promise<void>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para ocultares publicações.');
+ await request<void>(`/api/feed/posts/${feedPostId(postId)}/hide`,{token,method:'PUT'});
+}
+export async function restoreFeedPost(postId:number,token:string):Promise<void>{
+ if(DEMO_MODE||!token)throw Error('Inicia sessão para gerires publicações ocultas.');
+ await request<void>(`/api/feed/posts/${feedPostId(postId)}/hide`,{token,method:'DELETE'});
+}

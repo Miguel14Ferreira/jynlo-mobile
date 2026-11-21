@@ -10,7 +10,7 @@ import {mediaRequestSource} from '../../src/lib/protected-media-source';
 import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
-import {socialFeed,profilePosts,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {socialFeed,profilePosts,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia,hideFeedPost,restoreFeedPost} from '../../src/lib/social-feed-api';
 import type {StoryAudience} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
@@ -788,10 +788,19 @@ export default function JynloFeedHome(){
     const keys=hideEntry(hiddenKeysRef.current,key);
     setRecentlyHidden(key);
     persistVisibility(keys,currentFeedIdentity,auth.username);
+    // Posts are also hidden in the account, so they stay hidden on the web and other phones.
+    if(item.type==='POST'&&item.postId){
+      const identity=currentFeedIdentity;
+      void hideFeedPost(item.postId,auth.token).catch(()=>{
+        if(feedIdentity.current===identity)setError('A publicação ficou oculta neste telemóvel, mas não foi possível guardá-lo na tua conta.');
+      });
+    }
   }
   function undoHide(){
     if(!recentlyHidden||!auth.token||!auth.username||!identityMatches)return;
     persistVisibility(showEntry(hiddenKeysRef.current,recentlyHidden),currentFeedIdentity,auth.username);
+    const postMatch=/^post:(\d+)$/.exec(recentlyHidden);
+    if(postMatch)void restoreFeedPost(Number(postMatch[1]),auth.token).catch(()=>{});
     setRecentlyHidden(null);
   }
   function confirmBlockAuthor(item:FeedItem){
@@ -1391,7 +1400,9 @@ export default function JynloFeedHome(){
     <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
     <AttendanceDigest/>
     {identityMatches&&recentlyHidden?<View style={styles.hiddenNotice}>
-      <Text style={styles.hiddenNoticeText}>{recentlyHidden?.startsWith('attendance:')?'Atividade ocultada do teu feed neste dispositivo.':'Publicação ocultada só neste dispositivo.'}</Text>
+      <Text style={styles.hiddenNoticeText}>{recentlyHidden?.startsWith('attendance:')?'Atividade ocultada do teu feed neste dispositivo.':
+        recentlyHidden?.startsWith('post:')?'Publicação ocultada na tua conta.':'Ocultado do teu feed neste dispositivo.'}</Text>
+      {recentlyHidden?.startsWith('post:')?<Pressable accessibilityRole="button" accessibilityLabel="Gerir publicações ocultas" onPress={()=>router.push('/feed-hidden')} style={styles.hiddenUndo}><Text style={styles.link}>Gerir</Text></Pressable>:null}
       <Pressable accessibilityRole="button" accessibilityLabel="Desfazer ocultação" onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>Desfazer</Text></Pressable>
     </View>:null}
     {identityMatches&&publishNotice?<View style={styles.hiddenNotice}>
@@ -1480,6 +1491,9 @@ export default function JynloFeedHome(){
           {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed" style={styles.postMenuAction} onPress={()=>{
             const post=postMenuItem;setPostMenuItem(null);hideFromFeed(post);
           }}><Text style={styles.postMenuText}>Ocultar do meu feed</Text></Pressable>:null}
+          {postMenuItem&&auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Gerir publicações ocultas" style={styles.postMenuAction} onPress={()=>{
+            setPostMenuItem(null);router.push('/feed-hidden');
+          }}><Text style={styles.postMenuText}>Gerir publicações ocultas</Text></Pressable>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()!==auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?<>
             <Pressable accessibilityRole="button" accessibilityLabel="Denunciar publicação" style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);
