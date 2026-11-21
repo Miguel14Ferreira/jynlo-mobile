@@ -88,7 +88,8 @@ test('session chat receives live authenticated WebSocket signals and rechecks pr
  assert.match(panel,/resume\.remove\(\);disconnect\(\)/);
  assert.match(realtime,/\{type:'AUTH',token\}/);
  assert.match(realtime,/envelope\.type==='AUTHENTICATED'/);
- assert.match(realtime,/!authenticated\|\|envelope\.type!=='SESSION_CHAT_MESSAGE'/);
+ assert.match(realtime,/if\(!authenticated\)return;/);
+ assert.match(realtime,/if\(envelope\.type!=='SESSION_CHAT_MESSAGE'\)return;/);
  assert.match(realtime,/sessionId!==sessionId/);
  assert.match(realtime,/onInvalidated\(\)/);
  assert.doesNotMatch(realtime,/onMessage\(message\)|setEntries\(/);

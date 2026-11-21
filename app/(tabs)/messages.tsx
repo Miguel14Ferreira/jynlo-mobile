@@ -195,6 +195,13 @@ export default function MessagesScreen(){
     <Text style={styles.storyRepliesCaption}>Respostas privadas, com acesso à Story e à conversa</Text></View>
    <JynloIcon name="chevron-right" size={20} color={T.accent}/>
   </Pressable>:null}
+  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Abrir conversas de grupo"
+   onPress={()=>router.push('/groups')} style={styles.storyRepliesShortcut}>
+   <View style={styles.storyRepliesSymbol}><Text style={styles.storyRepliesEmoji}>👥</Text></View>
+   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Conversas de grupo</Text>
+    <Text style={styles.storyRepliesCaption}>Grupos privados com os teus amigos, fora das comunidades</Text></View>
+   <JynloIcon name="chevron-right" size={20} color={T.accent}/>
+  </Pressable>:null}
   {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')} style={styles.invitesShortcut}><JynloIcon name="community" size={17} color={T.accent}/><Text style={styles.invitesText}>Convites e pedidos</Text><JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
