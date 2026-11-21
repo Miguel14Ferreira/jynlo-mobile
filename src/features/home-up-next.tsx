@@ -72,10 +72,10 @@ export function HomeUpNext(){
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})} style={styles.chip}>
      <JynloIcon name="community" size={17} color={colors.accent}/><Text style={styles.chipText} numberOfLines={1}>{group.name}</Text>
     </Pressable>)}
-   <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/communities')} style={styles.chip}>
+   <Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.chip}>
     <Text style={styles.chipText}>{communities.length?'Comunidades':'Encontrar comunidades'}</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/tournaments')} style={styles.chip}>
+   <Pressable accessibilityRole="button" onPress={()=>router.push('/tournaments')} style={styles.chip}>
     <JynloIcon name="championship" size={17} color={colors.accent}/><Text style={styles.chipText}>Torneios</Text>
    </Pressable>
   </ScrollView>

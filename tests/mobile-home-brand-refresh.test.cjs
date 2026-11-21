@@ -16,7 +16,9 @@ test('mobile home actions resolve to screens already registered in Expo Router',
  assert.match(home,/router\.push\(auth\.token\?'\/live':'\/login'\)/);
  assert.match(home,/router\.push\('\/notifications'\)/);
  assert.match(home,/router\.push\(auth\.token\?'\/\(tabs\)\/profile':'\/login'\)/);
- for(const name of ['explore','communities','profile'])assert.match(tabs,new RegExp('name="'+name+'"'));
+ for(const name of ['explore','profile'])assert.match(tabs,new RegExp('name="'+name+'"'));
+ // Communities is a stack screen (app/communities/index.tsx), registered in the root layout.
+ assert.ok(fs.existsSync(path.join(__dirname,'..','app/communities/index.tsx')));
 });
 test('home leads with the next games before Stories and the feed',()=>{
  assert.match(home,/import \{HomeUpNext\} from '\.\.\/\.\.\/src\/features\/home-up-next'/);

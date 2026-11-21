@@ -25,10 +25,11 @@ test('Feed and bottom navigation use one shared palette',()=>{
  assert.match(tabs,/tabBarInactiveTintColor:colors\.tabInactive/);
 });
 test('bottom tabs retain five destinations and clear selected state',()=>{
- for(const tab of ['index','explore','communities','messages','profile']){
+ for(const tab of ['index','explore','messages','profile']){
   assert.ok(tabs.includes('name="'+tab+'"'),tab);
  }
  assert.match(tabs,/focused&&styles\.iconActive/);
  assert.match(tabs,/minHeight:MobileTheme\.touchTarget/);
- assert.match(tabs,/name="tournaments" options=\{\{href:null/);
+ // Communities and tournaments are stack screens reached from Início and Explorar.
+ assert.doesNotMatch(tabs,/name="tournaments"/);
 });

@@ -29,6 +29,6 @@ test('Explorar mostra Comunidades aos visitantes e preserva login na criação d
  assert.doesNotMatch(file,/🏆 Torneios/);
  assert.match(tabs,/if\(!auth\.token\|\|!auth\.username\)\{\s*router\.push\(\{pathname:'\/login',params:\{redirect:'\/'\}\}\);/);
  assert.match(tabs,/if\(destination==='session'\)router\.push\('\/sessions\/create'\)/);
- assert.ok(read('src/features/home-up-next.tsx').includes("router.push('/(tabs)/communities')"));
+ assert.ok(read('src/features/home-up-next.tsx').includes("router.push('/communities')"));
  assert.equal(require('../src/lib/routes.cjs').safeRedirect('/sessions/create'),'/sessions/create');
 });
