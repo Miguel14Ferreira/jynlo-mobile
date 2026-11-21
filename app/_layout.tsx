@@ -135,6 +135,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/>
     <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
     <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
     <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
+    <Stack.Screen name="security-mfa" options={{title:'Verificação em dois passos'}}/>
     <Stack.Screen name="edit-profile" options={{title:'Editar perfil'}}/>
     <Stack.Screen name="register" options={{title:'Criar conta'}}/>
     <Stack.Screen name="confirm-email" options={{title:'Confirmar email'}}/>
