@@ -23,6 +23,7 @@ import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/ses
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
+import {AddToCalendarButton} from '../../src/components/AddToCalendarButton';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -784,6 +785,8 @@ export default function SessionScreen(){
         })}
         </>:null}
       </View>:null}
+      {(detail?.joined||owner)&&detail&&detail.status!=='CANCELLED'?
+        <AddToCalendarButton session={detail} exactAddress={safeExactAddress(detail,auth.username)} onError={setFeedback}/>:null}
       <Button title="Partilhar esta sessão" secondary onPress={share}/>
     </>:null}
 
