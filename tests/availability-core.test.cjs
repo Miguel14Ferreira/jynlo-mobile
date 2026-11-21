@@ -59,3 +59,15 @@ test('availability alerts open the group or the community',()=>{
  assert.deepEqual(notificationDestination({type:'AVAILABILITY_REQUEST',privateGroupId:5,relatedUsername:'ana'}),{kind:'group-chat',id:'5'});
  assert.deepEqual(notificationDestination({type:'AVAILABILITY_REMINDER',communityId:7}),{kind:'community',id:'7'});
 });
+
+test('team chat alerts open the team chat and team chats are in Messages',()=>{
+ const {notificationDestination}=require('../src/lib/notification-route.cjs');
+ assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',sportsTeamId:8,relatedUsername:'ana'}),{kind:'team-chat',id:'8'});
+ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ assert.match(read('app/notifications.tsx'),/case 'team-chat':router\.push\(\{pathname:'\/teams\/\[id\]',params:\{id:destination\.id!,tab:'CHAT'\}\}\)/);
+ const messages=read('app/(tabs)/messages.tsx');
+ assert.match(messages,/teamChatInbox\(auth\.token\)/);
+ assert.match(messages,/\['team','Equipas'\]/);
+ assert.match(read('src/components/SportsTeamContentPanel.tsx'),/markTeamChatRead\(teamId,newest,token\)/);
+ assert.match(read('app/teams/[id].tsx'),/setConversationMuted\('team',String\(teamId\),!chatMuted,auth\.token\)/);
+});

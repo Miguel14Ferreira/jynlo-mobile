@@ -289,6 +289,7 @@ export default function NotificationsScreen(){
     case 'community-chat':router.push({pathname:'/communities/[id]/chat',params:{id:destination.id!}});break;
     case 'session-chat':router.push({pathname:'/sessions/[id]/chat',params:{id:destination.id!}});break;
     case 'group-chat':router.push({pathname:'/groups/[id]',params:{id:destination.id!}});break;
+    case 'team-chat':router.push({pathname:'/teams/[id]',params:{id:destination.id!,tab:'CHAT'}});break;
     case 'direct-chat':router.push({pathname:'/messages/[peer]',params:{peer:destination.peer!}});break;
     case 'social-profile':router.push({pathname:'/social/[username]',params:{username:destination.peer!}});break;
     case 'social-post':router.push({pathname:'/posts/[postId]',params:{postId:destination.id!}});break;

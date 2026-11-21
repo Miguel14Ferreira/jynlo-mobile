@@ -273,3 +273,32 @@ export async function markPrivateGroupRead(groupId:number,lastSeenMessageId:numb
  if(!Number.isSafeInteger(groupId)||groupId<=0||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'private',id:String(groupId),lastSeenMessageId}});
 }
+
+/** Team chats the account can open (owner or active member, chat on); the server decides access. */
+export async function teamChatInbox(token:string):Promise<JynloInboxSummary[]>{
+ if(!token||DEMO_MODE)return [];
+ const teams=await request<Array<{id:number;name:string;chatEnabled?:boolean}>>('/api/teams/mine',{token});
+ if(!Array.isArray(teams))throw Error('Lista de equipas inválida.');
+ const allowed=new Map<string,string>();
+ for(const t of teams)if(t&&Number.isSafeInteger(t.id)&&t.id>0&&t.chatEnabled!==false)allowed.set(String(t.id),typeof t.name==='string'&&t.name.trim()?t.name.trim():'Equipa');
+ if(!allowed.size)return [];
+ const ids=[...allowed.keys()].slice(0,100);
+ const batch=await request<JynloInboxSummary[]>('/api/messages/inbox/summaries',{
+  token,method:'POST',body:{conversations:ids.map(id=>({kind:'team',id}))}
+ });
+ if(!Array.isArray(batch))throw Error('Resposta de conversas inválida. Atualiza para voltar a consultar.');
+ const seen=new Set<string>();const result:JynloInboxSummary[]=[];
+ for(const item of batch){
+  if(!item||item.kind!=='team'||typeof item.id!=='string'||!allowed.has(item.id)||seen.has(item.id))continue;
+  if(!Number.isSafeInteger(item.unreadCount)||item.unreadCount<0)continue;
+  seen.add(item.id);result.push({...item,title:allowed.get(item.id)});
+ }
+ // Teams the server omitted (not an active member, chat off) are not listed.
+ return result.sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
+}
+
+export async function markTeamChatRead(teamId:number,lastSeenMessageId:number,token:string):Promise<void>{
+ if(!token||DEMO_MODE)return;
+ if(!Number.isSafeInteger(teamId)||teamId<=0||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
+ await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'team',id:String(teamId),lastSeenMessageId}});
+}

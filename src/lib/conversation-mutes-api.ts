@@ -1,8 +1,8 @@
 import {DEMO_MODE,request} from './api';
 
-export type MutableConversationKind='direct'|'community'|'session'|'private';
+export type MutableConversationKind='direct'|'community'|'session'|'private'|'team';
 export interface MutedConversation{kind:MutableConversationKind;id:string}
-const supported=new Set<MutableConversationKind>(['direct','community','session','private']);
+const supported=new Set<MutableConversationKind>(['direct','community','session','private','team']);
 
 function conversationKey(kind:MutableConversationKind,id:string):string{
  if(!supported.has(kind))throw Error('Tipo de conversa inválido.');

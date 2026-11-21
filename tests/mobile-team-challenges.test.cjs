@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 
 test('permanent team details open challenges lazily without changing roster/chat navigation',()=>{
  const detail=read('app/teams/[id].tsx');
- assert.match(detail,/\|'CHALLENGES'(\|'[A-Z]+')*>\('OVERVIEW'\)/);
+ assert.match(detail,/\|'CHALLENGES'(\|'[A-Z]+')*>\(tab==='CHAT'\?'CHAT':tab==='FEED'\?'FEED':'OVERVIEW'\)/);
  assert.match(detail,/id:'CHALLENGES',label:'Desafios'/);
  assert.match(detail,/activeTab==='CHALLENGES'&&team\?/);
  assert.match(detail,/<SportsTeamChallengesPanel teamId=\{teamId\} token=\{auth\.token\}/);
