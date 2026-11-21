@@ -29,7 +29,7 @@ eliminação da conta na app.
 | Prioridade | O quê | Porque importa | Estado |
 |---|---|---|---|
 | P0 | Denunciar publicação e comentário; bloquear/denunciar a partir do perfil | Obrigatório nas lojas para conteúdo de utilizadores (Apple 1.2 / Google UGC) | Feito (21/11) |
-| P1 | Preferências de notificações por tipo (`/api/notifications/me/preferences`) | O web deixa escolher que avisos receber; a app não | Por fazer |
+| P1 | Preferências de notificações por tipo (`/api/notifications/me/preferences`) | O web deixa escolher que avisos receber; a app não | Feito (21/11) |
 | P1 | Organizador: "a sessão não aconteceu" / reportar problema (`/sessions/{id}/problems`) | Fecha corretamente sessões que não se realizaram | Por fazer |
 | P2 | Disputas de presença e fiabilidade do jogador | Contestar faltas marcadas | Por fazer |
 | P2 | Modelos de sessão (`/sessions/presets`) | Criar o jogo semanal mais depressa | Por fazer |
