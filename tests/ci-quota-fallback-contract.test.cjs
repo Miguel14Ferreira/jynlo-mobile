@@ -11,7 +11,9 @@ test('ordinary develop commits do not start unavailable GitHub-hosted contract r
  assert.doesNotMatch(contracts,/^\s+push:/m);
  assert.doesNotMatch(contracts,/^\s+pull_request:/m);
  const quality=read('.github/workflows/mobile-quality.yml');
- assert.match(quality,/paths:\s*\['\.github\/workflows\/mobile-quality.yml'\]/);
+ // Manual only: builds and checks moved to EAS Workflows / local runs.
+ assert.match(quality,/workflow_dispatch:/);
+ assert.doesNotMatch(quality,/^\s+push:/m);
 });
 test('local Windows validation covers release guard, TypeScript and all contracts without an APK',()=>{
  const ps=read('scripts/validate-local.ps1');
