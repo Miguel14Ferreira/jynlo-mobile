@@ -88,7 +88,7 @@ export default function RelayManagement(){
   try{validated=validateDecision(status,reason);}
   catch(e){setError(e instanceof Error?e.message:tr('Fundamento inválido.'));return;}
   Alert.alert(status==='VALID'?tr('Revalidar tempo?'):tr('Desqualificar tempo?'),row.teamName+' · '+tr('Série {v}',{v:row.heatNumber})+
-   tr('. Fundamento: {v}',{v:validated.reason})+tr('. Esta decisão fica registada no histórico de júri.'),[
+   '. '+tr('Fundamento: {v}',{v:validated.reason})+'. '+tr('Esta decisão fica registada no histórico de júri.'),[
    {text:tr('Cancelar'),style:'cancel'},
    {text:tr('Confirmar'),style:status==='DISQUALIFIED'?'destructive':'default',
     onPress:()=>{void act(()=>decideRelayHeat(cid,t,role,auth.token!,auth.username!,data,row,status,validated.reason),tr('Decisão registada.'));}}

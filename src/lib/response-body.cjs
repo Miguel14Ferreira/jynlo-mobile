@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 
 /**
  * Some APIs return 200 OK with no response body for successful mutations.
@@ -6,7 +7,7 @@
  * Never auto-retry a mutation after an invalid server response.
  */
 class InvalidSuccessfulResponseError extends Error {
-  constructor(){super('Resposta inválida da Jynlo. Se alteraste dados, confirma o resultado antes de tentares novamente.');this.name='InvalidSuccessfulResponseError';}
+  constructor(){super(tr('Resposta inválida da Jynlo. Se alteraste dados, confirma o resultado antes de tentares novamente.'));this.name='InvalidSuccessfulResponseError';}
 }
 async function readSuccessfulResponse(response) {
   if (response.status === 204 || response.status === 205) return undefined;

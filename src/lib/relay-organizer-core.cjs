@@ -7,7 +7,7 @@ function canManageRelay(role,t){return isOrganizer(role)&&isRelay(t)&&t.status!=
 function positiveId(id){return validTournamentId(id);}
 function validateHeatNumber(value){
  const str=String(value).trim();
- if(!/^(?:[1-9]|1[0-9]|20)$/.test(str))throw Error('A série deve ser um número inteiro entre 1 e 20.');
+ if(!/^(?:[1-9]|1[0-9]|20)$/.test(str))throw Error(tr('A série deve ser um número inteiro entre 1 e 20.'));
  return Number(str);
 }
 function validateElapsedSeconds(value){
@@ -20,7 +20,7 @@ function validateRunners(value,team){
  if(!team||!Array.isArray(team.players)||team.players.length!==4)
   throw Error(tr('A equipa deve ter exatamente quatro atletas confirmados.'));
  const input=String(value).split(',').map(x=>x.trim());
- if(input.length!==4||input.some(x=>!/^[1-9][0-9]*$/.test(x)))throw Error('Indica quatro IDs de atletas, na ordem da estafeta, separados por vírgulas.');
+ if(input.length!==4||input.some(x=>!/^[1-9][0-9]*$/.test(x)))throw Error(tr('Indica quatro IDs de atletas, na ordem da estafeta, separados por vírgulas.'));
  const ids=input.map(Number),actual=team.players.map(x=>x.profileId);
  if(ids.some(x=>!Number.isSafeInteger(x))||new Set(ids).size!==4||
     new Set(actual).size!==4||ids.some(id=>!actual.includes(id)))

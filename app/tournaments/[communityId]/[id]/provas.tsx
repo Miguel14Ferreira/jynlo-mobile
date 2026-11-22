@@ -98,7 +98,7 @@ export default function EventRankingScreen(){
  function confirmDelete(event:EventRankingEvent){
   if(!auth.token||!auth.username)return;
   const token=auth.token,username=auth.username;
-  Alert.alert(t('Apagar prova?'),t('Os pontos de "')+event.name+t('" deixam de contar.'),[
+  Alert.alert(t('Apagar prova?'),t('Os pontos de "{v}" deixam de contar.',{v:event.name}),[
    {text:t('Manter'),style:'cancel'},
    {text:t('Apagar'),style:'destructive',onPress:()=>{void run(()=>deleteEventRankingEvent(cid,tid,event.id,token,username),t('Prova apagada.'));}}
   ]);
@@ -123,7 +123,7 @@ export default function EventRankingScreen(){
    <View style={styles.panel}>
     <View style={styles.row}><Badge text={completed?t('Concluído'):data.status==='IN_PROGRESS'?t('A decorrer'):t('Em preparação')}/>
      <Badge text={plural(data.events.length,'prova','provas')}/></View>
-    <Text style={styles.meta}>{t('Cada prova ordena os atletas por {a}. Os lugares dão pontos e a soma decide a classificação.',{a:KIND_SHORT[kind]})}</Text>
+    <Text style={styles.meta}>{t('Cada prova ordena os atletas por {a}. Os lugares dão pontos e a soma decide a classificação.',{a:t(KIND_SHORT[kind])})}</Text>
     <Text style={styles.meta}>{t('Pontos por lugar:')} <Text style={styles.strong}>{data.pointsByPlace.join(' · ')}</Text></Text>
     {manager&&!completed&&!pointsOpen?<Button secondary disabled={busy} title={t('Alterar pontos por lugar')} onPress={()=>{setPointsDraft(data.pointsByPlace.join(', '));setPointsOpen(true);}}/>:null}
     {pointsOpen?<View style={styles.form}>
@@ -143,7 +143,7 @@ export default function EventRankingScreen(){
       style={[styles.choice,kind===k&&styles.choiceActive]}
       onPress={()=>{if(!auth.token||!auth.username||kind===k)return;const tk=auth.token,u=auth.username;
        void run(()=>setEventRankingKind(cid,tid,k,tk,u),t('Forma de classificar atualizada.'));}}>
-      <Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{KIND_LABELS[k]}</Text>
+      <Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{t(KIND_LABELS[k])}</Text>
      </Pressable>)}
     <Text style={styles.meta}>{t('Podes mudar até registares a primeira prova.')}</Text>
    </View>:null}
@@ -167,7 +167,7 @@ export default function EventRankingScreen(){
     <Text style={styles.heading}>{editingId?t('Editar prova'):t('Nova prova')}</Text>
     <Text style={styles.label}>{t('NOME DA PROVA')}</Text>
     <TextInput style={styles.input} value={eventName} onChangeText={setEventName} maxLength={80} editable={!busy} accessibilityLabel={t('Nome da prova')}/>
-    <Text style={styles.label}>DATA (AAAA-MM-DD)</Text>
+    <Text style={styles.label}>{t('DATA (AAAA-MM-DD)')}</Text>
     <TextInput style={styles.input} value={eventDate} onChangeText={setEventDate} editable={!busy} placeholder={today()}
      placeholderTextColor={C.muted} accessibilityLabel={t('Data da prova')}/>
     <Text style={styles.meta}>{t(INPUT_HINT[kind])}</Text>

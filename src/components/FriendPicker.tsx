@@ -23,7 +23,7 @@ export function FriendPicker({token,group,selected,onChange,disabled,max}:{
   else if(selected.length<max)onChange([...selected,u]);
  };
  return <View style={{gap:8}}>
-  <Text style={styles.label}>{t('Seleciona os amigos que queres convidar · {a} selecionado{b}',{a:selected.length,b:selected.length===1?'':'s'})}</Text>
+  <Text style={styles.label}>{selected.length===1?t('Seleciona os amigos que queres convidar · 1 selecionado'):t('Seleciona os amigos que queres convidar · {a} selecionados',{a:selected.length})}</Text>
   <TextInput value={query} onChangeText={setQuery} placeholder={t('Pesquisa por nome ou username…')} placeholderTextColor={C.muted}
    style={styles.input} autoCorrect={false} autoCapitalize="none" accessibilityLabel={t('Pesquisar amigos')} editable={!disabled}/>
   {loading?<ActivityIndicator color={C.mint}/>:null}

@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 
 /** Mirror the web attendance digest: one compact activity per session, not
  * one social post per participant. Use only already-authorized feed items.
@@ -30,7 +31,7 @@ function isDigestAttendance(item) {
 }
 function attendanceTitle(group){
  const representative=group.ownActivity||group.item;
- const name=representative.authorDisplayName||representative.authorUsername||'Alguém';
+ const name=representative.authorDisplayName||representative.authorUsername||tr('Alguém');
  const sport=group.item.sport||'desporto';
  return group.count>1
   ? `${name} e mais ${group.count-1} participaram numa sessão de ${sport}`

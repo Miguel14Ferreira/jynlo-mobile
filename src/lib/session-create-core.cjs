@@ -78,24 +78,24 @@ function formatSessionLocalDateTime(iso){
 }
 function describeSessionConfirmation(payload,context={}){
  const visibility=payload.communityShareIds.length?'Apenas membros das comunidades':
-  payload.communityId!=null?'Apenas membros da comunidade':
-  payload.privateGame?'Privada com palavra-passe':'Pública';
+  payload.communityId!=null?tr('Apenas membros da comunidade'):
+  payload.privateGame?tr('Privada com palavra-passe'):tr('Pública');
  const communityNames=Array.isArray(context.sharedCommunityNames)?context.sharedCommunityNames:[];
  const parts=[
   payload.sport,
   payload.city,
   formatSessionLocalDateTime(payload.gameDate),
-  payload.maxParticipants+' participantes',
+  tr('{n} participantes',{n:payload.maxParticipants}),
   visibility
  ];
- if(payload.communityShareIds.length)parts.push('Partilhada com '+(communityNames.length?communityNames.join(', '):payload.communityShareIds.length+' comunidades'));
- if(payload.communityId!=null)parts.push('Comunidade '+(context.communityName||'selecionada'));
- if(payload.seasonCompetitionCommunityId!=null)parts.push('Jogo de época'+(payload.confirmActivateRankings?' · ativar classificações':''));
- if(payload.venueId!=null)parts.push('Recinto '+(context.venueName||'selecionado'));
- if(payload.recurrence!=='NONE')parts.push(payload.recurrenceOccurrences+' ciclos de repetição ('+(payload.recurrence==='WEEKLY'?'semanal':'quinzenal')+'), '+(payload.additionalWeeklyGameDates.length+1)+' horários/ciclo');
- parts.push(payload.externalConfirmedParticipants+' confirmados externos');
- parts.push('Inscrições '+(payload.registrationOpeningMode==='MANUAL'?'manuais':payload.registrationOpeningMode==='SCHEDULED'?'programadas':'imediatas'));
- return parts.join(' · ')+'. O organizador fica automaticamente inscrito.';
+ if(payload.communityShareIds.length)parts.push(tr('Partilhada com {who}',{who:communityNames.length?communityNames.join(', '):tr('{n} comunidades',{n:payload.communityShareIds.length})}));
+ if(payload.communityId!=null)parts.push(context.communityName?tr('Comunidade {name}',{name:context.communityName}):tr('Comunidade selecionada'));
+ if(payload.seasonCompetitionCommunityId!=null)parts.push(tr('Jogo de época')+(payload.confirmActivateRankings?' · '+tr('ativar classificações'):''));
+ if(payload.venueId!=null)parts.push(context.venueName?tr('Recinto {name}',{name:context.venueName}):tr('Recinto selecionado'));
+ if(payload.recurrence!=='NONE')parts.push(tr('{n} ciclos de repetição ({kind}), {slots} horários/ciclo',{n:payload.recurrenceOccurrences,kind:payload.recurrence==='WEEKLY'?tr('semanal'):tr('quinzenal'),slots:payload.additionalWeeklyGameDates.length+1}));
+ parts.push(tr('{n} confirmados externos',{n:payload.externalConfirmedParticipants}));
+ parts.push(payload.registrationOpeningMode==='MANUAL'?tr('Inscrições manuais'):payload.registrationOpeningMode==='SCHEDULED'?tr('Inscrições programadas'):tr('Inscrições imediatas'));
+ return parts.join(' · ')+'. '+tr('O organizador fica automaticamente inscrito.');
 }
 function isValidCustomSport(name,allowedSports){
  if(typeof name!=='string'||name.length<2||name.length>60||
@@ -126,18 +126,18 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  const address=String(input.address||'').trim();
  if(!address||address.length>500)throw Error(tr('Indica uma morada válida (até 500 caracteres).'));
  const maxText=String(input.maxParticipants||'').trim();
- if(!/^\d{1,3}$/.test(maxText))throw Error('Número de participantes inválido.');
+ if(!/^\d{1,3}$/.test(maxText))throw Error(tr('Número de participantes inválido.'));
  const maxParticipants=Number(maxText);
  if(maxParticipants<2||maxParticipants>100)throw Error(tr('A sessão deve permitir entre 2 e 100 participantes.'));
  const priceText=String(input.price||'0').trim().replace(',','.');
- if(!/^\d{1,6}(?:\.\d{1,2})?$/.test(priceText))throw Error('Indica um preço válido, com até duas casas decimais.');
+ if(!/^\d{1,6}(?:\.\d{1,2})?$/.test(priceText))throw Error(tr('Indica um preço válido, com até duas casas decimais.'));
  const priceAmount=Number(priceText);
  const externalText=String(input.externalConfirmedParticipants??'0').trim();
- if(!/^\d{1,2}$/.test(externalText))throw Error('Indica quantos jogadores já tens confirmados.');
+ if(!/^\d{1,2}$/.test(externalText))throw Error(tr('Indica quantos jogadores já tens confirmados.'));
  const externalConfirmedParticipants=Number(externalText);
  if(externalConfirmedParticipants>maxParticipants-1)throw Error(tr('Os jogadores externos não podem ocupar a vaga do organizador.'));
  const minText=String(input.minParticipants??'2').trim();
- if(!/^\d{1,3}$/.test(minText))throw Error('Mínimo de participantes inválido.');
+ if(!/^\d{1,3}$/.test(minText))throw Error(tr('Mínimo de participantes inválido.'));
  const minParticipants=Number(minText);
  if(minParticipants<2||minParticipants>maxParticipants)throw Error(tr('O mínimo deve estar entre 2 e a capacidade total.'));
  const communityId=input.communityId==null?null:Number(input.communityId);
@@ -171,11 +171,11 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   // Communities plan up to 52 games; independent organisers up to 12 (about three months).
   const maxSessions=hasCommunity?52:12;
   if(!/^[1-9][0-9]?$/.test(text)||Number(text)<2||Number(text)>maxSessions)
-   throw Error(tr('Escolhe entre 2 e ')+maxSessions+' repetições.');
+   throw Error(tr('Escolhe entre 2 e {n} repetições.',{n:maxSessions}));
   recurrenceOccurrences=Number(text);
   const perCycle=recurrence==='WEEKLY'&&Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots.length+1:1;
   if(recurrenceOccurrences*perCycle>maxSessions)
-   throw Error(tr('O plano pode ter no máximo ')+maxSessions+' sessões'+(hasCommunity?'.':tr(' sem comunidade.')));
+   throw Error(hasCommunity?tr('O plano pode ter no máximo {n} sessões.',{n:maxSessions}):tr('O plano pode ter no máximo {n} sessões sem comunidade.',{n:maxSessions}));
   const zone=String(input.recurrenceTimeZone||'').trim();
   if(!zone||zone.length>64)throw Error(tr('Não foi possível identificar o fuso horário para repetir sessões.'));
   try{new Intl.DateTimeFormat('en-US',{timeZone:zone});}
@@ -196,7 +196,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(privateGame&&shareIds.length)throw Error(tr('Sessões partilhadas não podem ter palavra-passe.'));
  if(privateGame&&password.length<4)throw Error(tr('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.'));
  const meetingPointInstructions=String(input.meetingPointInstructions||'').trim();
- if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error('O ponto de encontro deve ter uma única linha até 240 caracteres.');
+ if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error(tr('O ponto de encontro deve ter uma única linha até 240 caracteres.'));
  return {
   sport,gameDate,city,address,maxParticipants,
   priceAmount,privateGame,password:privateGame?password:null,latitude:locationLatitude,longitude:locationLongitude,

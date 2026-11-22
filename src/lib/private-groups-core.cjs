@@ -17,7 +17,7 @@ function validateInvitees(usernames,me,currentCount){
  }
  if(!out.length)throw new Error(tr('Escolhe pelo menos um amigo.'));
  const room=MAX_MEMBERS-(currentCount||1);
- if(out.length>room)throw new Error(room<=0?tr('O grupo já tem 30 membros.'):tr('Podes adicionar no máximo ')+room+(room===1?' pessoa.':' pessoas.'));
+ if(out.length>room)throw new Error(room<=0?tr('O grupo já tem 30 membros.'):(room===1?tr('Podes adicionar no máximo 1 pessoa.'):tr('Podes adicionar no máximo {n} pessoas.',{n:room})));
  return out;
 }
 function validateGroupMessage(text){
@@ -56,7 +56,7 @@ function replyQuote(messages,message){
  const original=(messages||[]).find(m=>m&&m.id===message.replyToId);
  if(!original)return {sender:'',text:tr('Mensagem anterior')};
  if(original.deleted)return {sender:original.sender,text:tr('Mensagem apagada')};
- const text=(original.text||'').trim()||((original.attachments||[])[0]?.filename)||'Anexo';
+ const text=(original.text||'').trim()||((original.attachments||[])[0]?.filename)||tr('Anexo');
  return {sender:original.sender,text:text.length>120?text.slice(0,120)+'…':text};
 }
 module.exports={editableGroupMessage,replyQuote,MAX_MEMBERS,MAX_MESSAGE,validateGroupTitle,validateInvitees,validateGroupMessage,mergeMessages,isCreator,isMine,membersLabel,invitableFriends};

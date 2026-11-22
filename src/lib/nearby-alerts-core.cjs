@@ -72,9 +72,9 @@ function problem(preference){
 function samePreference(a,b){return JSON.stringify(normalizePreference(a))===JSON.stringify(normalizePreference(b));}
 
 function summary(preference){
- if(!preference.enabled)return 'Desligado';
- const where=preference.placeLabel||'o local escolhido';
- const what=preference.sports.length?preference.sports.join(', '):'todas as modalidades';
+ if(!preference.enabled)return tr('Desligado');
+ const where=preference.placeLabel||tr('o local escolhido');
+ const what=preference.sports.length?preference.sports.join(', '):tr('todas as modalidades');
  return `Até ${preference.radiusKm} km de ${where} · ${what}`;
 }
 

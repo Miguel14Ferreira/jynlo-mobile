@@ -18,5 +18,5 @@ function formatChessPoints(halfPointUnits){return Number.isSafeInteger(halfPoint
 function displayPerson(...values){return values.find(x=>typeof x==='string'&&x.trim())?.trim()||tr('Participante não identificado');}
 function validatedRank(rank){return Number.isSafeInteger(rank)&&rank>0?String(rank):'—';}
 function sourceRounds(data){return Array.isArray(data)?data.filter(x=>x&&Number.isSafeInteger(x.id)&&x.id>0):[];}
-function stageLabel(stage){return stage==='FINAL'?'Final':stage==='QUALIFICATION'?'Qualificação':tr('Fase não identificada');}
+function stageLabel(stage){return stage==='FINAL'?tr('Final'):stage==='QUALIFICATION'?tr('Qualificação'):tr('Fase não identificada');}
 module.exports={formatSeconds,formatMetres,formatPoints,formatChessPoints,displayPerson,validatedRank,sourceRounds,stageLabel};

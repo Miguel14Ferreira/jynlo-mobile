@@ -40,7 +40,7 @@ function communitySports(c){
 }
 function describeCommunitySports(c,limit=2){
   const values=communitySports(c);
-  if(!values.length)return 'Multidesporto';
+  if(!values.length)return tr('Multidesporto');
   const count=Number.isSafeInteger(limit)?Math.max(1,Math.min(limit,5)):2;
   return values.slice(0,count).join(' · ')+(values.length>count?' · +'+(values.length-count):'');
 }

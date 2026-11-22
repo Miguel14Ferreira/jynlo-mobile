@@ -17,7 +17,7 @@ export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
    <Text style={styles.heading}>{t('Portugal continental · esquema de localizações')}</Text>
    <Text style={styles.hint}>{t('Pinos baseados nas coordenadas públicas. Sem fundo cartográfico nem ruas.')}</Text>
    <View style={styles.plot}>
-    <Text style={styles.north}>{t('N ↑')}</Text>
+    <Text style={styles.north}>N ↑</Text>
     <View pointerEvents="none" style={styles.continent}/>
     {mainland.map(s=><Pressable key={s.id} accessibilityRole="button"
       accessibilityLabel={t('Ver sessão de {v}',{v:s.sport})+(s.city?' em '+s.city:'')}
@@ -27,7 +27,7 @@ export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
       },selectedId===s.id&&styles.selected]}>
       <Text style={styles.pinText}>{selectedId===s.id?'●':'•'}</Text>
      </Pressable>)}
-    <Text style={styles.south}>{t('S ↓')}</Text>
+    <Text style={styles.south}>S ↓</Text>
    </View>
    <Text style={styles.hint}>{t('{a} sessões neste esquema · {b} fora da área continental ou sem posição representável',{a:mainland.length,b:sessions.length-mainland.length})}</Text>
   </View>;

@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Pure presentation helpers; server remains authoritative on eligibility and status. */
 function minimumPlayersProgress(session){
   if(!session)return null;
@@ -13,6 +14,6 @@ function rosterAttendanceLabel(attendanceStatus,sessionStatus){
   // An upcoming session has not yet recorded attendance: never label PENDING as a failure.
   if(sessionStatus!=='COMPLETED')return null;
   const labels={ATTENDED:'Compareceu',NO_SHOW:'Não compareceu',LATE_CANCELLED:'Cancelamento tardio'};
-  return labels[attendanceStatus]||null;
+  return labels[attendanceStatus]?tr(labels[attendanceStatus]):null;
 }
 module.exports={minimumPlayersProgress,rosterAttendanceLabel};

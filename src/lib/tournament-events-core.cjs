@@ -37,7 +37,7 @@ function validateRacePointsCsv(value){
  let previous=Infinity;
  const points=parts.map(part=>{
   const text=part.trim();
-  if(!/^[0-9]{1,4}$/.test(text))throw Error('Introduz valores inteiros separados por vírgulas.');
+  if(!/^[0-9]{1,4}$/.test(text))throw Error(tr('Introduz valores inteiros separados por vírgulas.'));
   const n=Number(text);
   if(n>1000||n>previous)throw Error(tr('Os pontos devem ser decrescentes, entre 0 e 1000.'));
   previous=n;return n;

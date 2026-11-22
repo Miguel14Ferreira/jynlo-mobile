@@ -51,14 +51,14 @@ export function parseTeamCrest(raw:string|null|undefined):TeamCrestDesign{
 }
 function shieldPath(shape:string):string {
  switch(shape){
-  case 'circle':return t('M160 23 A142 142 0 1 1 159.99 23 Z');
-  case 'hex':return t('M160 17 L286 89 L286 252 L160 333 L34 252 L34 89 Z');
-  case 'diamond':return t('M160 15 L297 169 L160 345 L23 169 Z');
-  case 'rounded':return t('M68 27 H252 Q288 27 288 66 V209 Q276 287 160 339 Q44 287 32 209 V66 Q32 27 68 27 Z');
-  case 'square':return t('M43 34 H277 V326 H43 Z');
-  case 'oval':return t('M160 20 C260 20 293 84 293 180 C293 277 259 340 160 340 C61 340 27 277 27 180 C27 84 60 20 160 20 Z');
-  case 'banner':return t('M42 34 H278 V321 L160 261 L42 321 Z');
-  default:return t('M42 34 H278 V207 Q269 284 160 340 Q51 284 42 207 Z');
+  case 'circle':return 'M160 23 A142 142 0 1 1 159.99 23 Z';
+  case 'hex':return 'M160 17 L286 89 L286 252 L160 333 L34 252 L34 89 Z';
+  case 'diamond':return 'M160 15 L297 169 L160 345 L23 169 Z';
+  case 'rounded':return 'M68 27 H252 Q288 27 288 66 V209 Q276 287 160 339 Q44 287 32 209 V66 Q32 27 68 27 Z';
+  case 'square':return 'M43 34 H277 V326 H43 Z';
+  case 'oval':return 'M160 20 C260 20 293 84 293 180 C293 277 259 340 160 340 C61 340 27 277 27 180 C27 84 60 20 160 20 Z';
+  case 'banner':return 'M42 34 H278 V321 L160 261 L42 321 Z';
+  default:return 'M42 34 H278 V207 Q269 284 160 340 Q51 284 42 207 Z';
  }
 }
 function glyph(symbol:string):string {
@@ -199,7 +199,7 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
       fontWeight="900" fill={project.textColor}>{initials(teamName,project.customInitials)}</SvgText>:null}
      {project.caption?<SvgText x={160} y={286} textAnchor="middle" alignmentBaseline="middle"
       fontSize={16} fontWeight="800" fill={project.textColor}>{project.caption}</SvgText>:null}
-     {layers.map(layer=><G key={layer.id} transform={'translate('+layer.x+' '+layer.y+t(') rotate(')+layer.rotation+')'}
+     {layers.map(layer=><G key={layer.id} transform={'translate('+layer.x+' '+layer.y+') rotate('+layer.rotation+')'}
       opacity={layer.opacity/100}>
       <SvgText textAnchor="middle" alignmentBaseline="middle"
        fontWeight="800" fontSize={layer.size} fill={layer.color}>

@@ -4,7 +4,7 @@ const {tr}=require('./i18n-core.cjs');
 /** Validate the existing Jynlo /api/sessions/{id}/details contract. */
 function asInt(value,label,min,max){
  const text=String(value??'').trim();
- if(!/^[0-9]+$/.test(text))throw Error(label+': indica um número inteiro.');
+ if(!/^[0-9]+$/.test(text))throw Error(tr('{label}: indica um número inteiro.',{label}));
  const number=Number(text);
  if(!Number.isSafeInteger(number)||number<min||number>max)
   throw Error(label+': valor fora dos limites ('+min+'–'+max+').');
@@ -32,16 +32,16 @@ function editSessionPayload(fields,allowedSports,now=Date.now()){
  const meeting=String(fields.meetingPointInstructions||'').trim();
  if(meeting.length>240||/[\r\n\x00-\x1f\x7f]/.test(meeting))
   throw Error(tr('O ponto de encontro deve ter uma linha até 240 caracteres.'));
- const maxParticipants=asInt(fields.maxParticipants,'Máximo de jogadores',2,100);
+ const maxParticipants=asInt(fields.maxParticipants,tr('Máximo de jogadores'),2,100);
  const occupied=Number(fields.currentParticipantCount);
  const external=Number(fields.currentExternalConfirmedParticipants);
  if(fields.currentParticipantCount!=null&&Number.isSafeInteger(occupied)&&occupied>=0&&maxParticipants<occupied)
   throw Error(tr('A capacidade não pode ser inferior ao número de jogadores já inscritos.'));
  if(fields.currentExternalConfirmedParticipants!=null&&Number.isSafeInteger(external)&&external>=0&&maxParticipants<external+1)
   throw Error(tr('A capacidade deve incluir os jogadores externos e a vaga do organizador.'));
- const minParticipants=asInt(fields.minParticipants,'Mínimo de jogadores',2,maxParticipants);
+ const minParticipants=asInt(fields.minParticipants,tr('Mínimo de jogadores'),2,maxParticipants);
  const priceText=String(fields.priceAmount??'').trim().replace(',','.');
- if(!/^\d+(\.\d{1,2})?$/.test(priceText))throw Error('Indica um preço válido até duas casas decimais.');
+ if(!/^\d+(\.\d{1,2})?$/.test(priceText))throw Error(tr('Indica um preço válido até duas casas decimais.'));
  const priceAmount=Number(priceText);
  if(!Number.isFinite(priceAmount)||priceAmount<0||priceAmount>100000)
   throw Error(tr('O preço indicado não é válido.'));

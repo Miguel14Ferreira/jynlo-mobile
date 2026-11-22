@@ -60,7 +60,7 @@ export default function TeamCompetitionDiscovery(){
     setApplications([]);setApplicationsVerified(false);
     if(auth.token)failed.push(t('candidaturas anteriores'));
   }
-  if(failed.length)setError(t('Não foi possível atualizar {v}',{v:failed.join(', ')})+t('. Podes continuar a consultar as restantes secções.'));
+  if(failed.length)setError(t('Não foi possível atualizar {v}. Podes continuar a consultar as restantes secções.',{v:failed.join(', ')}));
   setLoading(false);
  },[filters,auth.token,teamId]);
  const search=()=>{const next={query:query.trim(),sport:sport.trim()};

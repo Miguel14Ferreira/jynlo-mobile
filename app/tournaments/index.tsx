@@ -50,7 +50,7 @@ export default function TournamentsScreen(){
       {STATUSES.map(x=><Pressable key={x.value} accessibilityRole="button"
         accessibilityState={{selected:status===x.value}}
         onPress={()=>setStatus(x.value)} style={[styles.chip,status===x.value&&styles.selected]}>
-        <Text style={[styles.chipText,status===x.value&&styles.selectedText]}>{x.label}</Text>
+        <Text style={[styles.chipText,status===x.value&&styles.selectedText]}>{t(x.label)}</Text>
       </Pressable>)}
     </ScrollView>
     {sports.length>1?<><Text style={styles.filterLabel}>{t('MODALIDADE')}</Text>

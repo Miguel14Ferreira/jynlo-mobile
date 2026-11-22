@@ -4,8 +4,8 @@ const {tr}=require('./i18n-core.cjs');
 
 const MAX_SLOTS=5;
 const MAX_NOTE=200;
-const ANSWERS=Object.freeze([{value:'YES',label:'Posso'},{value:'MAYBE',label:'Talvez'},{value:'NO',label:tr('Não posso')}]);
-const WEEKDAYS=['dom','seg','ter','qua','qui','sex','sáb'];
+const ANSWERS=Object.freeze([{value:'YES',label:'Posso'},{value:'MAYBE',label:'Talvez'},{value:'NO',label:'Não posso'}]);
+const WEEKDAYS=['dia::dom','dia::seg','dia::ter','dia::qua','dia::qui','dia::sex','dia::sáb'];
 const pad=n=>String(n).padStart(2,'0');
 
 /** The next `count` local days as {value:'AAAA-MM-DD', label:'sáb 28/11'}; the first is "Hoje". */
@@ -14,15 +14,15 @@ function dayOptions(now=new Date(),count=21){
  for(let i=0;i<count;i++){
   const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
   const value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  out.push({value,label:i===0?'Hoje':i===1?'Amanhã':`${WEEKDAYS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`});
+  out.push({value,label:i===0?tr('Hoje'):i===1?tr('Amanhã'):`${tr(WEEKDAYS[d.getDay()])} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`});
  }
  return out;
 }
 
 /** Local day and HH:mm as an ISO instant, or an error message. */
 function slotInstant(day,time,now=Date.now()){
- if(!/^\d{4}-\d{2}-\d{2}$/.test(day||''))return{error:'Escolhe o dia.'};
- if(!/^([01]\d|2[0-3]):[0-5]\d$/.test((time||'').trim()))return{error:'Indica a hora no formato HH:mm.'};
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day||''))return{error:tr('Escolhe o dia.')};
+ if(!/^([01]\d|2[0-3]):[0-5]\d$/.test((time||'').trim()))return{error:tr('Indica a hora no formato HH:mm.')};
  const local=new Date(day+'T'+time.trim()+':00');
  if(!Number.isFinite(local.getTime()))return{error:tr('Data inválida.')};
  if(local.getTime()<now+60*60000)return{error:tr('Escolhe uma hora daqui a pelo menos 1 hora.')};
@@ -42,7 +42,7 @@ function slotLabel(iso,now=new Date()){
  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
  const day=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
  const diff=Math.round((day-today)/86400000);
- const prefix=diff===0?'Hoje':diff===1?'Amanhã':`${WEEKDAYS[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
+ const prefix=diff===0?tr('Hoje'):diff===1?tr('Amanhã'):`${tr(WEEKDAYS[d.getDay()])} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`;
  return `${prefix} às ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 

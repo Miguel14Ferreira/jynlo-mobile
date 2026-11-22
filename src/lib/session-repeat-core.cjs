@@ -37,8 +37,9 @@ function repeatInviteMessage(summary){
  const invited=summary&&Number.isSafeInteger(summary.invited)?summary.invited:0;
  const skipped=summary&&Number.isSafeInteger(summary.skipped)?summary.skipped:0;
  if(!invited&&!skipped)return tr('A sessão foi criada. Não havia jogadores da sessão anterior para convidar.');
- return tr('A sessão foi criada e ')+(invited===1?tr('1 jogador da última vez foi convidado'):invited+' jogadores da última vez foram convidados')+
-  (skipped?' ('+skipped+' já estavam inscritos ou não podiam ser convidados).':'.');
+ const who=invited===1?tr('1 jogador da última vez foi convidado'):tr('{n} jogadores da última vez foram convidados',{n:invited});
+ const extra=skipped?' '+tr('({n} já estavam inscritos ou não podiam ser convidados)',{n:skipped}):'';
+ return tr('A sessão foi criada e {who}{extra}.',{who,extra});
 }
 
 module.exports={nextSameWeekday,repeatFormPatch,repeatInviteMessage};

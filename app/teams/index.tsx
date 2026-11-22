@@ -77,7 +77,7 @@ export default function TeamsScreen(){
     if(competitions.status==='fulfilled')setCompetitionInvites(competitions.value.filter(x=>x.status==='PENDING'));
     else{setCompetitionInvites([]);failed.push(t('convites para competições'));}
     if(failed.length)
-     setError(t('Não foi possível confirmar {v}',{v:failed.join(', ')})+t('. As secções afetadas foram ocultadas até uma nova verificação.'));
+     setError(t('Não foi possível confirmar {v}. As secções afetadas foram ocultadas até uma nova verificação.',{v:failed.join(', ')}));
     else setError('');
    }catch(e){if(!silent&&version===requestVersion.current)setError(e instanceof Error?e.message:t('Erro a carregar equipas.'));}
    finally{

@@ -84,5 +84,5 @@ const NOTE_TEXT={
  gps:'Este perfil usa a localização atual: volta a captar o ponto GPS no passo "Quando e onde?".',
  registration:'Escolhe de novo o dia e a hora de abertura das inscrições.'
 };
-function presetNotesText(notes){return (notes||[]).map(n=>NOTE_TEXT[n]).filter(Boolean);}
+function presetNotesText(notes){return (notes||[]).map(n=>NOTE_TEXT[n]).filter(Boolean).map(x=>tr(x));}
 module.exports={MAX_PRESETS,MAX_NAME,validatePresetName,presetFromForm,formFromPreset,presetNotesText};

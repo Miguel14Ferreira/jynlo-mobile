@@ -30,7 +30,7 @@ export function TeamCompetitionApplications({communityId,competitionId,type,toke
    else errors.push(t('a configuração de candidaturas'));
    if(rows.status==='fulfilled'){setApplications(rows.value);setApplicationsVerified(true);}
    else errors.push(t('os pedidos recebidos'));
-   if(errors.length)setError(t('Não foi possível verificar {v}',{v:errors.join(' e ')})+t('. Atualiza antes de tomar decisões.'));
+   if(errors.length)setError(t('Não foi possível verificar {v}. Atualiza antes de tomar decisões.',{v:errors.join(' e ')}));
   });
   return()=>{generation.current++;};
  },[communityId,competitionId,type,token,refreshKey]);

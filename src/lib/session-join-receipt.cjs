@@ -7,7 +7,7 @@ function confirmedSessionJoin(result){
  if(result.state==='WAITLISTED'){
   const position=result.waitlistPosition;
   if(position!=null&&(!Number.isSafeInteger(position)||position<=0))return null;
-  return {state:'WAITLISTED',message:position!=null?tr('Entraste na lista de espera · posição ')+position+'.':tr('Entraste na lista de espera.')};
+  return {state:'WAITLISTED',message:position!=null?tr('Entraste na lista de espera · posição {n}.',{n:position}):tr('Entraste na lista de espera.')};
  }
  return null;
 }

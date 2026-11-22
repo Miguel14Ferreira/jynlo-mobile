@@ -20,7 +20,7 @@ function registrationAction(tournament,entries,username,hasMore){
 }
 function participantStatus(value){
  if(value==='PENDING')return tr('Aguardar confirmação');
- if(value==='CONFIRMED')return 'Confirmado';
+ if(value==='CONFIRMED')return tr('Confirmado');
  return tr('Estado desconhecido');
 }
 function canConfirmParticipant(role,tournament,participant){

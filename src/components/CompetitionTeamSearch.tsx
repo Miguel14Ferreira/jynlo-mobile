@@ -33,7 +33,7 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
     const missing=[];
     if(memberships.status==='rejected')missing.push(t('equipas da comunidade'));
     if(invitations.status==='rejected')missing.push(t('convites anteriores'));
-    if(missing.length)setError(t('Não foi possível atualizar {v}',{v:missing.join(' e ')})+t('. Confirma o estado antes de enviar novos convites.'));
+    if(missing.length)setError(t('Não foi possível atualizar {v}. Confirma o estado antes de enviar novos convites.',{v:missing.join(' e ')}));
   });
   return()=>{active=false;searchVersion.current++;};
  },[open,communityId,competitionId,type,token,refreshKey]);

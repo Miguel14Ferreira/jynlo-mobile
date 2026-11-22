@@ -20,13 +20,13 @@ function classificationKind(t){
 }
 function label(kind){return ({RACE:tr('Campeonato por pontos de corrida'),TEAM:tr('Classificação por equipas'),INDIVIDUAL:tr('Classificação individual'),TIMED:tr('Melhores tempos'),MEASURED:tr('Melhores marcas'),RELAY:tr('Estafetas por tempo'),CHESS:tr('Pontos de xadrez'),EVENT_RANKING:tr('Classificação por provas'),UNSUPPORTED:tr('Classificação específica indisponível')})[kind]||'Classificação';}
 function standingsColumns(kind){
- if(kind==='RACE')return ['Pos.','Piloto','Corridas','Pódios','Pontos'];
- if(kind==='TEAM')return ['Pos.','Equipa','J','V','E','D','Pts'];
- if(kind==='INDIVIDUAL')return ['Pos.','Jogador','J','V','E','D','Pts'];
- if(kind==='CHESS')return ['Pos.','Jogador','Partidas','V','E','D','Pontos'];
- if(kind==='TIMED'||kind==='RELAY')return ['Pos.','Participante','Melhor tempo'];
- if(kind==='MEASURED')return ['Pos.','Participante','Melhor marca'];
- return ['Pos.','Participante','Resultado'];
+ if(kind==='RACE')return [tr('Pos.'),tr('Piloto'),tr('Corridas'),tr('Pódios'),tr('Pontos')];
+ if(kind==='TEAM')return [tr('Pos.'),tr('Equipa'),tr('tabela::J'),tr('tabela::V'),tr('tabela::E'),tr('tabela::D'),tr('Pts')];
+ if(kind==='INDIVIDUAL')return [tr('Pos.'),tr('Jogador'),tr('tabela::J'),tr('tabela::V'),tr('tabela::E'),tr('tabela::D'),tr('Pts')];
+ if(kind==='CHESS')return [tr('Pos.'),tr('Jogador'),tr('Partidas'),tr('tabela::V'),tr('tabela::E'),tr('tabela::D'),tr('Pontos')];
+ if(kind==='TIMED'||kind==='RELAY')return [tr('Pos.'),tr('Participante'),tr('Melhor tempo')];
+ if(kind==='MEASURED')return [tr('Pos.'),tr('Participante'),tr('Melhor marca')];
+ return [tr('Pos.'),tr('Participante'),tr('Resultado')];
 }
 function isPerformanceKind(kind){return ['RACE','TIMED','MEASURED','RELAY'].includes(kind);}
 function validTournamentId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error(tr('Identificador de torneio inválido.'));return n;}

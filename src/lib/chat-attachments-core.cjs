@@ -15,7 +15,7 @@ function validateChatAlbum(files,{allowUnknownSize=false}={}){
   const max=mime.startsWith('video/')?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES;
   if(item.fileSize!=null){
    if(!Number.isSafeInteger(item.fileSize)||item.fileSize<0||item.fileSize>max)
-    return tr('O ficheiro excede o limite permitido (')+(max/1024/1024)+' MB).';
+    return tr('O ficheiro excede o limite permitido ({n} MB).',{n:max/1024/1024});
    if(item.fileSize===0&&!allowUnknownSize)return tr('Não foi possível confirmar o tamanho de um ficheiro.');
    total+=item.fileSize;
   }else if(!allowUnknownSize)return tr('Não foi possível confirmar o tamanho de um ficheiro.');
@@ -42,8 +42,8 @@ function verifiedLocalChatMediaSize(size,type){
  if(type!=='image'&&type!=='video')throw Error(tr('Tipo de anexo inválido.'));
  if(!Number.isSafeInteger(size)||size<=0)
   throw Error(type==='video'?
-   'Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.':
-   'Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.');
+   tr('Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.'):
+   tr('Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.'));
  if(size>(type==='video'?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES))
   throw Error(type==='video'?tr('O vídeo deve ter até 20 MB.'):tr('A fotografia deve ter até 5 MB.'));
  return size;

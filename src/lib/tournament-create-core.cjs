@@ -63,8 +63,8 @@ function createTournamentDraft(data){
   if(groupCount!==2&&groupCount!==4)throw Error('Seleciona 2 ou 4 grupos.');
  }
  if(entryType==='TEAM'){
-  playersPerTeam=profile.model==='RELAY_BEST_TIME'?4:asInt(data.playersPerTeam,1,30,'Indica de 1 a 30 jogadores por equipa.');
-  if(format==='LEAGUE'&&profile.model==='NUMERIC_TEAM')roundRobinLegs=asInt(data.roundRobinLegs||1,1,2,'Seleciona 1 ou 2 voltas.');
+  playersPerTeam=profile.model==='RELAY_BEST_TIME'?4:asInt(data.playersPerTeam,1,30,tr('Indica de 1 a 30 jogadores por equipa.'));
+  if(format==='LEAGUE'&&profile.model==='NUMERIC_TEAM')roundRobinLegs=asInt(data.roundRobinLegs||1,1,2,tr('Seleciona 1 ou 2 voltas.'));
  }
  let eventType=null,eventDiscipline=null;
  if(profile.events.length){
@@ -81,9 +81,9 @@ function createTournamentDraft(data){
  const numeric=isNumericModel(profile.model);
  const points=numeric
   ?profile.model==='CHESS_HALF_POINTS'?[2,1,0]:[
-    asInt(data.winPoints??3,0,999,'Pontos de vitória inválidos.'),
-    asInt(data.drawPoints??1,0,999,'Pontos de empate inválidos.'),
-    asInt(data.lossPoints??0,0,999,'Pontos de derrota inválidos.')
+    asInt(data.winPoints??3,0,999,tr('Pontos de vitória inválidos.')),
+    asInt(data.drawPoints??1,0,999,tr('Pontos de empate inválidos.')),
+    asInt(data.lossPoints??0,0,999,tr('Pontos de derrota inválidos.'))
    ]
   :[null,null,null];
  return {

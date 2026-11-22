@@ -21,7 +21,7 @@ function canCompleteTournament(role,tournament){
 }
 function validateTournamentScore(home,away){
  const parse=(value)=>{
-  if(typeof value!=='string'||!/^\d{1,3}$/.test(value.trim()))throw Error('Introduz um resultado inteiro de 0 a 999 para cada participante.');
+  if(typeof value!=='string'||!/^\d{1,3}$/.test(value.trim()))throw Error(tr('Introduz um resultado inteiro de 0 a 999 para cada participante.'));
   const score=Number(value.trim());
   if(!Number.isInteger(score)||score<0||score>999)throw Error(tr('Resultado inválido.'));
   return score;

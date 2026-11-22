@@ -14,7 +14,7 @@ function officialTournamentOutcome(tournament){
    Number.isSafeInteger(tournament.championTeamId)&&tournament.championTeamId>0:
    Number.isSafeInteger(tournament.championProfileId)&&tournament.championProfileId>0;
  if(validIdentity&&typeof name==='string'&&name.trim().length>0)return {
-  title:tr('Campeão oficial: ')+name.trim(),
+  title:tr('Campeão oficial: {name}',{name:name.trim()}),
   detail:tr('Vencedor confirmado pelo servidor no encerramento da competição.'),
   winner:true
  };

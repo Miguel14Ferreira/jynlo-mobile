@@ -51,7 +51,7 @@ export default function MySessionsScreen(){
   <Text style={styles.groupTitle}>{t('Próximas sessões · {a}',{a:upcomingCount})}</Text>
   {upcomingCount===0?<Text style={styles.empty}>{t('Não tens sessões futuras. Podes criar uma nova ou procurar uma atividade.')}</Text>:null}
   {sections.upcoming.filter(section=>section.items.length>0).map(section=><View style={styles.section} key={section.title}>
-    <Text style={styles.sectionTitle}>{section.title} · {section.items.length}</Text>
+    <Text style={styles.sectionTitle}>{t(section.title)} · {section.items.length}</Text>
     {section.items.map(item=><SessionCard key={item.id} session={item} onPress={()=>open(item)}/>)}
   </View>)}
   <Pressable accessibilityRole="button" accessibilityLabel={showHistory?t('Ocultar histórico de sessões'):t('Mostrar histórico de sessões')}
@@ -61,7 +61,7 @@ export default function MySessionsScreen(){
   {showHistory?<View style={styles.group}>
     {historyCount===0?<Text style={styles.empty}>{t('Ainda não tens sessões anteriores ou canceladas.')}</Text>:null}
     {sections.history.filter(section=>section.items.length>0).map(section=><View style={styles.section} key={section.title}>
-      <Text style={styles.sectionTitle}>{section.title} · {section.items.length}</Text>
+      <Text style={styles.sectionTitle}>{t(section.title)} · {section.items.length}</Text>
       {section.items.map(item=><SessionCard key={item.id} session={item} onPress={()=>open(item)}/>)}
     </View>)}
   </View>:null}

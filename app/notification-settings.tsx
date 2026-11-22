@@ -61,15 +61,15 @@ export default function NotificationSettingsScreen(){
    </View>
    <View style={styles.legend}><Text style={styles.legendText}>{t('App')}</Text><Text style={styles.legendText}>{t('Email')}</Text></View>
    {PREFERENCE_GROUPS.map(group=><View key={group.title} style={styles.panel}>
-    <Text style={styles.heading}>{group.title}</Text>
+    <Text style={styles.heading}>{t(group.title)}</Text>
     {group.types.map(item=>{
      const inApp=!draft.disabledInAppTypes.includes(item.type),email=!draft.disabledEmailTypes.includes(item.type);
      return <View key={item.type} style={styles.typeRow}>
-      <Text style={[styles.typeLabel,!draft.inAppEnabled&&!draft.emailEnabled&&styles.dim]}>{item.label}</Text>
+      <Text style={[styles.typeLabel,!draft.inAppEnabled&&!draft.emailEnabled&&styles.dim]}>{t(item.label)}</Text>
       <Switch value={inApp&&draft.inAppEnabled} disabled={busy||!draft.inAppEnabled}
-       accessibilityLabel={item.label+' '+t('na aplicação')} onValueChange={value=>setDraft(current=>current?toggleType(current,'inApp',item.type,value):current)}/>
+       accessibilityLabel={t(item.label)+' '+t('na aplicação')} onValueChange={value=>setDraft(current=>current?toggleType(current,'inApp',item.type,value):current)}/>
       <Switch value={email&&draft.emailEnabled} disabled={busy||!draft.emailEnabled}
-       accessibilityLabel={item.label+' '+t('por email')} onValueChange={value=>setDraft(current=>current?toggleType(current,'email',item.type,value):current)}/>
+       accessibilityLabel={t(item.label)+' '+t('por email')} onValueChange={value=>setDraft(current=>current?toggleType(current,'email',item.type,value):current)}/>
      </View>;
     })}
    </View>)}

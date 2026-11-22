@@ -35,7 +35,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
   {summary?<View style={styles.grid} accessibilityLabel={t('Taxa de presença {v}',{v:formatRate(summary.attendanceRate)})}>
    <Stat label={t('Taxa de presença')} value={formatRate(summary.attendanceRate)}/>
    <Stat label={t('Sessões concluídas')} value={String(summary.completedSessions??0)}/>
-   <Stat label="Faltas" value={String(summary.noShows??0)}/>
+   <Stat label={t('Faltas')} value={String(summary.noShows??0)}/>
    <Stat label={t('Cancelamentos tardios')} value={String(summary.lateCancellations??0)}/>
   </View>:null}
   {notice?<Message>{notice}</Message>:null}

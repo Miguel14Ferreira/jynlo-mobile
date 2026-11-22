@@ -145,7 +145,7 @@ export default function CreateTournamentScreen(){
   try{createTournamentDraft(data);payload={...data};}
   catch(e){setError(e instanceof Error?e.message:t('Configuração inválida.'));return;}
   const version=generation.current,identity=identityRef.current,communityIdAtConfirmation=selected.id;
-  Alert.alert(t('Criar torneio?'),selected.name+' · '+sport+' · '+t(FORMAT_LABELS[effectiveFormat])+t('. O torneio fica em preparação e não inicia jogos automaticamente.'),[
+  Alert.alert(t('Criar torneio?'),selected.name+' · '+sport+' · '+t(FORMAT_LABELS[effectiveFormat])+'. '+t('O torneio fica em preparação e não inicia jogos automaticamente.'),[
    {text:t('Voltar'),style:'cancel'},
    {text:t('Criar torneio'),onPress:()=>{void save(payload,version,identity,communityIdAtConfirmation);}}
   ]);

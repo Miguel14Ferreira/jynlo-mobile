@@ -5,11 +5,11 @@ function optionalStat(value,label){
  if(value===undefined||value===null||value==='')return null;
  const normalized=String(value).trim();
  if(!/^(?:0|[1-9][0-9]?)$/.test(normalized))
-  throw Error(label+' deve ser um número inteiro entre 0 e 99.');
+  throw Error(tr('{label} deve ser um número inteiro entre 0 e 99.',{label}));
  return Number(normalized);
 }
 function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scoreB=''){
- if(!['A','B','DRAW'].includes(outcome))throw Error('Escolhe Equipa A, Equipa B ou empate.');
+ if(!['A','B','DRAW'].includes(outcome))throw Error(tr('Escolhe Equipa A, Equipa B ou empate.'));
  if(!Array.isArray(players))throw Error(tr('A lista de jogadores não está disponível.'));
  const byName=new Set(),selected=[];
  let a=0,b=0;
@@ -20,8 +20,8 @@ function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scor
   const key=username.toLowerCase();
   if(!username||!['A','B'].includes(team)||byName.has(key))
     throw Error(tr('Verifica os jogadores e as equipas antes de registar o resultado.'));
-  const goals=optionalStat(player.goals,'Golos');
-  const assists=optionalStat(player.assists,'Assistências');
+  const goals=optionalStat(player.goals,tr('Golos'));
+  const assists=optionalStat(player.assists,tr('Assistências'));
   if((goals!==null||assists!==null)&&sport!=='Futebol')
    throw Error(tr('Golos e assistências só podem ser registados em sessões de Futebol.'));
   byName.add(key);
@@ -37,8 +37,8 @@ function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scor
  if(hasA!==hasB)throw Error(tr('Preenche os dois resultados ou deixa os dois vazios.'));
  if(!hasA)return {outcome,players:selected};
  if(sport!=='Futebol')throw Error(tr('O marcador oficial só pode ser registado para Futebol.'));
- const aScore=optionalStat(scoreA,'Golos da Equipa A');
- const bScore=optionalStat(scoreB,'Golos da Equipa B');
+ const aScore=optionalStat(scoreA,tr('Golos da Equipa A'));
+ const bScore=optionalStat(scoreB,tr('Golos da Equipa B'));
  const winner=aScore===bScore?'DRAW':aScore>bScore?'A':'B';
  if(outcome!==winner)throw Error(tr('O vencedor ou empate não corresponde ao marcador.'));
  const goalsA=selected.filter(p=>p.team==='A').reduce((sum,p)=>sum+(p.goals||0),0);

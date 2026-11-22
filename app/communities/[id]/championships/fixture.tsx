@@ -153,7 +153,7 @@ export default function ChampionshipFixtureScreen(){
   {!loading&&fixture&&!canWrite?<Message>{t('Os acontecimentos estão disponíveis para consulta. A edição exige um organizador, uma liga ativa de Futebol/Futsal e um resultado registado.')}</Message>:null}
   {fixture?<View style={styles.card}>
    <Text style={styles.title}>{t('Golos ({a})',{a:goals.length})}</Text>
-   {goals.map(g=><View key={g.id} style={styles.row}><Text style={styles.note}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"t('"}{g.assisterName?') · Assistência: t('+g.assisterName:')'}</Text>
+   {goals.map(g=><View key={g.id} style={styles.row}><Text style={styles.note}>⚽ {g.scorerName} · {g.teamName}{g.minute==null?'':' · '+g.minute+"'"}{g.assisterName?' · '+t('Assistência: {v}',{v:g.assisterName}):''}</Text>
     {canWrite?<Button secondary title={t('Remover')} disabled={busy} onPress={()=>removeEvent(t('Golo de {v}',{v:g.scorerName}),()=>removeOwnedFixtureGoal(cid,chid,eid,fid,g.id,auth.token!))}/>:null}
    </View>)}
    <Text style={styles.title}>{t('Cartões ({a})',{a:cards.length})}</Text>

@@ -38,7 +38,7 @@ export function PublicShareCard({target,name,token,canManage}:{target:PublicShar
    <View style={{flex:1,gap:4}}>
     <Text style={styles.title}>🔗 {isTournament?t('Página pública do torneio'):t('Classificação pública')}</Text>
     <Text style={styles.meta}>{setting.enabled
-     ?t('Qualquer pessoa com a ligação vê {v}',{v:(isTournament?t('a classificação e os resultados'):t('a tabela da época'))})+t(', sem conta. Só aparecem alcunhas ou nomes de utilizador.')
+     ?(isTournament?t('Qualquer pessoa com a ligação vê a classificação e os resultados, sem conta. Só aparecem alcunhas ou nomes de utilizador.'):t('Qualquer pessoa com a ligação vê a tabela da época, sem conta. Só aparecem alcunhas ou nomes de utilizador.'))
      :t('Desligada. Ativa para partilhar {v} com quem não está na Jynlo.',{v:(isTournament?t('o torneio'):t('a tabela'))})}</Text>
    </View>
    {canManage?<Switch value={setting.enabled} disabled={busy} onValueChange={v=>{void toggle(v);}}

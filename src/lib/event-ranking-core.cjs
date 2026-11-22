@@ -32,7 +32,7 @@ function buildResults(rows,kind){
   if(row.dnf){results.push({participantId:row.participantId,value:null,position:null,didNotFinish:true});continue;}
   const parsed=parseEventValue(row.raw,kind);
   if(parsed===null)continue;
-  if(Number.isNaN(parsed)||parsed<0)throw Error(tr('Valor inválido para ')+row.name+'.');
+  if(Number.isNaN(parsed)||parsed<0)throw Error(tr('Valor inválido para {name}.',{name:row.name}));
   results.push({participantId:row.participantId,didNotFinish:false,
    value:kind==='POSITION'?null:parsed,position:kind==='POSITION'?parsed:null});
  }

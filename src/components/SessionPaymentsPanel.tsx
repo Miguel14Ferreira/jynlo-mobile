@@ -61,7 +61,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
      <Text style={[styles.state,player.confirmedAt?styles.paid:player.claimedAt?styles.claimed:null]}>
       {player.confirmedAt?t('✅ Pago'):player.claimedAt?t('⏳ Diz que pagou'):t('Por pagar')}</Text>
      <Pressable accessibilityRole="button" disabled={busy} style={[styles.small,!player.confirmedAt&&styles.smallPrimary]}
-      accessibilityLabel={(player.confirmedAt?t('Anular pagamento de')+' ':t('Marcar como pago:')+' ')+player.username}
+      accessibilityLabel={player.confirmedAt?t('Anular pagamento de {user}',{user:player.username}):t('Marcar como pago: {user}',{user:player.username})}
       onPress={()=>void run(()=>confirmPayment(sessionId,player.username,!player.confirmedAt,token))}>
       <Text style={[styles.smallText,!player.confirmedAt&&styles.smallTextPrimary]}>{player.confirmedAt?t('Anular'):t('Marcar pago')}</Text>
      </Pressable>

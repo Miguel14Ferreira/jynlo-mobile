@@ -149,7 +149,7 @@ export default function TeamDetail(){
   if(linked.status==='fulfilled'){setCommunities(linked.value);setCommunitiesVerified(true);}
   else{setCommunities([]);setCommunitiesVerified(false);failed.push(t('as comunidades'));}
   if(failed.length){
-   if(!silent)setError(t('Não foi possível atualizar {v}',{v:failed.join(', ')})+t('. As restantes secções continuam disponíveis.'));
+   if(!silent)setError(t('Não foi possível atualizar {v}. As restantes secções continuam disponíveis.',{v:failed.join(', ')}));
   }else if(!silent)setError('');
   if(!silent)setLoading(false);
  },[teamId,auth.token,auth.username]);

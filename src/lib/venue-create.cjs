@@ -25,7 +25,7 @@ function buildVenueRequest(fields,sports,catalog){
  const cleaned={};
  for(const [field,max] of Object.entries(LIMITS)){
   const value=String(fields[field]||'').trim();
-  if(value.length>max)throw new Error('O campo '+field+' excede o limite permitido.');
+  if(value.length>max)throw new Error(tr('O campo {field} excede o limite permitido.',{field}));
   cleaned[field]=value;
  }
  if(!cleaned.name||!cleaned.city)throw new Error(tr('O nome e a cidade são obrigatórios.'));

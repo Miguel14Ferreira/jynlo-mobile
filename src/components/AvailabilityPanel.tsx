@@ -102,8 +102,8 @@ export function AvailabilityPanel({kind,targetId,token,communityId}:{kind:Availa
     <Text style={styles.slotText}>{slotLabel(slot.startsAt)}{best?.id===slot.id?'  ★':''}</Text>
     <Text style={styles.meta} numberOfLines={2}>{slot.yes.length} {slot.yes.length===1?'pode':'podem'}{slot.yes.length?': '+slot.yes.join(', '):''}{slot.maybe.length?` · ${slot.maybe.length} talvez`:''}{slot.no?` · ${slot.no} não`:''}</Text>
     <View style={styles.row}>{ANSWERS.map(a=><Pressable key={a.value} accessibilityRole="button" accessibilityState={{selected:slot.mine===a.value,disabled:busy}}
-     accessibilityLabel={a.label+', '+slotLabel(slot.startsAt)} disabled={busy} onPress={()=>{void answer(request,slot.id,a.value);}}
-     style={[styles.chip,slot.mine===a.value&&styles.chipOn]}><Text style={[styles.chipText,slot.mine===a.value&&styles.chipTextOn]}>{a.label}</Text></Pressable>)}</View>
+     accessibilityLabel={t(a.label)+', '+slotLabel(slot.startsAt)} disabled={busy} onPress={()=>{void answer(request,slot.id,a.value);}}
+     style={[styles.chip,slot.mine===a.value&&styles.chipOn]}><Text style={[styles.chipText,slot.mine===a.value&&styles.chipTextOn]}>{t(a.label)}</Text></Pressable>)}</View>
    </View>)}
    {request.mine?<View style={styles.row}>
     {best?<Pressable accessibilityRole="button" onPress={()=>createGame(request)} style={styles.newBtn}><Text style={styles.newText}>{t('Criar jogo na melhor opção')}</Text></Pressable>:null}

@@ -4,8 +4,8 @@ const {tr}=require('./i18n-core.cjs');
 const ATTENDANCE_LABELS={ATTENDED:'Presente',NO_SHOW:'Faltou',LATE_CANCELLED:'Cancelamento tardio',PENDING:'Pendente'};
 const DISPUTE_LABELS={OPEN:'Em análise',ACCEPTED:'Aceite',REJECTED:'Rejeitada'};
 const MAX_REASON=2000;
-function attendanceLabel(status){return ATTENDANCE_LABELS[status]||ATTENDANCE_LABELS.PENDING;}
-function disputeLabel(status){return status?DISPUTE_LABELS[status]||null:null;}
+function attendanceLabel(status){return tr(ATTENDANCE_LABELS[status]||ATTENDANCE_LABELS.PENDING);}
+function disputeLabel(status){return status&&DISPUTE_LABELS[status]?tr(DISPUTE_LABELS[status]):null;}
 /** Sessions the user organises are left out, as on the web (the organiser marks the others). */
 function externalHistory(items,ownedSessionIds){
  const owned=new Set((ownedSessionIds||[]).map(Number));

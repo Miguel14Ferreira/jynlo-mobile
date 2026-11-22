@@ -3,7 +3,7 @@ import {File,Paths} from 'expo-file-system';
 import {pickLanguage,translate,localeTag,setCurrentLanguage,type AppLanguage} from './i18n-core.cjs';
 import {EN} from './i18n-en.cjs';
 
-type T=(text:string,params?:Record<string,string|number>)=>string;
+type T=(text:string,params?:Record<string,unknown>)=>string;
 interface LanguageState {language:AppLanguage;setLanguage:(next:AppLanguage)=>void;locale:string}
 
 let current:AppLanguage='pt';
