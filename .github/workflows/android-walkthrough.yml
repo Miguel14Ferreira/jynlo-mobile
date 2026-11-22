@@ -27,6 +27,10 @@ jobs:
       CI: "true"
       EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
     steps:
+      - name: Libertar espaço em disco (a compilação e o emulador precisam de ~20 GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules/@angular "$AGENT_TOOLSDIRECTORY/CodeQL" /usr/local/.ghcup || true
+          echo "::notice::Disco livre no início: $(df -h / | awk 'NR==2{print $4}')"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -43,6 +47,11 @@ jobs:
       - name: Compilar APK (assinatura de desenvolvimento, só para o emulador)
         working-directory: android
         run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=x86_64
+      - name: Guardar APK e limpar ficheiros da compilação
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/jynlo.apk"
+          rm -rf android/app/build/intermediates android/app/build/tmp android/build node_modules/.cache
+          echo "::notice::Disco livre antes do emulador: $(df -h / | awk 'NR==2{print $4}')"
       - name: Escolher percurso
         env:
           QA_USER: ${{ secrets.JYNLO_QA1_USERNAME }}
