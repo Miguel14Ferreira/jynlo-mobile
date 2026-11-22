@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 test('communities and tournaments (no tab of their own) are reachable from Explorar',()=>{
  const tabs=read('app/(tabs)/_layout.tsx');
  const explore=read('app/(tabs)/explore.tsx');
@@ -18,6 +19,6 @@ test('tab bar shows icons only, but every tab keeps a spoken name',()=>{
  const tabs=read('app/(tabs)/_layout.tsx');
  assert.match(tabs,/tabBarShowLabel:false/);
  for(const t of ['Início','Explorar','Perfil'])assert.ok(tabs.includes("tabBarAccessibilityLabel:'"+t+"'"),t);
- assert.match(tabs,/tabBarAccessibilityLabel:badge\?'Mensagens, '\+badge\+' por ler':'Mensagens'/);
+ assert.match(tabs,/tabBarAccessibilityLabel:badge\?t\('Mensagens, \{count\} por ler',\{count:badge\}\):'Mensagens'/);
  assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
 });

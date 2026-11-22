@@ -18,5 +18,5 @@ test('root layout registers a route error boundary',()=>{
  assert.match(code,/export function ErrorBoundary\(props:ErrorBoundaryProps\)/);
  assert.match(code,/<RouterErrorBoundary \{\.\.\.props\}\/>/);
  assert.match(code,/reportClientError\(props\.error,\{fatal:true\}\)/);
- assert.match(code,/<AuthProvider><Navigation\/><\/AuthProvider>/);
+ assert.match(code,/<AuthProvider><LanguageProvider><Navigation\/><\/LanguageProvider><\/AuthProvider>/);
 });

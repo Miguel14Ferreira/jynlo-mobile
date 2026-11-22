@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/explore.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/explore.tsx'),'utf8'));
 test('Explore uses shared mobile tokens and keeps real session navigation',()=>{
  assert.match(source,/import \{C,MobileTheme\} from '\.\.\/\.\.\/src\/lib\/theme'/);
  assert.match(source,/backgroundColor:MobileTheme\.colors\.background/);
@@ -12,7 +13,7 @@ test('Explore uses shared mobile tokens and keeps real session navigation',()=>{
 });
 test('Explore focuses on finding games without duplicating primary tabs',()=>{
  // Creation (sessions, venues, communities…) moved to the central Criar tab.
- const tabs=fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8');
+ const tabs=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8'));
  assert.match(tabs,/else if\(destination==='venue'\)router\.push\('\/venues\/create'\)/);
  assert.doesNotMatch(source,/router\.push\('\/feed'\)/);
  assert.match(source,/accessibilityLabel="Filtrar por cidade"/);

@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
-const get=file=>fs.readFileSync(path.join(root,file),'utf8');
+const get=file=>untranslate(fs.readFileSync(path.join(root,file),'utf8'));
 const api=get('src/lib/social-relations-api.ts');
 const people=get('src/components/SocialPeopleList.tsx');
 const profile=get('app/(tabs)/profile.tsx');

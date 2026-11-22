@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
@@ -19,7 +20,7 @@ export default function FirstStepsScreen(){
   void Promise.all([sportsCatalog(auth.token),getFirstSteps(auth.token)]).then(([list,state])=>{
    if(!active)return;
    setCatalog(list);setSelected(state.favoriteSports.filter(s=>list.includes(s)));setCity(state.location||'');
-  }).catch(()=>{if(active)setError('Não foi possível carregar as modalidades. Tenta mais tarde no teu perfil.');})
+  }).catch(()=>{if(active)setError(t('Não foi possível carregar as modalidades. Tenta mais tarde no teu perfil.'));})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[auth.token]);
@@ -27,36 +28,36 @@ export default function FirstStepsScreen(){
  const leave=()=>{if(router.canGoBack())router.back();else router.replace('/(tabs)');};
  async function save(){
   if(!auth.token||busy)return;
-  if(!selected.length){setError('Escolhe pelo menos uma modalidade.');return;}
+  if(!selected.length){setError(t('Escolhe pelo menos uma modalidade.'));return;}
   setBusy(true);setError('');
   try{
    await saveFirstSteps(auth.token,selected,city.trim());
    router.replace({pathname:'/(tabs)/explore',params:{sport:selected[0]??'',city:city.trim()}});
   }
-  catch(e){setError(e instanceof Error&&e.message?e.message:'Não foi possível guardar. Tenta novamente.');}
+  catch(e){setError(e instanceof Error&&e.message?e.message:t('Não foi possível guardar. Tenta novamente.'));}
   finally{setBusy(false);}
  }
  async function later(){if(auth.username)await skipFirstSteps(auth.username);leave();}
  if(loading)return <Page><Loader/></Page>;
  return <Page>
-  <Eyebrow>PRIMEIROS PASSOS</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>O que gostas de jogar?</Text>
-  <Text style={styles.text}>Escolhe até {MAX_SPORTS} modalidades e a tua cidade. Abrimos Explorar já com os teus jogos, e quem procura parceiros na tua modalidade passa a encontrar-te. Podes mudar tudo no perfil.</Text>
+  <Eyebrow>{t('PRIMEIROS PASSOS')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('O que gostas de jogar?')}</Text>
+  <Text style={styles.text}>{t('Escolhe até {max} modalidades e a tua cidade. Abrimos Explorar já com os teus jogos, e quem procura parceiros na tua modalidade passa a encontrar-te. Podes mudar tudo no perfil.',{max:MAX_SPORTS})}</Text>
   {error?<Message tone="error">{error}</Message>:null}
-  <TextInput value={filter} onChangeText={setFilter} placeholder="Procurar outra modalidade…" placeholderTextColor={C.muted}
-   style={styles.input} accessibilityLabel="Procurar modalidade" maxLength={40}/>
+  <TextInput value={filter} onChangeText={setFilter} placeholder={t('Procurar outra modalidade…')} placeholderTextColor={C.muted}
+   style={styles.input} accessibilityLabel={t('Procurar modalidade')} maxLength={40}/>
   <View style={styles.chips}>
    {choices.map(sport=>{const on=selected.includes(sport);return <Pressable key={sport} onPress={()=>setSelected(toggleSport(selected,sport))}
     accessibilityRole="checkbox" accessibilityState={{checked:on}} accessibilityLabel={sport} style={[styles.chip,on&&styles.chipOn]}>
     <Text style={[styles.chipText,on&&styles.chipTextOn]}>{on?'✓ ':''}{sport}</Text></Pressable>;})}
-   {!choices.length?<Text style={styles.text}>Nenhuma modalidade encontrada.</Text>:null}
+   {!choices.length?<Text style={styles.text}>{t('Nenhuma modalidade encontrada.')}</Text>:null}
   </View>
-  <Text style={styles.count}>{selected.length}/{MAX_SPORTS} escolhidas</Text>
-  <Text style={styles.label}>Cidade</Text>
-  <TextInput value={city} onChangeText={setCity} placeholder="Ex.: Porto" placeholderTextColor={C.muted} style={styles.input}
-   accessibilityLabel="Cidade" maxLength={120} autoCapitalize="words"/>
-  <Button title={busy?'A guardar…':'Guardar e explorar'} onPress={()=>void save()} disabled={busy||!selected.length}/>
-  <Button title="Agora não" secondary onPress={()=>void later()} disabled={busy}/>
+  <Text style={styles.count}>{t('{count}/{max} escolhidas',{count:selected.length,max:MAX_SPORTS})}</Text>
+  <Text style={styles.label}>{t('Cidade')}</Text>
+  <TextInput value={city} onChangeText={setCity} placeholder={t('Ex.: Porto')} placeholderTextColor={C.muted} style={styles.input}
+   accessibilityLabel={t('Cidade')} maxLength={120} autoCapitalize="words"/>
+  <Button title={busy?t('A guardar…'):t('Guardar e explorar')} onPress={()=>void save()} disabled={busy||!selected.length}/>
+  <Button title={t('Agora não')} secondary onPress={()=>void later()} disabled={busy}/>
  </Page>;
 }
 
