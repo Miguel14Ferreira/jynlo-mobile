@@ -1,0 +1,86 @@
+name: Jynlo Android - percurso no emulador
+
+# Compila a app ligada à API real, abre-a num emulador Android, entra com a
+# conta de teste (secrets JYNLO_QA1_USERNAME / JYNLO_QA1_PASSWORD) e guarda
+# capturas, vídeo e registos de erro como artefacto.
+on:
+  workflow_dispatch:
+    inputs:
+      locale:
+        description: "Idioma da app no emulador"
+        type: choice
+        options: [pt-PT, en-US]
+        default: pt-PT
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-walkthrough
+  cancel-in-progress: false
+
+jobs:
+  walkthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: "true"
+      EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: Gerar projeto Android
+        run: npx expo prebuild --platform android --no-install --clean
+      - name: Compilar APK (assinatura de desenvolvimento, só para o emulador)
+        working-directory: android
+        run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=x86_64
+      - name: Escolher percurso
+        env:
+          QA_USER: ${{ secrets.JYNLO_QA1_USERNAME }}
+          QA_PASS: ${{ secrets.JYNLO_QA1_PASSWORD }}
+        run: |
+          if [ -n "$QA_USER" ] && [ -n "$QA_PASS" ]; then
+            echo "FLOW=.maestro/percurso.yaml" >> "$GITHUB_ENV"
+            echo "Conta de teste encontrada: percurso com sessão iniciada."
+          else
+            echo "FLOW=.maestro/visitante.yaml" >> "$GITHUB_ENV"
+            echo "::warning::Sem JYNLO_QA1_USERNAME/JYNLO_QA1_PASSWORD neste repositório: percurso como visitante."
+          fi
+      - name: Instalar Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Ativar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Percurso no emulador
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          JYNLO_USER: ${{ secrets.JYNLO_QA1_USERNAME }}
+          JYNLO_PASS: ${{ secrets.JYNLO_QA1_PASSWORD }}
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash .github/scripts/android-walkthrough.sh "${{ inputs.locale }}"
+      - name: Guardar capturas, vídeo e registos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-android-percurso
+          path: walkthrough/
+          if-no-files-found: warn
+          retention-days: 14

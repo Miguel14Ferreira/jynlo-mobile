@@ -1,0 +1,101 @@
+# Percurso de utilização no emulador Android: entra com a conta de teste e
+# fotografa os ecrãs principais. Passos marcados "optional" não falham o teste
+# quando a conta não tem esse conteúdo (por exemplo, nenhuma conversa).
+appId: com.jynlo.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Entrar na Jynlo.*"
+    timeout: 90000
+- takeScreenshot: 01_boas_vindas
+- tapOn: "Entrar na Jynlo.*"
+- extendedWaitUntil:
+    visible: "Nome de utilizador"
+    timeout: 20000
+- takeScreenshot: 02_login
+- tapOn: "Nome de utilizador"
+- inputText: ${JYNLO_USER}
+- tapOn: "Palavra-passe"
+- inputText: ${JYNLO_PASS}
+- hideKeyboard
+- tapOn: "^Entrar$"
+- extendedWaitUntil:
+    visible: "Início"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 03_inicio
+- scroll
+- takeScreenshot: 04_inicio_scroll
+- tapOn: "Explorar"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 05_explorar
+- scroll
+- takeScreenshot: 06_explorar_jogos
+- tapOn: "Início"
+- tapOn:
+    text: "As minhas sessões"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 07_minhas_sessoes
+- tapOn:
+    text: "Ver detalhes da sessão"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 08_detalhe_jogo
+- scroll
+- takeScreenshot: 09_detalhe_jogo_scroll
+- back
+- back
+- tapOn:
+    text: "Torneios"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 10_torneios
+- back
+- tapOn:
+    text: "Mensagens.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 11_mensagens
+- tapOn: "Perfil"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 12_perfil
+- scrollUntilVisible:
+    element: "Mais opções"
+    timeout: 20000
+    optional: true
+- tapOn:
+    text: "Mais opções"
+    optional: true
+- takeScreenshot: 13_mais_opcoes
+- tapOn:
+    text: "As minhas equipas"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 14_equipas
+- back
+- scrollUntilVisible:
+    element: "Enviar opinião.*"
+    timeout: 20000
+    optional: true
+- tapOn:
+    text: "Enviar opinião.*"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: 15_opiniao
+- back
+- tapOn: "Início"
+- tapOn:
+    text: "Encontrar comunidades"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 16_comunidades
