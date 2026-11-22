@@ -19,3 +19,12 @@ test('offer only when needed and not skipped',()=>{
  assert.strictEqual(shouldOffer(null,false),false);
  assert.strictEqual(skipFileName('Ana/../x'),'first-steps-ana_.._x.txt');
 });
+test('primeiros passos sugerem comunidades públicas das modalidades escolhidas',()=>{
+ const {suggestedCommunities}=require('../src/lib/first-steps-core.cjs');
+ const futsal=[{id:1,visibility:'PUBLIC'},{id:2,visibility:'PRIVATE'},{id:3,visibility:'PUBLIC'}];
+ const padel=[{id:4,visibility:'PUBLIC'},{id:1,visibility:'PUBLIC'},{id:5,visibility:'PUBLIC'}];
+ // Alternates between sports, skips private, duplicates and communities already joined.
+ assert.deepEqual(suggestedCommunities([futsal,padel],[5],8).map(g=>g.id),[1,4,3]);
+ assert.deepEqual(suggestedCommunities([futsal,padel],[],2).map(g=>g.id),[1,4]);
+ assert.deepEqual(suggestedCommunities([],[],8),[]);
+});

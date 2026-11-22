@@ -4,3 +4,5 @@ export function sportChoices(catalog:readonly string[],filter:string,selected:re
 export function toggleSport(selected:readonly string[],sport:string):string[];
 export function shouldOffer(state:{needed:boolean}|null|undefined,skipped:boolean):boolean;
 export function skipFileName(username:string):string;
+
+export function suggestedCommunities<T extends {id:number;visibility:string}>(lists:T[][],memberIds:number[],limit:number):T[];
