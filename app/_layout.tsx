@@ -189,6 +189,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="login" options={{title:t('Entrar na Jynlo')}}/>
     <Stack.Screen name="change-password" options={{title:t('Alterar palavra-passe')}}/>
     <Stack.Screen name="security-mfa" options={{title:t('Verificação em dois passos')}}/>
+    <Stack.Screen name="device-sessions" options={{title:t('Sessões no site')}}/>
     <Stack.Screen name="edit-profile" options={{title:t('Editar perfil')}}/>
     <Stack.Screen name="register" options={{title:t('Criar conta')}}/>
     <Stack.Screen name="confirm-email" options={{title:t('Confirmar email')}}/>

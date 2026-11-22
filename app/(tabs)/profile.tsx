@@ -227,6 +227,7 @@ export default function ProfileScreen(){
 
     <Button title={t('Alterar palavra-passe')} secondary onPress={()=>router.push('/change-password')}/>
     <Button title={t('Verificação em dois passos')} secondary onPress={()=>router.push('/security-mfa')}/>
+    <Button title={t('Sessões iniciadas no site')} secondary onPress={()=>router.push('/device-sessions')}/>
     <Button title={showDelete?t('Ocultar eliminação de conta'):t('Eliminar a minha conta')} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>
     {showDelete?<View style={styles.deleteBox}>
       <Text style={styles.deleteWarning}>{t('A eliminação é definitiva. As tuas publicações e os teus dados pessoais são apagados ou anonimizados. Se és proprietário de comunidades, transfere primeiro a propriedade.')}</Text>
