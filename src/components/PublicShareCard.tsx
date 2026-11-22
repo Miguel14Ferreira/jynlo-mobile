@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Share,StyleSheet,Switch,Text,View} from 'react-native';
 import {Button} from './UI';
 import {publicShareSetting,updatePublicShare,type PublicShareSetting,type PublicShareTarget} from '../lib/public-share-api';
@@ -23,27 +24,27 @@ export function PublicShareCard({target,name,token,canManage}:{target:PublicShar
   if(busy)return;
   setBusy(true);setError('');
   try{const next=await updatePublicShare(target,enabled,token);if(current.current===key)setSetting(next);}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar.');}
+  catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar.'));}
   finally{setBusy(false);}
  }
  async function share(){
   try{
    const url=publicShareUrl(setting!.path);
    await Share.share({message:shareMessage(target.kind,name,url),url});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível partilhar.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível partilhar.'));}
  }
  return <View style={styles.card}>
   <View style={styles.row}>
    <View style={{flex:1,gap:4}}>
-    <Text style={styles.title}>🔗 {isTournament?'Página pública do torneio':'Classificação pública'}</Text>
+    <Text style={styles.title}>🔗 {isTournament?t('Página pública do torneio'):t('Classificação pública')}</Text>
     <Text style={styles.meta}>{setting.enabled
-     ?'Qualquer pessoa com a ligação vê '+(isTournament?'a classificação e os resultados':'a tabela da época')+', sem conta. Só aparecem alcunhas ou nomes de utilizador.'
-     :'Desligada. Ativa para partilhar '+(isTournament?'o torneio':'a tabela')+' com quem não está na Jynlo.'}</Text>
+     ?(isTournament?t('Qualquer pessoa com a ligação vê a classificação e os resultados, sem conta. Só aparecem alcunhas ou nomes de utilizador.'):t('Qualquer pessoa com a ligação vê a tabela da época, sem conta. Só aparecem alcunhas ou nomes de utilizador.'))
+     :t('Desligada. Ativa para partilhar {v} com quem não está na Jynlo.',{v:(isTournament?t('o torneio'):t('a tabela'))})}</Text>
    </View>
    {canManage?<Switch value={setting.enabled} disabled={busy} onValueChange={v=>{void toggle(v);}}
-    accessibilityLabel={isTournament?'Página pública do torneio':'Classificação pública'}/>:null}
+    accessibilityLabel={isTournament?t('Página pública do torneio'):t('Classificação pública')}/>:null}
   </View>
-  {setting.enabled?<Button title="Partilhar ligação" disabled={busy} onPress={()=>{void share();}}/>:null}
+  {setting.enabled?<Button title={t('Partilhar ligação')} disabled={busy} onPress={()=>{void share();}}/>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
  </View>;
 }

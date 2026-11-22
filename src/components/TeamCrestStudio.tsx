@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import Svg,{ClipPath,Defs,G,Path,Rect,Text as SvgText} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
@@ -131,18 +132,18 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
   const current=projectRef.current;
   if((current.layers||[]).some(l=>l.text.length>18||/[\x00-\x1F]/.test(l.text)
      ||(l.kind==='text'&&!l.text.trim()))){
-   setNotice('Cada camada de texto deve ter entre 1 e 18 caracteres.');return;
+   setNotice(t('Cada camada de texto deve ter entre 1 e 18 caracteres.'));return;
   }
   if(!/^[\p{L}0-9]{0,5}$/u.test(current.customInitials)||current.caption.length>22){
-   setNotice('Revê as iniciais e o texto inferior.');return;
+   setNotice(t('Revê as iniciais e o texto inferior.'));return;
   }
   setExporting(true);setNotice('');
   try{
-   if(!previewRef.current)throw Error('Pré-visualização indisponível.');
+   if(!previewRef.current)throw Error(t('Pré-visualização indisponível.'));
    const uri=await captureRef(previewRef.current,{
     format:'png',quality:1,result:'tmpfile',width:640,height:720});
    onSave({uri,type:'image',mimeType:'image/png'},JSON.stringify({...current,version:2}));
-  }catch{setNotice('Não foi possível gerar o PNG. Confirma o emblema antes de repetir.');}
+  }catch{setNotice(t('Não foi possível gerar o PNG. Confirma o emblema antes de repetir.'));}
   finally{setExporting(false);}
  };
  const path=shieldPath(project.shape);
@@ -168,8 +169,8 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
     style={[styles.color,{backgroundColor:color},chosen.toUpperCase()===color&&styles.colorSelected]}/>)}</View>
   </View>;
  return <View style={styles.studio}>
-  <Text style={styles.title}>Estúdio de emblemas</Text>
-  <Text style={styles.note}>Cria símbolos para qualquer desporto. Arrasta os elementos com o dedo, altera cores, tamanho e rotação e volta a editá-los depois de guardar.</Text>
+  <Text style={styles.title}>{t('Estúdio de emblemas')}</Text>
+  <Text style={styles.note}>{t('Cria símbolos para qualquer desporto. Arrasta os elementos com o dedo, altera cores, tamanho e rotação e volta a editá-los depois de guardar.')}</Text>
   <View style={styles.previewBackground}>
    <View ref={previewRef} collapsable={false} style={styles.preview}
     onStartShouldSetResponder={()=>!isDisabled}
@@ -207,80 +208,80 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
      </G>)}
     </Svg>
    </View>
-   <Text style={styles.note}>{selectedLayer?'Camada selecionada: '+label:'Toca num elemento para o selecionar e arrastar.'}</Text>
+   <Text style={styles.note}>{selectedLayer?t('Camada selecionada: {v}',{v:label}):t('Toca num elemento para o selecionar e arrastar.')}</Text>
   </View>
-  <Text style={styles.label}>Modelos rápidos</Text>
-  <View style={styles.choices}>{['Clássico','Minimalista','Energético','Em branco'].map((name,index)=><Pressable
+  <Text style={styles.label}>{t('Modelos rápidos')}</Text>
+  <View style={styles.choices}>{['Clássico','Minimalista','Energético',t('Em branco')].map((name,index)=><Pressable
    key={name} disabled={isDisabled} style={styles.option}
    onPress={()=>{
     const base=defaultCrest();
-    if(index===0){base.symbol='star';base.caption='DESDE 2026';}
+    if(index===0){base.symbol='star';base.caption=t('DESDE 2026');}
     if(index===1){base.shape='circle';base.borderWidth=2;base.innerBorder=false;}
     if(index===2){base.shape='hex';base.pattern='chevron';base.symbol='flame';base.primary='#142E60';}
     if(index===3){base.showInitials=false;base.innerBorder=false;base.borderWidth=0;}
     setProject(base);setSelected(null);
    }}><Text style={styles.controlText}>{name}</Text></Pressable>)}</View>
-  <Text style={styles.label}>Formato</Text>
+  <Text style={styles.label}>{t('Formato')}</Text>
   <View style={styles.choices}>{SHAPES.map(option=><Pressable key={option.id} disabled={isDisabled}
    accessibilityRole="button" accessibilityState={{selected:project.shape===option.id}}
    style={[styles.option,project.shape===option.id&&styles.active]}
    onPress={()=>update({shape:option.id})}><Text style={styles.controlText}>{option.label}</Text></Pressable>)}</View>
-  <Text style={styles.label}>Símbolo central (opcional)</Text>
+  <Text style={styles.label}>{t('Símbolo central (opcional)')}</Text>
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layerStrip}>
    <Pressable disabled={isDisabled} accessibilityRole="button"
     accessibilityState={{selected:project.symbol==='none'}}
     style={[styles.option,project.symbol==='none'&&styles.active]}
-    onPress={()=>update({symbol:'none'})}><Text style={styles.controlText}>Sem símbolo</Text></Pressable>
-   {SYMBOLS.map(icon=><Pressable key={icon.id} disabled={isDisabled} accessibilityRole="button"
+    onPress={()=>update({symbol:'none'})}><Text style={styles.controlText}>{t('Sem símbolo')}</Text></Pressable>
+   {SYMBOLS.map(f=>({...f,label:t(f.label)})).map(icon=><Pressable key={icon.id} disabled={isDisabled} accessibilityRole="button"
     accessibilityState={{selected:project.symbol===icon.id}}
     style={[styles.option,project.symbol===icon.id&&styles.active]}
     onPress={()=>update({symbol:icon.id})}><Text style={styles.controlText}>{icon.label}</Text></Pressable>)}
   </ScrollView>
-  <Text style={styles.label}>Fundo</Text>
-  <View style={styles.choices}>{PATTERNS.map(option=><Pressable key={option.id} disabled={isDisabled}
+  <Text style={styles.label}>{t('Fundo')}</Text>
+  <View style={styles.choices}>{PATTERNS.map(f=>({...f,label:t(f.label)})).map(option=><Pressable key={option.id} disabled={isDisabled}
    accessibilityRole="button" accessibilityState={{selected:project.pattern===option.id}}
    style={[styles.option,project.pattern===option.id&&styles.active]}
    onPress={()=>update({pattern:option.id})}><Text style={styles.controlText}>{option.label}</Text></Pressable>)}</View>
-  {palette('Cor principal',project.primary,value=>update({primary:value}))}
-  {palette('Cor do padrão',project.secondary,value=>update({secondary:value}))}
-  {palette('Cor de texto',project.textColor,value=>update({textColor:value}))}
+  {palette(t('Cor principal'),project.primary,value=>update({primary:value}))}
+  {palette(t('Cor do padrão'),project.secondary,value=>update({secondary:value}))}
+  {palette(t('Cor de texto'),project.textColor,value=>update({textColor:value}))}
   {palette('Contorno',project.borderColor,value=>update({borderColor:value}))}
   <View style={styles.numbers}>
-   {numberControl('Intensidade do padrão',project.patternOpacity,0,100,10,
+   {numberControl(t('Intensidade do padrão'),project.patternOpacity,0,100,10,
      value=>update({patternOpacity:value}))}
-   {numberControl('Largura do contorno',project.borderWidth,0,14,1,
+   {numberControl(t('Largura do contorno'),project.borderWidth,0,14,1,
      value=>update({borderWidth:value}))}
-   {project.symbol!=='none'?numberControl('Tamanho do símbolo',project.symbolSize,30,112,4,
+   {project.symbol!=='none'?numberControl(t('Tamanho do símbolo'),project.symbolSize,30,112,4,
      value=>update({symbolSize:value})):null}
-   {project.symbol!=='none'?numberControl('Posição do símbolo',project.symbolY,85,205,5,
+   {project.symbol!=='none'?numberControl(t('Posição do símbolo'),project.symbolY,85,205,5,
      value=>update({symbolY:value})):null}
   </View>
   <View style={styles.row}>
    <Pressable style={[styles.option,project.showInitials&&styles.active]} disabled={isDisabled}
     onPress={()=>update({showInitials:!project.showInitials})}>
-    <Text style={styles.controlText}>{project.showInitials?'✓ ':''}Iniciais</Text></Pressable>
+    <Text style={styles.controlText}>{t('{a}Iniciais',{a:project.showInitials?'✓ ':''})}</Text></Pressable>
    <Pressable style={[styles.option,project.innerBorder&&styles.active]} disabled={isDisabled}
     onPress={()=>update({innerBorder:!project.innerBorder})}>
-    <Text style={styles.controlText}>{project.innerBorder?'✓ ':''}Aro interior</Text></Pressable>
+    <Text style={styles.controlText}>{t('{a}Aro interior',{a:project.innerBorder?'✓ ':''})}</Text></Pressable>
   </View>
   {project.showInitials?<TextInput editable={!isDisabled} style={styles.input}
-   value={project.customInitials} maxLength={5} placeholder="Iniciais (opcional)"
+   value={project.customInitials} maxLength={5} placeholder={t('Iniciais (opcional)')}
    placeholderTextColor="#A2C6CC" onChangeText={value=>update({customInitials:value})}/>:null}
   {project.showInitials?<View style={styles.numbers}>
-   {numberControl('Tamanho das iniciais',project.initialsSize,16,54,2,
+   {numberControl(t('Tamanho das iniciais'),project.initialsSize,16,54,2,
      value=>update({initialsSize:value}))}
-   {numberControl('Posição das iniciais',project.initialsY,165,265,5,
+   {numberControl(t('Posição das iniciais'),project.initialsY,165,265,5,
      value=>update({initialsY:value}))}
   </View>:null}
   <TextInput editable={!isDisabled} style={styles.input} value={project.caption} maxLength={22}
-   placeholder="Texto inferior opcional" placeholderTextColor="#A2C6CC"
+   placeholder={t('Texto inferior opcional')} placeholderTextColor="#A2C6CC"
    onChangeText={value=>update({caption:value})}/>
-  <Text style={styles.section}>Camadas livres ({layers.length}/6)</Text>
+  <Text style={styles.section}>{t('Camadas livres ({a}/6)',{a:layers.length})}</Text>
   <View style={styles.choices}>
    <Pressable style={styles.option} disabled={isDisabled||layers.length>=6}
-    onPress={()=>createLayer('text')}><Text style={styles.controlText}>+ Texto</Text></Pressable>
+    onPress={()=>createLayer('text')}><Text style={styles.controlText}>{t('+ Texto')}</Text></Pressable>
    <Pressable style={styles.option} disabled={isDisabled||layers.length>=6}
-    onPress={()=>createLayer('symbol')}><Text style={styles.controlText}>+ Símbolo</Text></Pressable>
+    onPress={()=>createLayer('symbol')}><Text style={styles.controlText}>{t('+ Símbolo')}</Text></Pressable>
   </View>
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layerStrip}>
    {layers.map(layer=><Pressable key={layer.id}
@@ -291,17 +292,17 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
    </Pressable>)}
   </ScrollView>
   {selectedLayer?<View style={styles.layerEditor}>
-   <Text style={styles.label}>Editar camada selecionada</Text>
+   <Text style={styles.label}>{t('Editar camada selecionada')}</Text>
    {selectedLayer.kind==='text'?<TextInput style={styles.input} editable={!isDisabled}
-    maxLength={18} placeholder="Texto" placeholderTextColor="#A2C6CC"
+    maxLength={18} placeholder={t('Texto')} placeholderTextColor="#A2C6CC"
     value={selectedLayer.text} onChangeText={value=>updateLayer(selectedLayer.id,{text:value})}/>
-   :<View style={styles.choices}>{SYMBOLS.map(icon=><Pressable key={icon.id}
+   :<View style={styles.choices}>{SYMBOLS.map(f=>({...f,label:t(f.label)})).map(icon=><Pressable key={icon.id}
       accessibilityRole="button" accessibilityState={{selected:selectedLayer.symbol===icon.id}}
       style={[styles.option,selectedLayer.symbol===icon.id&&styles.active]}
       disabled={isDisabled} onPress={()=>updateLayer(selectedLayer.id,{symbol:icon.id})}>
       <Text style={styles.controlText}>{icon.label}</Text>
      </Pressable>)}</View>}
-   {palette('Cor desta camada',selectedLayer.color,value=>updateLayer(selectedLayer.id,{color:value}))}
+   {palette(t('Cor desta camada'),selectedLayer.color,value=>updateLayer(selectedLayer.id,{color:value}))}
    <View style={styles.numbers}>
     {numberControl('Tamanho',selectedLayer.size,18,110,4,v=>updateLayer(selectedLayer.id,{size:v}))}
     {numberControl('Rotação',selectedLayer.rotation,-180,180,15,v=>updateLayer(selectedLayer.id,{rotation:v}))}
@@ -311,19 +312,19 @@ export default function TeamCrestStudio({teamId,teamName,design,disabled,onSave}
    </View>
    <View style={styles.choices}>
     <Pressable style={styles.option} disabled={isDisabled} onPress={()=>reorder(-1)}>
-     <Text style={styles.controlText}>Para trás</Text></Pressable>
+     <Text style={styles.controlText}>{t('Para trás')}</Text></Pressable>
     <Pressable style={styles.option} disabled={isDisabled} onPress={()=>reorder(1)}>
-     <Text style={styles.controlText}>Para a frente</Text></Pressable>
+     <Text style={styles.controlText}>{t('Para a frente')}</Text></Pressable>
     <Pressable style={styles.option} disabled={isDisabled||layers.length>=6} onPress={duplicateLayer}>
-     <Text style={styles.controlText}>Duplicar</Text></Pressable>
+     <Text style={styles.controlText}>{t('Duplicar')}</Text></Pressable>
     <Pressable style={styles.deleteButton} disabled={isDisabled} onPress={removeLayer}>
-     <Text style={styles.controlText}>Eliminar</Text></Pressable>
+     <Text style={styles.controlText}>{t('Eliminar')}</Text></Pressable>
    </View>
   </View>:null}
   {notice?<Text style={styles.warning}>{notice}</Text>:null}
   <Pressable accessibilityRole="button" disabled={isDisabled} onPress={()=>void save()}
    style={[styles.save,isDisabled&&styles.disabled]}>
-   <Text style={styles.saveLabel}>{isDisabled?'A gerar…':'Guardar emblema da equipa'}</Text>
+   <Text style={styles.saveLabel}>{isDisabled?t('A gerar…'):t('Guardar emblema da equipa')}</Text>
   </Pressable>
  </View>;
 }

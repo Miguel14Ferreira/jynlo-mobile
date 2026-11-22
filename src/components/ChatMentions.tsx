@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {StyleProp,TextStyle} from 'react-native';
 import {useRouter} from 'expo-router';
@@ -13,7 +14,7 @@ export function ChatMentionText({body,style}:{body:string;style?:StyleProp<TextS
  return <Text style={style}>
   {pieces.map((piece,i)=>piece.username
     ?<Text key={i} accessibilityRole="link"
-      accessibilityLabel={'Abrir perfil de @'+piece.username} style={styles.mention}
+      accessibilityLabel={t('Abrir perfil de @{v}',{v:piece.username})} style={styles.mention}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:piece.username!}})}>{piece.text}</Text>
     :<Text key={i}>{piece.text}</Text>)}
  </Text>;
@@ -41,10 +42,10 @@ export function ChatMentionSuggestions({draft,token,onChange,disabled=false}:{
   return()=>{active=false;clearTimeout(timeout);};
  },[term,token,disabled]);
  if(!term||disabled||(!loading&&!options.length))return null;
- return <View style={styles.box} accessibilityLabel="Sugestões de utilizadores a identificar">
-  {loading?<Text style={styles.loading}>A procurar perfis…</Text>:null}
+ return <View style={styles.box} accessibilityLabel={t('Sugestões de utilizadores a identificar')}>
+  {loading?<Text style={styles.loading}>{t('A procurar perfis…')}</Text>:null}
   {options.map(person=><Pressable key={person.username} accessibilityRole="button"
-   accessibilityLabel={'Identificar @'+person.username}
+   accessibilityLabel={t('Identificar @{v}',{v:person.username})}
    onPress={()=>onChange(insertMention(draft,person.username))} style={styles.choice}>
     <Text style={styles.handle}>@{person.username}</Text>
     <Text numberOfLines={1} style={styles.name}>{person.fullName||person.nickname||''}</Text>

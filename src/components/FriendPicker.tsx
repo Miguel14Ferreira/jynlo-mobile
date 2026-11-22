@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
 import {storyMentionFriends,type StoryFriend} from '../lib/social-relations-api';
@@ -12,7 +13,7 @@ export function FriendPicker({token,group,selected,onChange,disabled,max}:{
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[query,setQuery]=useState('');
  useEffect(()=>{let live=true;setLoading(true);setError('');
   storyMentionFriends(token).then(list=>{if(live)setFriends(list);})
-   .catch(()=>{if(live)setError('Não foi possível carregar os teus amigos.');})
+   .catch(()=>{if(live)setError(t('Não foi possível carregar os teus amigos.'));})
    .finally(()=>{if(live)setLoading(false);});
   return()=>{live=false;};},[token]);
  const list=invitableFriends(friends,group,query);
@@ -22,12 +23,12 @@ export function FriendPicker({token,group,selected,onChange,disabled,max}:{
   else if(selected.length<max)onChange([...selected,u]);
  };
  return <View style={{gap:8}}>
-  <Text style={styles.label}>Seleciona os amigos que queres convidar · {selected.length} selecionado{selected.length===1?'':'s'}</Text>
-  <TextInput value={query} onChangeText={setQuery} placeholder="Pesquisa por nome ou username…" placeholderTextColor={C.muted}
-   style={styles.input} autoCorrect={false} autoCapitalize="none" accessibilityLabel="Pesquisar amigos" editable={!disabled}/>
+  <Text style={styles.label}>{selected.length===1?t('Seleciona os amigos que queres convidar · 1 selecionado'):t('Seleciona os amigos que queres convidar · {a} selecionados',{a:selected.length})}</Text>
+  <TextInput value={query} onChangeText={setQuery} placeholder={t('Pesquisa por nome ou username…')} placeholderTextColor={C.muted}
+   style={styles.input} autoCorrect={false} autoCapitalize="none" accessibilityLabel={t('Pesquisar amigos')} editable={!disabled}/>
   {loading?<ActivityIndicator color={C.mint}/>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
-  {!loading&&!error&&!list.length?<Text style={styles.muted}>{query.trim()?'Não encontrámos amigos com esse nome.':'Não há amigos disponíveis para adicionar.'}</Text>:null}
+  {!loading&&!error&&!list.length?<Text style={styles.muted}>{query.trim()?t('Não encontrámos amigos com esse nome.'):t('Não há amigos disponíveis para adicionar.')}</Text>:null}
   {list.slice(0,60).map(f=>{const on=selected.includes(f.username);const name=f.nickname||f.fullName||f.username;
    return <Pressable key={f.username} accessibilityRole="checkbox" accessibilityState={{checked:on,disabled}} accessibilityLabel={name}
     onPress={()=>toggle(f.username)} style={[styles.row,on&&styles.rowOn]}>

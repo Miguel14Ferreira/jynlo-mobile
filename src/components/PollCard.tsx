@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import type {ChatPollContent} from '../lib/chat-poll.cjs';
@@ -20,8 +21,8 @@ export function PollCard({poll,kind,conversationId,messageId,token}:{poll:ChatPo
   finally{setBusy(false);}
  }
  const total=result?.total??0;
- return <View style={styles.card} accessibilityLabel={'Sondagem: '+poll.question}>
-  <Text style={styles.kind}>📊 Sondagem</Text>
+ return <View style={styles.card} accessibilityLabel={t('Sondagem: {v}',{v:poll.question})}>
+  <Text style={styles.kind}>{t('📊 Sondagem')}</Text>
   <Text style={styles.question}>{poll.question}</Text>
   {poll.options.map((option,index)=>{
    const count=result?.counts?.[index]??0,mine=result?.mine===index;
@@ -34,8 +35,8 @@ export function PollCard({poll,kind,conversationId,messageId,token}:{poll:ChatPo
     <Text style={styles.count}>{count}</Text>
    </Pressable>;
   })}
-  <Text style={styles.meta}>{failed?'Não foi possível atualizar a sondagem.'
-   :`${total} ${total===1?'voto':'votos'} · ${result?.mine==null?'toca para votar':'toca de novo para retirar'}`}</Text>
+  <Text style={styles.meta}>{failed?t('Não foi possível atualizar a sondagem.')
+   :`${total} ${total===1?'voto':'votos'} · ${result?.mine==null?t('toca para votar'):t('toca de novo para retirar')}`}</Text>
  </View>;
 }
 const styles=StyleSheet.create({

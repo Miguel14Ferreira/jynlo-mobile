@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text} from 'react-native';
 import {useRouter} from 'expo-router';
 import {previousUnpaid,type PreviousUnpaid} from '../lib/session-payments-api';
@@ -16,8 +17,8 @@ export default function PreviousUnpaidWarning({sessionId,token}:{sessionId:numbe
  const names=data.unpaid.length<=4?data.unpaid.join(', '):data.unpaid.slice(0,4).join(', ')+' +'+(data.unpaid.length-4);
  return <Pressable accessibilityRole="link" style={styles.box}
   onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(data.sessionId)}})}>
-  <Text style={styles.text}>💶 Ainda falta{data.unpaid.length===1?'':'m'} {data.unpaid.length} pagamento{data.unpaid.length===1?'':'s'} do jogo anterior: {names}.</Text>
-  <Text style={styles.link}>Ver jogo anterior ›</Text>
+  <Text style={styles.text}>{data.unpaid.length===1?t('💶 Ainda falta 1 pagamento do jogo anterior: {d}.',{d:names}):t('💶 Ainda faltam {b} pagamentos do jogo anterior: {d}.',{b:data.unpaid.length,d:names})}</Text>
+  <Text style={styles.link}>{t('Ver jogo anterior ›')}</Text>
  </Pressable>;
 }
 const styles=StyleSheet.create({

@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /**
  * Draft creation rules mirror the explicitly supported Jynlo web/BE contracts.
  * This is client-side UX validation, never a substitute for server authorization.
@@ -46,43 +47,43 @@ function asInt(value,min,max,label){
  return n;
 }
 function createTournamentDraft(data){
- if(!data||typeof data!=='object')throw Error('Configuração inválida.');
+ if(!data||typeof data!=='object')throw Error(tr('Configuração inválida.'));
  const name=String(data.name||'').trim(),sport=String(data.sport||'').trim();
- if(name.length<2||name.length>120)throw Error('O nome deve ter entre 2 e 120 caracteres.');
- if(!sport||sport.length>100)throw Error('Seleciona uma modalidade válida.');
+ if(name.length<2||name.length>120)throw Error(tr('O nome deve ter entre 2 e 120 caracteres.'));
+ if(!sport||sport.length>100)throw Error(tr('Seleciona uma modalidade válida.'));
  const entryType=data.entryType==='TEAM'?'TEAM':'INDIVIDUAL';
  const profile=creationProfile(sport,entryType,data.athleticsMode);
- if(profile.model==='UNAVAILABLE')throw Error('Esta modalidade ainda não tem um modelo de torneio validado no mobile.');
+ if(profile.model==='UNAVAILABLE')throw Error(tr('Esta modalidade ainda não tem um modelo de torneio validado no mobile.'));
  const format=data.format||'LEAGUE';
- if(!profile.formats.includes(format))throw Error('O formato não é compatível com esta modalidade.');
+ if(!profile.formats.includes(format))throw Error(tr('O formato não é compatível com esta modalidade.'));
  let groupCount=null,playersPerTeam=null,roundRobinLegs=null;
  if(format==='GROUP_KNOCKOUT'){
-  if(entryType!=='TEAM'||profile.model!=='NUMERIC_TEAM')throw Error('Os grupos exigem um torneio numérico por equipas.');
+  if(entryType!=='TEAM'||profile.model!=='NUMERIC_TEAM')throw Error(tr('Os grupos exigem um torneio numérico por equipas.'));
   groupCount=asInt(data.groupCount,2,4,'Seleciona 2 ou 4 grupos.');
   if(groupCount!==2&&groupCount!==4)throw Error('Seleciona 2 ou 4 grupos.');
  }
  if(entryType==='TEAM'){
-  playersPerTeam=profile.model==='RELAY_BEST_TIME'?4:asInt(data.playersPerTeam,1,30,'Indica de 1 a 30 jogadores por equipa.');
-  if(format==='LEAGUE'&&profile.model==='NUMERIC_TEAM')roundRobinLegs=asInt(data.roundRobinLegs||1,1,2,'Seleciona 1 ou 2 voltas.');
+  playersPerTeam=profile.model==='RELAY_BEST_TIME'?4:asInt(data.playersPerTeam,1,30,tr('Indica de 1 a 30 jogadores por equipa.'));
+  if(format==='LEAGUE'&&profile.model==='NUMERIC_TEAM')roundRobinLegs=asInt(data.roundRobinLegs||1,1,2,tr('Seleciona 1 ou 2 voltas.'));
  }
  let eventType=null,eventDiscipline=null;
  if(profile.events.length){
   const requested=String(data.eventType||'').trim();
-  if(!profile.events.includes(requested))throw Error('Seleciona um tipo de prova compatível.');
+  if(!profile.events.includes(requested))throw Error(tr('Seleciona um tipo de prova compatível.'));
   eventType=requested;
- }else if(data.eventType)throw Error('Este torneio não utiliza esse tipo de prova.');
+ }else if(data.eventType)throw Error(tr('Este torneio não utiliza esse tipo de prova.'));
  const disciplines=disciplineChoices(eventType);
  if(disciplines.length){
   const requested=String(data.eventDiscipline||'').trim();
-  if(!disciplines.includes(requested))throw Error('Seleciona uma disciplina válida para a prova.');
+  if(!disciplines.includes(requested))throw Error(tr('Seleciona uma disciplina válida para a prova.'));
   eventDiscipline=requested;
- }else if(data.eventDiscipline)throw Error('Esta competição não utiliza uma disciplina de prova.');
+ }else if(data.eventDiscipline)throw Error(tr('Esta competição não utiliza uma disciplina de prova.'));
  const numeric=isNumericModel(profile.model);
  const points=numeric
   ?profile.model==='CHESS_HALF_POINTS'?[2,1,0]:[
-    asInt(data.winPoints??3,0,999,'Pontos de vitória inválidos.'),
-    asInt(data.drawPoints??1,0,999,'Pontos de empate inválidos.'),
-    asInt(data.lossPoints??0,0,999,'Pontos de derrota inválidos.')
+    asInt(data.winPoints??3,0,999,tr('Pontos de vitória inválidos.')),
+    asInt(data.drawPoints??1,0,999,tr('Pontos de empate inválidos.')),
+    asInt(data.lossPoints??0,0,999,tr('Pontos de derrota inválidos.'))
    ]
   :[null,null,null];
  return {

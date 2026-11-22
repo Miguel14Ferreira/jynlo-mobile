@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -24,17 +25,17 @@ function ScoreEditor({match,tournament,busy,writeGuard,onSave}:{match:OrganizerM
  const [away,setAway]=useState(match.awayScore==null?'':String(match.awayScore));
  let valid=true;try{validateTournamentMatchScore(tournament,match,home,away);}catch{valid=false;}
  return <View style={styles.editor}>
-  <Text style={styles.helper}>Resultado · {match.home} / {match.away}</Text>
+  <Text style={styles.helper}>{t('Resultado · {a} / {b}',{a:match.home,b:match.away})}</Text>
   {tournament.scoringMode==='CHESS_HALF_POINTS'?<Text style={styles.helper}>Xadrez: 1–0, 0–1 ou 0–0 (empate).</Text>:null}
   {tournament.entryType==='TEAM'&&(tournament.format==='KNOCKOUT'||(tournament.format==='GROUP_KNOCKOUT'&&match.groupNumber==null))?
-   <Text style={styles.helper}>Eliminatória: indica o resultado após desempate. Não pode haver empate.</Text>:null}
+   <Text style={styles.helper}>{t('Eliminatória: indica o resultado após desempate. Não pode haver empate.')}</Text>:null}
   <View style={styles.scoreRow}>
-   <TextInput style={styles.scoreInput} value={home} onChangeText={setHome} keyboardType="number-pad" maxLength={3} accessibilityLabel={`Pontos de ${match.home}`}/>
+   <TextInput style={styles.scoreInput} value={home} onChangeText={setHome} keyboardType="number-pad" maxLength={3} accessibilityLabel={t('Pontos de {a}',{a:match.home})}/>
    <Text style={styles.dash}>—</Text>
-   <TextInput style={styles.scoreInput} value={away} onChangeText={setAway} keyboardType="number-pad" maxLength={3} accessibilityLabel={`Pontos de ${match.away}`}/>
+   <TextInput style={styles.scoreInput} value={away} onChangeText={setAway} keyboardType="number-pad" maxLength={3} accessibilityLabel={t('Pontos de {a}',{a:match.away})}/>
   </View>
   {!writeGuard.allowed?<Text style={styles.helper}>{writeGuard.reason}</Text>:null}
-  <Button secondary disabled={busy||!valid||!writeGuard.allowed} title={match.status==='COMPLETED'?'Corrigir resultado':'Registar resultado'} onPress={()=>onSave(match.id,home,away)}/>
+  <Button secondary disabled={busy||!valid||!writeGuard.allowed} title={match.status==='COMPLETED'?t('Corrigir resultado'):t('Registar resultado')} onPress={()=>onSave(match.id,home,away)}/>
  </View>;
 }
 export default function TournamentManagerScreen(){
@@ -66,7 +67,7 @@ export default function TournamentManagerScreen(){
     communityDetails(cid,auth.token,auth.username)
    ]);
    if(version!==generation.current||request!==readVersion.current)return false;
-   if(community.id!==cid)throw Error('Comunidade diferente da competição selecionada.');
+   if(community.id!==cid)throw Error(t('Comunidade diferente da competição selecionada.'));
    const currentRole='myRole' in community?community.myRole:null;
    setTournament(info);setRole(currentRole||null);
    const kind=organizerFixtureType(info);
@@ -96,13 +97,13 @@ export default function TournamentManagerScreen(){
    setMatches(response.matches.map(m=>kind==='TEAM'?mapTeam(m as TournamentTeamMatch):mapIndividual(m as TournamentIndividualMatch)));
    setPage(response.page);setHasMore(response.hasMore);
    if(table.status==='fulfilled'){setStandings(table.value);}
-   else{setStandings(null);setStandingsError('Não foi possível atualizar a classificação oficial.');}
+   else{setStandings(null);setStandingsError(t('Não foi possível atualizar a classificação oficial.'));}
    if(groupState.status==='fulfilled')setGroups(groupState.value);
-   else{setGroups(null);setStandingsError(old=>[old,'Não foi possível confirmar a fase de grupos.'].filter(Boolean).join(' '));}
+   else{setGroups(null);setStandingsError(old=>[old,t('Não foi possível confirmar a fase de grupos.')].filter(Boolean).join(' '));}
    return true;
   }catch(e){
    if(version===generation.current&&request===readVersion.current)
-    setError((silent?'Não foi possível confirmar os dados atuais: ':'')+(e instanceof Error?e.message:'Não foi possível carregar a gestão do torneio.'));
+    setError((silent?t('Não foi possível confirmar os dados atuais:')+' ':'')+(e instanceof Error?e.message:t('Não foi possível carregar a gestão do torneio.')));
    return false;
   }finally{
    if(version===generation.current&&request===readVersion.current){
@@ -134,35 +135,35 @@ export default function TournamentManagerScreen(){
    await run();
    if(version!==generation.current)return;
    const refreshed=await load(version,true);
-   if(version===generation.current)setNotice(refreshed?success:success+' Não foi possível confirmar a atualização do calendário. Consulta novamente antes de repetir.');
+   if(version===generation.current)setNotice(refreshed?success:success+' '+t('Não foi possível confirmar a atualização do calendário. Consulta novamente antes de repetir.'));
   }
-  catch(e){if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível concluir a ação.')+' Confirma o estado atual antes de repetir.');}
+  catch(e){if(version===generation.current)setError((e instanceof Error?e.message:t('Não foi possível concluir a ação.'))+' '+t('Confirma o estado atual antes de repetir.'));}
   finally{pendingWrite.current=false;if(version===generation.current)setBusy(false);}
  }
  function publish(){if(!tournament||!canPublish||!auth.token||!auth.username)return;
   const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
-  Alert.alert('Publicar calendário?','Esta ação inicia o torneio e fecha as inscrições. Confirma primeiro as equipas ou os participantes.',[
-   {text:'Voltar',style:'cancel'},
-   {text:'Publicar calendário',onPress:()=>{void act(()=>publishTournamentSchedule(cid,tournament,auth.token!,auth.username!),'Calendário publicado pelo servidor.',confirmationVersion,confirmationReadVersion);}}
+  Alert.alert(t('Publicar calendário?'),t('Esta ação inicia o torneio e fecha as inscrições. Confirma primeiro as equipas ou os participantes.'),[
+   {text:t('Voltar'),style:'cancel'},
+   {text:t('Publicar calendário'),onPress:()=>{void act(()=>publishTournamentSchedule(cid,tournament,auth.token!,auth.username!),t('Calendário publicado pelo servidor.'),confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  function save(id:number,home:string,away:string){if(!tournament||!canRecord||!auth.token||!auth.username)return;
   const match=matches.find(item=>item.id===id);
-  if(!match){setError('O jogo já não está disponível. Volta a sincronizar o calendário.');return;}
+  if(!match){setError(t('O jogo já não está disponível. Volta a sincronizar o calendário.'));return;}
   const guard=organizerMatchWriteGuard(tournament,match,matches,groups,groups!==null);
-  if(!guard.allowed){setError(guard.reason||'Este resultado já não pode ser alterado.');return;}
-  try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:'Resultado inválido.');return;}
+  if(!guard.allowed){setError(guard.reason||t('Este resultado já não pode ser alterado.'));return;}
+  try{validateTournamentMatchScore(tournament,match,home,away);}catch(e){setError(e instanceof Error?e.message:t('Resultado inválido.'));return;}
   const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
-  Alert.alert('Confirmar resultado?',`Registar ${home} — ${away}? A classificação será calculada pelo servidor.`,[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Guardar',onPress:()=>{void act(()=>saveTournamentMatchResult(cid,tournament,id,home,away,auth.token!,auth.username!),'Resultado registado pelo servidor.',confirmationVersion,confirmationReadVersion);}}
+  Alert.alert(t('Confirmar resultado?'),t('Registar {a} — {b}? A classificação será calculada pelo servidor.',{a:home,b:away}),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Guardar'),onPress:()=>{void act(()=>saveTournamentMatchResult(cid,tournament,id,home,away,auth.token!,auth.username!),t('Resultado registado pelo servidor.'),confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  function finish(){if(!tournament||!canFinish||!allVisibleFinished||!auth.token||!auth.username)return;
   const confirmationVersion=generation.current,confirmationReadVersion=readVersion.current;
-  Alert.alert('Encerrar a liga?','Esta ação fecha a competição e fixa o resultado oficial. Depois de concluída, não poderás alterar os jogos.',[
-   {text:'Manter aberta',style:'cancel'},
-   {text:'Encerrar liga',style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),'Liga encerrada pelo servidor.',confirmationVersion,confirmationReadVersion);}}
+  Alert.alert(t('Encerrar a liga?'),t('Esta ação fecha a competição e fixa o resultado oficial. Depois de concluída, não poderás alterar os jogos.'),[
+   {text:t('Manter aberta'),style:'cancel'},
+   {text:t('Encerrar liga'),style:'destructive',onPress:()=>{void act(()=>finishTournamentLeague(cid,tournament,auth.token!,auth.username!),t('Liga encerrada pelo servidor.'),confirmationVersion,confirmationReadVersion);}}
   ]);
  }
  async function more(){if(!tournament||!type||!fixturesVerified||!auth.token||!auth.username||busy||syncing||pendingWrite.current||!hasMore)return;
@@ -176,63 +177,63 @@ export default function TournamentManagerScreen(){
    if(version!==generation.current)return;
    setMatches(previous=>[...previous,...items.filter(m=>!previous.some(x=>x.id===m.id))]);
    visiblePage.current=checked.page;setPage(checked.page);setHasMore(checked.hasMore);
-  }catch(e){if(version===generation.current&&reading===readVersion.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  }catch(e){if(version===generation.current&&reading===readVersion.current)setError(e instanceof Error?e.message:t('Não foi possível carregar mais jogos.'));}
   finally{pendingWrite.current=false;if(version===generation.current&&reading===readVersion.current)setBusy(false);}
  }
- return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Gestão do torneio'}</Text>
-  {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
-  {loading?<Loader/>:null}{syncing?<Message>A sincronizar resultados e classificações oficiais…</Message>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('TORNEIOS · ORGANIZAÇÃO')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Gestão do torneio')}</Text>
+  {!auth.token?<Button title={t('Entrar')} onPress={()=>router.push('/login')}/>:null}
+  {loading?<Loader/>:null}{syncing?<Message>{t('A sincronizar resultados e classificações oficiais…')}</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}{notice?<Message>{notice}</Message>:null}
   {!loading&&!syncing&&!busy&&auth.token&&(error||!!tournament&&isOrganizer(role)&&type&&!fixturesVerified)?
-   <Button secondary title="Voltar a sincronizar dados" onPress={()=>{void load(generation.current,!!tournament);}}/>:null}
-  {!loading&&tournament&&!isOrganizer(role)?<Message>Este painel é exclusivo para proprietários e administradores da comunidade.</Message>:null}
-  {!loading&&tournament&&isOrganizer(role)&&!type?<><Message>Esta modalidade utiliza regras próprias de resultados. Não aplicamos uma tabela de jogos genérica.</Message>
-    {managedKind(tournament)?<Button secondary title="Gerir jornadas da competição"
+   <Button secondary title={t('Voltar a sincronizar dados')} onPress={()=>{void load(generation.current,!!tournament);}}/>:null}
+  {!loading&&tournament&&!isOrganizer(role)?<Message>{t('Este painel é exclusivo para proprietários e administradores da comunidade.')}</Message>:null}
+  {!loading&&tournament&&isOrganizer(role)&&!type?<><Message>{t('Esta modalidade utiliza regras próprias de resultados. Não aplicamos uma tabela de jogos genérica.')}</Message>
+    {managedKind(tournament)?<Button secondary title={t('Gerir jornadas da competição')}
      onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/events',
       params:{communityId:String(cid),id:String(tid)}})}/>:null}
    </>:null}
   {!loading&&tournament&&isOrganizer(role)&&type?<>
-   <View style={styles.row}><Badge text={tournament.sport||'Modalidade'}/><Badge text={tournament.status==='DRAFT'?'Em preparação':tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}/></View>
-   {DEMO_MODE?<Message>Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.</Message>:null}
+   <View style={styles.row}><Badge text={tournament.sport||t('Modalidade')}/><Badge text={tournament.status==='DRAFT'?t('Em preparação'):tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}/></View>
+   {DEMO_MODE?<Message>{t('Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.')}</Message>:null}
    {standingsError?<Message tone="error">{standingsError}</Message>:null}
-   {!loading&&!syncing&&!fixturesVerified&&tournament.status==='IN_PROGRESS'?<Message tone="error">Os jogos apresentados não estão confirmados pelo servidor. Para proteger a competição, o registo de resultados e o encerramento ficam bloqueados até uma nova sincronização.</Message>:null}
+   {!loading&&!syncing&&!fixturesVerified&&tournament.status==='IN_PROGRESS'?<Message tone="error">{t('Os jogos apresentados não estão confirmados pelo servidor. Para proteger a competição, o registo de resultados e o encerramento ficam bloqueados até uma nova sincronização.')}</Message>:null}
    {fixturesVerified&&standings?<View style={styles.panel}>
-    <Text style={styles.heading}>Classificação oficial</Text>
-    {standings.rows.length===0?<Text style={styles.helper}>Ainda não existem resultados classificados.</Text>:null}
+    <Text style={styles.heading}>{t('Classificação oficial')}</Text>
+    {standings.rows.length===0?<Text style={styles.helper}>{t('Ainda não existem resultados classificados.')}</Text>:null}
     {standings.rows.map(row=>{
      const name='teamName' in row?row.teamName:(row.displayName||row.username);
      return <View key={'teamId' in row?'team-'+row.teamId:'player-'+row.profileId} style={styles.standing}>
       <Text style={styles.rank}>{row.position}.</Text>
       <Text style={styles.standingName}>{name}</Text>
-      <Text style={styles.standingPoints}>{row.points} pts</Text>
+      <Text style={styles.standingPoints}>{t('{a} pts',{a:row.points})}</Text>
      </View>;
     })}
     <Text style={styles.helper}>{standings.source}</Text>
    </View>:null}
    {fixturesVerified&&tournament.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups?
     <View style={styles.panel}>
-     <Text style={styles.heading}>Fases da competição</Text>
-     <Text style={styles.helper}>{groups.knockoutStarted?'Eliminatórias iniciadas pelo servidor.':'Fase de grupos a decorrer.'}</Text>
+     <Text style={styles.heading}>{t('Fases da competição')}</Text>
+     <Text style={styles.helper}>{groups.knockoutStarted?t('Eliminatórias iniciadas pelo servidor.'):t('Fase de grupos a decorrer.')}</Text>
      {groups.groups.map(group=><View key={group.groupNumber} style={styles.group}>
-      <Text style={styles.round}>Grupo {group.groupNumber}</Text>
+      <Text style={styles.round}>{t('Grupo {a}',{a:group.groupNumber})}</Text>
       {group.standings.map(row=><View key={row.teamId} style={styles.standing}>
        <Text style={styles.rank}>{row.position}.</Text><Text style={styles.standingName}>{row.teamName}</Text>
-       <Text style={styles.standingPoints}>{row.points} pts</Text>
+       <Text style={styles.standingPoints}>{t('{a} pts',{a:row.points})}</Text>
       </View>)}
      </View>)}
     </View>:null}
    {canPublish?<View style={styles.panel}>
-    <Text style={styles.heading}>Preparação do torneio</Text>
-    <Text style={styles.helper}>Confirma primeiro as inscrições e os plantéis. Publicar o calendário inicia o torneio.</Text>
-    <Button title={busy?'A guardar…':'Publicar calendário e iniciar torneio'} disabled={busy||syncing} onPress={publish}/>
+    <Text style={styles.heading}>{t('Preparação do torneio')}</Text>
+    <Text style={styles.helper}>{t('Confirma primeiro as inscrições e os plantéis. Publicar o calendário inicia o torneio.')}</Text>
+    <Button title={busy?t('A guardar…'):t('Publicar calendário e iniciar torneio')} disabled={busy||syncing} onPress={publish}/>
    </View>:null}
    {tournament.status!=='DRAFT'?<View style={styles.panel}>
-    <Text style={styles.heading}>{tournament.status==='COMPLETED'?'Jogos e resultados finais':'Jogos e resultados'}</Text>
-    <Text style={styles.helper}>{fixturesVerified?matches.length:0} jogos confirmados{fixturesVerified&&hasMore?' · existem mais páginas':''}. Os resultados nunca são calculados pelo telemóvel.</Text>
-    {fixturesVerified&&matches.length===0?<Message>Ainda não existem jogos publicados neste torneio.</Message>:null}
+    <Text style={styles.heading}>{tournament.status==='COMPLETED'?t('Jogos e resultados finais'):t('Jogos e resultados')}</Text>
+    <Text style={styles.helper}>{t('{a} jogos confirmados{b}. Os resultados nunca são calculados pelo telemóvel.',{a:fixturesVerified?matches.length:0,b:fixturesVerified&&hasMore?' · '+t('existem mais páginas'):''})}</Text>
+    {fixturesVerified&&matches.length===0?<Message>{t('Ainda não existem jogos publicados neste torneio.')}</Message>:null}
     {fixturesVerified?matches.map(m=><View key={m.id} style={styles.match}>
-      <View style={styles.row}><Text style={styles.round}>{tournament.format==='LEAGUE'?`Jornada ${m.roundNumber}`:m.groupNumber!=null?`Grupo ${m.groupNumber} · Jornada ${m.roundNumber}`:`Eliminatória · Ronda ${m.roundNumber}`}</Text><Badge text={m.status==='COMPLETED'?'Terminado':'Por disputar'}/></View>
+      <View style={styles.row}><Text style={styles.round}>{tournament.format==='LEAGUE'?t('Jornada {a}',{a:m.roundNumber}):m.groupNumber!=null?t('Grupo {a} · Jornada {b}',{a:m.groupNumber,b:m.roundNumber}):t('Eliminatória · Ronda {a}',{a:m.roundNumber})}</Text><Badge text={m.status==='COMPLETED'?t('Terminado'):t('Por disputar')}/></View>
       <View style={styles.fixtureScoreRow}>
        <Text style={styles.fixtureTeam} numberOfLines={2}>{m.home}</Text>
        <View style={[styles.scorePill,m.status==='COMPLETED'&&styles.scorePillFinal]}>
@@ -242,21 +243,21 @@ export default function TournamentManagerScreen(){
       </View>
       {canRecord?<ScoreEditor key={`${m.id}-${m.status}-${m.homeScore}-${m.awayScore}`} match={m} tournament={tournament} busy={busy||syncing} writeGuard={organizerMatchWriteGuard(tournament,m,matches,groups,groups!==null)} onSave={save}/>:null}
     </View>):null}
-    {fixturesVerified&&hasMore?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
+    {fixturesVerified&&hasMore?<Button secondary title={busy?t('A carregar…'):t('Carregar mais jogos')} disabled={busy||syncing} onPress={()=>{void more();}}/>:null}
    </View>:null}
    {canFinish?<View style={styles.panel}>
-    <Text style={styles.heading}>Encerrar a liga</Text>
-    <Text style={styles.helper}>Só disponível quando todos os jogos estiverem concluídos. A classificação e o campeão são confirmados antes de fechar.</Text>
-    <Button danger title={busy?'A processar…':'Encerrar liga'} disabled={busy||syncing||!allVisibleFinished} onPress={finish}/>
-    {!allVisibleFinished?<Text style={styles.helper}>Conclui os jogos pendentes e carrega todas as páginas para desbloquear esta ação.</Text>:null}
+    <Text style={styles.heading}>{t('Encerrar a liga')}</Text>
+    <Text style={styles.helper}>{t('Só disponível quando todos os jogos estiverem concluídos. A classificação e o campeão são confirmados antes de fechar.')}</Text>
+    <Button danger title={busy?t('A processar…'):t('Encerrar liga')} disabled={busy||syncing||!allVisibleFinished} onPress={finish}/>
+    {!allVisibleFinished?<Text style={styles.helper}>{t('Conclui os jogos pendentes e carrega todas as páginas para desbloquear esta ação.')}</Text>:null}
    </View>:null}
    {officialOutcome?<View style={styles.panel}>
     <Text style={styles.heading}>{officialOutcome.title}</Text>
     <Text style={styles.helper}>{officialOutcome.detail}</Text>
-    <Text style={styles.helper}>Os resultados finais estão disponíveis apenas para consulta.</Text>
+    <Text style={styles.helper}>{t('Os resultados finais estão disponíveis apenas para consulta.')}</Text>
    </View>:null}
   </>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

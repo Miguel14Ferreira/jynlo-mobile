@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -21,7 +22,7 @@ export default function IndividualMatchesScreen(){
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current){setLoading(false);setTournament(null);setMatches([]);setMore(false);setPage(0);setBusy(false);}return;}
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
-   if(version===generation.current){setTournament(null);setMatches([]);setMore(false);setError('Competição inválida.');setLoading(false);}
+   if(version===generation.current){setTournament(null);setMatches([]);setMore(false);setError(t('Competição inválida.'));setLoading(false);}
    return;
   }
   setLoading(true);setError('');setTournament(null);setMatches([]);setMore(false);setPage(0);
@@ -35,7 +36,7 @@ export default function IndividualMatchesScreen(){
     const verified=validateFirstFixturePage<TournamentIndividualMatch>(result);
     setMatches(verified.matches);setPage(verified.page);setMore(verified.hasMore);
    }
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar os jogos.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -52,29 +53,29 @@ export default function IndividualMatchesScreen(){
    if(version!==generation.current)return;
    const data=validateNextFixturePage<TournamentIndividualMatch>(response,p);
    setMatches(existing=>[...existing,...data.matches.filter(m=>!existing.some(x=>x.id===m.id))]);setPage(data.page);setMore(data.hasMore);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar mais jogos.'));}
   finally{if(version===generation.current){paging.current=false;setBusy(false);}}
  }
- return <Page><DemoBanner/><Eyebrow>TORNEIO · INDIVIDUAL</Eyebrow>
-  <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · INDIVIDUAL</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Calendário individual'}</Text>
-   {tournament?<Text style={styles.heroSubtitle}>{tournament.sport||'Multidesporto'} · Jogos e resultados confirmados</Text>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('TORNEIO · INDIVIDUAL')}</Eyebrow>
+  <View style={styles.hero}><Text style={styles.heroLabel}>{t('CALENDÁRIO · INDIVIDUAL')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Calendário individual')}</Text>
+   {tournament?<Text style={styles.heroSubtitle}>{t('{a} · Jogos e resultados confirmados',{a:tournament.sport||t('Multidesporto')})}</Text>:null}
   </View>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&tournament&&!supported?<Message>Esta modalidade não utiliza o calendário de confrontos individuais. Consulta a sua classificação específica.</Message>:null}
-  {!loading&&supported&&matches.length===0&&!error?<Message>Ainda não existem jogos individuais publicados.</Message>:null}
+  {!loading&&tournament&&!supported?<Message>{t('Esta modalidade não utiliza o calendário de confrontos individuais. Consulta a sua classificação específica.')}</Message>:null}
+  {!loading&&supported&&matches.length===0&&!error?<Message>{t('Ainda não existem jogos individuais publicados.')}</Message>:null}
   {!loading&&supported?matches.map(m=><View key={m.id} style={styles.card}>
-   <View style={styles.row}><Badge text={matchRound(m)}/><Badge text={m.status==='COMPLETED'?'Concluído':'Por disputar'}/></View>
+   <View style={styles.row}><Badge text={matchRound(m)}/><Badge text={m.status==='COMPLETED'?t('Concluído'):t('Por disputar')}/></View>
    <View style={styles.match}>
-    <Text style={styles.player} numberOfLines={2}>{m.homeUsername||'Jogador não indicado'}</Text>
+    <Text style={styles.player} numberOfLines={2}>{m.homeUsername||t('Jogador não indicado')}</Text>
     <View style={[styles.scoreBox,m.status==='COMPLETED'&&styles.scoreBoxFinal]}><Text style={styles.score}>{matchScore(m)}</Text></View>
-    <Text style={[styles.player,styles.awayPlayer]} numberOfLines={2}>{m.awayUsername||'Jogador não indicado'}</Text>
+    <Text style={[styles.player,styles.awayPlayer]} numberOfLines={2}>{m.awayUsername||t('Jogador não indicado')}</Text>
    </View>
   </View>):null}
-  {more?<Button secondary title={busy?'A carregar…':'Carregar mais jogos'} disabled={busy} onPress={()=>{void next();}}/>:null}
-  <Message>Os confrontos e resultados aparecem aqui assim que forem registados pela organização.</Message>
-  {supported?<Button secondary title="Participantes e inscrições" onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/participants",params:{communityId:String(cid),id:String(tid)}})}/>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  {more?<Button secondary title={busy?t('A carregar…'):t('Carregar mais jogos')} disabled={busy} onPress={()=>{void next();}}/>:null}
+  <Message>{t('Os confrontos e resultados aparecem aqui assim que forem registados pela organização.')}</Message>
+  {supported?<Button secondary title={t('Participantes e inscrições')} onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/participants",params:{communityId:String(cid),id:String(tid)}})}/>:null}
+  <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

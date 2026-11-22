@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Loader,Message,Page} from './UI';
@@ -21,21 +22,21 @@ export default function SocialPeopleList(props:Props){
   const task='postId' in props?postLikers(props.postId,auth.token):
     followingPeople(props.username,props.kind,auth.token);
   void task.then(result=>{if(version===generation.current)setPeople(result);})
-   .catch(()=>{if(version===generation.current)setError('Não foi possível carregar esta lista. Tenta abrir novamente.');})
+   .catch(()=>{if(version===generation.current)setError(t('Não foi possível carregar esta lista. Tenta abrir novamente.'));})
    .finally(()=>{if(version===generation.current)setLoading(false);});
   return()=>{generation.current++;setPeople([]);};
  },[auth.token,'postId' in props?props.postId:props.username,'postId' in props?'likers':props.kind]));
- const title='postId' in props?'Quem gostou':props.kind==='followers'?'Seguidores':'A seguir';
+ const title='postId' in props?t('Quem gostou'):props.kind==='followers'?'Seguidores':t('A seguir');
  return <Page>
   <Text style={styles.heading}>{title}</Text>
-  <Text style={styles.sub}>Perfis apresentados pela Jynlo. Os dados e a visibilidade dependem das permissões do servidor.</Text>
+  <Text style={styles.sub}>{t('Perfis apresentados pela Jynlo. Os dados e a visibilidade dependem das permissões do servidor.')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {!loading&&!error&&people.length===0?<Message>Não existem pessoas para mostrar nesta lista.</Message>:null}
+  {!loading&&!error&&people.length===0?<Message>{t('Não existem pessoas para mostrar nesta lista.')}</Message>:null}
   {people.map(person=>{
    const uri=resolveJynloMedia(person.profilePicUrl);
    const name=person.nickname?.trim()||person.fullName?.trim()||person.username;
-   return <Pressable key={person.username} style={styles.person} accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${person.username}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:person.username}})}>
+   return <Pressable key={person.username} style={styles.person} accessibilityRole="button" accessibilityLabel={t('Abrir perfil de {a}',{a:person.username})} onPress={()=>router.push({pathname:'/social/[username]',params:{username:person.username}})}>
     <View style={styles.avatar}>{uri?<Image style={styles.photo} source={{uri}}/>:<Text style={styles.initial}>{person.username.charAt(0).toUpperCase()}</Text>}</View>
     <View style={styles.identity}><Text style={styles.name} numberOfLines={1}>{name}</Text><Text style={styles.handle} numberOfLines={1}>@{person.username}</Text></View>
    </Pressable>;

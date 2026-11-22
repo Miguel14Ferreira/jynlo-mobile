@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Registration rules mirror backend CommunityTournamentService. The backend remains authoritative. */
 function canSeeIndividualRoster(tournament){return !!tournament&&tournament.entryType!=='TEAM';}
 /** Event series ("classificação por provas") keep entries open while in progress. */
@@ -18,9 +19,9 @@ function registrationAction(tournament,entries,username,hasMore){
  return hasMore?'NONE':'JOIN';
 }
 function participantStatus(value){
- if(value==='PENDING')return 'Aguardar confirmação';
- if(value==='CONFIRMED')return 'Confirmado';
- return 'Estado desconhecido';
+ if(value==='PENDING')return tr('Aguardar confirmação');
+ if(value==='CONFIRMED')return tr('Confirmado');
+ return tr('Estado desconhecido');
 }
 function canConfirmParticipant(role,tournament,participant){
  return canManageConfirmation(role,tournament)&&participant?.status==='PENDING';

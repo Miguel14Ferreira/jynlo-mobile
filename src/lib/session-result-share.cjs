@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 
 /**
  * Explicit, public-only score card text. Never includes individual player
@@ -14,8 +15,8 @@ function publicSessionResultMessage(game, result, sessionId) {
       || !Number.isSafeInteger(result.scoreB) || result.scoreB < 0) return null;
   const sport = typeof game.sport === 'string' ? game.sport.trim().slice(0, 60) : '';
   const title = sport ? sport + ' · ' : '';
-  return '🏆 Resultado oficial Jynlo\n' + title +
-    'Equipa A ' + result.scoreA + ' — ' + result.scoreB + ' Equipa B\n' +
+  return tr('🏆 Resultado oficial Jynlo\n') + title +
+    tr('Equipa A {a} — {b} Equipa B',{a:result.scoreA,b:result.scoreB}) + '\n' +
     'https://d24sports.com/sessions/' + sessionId;
 }
 

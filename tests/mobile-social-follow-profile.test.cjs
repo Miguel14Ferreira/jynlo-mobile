@@ -30,10 +30,10 @@ test('public profile is guarded against stale responses and repeated writes',()=
  assert.match(screen,/accessibilityLabel=\{status\.followedByMe\?'Deixar de seguir':status\.requestPending\?'Cancelar pedido para seguir':status\.privateProfile\?'Pedir para seguir':'Seguir utilizador'\}/);
 });
 test('users can open public profiles from social lists and feed',()=>{
- assert.match(lists,/accessibilityLabel=\{\x60Abrir perfil de \$\{person\.username\}\x60\}/);
+ assert.match(lists,/accessibilityLabel=\{'Abrir perfil de '\+person\.username\}/);
  assert.match(lists,/pathname:'\/social\/\[username\]'/);
  assert.match(feed,/pathname:'\/social\/\[username\]'/);
- assert.match(feed,/accessibilityLabel=\{t\('Abrir perfil de \{v\}',\{v:item\.authorUsername\}\)\}/);
+ assert.match(feed,/accessibilityLabel=\{'Abrir perfil de '\+item\.authorUsername\}/);
  assert.match(screen,/kind:'followers'/);
  assert.match(screen,/kind:'following'/);
 });

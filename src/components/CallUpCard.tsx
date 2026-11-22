@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {joinSession,sessionDetail} from '../lib/api';
@@ -31,30 +32,30 @@ export function CallUpCard({sessionId,token,username}:{sessionId:number;token:st
   if(!session||!token||joining||closed||session.joined||session.waitlisted||session.privateGame)return;
   setJoining(true);setError('');
   try{await joinSession(session.id,token,username||undefined);await load();}
-  catch{setError('Não foi possível confirmar. Tenta outra vez ou abre a sessão.');}
+  catch{setError(t('Não foi possível confirmar. Tenta outra vez ou abre a sessão.'));}
   finally{setJoining(false);}
  };
  const progress=session&&session.maxParticipants?Math.min(100,Math.round(session.participantCount/session.maxParticipants*100)):0;
- return <View style={styles.card} accessibilityLabel="Convocatória">
-  <Text style={styles.kind}>📣 CONVOCATÓRIA</Text>
+ return <View style={styles.card} accessibilityLabel={t('Convocatória')}>
+  <Text style={styles.kind}>{t('📣 CONVOCATÓRIA')}</Text>
   {session?<>
    <Text style={styles.title}>{session.sport} · {session.city}</Text>
    <Text style={styles.meta}>{formatDate(session.gameDate)}</Text>
    <View style={styles.bar}><View style={[styles.fill,{width:`${progress}%`}]}/></View>
-   <Text style={styles.meta}>{session.participantCount}/{session.maxParticipants} vão</Text>
-   {closed?<Text style={styles.state}>Esta sessão já não aceita inscrições</Text>
-    :organiser?<Text style={styles.state}>És o organizador desta sessão</Text>
-    :session.joined?<Text style={[styles.state,{color:C.mint}]}>✓ Vais a este jogo</Text>
-    :session.waitlisted?<Text style={styles.state}>Estás na lista de espera</Text>
-    :session.privateGame?<Text style={styles.state}>Sessão privada: abre a sessão para entrar</Text>
+   <Text style={styles.meta}>{t('{a}/{b} vão',{a:session.participantCount,b:session.maxParticipants})}</Text>
+   {closed?<Text style={styles.state}>{t('Esta sessão já não aceita inscrições')}</Text>
+    :organiser?<Text style={styles.state}>{t('És o organizador desta sessão')}</Text>
+    :session.joined?<Text style={[styles.state,{color:C.mint}]}>{t('✓ Vais a este jogo')}</Text>
+    :session.waitlisted?<Text style={styles.state}>{t('Estás na lista de espera')}</Text>
+    :session.privateGame?<Text style={styles.state}>{t('Sessão privada: abre a sessão para entrar')}</Text>
     :<Pressable accessibilityRole="button" disabled={joining} onPress={()=>void join()} style={[styles.join,joining&&{opacity:.6}]}>
-      {joining?<ActivityIndicator color={C.background}/>:<Text style={styles.joinText}>{session.status==='FULL'?'Vou (lista de espera)':'Vou'}</Text>}
+      {joining?<ActivityIndicator color={C.background}/>:<Text style={styles.joinText}>{session.status==='FULL'?t('Vou (lista de espera)'):t('Vou')}</Text>}
      </Pressable>}
    {error?<Text style={styles.error}>{error}</Text>:null}
    <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(session.id)}})}>
-    <Text style={styles.link}>Ver sessão ›</Text>
+    <Text style={styles.link}>{t('Ver sessão ›')}</Text>
    </Pressable>
-  </>:loading?<ActivityIndicator color={C.mint}/>:<Text style={styles.meta}>Sessão indisponível</Text>}
+  </>:loading?<ActivityIndicator color={C.mint}/>:<Text style={styles.meta}>{t('Sessão indisponível')}</Text>}
  </View>;
 }
 const styles=StyleSheet.create({

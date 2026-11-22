@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -20,9 +21,9 @@ function RankingRow({rank,name,main,sub}:{rank:number;name:string;main:string;su
 function EventRounds({rounds,title}:{rounds:PerformanceRound[];title:string}){
  const valid=sourceRounds(rounds);
  return <View style={styles.panel}><Text style={styles.heading}>{title}</Text>
-  {valid.length===0?<Text style={styles.note}>Ainda não existem provas associadas.</Text>:valid.map(round=><View key={round.id} style={styles.round}>
-   <Text style={styles.name}>{round.name||'Prova sem designação'}</Text>
-   <Text style={styles.note}>{round.sport||'Modalidade não indicada'}{round.eventDiscipline?` · ${round.eventDiscipline}`:''}</Text>
+  {valid.length===0?<Text style={styles.note}>{t('Ainda não existem provas associadas.')}</Text>:valid.map(round=><View key={round.id} style={styles.round}>
+   <Text style={styles.name}>{round.name||t('Prova sem designação')}</Text>
+   <Text style={styles.note}>{round.sport||t('Modalidade não indicada')}{round.eventDiscipline?` · ${round.eventDiscipline}`:''}</Text>
   </View>)}
  </View>;
 }
@@ -36,7 +37,7 @@ export default function TournamentResultsScreen(){
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current){setTournament(null);setOverview(null);setLoading(false);}return;}
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
-   if(version===generation.current){setTournament(null);setOverview(null);setError('Competição inválida.');setLoading(false);}
+   if(version===generation.current){setTournament(null);setOverview(null);setError(t('Competição inválida.'));setLoading(false);}
    return;
   }
   setLoading(true);setError('');setTournament(null);setOverview(null);
@@ -48,7 +49,7 @@ export default function TournamentResultsScreen(){
     const result=await performanceOverview(cid,details,auth.token,auth.username);
     if(version===generation.current)setOverview(result);
    }
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar esta prova.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar esta prova.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -57,70 +58,70 @@ export default function TournamentResultsScreen(){
   return()=>{generation.current++;};
  },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
- return <Page><DemoBanner/><Eyebrow>RESULTADOS DA COMPETIÇÃO</Eyebrow>
-  <View style={styles.hero}><Text style={styles.heroLabel}>RESULTADOS · JYNLO</Text>
-   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Resultados desportivos'}</Text>
-   {tournament?<View style={styles.badges}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={label(kind)}/></View>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('RESULTADOS DA COMPETIÇÃO')}</Eyebrow>
+  <View style={styles.hero}><Text style={styles.heroLabel}>{t('RESULTADOS · JYNLO')}</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Resultados desportivos')}</Text>
+   {tournament?<View style={styles.badges}><Badge text={tournament.sport||t('Multidesporto')}/><Badge text={label(kind)}/></View>:null}
   </View>
-  {!auth.token?<Button title="Entrar para ver resultados" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={t('Entrar para ver resultados')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {!loading&&tournament&&!isPerformanceKind(kind)?<Message>Esta modalidade tem outro formato de competição. Consulta o ecrã principal do torneio.</Message>:null}
+  {!loading&&tournament&&!isPerformanceKind(kind)?<Message>{t('Esta modalidade tem outro formato de competição. Consulta o ecrã principal do torneio.')}</Message>:null}
   {overview?.kind==='RACE'?<>
-   <View style={styles.panel}><Text style={styles.heading}>Campeonato · pilotos</Text>
-    <Text style={styles.note}>Pontuação por corrida, de acordo com os resultados oficiais.</Text>
-    {overview.data.standings.length===0?<Message>Ainda não há classificações de corridas.</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.playerId??'piloto'}-${i}`}
+   <View style={styles.panel}><Text style={styles.heading}>{t('Campeonato · pilotos')}</Text>
+    <Text style={styles.note}>{t('Pontuação por corrida, de acordo com os resultados oficiais.')}</Text>
+    {overview.data.standings.length===0?<Message>{t('Ainda não há classificações de corridas.')}</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.playerId??'piloto'}-${i}`}
      rank={row.position} name={displayPerson(row.fullName,row.username)} main={formatPoints(row.championshipPoints)}
-     sub={`${row.races} corridas · ${row.podiums} pódios${row.penaltyPoints?` · ${row.penaltyPoints} penalizações`:''}`}/>)}
+     sub={t('{a} corridas · {b} pódios',{a:row.races,b:row.podiums})+(row.penaltyPoints?' · '+t('{a} penalizações',{a:row.penaltyPoints}):'')}/>)}
    </View>
-   <EventRounds title="Corridas incluídas" rounds={overview.data.linkedRaces}/>
-   <Message>Os pontos por posição e as penalizações são aplicados pelo servidor. A app apenas apresenta os resultados existentes.</Message>
+   <EventRounds title={t('Corridas incluídas')} rounds={overview.data.linkedRaces}/>
+   <Message>{t('Os pontos por posição e as penalizações são aplicados pelo servidor. A app apenas apresenta os resultados existentes.')}</Message>
   </>:null}
   {overview?.kind==='TIMED'?<>
-   <View style={styles.panel}><Text style={styles.heading}>Melhores tempos</Text>
-    <Text style={styles.note}>{[overview.data.eventType,overview.data.eventDiscipline].filter(Boolean).join(' · ')||'Prova cronometrada'}</Text>
-    {overview.data.standings.length===0?<Message>Ainda não há tempos válidos associados ao torneio.</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.communityPlayerId??'atleta'}-${i}`}
+   <View style={styles.panel}><Text style={styles.heading}>{t('Melhores tempos')}</Text>
+    <Text style={styles.note}>{[overview.data.eventType,overview.data.eventDiscipline].filter(Boolean).join(' · ')||t('Prova cronometrada')}</Text>
+    {overview.data.standings.length===0?<Message>{t('Ainda não há tempos válidos associados ao torneio.')}</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.communityPlayerId??'atleta'}-${i}`}
      rank={row.position} name={displayPerson(row.fullName,row.username)} main={formatSeconds(row.bestSeconds)}
-     sub={`${row.validAttempts} ${row.validAttempts===1?'tentativa válida':'tentativas válidas'}`}/>)}
+     sub={`${row.validAttempts} ${row.validAttempts===1?t('tentativa válida'):t('tentativas válidas')}`}/>)}
    </View>
-   <EventRounds title="Provas cronometradas incluídas" rounds={overview.data.linkedRounds}/>
-   <Message>Classificação provisória pelo melhor tempo. Não substitui regras oficiais de desempate da modalidade.</Message>
+   <EventRounds title={t('Provas cronometradas incluídas')} rounds={overview.data.linkedRounds}/>
+   <Message>{t('Classificação provisória pelo melhor tempo. Não substitui regras oficiais de desempate da modalidade.')}</Message>
   </>:null}
   {overview?.kind==='MEASURED'?<>
-   <View style={styles.panel}><Text style={styles.heading}>Melhores marcas</Text>
-    <Text style={styles.note}>{[overview.data.eventType,overview.data.eventDiscipline].filter(Boolean).join(' · ')||'Prova de marcas'}</Text>
-    {overview.data.standings.length===0?<Message>Ainda não existem marcas válidas.</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.communityPlayerId??'atleta'}-${i}`}
+   <View style={styles.panel}><Text style={styles.heading}>{t('Melhores marcas')}</Text>
+    <Text style={styles.note}>{[overview.data.eventType,overview.data.eventDiscipline].filter(Boolean).join(' · ')||t('Prova de marcas')}</Text>
+    {overview.data.standings.length===0?<Message>{t('Ainda não existem marcas válidas.')}</Message>:overview.data.standings.map((row,i)=><RankingRow key={`${row.communityPlayerId??'atleta'}-${i}`}
      rank={row.position} name={displayPerson(row.fullName,row.username)} main={formatMetres(row.bestMetres)}
-     sub={`${row.validMarks} ${row.validMarks===1?'marca válida':'marcas válidas'}`}/>)}
+     sub={`${row.validMarks} ${row.validMarks===1?t('marca válida'):t('marcas válidas')}`}/>)}
    </View>
-   <EventRounds title="Provas de marcas incluídas" rounds={overview.data.linkedRounds}/>
-   <Message>O ranking é provisório e segue as marcas devolvidas pelo servidor, sem criar critérios oficiais de desempate.</Message>
+   <EventRounds title={t('Provas de marcas incluídas')} rounds={overview.data.linkedRounds}/>
+   <Message>{t('O ranking é provisório e segue as marcas devolvidas pelo servidor, sem criar critérios oficiais de desempate.')}</Message>
   </>:null}
   {overview?.kind==='RELAY'?<>
-   <View style={styles.panel}><Text style={styles.heading}>Estafetas · qualificação</Text>
-    <Text style={styles.note}>{overview.data.eventDiscipline||'Disciplina não indicada'} · Tempos de equipa</Text>
-    {(overview.data.qualifyingStandings||[]).length===0?<Message>Sem resultados de qualificação disponíveis.</Message>:
+   <View style={styles.panel}><Text style={styles.heading}>{t('Estafetas · qualificação')}</Text>
+    <Text style={styles.note}>{t('{a} · Tempos de equipa',{a:overview.data.eventDiscipline||t('Disciplina não indicada')})}</Text>
+    {(overview.data.qualifyingStandings||[]).length===0?<Message>{t('Sem resultados de qualificação disponíveis.')}</Message>:
      overview.data.qualifyingStandings.map((row,i)=><RankingRow key={`${row.teamId}-${i}`}
       rank={row.position} name={row.teamName} main={formatSeconds(row.bestSeconds)}
-      sub={`${row.recordedHeats} ${row.recordedHeats===1?'série registada':'séries registadas'}`}/>)}
+      sub={`${row.recordedHeats} ${row.recordedHeats===1?t('série registada'):t('séries registadas')}`}/>)}
    </View>
-   <View style={styles.panel}><Text style={styles.heading}>Final</Text>
-    {!overview.data.finalPublished?<Message>A final ainda não foi publicada pelo organizador.</Message>:
-     overview.data.finalStandings.length===0?<Message>Final publicada, mas sem resultados classificados.</Message>:
+   <View style={styles.panel}><Text style={styles.heading}>{t('Final')}</Text>
+    {!overview.data.finalPublished?<Message>{t('A final ainda não foi publicada pelo organizador.')}</Message>:
+     overview.data.finalStandings.length===0?<Message>{t('Final publicada, mas sem resultados classificados.')}</Message>:
       overview.data.finalStandings.map((row,i)=><RankingRow key={`final-${row.teamId}-${i}`}
        rank={row.position} name={row.teamName} main={formatSeconds(row.bestSeconds)}
-       sub={`${row.recordedHeats} ${row.recordedHeats===1?'série':'séries'}`}/>)}
-    <Text style={styles.note}>{overview.data.finalists?.length||0} finalistas registados pelo servidor.</Text>
+       sub={row.recordedHeats===1?t('1 série'):t('{n} séries',{n:row.recordedHeats})}/>)}
+    <Text style={styles.note}>{t('{a} finalistas registados pelo servidor.',{a:overview.data.finalists?.length||0})}</Text>
    </View>
-   <View style={styles.panel}><Text style={styles.heading}>Séries registadas</Text>
-    {overview.data.heats.length===0?<Text style={styles.note}>Ainda sem séries.</Text>:
+   <View style={styles.panel}><Text style={styles.heading}>{t('Séries registadas')}</Text>
+    {overview.data.heats.length===0?<Text style={styles.note}>{t('Ainda sem séries.')}</Text>:
      overview.data.heats.map(h=><View key={h.id} style={styles.round}>
       <Text style={styles.name}>{h.teamName} · {stageLabel(h.stage)} {h.heatNumber}</Text>
-      <Text style={styles.note}>{h.decisionStatus==='DISQUALIFIED'?'Desqualificada':h.decisionStatus==='VALID'?formatSeconds(h.elapsedSeconds):'Estado por confirmar'}</Text>
+      <Text style={styles.note}>{h.decisionStatus==='DISQUALIFIED'?t('Desqualificada'):h.decisionStatus==='VALID'?formatSeconds(h.elapsedSeconds):t('Estado por confirmar')}</Text>
      </View>)}
    </View>
-   <Message>Os finalistas e os resultados da final aparecem quando a organização os confirmar.</Message>
+   <Message>{t('Os finalistas e os resultados da final aparecem quando a organização os confirmar.')}</Message>
   </>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

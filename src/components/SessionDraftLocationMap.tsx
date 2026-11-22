@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import Constants from 'expo-constants';
 import MapView,{Marker,PROVIDER_GOOGLE} from 'react-native-maps';
@@ -26,29 +27,29 @@ export default function SessionDraftLocationMap({point,venueName,address,city,on
   search?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(search):null;
  const openMaps=()=>{if(destination)void Linking.openURL(destination).catch(()=>{});};
  return <View style={styles.container}>
-  <Text style={styles.heading}>Confirmar localização no mapa</Text>
+  <Text style={styles.heading}>{t('Confirmar localização no mapa')}</Text>
   {coordinates&&mapsEnabled?<View style={styles.mapWrap}>
     <MapView key={coordinates.latitude+'|'+coordinates.longitude} style={styles.map}
       provider={Platform.OS==='android'?PROVIDER_GOOGLE:undefined}
       initialRegion={{...coordinates,latitudeDelta:0.008,longitudeDelta:0.008}}
       scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
-      accessibilityLabel="Pré-visualização do ponto exato da sessão">
-      <Marker coordinate={coordinates} title={venueName||'Local da sessão'}/>
+      accessibilityLabel={t('Pré-visualização do ponto exato da sessão')}>
+      <Marker coordinate={coordinates} title={venueName||t('Local da sessão')}/>
     </MapView>
    </View>:<View style={styles.fallback}>
     <Text style={styles.description}>{coordinates
-     ?'Este build ainda não tem o Google Maps nativo configurado. Podes confirmar o ponto exato na aplicação Google Maps.'
-     :'Este recinto ainda não tem coordenadas GPS confirmadas. A pesquisa pela morada não garante um ponto exato.'}</Text>
+     ?t('Este build ainda não tem o Google Maps nativo configurado. Podes confirmar o ponto exato na aplicação Google Maps.')
+     :t('Este recinto ainda não tem coordenadas GPS confirmadas. A pesquisa pela morada não garante um ponto exato.')}</Text>
    </View>}
-  {coordinates?<Text style={styles.description}>O marcador representa o ponto GPS escolhido, sem alterações.</Text>:null}
+  {coordinates?<Text style={styles.description}>{t('O marcador representa o ponto GPS escolhido, sem alterações.')}</Text>:null}
   {destination?<Pressable accessibilityRole="link"
-    accessibilityLabel={coordinates?'Abrir ponto exato no Google Maps':'Pesquisar morada no Google Maps'}
+    accessibilityLabel={coordinates?t('Abrir ponto exato no Google Maps'):t('Pesquisar morada no Google Maps')}
     onPress={openMaps} style={styles.primaryButton}>
-   <Text style={styles.primaryText}>{coordinates?'Abrir ponto no Google Maps':'Pesquisar morada no Google Maps'}</Text>
+   <Text style={styles.primaryText}>{coordinates?t('Abrir ponto no Google Maps'):t('Pesquisar morada no Google Maps')}</Text>
   </Pressable>:null}
-  {!coordinates?<Pressable accessibilityRole="button" accessibilityLabel="Voltar e confirmar a localização"
+  {!coordinates?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar e confirmar a localização')}
     onPress={onEdit} style={styles.secondaryButton}>
-   <Text style={styles.secondaryText}>Voltar e confirmar localização</Text>
+   <Text style={styles.secondaryText}>{t('Voltar e confirmar localização')}</Text>
   </Pressable>:null}
  </View>;
 }

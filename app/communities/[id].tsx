@@ -1,4 +1,5 @@
 import CommunityChatPanel from '../../src/components/CommunityChatPanel';
+import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
 import React,{useCallback,useRef,useState} from 'react';
 import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -44,7 +45,7 @@ export default function CommunityDetailScreen(){
   const generation=useRef(0);
   const reload=useCallback(async(version=generation.current)=>{
     if(!Number.isSafeInteger(id)||id<=0){
-      if(version===generation.current){setError('Comunidade inválida.');setLoading(false);}
+      if(version===generation.current){setError(t('Comunidade inválida.'));setLoading(false);}
       return;
     }
     setLoading(true);setError('');setCommunity(null);setFollowState(null);setFollowError('');setFollowBusy(false);setMyRequest(null);setMyRequestError('');setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
@@ -56,7 +57,7 @@ export default function CommunityDetailScreen(){
         void communityFollowState(id,auth.token,auth.username).then(state=>{
           if(version===generation.current)setFollowState(state);
         }).catch(()=>{
-          if(version===generation.current)setFollowError('Seguidores temporariamente indisponíveis.');
+          if(version===generation.current)setFollowError(t('Seguidores temporariamente indisponíveis.'));
         });
       }
       if(auth.token&&auth.username&&isMember(c)){
@@ -65,13 +66,13 @@ export default function CommunityDetailScreen(){
           const next=await communitySessions(id,auth.token,auth.username);
           if(version!==generation.current)return;
           setSessions(next);setSessionsError('');
-        }catch{if(version===generation.current){setSessions([]);setSessionsError('Não foi possível carregar as sessões. Tenta novamente.');}}
+        }catch{if(version===generation.current){setSessions([]);setSessionsError(t('Não foi possível carregar as sessões. Tenta novamente.'));}}
         if(c.myRole==='OWNER'||c.myRole==='ADMIN'){
           try{
             const next=await pendingCommunityRequests(id,auth.token,auth.username);
             if(version!==generation.current)return;
             setRequests(next);setRequestsError('');
-          }catch{if(version===generation.current){setRequests([]);setRequestsError('Não foi possível carregar os pedidos de adesão.');}}
+          }catch{if(version===generation.current){setRequests([]);setRequestsError(t('Não foi possível carregar os pedidos de adesão.'));}}
         }else {setRequests([]);setRequestsError('');}
       }else{
         setSessions([]);setSessionsError('');setRequests([]);setRequestsError('');
@@ -80,11 +81,11 @@ export default function CommunityDetailScreen(){
             const next=await myPendingCommunityRequest(id,auth.token,auth.username);
             if(version!==generation.current)return;
             setMyRequest(next);setMyRequestError('');
-          }catch{if(version===generation.current){setMyRequest(null);setMyRequestError('Não foi possível confirmar o estado do teu pedido de adesão.');}}
+          }catch{if(version===generation.current){setMyRequest(null);setMyRequestError(t('Não foi possível confirmar o estado do teu pedido de adesão.'));}}
         }else setMyRequest(null);
       }
     }catch(e){
-      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a comunidade.');
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar a comunidade.'));
     }finally{if(version===generation.current)setLoading(false);}
   },[id,auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{
@@ -107,7 +108,7 @@ export default function CommunityDetailScreen(){
       setFollowState(next);
     }catch{
       if(version!==generation.current)return;
-      setFollowState(null);setFollowError('Não foi possível confirmar. Verifica o estado antes de tentares novamente.');
+      setFollowState(null);setFollowError(t('Não foi possível confirmar. Verifica o estado antes de tentares novamente.'));
       try{
         const actual=await communityFollowState(id,auth.token,auth.username);
         if(version===generation.current)setFollowState(actual);
@@ -123,12 +124,12 @@ export default function CommunityDetailScreen(){
       if(action==='join')await joinPublicCommunity(id,auth.token,auth.username);
       else await requestCommunityMembership(id,auth.token,auth.username);
       if(version!==generation.current)return;
-      setNotice(action==='join'?'Já fazes parte desta comunidade!':'Pedido enviado. Aguarda a decisão do organizador.');
+      setNotice(action==='join'?t('Já fazes parte desta comunidade!'):t('Pedido enviado. Aguarda a decisão do organizador.'));
       if(action==='join'&&teamDestination){
         router.replace(teamDestination as any);
       }else await reload(version);
     }catch(e){
-      if(version===generation.current)setError((e instanceof Error?e.message:'Operação não concluída.')+' Verifica o estado antes de repetir.');
+      if(version===generation.current)setError((e instanceof Error?e.message:t('Operação não concluída.'))+' '+t('Verifica o estado antes de repetir.'));
     }finally{if(version===generation.current)setBusy(false);}
   }
   async function sendInvite(){
@@ -138,9 +139,9 @@ export default function CommunityDetailScreen(){
     try{
       await inviteCommunityMember(id,inviteName,auth.token,auth.username);
       if(version!==generation.current)return;
-      setInviteName('');setNotice('Convite enviado! A pessoa poderá aceitá-lo em Comunidades → Convites.');
+      setInviteName('');setNotice(t('Convite enviado! A pessoa poderá aceitá-lo em Comunidades → Convites.'));
     }catch(e){
-      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível enviar o convite.');
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível enviar o convite.'));
     }finally{if(version===generation.current)setBusy(false);}
   }
   async function approve(requestId:number){
@@ -151,167 +152,167 @@ export default function CommunityDetailScreen(){
       await acceptCommunityRequest(id,requestId,auth.token,auth.username);
       if(version!==generation.current)return;
       await reload(version);
-      if(version===generation.current)setNotice('Pedido aprovado.');
+      if(version===generation.current)setNotice(t('Pedido aprovado.'));
     }catch(e){
-      if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível aprovar o pedido.');
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível aprovar o pedido.'));
     }finally{if(version===generation.current)setBusy(false);}
   }
   async function share(){
     if(!owner||!community)return;
-    if(DEMO_MODE){setNotice('Na demonstração, os convites funcionam entre Tiago e André, sem links para comunidades fictícias.');return;}
+    if(DEMO_MODE){setNotice(t('Na demonstração, os convites funcionam entre Tiago e André, sem links para comunidades fictícias.'));return;}
     const version=generation.current;
     try{await Share.share({message:`Junta-te à comunidade ${community.name} na Jynlo!\n${communityUrl(id)}`,url:communityUrl(id)});}
-    catch{if(version===generation.current)setError('Não foi possível abrir a partilha.');}
+    catch{if(version===generation.current)setError(t('Não foi possível abrir a partilha.'));}
   }
   return <Page><DemoBanner/>
-    {params.created==='1'?<Message>Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.</Message>:null}
+    {params.created==='1'?<Message>{t('Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.')}</Message>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
-    {error&&!community&&!loading?<Button secondary title="Tentar carregar comunidade novamente" disabled={busy} onPress={()=>{void reload();}}/>:null}
+    {error&&!community&&!loading?<Button secondary title={t('Tentar carregar comunidade novamente')} disabled={busy} onPress={()=>{void reload();}}/>:null}
     {!!notice?<Message>{notice}</Message>:null}
     {community?<>
       <View style={styles.identityCard}>
-        <Eyebrow>COMUNIDADE JYNLO</Eyebrow>
+        <Eyebrow>{t('COMUNIDADE JYNLO')}</Eyebrow>
         <View style={styles.identityHeading}>
           <View style={styles.identityMark}><Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text></View>
           <View style={styles.identityCopy}>
             <Text style={styles.heading}>{community.name}</Text>
-            <Text style={styles.identityStatus}>{role?'Fazes parte desta comunidade':'Descobre esta comunidade'}</Text>
+            <Text style={styles.identityStatus}>{role?t('Fazes parte desta comunidade'):t('Descobre esta comunidade')}</Text>
           </View>
         </View>
-        <Text style={styles.subtitle}>{community.description||'Mais do que desporto, uma forma de encontrar pessoas.'}</Text>
+        <Text style={styles.subtitle}>{community.description||t('Mais do que desporto, uma forma de encontrar pessoas.')}</Text>
         <View style={styles.header}>
           <Text style={styles.identitySports}>{describeCommunitySports(community,3)}</Text>
-          <Badge text={community.visibility==='PRIVATE'?'Privada':'Pública'}/>
+          <Badge text={community.visibility==='PRIVATE'?t('Privada'):t('Pública')}/>
         </View>
         {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
       </View>
       {community.visibility==='PUBLIC'&&auth.token&&followState?<View style={styles.section}>
         <Text style={styles.subtitle}>{followState.count} {followState.count===1?'seguidor':'seguidores'}</Text>
-        <Button secondary title={followBusy?'A atualizar…':followState.following?'A seguir ✓':'Seguir comunidade +'}
+        <Button secondary title={followBusy?t('A atualizar…'):followState.following?t('A seguir ✓'):t('Seguir comunidade +')}
           disabled={followBusy} onPress={()=>{void toggleFollow();}}/>
-        <Text style={styles.subtitle}>Seguir não dá acesso ao chat reservado aos membros.</Text>
+        <Text style={styles.subtitle}>{t('Seguir não dá acesso ao chat reservado aos membros.')}</Text>
       </View>:null}
       {!!followError&&community.visibility==='PUBLIC'?<Message tone="error">{followError}</Message>:null}
-      {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?'A confirmar…':'Juntar-me à comunidade'} disabled={busy} onPress={()=>{void take('join');}}/>:null}
+      {!role&&auth.token&&community.visibility==='PUBLIC'?<Button title={busy?t('A confirmar…'):t('Juntar-me à comunidade')} disabled={busy} onPress={()=>{void take('join');}}/>:null}
       {!role&&myRequestError?<Message tone="error">{myRequestError}</Message>:null}
-      {!role&&myRequestError?<Button secondary title="Verificar estado do pedido novamente" disabled={busy||loading} onPress={()=>{void reload();}}/>:null}
-      {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest&&!myRequestError?<Button title={busy?'A enviar…':'Pedir para entrar'} disabled={busy} onPress={()=>{void take('request');}}/>:null}
-      {!role&&myRequest?<Message>O teu pedido de entrada está pendente de aprovação.</Message>:null}
-      {!role&&!auth.token?<Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:`/communities/${id}`}})}/>:null}
-      {teamDestination&&role?<Button title="Continuar para a equipa do convite" onPress={()=>router.replace(teamDestination as any)}/>:null}
-      {teamDestination&&!role&&myRequest?<Message>O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.</Message>:null}
-      {teamDestination&&!role&&auth.token&&!loading?<Button secondary title="Verificar aprovação da comunidade" disabled={busy} onPress={()=>{void reload();}}/>:null}
-      {role?<View style={styles.sectionNav} accessibilityLabel="Secções da comunidade">
-        {([{id:'OVERVIEW',label:'Visão geral'},{id:'FEED',label:'Feed'},{id:'SESSIONS',label:'Sessões'},{id:'CHAT',label:'Chat'},{id:'MEMBERS',label:'Membros'}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
+      {!role&&myRequestError?<Button secondary title={t('Verificar estado do pedido novamente')} disabled={busy||loading} onPress={()=>{void reload();}}/>:null}
+      {!role&&auth.token&&community.visibility==='PRIVATE'&&!myRequest&&!myRequestError?<Button title={busy?t('A enviar…'):t('Pedir para entrar')} disabled={busy} onPress={()=>{void take('request');}}/>:null}
+      {!role&&myRequest?<Message>{t('O teu pedido de entrada está pendente de aprovação.')}</Message>:null}
+      {!role&&!auth.token?<Button title={t('Iniciar sessão para participar')} onPress={()=>router.push({pathname:'/login',params:{redirect:`/communities/${id}`}})}/>:null}
+      {teamDestination&&role?<Button title={t('Continuar para a equipa do convite')} onPress={()=>router.replace(teamDestination as any)}/>:null}
+      {teamDestination&&!role&&myRequest?<Message>{t('O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.')}</Message>:null}
+      {teamDestination&&!role&&auth.token&&!loading?<Button secondary title={t('Verificar aprovação da comunidade')} disabled={busy} onPress={()=>{void reload();}}/>:null}
+      {role?<View style={styles.sectionNav} accessibilityLabel={t('Secções da comunidade')}>
+        {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Sessões')},{id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
          accessibilityState={{selected:activeSection===tab.id}} onPress={()=>setActiveSection(tab.id)}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
          <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
         </Pressable>)}
         {owner?<Pressable accessibilityRole="tab" accessibilityState={{selected:activeSection==='MANAGE'}}
           onPress={()=>setActiveSection('MANAGE')} style={[styles.sectionTab,activeSection==='MANAGE'&&styles.sectionTabSelected]}>
-          <Text style={[styles.sectionTabText,activeSection==='MANAGE'&&styles.sectionTabTextSelected]}>Gerir</Text>
+          <Text style={[styles.sectionTabText,activeSection==='MANAGE'&&styles.sectionTabTextSelected]}>{t('Gerir')}</Text>
         </Pressable>:null}
       </View>:null}
       {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
-        <Text style={styles.sectionTitle}>O espaço da comunidade</Text>
-        <Text style={styles.muted}>Encontra os próximos jogos, acompanha a conversa e organiza a tua comunidade.</Text>
+        <Text style={styles.sectionTitle}>{t('O espaço da comunidade')}</Text>
+        <Text style={styles.muted}>{t('Encontra os próximos jogos, acompanha a conversa e organiza a tua comunidade.')}</Text>
         <View style={styles.quickLinks}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Ver próximas sessões da comunidade" onPress={()=>setActiveSection('SESSIONS')} style={styles.quickLink}>
-           <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>Sessões</Text>
-           <Text style={styles.quickLinkDescription}>{sessionsError?'Por confirmar':sessions.length+' agendadas'}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Ver próximas sessões da comunidade')} onPress={()=>setActiveSection('SESSIONS')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>{t('Sessões')}</Text>
+           <Text style={styles.quickLinkDescription}>{sessionsError?t('Por confirmar'):t('{n} agendadas',{n:sessions.length})}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da comunidade" onPress={()=>setActiveSection('CHAT')} style={styles.quickLink}>
-           <Text style={styles.quickLinkIcon}>◉</Text><Text style={styles.quickLinkTitle}>Chat</Text>
-           <Text style={styles.quickLinkDescription}>Conversar em tempo real</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir chat da comunidade')} onPress={()=>setActiveSection('CHAT')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>◉</Text><Text style={styles.quickLinkTitle}>{t('Chat')}</Text>
+           <Text style={styles.quickLinkDescription}>{t('Conversar em tempo real')}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Ver membros da comunidade" onPress={()=>setActiveSection('MEMBERS')} style={styles.quickLink}>
-           <Text style={styles.quickLinkIcon}>♙</Text><Text style={styles.quickLinkTitle}>Membros</Text>
-           <Text style={styles.quickLinkDescription}>{(community as CommunityGroup).memberCount} jogadores</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Ver membros da comunidade')} onPress={()=>setActiveSection('MEMBERS')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>♙</Text><Text style={styles.quickLinkTitle}>{t('Membros')}</Text>
+           <Text style={styles.quickLinkDescription}>{t('{a} jogadores',{a:(community as CommunityGroup).memberCount})}</Text>
           </Pressable>
         </View>
-        <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        <Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         {auth.token?<AvailabilityPanel kind="community" targetId={id} token={auth.token} communityId={id}/>:null}
-        <Button secondary title="Ver competições por modalidade" onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
-        {isMember(community)&&community.rankingsEnabled?<Button secondary title="Resultados e classificações" onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
+        <Button secondary title={t('Ver competições por modalidade')} onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
+        {isMember(community)&&community.rankingsEnabled?<Button secondary title={t('Resultados e classificações')} onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
         {isMember(community)&&community.rankingsEnabled&&auth.token?<PublicShareCard target={{kind:'RANKING',communityId:id}}
           name={community.name} token={auth.token} canManage={owner}/>:null}
-        {owner?<Button secondary title="Criar torneio nesta comunidade" onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id)}})}/>:null}
+        {owner?<Button secondary title={t('Criar torneio nesta comunidade')} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id)}})}/>:null}
       </View>:null}
       {role&&activeSection==='MEMBERS'?<View style={styles.section}>
-        <View style={styles.header}><Text style={styles.sectionTitle}>Membros</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
+        <View style={styles.header}><Text style={styles.sectionTitle}>{t('Membros')}</Text><Badge text={`${(community as CommunityGroup).memberCount}`}/></View>
         {(community as CommunityGroup).members.map(m=><View key={m.profileId+':'+m.username} style={styles.member}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{a}',{a:m.username})}
             onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}
             style={styles.avatar}><Text style={styles.avatarText}>{m.username.charAt(0).toUpperCase()}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{a}',{a:m.username})}
             onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})} style={{flex:1}}>
             <Text style={styles.memberName}>{m.fullName||m.username}</Text>
-            <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · Organizador':m.role==='ADMIN'?' · Administrador':''}</Text>
+            <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · '+t('Organizador'):m.role==='ADMIN'?' · '+t('Administrador'):''}</Text>
           </Pressable>
         </View>)}
       </View>:null}
       {auth.token && (role ? activeSection==='OVERVIEW' : community.visibility==='PUBLIC')?
         <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
       {owner&&activeSection==='MANAGE'?<View style={styles.section}>
-        <Eyebrow>FAZ A COMUNIDADE CRESCER</Eyebrow>
-        <Text style={styles.sectionTitle}>Convidar pessoas</Text>
-        <Text style={styles.muted}>Envia um convite a uma conta Jynlo existente. A adesão só acontece quando o destinatário aceitar.</Text>
+        <Eyebrow>{t('FAZ A COMUNIDADE CRESCER')}</Eyebrow>
+        <Text style={styles.sectionTitle}>{t('Convidar pessoas')}</Text>
+        <Text style={styles.muted}>{t('Envia um convite a uma conta Jynlo existente. A adesão só acontece quando o destinatário aceitar.')}</Text>
         <TextInput style={styles.input} value={inviteName} onChangeText={setInviteName} autoCapitalize="none"
-          placeholder={DEMO_MODE?'Experimenta: André':'Nome de utilizador'} placeholderTextColor={C.muted}
-          accessibilityLabel="Nome de utilizador a convidar"/>
-        <Button title={busy?'A enviar…':'Enviar convite'} disabled={busy||inviteName.trim().length<2} onPress={()=>{void sendInvite();}}/>
-        <Button secondary title="Partilhar ligação da comunidade" onPress={()=>{void share();}}/>
+          placeholder={DEMO_MODE?t('Experimenta: André'):t('Nome de utilizador')} placeholderTextColor={C.muted}
+          accessibilityLabel={t('Nome de utilizador a convidar')}/>
+        <Button title={busy?t('A enviar…'):t('Enviar convite')} disabled={busy||inviteName.trim().length<2} onPress={()=>{void sendInvite();}}/>
+        <Button secondary title={t('Partilhar ligação da comunidade')} onPress={()=>{void share();}}/>
       </View>:null}
-      {owner&&activeSection==='MANAGE'&&requestsError?<View style={styles.section}><Message tone="error">{requestsError}</Message><Button secondary title="Tentar carregar pedidos novamente" disabled={loading||busy} onPress={()=>{void reload();}}/></View>:null}
+      {owner&&activeSection==='MANAGE'&&requestsError?<View style={styles.section}><Message tone="error">{requestsError}</Message><Button secondary title={t('Tentar carregar pedidos novamente')} disabled={loading||busy} onPress={()=>{void reload();}}/></View>:null}
       {owner&&activeSection==='MANAGE'&&requests.length>0?<View style={styles.section}>
-        <Text style={styles.sectionTitle}>Pedidos para entrar</Text>
+        <Text style={styles.sectionTitle}>{t('Pedidos para entrar')}</Text>
         {requests.map(r=><View key={r.id} style={styles.request}>
           <Text style={styles.memberName}>@{r.requesterUsername}</Text>
-          <Button title={busy?'A aprovar…':'Aprovar'} disabled={busy} onPress={()=>{void approve(r.id);}}/>
+          <Button title={busy?t('A aprovar…'):t('Aprovar')} disabled={busy} onPress={()=>{void approve(r.id);}}/>
         </View>)}
       </View>:null}
       {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
-        <Eyebrow>TRANSMISSÕES EM DIRETO</Eyebrow>
-        <Text style={styles.sectionTitle}>Lives da comunidade</Text>
-        <Text style={styles.muted}>Assiste aos jogos e treinos em direto. O servidor confirma quem pode transmitir.</Text>
-        <Button secondary title="Ver diretos da comunidade" onPress={()=>router.push({pathname:'/communities/[id]/live',params:{id:String(id)}})}/>
+        <Eyebrow>{t('TRANSMISSÕES EM DIRETO')}</Eyebrow>
+        <Text style={styles.sectionTitle}>{t('Lives da comunidade')}</Text>
+        <Text style={styles.muted}>{t('Assiste aos jogos e treinos em direto. O servidor confirma quem pode transmitir.')}</Text>
+        <Button secondary title={t('Ver diretos da comunidade')} onPress={()=>router.push({pathname:'/communities/[id]/live',params:{id:String(id)}})}/>
       </View>:null}
       {role&&activeSection==='FEED'&&auth.token&&auth.username?<View style={styles.section}>
-        <Text style={styles.sectionTitle}>Feed da comunidade</Text>
+        <Text style={styles.sectionTitle}>{t('Feed da comunidade')}</Text>
         <CommunityFeedPanel communityId={id} token={auth.token} username={auth.username} canManage={owner}/>
       </View>:null}
       {role&&activeSection==='CHAT'?<View style={styles.section}>
-        <Eyebrow>A CONVERSA CONTINUA</Eyebrow>
-        <Text style={styles.sectionTitle}>Juntos, mesmo fora do campo</Text>
+        <Eyebrow>{t('A CONVERSA CONTINUA')}</Eyebrow>
+        <Text style={styles.sectionTitle}>{t('Juntos, mesmo fora do campo')}</Text>
         <CommunityChatPanel embedded/>
       </View>:null}
       {role&&activeSection==='SESSIONS'?<View style={styles.section}>
-        <Text style={styles.sectionTitle}>Próximas sessões</Text>
-        <Button title="Criar sessão nesta comunidade" onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        <Text style={styles.sectionTitle}>{t('Próximas sessões')}</Text>
+        <Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
-        {sessionsError?<Button secondary title="Tentar carregar sessões novamente" disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
+        {sessionsError?<Button secondary title={t('Tentar carregar sessões novamente')} disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
         {audienceError?<Message tone="error">{audienceError}</Message>:null}
-        {!sessionsError&&sessions.length===0?<Message>Esta comunidade ainda não tem sessões agendadas.</Message>:null}
+        {!sessionsError&&sessions.length===0?<Message>{t('Esta comunidade ainda não tem sessões agendadas.')}</Message>:null}
         {sessions.map(s=><View key={s.id} style={styles.communitySessionRow}>
           <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
           {auth.token&&(canOpenToPublic(s,owner)||canRestrictToMembers(s,owner,id))?<View style={{gap:4}}>
-           <Button secondary title={audienceBusy===s.id?'A guardar…':canOpenToPublic(s,owner)?'Procurar jogadores fora da comunidade':'Só membros da comunidade'}
+           <Button secondary title={audienceBusy===s.id?t('A guardar…'):canOpenToPublic(s,owner)?t('Procurar jogadores fora da comunidade'):t('Só membros da comunidade')}
             disabled={audienceBusy!==null} onPress={()=>{
              const token=auth.token;if(!token||audienceBusy!==null)return;
              const toPublic=canOpenToPublic(s,owner);
              setAudienceBusy(s.id);setAudienceError('');
              setCommunitySessionAudience(id,s.id,toPublic,token)
               .then(updated=>setSessions(prev=>prev.map(item=>item.id===updated.id?{...item,...updated}:item)))
-              .catch(()=>setAudienceError(toPublic?'Não foi possível abrir a sessão a outros jogadores.':'Não foi possível restringir a sessão aos membros.'))
+              .catch(()=>setAudienceError(toPublic?t('Não foi possível abrir a sessão a outros jogadores.'):t('Não foi possível restringir a sessão aos membros.')))
               .finally(()=>setAudienceBusy(null));
             }}/>
            <Text style={styles.audienceHint}>{canOpenToPublic(s,owner)
-            ?'Os membros continuam a poder juntar-se. A sessão passa também a aparecer a outros jogadores.'
-            :'Remove a sessão da pesquisa pública. Inscrições já confirmadas não são anuladas.'}</Text>
+            ?t('Os membros continuam a poder juntar-se. A sessão passa também a aparecer a outros jogadores.')
+            :t('Remove a sessão da pesquisa pública. Inscrições já confirmadas não são anuladas.')}</Text>
           </View>:null}
           {owner&&isMember(community)&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
-           <Button secondary title="Registar resultado do jogo"
+           <Button secondary title={t('Registar resultado do jogo')}
             onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(s.id),communityId:String(id),sport:s.sport}})}/>:null}
         </View>)}
       </View>:null}

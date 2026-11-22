@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {MobileTheme} from '../lib/theme';
 import {resolveJynloMedia} from '../lib/social-feed-api';
@@ -23,7 +24,7 @@ export function CommunityCard({community,onPress,memberCount,role}:{community:Co
     ?`${memberCount} ${memberCount===1?'membro':'membros'}`:null;
   const isPrivate=community.visibility==='PRIVATE';
   const roleLabel=role==='OWNER'?'Organizador':role==='ADMIN'?'Administrador':role?'Membro':null;
-  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Abrir comunidade ${community.name}`}
+  return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('Abrir comunidade {a}',{a:community.name})}
     style={({pressed})=>[styles.card,pressed&&styles.pressed]}>
     <View style={styles.row}>
       <View style={styles.picture}>{image?<Image source={{uri:image}} style={styles.photo} resizeMode="cover"/>:<Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{icon(sports[0]||null)}</Text>}</View>
@@ -36,11 +37,11 @@ export function CommunityCard({community,onPress,memberCount,role}:{community:Co
     {!!community.description&&<Text numberOfLines={2} style={styles.desc}>{community.description}</Text>}
     <View style={styles.footer}>
       <View style={styles.badges}>
-        <View style={styles.visibility}><Text style={styles.visibilityText}>{isPrivate?'Privada':'Pública'}</Text></View>
+        <View style={styles.visibility}><Text style={styles.visibilityText}>{isPrivate?t('Privada'):t('Pública')}</Text></View>
         {memberLabel?<Text style={styles.small}>{memberLabel}</Text>:null}
         {roleLabel?<View style={styles.pill}><Text style={styles.pillText}>{roleLabel}</Text></View>:null}
       </View>
-      <Text style={styles.openText}>Ver comunidade  ↗</Text>
+      <Text style={styles.openText}>{t('Ver comunidade  ↗')}</Text>
     </View>
   </Pressable>;
 }

@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t as tr} from '../../../../src/lib/i18n';
 import {Alert,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -27,7 +28,7 @@ export default function TournamentParticipantsScreen(){
    return;
   }
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
-   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   if(version===generation.current){setError(tr('Torneio inválido.'));setLoading(false);}
    return;
   }
   setLoading(true);setError('');
@@ -36,19 +37,19 @@ export default function TournamentParticipantsScreen(){
     tournamentDetails(cid,tid,auth.token,auth.username),communityDetails(cid,auth.token,auth.username)
    ]);
    if(version!==generation.current||epoch!==readEpoch.current)return;
-   if(community.id!==cid)throw Error('A comunidade devolvida não corresponde à selecionada.');
+   if(community.id!==cid)throw Error(tr('A comunidade devolvida não corresponde à selecionada.'));
    const currentRole='myRole' in community?community.myRole||null:null;
    if(!canSeeIndividualRoster(t)){
-    setTournament(t);setRole(currentRole);setError('Este torneio tem equipas: consulta o plantel de cada equipa.');return;
+    setTournament(t);setRole(currentRole);setError(tr('Este torneio tem equipas: consulta o plantel de cada equipa.'));return;
    }
-   if(!currentRole)throw Error('Só membros da comunidade podem ver as inscrições.');
+   if(!currentRole)throw Error(tr('Só membros da comunidade podem ver as inscrições.'));
    const result=await tournamentParticipants(cid,tid,0,auth.token,auth.username);
    if(version!==generation.current||epoch!==readEpoch.current)return;
    setTournament(t);setRole(currentRole);
    setItems(result.participants);setPage(result.page);setMore(result.hasMore);
   }catch(e){
    if(version===generation.current&&epoch===readEpoch.current)
-    setError(e instanceof Error?e.message:'Não foi possível obter os participantes.');
+    setError(e instanceof Error?e.message:tr('Não foi possível obter os participantes.'));
   }finally{
    if(version===generation.current&&epoch===readEpoch.current)setLoading(false);
   }
@@ -75,7 +76,7 @@ export default function TournamentParticipantsScreen(){
    setPage(data.page);setMore(data.hasMore);
   }catch(e){
    if(version===generation.current&&epoch===readEpoch.current)
-    setError(e instanceof Error?e.message:'Não foi possível carregar mais participantes.');
+    setError(e instanceof Error?e.message:tr('Não foi possível carregar mais participantes.'));
   }finally{
    pageRef.current=false;
    if(version===generation.current)setBusy(mutationRef.current);
@@ -94,64 +95,64 @@ export default function TournamentParticipantsScreen(){
    let success='';
    if(which==='JOIN'){
     const result=await joinIndividualTournament(cid,tid,auth.token,auth.username);
-    success=result.status==='PENDING'?'Inscrição recebida. Aguarda confirmação do organizador.':'A inscrição foi confirmada pelo servidor.';
+    success=result.status==='PENDING'?tr('Inscrição recebida. Aguarda confirmação do organizador.'):tr('A inscrição foi confirmada pelo servidor.');
    }else if(which==='LEAVE'){
     await leaveIndividualTournament(cid,tid,auth.token,auth.username);
-    success='Cancelaste a tua inscrição no torneio.';
+    success=tr('Cancelaste a tua inscrição no torneio.');
    }else if(participant){
     const result=await confirmIndividualParticipant(cid,tid,participant.profileId,auth.token,auth.username);
-    success=`Participação de ${result.displayName||result.username} confirmada pelo servidor.`;
+    success=tr('Participação de {a} confirmada pelo servidor.',{a:result.displayName||result.username});
    }
    if(version!==generation.current)return;
    setNotice(success);
    // Re-read authoritative state. No optimistic registration or retry of writes.
    await load(version);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível concluir.')+
-    ' Atualiza os participantes antes de tentar novamente, para evitar duplicados.');
+   if(version===generation.current)setError((e instanceof Error?e.message:tr('Não foi possível concluir.'))+
+    ' '+tr('Atualiza os participantes antes de tentar novamente, para evitar duplicados.'));
   }finally{
    mutationRef.current=false;
    if(version===generation.current)setBusy(pageRef.current);
   }
  }
- return <Page><DemoBanner/><Eyebrow>TORNEIOS · INSCRIÇÕES</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Participantes individuais'}</Text>
-  {tournament?<View style={styles.row}><Badge text={tournament.sport||'Desporto'}/>
-   <Badge text={tournament.status==='DRAFT'?'Inscrições em preparação':tournament.status==='IN_PROGRESS'?'Em curso':'Concluído'}/></View>:null}
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{tr('TORNEIOS · INSCRIÇÕES')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||tr('Participantes individuais')}</Text>
+  {tournament?<View style={styles.row}><Badge text={tournament.sport||tr('Desporto')}/>
+   <Badge text={tournament.status==='DRAFT'?tr('Inscrições em preparação'):tournament.status==='IN_PROGRESS'?tr('Em curso'):tr('Concluído')}/></View>:null}
+  {!auth.token?<Button title={tr('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!!notice?<Message>{notice}</Message>:null}
   {!loading&&tournament&&canSeeIndividualRoster(tournament)&&role?<>
-   {tournament.status==='DRAFT'?<Message>A participação só fica confirmada quando um organizador a aprovar. As inscrições e cancelamentos encerram ao começar o torneio.</Message>
-     :entriesOpen(tournament)?<Message>As provas já começaram, mas ainda podes pedir inscrição. As provas anteriores não contam para quem entra agora.</Message>
-     :<Message>O torneio já começou ou terminou. Os participantes são apresentados apenas para consulta.</Message>}
+   {tournament.status==='DRAFT'?<Message>{tr('A participação só fica confirmada quando um organizador a aprovar. As inscrições e cancelamentos encerram ao começar o torneio.')}</Message>
+     :entriesOpen(tournament)?<Message>{tr('As provas já começaram, mas ainda podes pedir inscrição. As provas anteriores não contam para quem entra agora.')}</Message>
+     :<Message>{tr('O torneio já começou ou terminou. Os participantes são apresentados apenas para consulta.')}</Message>}
    {myEntry?<View style={styles.myCard}>
-     <Text style={styles.heading}>A minha inscrição</Text>
+     <Text style={styles.heading}>{tr('A minha inscrição')}</Text>
      <Text style={styles.member}>{myEntry.displayName||myEntry.username}</Text>
      <Text style={styles.status}>{participantStatus(myEntry.status)}</Text>
    </View>:null}
-   {action==='JOIN'?<Button title={busy?'A guardar…':'Pedir inscrição no torneio'} disabled={busy} onPress={()=>{void mutate('JOIN');}}/>:null}
-   {action==='LEAVE'?<Button danger title={busy?'A aguardar…':'Cancelar a minha inscrição'} disabled={busy} onPress={()=>{
+   {action==='JOIN'?<Button title={busy?tr('A guardar…'):tr('Pedir inscrição no torneio')} disabled={busy} onPress={()=>{void mutate('JOIN');}}/>:null}
+   {action==='LEAVE'?<Button danger title={busy?tr('A aguardar…'):tr('Cancelar a minha inscrição')} disabled={busy} onPress={()=>{
     const version=generation.current;
-    Alert.alert('Cancelar inscrição?','Vais sair deste torneio individual.',[
-      {text:'Manter inscrição',style:'cancel'},
-      {text:'Cancelar inscrição',style:'destructive',onPress:()=>{void mutate('LEAVE',undefined,version);}}
+    Alert.alert(tr('Cancelar inscrição?'),tr('Vais sair deste torneio individual.'),[
+      {text:tr('Manter inscrição'),style:'cancel'},
+      {text:tr('Cancelar inscrição'),style:'destructive',onPress:()=>{void mutate('LEAVE',undefined,version);}}
     ]);
    }}/>:null}
-   {!myEntry&&more&&entriesOpen(tournament)?<Message>Carrega as páginas seguintes para confirmar se já estás inscrito antes de pedir uma nova inscrição.</Message>:null}
+   {!myEntry&&more&&entriesOpen(tournament)?<Message>{tr('Carrega as páginas seguintes para confirmar se já estás inscrito antes de pedir uma nova inscrição.')}</Message>:null}
    <View style={styles.panel}>
-    <Text style={styles.heading}>Participantes</Text>
-    {items.length===0?<Text style={styles.muted}>Ainda não existem pedidos de inscrição neste torneio.</Text>:null}
+    <Text style={styles.heading}>{tr('Participantes')}</Text>
+    {items.length===0?<Text style={styles.muted}>{tr('Ainda não existem pedidos de inscrição neste torneio.')}</Text>:null}
     {items.map(p=><View key={p.profileId} style={styles.participant}>
       <View style={{flex:1,gap:5}}><Text style={styles.member}>{p.displayName||p.username}</Text>
        <Text style={styles.status}>{participantStatus(p.status)}</Text></View>
-      {canConfirmParticipant(role,tournament,p)?<Button secondary disabled={busy} title="Confirmar" onPress={()=>{void mutate('CONFIRM',p);}}/>:null}
+      {canConfirmParticipant(role,tournament,p)?<Button secondary disabled={busy} title={tr('Confirmar')} onPress={()=>{void mutate('CONFIRM',p);}}/>:null}
     </View>)}
    </View>
-   {more?<Button secondary disabled={busy} title={busy?'A carregar…':'Carregar mais participantes'} onPress={()=>{void nextPage();}}/>:null}
-   <Button secondary disabled={busy||loading} title="Atualizar inscrições" onPress={()=>{setNotice('');void load();}}/>
+   {more?<Button secondary disabled={busy} title={busy?tr('A carregar…'):tr('Carregar mais participantes')} onPress={()=>{void nextPage();}}/>:null}
+   <Button secondary disabled={busy||loading} title={tr('Atualizar inscrições')} onPress={()=>{setNotice('');void load();}}/>
   </>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  <Button secondary title={tr('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:27,fontWeight:'900',color:C.white},row:{flexDirection:'row',flexWrap:'wrap',gap:8},

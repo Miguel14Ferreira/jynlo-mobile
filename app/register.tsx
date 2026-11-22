@@ -1,4 +1,5 @@
 import React,{useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
@@ -35,54 +36,52 @@ export default function RegisterScreen(){
     returnSessionId:null,returnCommunityId:null
    });
    setPassword('');setConfirmPassword('');setRegistered(true);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a conta.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível criar a conta.'));}
   finally{submitInFlight.current=false;setBusy(false);}
  }
  if(registered)return <Page>
-  <Brand subtitle="CONTA CRIADA"/>
-  <Eyebrow>CONFIRMAÇÃO POR EMAIL</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Verifica a tua caixa de correio.</Text>
-  <Message>A conta foi registada. Confirma o teu email para conseguires iniciar sessão na Jynlo.</Message>
-  <Button title="Confirmar email na aplicação" onPress={()=>router.replace({pathname:'/confirm-email',params:{username}})}/>
-  <Button title="Voltar ao início de sessão" secondary onPress={()=>router.replace('/login')}/>
+  <Brand subtitle={t('CONTA CRIADA')}/>
+  <Eyebrow>{t('CONFIRMAÇÃO POR EMAIL')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Verifica a tua caixa de correio.')}</Text>
+  <Message>{t('A conta foi registada. Confirma o teu email para conseguires iniciar sessão na Jynlo.')}</Message>
+  <Button title={t('Confirmar email na aplicação')} onPress={()=>router.replace({pathname:'/confirm-email',params:{username}})}/>
+  <Button title={t('Voltar ao início de sessão')} secondary onPress={()=>router.replace('/login')}/>
  </Page>;
  return <Page>
-  <Brand subtitle="JUNTA-TE À JYNLO"/>
+  <Brand subtitle={t('JUNTA-TE À JYNLO')}/>
   <DemoBanner/>
-  <Eyebrow>REGISTO NA APLICAÇÃO</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Encontra as tuas pessoas.</Text>
-  <Text style={styles.hint}>Cria a tua conta diretamente na app. Os mesmos dados e regras são usados no website.</Text>
+  <Eyebrow>{t('REGISTO NA APLICAÇÃO')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Encontra as tuas pessoas.')}</Text>
+  <Text style={styles.hint}>{t('Cria a tua conta diretamente na app. Os mesmos dados e regras são usados no website.')}</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.form}>
-   <Text style={styles.label}>Nome de utilizador *</Text>
-   <TextInput style={styles.input} value={username} onChangeText={setUsername} maxLength={50} autoCapitalize="none" autoComplete="username" autoCorrect={false} placeholder="Mínimo de 3 caracteres" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Email *</Text>
-   <TextInput style={styles.input} value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address" autoCapitalize="none" autoComplete="email" autoCorrect={false} placeholder="o.teu@email.com" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Palavra-passe *</Text>
-   <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry maxLength={128} autoComplete="new-password" placeholder="Mínimo de 8 caracteres" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Confirmar palavra-passe *</Text>
-   <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry maxLength={128} autoComplete="new-password" placeholder="Repetir palavra-passe" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Nome pelo qual queres ser tratado</Text>
-   <TextInput style={styles.input} value={nickname} onChangeText={setNickname} maxLength={80} placeholder="Opcional" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Data de nascimento *</Text>
+   <Text style={styles.label}>{t('Nome de utilizador *')}</Text>
+   <TextInput style={styles.input} value={username} onChangeText={setUsername} maxLength={50} autoCapitalize="none" autoComplete="username" autoCorrect={false} placeholder={t('Mínimo de 3 caracteres')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Email *')}</Text>
+   <TextInput style={styles.input} value={email} onChangeText={setEmail} maxLength={254} keyboardType="email-address" autoCapitalize="none" autoComplete="email" autoCorrect={false} placeholder={t('o.teu@email.com')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Palavra-passe *')}</Text>
+   <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry maxLength={128} autoComplete="new-password" placeholder={t('Mínimo de 8 caracteres')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Confirmar palavra-passe *')}</Text>
+   <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry maxLength={128} autoComplete="new-password" placeholder={t('Repetir palavra-passe')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Nome pelo qual queres ser tratado')}</Text>
+   <TextInput style={styles.input} value={nickname} onChangeText={setNickname} maxLength={80} placeholder={t('Opcional')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Data de nascimento *')}</Text>
    <BirthDatePicker onChange={setDateOfBirth} disabled={busy}/>
-   <Text style={styles.hint}>Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.</Text>
-   <Text style={styles.label}>País *</Text>
+   <Text style={styles.hint}>{t('Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.')}</Text>
+   <Text style={styles.label}>{t('País *')}</Text>
    <TextInput style={styles.input} value={country} onChangeText={setCountry} maxLength={100} placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Género (opcional)</Text>
+   <Text style={styles.label}>{t('Género (opcional)')}</Text>
    <View style={styles.gender}>
-    {([{value:null,label:'Não indicar'},{value:'masculino',label:'Masculino'},{value:'feminino',label:'Feminino'},{value:'outro',label:'Outro'}] as const).map(option=>
+    {([{value:null,label:t('Não indicar')},{value:'masculino',label:t('Masculino')},{value:'feminino',label:t('Feminino')},{value:'outro',label:t('Outro')}] as const).map(option=>
       <Text key={option.label} onPress={()=>setGender(option.value)}
        style={[styles.choice,gender===option.value&&styles.choiceActive]}>{option.label}</Text>)}
    </View>
    <Text onPress={()=>setAcceptedLegalTerms(value=>!value)} accessibilityRole="checkbox"
-    accessibilityState={{checked:acceptedLegalTerms}} style={styles.legal}>
-    {acceptedLegalTerms?'☑':'☐'} Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.
-   </Text>
-   <Button title="Ler Termos de Utilização" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
-   <Button title="Ler Política de Privacidade" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
-   <Button title={busy?'A criar conta…':'Criar conta'} disabled={busy} onPress={()=>{void submit();}}/>
-   <Button title="Já tenho conta" secondary onPress={()=>router.replace('/login')}/>
+    accessibilityState={{checked:acceptedLegalTerms}} style={styles.legal}>{t('{a} Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.',{a:acceptedLegalTerms?'☑':'☐'})}</Text>
+   <Button title={t('Ler Termos de Utilização')} secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
+   <Button title={t('Ler Política de Privacidade')} secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
+   <Button title={busy?t('A criar conta…'):t('Criar conta')} disabled={busy} onPress={()=>{void submit();}}/>
+   <Button title={t('Já tenho conta')} secondary onPress={()=>router.replace('/login')}/>
   </View>
  </Page>;
 }

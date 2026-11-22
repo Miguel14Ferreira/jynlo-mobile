@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {sessionSocialMemories,resolveJynloMedia} from '../lib/social-feed-api';
@@ -33,7 +34,7 @@ export default function SessionMemoriesPanel({
    setPosts(found.filter(post=>post.type==='POST'&&post.sessionId===sessionId));
   }catch{
    if(current!==generation.current)return;
-   if(!silent){setPosts([]);setError('Não foi possível carregar as recordações deste jogo.');}
+   if(!silent){setPosts([]);setError(t('Não foi possível carregar as recordações deste jogo.'));}
   }finally{
    if(current===generation.current){pending.current=false;if(!silent)setLoading(false);}
   }
@@ -48,19 +49,19 @@ export default function SessionMemoriesPanel({
 
  if(!canSharePublicly||!token)return null;
  return <View style={styles.panel}>
-  <Text style={styles.eyebrow}>JYNLO · MOMENTOS</Text>
-  <Text style={styles.heading}>Recordações deste jogo</Text>
-  <Text style={styles.hint}>Partilha fotografias, vídeos e momentos do jogo. Nada é publicado automaticamente.</Text>
+  <Text style={styles.eyebrow}>{t('JYNLO · MOMENTOS')}</Text>
+  <Text style={styles.heading}>{t('Recordações deste jogo')}</Text>
+  <Text style={styles.hint}>{t('Partilha fotografias, vídeos e momentos do jogo. Nada é publicado automaticamente.')}</Text>
   <View style={styles.actions}>
    {completed&&canPublish?<Pressable accessibilityRole="button"
-    accessibilityLabel="Partilhar um momento desta sessão" style={[styles.action,styles.primary]}
+    accessibilityLabel={t('Partilhar um momento desta sessão')} style={[styles.action,styles.primary]}
     onPress={()=>router.push({pathname:'/(tabs)',params:{momentSession:String(sessionId)}})}>
-    <Text style={styles.primaryLabel}>Partilhar momento</Text>
+    <Text style={styles.primaryLabel}>{t('Partilhar momento')}</Text>
    </Pressable>:null}
   </View>
-  {loading?<Text style={styles.hint}>A carregar recordações…</Text>:
+  {loading?<Text style={styles.hint}>{t('A carregar recordações…')}</Text>:
    error?<Text style={styles.error}>{error}</Text>:
-   posts.length===0?<Text style={styles.hint}>Ainda não há recordações deste jogo.</Text>:
+   posts.length===0?<Text style={styles.hint}>{t('Ainda não há recordações deste jogo.')}</Text>:
    <View style={styles.grid}>{posts.map(post=>{
     const firstPhoto=post.imageUrl||post.extraMedia?.find(asset=>asset.mimeType.startsWith('image/'))?.url||null;
     // Authenticated private-media routes require dedicated protected viewers.
@@ -68,11 +69,11 @@ export default function SessionMemoriesPanel({
     const preview=firstPhoto&&!firstPhoto.includes('/api/profile-media/')
       ?resolveJynloMedia(firstPhoto):null;
     return <Pressable key={post.postId} accessibilityRole="button"
-      accessibilityLabel={'Abrir publicação de @'+post.authorUsername}
+      accessibilityLabel={t('Abrir publicação de @{v}',{v:post.authorUsername})}
       onPress={()=>{if(post.postId)router.push({pathname:'/posts/[postId]',params:{postId:String(post.postId)}});}}
       style={styles.card}>
       {preview?<Image source={{uri:preview}} style={styles.photo} resizeMode="cover"/>:
-       post.videoUrl?<View style={styles.mediaPlaceholder}><Text style={styles.actionLabel}>▶ Vídeo</Text></View>:null}
+       post.videoUrl?<View style={styles.mediaPlaceholder}><Text style={styles.actionLabel}>{t('▶ Vídeo')}</Text></View>:null}
       <View style={styles.copy}>
        <Text style={styles.author}>@{post.authorUsername}</Text>
        {post.content?<Text style={styles.content} numberOfLines={3}>{post.content}</Text>:null}

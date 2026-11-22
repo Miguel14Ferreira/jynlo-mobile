@@ -1,4 +1,5 @@
 import React,{useCallback,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Image,Linking,StyleSheet,Text,View} from 'react-native';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {useLocalSearchParams,useFocusEffect,useRouter} from 'expo-router';
@@ -12,16 +13,16 @@ import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} fro
 
 const info=(label:string,value:unknown)=>{
  if(typeof value!=='string'||!value.trim())return null;
- return <View style={styles.infoRow} accessibilityLabel={label+': '+value.trim()}>
-  <Text style={styles.infoLabel}>{label}</Text>
+ return <View style={styles.infoRow} accessibilityLabel={t(label)+': '+value.trim()}>
+  <Text style={styles.infoLabel}>{t(label)}</Text>
   <Text style={styles.infoValue}>{value.trim()}</Text>
  </View>;
 };
 const availability=(label:string,value:boolean|null|undefined)=>{
  if(value==null)return null;
- return <View style={styles.infoRow} accessibilityLabel={label+': '+(value?'Sim':'Não')}>
-  <Text style={styles.infoLabel}>{label}</Text>
-  <Text style={styles.infoValue}>{value?'Sim':'Não'}</Text>
+ return <View style={styles.infoRow} accessibilityLabel={t(label)+': '+(value?t('Sim'):t('Não'))}>
+  <Text style={styles.infoLabel}>{t(label)}</Text>
+  <Text style={styles.infoValue}>{value?t('Sim'):t('Não')}</Text>
  </View>;
 };
 function safeHttps(value:string|null|undefined):string|null{
@@ -53,7 +54,7 @@ export default function VenueDetailScreen(){
   setSelectedPhoto(null);setPhotoMessage('');
   setConditions([]);setRating(null);setExtraError(false);
   if(!Number.isSafeInteger(id)||id<=0){
-   setError('Recinto inválido.');setLoading(false);
+   setError(t('Recinto inválido.'));setLoading(false);
    return()=>{active=false;};
   }
   void (async()=>{
@@ -71,7 +72,7 @@ export default function VenueDetailScreen(){
     if(extras[2].status==='fulfilled')setRating(extras[2].value);
     setExtraError(extras.some(item=>item.status==='rejected'));
    }catch(e){
-    if(active)setError(e instanceof Error?e.message:'Erro ao carregar o recinto.');
+    if(active)setError(e instanceof Error?e.message:t('Erro ao carregar o recinto.'));
    }finally{if(active)setLoading(false);}
   })();
   return()=>{active=false};
@@ -85,7 +86,7 @@ export default function VenueDetailScreen(){
    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,
     aspect:[4,3],quality:0.75,exif:false,base64:false});
    if(!result.canceled&&result.assets?.[0])setSelectedPhoto(result.assets[0]);
-  }catch{setPhotoMessage('Não foi possível abrir a galeria.');}
+  }catch{setPhotoMessage(t('Não foi possível abrir a galeria.'));}
  }
  async function submitPhoto(){
   if(!auth.token||DEMO_MODE||!selectedPhoto||sendingPhoto||!Number.isSafeInteger(id)||id<=0)return;
@@ -94,9 +95,9 @@ export default function VenueDetailScreen(){
    await uploadVenuePhoto(id,auth.token,selectedPhoto);
    setSelectedPhoto(null);
    // Refresh authoritative gallery rather than synthesising an image entry.
-   try{setPhotos(await venuePhotos(id));setPhotoMessage('Fotografia enviada com sucesso.');}
-   catch{setPhotoMessage('Fotografia recebida. Reabre o recinto para atualizar a galeria.');}
-  }catch(e){setPhotoMessage(e instanceof Error?e.message:'Não foi possível confirmar o envio.');}
+   try{setPhotos(await venuePhotos(id));setPhotoMessage(t('Fotografia enviada com sucesso.'));}
+   catch{setPhotoMessage(t('Fotografia recebida. Reabre o recinto para atualizar a galeria.'));}
+  }catch(e){setPhotoMessage(e instanceof Error?e.message:t('Não foi possível confirmar o envio.'));}
   finally{setSendingPhoto(false);}
  }
  const validCoordinates=venue?.latitude!=null&&venue?.longitude!=null&&
@@ -107,19 +108,19 @@ export default function VenueDetailScreen(){
     String(venue.latitude)+','+String(venue.longitude)):null;
  const site=safeHttps(venue?.website);
  return <Page>
-  <DemoBanner/><Eyebrow>DETALHE DO RECINTO</Eyebrow>
+  <DemoBanner/><Eyebrow>{t('DETALHE DO RECINTO')}</Eyebrow>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {extraError?<Message>Algumas informações adicionais não estão disponíveis neste momento.</Message>:null}
+  {extraError?<Message>{t('Algumas informações adicionais não estão disponíveis neste momento.')}</Message>:null}
   {venue?<View style={styles.card}>
    <Text style={styles.name}>{venue.name}</Text>
    <Text style={styles.meta}>{[venue.city,venue.district].filter(Boolean).join(' · ')}</Text>
    {info('Modalidades',venue.sports)}
-   {info('Tipo de recinto',venue.venueType)}
+   {info(t('Tipo de recinto'),venue.venueType)}
    {info('Morada',venue.address)}
-   {mapUrl?<Button title="Abrir localização no mapa" secondary
+   {mapUrl?<Button title={t('Abrir localização no mapa')} secondary
       onPress={()=>{void openExternal(mapUrl);}}/>:null}
-   <Eyebrow>INSTALAÇÕES E SERVIÇOS</Eyebrow>
+   <Eyebrow>{t('INSTALAÇÕES E SERVIÇOS')}</Eyebrow>
    {info('Superfície',venue.surfaceType)}
    {info('Ambiente',venue.environmentType)}
    {info('Horário',venue.openingHours)}
@@ -129,34 +130,34 @@ export default function VenueDetailScreen(){
    {availability('Interior',venue.indoor)}
    {availability('Balneários',venue.changingRooms)}
    {availability('Chuveiros',venue.showers)}
-   {availability('Casas de banho',venue.toilets)}
+   {availability(t('Casas de banho'),venue.toilets)}
    {availability('Acessibilidade',venue.accessible)}
    {availability('Iluminação',venue.lighting)}
    {availability('Estacionamento',venue.parking)}
    {availability('Wi-Fi',venue.wifi)}
-   <Eyebrow>CONTACTOS</Eyebrow>
+   <Eyebrow>{t('CONTACTOS')}</Eyebrow>
    {info('Contacto',venue.contact)}
-   {site?<Button title="Abrir website do recinto" secondary
+   {site?<Button title={t('Abrir website do recinto')} secondary
      onPress={()=>{void openExternal(site);}}/>:null}
-   {!venue.contact&&!site?<Text style={styles.meta}>Contactos não disponíveis.</Text>:null}
-   <Eyebrow>AJUDAR A MELHORAR ESTE RECINTO</Eyebrow>
-   <Button title="Sugerir correção das informações" secondary
+   {!venue.contact&&!site?<Text style={styles.meta}>{t('Contactos não disponíveis.')}</Text>:null}
+   <Eyebrow>{t('AJUDAR A MELHORAR ESTE RECINTO')}</Eyebrow>
+   <Button title={t('Sugerir correção das informações')} secondary
     onPress={()=>router.push({pathname:'/venues/[id]/suggest-edit',params:{id:String(id)}})}/>
-   <Eyebrow>AVALIAÇÕES</Eyebrow>
+   <Eyebrow>{t('AVALIAÇÕES')}</Eyebrow>
    {rating&&rating.averageScore!=null&&rating.ratingCount>=3?
-     <Text style={styles.meta}>Avaliação média: {rating.averageScore.toFixed(1)}/5 · {rating.ratingCount} avaliações</Text>:
-     <Text style={styles.meta}>Ainda não existem avaliações públicas suficientes.</Text>}
-   <Eyebrow>FOTOGRAFIAS</Eyebrow>
+     <Text style={styles.meta}>{t('Avaliação média: {a}/5 · {b} avaliações',{a:rating.averageScore.toFixed(1),b:rating.ratingCount})}</Text>:
+     <Text style={styles.meta}>{t('Ainda não existem avaliações públicas suficientes.')}</Text>}
+   <Eyebrow>{t('FOTOGRAFIAS')}</Eyebrow>
    {photos.length?photos.filter(photo=>safeHttps(photo.photoUrl)).map(photo=>
     <Image key={photo.id} source={{uri:photo.photoUrl}} style={styles.photo} resizeMode="cover"/>):
-    <Text style={styles.meta}>Ainda não existem fotografias disponíveis.</Text>}
-   <Message>O envio de novas fotografias está temporariamente suspenso até existir um processo de aprovação das contribuições.</Message>
-   <Eyebrow>CONDIÇÕES POR MODALIDADE</Eyebrow>
+    <Text style={styles.meta}>{t('Ainda não existem fotografias disponíveis.')}</Text>}
+   <Message>{t('O envio de novas fotografias está temporariamente suspenso até existir um processo de aprovação das contribuições.')}</Message>
+   <Eyebrow>{t('CONDIÇÕES POR MODALIDADE')}</Eyebrow>
    {conditions.length?conditions.map(condition=><View key={condition.id} style={styles.condition}>
     <Text style={styles.conditionTitle}>{condition.sport}</Text>
     <Text style={styles.meta}>{condition.conditions}</Text>
     {info('Fonte',condition.informationSource)}
-   </View>):<Text style={styles.meta}>Sem informações adicionais por modalidade.</Text>}
+   </View>):<Text style={styles.meta}>{t('Sem informações adicionais por modalidade.')}</Text>}
   </View>:null}
  </Page>;
 }

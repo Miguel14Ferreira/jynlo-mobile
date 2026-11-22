@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** "Classificação por provas": client helpers. The server computes places, points and the table. */
 const KINDS=['TIME','SCORE','POSITION'];
 const KIND_LABELS={TIME:'⏱️ Tempo / pancadas (menor ganha)',SCORE:'🎯 Pontos / marca / nota (maior ganha)',POSITION:'🏁 Só posições'};
@@ -31,11 +32,11 @@ function buildResults(rows,kind){
   if(row.dnf){results.push({participantId:row.participantId,value:null,position:null,didNotFinish:true});continue;}
   const parsed=parseEventValue(row.raw,kind);
   if(parsed===null)continue;
-  if(Number.isNaN(parsed)||parsed<0)throw Error('Valor inválido para '+row.name+'.');
+  if(Number.isNaN(parsed)||parsed<0)throw Error(tr('Valor inválido para {name}.',{name:row.name}));
   results.push({participantId:row.participantId,didNotFinish:false,
    value:kind==='POSITION'?null:parsed,position:kind==='POSITION'?parsed:null});
  }
- if(!results.length)throw Error('Regista pelo menos um resultado.');
+ if(!results.length)throw Error(tr('Regista pelo menos um resultado.'));
  return results;
 }
 /** Draft input rows for editing an existing event (or a new one when event is null). */

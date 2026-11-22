@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Group server-confirmed team codes without deriving or inventing assignments. */
 function confirmedSessionTeams(participants){
  const groups={A:[],B:[],unassigned:[]};
@@ -17,16 +18,16 @@ function confirmedSessionTeams(participants){
  return groups;
 }
 function sessionParticipationLabel(session,at=Date.now()){
- if(!session)return 'Sessão indisponível';
- if(session.status==='CANCELLED')return 'Cancelada';
- if(session.status==='COMPLETED')return 'Concluída';
+ if(!session)return tr('Sessão indisponível');
+ if(session.status==='CANCELLED')return tr('Cancelada');
+ if(session.status==='COMPLETED')return tr('Concluída');
  // A stale OPEN/FULL status must not advertise expired sessions as joinable.
  const time=Date.parse(session.gameDate||'');
- if(['OPEN','FULL'].includes(session.status)&&Number.isFinite(time)&&time<=at)return 'Data ultrapassada';
- if(session.joined)return 'Confirmado';
- if(session.waitlisted)return 'Lista de espera';
- if(session.status==='FULL')return 'Completa';
- if(session.status==='OPEN')return 'Aberta';
- return 'Estado por confirmar';
+ if(['OPEN','FULL'].includes(session.status)&&Number.isFinite(time)&&time<=at)return tr('Data ultrapassada');
+ if(session.joined)return tr('Confirmado');
+ if(session.waitlisted)return tr('Lista de espera');
+ if(session.status==='FULL')return tr('Completa');
+ if(session.status==='OPEN')return tr('Aberta');
+ return tr('Estado por confirmar');
 }
 module.exports={confirmedSessionTeams,sessionParticipationLabel};

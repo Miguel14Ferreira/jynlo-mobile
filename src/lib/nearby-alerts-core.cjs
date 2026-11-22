@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 // "Novos jogos perto de ti": choices and checks for the settings screen.
 // The server validates again; these keep the screen honest and testable.
 
@@ -64,16 +65,16 @@ function sportSuggestions(catalog,search,chosen,limit=8){
 
 /** Error message for the screen, or '' when the draft can be saved. */
 function problem(preference){
- if(preference.enabled&&(preference.latitude===null||preference.longitude===null))return 'Escolhe um local para receberes avisos.';
+ if(preference.enabled&&(preference.latitude===null||preference.longitude===null))return tr('Escolhe um local para receberes avisos.');
  return '';
 }
 
 function samePreference(a,b){return JSON.stringify(normalizePreference(a))===JSON.stringify(normalizePreference(b));}
 
 function summary(preference){
- if(!preference.enabled)return 'Desligado';
- const where=preference.placeLabel||'o local escolhido';
- const what=preference.sports.length?preference.sports.join(', '):'todas as modalidades';
+ if(!preference.enabled)return tr('Desligado');
+ const where=preference.placeLabel||tr('o local escolhido');
+ const what=preference.sports.length?preference.sports.join(', '):tr('todas as modalidades');
  return `Até ${preference.radiusKm} km de ${where} · ${what}`;
 }
 

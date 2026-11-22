@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {storyMentionUsernames} from '../lib/story-details.cjs';
 import {JynloIcon} from './JynloIcon';
@@ -15,7 +16,7 @@ export default function StoryDetailsView({locationLabel,taggedUsernames,showTime
   {tags.length?<ScrollView horizontal showsHorizontalScrollIndicator={false}
    keyboardShouldPersistTaps="handled" style={styles.tagsStrip} contentContainerStyle={styles.tags}>
    {tags.map(username=>onOpenProfile?
-   <Pressable key={username} accessibilityRole="button" accessibilityLabel={'Abrir perfil de '+username}
+   <Pressable key={username} accessibilityRole="button" accessibilityLabel={t('Abrir perfil de {v}',{v:username})}
     onPress={()=>onOpenProfile(username)} style={styles.tag}><Text style={styles.labelText}>@{username}</Text></Pressable>:
    <View key={username} style={styles.tag}><Text style={styles.labelText}>@{username}</Text></View>)}
    </ScrollView>:null}

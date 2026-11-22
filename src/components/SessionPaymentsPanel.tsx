@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
@@ -16,7 +17,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
  useEffect(()=>{
   const key=sessionId+'|'+token;identity.current=key;setData(null);setError('');
   sessionPayments(sessionId,token).then(result=>{if(identity.current===key)apply(result);})
-   .catch(()=>{if(identity.current===key)setError('Não foi possível carregar os pagamentos.');});
+   .catch(()=>{if(identity.current===key)setError(t('Não foi possível carregar os pagamentos.'));});
  },[sessionId,token]);
  function apply(result:SessionPayments){
   setData(result);
@@ -29,64 +30,64 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
   if(busy)return;
   const key=identity.current;setBusy(true);setError('');
   try{const result=await action();if(identity.current===key)apply(result);}
-  catch(e){if(identity.current===key)setError(e instanceof Error&&e.message?e.message:'Não foi possível guardar. Tenta outra vez.');}
+  catch(e){if(identity.current===key)setError(e instanceof Error&&e.message?e.message:t('Não foi possível guardar. Tenta outra vez.'));}
   finally{setBusy(false);}
  }
  if(!data)return error?<Message>{error}</Message>:null;
  const amount=money(data.priceAmount??0);
  const pending=data.playerCount-data.confirmedCount;
- return <View style={styles.panel} accessibilityLabel="Pagamentos">
+ return <View style={styles.panel} accessibilityLabel={t('Pagamentos')}>
   <View style={styles.head}>
-   <Text style={styles.title}>💶 Pagamentos</Text>
-   <Text style={styles.count} accessibilityRole="text">{data.confirmedCount} de {data.playerCount} pagos</Text>
+   <Text style={styles.title}>{t('💶 Pagamentos')}</Text>
+   <Text style={styles.count} accessibilityRole="text">{t('{a} de {b} pagos',{a:data.confirmedCount,b:data.playerCount})}</Text>
   </View>
   {data.organiser?<>
-   <Text style={styles.label}>Como se paga este jogo?</Text>
+   <Text style={styles.label}>{t('Como se paga este jogo?')}</Text>
    <View style={styles.row}>
-    <Choice label="📱 MB WAY para mim" selected={mbwayDraft} disabled={busy} onPress={()=>setMbwayDraft(true)}/>
-    <Choice label="🤝 Em mão, no dia" selected={!mbwayDraft&&data.method==='IN_PERSON'} disabled={busy}
+    <Choice label={t('📱 MB WAY para mim')} selected={mbwayDraft} disabled={busy} onPress={()=>setMbwayDraft(true)}/>
+    <Choice label={t('🤝 Em mão, no dia')} selected={!mbwayDraft&&data.method==='IN_PERSON'} disabled={busy}
      onPress={()=>{setMbwayDraft(false);if(data.method!=='IN_PERSON')void run(()=>setPaymentMethod(sessionId,'IN_PERSON',null,token));}}/>
    </View>
    {mbwayDraft?<>
-    <Text style={styles.label}>O teu número MB WAY para receberes</Text>
+    <Text style={styles.label}>{t('O teu número MB WAY para receberes')}</Text>
     <TextInput value={phone} onChangeText={setPhone} placeholder="912 345 678" placeholderTextColor={C.muted}
-     keyboardType="phone-pad" autoComplete="tel" maxLength={20} editable={!busy} style={styles.input} accessibilityLabel="Número MB WAY"/>
-    <Button title="Guardar número" disabled={busy||!phone.trim()} onPress={()=>void run(()=>setPaymentMethod(sessionId,'MBWAY',phone.trim(),token))}/>
-    <Text style={styles.muted}>Só os jogadores inscritos veem este número.</Text>
+     keyboardType="phone-pad" autoComplete="tel" maxLength={20} editable={!busy} style={styles.input} accessibilityLabel={t('Número MB WAY')}/>
+    <Button title={t('Guardar número')} disabled={busy||!phone.trim()} onPress={()=>void run(()=>setPaymentMethod(sessionId,'MBWAY',phone.trim(),token))}/>
+    <Text style={styles.muted}>{t('Só os jogadores inscritos veem este número.')}</Text>
    </>:null}
-   {data.players.length===0?<Text style={styles.muted}>Ainda não há jogadores inscritos.</Text>:
+   {data.players.length===0?<Text style={styles.muted}>{t('Ainda não há jogadores inscritos.')}</Text>:
     data.players.map(player=><View key={player.username} style={styles.player}>
      <Text style={styles.name} numberOfLines={1}>{player.username}</Text>
      <Text style={[styles.state,player.confirmedAt?styles.paid:player.claimedAt?styles.claimed:null]}>
-      {player.confirmedAt?'✅ Pago':player.claimedAt?'⏳ Diz que pagou':'Por pagar'}</Text>
+      {player.confirmedAt?t('✅ Pago'):player.claimedAt?t('⏳ Diz que pagou'):t('Por pagar')}</Text>
      <Pressable accessibilityRole="button" disabled={busy} style={[styles.small,!player.confirmedAt&&styles.smallPrimary]}
-      accessibilityLabel={(player.confirmedAt?'Anular pagamento de ':'Marcar como pago: ')+player.username}
+      accessibilityLabel={player.confirmedAt?t('Anular pagamento de {user}',{user:player.username}):t('Marcar como pago: {user}',{user:player.username})}
       onPress={()=>void run(()=>confirmPayment(sessionId,player.username,!player.confirmedAt,token))}>
-      <Text style={[styles.smallText,!player.confirmedAt&&styles.smallTextPrimary]}>{player.confirmedAt?'Anular':'Marcar pago'}</Text>
+      <Text style={[styles.smallText,!player.confirmedAt&&styles.smallTextPrimary]}>{player.confirmedAt?t('Anular'):t('Marcar pago')}</Text>
      </Pressable>
     </View>)}
    {data.method&&pending>0?(reminderBlocked(data.lastReminderAt)
-    ?<Text style={styles.muted}>🔔 Lembrete enviado. Podes voltar a lembrar daqui a 12 horas.</Text>
-    :<Button secondary title={`🔔 Lembrar quem falta (${pending})`} disabled={busy} onPress={()=>void run(()=>remindUnpaid(sessionId,token))}/>):null}
+    ?<Text style={styles.muted}>{t('🔔 Lembrete enviado. Podes voltar a lembrar daqui a 12 horas.')}</Text>
+    :<Button secondary title={t('🔔 Lembrar quem falta ({a})',{a:pending})} disabled={busy} onPress={()=>void run(()=>remindUnpaid(sessionId,token))}/>):null}
   </>:<>
-   {data.me?.confirmedAt?<Text style={styles.ok}>✅ O organizador confirmou o teu pagamento.</Text>:<>
-    {data.method==='IN_PERSON'?<Text style={styles.text}>Paga {amount} ao organizador no dia do jogo.</Text>
+   {data.me?.confirmedAt?<Text style={styles.ok}>{t('✅ O organizador confirmou o teu pagamento.')}</Text>:<>
+    {data.method==='IN_PERSON'?<Text style={styles.text}>{t('Paga {a} ao organizador no dia do jogo.',{a:amount})}</Text>
      :data.mbwayPhone?<>
-      <Text style={styles.text}>Paga {amount} por MB WAY ao organizador:</Text>
+      <Text style={styles.text}>{t('Paga {a} por MB WAY ao organizador:',{a:amount})}</Text>
       <View style={styles.row}>
        <Text selectable style={styles.phone}>{phoneLabel(data.mbwayPhone)}</Text>
        <Pressable accessibilityRole="button" style={styles.small} onPress={()=>void Share.share({message:data.mbwayPhone!})}>
-        <Text style={styles.smallText}>Partilhar número</Text></Pressable>
+        <Text style={styles.smallText}>{t('Partilhar número')}</Text></Pressable>
       </View>
-     </>:<Text style={styles.muted}>O organizador ainda não indicou como pagar.</Text>}
+     </>:<Text style={styles.muted}>{t('O organizador ainda não indicou como pagar.')}</Text>}
     {data.me?.claimedAt?<>
-     <Text style={styles.muted}>⏳ Disseste que já pagaste. Falta o organizador confirmar.</Text>
-     <Button secondary title="Afinal ainda não paguei" disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,false,token))}/>
-    </>:<Button title="Já paguei" disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,true,token))}/>}
+     <Text style={styles.muted}>{t('⏳ Disseste que já pagaste. Falta o organizador confirmar.')}</Text>
+     <Button secondary title={t('Afinal ainda não paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,false,token))}/>
+    </>:<Button title={t('Já paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,true,token))}/>}
    </>}
   </>}
   {error?<Text style={styles.error} accessibilityRole="alert">{error}</Text>:null}
-  <Text style={styles.muted}>O pagamento é feito diretamente ao organizador. A Jynlo não recebe nem guarda dinheiro.</Text>
+  <Text style={styles.muted}>{t('O pagamento é feito diretamente ao organizador. A Jynlo não recebe nem guarda dinheiro.')}</Text>
  </View>;
 }
 

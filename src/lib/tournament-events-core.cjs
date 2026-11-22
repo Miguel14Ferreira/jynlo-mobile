@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 const {classificationKind}=require('./competition-core.cjs');
 const {isOrganizer}=require('./tournament-organizer-core.cjs');
 const ENDPOINTS=Object.freeze({RACE:'races',TIMED:'times',MEASURED:'marks'});
@@ -30,15 +31,15 @@ function roundCollections(overview){
 }
 /** Follows CommunityRaceStandings.parsePoints on the backend (0..1000, <=20 places, nonincreasing). */
 function validateRacePointsCsv(value){
- if(typeof value!=='string'||!value.trim())throw Error('Indica os pontos por posição.');
+ if(typeof value!=='string'||!value.trim())throw Error(tr('Indica os pontos por posição.'));
  const parts=value.split(',');
- if(parts.length>20)throw Error('Só podes configurar as primeiras 20 posições.');
+ if(parts.length>20)throw Error(tr('Só podes configurar as primeiras 20 posições.'));
  let previous=Infinity;
  const points=parts.map(part=>{
   const text=part.trim();
-  if(!/^[0-9]{1,4}$/.test(text))throw Error('Introduz valores inteiros separados por vírgulas.');
+  if(!/^[0-9]{1,4}$/.test(text))throw Error(tr('Introduz valores inteiros separados por vírgulas.'));
   const n=Number(text);
-  if(n>1000||n>previous)throw Error('Os pontos devem ser decrescentes, entre 0 e 1000.');
+  if(n>1000||n>previous)throw Error(tr('Os pontos devem ser decrescentes, entre 0 e 1000.'));
   previous=n;return n;
  });
  return points.join(',');

@@ -4,7 +4,7 @@ for f in sys.argv[1:]:
         if line.lstrip().startswith(('import','//')) or 'StyleSheet' in line: continue
         for m in re.finditer(r"(?<![\w.$\]`])'((?:[^'\\\n]|\\.)*)'",line):
             v=m.group(1); pre=line[:m.start()]
-            if re.search(r'(^|[^\w.])t\($',pre): continue
+            if re.search(r'(^|[^\w.])tr?\($',pre): continue
             if not re.search(r"[a-zà-ÿ]",v) or re.fullmatch(r"[a-z0-9_\-./:\[\]()]+",v) or v.startswith(('/','http','#')): continue
             print(f"{f}:{i}: {v}")
         for m in re.finditer(r">([^<>{}()=;&|]*[A-Za-zÀ-ÿ][^<>{}()=;&|]*)</",line):

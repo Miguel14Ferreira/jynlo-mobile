@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {safeTeamKitColor,type TeamKitPattern,type TeamKitGarment} from '../lib/sports-teams-api';
 
@@ -19,7 +20,7 @@ export default function TeamKitPreview({primary,secondary,pattern='PLAIN',
  const unit=size/64;
  const shirtStyle={width:38*unit,height:47*unit,left:13*unit,top:13*unit,
    borderTopLeftRadius:6*unit,borderTopRightRadius:6*unit};
- return <View accessibilityLabel={'Equipamento '+(choice==='STRIPES'?'às riscas verticais':choice==='DIAGONAL'?'com faixa diagonal':choice==='HOOPS'?'às riscas horizontais':choice==='HALVES'?'em metades':choice==='CHEVRON'?'em V':'liso')}
+ return <View accessibilityLabel={'Equipamento '+(choice==='STRIPES'?t('às riscas verticais'):choice==='DIAGONAL'?t('com faixa diagonal'):choice==='HOOPS'?t('às riscas horizontais'):choice==='HALVES'?t('em metades'):choice==='CHEVRON'?t('em V'):'liso')}
   style={{width:size,height:size,position:'relative'}}>
    {!sleeveless?<><View style={[styles.sleeve,{backgroundColor:main,left:2*unit,top:15*unit,
      width:18*unit,height:18*unit,transform:[{rotate:'19deg'}]}]}/>

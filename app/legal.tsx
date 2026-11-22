@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useLocalSearchParams} from 'expo-router';
 import {Eyebrow,Page} from '../src/components/UI';
@@ -13,7 +14,7 @@ export default function LegalScreen(){
  const document=legalDocument(kind);
  return <Page>
   
-  <Eyebrow>JYNLO · PILOTO</Eyebrow>
+  <Eyebrow>{t('JYNLO · PILOTO')}</Eyebrow>
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{document.title}</Text>
   <Text style={styles.intro}>{document.intro}</Text>
   <Text style={styles.note}>{document.updated}</Text>

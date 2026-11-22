@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {profilePosts,resolveJynloMedia} from '../lib/social-feed-api';
@@ -30,7 +31,7 @@ export default function ProfilePosts({username,token}:{username:string;token:str
    setHasMore(records.length===20);
   }catch(e){
    if(version===generation.current&&loadedIdentity.current===identity)
-    setError(e instanceof Error?e.message:'Não foi possível carregar as publicações.');
+    setError(e instanceof Error?e.message:t('Não foi possível carregar as publicações.'));
   }finally{
    // Old responses may settle after navigation. Never unlock another request generation.
    if(version===generation.current){busy.current=false;setLoading(false);}
@@ -45,17 +46,17 @@ export default function ProfilePosts({username,token}:{username:string;token:str
  },[load,identity]));
  if(!token)return null;
  return <View style={styles.section}>
-  <Text style={styles.title}>Publicações</Text>
-  <Text style={styles.description}>Momentos partilhados no perfil, disponíveis até serem apagados pelo autor.</Text>
+  <Text style={styles.title}>{t('Publicações')}</Text>
+  <Text style={styles.description}>{t('Momentos partilhados no perfil, disponíveis até serem apagados pelo autor.')}</Text>
   <View style={styles.grid}>
    {visibleItems.map(item=><Pressable key={item.postId} accessibilityRole="button"
-    accessibilityLabel={'Ver publicação de '+item.authorUsername}
+    accessibilityLabel={t('Ver publicação de {v}',{v:item.authorUsername})}
     onPress={()=>item.postId&&router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}
     style={styles.post}>
     {(()=>{const album=postMediaItems(item),first=album[0],preview=first?resolveJynloMedia(first.url):null;
       return <View>
        {preview&&first?.type==='image'?<ProtectedProfileImage src={first.url} token={token} style={styles.image} resizeMode="contain"/>:
-        first?.type==='video'?<View style={styles.placeholder}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={23} color={T.accent}/><Text style={styles.metaText}>Vídeo</Text></View><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
+        first?.type==='video'?<View style={styles.placeholder}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={23} color={T.accent}/><Text style={styles.metaText}>{t('Vídeo')}</Text></View><Text style={styles.content} numberOfLines={2}>{item.content}</Text></View>:
         <View style={styles.placeholder}><Text style={styles.content} numberOfLines={5}>{item.content}</Text></View>}
        {album.length>1?<View style={styles.albumMark}><View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="gallery" size={15} color="#fff"/><Text style={styles.albumMarkText}>{album.length}</Text></View></View>:null}
       </View>;
@@ -66,10 +67,10 @@ export default function ProfilePosts({username,token}:{username:string;token:str
     </View>
    </Pressable>)}
   </View>
-  {sameProfile&&!loading&&!error&&visibleItems.length===0?<Text style={styles.empty}>Ainda não existem publicações neste perfil.</Text>:null}
+  {sameProfile&&!loading&&!error&&visibleItems.length===0?<Text style={styles.empty}>{t('Ainda não existem publicações neste perfil.')}</Text>:null}
   {sameProfile&&!!error?<Message tone="error">{error}</Message>:null}
   {sameProfile&&loading?<Loader/>:null}
-  {sameProfile&&!loading&&(hasMore||!!error)?<Button secondary title={error?'Tentar novamente':'Ver mais publicações'} onPress={()=>void load(generation.current)}/>:null}
+  {sameProfile&&!loading&&(hasMore||!!error)?<Button secondary title={error?t('Tentar novamente'):t('Ver mais publicações')} onPress={()=>void load(generation.current)}/>:null}
  </View>;
 }
 const T=MobileTheme.colors;

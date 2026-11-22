@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -25,56 +26,56 @@ export default function TournamentsScreen(){
      if(version===requestVersion.current)setItems(next);
    }catch(e){
      if(version===requestVersion.current){
-       setItems([]);setError(e instanceof Error?e.message:'Não foi possível carregar os torneios.');
+       setItems([]);setError(e instanceof Error?e.message:t('Não foi possível carregar os torneios.'));
      }
    }finally{if(version===requestVersion.current)setLoading(false);}
  },[auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{requestVersion.current++;};},[load]));
  const sports=useMemo(()=>availableSports(items),[items]);
  const filtered=useMemo(()=>filterTournaments(items,{query,status,sport}),[items,query,status,sport]);
- return <Page><Brand subtitle="A COMPETIÇÃO ACONTECE AQUI"/><DemoBanner/>
+ return <Page><Brand subtitle={t('A COMPETIÇÃO ACONTECE AQUI')}/><DemoBanner/>
   <View style={styles.intro}>
-   <Eyebrow>AS COMPETIÇÕES DAS TUAS COMUNIDADES</Eyebrow>
-   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Torneios</Text>
-   <Text style={styles.sub}>Acompanha competições, resultados e classificações por modalidade.</Text>
+   <Eyebrow>{t('AS COMPETIÇÕES DAS TUAS COMUNIDADES')}</Eyebrow>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Torneios')}</Text>
+   <Text style={styles.sub}>{t('Acompanha competições, resultados e classificações por modalidade.')}</Text>
   </View>
-  {!auth.token?<Button title="Entrar para ver torneios" onPress={()=>router.push('/login')}/>:null}
-  {auth.token?<Button title="Criar torneio" onPress={()=>router.push('/tournaments/create')}/>:null}
+  {!auth.token?<Button title={t('Entrar para ver torneios')} onPress={()=>router.push('/login')}/>:null}
+  {auth.token?<Button title={t('Criar torneio')} onPress={()=>router.push('/tournaments/create')}/>:null}
   {auth.token?<View style={styles.filters}>
     <TextInput style={styles.search} value={query} onChangeText={setQuery} autoCorrect={false}
-      placeholder="Procurar torneio, comunidade ou desporto…" placeholderTextColor={C.muted}
-      accessibilityLabel="Procurar torneios"/>
-    <Text style={styles.filterLabel}>ESTADO DA COMPETIÇÃO</Text>
+      placeholder={t('Procurar torneio, comunidade ou desporto…')} placeholderTextColor={C.muted}
+      accessibilityLabel={t('Procurar torneios')}/>
+    <Text style={styles.filterLabel}>{t('ESTADO DA COMPETIÇÃO')}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
       {STATUSES.map(x=><Pressable key={x.value} accessibilityRole="button"
         accessibilityState={{selected:status===x.value}}
         onPress={()=>setStatus(x.value)} style={[styles.chip,status===x.value&&styles.selected]}>
-        <Text style={[styles.chipText,status===x.value&&styles.selectedText]}>{x.label}</Text>
+        <Text style={[styles.chipText,status===x.value&&styles.selectedText]}>{t(x.label)}</Text>
       </Pressable>)}
     </ScrollView>
-    {sports.length>1?<><Text style={styles.filterLabel}>MODALIDADE</Text>
+    {sports.length>1?<><Text style={styles.filterLabel}>{t('MODALIDADE')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {['ALL',...sports].map(value=><Pressable key={value} accessibilityRole="button"
           accessibilityState={{selected:sport===value}}
           onPress={()=>setSport(value)} style={[styles.chip,sport===value&&styles.selected]}>
-          <Text style={[styles.chipText,sport===value&&styles.selectedText]}>{value==='ALL'?'Todas':value}</Text>
+          <Text style={[styles.chipText,sport===value&&styles.selectedText]}>{value==='ALL'?t('Todas'):value}</Text>
         </Pressable>)}
       </ScrollView></>:null}
   </View>:null}
   {loading?<Loader/>:null}
   {error?<View style={styles.recovery}><Message tone="error">{error}</Message>
-    <Button secondary title="Tentar novamente" onPress={()=>{void load();}}/>
+    <Button secondary title={t('Tentar novamente')} onPress={()=>{void load();}}/>
   </View>:null}
   {!loading&&!error&&auth.token&&items.length===0?<View style={styles.recovery}>
-    <Message>Ainda não existem torneios nas tuas comunidades. Junta-te a uma comunidade para os descobrires.</Message>
-    <Button secondary title="Descobrir comunidades" onPress={()=>router.push('/communities')}/>
+    <Message>{t('Ainda não existem torneios nas tuas comunidades. Junta-te a uma comunidade para os descobrires.')}</Message>
+    <Button secondary title={t('Descobrir comunidades')} onPress={()=>router.push('/communities')}/>
   </View>:null}
-  {!loading&&!error&&items.length>0?<Text style={styles.count}>{filtered.length} {filtered.length===1?'torneio encontrado':'torneios encontrados'} de {items.length}</Text>:null}
+  {!loading&&!error&&items.length>0?<Text style={styles.count}>{filtered.length} {filtered.length===1?t('torneio encontrado'):t('torneios encontrados')} de {items.length}</Text>:null}
   {!loading&&!error&&items.length>0&&filtered.length===0?<View style={styles.recovery}>
-    <Message>Não existem torneios com estes filtros. Experimenta outra modalidade ou estado.</Message>
-    <Button secondary title="Limpar filtros" onPress={()=>{setQuery('');setStatus('ALL');setSport('ALL');}}/>
+    <Message>{t('Não existem torneios com estes filtros. Experimenta outra modalidade ou estado.')}</Message>
+    <Button secondary title={t('Limpar filtros')} onPress={()=>{setQuery('');setStatus('ALL');setSport('ALL');}}/>
   </View>:null}
-  {!loading&&!error?filtered.map(x=><Pressable accessibilityRole="button" accessibilityLabel={'Abrir torneio '+x.tournament.name} key={`${x.communityId}-${x.tournament.id}`}
+  {!loading&&!error?filtered.map(x=><Pressable accessibilityRole="button" accessibilityLabel={t('Abrir torneio {v}',{v:x.tournament.name})} key={`${x.communityId}-${x.tournament.id}`}
     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(x.communityId),id:String(x.tournament.id)}})}
     style={styles.card}>
     <View style={styles.row}>
@@ -85,11 +86,11 @@ export default function TournamentsScreen(){
     </View>
     <View style={styles.cardMeta}>
       <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>
-      <Text style={[styles.status,x.tournament.status==='IN_PROGRESS'&&styles.statusActive]}>{x.tournament.status==='DRAFT'?'Em preparação':x.tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}</Text>
+      <Text style={[styles.status,x.tournament.status==='IN_PROGRESS'&&styles.statusActive]}>{x.tournament.status==='DRAFT'?t('Em preparação'):x.tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}</Text>
     </View>
     <Text style={styles.sportDetail}>{x.tournament.sport}</Text>
   </Pressable>):null}
-  {auth.token&&items.length>0?<Message>As classificações respeitam as regras disponíveis para cada modalidade. Algumas provas podem ter funcionalidades limitadas no mobile.</Message>:null}
+  {auth.token&&items.length>0?<Message>{t('As classificações respeitam as regras disponíveis para cada modalidade. Algumas provas podem ter funcionalidades limitadas no mobile.')}</Message>:null}
  </Page>;
 }
 const styles=StyleSheet.create({recovery:{gap:10},intro:{gap:7,paddingVertical:4},title:{fontSize:28,fontWeight:'900',color:C.white,letterSpacing:-0.5},sub:{fontSize:13,lineHeight:20,color:'#B6D8DC'},

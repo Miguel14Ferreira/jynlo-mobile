@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -34,7 +35,7 @@ export default function CommunitiesScreen(){
         if(request===requestVersion.current)setResults(data);
       }
     }catch(e){
-      if(request===requestVersion.current)setError(e instanceof Error?e.message:'Não foi possível carregar as comunidades.');
+      if(request===requestVersion.current)setError(e instanceof Error?e.message:t('Não foi possível carregar as comunidades.'));
     }finally{
       if(request===requestVersion.current)setLoading(false);
     }
@@ -43,53 +44,53 @@ export default function CommunitiesScreen(){
   const list=mode==='mine'?mine:results;
   const open=(id:number)=>router.push({pathname:'/communities/[id]',params:{id:String(id)}});
   return <Page>
-    <Brand subtitle="ENCONTRA AS TUAS PESSOAS"/><DemoBanner/>
+    <Brand subtitle={t('ENCONTRA AS TUAS PESSOAS')}/><DemoBanner/>
     <View style={styles.hero}>
-      <Eyebrow>JUNTOS É OUTRO JOGO</Eyebrow>
-      <Text maxFontSizeMultiplier={1.3} style={styles.headline}>A tua malta.{"\n"}<Text style={{color:C.mint}}>A tua comunidade.</Text></Text>
-      <Text style={styles.sub}>De uma sessão podem nascer amizades, equipas e grandes desafios.</Text>
+      <Eyebrow>{t('JUNTOS É OUTRO JOGO')}</Eyebrow>
+      <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('A tua malta.')}{"\n"}<Text style={{color:C.mint}}>{t('A tua comunidade.')}</Text></Text>
+      <Text style={styles.sub}>{t('De uma sessão podem nascer amizades, equipas e grandes desafios.')}</Text>
     </View>
     <View style={styles.actions}>
-      <View style={{flex:1}}><Button title="+ Criar comunidade" onPress={()=>auth.token?router.push('/communities/create'):router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/></View>
+      <View style={{flex:1}}><Button title={t('+ Criar comunidade')} onPress={()=>auth.token?router.push('/communities/create'):router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/></View>
       <Pressable accessibilityRole="button" onPress={()=>auth.token?router.push('/communities/invites'):router.push('/login')}
-        style={styles.inbox}><Text style={styles.inboxIcon}>✉</Text><Text style={styles.inboxLabel}>Convites</Text></Pressable>
+        style={styles.inbox}><Text style={styles.inboxIcon}>✉</Text><Text style={styles.inboxLabel}>{t('Convites')}</Text></Pressable>
     </View>
     <View style={styles.segment}>
       {(['mine','explore'] as const).map(tab=><Pressable key={tab} onPress={()=>setMode(tab)}
         accessibilityRole="tab" accessibilityState={{selected:mode===tab}}
         style={[styles.segmentTab,mode===tab&&styles.segmentActive]}>
-        <Text style={[styles.segmentText,mode===tab&&{color:C.background}]}>{tab==='mine'?'As minhas':'Explorar'}</Text>
+        <Text style={[styles.segmentText,mode===tab&&{color:C.background}]}>{tab==='mine'?t('As minhas'):t('Explorar')}</Text>
       </Pressable>)}
     </View>
     {mode==='explore'?<View style={styles.filters}>
       <TextInput style={styles.input} value={term} onChangeText={setTerm}
-        placeholder="Pesquisar comunidades…" placeholderTextColor={C.muted} autoCapitalize="none" accessibilityLabel="Pesquisar comunidades"/>
+        placeholder={t('Pesquisar comunidades…')} placeholderTextColor={C.muted} autoCapitalize="none" accessibilityLabel={t('Pesquisar comunidades')}/>
       <TextInput style={styles.input} value={sportSearch} onChangeText={setSportSearch}
-        placeholder="Filtrar por modalidade…" placeholderTextColor={C.muted} autoCapitalize="none"
-        accessibilityLabel="Pesquisar modalidades das comunidades"/>
-      {(term.trim()||sportFilter)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros das comunidades" onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}} style={styles.resetFilters}><Text style={styles.resetFiltersText}>Limpar filtros  ×</Text></Pressable>:null}
+        placeholder={t('Filtrar por modalidade…')} placeholderTextColor={C.muted} autoCapitalize="none"
+        accessibilityLabel={t('Pesquisar modalidades das comunidades')}/>
+      {(term.trim()||sportFilter)?<Pressable accessibilityRole="button" accessibilityLabel={t('Limpar filtros das comunidades')} onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}} style={styles.resetFilters}><Text style={styles.resetFiltersText}>{t('Limpar filtros  ×')}</Text></Pressable>:null}
       {sportFilter?<Pressable accessibilityRole="button" onPress={()=>{setSportFilter('');setSportSearch('');}}>
-        <Text style={styles.selectedFilter}>Modalidade: {sportFilter}  × Limpar</Text>
+        <Text style={styles.selectedFilter}>{t('Modalidade: {a}  × Limpar',{a:sportFilter})}</Text>
       </Pressable>:null}
-      {suggestions.map(s=><Pressable key={s} accessibilityRole="button" accessibilityLabel={'Filtrar por '+s}
+      {suggestions.map(s=><Pressable key={s} accessibilityRole="button" accessibilityLabel={t('Filtrar por {v}',{v:s})}
         onPress={()=>{setSportFilter(s);setSportSearch('');}} style={styles.suggestion}>
         <Text style={styles.suggestionText}>{s}  +</Text>
       </Pressable>)}
     </View>:null}
-    {mode==='mine'&&!auth.token?<Message>Inicia sessão para veres as comunidades de que fazes parte. Podes explorar comunidades públicas mesmo sem conta.</Message>:null}
-    {!loading&&!error?<View style={styles.resultHeader}><Text style={styles.resultTitle}>{mode==='mine'?'As tuas comunidades':'Descobrir comunidades'}</Text><Text style={styles.resultCount}>{list.length} {list.length===1?'comunidade':'comunidades'}</Text></View>:null}
+    {mode==='mine'&&!auth.token?<Message>{t('Inicia sessão para veres as comunidades de que fazes parte. Podes explorar comunidades públicas mesmo sem conta.')}</Message>:null}
+    {!loading&&!error?<View style={styles.resultHeader}><Text style={styles.resultTitle}>{mode==='mine'?t('As tuas comunidades'):t('Descobrir comunidades')}</Text><Text style={styles.resultCount}>{list.length} {list.length===1?'comunidade':'comunidades'}</Text></View>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
     {!loading&&!error&&list.length===0?<View style={styles.empty}>
       <Text maxFontSizeMultiplier={1.3} style={styles.emptyEmoji}>{mode==='mine'?'🤝':'⌕'}</Text>
-      <Text style={styles.emptyTitle}>{mode==='mine'?'Ainda não tens comunidades':'Não encontrámos comunidades'}</Text>
-      <Text style={styles.sub}>{mode==='mine'?'Cria a tua primeira comunidade ou explora as existentes.':'Experimenta outro nome ou pesquisa novamente.'}</Text>
-      {mode==='mine'?<Button title="Explorar comunidades" secondary onPress={()=>setMode('explore')}/>:<Button title="Limpar pesquisa" secondary onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}}/>}
+      <Text style={styles.emptyTitle}>{mode==='mine'?t('Ainda não tens comunidades'):t('Não encontrámos comunidades')}</Text>
+      <Text style={styles.sub}>{mode==='mine'?t('Cria a tua primeira comunidade ou explora as existentes.'):t('Experimenta outro nome ou pesquisa novamente.')}</Text>
+      {mode==='mine'?<Button title={t('Explorar comunidades')} secondary onPress={()=>setMode('explore')}/>:<Button title={t('Limpar pesquisa')} secondary onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}}/>}
     </View>:null}
     {list.map(item=><CommunityCard key={item.id} community={item}
       memberCount={'memberCount' in item?(item as CommunityGroup).memberCount:undefined}
       role={'myRole' in item?(item as CommunityGroup).myRole:null} onPress={()=>open(item.id)}/>)}
-    {DEMO_MODE?<Text style={styles.note}>Demonstração: cria uma comunidade, termina sessão e entra como André para aceitares o convite.</Text>:null}
+    {DEMO_MODE?<Text style={styles.note}>{t('Demonstração: cria uma comunidade, termina sessão e entra como André para aceitares o convite.')}</Text>:null}
   </Page>;
 }
 const styles=StyleSheet.create({

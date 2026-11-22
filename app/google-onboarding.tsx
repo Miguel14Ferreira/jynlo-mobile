@@ -1,4 +1,5 @@
 import React,{useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter,useLocalSearchParams} from 'expo-router';
 import {Button,Message,Page} from '../src/components/UI';
@@ -31,44 +32,44 @@ export default function GoogleOnboarding(){
     country:country.trim(),indicativePhone:null,phone:null,gender:null,acceptedLegalTerms:true
    });
    router.replace(redirect as any);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível concluir o registo Google.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível concluir o registo Google.'));}
   finally{submitInFlight.current=false;setBusy(false);}
  }
  if(!auth.googleOnboardingEmail)return <Page><Message>
-  O registo Google não está ativo. Volta ao login e escolhe novamente a tua conta Google.
- </Message><Button title="Voltar ao login" onPress={()=>router.replace('/login')}/></Page>;
+  {t('O registo Google não está ativo. Volta ao login e escolhe novamente a tua conta Google.')}
+ </Message><Button title={t('Voltar ao login')} onPress={()=>router.replace('/login')}/></Page>;
  return <Page>
-  <Text style={styles.eyebrow}>QUASE PRONTO · CONTA GOOGLE</Text>
-  <Text style={styles.title}>Cria o teu perfil Jynlo</Text>
-  <Text style={styles.subtitle}>Google confirmado. Escolhe como queres aparecer na Jynlo.</Text>
+  <Text style={styles.eyebrow}>{t('QUASE PRONTO · CONTA GOOGLE')}</Text>
+  <Text style={styles.title}>{t('Cria o teu perfil Jynlo')}</Text>
+  <Text style={styles.subtitle}>{t('Google confirmado. Escolhe como queres aparecer na Jynlo.')}</Text>
   <Text style={styles.email} numberOfLines={2}>{auth.googleOnboardingEmail}</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.group}>
-   <Text style={styles.label}>Nome de utilizador *</Text>
+   <Text style={styles.label}>{t('Nome de utilizador *')}</Text>
    <TextInput style={styles.input} value={username} onChangeText={setUsername}
     maxLength={50} autoCapitalize="none" autoCorrect={false} autoComplete="username"
-    placeholder="Como te vão encontrar" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Nome pelo qual queres ser tratado</Text>
+    placeholder={t('Como te vão encontrar')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Nome pelo qual queres ser tratado')}</Text>
    <TextInput style={styles.input} value={nickname} onChangeText={setNickname}
-    maxLength={80} placeholder="Opcional" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Data de nascimento *</Text>
+    maxLength={80} placeholder={t('Opcional')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Data de nascimento *')}</Text>
    <BirthDatePicker onChange={setBirth} disabled={busy}/>
-   <Text style={styles.hint}>Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.</Text>
-   <Text style={styles.label}>País *</Text>
+   <Text style={styles.hint}>{t('Escolhe dia, mês e ano. Tens de ter pelo menos 18 anos.')}</Text>
+   <Text style={styles.label}>{t('País *')}</Text>
    <TextInput style={styles.input} value={country} onChangeText={setCountry}
-    maxLength={100} placeholder="Portugal" placeholderTextColor={C.muted}/>
+    maxLength={100} placeholder={t('Portugal')} placeholderTextColor={C.muted}/>
   </View>
   <Pressable accessibilityRole="checkbox" accessibilityState={{checked:accepted}}
     onPress={()=>setAccepted(previous=>!previous)} style={styles.consent}>
     <View style={[styles.check,accepted&&styles.checked]}><Text style={{color:C.background}}>{accepted?'✓':''}</Text></View>
-    <Text style={styles.consentText}>Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.</Text>
+    <Text style={styles.consentText}>{t('Li e aceito os Termos de Utilização e a Política de Privacidade da Jynlo.')}</Text>
   </Pressable>
   <View style={styles.links}>
-   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}>Termos de Utilização</Text>
-   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}>Política de Privacidade</Text>
+   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}>{t('Termos de Utilização')}</Text>
+   <Text style={styles.link} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}>{t('Política de Privacidade')}</Text>
   </View>
-  <Button title={busy?'A criar conta…':'Concluir registo'} disabled={!ready} onPress={()=>{void submit();}}/>
-  <Text style={styles.hint}>A Google autentica a identidade; a Jynlo valida e cria o teu perfil no servidor. Não guardamos aqui a tua palavra-passe Google.</Text>
+  <Button title={busy?t('A criar conta…'):t('Concluir registo')} disabled={!ready} onPress={()=>{void submit();}}/>
+  <Text style={styles.hint}>{t('A Google autentica a identidade; a Jynlo valida e cria o teu perfil no servidor. Não guardamos aqui a tua palavra-passe Google.')}</Text>
  </Page>;
 }
 const styles=StyleSheet.create({

@@ -19,6 +19,6 @@ test('tab bar shows icons only, but every tab keeps a spoken name',()=>{
  const tabs=read('app/(tabs)/_layout.tsx');
  assert.match(tabs,/tabBarShowLabel:false/);
  for(const t of ['Início','Explorar','Perfil'])assert.ok(tabs.includes("tabBarAccessibilityLabel:'"+t+"'"),t);
- assert.match(tabs,/tabBarAccessibilityLabel:badge\?t\('Mensagens, \{count\} por ler',\{count:badge\}\):'Mensagens'/);
+ assert.match(tabs,/tabBarAccessibilityLabel:badge\?'Mensagens, '\+badge\+' por ler':'Mensagens'/);
  assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
 });

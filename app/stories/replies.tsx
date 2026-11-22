@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
@@ -29,7 +30,7 @@ export default function PrivateStoryReplies(){
    setHasMore(results.length===20);
   }catch(e){
    if(version===generation.current&&identity===currentAccount.current)
-    setError(e instanceof Error?e.message:'Não foi possível consultar as respostas.');
+    setError(e instanceof Error?e.message:t('Não foi possível consultar as respostas.'));
   }finally{
    if(version===generation.current){busy.current=false;setLoading(false);}
   }
@@ -42,9 +43,9 @@ export default function PrivateStoryReplies(){
   return()=>{generation.current++;};
  },[identity,load]));
  return <Page>
-  <Text style={styles.title}>Reações às tuas Stories</Text>
-  <Text style={styles.note}>As reações e respostas são privadas. Continuam guardadas depois de as Stories expirarem.</Text>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+  <Text style={styles.title}>{t('Reações às tuas Stories')}</Text>
+  <Text style={styles.note}>{t('As reações e respostas são privadas. Continuam guardadas depois de as Stories expirarem.')}</Text>
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {sameAccount?items.map(reply=>{
    const isReaction=storyReplyKind(reply.content)==='reaction';
    return <View key={reply.id} style={styles.card}>
@@ -52,37 +53,37 @@ export default function PrivateStoryReplies(){
      <View style={styles.avatar}><Text style={styles.avatarLetter}>{reply.senderUsername.charAt(0).toUpperCase()||'J'}</Text></View>
      <View style={styles.senderCopy}>
       <Text style={styles.sender}>@{reply.senderUsername}</Text>
-      <Text style={styles.note}>{Number.isFinite(Date.parse(reply.createdAt))?new Date(reply.createdAt).toLocaleString('pt-PT'):'Resposta recebida'}</Text>
+      <Text style={styles.note}>{Number.isFinite(Date.parse(reply.createdAt))?new Date(reply.createdAt).toLocaleString('pt-PT'):t('Resposta recebida')}</Text>
      </View>
-     <View style={styles.kindBadge}><Text style={styles.kindText}>{isReaction?'Reação':'Resposta'}</Text></View>
+     <View style={styles.kindBadge}><Text style={styles.kindText}>{isReaction?t('Reação'):t('Resposta')}</Text></View>
     </View>
     <View style={styles.storyContext}>
      <Text style={styles.storyContextIcon}>◉</Text>
      <View style={{flex:1,gap:3}}>
-      <Text style={styles.storyContextTitle}>À tua Story</Text>
-      <Text style={styles.storyContextSubtitle}>Conteúdo original · Story #{reply.storyId}</Text>
+      <Text style={styles.storyContextTitle}>{t('À tua Story')}</Text>
+      <Text style={styles.storyContextSubtitle}>{t('Conteúdo original · Story #{a}',{a:reply.storyId})}</Text>
      </View>
      <Text style={styles.storyContextArrow}>↗</Text>
     </View>
-    {isReaction?<View style={styles.reactionBubble}><Text maxFontSizeMultiplier={1.3} style={styles.reactionEmoji}>{reply.content}</Text><Text style={styles.reactionLabel}>Reagiu à tua Story</Text></View>:
+    {isReaction?<View style={styles.reactionBubble}><Text maxFontSizeMultiplier={1.3} style={styles.reactionEmoji}>{reply.content}</Text><Text style={styles.reactionLabel}>{t('Reagiu à tua Story')}</Text></View>:
      <Text style={styles.message}>{reply.content}</Text>}
     <View style={styles.actions}>
-     <Pressable accessibilityRole="button" accessibilityLabel={'Abrir conversa privada com '+reply.senderUsername}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir conversa privada com {v}',{v:reply.senderUsername})}
       style={styles.primaryAction} onPress={()=>router.push({pathname:'/messages/[peer]',params:{peer:reply.senderUsername}})}>
-      <Text style={styles.primaryText}>Abrir conversa</Text>
+      <Text style={styles.primaryText}>{t('Abrir conversa')}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Ver Story original, se disponível"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver Story original, se disponível')}
       style={styles.secondaryAction} onPress={()=>router.push({pathname:'/',params:{storyId:String(reply.storyId)}})}>
-      <Text style={styles.secondaryText}>Ver Story</Text>
+      <Text style={styles.secondaryText}>{t('Ver Story')}</Text>
      </Pressable>
     </View>
    </View>;
   }):null}
-  {sameAccount&&!loading&&!error&&items.length===0?<Text style={styles.note}>Ainda não recebeste respostas privadas às tuas Stories.</Text>:null}
+  {sameAccount&&!loading&&!error&&items.length===0?<Text style={styles.note}>{t('Ainda não recebeste respostas privadas às tuas Stories.')}</Text>:null}
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}
   {loading?<Loader/>:null}
   {sameAccount&&!loading&&(hasMore||!!error)?
-   <Button secondary title={error?'Tentar novamente':'Ver respostas anteriores'} onPress={()=>void load(generation.current)}/>:null}
+   <Button secondary title={error?t('Tentar novamente'):t('Ver respostas anteriores')} onPress={()=>void load(generation.current)}/>:null}
  </Page>;
 }
 const styles=StyleSheet.create({

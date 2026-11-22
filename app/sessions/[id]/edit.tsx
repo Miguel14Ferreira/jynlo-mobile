@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,Loader,Message,Page} from '../../../src/components/UI';
@@ -37,15 +38,15 @@ export default function EditSession(){
  const load=useCallback(async()=>{
   const version=++generation.current;setLoading(true);setError('');setSession(null);setDraft(null);
   if(!auth.token||!Number.isSafeInteger(id)||id<=0){
-   setError('Inicia sessão para editar uma sessão válida.');setLoading(false);return;
+   setError(t('Inicia sessão para editar uma sessão válida.'));setLoading(false);return;
   }
   try{
    const result=await sessionDetail(id,auth.token,auth.username||undefined);
    if(version!==generation.current)return;
-   if(!isOrganizer(result,auth.username))throw Error('Só o organizador pode editar esta sessão.');
-   if(!['OPEN','FULL'].includes(result.status))throw Error('Esta sessão já não está disponível para edição.');
+   if(!isOrganizer(result,auth.username))throw Error(t('Só o organizador pode editar esta sessão.'));
+   if(!['OPEN','FULL'].includes(result.status))throw Error(t('Esta sessão já não está disponível para edição.'));
    setSession(result);setDraft(fromSession(result));
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a edição.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível abrir a edição.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{generation.current++;};},[load]));
@@ -55,17 +56,17 @@ export default function EditSession(){
   if(!draft||!session||!auth.token||busy||saving.current||DEMO_MODE)return;
   let payload:SessionDetailsUpdate;
   try{payload=editSessionPayload({...draft,currentParticipantCount:session.participantCount,
-   currentExternalConfirmedParticipants:session.externalConfirmedParticipants},SPORTS);}catch(e){setError(e instanceof Error?e.message:'Confirma os campos.');return;}
+   currentExternalConfirmedParticipants:session.externalConfirmedParticipants},SPORTS);}catch(e){setError(e instanceof Error?e.message:t('Confirma os campos.'));return;}
   const version=generation.current,token=auth.token,sessionId=id;
-  Alert.alert('Guardar alterações?', 'Os participantes podem ser afetados por mudanças na data, no local ou na capacidade. Confirma antes de guardar.',[
-   {text:'Voltar',style:'cancel'},
-   {text:'Guardar',onPress:()=>{
+  Alert.alert(t('Guardar alterações?'), t('Os participantes podem ser afetados por mudanças na data, no local ou na capacidade. Confirma antes de guardar.'),[
+   {text:t('Voltar'),style:'cancel'},
+   {text:t('Guardar'),onPress:()=>{
     if(saving.current||version!==generation.current)return;
     saving.current=true;setBusy(true);setError('');
     void updateSessionDetails(sessionId,token,payload).then(()=>{
      if(version===generation.current)router.replace({pathname:'/sessions/[id]',params:{id:String(sessionId)}});
     }).catch(e=>{
-     if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível guardar.')+' Confirma o estado da sessão antes de tentar novamente.');
+     if(version===generation.current)setError((e instanceof Error?e.message:t('Não foi possível guardar.'))+' '+t('Confirma o estado da sessão antes de tentar novamente.'));
     }).finally(()=>{saving.current=false;if(version===generation.current)setBusy(false);});
    }}
   ]);
@@ -80,18 +81,18 @@ export default function EditSession(){
     placeholderTextColor={C.muted} keyboardType={options?.keyboardType||'default'}/>
   </View>;
  return <Page>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Editar sessão</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Editar sessão')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {!loading&&session&&draft?<View style={styles.form}>
    <Badge text="Organizador"/>
-   <Text style={styles.help}>As alterações aplicam-se a esta sessão. Algumas não são possíveis depois de a sessão começar.</Text>
-   <Text style={styles.label}>Modalidade</Text>
+   <Text style={styles.help}>{t('As alterações aplicam-se a esta sessão. Algumas não são possíveis depois de a sessão começar.')}</Text>
+   <Text style={styles.label}>{t('Modalidade')}</Text>
    <Pressable style={styles.picker} disabled={busy} onPress={()=>setSportPicker(!sportPicker)}>
     <Text style={styles.pickerText}>{draft.sport}  ▾</Text>
    </Pressable>
    {sportPicker?<View style={styles.field}>
-    <TextInput style={styles.input} placeholder="Pesquisar modalidade" placeholderTextColor={C.muted}
+    <TextInput style={styles.input} placeholder={t('Pesquisar modalidade')} placeholderTextColor={C.muted}
       value={sportQuery} onChangeText={setSportQuery}/>
     <ScrollView nestedScrollEnabled style={{maxHeight:230}} keyboardShouldPersistTaps="handled">
      {matches.map(name=><Pressable key={name} style={styles.option} onPress={()=>{set('sport',name);setSportPicker(false);setSportQuery('');}}>
@@ -99,22 +100,22 @@ export default function EditSession(){
      </Pressable>)}
     </ScrollView>
    </View>:null}
-   {field('Data (AAAA-MM-DD)','date',{placeholder:'2026-11-20',keyboardType:'number-pad'})}
-   {field('Hora (HH:mm)','hour',{placeholder:'19:30',keyboardType:'number-pad'})}
-   {field('Cidade','city')}
-   {field('Morada','address')}
-   {field('Máximo de jogadores','maxParticipants',{keyboardType:'number-pad'})}
-   {field('Mínimo de jogadores','minParticipants',{keyboardType:'number-pad'})}
-   {field('Preço por jogador (€)','priceAmount',{keyboardType:'decimal-pad'})}
-   {field('Ponto de encontro (opcional)','meetingPointInstructions')}
-   <View style={styles.field}><Text style={styles.label}>Descrição da sessão (opcional)</Text>
+   {field(t('Data (AAAA-MM-DD)'),'date',{placeholder:'2026-11-20',keyboardType:'number-pad'})}
+   {field(t('Hora (HH:mm)'),'hour',{placeholder:'19:30',keyboardType:'number-pad'})}
+   {field(t('Cidade'),'city')}
+   {field(t('Morada'),'address')}
+   {field(t('Máximo de jogadores'),'maxParticipants',{keyboardType:'number-pad'})}
+   {field(t('Mínimo de jogadores'),'minParticipants',{keyboardType:'number-pad'})}
+   {field(t('Preço por jogador (€)'),'priceAmount',{keyboardType:'decimal-pad'})}
+   {field(t('Ponto de encontro (opcional)'),'meetingPointInstructions')}
+   <View style={styles.field}><Text style={styles.label}>{t('Descrição da sessão (opcional)')}</Text>
     <TextInput style={[styles.input,styles.multiline]} multiline textAlignVertical="top" maxLength={1000}
      value={draft.description} onChangeText={value=>set('description',value)} editable={!busy}
-     placeholder="Informações sobre o jogo, regras ou material necessário" placeholderTextColor={C.muted}
-     accessibilityLabel="Descrição da sessão"/>
+     placeholder={t('Informações sobre o jogo, regras ou material necessário')} placeholderTextColor={C.muted}
+     accessibilityLabel={t('Descrição da sessão')}/>
    </View>
-   <Button title={busy?'A guardar…':'Guardar alterações'} disabled={busy} onPress={confirm}/>
-   <Button secondary title="Cancelar" disabled={busy} onPress={()=>router.back()}/>
+   <Button title={busy?t('A guardar…'):t('Guardar alterações')} disabled={busy} onPress={confirm}/>
+   <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>router.back()}/>
   </View>:null}
  </Page>;
 }

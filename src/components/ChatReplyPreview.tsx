@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import {C} from '../lib/theme';
@@ -12,10 +13,10 @@ export default function ChatReplyPreview({sender,body,onCancel,disabled=false}:{
  return <View style={styles.container}>
   <View style={styles.identity}><JynloIcon name="reply" size={17} color={C.mint}/></View>
   <View style={styles.copy}>
-   <Text style={styles.title} numberOfLines={1}>A responder a {sender}</Text>
-   <Text style={styles.body} numberOfLines={2}>{body||'Mensagem anterior'}</Text>
+   <Text style={styles.title} numberOfLines={1}>{t('A responder a {a}',{a:sender})}</Text>
+   <Text style={styles.body} numberOfLines={2}>{body||t('Mensagem anterior')}</Text>
   </View>
-  <Pressable accessibilityRole="button" accessibilityLabel="Cancelar resposta à mensagem"
+  <Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar resposta à mensagem')}
    disabled={disabled} onPress={onCancel} style={[styles.cancel,disabled&&styles.disabled]}>
    <JynloIcon name="close" size={20} color={C.mint}/>
   </Pressable>

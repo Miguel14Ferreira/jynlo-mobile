@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
 import {Message} from './UI';
@@ -22,26 +23,26 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
   const id=++generation.current;setLoading(true);setError('');
   const [h,s]=await Promise.allSettled([myAttendanceHistory(token),reliabilitySummary(username,token)]);
   if(id!==generation.current)return;
-  if(h.status==='fulfilled')setItems(h.value);else{setItems([]);setError('Não foi possível carregar o histórico de presenças.');}
+  if(h.status==='fulfilled')setItems(h.value);else{setItems([]);setError(t('Não foi possível carregar o histórico de presenças.'));}
   setSummary(s.status==='fulfilled'?s.value:null);
   setLoading(false);
  },[token,username]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[load]);
  const list=externalHistory(items,ownedSessionIds);
  return <View style={styles.wrap}>
-  <Text style={styles.kicker}>FIABILIDADE</Text>
-  <Text style={styles.title}>Histórico de presenças · {list.length}</Text>
-  {summary?<View style={styles.grid} accessibilityLabel={'Taxa de presença '+formatRate(summary.attendanceRate)}>
-   <Stat label="Taxa de presença" value={formatRate(summary.attendanceRate)}/>
-   <Stat label="Sessões concluídas" value={String(summary.completedSessions??0)}/>
-   <Stat label="Faltas" value={String(summary.noShows??0)}/>
-   <Stat label="Cancelamentos tardios" value={String(summary.lateCancellations??0)}/>
+  <Text style={styles.kicker}>{t('FIABILIDADE')}</Text>
+  <Text style={styles.title}>{t('Histórico de presenças · {a}',{a:list.length})}</Text>
+  {summary?<View style={styles.grid} accessibilityLabel={t('Taxa de presença {v}',{v:formatRate(summary.attendanceRate)})}>
+   <Stat label={t('Taxa de presença')} value={formatRate(summary.attendanceRate)}/>
+   <Stat label={t('Sessões concluídas')} value={String(summary.completedSessions??0)}/>
+   <Stat label={t('Faltas')} value={String(summary.noShows??0)}/>
+   <Stat label={t('Cancelamentos tardios')} value={String(summary.lateCancellations??0)}/>
   </View>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<ActivityIndicator color={C.mint} style={{padding:16}}/>:null}
   {!loading&&error?<><Message tone="error">{error}</Message>
-   <Pressable accessibilityRole="button" onPress={()=>{void load();}} style={styles.outline}><Text style={styles.outlineText}>Tentar novamente</Text></Pressable></>:null}
-  {!loading&&!error&&list.length===0?<Text style={styles.empty}>Ainda não tens presenças registadas em sessões concluídas.</Text>:null}
+   <Pressable accessibilityRole="button" onPress={()=>{void load();}} style={styles.outline}><Text style={styles.outlineText}>{t('Tentar novamente')}</Text></Pressable></>:null}
+  {!loading&&!error&&list.length===0?<Text style={styles.empty}>{t('Ainda não tens presenças registadas em sessões concluídas.')}</Text>:null}
   {!loading&&!error?list.map(item=>{const dispute=disputeLabel(item.disputeStatus);
    return <View key={item.participantId} style={styles.card}>
     <View style={styles.row}>
@@ -52,16 +53,15 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
      <Text style={[styles.badge,item.attendanceStatus==='ATTENDED'&&styles.ok,item.attendanceStatus==='NO_SHOW'&&styles.bad,
       item.attendanceStatus==='LATE_CANCELLED'&&styles.warn]}>{attendanceLabel(item.attendanceStatus)}</Text>
     </View>
-    {dispute?<Text style={[styles.dispute,item.disputeStatus==='ACCEPTED'&&{color:C.mint},item.disputeStatus==='REJECTED'&&{color:C.danger}]}>
-     Contestação: {dispute}</Text>:null}
+    {dispute?<Text style={[styles.dispute,item.disputeStatus==='ACCEPTED'&&{color:C.mint},item.disputeStatus==='REJECTED'&&{color:C.danger}]}>{t('Contestação: {a}',{a:dispute})}</Text>:null}
     <View style={styles.actions}>
-     <Pressable accessibilityRole="button" onPress={()=>onOpenSession(item.sessionId)} style={styles.link}><Text style={styles.linkText}>Ver sessão</Text></Pressable>
-     {item.canDispute?<Pressable accessibilityRole="button" accessibilityLabel={'Contestar falta em '+item.sport}
-      onPress={()=>{setNotice('');setPending(item);}} style={styles.outline}><Text style={styles.outlineText}>Contestar falta</Text></Pressable>:null}
+     <Pressable accessibilityRole="button" onPress={()=>onOpenSession(item.sessionId)} style={styles.link}><Text style={styles.linkText}>{t('Ver sessão')}</Text></Pressable>
+     {item.canDispute?<Pressable accessibilityRole="button" accessibilityLabel={t('Contestar falta em {v}',{v:item.sport})}
+      onPress={()=>{setNotice('');setPending(item);}} style={styles.outline}><Text style={styles.outlineText}>{t('Contestar falta')}</Text></Pressable>:null}
     </View>
    </View>;}):null}
   <DisputeSheet item={pending} token={token} onClose={()=>setPending(null)}
-   onSent={id=>{setItems(prev=>markDisputed(prev,id));setPending(null);setNotice('Contestação enviada. O estado fica agora em análise.');}}/>
+   onSent={id=>{setItems(prev=>markDisputed(prev,id));setPending(null);setNotice(t('Contestação enviada. O estado fica agora em análise.'));}}/>
  </View>;
 }
 function Stat({label,value}:{label:string;value:string}){
@@ -75,29 +75,29 @@ function DisputeSheet({item,token,onClose,onSent}:{item:AttendanceHistoryItem|nu
  const current=item;
  async function send(){
   if(inFlight.current)return;
-  try{validateDisputeReason(reason);}catch(e){setError(e instanceof Error?e.message:'Confirma a justificação.');return;}
+  try{validateDisputeReason(reason);}catch(e){setError(e instanceof Error?e.message:t('Confirma a justificação.'));return;}
   inFlight.current=true;setBusy(true);setError('');
   try{await disputeNoShow(current.participantId,reason,token);onSent(current.participantId);}
-  catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar a contestação.')+' Atualiza o histórico antes de tentar de novo.');}
+  catch(e){setError((e instanceof Error?e.message:t('Não foi possível enviar a contestação.'))+' '+t('Atualiza o histórico antes de tentar de novo.'));}
   finally{inFlight.current=false;setBusy(false);}
  }
  return <Modal visible transparent animationType="fade" onRequestClose={busy?()=>{}:onClose}>
   <View style={styles.backdrop}>
-   <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel="Fechar contestação" onPress={busy?undefined:onClose}/>
+   <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('Fechar contestação')} onPress={busy?undefined:onClose}/>
    <View style={styles.sheet} accessibilityViewIsModal>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:12}}>
-     <Text style={styles.kicker}>CONTESTAÇÃO DE PRESENÇA</Text>
-     <Text style={styles.sheetTitle}>Contestar falta em {current.sport}</Text>
-     <Text style={styles.text}>{fmtDate(current.gameDate)}. Explica de forma objetiva por que motivo consideras que o registo de falta está incorreto. A equipa Jynlo analisa e decide.</Text>
+     <Text style={styles.kicker}>{t('CONTESTAÇÃO DE PRESENÇA')}</Text>
+     <Text style={styles.sheetTitle}>{t('Contestar falta em {a}',{a:current.sport})}</Text>
+     <Text style={styles.text}>{t('{a}. Explica de forma objetiva por que motivo consideras que o registo de falta está incorreto. A equipa Jynlo analisa e decide.',{a:fmtDate(current.gameDate)})}</Text>
      <TextInput value={reason} onChangeText={t=>{setReason(t);setError('');}} editable={!busy} multiline maxLength={MAX_REASON}
-      placeholder="Ex.: Estive presente na sessão e fui registado por engano como falta." placeholderTextColor={C.muted}
-      style={styles.input} accessibilityLabel="Justificação"/>
+      placeholder={t('Ex.: Estive presente na sessão e fui registado por engano como falta.')} placeholderTextColor={C.muted}
+      style={styles.input} accessibilityLabel={t('Justificação')}/>
      {error?<Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>:null}
      <Pressable accessibilityRole="button" disabled={busy||!reason.trim()} onPress={()=>{void send();}}
       style={[styles.primary,(busy||!reason.trim())&&{opacity:.5}]}>
-      {busy?<ActivityIndicator color={C.background}/>:<Text style={styles.primaryText}>Enviar contestação</Text>}
+      {busy?<ActivityIndicator color={C.background}/>:<Text style={styles.primaryText}>{t('Enviar contestação')}</Text>}
      </Pressable>
-     <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>Cancelar</Text></Pressable>
+     <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>{t('Cancelar')}</Text></Pressable>
     </ScrollView>
    </View>
   </View>

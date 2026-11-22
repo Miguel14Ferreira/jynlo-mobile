@@ -1,4 +1,5 @@
 import React,{useState} from 'react';
+import {t} from '../lib/i18n';
 import {FlatList,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import {validAdultDate} from '../lib/native-registration';
@@ -41,36 +42,36 @@ export default function BirthDatePicker({onChange,disabled=false}:{onChange:(iso
  };
  const value=(part:Part)=>part==='day'?(day?pad(day):'Dia'):part==='month'?(month?MONTHS[month-1]:'Mês'):(year?String(year):'Ano');
  return <>
-  <View style={styles.row} accessibilityLabel="Data de nascimento">
+  <View style={styles.row} accessibilityLabel={t('Data de nascimento')}>
    {(['day','month','year'] as const).map(part=><Pressable key={part} accessibilityRole="button"
-     accessibilityLabel={'Selecionar '+(part==='day'?'dia':part==='month'?'mês':'ano')+' de nascimento'}
-     accessibilityHint="Abre uma lista de opções, sem utilizar o teclado"
+     accessibilityLabel={'Selecionar '+(part==='day'?'dia':part==='month'?'mês':'ano')+' '+t('de nascimento')}
+     accessibilityHint={t('Abre uma lista de opções, sem utilizar o teclado')}
      disabled={disabled} onPress={()=>openPart(part)}
      style={[styles.field,disabled&&styles.disabled]}>
     <Text style={[styles.fieldText,!(part==='day'?day:part==='month'?month:year)&&styles.placeholder]}>{value(part)}</Text>
     <Text style={styles.chevron}>⌄</Text>
    </Pressable>)}
   </View>
-  {invalidAge?<Text accessibilityRole="alert" style={styles.error}>A data selecionada ainda não cumpre a idade mínima de 18 anos.</Text>:null}
+  {invalidAge?<Text accessibilityRole="alert" style={styles.error}>{t('A data selecionada ainda não cumpre a idade mínima de 18 anos.')}</Text>:null}
   <Modal visible={open!==null} transparent animationType="slide" onRequestClose={()=>setOpen(null)}>
    <View style={styles.overlay}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fechar seleção da data" onPress={()=>setOpen(null)} style={styles.backdrop}/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar seleção da data')} onPress={()=>setOpen(null)} style={styles.backdrop}/>
     <View style={styles.sheet}>
      <View style={styles.heading}>
-      <Text style={styles.title}>{open==='day'?'Escolhe o dia':open==='month'?'Escolhe o mês':'Escolhe o ano'}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Fechar" onPress={()=>setOpen(null)} style={styles.close}><Text style={styles.closeText}>✕</Text></Pressable>
+      <Text style={styles.title}>{open==='day'?t('Escolhe o dia'):open==='month'?t('Escolhe o mês'):t('Escolhe o ano')}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar')} onPress={()=>setOpen(null)} style={styles.close}><Text style={styles.closeText}>✕</Text></Pressable>
      </View>
      {open==='year'?<View style={styles.yearNavigation}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Anos mais antigos" disabled={(yearPage+1)*YEAR_PAGE_SIZE>=YEARS.length}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Anos mais antigos')} disabled={(yearPage+1)*YEAR_PAGE_SIZE>=YEARS.length}
        onPress={()=>setYearPage(page=>Math.min(page+1,Math.ceil(YEARS.length/YEAR_PAGE_SIZE)-1))}
        style={[styles.yearNavButton,(yearPage+1)*YEAR_PAGE_SIZE>=YEARS.length&&styles.disabled]}>
-       <Text style={styles.yearNavText}>‹ Anteriores</Text>
+       <Text style={styles.yearNavText}>{t('‹ Anteriores')}</Text>
       </Pressable>
       <Text accessibilityRole="text" style={styles.yearRange}>{visibleYears[visibleYears.length-1]}–{visibleYears[0]}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Anos mais recentes" disabled={yearPage===0}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Anos mais recentes')} disabled={yearPage===0}
        onPress={()=>setYearPage(page=>Math.max(0,page-1))}
        style={[styles.yearNavButton,yearPage===0&&styles.disabled]}>
-       <Text style={styles.yearNavText}>Recentes ›</Text>
+       <Text style={styles.yearNavText}>{t('Recentes ›')}</Text>
       </Pressable>
      </View>:null}
      <FlatList key={`${open}-${yearPage}`} data={open?values:[]} keyExtractor={item=>String(item)}

@@ -1,4 +1,5 @@
 import React,{useCallback,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -72,7 +73,7 @@ export default function SuggestVenueEditScreen(){
   ]).then(([detail,previous])=>{
    if(!active)return;
    setVenue(detail);setMine(previous);setValue(valueOf(detail,'name'));
-  }).catch(()=>{if(active)setError('Não foi possível carregar o recinto ou verificar sugestões anteriores.');})
+  }).catch(()=>{if(active)setError(t('Não foi possível carregar o recinto ou verificar sugestões anteriores.'));})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[id,auth.token]));
@@ -81,23 +82,23 @@ export default function SuggestVenueEditScreen(){
  async function submit(){
   if(!auth.token||DEMO_MODE||busy||!venue||hasPending||completed)return;
   const changes=buildChanges(field,value);
-  if(!changes){setError('Introduz uma alteração válida. Para GPS utiliza latitude,longitude.');return;}
+  if(!changes){setError(t('Introduz uma alteração válida. Para GPS utiliza latitude,longitude.'));return;}
   const fieldLimit=FIELDS.find(x=>x.key===field)?.limit??255;
-  if(value.trim().length>fieldLimit){setError('O valor excede o limite permitido.');return;}
-  if(field==='district'&&!['Aveiro','Beja','Braga','Bragança','Castelo Branco','Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal','Viana do Castelo','Vila Real','Viseu'].includes(value.trim())){
-   setError('Escolhe um distrito português válido.');return;
+  if(value.trim().length>fieldLimit){setError(t('O valor excede o limite permitido.'));return;}
+  if(field==='district'&&!['Aveiro','Beja','Braga','Bragança',t('Castelo Branco'),'Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal',t('Viana do Castelo'),t('Vila Real'),'Viseu'].includes(value.trim())){
+   setError(t('Escolhe um distrito português válido.'));return;
   }
   if(field==='website'&&value.trim()&&!sourceValid(value.trim())){
-   setError('O website deve utilizar HTTPS.');return;
+   setError(t('O website deve utilizar HTTPS.'));return;
   }
   if(reason.trim().length<10||reason.trim().length>1000){
-   setError('Explica a alteração em 10 a 1000 caracteres.');return;
+   setError(t('Explica a alteração em 10 a 1000 caracteres.'));return;
   }
   if(sourceUrl.trim()&&!sourceValid(sourceUrl.trim())){
-   setError('A fonte deve ser um endereço HTTPS público válido.');return;
+   setError(t('A fonte deve ser um endereço HTTPS público válido.'));return;
   }
   if(requiresSource&&!sourceUrl.trim()){
-   setError('Indica uma fonte HTTPS pública para o contacto ou a localização GPS.');return;
+   setError(t('Indica uma fonte HTTPS pública para o contacto ou a localização GPS.'));return;
   }
   setBusy(true);setError('');
   try{
@@ -108,22 +109,22 @@ export default function SuggestVenueEditScreen(){
    setMine(created);setCompleted(true);
   }catch(e){
    if(e instanceof ApiError&&e.status===409){
-    setError('Já tens uma proposta pendente neste recinto. Reabre esta página para confirmar o estado.');
+    setError(t('Já tens uma proposta pendente neste recinto. Reabre esta página para confirmar o estado.'));
    }else{
-    setError('Não foi possível confirmar o envio. Verifica as propostas anteriores antes de tentar novamente.');
+    setError(t('Não foi possível confirmar o envio. Verifica as propostas anteriores antes de tentar novamente.'));
    }
   }finally{setBusy(false);}
  }
- return <Page><Eyebrow>SUGERIR CORREÇÃO</Eyebrow>
-  {!auth.token||DEMO_MODE?<Message>Inicia sessão com uma conta real para sugerires alterações.</Message>:null}
+ return <Page><Eyebrow>{t('SUGERIR CORREÇÃO')}</Eyebrow>
+  {!auth.token||DEMO_MODE?<Message>{t('Inicia sessão com uma conta real para sugerires alterações.')}</Message>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {completed?<Message>Sugestão enviada para análise. As informações do recinto não são alteradas imediatamente.</Message>:null}
-  {mine?<Message>Última sugestão: {mine.status==='PENDING'?'Em análise':mine.status==='APPROVED'?'Aprovada':mine.status==='REJECTED'?'Rejeitada':mine.status}.</Message>:null}
+  {completed?<Message>{t('Sugestão enviada para análise. As informações do recinto não são alteradas imediatamente.')}</Message>:null}
+  {mine?<Message>{t('Última sugestão: {a}.',{a:mine.status==='PENDING'?t('Em análise'):mine.status==='APPROVED'?t('Aprovada'):mine.status==='REJECTED'?t('Rejeitada'):mine.status})}</Message>:null}
   {venue&&!loading?<View style={styles.form}>
    <Text style={styles.heading}>{venue.name}</Text>
-   <Message>Escolhe uma informação, propõe a correção e explica o motivo. Um moderador irá analisar a sugestão.</Message>
-   <Eyebrow>INFORMAÇÃO A CORRIGIR</Eyebrow>
-   <View style={styles.fields}>{FIELDS.map(item=>
+   <Message>{t('Escolhe uma informação, propõe a correção e explica o motivo. Um moderador irá analisar a sugestão.')}</Message>
+   <Eyebrow>{t('INFORMAÇÃO A CORRIGIR')}</Eyebrow>
+   <View style={styles.fields}>{FIELDS.map(f=>({...f,label:t(f.label)})).map(item=>
     <Pressable accessibilityRole="radio" accessibilityState={{selected:field===item.key}}
       disabled={busy||hasPending||completed} key={item.key}
       onPress={()=>{setField(item.key);setValue(valueOf(venue,item.key));setError('');}}
@@ -131,25 +132,25 @@ export default function SuggestVenueEditScreen(){
       <Text style={styles.choiceText}>{item.label}</Text>
     </Pressable>
    )}</View>
-   <Text style={styles.label}>Valor atual</Text>
-   <Text style={styles.muted}>{valueOf(venue,field)||'Não indicado'}</Text>
-   <Text style={styles.label}>Valor proposto {field==='coordinates'?'(latitude,longitude)':''}</Text>
+   <Text style={styles.label}>{t('Valor atual')}</Text>
+   <Text style={styles.muted}>{valueOf(venue,field)||t('Não indicado')}</Text>
+   <Text style={styles.label}>{t('Valor proposto {a}',{a:field==='coordinates'?'(latitude,longitude)':''})}</Text>
    <TextInput style={styles.input} value={value} maxLength={FIELDS.find(x=>x.key===field)?.limit||255}
     editable={!busy&&!hasPending&&!completed} onChangeText={setValue}
     autoCapitalize={field==='website'||field==='coordinates'?'none':'sentences'}
-    placeholderTextColor={C.muted} placeholder={field==='coordinates'?'38.72,-9.14':'Nova informação'}/>
-   <Text style={styles.label}>Motivo (10–1000 caracteres)</Text>
+    placeholderTextColor={C.muted} placeholder={field==='coordinates'?'38.72,-9.14':t('Nova informação')}/>
+   <Text style={styles.label}>{t('Motivo (10–1000 caracteres)')}</Text>
    <TextInput multiline value={reason} maxLength={1000} onChangeText={setReason}
     editable={!busy&&!hasPending&&!completed} style={[styles.input,styles.longInput]}
-    placeholder="Explica por que motivo esta informação deve ser corrigida" placeholderTextColor={C.muted}/>
-   <Text style={styles.label}>Fonte pública HTTPS {requiresSource?'(obrigatória)':'(opcional)'}</Text>
+    placeholder={t('Explica por que motivo esta informação deve ser corrigida')} placeholderTextColor={C.muted}/>
+   <Text style={styles.label}>{t('Fonte pública HTTPS {a}',{a:requiresSource?t('(obrigatória)'):t('(opcional)')})}</Text>
    <TextInput style={styles.input} value={sourceUrl} maxLength={500} onChangeText={setSourceUrl}
     editable={!busy&&!hasPending&&!completed} autoCapitalize="none" keyboardType="url"
-    placeholder="https://..." placeholderTextColor={C.muted}/>
-   <Button title={busy?'A enviar…':'Enviar sugestão para aprovação'}
+    placeholder={t('https://...')} placeholderTextColor={C.muted}/>
+   <Button title={busy?t('A enviar…'):t('Enviar sugestão para aprovação')}
     disabled={busy||hasPending||completed} onPress={()=>{void submit();}}/>
   </View>:null}
-  <Button title="Voltar ao recinto" secondary onPress={()=>router.back()}/>
+  <Button title={t('Voltar ao recinto')} secondary onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

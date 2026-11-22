@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 // Offline helpers: what counts as "no connection", and which saved snapshots
 // are still worth showing. Pure, so they are tested without React Native.
 
@@ -38,7 +39,7 @@ function serializeSnapshot(data,owner,now=Date.now()){
 /** "há 5 min", "há 2 h", "a 21/11" — when the saved data is from. */
 function savedLabel(savedAt,now=Date.now()){
  const minutes=Math.max(0,Math.round((now-savedAt)/60000));
- if(minutes<1)return 'agora mesmo';
+ if(minutes<1)return tr('agora mesmo');
  if(minutes<60)return 'há '+minutes+' min';
  const hours=Math.round(minutes/60);
  if(hours<24)return 'há '+hours+' h';

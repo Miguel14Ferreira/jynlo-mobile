@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
@@ -125,7 +126,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  const [locationBusy,setLocationBusy]=useState(false);
  const locationRequest=useRef(false);
  const [accessRevoked,setAccessRevoked]=useState(false);
- const [blockReason,setBlockReason]=useState('Já não tens acesso a esta conversa.');
+ const [blockReason,setBlockReason]=useState(t('Já não tens acesso a esta conversa.'));
  const accessRevokedRef=useRef(false);
  const [replyTo,setReplyTo]=useState<number|null>(null);
  const feedRootDraft=useRef<{draft:string;media:ImagePickerAsset[]}>({draft:'',media:[]});
@@ -178,7 +179,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setDraft('');setReplyTo(null);setEditingId(null);setExpandedMessageActions(null);setEditDraft('');
   feedRootDraft.current={draft:'',media:[]};feedCommentDrafts.current.clear();
   setMedia([]);setAttachmentsEnabled(false);setSyncWarning('');
-  const message=failure.status===409?'O chat ou feed da equipa foi desativado pelo responsável.':'Já não tens acesso a esta conversa.';
+  const message=failure.status===409?t('O chat ou feed da equipa foi desativado pelo responsável.'):t('Já não tens acesso a esta conversa.');
   setBlockReason(message);setError(message);
   return true;
  },[]);
@@ -187,9 +188,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   // than ApiError. Only explicit authorization failures revoke local access.
   if(!(failure instanceof Error))return false;
   if(/^O (?:chat|feed) da equipa está desativado/i.test(failure.message))
-   return revokeIfUnauthorized(new ApiError(409,'Conversa desativada.'));
+   return revokeIfUnauthorized(new ApiError(409,t('Conversa desativada.')));
   if(!/^(?:A sessão expirou|Já não tens permissão para enviar)/i.test(failure.message))return false;
-  return revokeIfUnauthorized(new ApiError(403,'Acesso à conversa revogado.'));
+  return revokeIfUnauthorized(new ApiError(403,t('Acesso à conversa revogado.')));
  };
  const loadReactions=useCallback(async(items:TeamContentEntry[])=>{
   // Never replace an optimistic reaction with a stale background summary.
@@ -254,7 +255,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    const wasBlocked=accessRevokedRef.current;
    accessRevokedRef.current=false;setAccessRevoked(false);
-   setBlockReason('Já não tens acesso a esta conversa.');setError('');
+   setBlockReason(t('Já não tens acesso a esta conversa.'));setError('');
    setEntries(history);
    if(kind==='chat'){
     // Seeing the chat moves the server read cursor, so the Messages badge clears.
@@ -291,7 +292,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     }).catch(failure=>{
      if(expected===version.current&&searchGeneration===searchVersion.current){
       if(!revokeIfUnauthorized(failure))
-       setSyncWarning('Não foi possível sincronizar os resultados da pesquisa.');
+       setSyncWarning(t('Não foi possível sincronizar os resultados da pesquisa.'));
      }
     }).finally(()=>{if(expected===version.current)searchRecheckRef.current=false;});
    }
@@ -308,8 +309,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   }catch(e){
    if(expected!==version.current||writeVersion!==mutationVersion.current)return;
    if(revokeIfUnauthorized(e))return;
-   const message=e instanceof Error?e.message:'Não foi possível carregar as mensagens.';
-   if(quiet)setSyncWarning('A sincronização falhou. As mensagens podem estar desatualizadas.');
+   const message=e instanceof Error?e.message:t('Não foi possível carregar as mensagens.');
+   if(quiet)setSyncWarning(t('A sincronização falhou. As mensagens podem estar desatualizadas.'));
    else setError(message);
   }finally{
    if(reading.current===expected&&readRequestVersion.current===readRequest){
@@ -338,7 +339,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   setSending(!!pendingKind);setUploading(pendingKind==='media');setReactionBusyId(null);setLoading(true);
   setConnection('connecting');locationRequest.current=false;setLocationBusy(false);
   latestId.current=0;nearLatest.current=true;initialChatPositionPending.current=true;setUnseenBelow(false);
-  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason('Já não tens acesso a esta conversa.');
+  accessRevokedRef.current=false;setAccessRevoked(false);setBlockReason(t('Já não tens acesso a esta conversa.'));
   setEntries([]);setOlderEntries([]);olderRef.current=[];olderExhausted.current=false;setHasOlderPosts(false);setOlderBusy(false);setOlderError('');olderPending.current=false;
   olderReconcilePending.current=false;olderReconcileAt.current=0;olderReconcileOffset.current=0;
   setBrokenAuthorAvatars({});
@@ -403,7 +404,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    const ImagePicker=await import('expo-image-picker');
    if(source==='camera'){
     const permission=await ImagePicker.requestCameraPermissionsAsync();
-    if(!permission.granted)throw Error('É necessária permissão para utilizar a câmara.');
+    if(!permission.granted)throw Error(t('É necessária permissão para utilizar a câmara.'));
    }
    const chosen=source==='camera'
     ?await ImagePicker.launchCameraAsync({
@@ -418,7 +419,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(next.error)throw Error(next.error);
    setMedia(next.items);
   }catch(e){if(current===version.current)
-    setError(e instanceof Error?e.message:'Não foi possível selecionar os anexos.');}
+    setError(e instanceof Error?e.message:t('Não foi possível selecionar os anexos.'));}
   finally{if(current===version.current)choosing.current=false;}
  };
  const switchReply=(id:number|null)=>{
@@ -459,8 +460,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
   }catch(e){
    if(current===version.current&&!rejectPrivateUpload(e))
-    setError((e instanceof Error?e.message:'Envio não confirmado.')+
-     ' Confirma o histórico antes de repetir.');
+    setError((e instanceof Error?e.message:t('Envio não confirmado.'))+
+     ' '+t('Confirma o histórico antes de repetir.'));
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
@@ -478,7 +479,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   sendingNow.current=true;setSending(true);setError('');
   try{const saved=await sendTeamContent(teamId,kind,text,token,null);
    setEntries(previous=>previous.some(item=>item.id===saved.id)?previous:[...previous,saved].sort((a,b)=>a.id-b.id));}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível enviar a sondagem.');}
+  catch(e){setError(e instanceof Error?e.message:t('Não foi possível enviar a sondagem.'));}
   finally{sendingNow.current=false;setSending(false);}
  };
  const send=async()=>{
@@ -509,8 +510,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }
   }catch(e){
    if(current===version.current&&!revokeIfUnauthorized(e))
-    setError((e instanceof Error?e.message:'Envio não confirmado.')+
-      ' Consulta o histórico antes de repetires a operação.');
+    setError((e instanceof Error?e.message:t('Envio não confirmado.'))+
+      ' '+t('Consulta o histórico antes de repetires a operação.'));
   }finally{
    pendingWrites.current.delete(writeKey);
    if(activeWriteKey.current===writeKey){
@@ -531,7 +532,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===searchVersion.current&&!accessRevokedRef.current){setSearchResults(results);void loadReactions(results);}
   }catch(e){
    if(current===searchVersion.current&&!revokeIfUnauthorized(e))
-    setError('Não foi possível pesquisar as mensagens.');
+    setError(t('Não foi possível pesquisar as mensagens.'));
   }finally{
    if(current===searchVersion.current){searchPendingRef.current=false;setSearching(false);}
   }
@@ -545,21 +546,21 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   try{
    const Location=await import('expo-location');
    const permission=await Location.requestForegroundPermissionsAsync();
-   if(!permission.granted)throw Error('Autoriza a localização para a partilhares.');
+   if(!permission.granted)throw Error(t('Autoriza a localização para a partilhares.'));
    const position=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
    if(current!==version.current||accessRevokedRef.current)return;
    const lat=position.coords.latitude,lng=position.coords.longitude;
    if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)
-    throw Error('Não foi possível obter coordenadas válidas.');
+    throw Error(t('Não foi possível obter coordenadas válidas.'));
    const link='https://www.google.com/maps?q='+lat.toFixed(6)+','+lng.toFixed(6);
    setDraft(previous=>{
     const next=previous.trim()?previous.trim()+'\n'+link:link;
-    if(next.length>2000){setError('A mensagem já atingiu o limite de caracteres.');return previous;}
+    if(next.length>2000){setError(t('A mensagem já atingiu o limite de caracteres.'));return previous;}
     return next;
    });
   }catch(e){
    if(current===version.current&&!accessRevokedRef.current)
-    setError(e instanceof Error?e.message:'Não foi possível obter a localização.');
+    setError(e instanceof Error?e.message:t('Não foi possível obter a localização.'));
   }finally{
    if(current===version.current){locationRequest.current=false;setLocationBusy(false);}
   }
@@ -576,8 +577,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const replyPreview=(id:number|null):string=>{
   const original=[...searchResults,...entries,...olderEntries].find(item=>item.id===id);
-  if(!original)return 'uma mensagem anterior';
-  if(original.deleted)return 'uma mensagem eliminada';
+  if(!original)return t('uma mensagem anterior');
+  if(original.deleted)return t('uma mensagem eliminada');
   return '@'+original.username+': '+original.body.slice(0,110);
  };
  const react=async(item:TeamContentEntry,emoji:string)=>{
@@ -601,7 +602,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===version.current&&!accessRevokedRef.current){
     if(!revokeIfUnauthorized(e)){
      setReactions(previous=>({...previous,[item.id]:original}));
-     setError('Reação não confirmada. Consulta o histórico antes de repetir.');
+     setError(t('Reação não confirmada. Consulta o histórico antes de repetir.'));
     }
    }
   }finally{
@@ -634,9 +635,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     if(e instanceof ApiError&&e.status===409){
      // 409 on edit may mean the message was removed, not that the entire
      // team chat was disabled. The next authorized history GET decides.
-     setError('Esta mensagem pode ter sido eliminada. A verificar o histórico.');
+     setError(t('Esta mensagem pode ter sido eliminada. A verificar o histórico.'));
     }else if(!revokeIfUnauthorized(e))
-     setError('Edição não confirmada. Consulta o histórico antes de repetir.');
+     setError(t('Edição não confirmada. Consulta o histórico antes de repetir.'));
    }
   }finally{
    pendingWrites.current.delete(writeKey);
@@ -649,9 +650,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
  };
  const remove=(item:TeamContentEntry)=>{
   if(sendingNow.current||!item.canManage||item.deleted)return;
-  Alert.alert('Eliminar conteúdo','Queres eliminar esta mensagem da equipa?',[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Eliminar',style:'destructive',onPress:()=>{void (async()=>{
+  Alert.alert(t('Eliminar conteúdo'),t('Queres eliminar esta mensagem da equipa?'),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Eliminar'),style:'destructive',onPress:()=>{void (async()=>{
     if(sendingNow.current||pendingWrites.current.has(writeKey)||accessRevokedRef.current)return;
     pendingWrites.current.set(writeKey,'delete');
     sendingNow.current=true;invalidatePendingRead();setSending(true);setError('');
@@ -672,9 +673,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     }catch(e){
      if(current===version.current){
       if(e instanceof ApiError&&e.status===409){
-       setError('A mensagem já pode ter sido eliminada. A verificar o histórico.');
+       setError(t('A mensagem já pode ter sido eliminada. A verificar o histórico.'));
       }else if(!revokeIfUnauthorized(e))
-       setError('Eliminação não confirmada. Consulta o histórico antes de repetir.');
+       setError(t('Eliminação não confirmada. Consulta o histórico antes de repetir.'));
      }
     }finally{
      pendingWrites.current.delete(writeKey);
@@ -736,41 +737,41 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(additions.length)void loadReactions(additions);
   }catch(e){
    if(current!==version.current||accessRevokedRef.current)return;
-   if(!revokeIfUnauthorized(e))setOlderError('Não foi possível carregar publicações anteriores.');
+   if(!revokeIfUnauthorized(e))setOlderError(t('Não foi possível carregar publicações anteriores.'));
   }finally{
    if(current===version.current){olderPending.current=false;setOlderBusy(false);}
   }
  };
  const composer=<>
-  {replyTo?<ChatReplyPreview sender={kind==='chat'?'mensagem da equipa':'publicação'} body={replyPreview(replyTo)} onCancel={()=>switchReply(null)} disabled={sending||uploading}/>:null}
+  {replyTo?<ChatReplyPreview sender={kind==='chat'?t('mensagem da equipa'):'publicação'} body={replyPreview(replyTo)} onCancel={()=>switchReply(null)} disabled={sending||uploading}/>:null}
   <View style={styles.attachmentActions}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual"
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar localização atual')}
     accessibilityState={{disabled:sending||locationBusy}}
     disabled={sending||locationBusy} onPress={()=>void composeLocation()} style={styles.attachmentButton}>
     <JynloIcon name="location" size={20} color={C.mint}/>
    </Pressable>
    {attachmentsEnabled?<>
-   <Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos"
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Selecionar fotografias ou vídeos')}
      disabled={sending||uploading} onPress={()=>void chooseMedia()} style={styles.attachmentButton}>
      <JynloIcon name="gallery" size={20} color={C.mint}/>
    </Pressable>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara"
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara')}
      disabled={sending||uploading} onPress={()=>void chooseMedia('camera')} style={styles.attachmentButton}>
      <JynloIcon name="camera" size={20} color={C.mint}/>
    </Pressable>
    <ChatPdfComposer target={{scope:'team',id:teamId,kind}} token={token}
      enabled={!sending&&!uploading} compact replyId={replyTo}
-     onPermissionError={reason=>{revokeIfUnauthorized(new ApiError(reason==='disabled'?409:403,'Conversa indisponível.'));}}
+     onPermissionError={reason=>{revokeIfUnauthorized(new ApiError(reason==='disabled'?409:403,t('Conversa indisponível.')));}}
      onSent={async()=>{await refresh(true,version.current);}}/>
    </>:null}
   </View>
   {media.length?<View style={styles.selectedMedia}>
-   <Text style={styles.sub}>{media.length} ficheiro(s) selecionado(s) · A legenda é opcional.</Text>
+   <Text style={styles.sub}>{t('{a} ficheiro(s) selecionado(s) · A legenda é opcional.',{a:media.length})}</Text>
    <View style={styles.mediaPreviews}>
     {media.map((file,index)=><View key={file.uri+'-'+index} style={styles.mediaPreviewCard}>
      {file.type==='image'?<Image source={{uri:file.uri}} style={styles.mediaPreviewImage} resizeMode="cover"/>:
       <View style={styles.mediaPreviewVideo}><JynloIcon name="video" size={24} color={C.mint}/></View>}
-     <Pressable accessibilityRole="button" accessibilityLabel={'Retirar anexo '+(index+1)}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Retirar anexo {v}',{v:(index+1)})}
       disabled={sending||uploading} onPress={()=>setMedia(current=>current.filter((_,i)=>i!==index))}
       style={styles.removeMedia}><JynloIcon name="close" size={17} color={C.white}/></Pressable>
     </View>)}
@@ -779,47 +780,47 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
    <TextInput ref={composerInputRef} multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
     onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
-    maxLength={2000} placeholder={kind==='chat'?'Escreve uma mensagem…':'Partilha uma novidade com o plantel…'}
-    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel="Texto da mensagem"/>
-   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem" disabled={sending||uploading}
+    maxLength={2000} placeholder={kind==='chat'?t('Escreve uma mensagem…'):t('Partilha uma novidade com o plantel…')}
+    placeholderTextColor={C.muted} editable={!sending} accessibilityLabel={t('Texto da mensagem')}/>
+   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')} disabled={sending||uploading}
     onPress={()=>setPollOpen(true)} style={styles.pollButton}><Text style={{fontSize:20}}>📊</Text></Pressable>:null}
-   <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Enviar mensagem':'Publicar na equipa'}
+   <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?t('Enviar mensagem'):t('Publicar na equipa')}
     accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
     disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()}
     style={[styles.button,kind==='chat'&&styles.chatSendButton]}>
     <JynloIcon name="send" size={20} color="#062A30"/>
-    {kind==='feed'?<Text style={styles.buttonText}>{sending?'A publicar…':'Publicar'}</Text>:null}
+    {kind==='feed'?<Text style={styles.buttonText}>{sending?t('A publicar…'):t('Publicar')}</Text>:null}
    </Pressable>
   </View>
   <ChatMentionSuggestions draft={draft} token={token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
   {kind==='chat'?<PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>:null}
  </>;
  if(accessRevoked)return <View style={styles.panel}>
-  <Text style={styles.title}>Conversa indisponível</Text>
+  <Text style={styles.title}>{t('Conversa indisponível')}</Text>
   <Text style={styles.error} accessibilityRole="alert">{blockReason}</Text>
  </View>;
  return <View style={styles.panel}>
   <View style={styles.headingRow}>
    <View style={{flex:1}}>
-    <Text style={styles.sub}>Só para membros confirmados · {connection==='online'?'Em tempo real':connection==='connecting'?'A ligar…':'A sincronizar por rede'}</Text>
+    <Text style={styles.sub}>{t('Só para membros confirmados · {a}',{a:connection==='online'?t('Em tempo real'):connection==='connecting'?t('A ligar…'):t('A sincronizar por rede')})}</Text>
    </View>
   </View>
   {kind==='feed'&&(replyTo===null||!(searchActive?searchResults:allFeedEntries).some(item=>item.id===replyTo))?composer:null}
   <View style={styles.searchRow}>
    <TextInput style={styles.searchInput} value={searchTerm} onChangeText={changeSearchTerm}
-    maxLength={80} placeholder={kind==='chat'?'Pesquisar nesta conversa…':'Pesquisar publicações…'} placeholderTextColor={C.muted}
-    accessibilityLabel={kind==='chat'?'Pesquisar mensagens da equipa':'Pesquisar publicações da equipa'}/>
-   <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar mensagens" disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
+    maxLength={80} placeholder={kind==='chat'?t('Pesquisar nesta conversa…'):t('Pesquisar publicações…')} placeholderTextColor={C.muted}
+    accessibilityLabel={kind==='chat'?t('Pesquisar mensagens da equipa'):t('Pesquisar publicações da equipa')}/>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Pesquisar mensagens')} disabled={searching||searchTerm.trim().length<2} onPress={()=>void search()}
     style={styles.searchButton}><JynloIcon name="search" size={20} color={C.mint}/></Pressable>
-   {searchActive?<Pressable accessibilityRole="button" accessibilityLabel="Voltar à conversa" onPress={clearSearch} style={styles.searchButton}>
+   {searchActive?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar à conversa')} onPress={clearSearch} style={styles.searchButton}>
     <JynloIcon name="close" size={20} color={C.mint}/></Pressable>:null}
   </View>
-  {searchActive?<Text style={styles.sub}>{searching?'A pesquisar…':searchResults.length+' resultados encontrados'}</Text>:null}
-  {loading&&!searchActive?<Text style={styles.sub}>A carregar…</Text>:null}
+  {searchActive?<Text style={styles.sub}>{searching?t('A pesquisar…'):searchResults.length+' '+t('resultados encontrados')}</Text>:null}
+  {loading&&!searchActive?<Text style={styles.sub}>{t('A carregar…')}</Text>:null}
   {error?<Text style={styles.error} accessibilityRole="alert">{error}</Text>:null}
   {syncWarning?<Text style={styles.sub}>{syncWarning}</Text>:null}
   {!searchActive&&!loading&&!entries.length?<Text style={styles.empty}>
-   {kind==='chat'?'Ainda não existem mensagens. Começa a conversa!':'Ainda não há publicações nesta equipa.'}
+   {kind==='chat'?t('Ainda não existem mensagens. Começa a conversa!'):t('Ainda não há publicações nesta equipa.')}
   </Text>:null}
   <ScrollView ref={historyRef} nestedScrollEnabled keyboardShouldPersistTaps="handled"
    style={kind==='chat'?[styles.chatHistory,keyboardOpen&&styles.chatHistoryKeyboard]:styles.feedHistory}
@@ -842,13 +843,13 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    }}>
   {kind==='feed'&&!searchActive&&(hasOlderPosts||olderBusy||!!olderError)?<View style={styles.historyLoadMore}>
    <Pressable accessibilityRole="button" disabled={olderBusy||loading||sending} onPress={()=>void loadOlderPosts()} style={styles.attachmentButton}>
-    <Text style={styles.actionText}>{olderBusy?'A carregar publicações…':'Ver publicações anteriores'}</Text>
+    <Text style={styles.actionText}>{olderBusy?t('A carregar publicações…'):t('Ver publicações anteriores')}</Text>
    </Pressable>
    {olderError?<Text accessibilityRole="alert" style={styles.error}>{olderError}</Text>:null}
   </View>:null}
   {visibleEntries.map(item=><View key={item.id} style={[styles.entry,kind==='chat'&&styles.chatBubble,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='chat'&&item.username?.toLowerCase()===username.toLowerCase()&&styles.ownChatBubble,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
-    <Pressable accessibilityRole="button" accessibilityLabel={'Abrir perfil de @'+item.username}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{v}',{v:item.username})}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})} style={styles.authorAvatar}>
      {teamPlayerAvatarUri(item.profilePicUrl)&&!brokenAuthorAvatars[item.id]?
       <Image source={{uri:teamPlayerAvatarUri(item.profilePicUrl)!}} style={styles.authorAvatarPhoto}
@@ -856,7 +857,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       <Text style={styles.avatarLetter}>{(item.username||'J').slice(0,1).toUpperCase()}</Text>}
     </Pressable>
     <View style={{flex:1}}>
-     <Pressable accessibilityRole="link" accessibilityLabel={'Abrir perfil de @'+item.username}
+     <Pressable accessibilityRole="link" accessibilityLabel={t('Abrir perfil de @{v}',{v:item.username})}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})}
       style={styles.authorLink}><Text style={styles.author}>@{item.username}</Text></Pressable>
      <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
@@ -864,41 +865,41 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </View>
    {item.replyToId?<View style={styles.replyQuote}><JynloIcon name="reply" size={14} color={C.mint}/><Text numberOfLines={2} style={styles.replyQuoteText}>{replyPreview(item.replyToId)}</Text></View>:null}
    {!item.deleted&&kind==='chat'&&readPoll(item.body)?<PollCard poll={readPoll(item.body)!} kind="team" conversationId={teamId} messageId={item.id} token={token}/>:
-   <ChatMentionText body={item.deleted?(kind==='chat'?'Mensagem eliminada':'Publicação eliminada'):giphyImageUrl(item.body)?'GIF partilhado':item.body} style={styles.body}/>}
+   <ChatMentionText body={item.deleted?(kind==='chat'?t('Mensagem eliminada'):t('Publicação eliminada')):giphyImageUrl(item.body)?t('GIF partilhado'):item.body} style={styles.body}/>}
    {!item.deleted&&giphyImageUrl(item.body)?<Image source={{uri:giphyImageUrl(item.body)!}} resizeMode="contain" style={styles.sharedGif}/>:null}
-   {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel="Abrir localização no mapa"
+   {!item.deleted&&chatLocationUrl(item.body)?<Pressable accessibilityRole="link" accessibilityLabel={t('Abrir localização no mapa')}
     onPress={()=>{const link=chatLocationUrl(item.body);if(link)void Linking.openURL(link);}}
-    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>Abrir localização no mapa</Text></Pressable>:null}
+    style={styles.mapLink}><JynloIcon name="location" size={18} color={C.mint}/><Text style={styles.actionText}>{t('Abrir localização no mapa')}</Text></Pressable>:null}
    {!item.deleted&&item.attachments?.length?item.attachments.map(file=>
     <SecureChatAttachment key={file.index} scope="team" kind={kind} conversationId={teamId}
       messageId={item.id} token={token} index={file.index} name={file.filename}
       mime={file.mimeType} size={file.size} autoPreview={kind==='chat'?file.mimeType.startsWith('image/'):
        recentFeedPhotoKeys.has(item.id+':'+file.index)}
-      onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,'Anexo privado indisponível.'));}}/>):null}
+      onAuthorizationError={status=>{revokeIfUnauthorized(new ApiError(status,t('Anexo privado indisponível.')));}}/>):null}
    {kind==='feed'&&!searchActive&&item.replyToId==null&&(feedCommentCounts.get(item.id)||0)>0?
     <Pressable accessibilityRole="button" accessibilityLabel={(collapsedFeedPosts.has(item.id)?'Ver ':'Ocultar ')+(feedCommentCounts.get(item.id)||0)+' comentários'}
      accessibilityState={{expanded:!collapsedFeedPosts.has(item.id)}}
      onPress={()=>setCollapsedFeedPosts(previous=>{const next=new Set(previous);if(next.has(item.id))next.delete(item.id);else next.add(item.id);return next;})}
      style={styles.commentToggle}>
-     <Text style={styles.commentToggleText}>{collapsedFeedPosts.has(item.id)?'Ver':'Ocultar'} {feedCommentCounts.get(item.id)||0} {(feedCommentCounts.get(item.id)||0)===1?'comentário':'comentários'}</Text>
+     <Text style={styles.commentToggleText}>{collapsedFeedPosts.has(item.id)?t('Ver'):t('Ocultar')} {feedCommentCounts.get(item.id)||0} {(feedCommentCounts.get(item.id)||0)===1?'comentário':'comentários'}</Text>
     </Pressable>:null}
-   {item.editedAt&&!item.deleted?<Text style={styles.sub}>Editada</Text>:null}
+   {item.editedAt&&!item.deleted?<Text style={styles.sub}>{t('Editada')}</Text>:null}
    {!item.deleted?<View style={styles.reactionRow}>
     {kind==='feed'?<>
-     <Pressable accessibilityRole="button" accessibilityLabel={'Gostar da publicação de @'+item.username}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Gostar da publicação de @{v}',{v:item.username})}
       accessibilityState={{selected:reactions[item.id]?.mine==='❤️',disabled:reactionBusyId!==null}}
       disabled={reactionBusyId!==null} onPress={()=>void react(item,'❤️')}
       style={[styles.reactionButton,reactions[item.id]?.mine==='❤️'&&styles.reactionSelected]}>
       <Text style={styles.reactionLabel}>❤️ {Object.values(reactions[item.id]?.counts||{}).reduce((sum,count)=>sum+(Number(count)||0),0)||'Gostar'}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel={'Escolher reação à publicação de @'+item.username}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Escolher reação à publicação de @{v}',{v:item.username})}
       accessibilityState={{expanded:feedReactionPickerId===item.id,disabled:reactionBusyId!==null}}
       disabled={reactionBusyId!==null}
       onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
-      style={styles.reactionButton}><Text style={styles.reactionLabel}>☺ Reagir</Text></Pressable>
+      style={styles.reactionButton}><Text style={styles.reactionLabel}>{t('☺ Reagir')}</Text></Pressable>
     </>:null}
     {kind==='chat'?<>
-      <Pressable accessibilityRole="button" accessibilityLabel={'Reagir à mensagem de @'+item.username}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Reagir à mensagem de @{v}',{v:item.username})}
        accessibilityState={{expanded:feedReactionPickerId===item.id,disabled:reactionBusyId!==null}}
        disabled={reactionBusyId!==null} onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
        style={[styles.reactionButton,styles.reactionToggle]}>
@@ -913,7 +914,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       </Pressable>)}
     </>:null}
     {feedReactionPickerId===item.id?emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
-      accessibilityLabel={'Reagir com '+emoji}
+      accessibilityLabel={t('Reagir com {v}',{v:emoji})}
       accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId===item.id}}
       disabled={reactionBusyId!==null} onPress={()=>void react(item,emoji)}
       style={[styles.reactionButton,reactions[item.id]?.mine===emoji&&styles.reactionSelected]}>
@@ -921,44 +922,44 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>):null}
    </View>:null}
    {!item.deleted?<>
-    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={'Mostrar ações da mensagem de @'+item.username}
+    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar ações da mensagem de @{v}',{v:item.username})}
      accessibilityState={{expanded:expandedMessageActions===item.id,disabled:sending}} disabled={sending}
      onPress={()=>setExpandedMessageActions(current=>current===item.id?null:item.id)}
      style={styles.messageMore}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
     {(kind==='feed'||expandedMessageActions===item.id)?<View style={[styles.actions,kind==='chat'&&styles.contextActions]}>
-     <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?'Responder à mensagem':'Comentar publicação'} style={styles.entryAction}
+     <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?t('Responder à mensagem'):t('Comentar publicação')} style={styles.entryAction}
       disabled={sending} onPress={()=>{setExpandedMessageActions(null);switchReply(item.id);}}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
-     {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel="Editar mensagem" style={styles.entryAction} disabled={sending}
+     {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={t('Editar mensagem')} style={styles.entryAction} disabled={sending}
       onPress={()=>{setExpandedMessageActions(null);setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
-     {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar mensagem" style={styles.entryAction} disabled={sending}
+     {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar mensagem')} style={styles.entryAction} disabled={sending}
       onPress={()=>{setExpandedMessageActions(null);remove(item);}}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
     </View>:null}
    </>:null}
    {kind==='feed'&&replyTo===item.id?<View style={styles.inlineCommentComposer}>
-    <Text style={styles.commentContext}>A comentar publicação de @{item.username}</Text>
+    <Text style={styles.commentContext}>{t('A comentar publicação de @{a}',{a:item.username})}</Text>
     {composer}
    </View>:null}
    {editingId===item.id?<View style={styles.editBox}>
     <TextInput multiline maxLength={2000} style={styles.editInput} value={editDraft} onChangeText={setEditDraft}
-     editable={!sending} accessibilityLabel="Editar mensagem"/>
+     editable={!sending} accessibilityLabel={t('Editar mensagem')}/>
     <View style={styles.editActions}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Cancelar edição" disabled={sending}
-      onPress={()=>{setEditingId(null);setEditDraft('');}} style={styles.editCancel}><Text style={styles.editCancelText}>Cancelar</Text></Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Guardar edição"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar edição')} disabled={sending}
+      onPress={()=>{setEditingId(null);setEditDraft('');}} style={styles.editCancel}><Text style={styles.editCancelText}>{t('Cancelar')}</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Guardar edição')}
       disabled={sending||!editDraft.trim()||editDraft.trim()===item.body.trim()}
       onPress={()=>void update()} style={[styles.editSave,(sending||!editDraft.trim()||editDraft.trim()===item.body.trim())&&styles.editDisabled]}>
-      <Text style={styles.editSaveText}>{sending?'A guardar…':'✓ Guardar'}</Text>
+      <Text style={styles.editSaveText}>{sending?t('A guardar…'):t('✓ Guardar')}</Text>
      </Pressable>
     </View>
    </View>:null}
   </View>)}
   </ScrollView>
   {kind==='chat'&&unseenBelow&&!searchActive?<Pressable accessibilityRole="button"
-   accessibilityLabel="Ver mensagens novas" onPress={()=>{
+   accessibilityLabel={t('Ver mensagens novas')} onPress={()=>{
     nearLatest.current=true;setUnseenBelow(false);
     historyRef.current?.scrollToEnd({animated:true});
    }} style={styles.newMessagesButton}>
-   <Text style={styles.newMessagesText}>↓ Mensagens novas</Text>
+   <Text style={styles.newMessagesText}>{t('↓ Mensagens novas')}</Text>
   </Pressable>:null}
   {kind==='chat'?composer:null}
  </View>;

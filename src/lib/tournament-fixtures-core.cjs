@@ -1,9 +1,10 @@
 'use strict';
-function validPage(value){if(typeof value!=='number'&&!(typeof value==='string'&&/^\d+$/.test(value)))throw Error('Página inválida.');const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>9999)throw Error('Página inválida.');return n;}
+const {tr}=require('./i18n-core.cjs');
+function validPage(value){if(typeof value!=='number'&&!(typeof value==='string'&&/^\d+$/.test(value)))throw Error(tr('Página inválida.'));const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>9999)throw Error(tr('Página inválida.'));return n;}
 function teamMatchStage(match,format){if(format==='GROUP_KNOCKOUT')return Number.isSafeInteger(match?.groupNumber)&&match.groupNumber>0?'GROUP':'KNOCKOUT';if(format==='KNOCKOUT')return 'KNOCKOUT';return 'LEAGUE';}
 function splitTeamMatches(matches,format){const groups=new Map(),knockout=[],league=[];for(const match of matches||[]){if(!match||!Number.isSafeInteger(match.id)||match.id<=0)continue;const stage=teamMatchStage(match,format);if(stage==='GROUP'){const n=match.groupNumber;if(!groups.has(n))groups.set(n,[]);groups.get(n).push(match);}else if(stage==='KNOCKOUT')knockout.push(match);else league.push(match);}const sort=(a,b)=>a.roundNumber-b.roundNumber||a.id-b.id;return {groups:[...groups].sort((a,b)=>a[0]-b[0]).map(([number,entries])=>({number,matches:entries.sort(sort)})),knockout:knockout.sort(sort),league:league.sort(sort)};}
-function matchScore(match){if(match?.status!=='COMPLETED')return 'Por disputar';if(!Number.isInteger(match?.homeScore)||!Number.isInteger(match?.awayScore)||match.homeScore<0||match.awayScore<0)return 'Resultado por confirmar';return `${match.homeScore} – ${match.awayScore}`;}
-function matchRound(match){return Number.isSafeInteger(match?.roundNumber)&&match.roundNumber>0?`Ronda ${match.roundNumber}`:'Ronda por definir';}
+function matchScore(match){if(match?.status!=='COMPLETED')return tr('Por disputar');if(!Number.isInteger(match?.homeScore)||!Number.isInteger(match?.awayScore)||match.homeScore<0||match.awayScore<0)return tr('Resultado por confirmar');return `${match.homeScore} – ${match.awayScore}`;}
+function matchRound(match){return Number.isSafeInteger(match?.roundNumber)&&match.roundNumber>0?`Ronda ${match.roundNumber}`:tr('Ronda por definir');}
 function isTeamInMatch(match,teamId){return match?.homeTeamId===teamId||match?.awayTeamId===teamId;}
 function canListMatches(tournament){const {classificationKind}=require('./competition-core.cjs');return !!tournament&&tournament.entryType==='TEAM'&&classificationKind(tournament)==='TEAM';}
 module.exports={validPage,teamMatchStage,splitTeamMatches,matchScore,matchRound,isTeamInMatch,canListMatches};

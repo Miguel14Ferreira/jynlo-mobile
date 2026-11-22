@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import TeamKitPreview from './TeamKitPreview';
 import {
@@ -73,10 +74,10 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
   const all=[primary,...variants];
   if(all.some(v=>v.playerName.trim().length>14||
     (v.playerName.trim()!==''&&!/^[\p{L}0-9 .'-]+$/u.test(v.playerName.trim())))){
-   setWarning('O nome deve conter até 14 letras, números e espaços.');return;
+   setWarning(t('O nome deve conter até 14 letras, números e espaços.'));return;
   }
   if(all.some(v=>v.playerNumber.trim()!==''&&!/^[0-9]{1,2}$/.test(v.playerNumber.trim()))){
-   setWarning('O número deve conter um ou dois algarismos.');return;
+   setWarning(t('O número deve conter um ou dois algarismos.'));return;
   }
   // Keep the draft until the server confirms it: an uncertain upload must not
   // silently restore the old team design while the request is in flight.
@@ -84,8 +85,8 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
    variants.map(v=>({...v,playerName:v.playerName.trim(),playerNumber:v.playerNumber.trim()})));
  };
  return <View style={styles.studio}>
-  <Text style={styles.title}>Estúdio de equipamentos</Text>
-  <Text style={styles.hint}>Três conjuntos próprios, para qualquer modalidade. As alterações só são oficiais depois de guardar.</Text>
+  <Text style={styles.title}>{t('Estúdio de equipamentos')}</Text>
+  <Text style={styles.hint}>{t('Três conjuntos próprios, para qualquer modalidade. As alterações só são oficiais depois de guardar.')}</Text>
   <View style={styles.slotRow}>{SLOTS.map(item=><Pressable key={item.id}
    accessibilityRole="button" accessibilityState={{selected:slot===item.id}}
    disabled={disabled} onPress={()=>selectSlot(item.id)}
@@ -96,23 +97,23 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
    <View style={styles.sideRow}>{(['front','back'] as const).map(name=><Pressable key={name}
     accessibilityRole="button" accessibilityState={{selected:side===name}}
     style={[styles.side,side===name&&styles.sideActive]} onPress={()=>setSide(name)}>
-    <Text style={styles.light}>{name==='front'?'Frente':'Costas'}</Text>
+    <Text style={styles.light}>{name==='front'?t('Frente'):t('Costas')}</Text>
    </Pressable>)}</View>
    <TeamKitPreview primary={current.primary} secondary={current.secondary}
     accent={current.accent} garment={current.garment} pattern={current.pattern}
     playerName={current.playerName} playerNumber={current.playerNumber} side={side} size={222}/>
-   <Text style={styles.hint}>{GARMENTS.find(g=>g.id===current.garment)?.label}</Text>
+   <Text style={styles.hint}>{t(GARMENTS.find(g=>g.id===current.garment)?.label??'')}</Text>
   </View>
-  <Text style={styles.label}>Tipo de peça</Text>
-  <View style={styles.choices}>{GARMENTS.map(g=><Pressable key={g.id} disabled={disabled}
+  <Text style={styles.label}>{t('Tipo de peça')}</Text>
+  <View style={styles.choices}>{GARMENTS.map(f=>({...f,label:t(f.label)})).map(g=><Pressable key={g.id} disabled={disabled}
    accessibilityRole="button" accessibilityState={{selected:current.garment===g.id}}
    style={[styles.choice,current.garment===g.id&&styles.choiceActive]}
    onPress={()=>update({garment:g.id})}>
    <Text style={styles.light}>{g.label}</Text>
   </Pressable>)}</View>
-  <Text style={styles.label}>Padrão</Text>
+  <Text style={styles.label}>{t('Padrão')}</Text>
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.patterns}>
-   {PATTERNS.map(item=><Pressable key={item.id}
+   {PATTERNS.map(f=>({...f,label:t(f.label)})).map(item=><Pressable key={item.id}
     accessibilityRole="button" accessibilityState={{selected:current.pattern===item.id}}
     disabled={disabled} onPress={()=>update({pattern:item.id})}
     style={[styles.pattern,current.pattern===item.id&&styles.choiceActive]}>
@@ -122,7 +123,7 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
    </Pressable>)}
   </ScrollView>
   {(['primary','secondary','accent'] as const).map((key)=><View key={key}>
-   <Text style={styles.label}>{key==='primary'?'Cor principal':key==='secondary'?'Cor secundária':'Cor de destaque'}</Text>
+   <Text style={styles.label}>{key==='primary'?t('Cor principal'):key==='secondary'?t('Cor secundária'):t('Cor de destaque')}</Text>
    <View style={styles.colors}>{COLORS.map(color=><Pressable key={color}
     accessibilityRole="button" accessibilityLabel={color}
     accessibilityState={{selected:current[key].toUpperCase()===color}}
@@ -130,8 +131,8 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
     style={[styles.swatch,{backgroundColor:color},current[key].toUpperCase()===color&&styles.swatchSelected]}/>)}</View>
   </View>)}
   <View style={styles.nameRow}>
-   <View style={styles.nameField}><Text style={styles.label}>Nome nas costas</Text>
-    <TextInput style={styles.input} placeholder="ATLETA" placeholderTextColor="#8AADB3"
+   <View style={styles.nameField}><Text style={styles.label}>{t('Nome nas costas')}</Text>
+    <TextInput style={styles.input} placeholder={t('ATLETA')} placeholderTextColor="#8AADB3"
       maxLength={14} autoCapitalize="characters" editable={!disabled}
       value={current.playerName} onChangeText={value=>update({playerName:value})}/></View>
    <View style={styles.numberField}><Text style={styles.label}>N.º</Text>
@@ -141,11 +142,11 @@ export default function TeamKitStudio({team,disabled,onSave}:Props){
   </View>
   {slot!=='PRIMARY'&&variants.some(v=>v.type===slot)?<Pressable
    accessibilityRole="button" disabled={disabled} onPress={removeVariant} style={styles.remove}>
-   <Text style={styles.removeText}>Eliminar este conjunto {slot==='ALTERNATE'?'alternativo':'de treino'}</Text>
+   <Text style={styles.removeText}>{t('Eliminar este conjunto {a}',{a:slot==='ALTERNATE'?'alternativo':t('de treino')})}</Text>
   </Pressable>:null}
   {warning?<Text style={styles.warning}>{warning}</Text>:null}
   <Pressable accessibilityRole="button" disabled={disabled} onPress={save} style={[styles.save,disabled&&styles.disabled]}>
-   <Text style={styles.saveText}>{disabled?'Aguardar…':'Guardar os equipamentos'}</Text>
+   <Text style={styles.saveText}>{disabled?t('Aguardar…'):t('Guardar os equipamentos')}</Text>
   </Pressable>
  </View>;
 }

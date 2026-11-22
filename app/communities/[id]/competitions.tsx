@@ -1,4 +1,5 @@
 import React,{useCallback,useMemo,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -25,7 +26,7 @@ export default function CommunityCompetitions(){
   let active=true;
   const load=async()=>{
    if(!auth.token||!auth.username){if(active){setLoading(false);setError('');setCommunity(null);setTournaments([]);setChampionships([]);setChampionshipError('');}return;}
-   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setChampionships([]);setChampionshipError('');setError('Comunidade inválida.');}return;}
+   if(!Number.isSafeInteger(id)||id<=0){if(active){setLoading(false);setCommunity(null);setTournaments([]);setChampionships([]);setChampionshipError('');setError(t('Comunidade inválida.'));}return;}
    setLoading(true);setError('');setChampionshipError('');setCommunity(null);setTournaments([]);setChampionships([]);
    try{
     const c=await communityDetails(id,auth.token,auth.username);
@@ -35,10 +36,10 @@ export default function CommunityCompetitions(){
     const [data,championshipData]=await Promise.allSettled([tournamentsForCommunity(id,auth.token,auth.username),communityChampionships(id,auth.token)]);
     if(!active)return;
     if(data.status==='fulfilled')setTournaments(data.value);
-    else setError(data.reason instanceof Error?data.reason.message:'Não foi possível carregar torneios.');
+    else setError(data.reason instanceof Error?data.reason.message:t('Não foi possível carregar torneios.'));
     if(championshipData.status==='fulfilled')setChampionships(championshipData.value);
-    else setChampionshipError(championshipData.reason instanceof Error?championshipData.reason.message:'Não foi possível carregar campeonatos.');
-   }catch(e){if(active)setError(e instanceof Error?e.message:'Não foi possível carregar as competições.');}
+    else setChampionshipError(championshipData.reason instanceof Error?championshipData.reason.message:t('Não foi possível carregar campeonatos.'));
+   }catch(e){if(active)setError(e instanceof Error?e.message:t('Não foi possível carregar as competições.'));}
    finally{if(active)setLoading(false);}
   };
   void load();
@@ -47,32 +48,32 @@ export default function CommunityCompetitions(){
  const sections=useMemo(()=>groupCommunityTournaments(community,tournaments),[community,tournaments]);
  const role=community&&'myRole' in community?community.myRole:null;
  const organizer=role==='OWNER'||role==='ADMIN';
- return <Page><DemoBanner/><Eyebrow>COMPETIÇÕES POR MODALIDADE</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Competições da comunidade</Text>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('COMPETIÇÕES POR MODALIDADE')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('Competições da comunidade')}</Text>
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {error&&auth.token?<Button secondary title="Tentar carregar competições novamente" onPress={()=>setRetryCount(current=>current+1)}/>:null}
-  {community?<Text style={styles.sub}>{community.name} · Cada torneio mantém a sua própria classificação e regras de resultados.</Text>:null}
-  {community&&!role?<Message>Entra na comunidade para veres os seus torneios e respetivas classificações.</Message>:null}
+  {error&&auth.token?<Button secondary title={t('Tentar carregar competições novamente')} onPress={()=>setRetryCount(current=>current+1)}/>:null}
+  {community?<Text style={styles.sub}>{t('{a} · Cada torneio mantém a sua própria classificação e regras de resultados.',{a:community.name})}</Text>:null}
+  {community&&!role?<Message>{t('Entra na comunidade para veres os seus torneios e respetivas classificações.')}</Message>:null}
   {!loading&&!!role?<View style={styles.section}>
-   <Text style={styles.sectionTitle}>Campeonatos</Text>
-   <Text style={styles.small}>Um campeonato reúne vários torneios e as respetivas classificações.</Text>
-   <Button secondary title="Palmarés dos campeonatos" onPress={()=>router.push({pathname:'/communities/[id]/championships/honours',params:{id:String(id)}})}/>
-   {organizer?<Button secondary title="Criar campeonato" onPress={()=>router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}})}/>:null}
+   <Text style={styles.sectionTitle}>{t('Campeonatos')}</Text>
+   <Text style={styles.small}>{t('Um campeonato reúne vários torneios e as respetivas classificações.')}</Text>
+   <Button secondary title={t('Palmarés dos campeonatos')} onPress={()=>router.push({pathname:'/communities/[id]/championships/honours',params:{id:String(id)}})}/>
+   {organizer?<Button secondary title={t('Criar campeonato')} onPress={()=>router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}})}/>:null}
    {championshipError?<Message tone="error">{championshipError}</Message>:null}
-   {championshipError?<Button secondary title="Tentar carregar campeonatos novamente" onPress={()=>setRetryCount(value=>value+1)}/>:null}
-   {!championshipError&&championships.length===0?<Text style={styles.small}>Ainda não existem campeonatos nesta comunidade.</Text>:null}
-   {championships.map(championship=><Pressable key={championship.id} accessibilityRole="button" accessibilityLabel={'Abrir campeonato '+championship.name} style={styles.tournament}
+   {championshipError?<Button secondary title={t('Tentar carregar campeonatos novamente')} onPress={()=>setRetryCount(value=>value+1)}/>:null}
+   {!championshipError&&championships.length===0?<Text style={styles.small}>{t('Ainda não existem campeonatos nesta comunidade.')}</Text>:null}
+   {championships.map(championship=><Pressable key={championship.id} accessibilityRole="button" accessibilityLabel={t('Abrir campeonato {v}',{v:championship.name})} style={styles.tournament}
     onPress={()=>router.push({pathname:'/communities/[id]/championships/[championshipId]',params:{id:String(id),championshipId:String(championship.id)}})}>
     <View style={{flex:1,gap:5}}><Text style={styles.tournamentTitle}>{championship.name}</Text>
      <Text style={styles.classification}>{championship.sport} · {championship.seasonLabel}</Text>
-     <Text style={styles.small}>{championship.closedAt?'Encerrado':'Em curso'} · {championship.competitions.length} {championship.competitions.length===1?'torneio':'torneios'} associados</Text>
-     {championship.closedAt&&championship.championDisplayName?<Text style={styles.small}>Campeão: {championship.championDisplayName}</Text>:null}</View>
+     <Text style={styles.small}>{t('{a} · {b} {c} associados',{a:championship.closedAt?t('Encerrado'):t('Em curso'),b:championship.competitions.length,c:championship.competitions.length===1?'torneio':'torneios'})}</Text>
+     {championship.closedAt&&championship.championDisplayName?<Text style={styles.small}>{t('Campeão: {a}',{a:championship.championDisplayName})}</Text>:null}</View>
     <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
    </Pressable>)}
   </View>:null}
-  {!loading&&!error&&!!role&&sections.length===0?<Message>Esta comunidade ainda não tem modalidades configuradas.</Message>:null}
+  {!loading&&!error&&!!role&&sections.length===0?<Message>{t('Esta comunidade ainda não tem modalidades configuradas.')}</Message>:null}
   {!loading&&!error&&!!role?sections.map(section=><View key={section.sport} style={styles.section}>
    <View style={styles.header}>
     <Text maxFontSizeMultiplier={1.3} style={styles.icon}>{sportIcon(section.sport)}</Text>
@@ -82,25 +83,25 @@ export default function CommunityCompetitions(){
     </View>
     {!section.selected?<Badge text="Histórico"/>:null}
    </View>
-   {section.tournaments.length===0?<Text style={styles.small}>Ainda não existem torneios nesta modalidade.</Text>:null}
+   {section.tournaments.length===0?<Text style={styles.small}>{t('Ainda não existem torneios nesta modalidade.')}</Text>:null}
    {section.tournaments.map(tournament=><Pressable
      key={tournament.id} accessibilityRole="button"
-     accessibilityLabel={'Abrir torneio '+tournament.name}
+     accessibilityLabel={t('Abrir torneio {v}',{v:tournament.name})}
      style={styles.tournament}
      onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(id),id:String(tournament.id)}})}>
      <View style={{flex:1,gap:5}}>
       <Text style={styles.tournamentTitle}>{tournament.name}</Text>
       <Text style={styles.classification}>{label(tournament.kind)}</Text>
-      <Text style={styles.small}>{tournament.status==='DRAFT'?'Em preparação':tournament.status==='IN_PROGRESS'?'A decorrer':'Concluído'}</Text>
+      <Text style={styles.small}>{tournament.status==='DRAFT'?t('Em preparação'):tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}</Text>
      </View>
      <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
    </Pressable>)}
    {organizer&&section.selected&&community&&canCreateTournamentForSport(community,section.sport)?
-     <Button secondary title={'Criar torneio de '+section.sport} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id),sport:section.sport}})}/>:null}
+     <Button secondary title={t('Criar torneio de {v}',{v:section.sport})} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id),sport:section.sport}})}/>:null}
    {organizer&&section.selected&&community&&!canCreateTournamentForSport(community,section.sport)?
-     <Text style={styles.small}>A criação nativa para esta modalidade ainda precisa de um formato de resultados validado. Os torneios existentes continuam acessíveis.</Text>:null}
+     <Text style={styles.small}>{t('A criação nativa para esta modalidade ainda precisa de um formato de resultados validado. Os torneios existentes continuam acessíveis.')}</Text>:null}
   </View>):null}
-  <Button secondary title="Voltar à comunidade" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar à comunidade')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

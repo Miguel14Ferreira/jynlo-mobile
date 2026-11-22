@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 function normalizeInstant(value){
  if(typeof value==='string' && !/^\d+(?:\.\d+)?$/.test(value.trim()))return value;
  if(typeof value!=='string'&&typeof value!=='number')return '';
@@ -19,10 +20,10 @@ function mergeMessages(oldList,newList){
  const m=new Map();for(const x of [...oldList,...newList])if(Number.isSafeInteger(x?.id)&&x.id>0)m.set(x.id,x);
  return [...m.values()].sort((a,b)=>a.id-b.id);
 }
-function safePositiveId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error('Identificador inválido');return n;}
+function safePositiveId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error(tr('Identificador inválido'));return n;}
 function teamInviteUrl(origin,communityId,tournamentId,teamId){
  [communityId,tournamentId,teamId].forEach(safePositiveId);
- if(origin!=='https://d24sports.com')throw Error('Origem não autorizada');
+ if(origin!=='https://d24sports.com')throw Error(tr('Origem não autorizada'));
  const u=new URL('/menu/communities/'+communityId,origin);
  u.searchParams.set('tab','tournaments');u.searchParams.set('tournament',String(tournamentId));u.searchParams.set('team',String(teamId));u.searchParams.set('teamPage',String(teamId));
  return u.toString();

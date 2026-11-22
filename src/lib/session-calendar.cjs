@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** "Adicionar ao calendário": a Google Calendar event link (opens the Calendar app on Android).
  * Google needs start AND end; the game lasts 90 minutes by default, like the web. */
 const DEFAULT_MINUTES=90;
@@ -19,12 +20,12 @@ function googleCalendarUrl(session,exactAddress,now){
  if(!session||!session.gameDate)return null;
  const w=calendarWindow(session.gameDate);
  if(!w||w.end.getTime()<(now||Date.now()))return null;
- const sport=session.sport||'Sessão';
+ const sport=session.sport||tr('Sessão');
  const q=new URLSearchParams({
   action:'TEMPLATE',
   text:'Jynlo — '+sport,
   dates:w.dates,
-  details:'Sessão de '+sport+' na Jynlo.'+(session.creatorUsername?' Criada por '+session.creatorUsername+'.':'')+
+  details:tr('Sessão de {sport} na Jynlo.',{sport})+(session.creatorUsername?' '+tr('Criada por {user}.',{user:session.creatorUsername}):'')+
    (Number.isSafeInteger(session.id)?'\nhttps://d24sports.com/sessions/'+session.id:''),
   location:calendarLocation(session,exactAddress)
  });

@@ -1,15 +1,16 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Quick session competition result: report only actual team membership and outcome. */
 function optionalStat(value,label){
  if(value===undefined||value===null||value==='')return null;
  const normalized=String(value).trim();
  if(!/^(?:0|[1-9][0-9]?)$/.test(normalized))
-  throw Error(label+' deve ser um número inteiro entre 0 e 99.');
+  throw Error(tr('{label} deve ser um número inteiro entre 0 e 99.',{label}));
  return Number(normalized);
 }
 function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scoreB=''){
- if(!['A','B','DRAW'].includes(outcome))throw Error('Escolhe Equipa A, Equipa B ou empate.');
- if(!Array.isArray(players))throw Error('A lista de jogadores não está disponível.');
+ if(!['A','B','DRAW'].includes(outcome))throw Error(tr('Escolhe Equipa A, Equipa B ou empate.'));
+ if(!Array.isArray(players))throw Error(tr('A lista de jogadores não está disponível.'));
  const byName=new Set(),selected=[];
  let a=0,b=0;
  for(const player of players){
@@ -18,11 +19,11 @@ function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scor
   const team=player.team;
   const key=username.toLowerCase();
   if(!username||!['A','B'].includes(team)||byName.has(key))
-    throw Error('Verifica os jogadores e as equipas antes de registar o resultado.');
-  const goals=optionalStat(player.goals,'Golos');
-  const assists=optionalStat(player.assists,'Assistências');
+    throw Error(tr('Verifica os jogadores e as equipas antes de registar o resultado.'));
+  const goals=optionalStat(player.goals,tr('Golos'));
+  const assists=optionalStat(player.assists,tr('Assistências'));
   if((goals!==null||assists!==null)&&sport!=='Futebol')
-   throw Error('Golos e assistências só podem ser registados em sessões de Futebol.');
+   throw Error(tr('Golos e assistências só podem ser registados em sessões de Futebol.'));
   byName.add(key);
   selected.push(goals!==null||assists!==null
    ?{username,team,...(goals!==null?{goals}:{}),...(assists!==null?{assists}:{})}
@@ -30,24 +31,24 @@ function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scor
   if(team==='A')a++;else b++;
  }
  if(selected.length<2||selected.length>100||!a||!b)
-  throw Error('Seleciona pelo menos um jogador em cada equipa.');
+  throw Error(tr('Seleciona pelo menos um jogador em cada equipa.'));
  const hasA=String(scoreA??'').trim().length>0;
  const hasB=String(scoreB??'').trim().length>0;
- if(hasA!==hasB)throw Error('Preenche os dois resultados ou deixa os dois vazios.');
+ if(hasA!==hasB)throw Error(tr('Preenche os dois resultados ou deixa os dois vazios.'));
  if(!hasA)return {outcome,players:selected};
- if(sport!=='Futebol')throw Error('O marcador oficial só pode ser registado para Futebol.');
- const aScore=optionalStat(scoreA,'Golos da Equipa A');
- const bScore=optionalStat(scoreB,'Golos da Equipa B');
+ if(sport!=='Futebol')throw Error(tr('O marcador oficial só pode ser registado para Futebol.'));
+ const aScore=optionalStat(scoreA,tr('Golos da Equipa A'));
+ const bScore=optionalStat(scoreB,tr('Golos da Equipa B'));
  const winner=aScore===bScore?'DRAW':aScore>bScore?'A':'B';
- if(outcome!==winner)throw Error('O vencedor ou empate não corresponde ao marcador.');
+ if(outcome!==winner)throw Error(tr('O vencedor ou empate não corresponde ao marcador.'));
  const goalsA=selected.filter(p=>p.team==='A').reduce((sum,p)=>sum+(p.goals||0),0);
  const goalsB=selected.filter(p=>p.team==='B').reduce((sum,p)=>sum+(p.goals||0),0);
  if(goalsA>aScore||goalsB>bScore)
-  throw Error('Os golos atribuídos aos jogadores excedem o marcador oficial.');
+  throw Error(tr('Os golos atribuídos aos jogadores excedem o marcador oficial.'));
  return {outcome,players:selected,scoreA:aScore,scoreB:bScore};
 }
 function editableCompetitionRoster(roster){
- if(!Array.isArray(roster))throw Error('Não foi possível confirmar os jogadores inscritos.');
+ if(!Array.isArray(roster))throw Error(tr('Não foi possível confirmar os jogadores inscritos.'));
  const seen=new Set();
  return roster.filter(p=>{
   const username=typeof p?.username==='string'?p.username.trim():'';

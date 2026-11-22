@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -24,7 +25,7 @@ export default function ChampionshipTeamsScreen(){
   async function load(){
    try{
     if(!auth.token||!auth.username||!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(championshipId)||championshipId<=0)
-     throw Error('Inicia sessão e seleciona um campeonato válido.');
+     throw Error(t('Inicia sessão e seleciona um campeonato válido.'));
     const [teams,championships,group]=await Promise.all([
      getChampionshipTeams(communityId,championshipId,auth.token),
      communityChampionships(communityId,auth.token),
@@ -32,12 +33,12 @@ export default function ChampionshipTeamsScreen(){
     ]);
     if(!active)return;
     const championship=championships.find(c=>c.id===championshipId);
-    if(!championship)throw Error('Campeonato não encontrado ou sem acesso.');
+    if(!championship)throw Error(t('Campeonato não encontrado ou sem acesso.'));
     const role='myRole' in group?group.myRole:null;
     setOrganizer(role==='OWNER'||role==='ADMIN');
     setClosed(!!championship.closedAt);
     setData(teams);
-   }catch(e){if(active)setError(e instanceof Error?e.message:'Não foi possível consultar equipas.');}
+   }catch(e){if(active)setError(e instanceof Error?e.message:t('Não foi possível consultar equipas.'));}
    finally{if(active)setLoading(false);}
   }
   void load();return()=>{active=false;if(viewGeneration.current===version)viewGeneration.current++;};
@@ -51,36 +52,36 @@ export default function ChampionshipTeamsScreen(){
    if(version!==viewGeneration.current)return;
    setData(next);setName('');setSelected({});
   }catch(e){
-   if(version===viewGeneration.current)setError((e instanceof Error?e.message:'Não foi possível guardar a alteração.')+' Confirma o estado antes de repetir.');
+   if(version===viewGeneration.current)setError((e instanceof Error?e.message:t('Não foi possível guardar a alteração.'))+' '+t('Confirma o estado antes de repetir.'));
   }finally{
    savingRef.current=false;
    setSaving(false);
   }
  }
- return <Page><DemoBanner/><Eyebrow>EQUIPAS DA ÉPOCA</Eyebrow>
-  <Text style={styles.heading}>Equipas do campeonato</Text>
-  <Text style={styles.hint}>Uma equipa pode disputar várias provas com identificadores diferentes. Associa cada equipa da prova à sua equipa do campeonato.</Text>
+ return <Page><DemoBanner/><Eyebrow>{t('EQUIPAS DA ÉPOCA')}</Eyebrow>
+  <Text style={styles.heading}>{t('Equipas do campeonato')}</Text>
+  <Text style={styles.hint}>{t('Uma equipa pode disputar várias provas com identificadores diferentes. Associa cada equipa da prova à sua equipa do campeonato.')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {error&&!data?<Button secondary title="Tentar novamente" onPress={()=>setRetry(x=>x+1)}/>:null}
-  {closed?<Message>Este campeonato está encerrado. As associações são apenas de leitura.</Message>:null}
+  {error&&!data?<Button secondary title={t('Tentar novamente')} onPress={()=>setRetry(x=>x+1)}/>:null}
+  {closed?<Message>{t('Este campeonato está encerrado. As associações são apenas de leitura.')}</Message>:null}
   {data?<View style={styles.card}>
-   <Text style={styles.title}>Equipas da época ({data.teams.length})</Text>
-   {data.teams.length===0?<Text style={styles.hint}>Ainda não existem equipas definidas nesta época.</Text>:null}
+   <Text style={styles.title}>{t('Equipas da época ({a})',{a:data.teams.length})}</Text>
+   {data.teams.length===0?<Text style={styles.hint}>{t('Ainda não existem equipas definidas nesta época.')}</Text>:null}
    {data.teams.map(team=><Text key={team.id} style={styles.team}>• {team.name}</Text>)}
    {organizer&&!closed?<View style={styles.section}>
-    <Text style={styles.label}>Nova equipa da época</Text>
-    <TextInput style={styles.input} placeholder="Nome da equipa" placeholderTextColor={C.muted} maxLength={100} value={name} editable={!saving} onChangeText={setName}/>
-    <Button title={saving?'A guardar…':'Criar equipa'} disabled={saving||!name.trim()} onPress={()=>Alert.alert('Criar equipa?',name.trim(),[
-     {text:'Cancelar',style:'cancel'},{text:'Criar',onPress:()=>{void update(()=>createChampionshipTeam(communityId,championshipId,name,auth.token!));}}
+    <Text style={styles.label}>{t('Nova equipa da época')}</Text>
+    <TextInput style={styles.input} placeholder={t('Nome da equipa')} placeholderTextColor={C.muted} maxLength={100} value={name} editable={!saving} onChangeText={setName}/>
+    <Button title={saving?t('A guardar…'):t('Criar equipa')} disabled={saving||!name.trim()} onPress={()=>Alert.alert(t('Criar equipa?'),name.trim(),[
+     {text:t('Cancelar'),style:'cancel'},{text:t('Criar'),onPress:()=>{void update(()=>createChampionshipTeam(communityId,championshipId,name,auth.token!));}}
     ])}/>
    </View>:null}
    {organizer&&!closed&&auth.token?<CompetitionTeamSearch communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token} onEnrolled={()=>setRetry(x=>x+1)}/>:null}
    {organizer&&!closed&&auth.token?<TeamCompetitionApplications communityId={communityId} competitionId={championshipId} type="CHAMPIONSHIP" token={auth.token} onEnrolled={()=>setRetry(x=>x+1)}/>:null}
   </View>:null}
   {data?<View style={styles.card}>
-   <Text style={styles.title}>Equipas das provas ({data.competitionTeams.length})</Text>
-   {data.competitionTeams.length===0?<Text style={styles.hint}>Ainda não existem equipas de torneios associados a este campeonato.</Text>:null}
+   <Text style={styles.title}>{t('Equipas das provas ({a})',{a:data.competitionTeams.length})}</Text>
+   {data.competitionTeams.length===0?<Text style={styles.hint}>{t('Ainda não existem equipas de torneios associados a este campeonato.')}</Text>:null}
    {data.competitionTeams.map(entry=>{
     const linked=data.teams.find(team=>team.id===entry.championshipTeamId);
     const picked=selected[entry.id]??entry.championshipTeamId;
@@ -89,27 +90,27 @@ export default function ChampionshipTeamsScreen(){
      .map(other=>other.championshipTeamId));
     return <View key={entry.id} style={styles.section}>
      <Text style={styles.label}>{entry.name}</Text>
-     <Text style={styles.hint}>{entry.tournamentName} · {linked?'Equipa da época: '+linked.name:'Sem associação'}</Text>
+     <Text style={styles.hint}>{entry.tournamentName} · {linked?t('Equipa da época: {v}',{v:linked.name}):t('Sem associação')}</Text>
      {organizer&&!closed?<View style={styles.section}>
       {data.teams.map(team=><Pressable key={team.id} onPress={()=>setSelected(current=>({...current,[entry.id]:team.id}))} disabled={saving||conflictingTeamIds.has(team.id)} accessibilityRole="radio" accessibilityState={{selected:picked===team.id,disabled:conflictingTeamIds.has(team.id)}} style={[styles.choice,picked===team.id&&styles.selected,conflictingTeamIds.has(team.id)&&styles.unavailable]}>
-       <Text style={styles.team}>{picked===team.id?'●':'○'} {team.name}{conflictingTeamIds.has(team.id)?' · Já utilizada nesta prova':''}</Text>
+       <Text style={styles.team}>{picked===team.id?'●':'○'} {team.name}{conflictingTeamIds.has(team.id)?' · '+t('Já utilizada nesta prova'):''}</Text>
       </Pressable>)}
-      <Button secondary title="Guardar associação" disabled={saving||!picked||picked===entry.championshipTeamId||conflictingTeamIds.has(picked)} onPress={()=>{
+      <Button secondary title={t('Guardar associação')} disabled={saving||!picked||picked===entry.championshipTeamId||conflictingTeamIds.has(picked)} onPress={()=>{
        if(!picked)return;
        const target=data.teams.find(team=>team.id===picked);
-       Alert.alert('Associar equipa?',entry.name+' → '+(target?.name||''),[
-        {text:'Cancelar',style:'cancel'},
-        {text:'Associar',onPress:()=>{void update(()=>linkChampionshipTeam(communityId,championshipId,entry.id,picked,auth.token!));}}
+       Alert.alert(t('Associar equipa?'),entry.name+' → '+(target?.name||''),[
+        {text:t('Cancelar'),style:'cancel'},
+        {text:t('Associar'),onPress:()=>{void update(()=>linkChampionshipTeam(communityId,championshipId,entry.id,picked,auth.token!));}}
        ]);
       }}/>
-      {!saving&&data.teams.length===0?<Text style={styles.hint}>Cria primeiro uma equipa da época para poderes fazer esta associação.</Text>:
-       !saving&&picked===entry.championshipTeamId?<Text style={styles.hint}>Esta equipa já está associada. Seleciona outra para alterar.</Text>:
-       !saving&&conflictingTeamIds.has(picked)?<Text style={styles.hint}>Esta equipa já está utilizada nesta prova. Escolhe outra equipa disponível.</Text>:null}
+      {!saving&&data.teams.length===0?<Text style={styles.hint}>{t('Cria primeiro uma equipa da época para poderes fazer esta associação.')}</Text>:
+       !saving&&picked===entry.championshipTeamId?<Text style={styles.hint}>{t('Esta equipa já está associada. Seleciona outra para alterar.')}</Text>:
+       !saving&&conflictingTeamIds.has(picked)?<Text style={styles.hint}>{t('Esta equipa já está utilizada nesta prova. Escolhe outra equipa disponível.')}</Text>:null}
      </View>:null}
     </View>;
    })}
   </View>:null}
-  <Button secondary title="Voltar ao campeonato" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao campeonato')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

@@ -36,7 +36,7 @@ test('venue labels and values use accessible hierarchy instead of low-emphasis t
  assert.match(screen,/styles\.infoLabel/);
  assert.match(screen,/styles\.infoValue/);
  assert.match(screen,/fontSize:15,fontWeight:'600',lineHeight:23/);
- assert.match(screen,/accessibilityLabel=\{label\+': '\+/);
+ assert.match(screen,/accessibilityLabel=\{t\(label\)\+': '\+/);
  assert.doesNotMatch(screen,/\{label\}: \{value\.trim\(\)\}/);
 });
 test('muted text design tokens achieve WCAG AA contrast on native dark surfaces',()=>{

@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Presentation only: never calculate finishing places, champions or qualification. */
 function nonNegative(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0;}
 function formatSeconds(value){
@@ -14,8 +15,8 @@ function formatSeconds(value){
 function formatMetres(value){return nonNegative(value)?`${new Intl.NumberFormat('pt-PT',{maximumFractionDigits:3}).format(value)} m`:'—';}
 function formatPoints(value){return nonNegative(value)?`${new Intl.NumberFormat('pt-PT').format(value)} pts`:'—';}
 function formatChessPoints(halfPointUnits){return Number.isSafeInteger(halfPointUnits)&&halfPointUnits>=0?new Intl.NumberFormat('pt-PT',{maximumFractionDigits:1}).format(halfPointUnits/2):'—';}
-function displayPerson(...values){return values.find(x=>typeof x==='string'&&x.trim())?.trim()||'Participante não identificado';}
+function displayPerson(...values){return values.find(x=>typeof x==='string'&&x.trim())?.trim()||tr('Participante não identificado');}
 function validatedRank(rank){return Number.isSafeInteger(rank)&&rank>0?String(rank):'—';}
 function sourceRounds(data){return Array.isArray(data)?data.filter(x=>x&&Number.isSafeInteger(x.id)&&x.id>0):[];}
-function stageLabel(stage){return stage==='FINAL'?'Final':stage==='QUALIFICATION'?'Qualificação':'Fase não identificada';}
+function stageLabel(stage){return stage==='FINAL'?tr('Final'):stage==='QUALIFICATION'?tr('Qualificação'):tr('Fase não identificada');}
 module.exports={formatSeconds,formatMetres,formatPoints,formatChessPoints,displayPerson,validatedRank,sourceRounds,stageLabel};

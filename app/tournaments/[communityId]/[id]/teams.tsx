@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t as tr} from '../../../../src/lib/i18n';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -20,7 +21,7 @@ export default function TeamsScreen(){
  const load=useCallback(async(version=generation.current,silent=false)=>{
   if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
-   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   if(version===generation.current){setError(tr('Torneio inválido.'));setLoading(false);}
    return;
   }
   if(!silent)setLoading(true);
@@ -35,7 +36,7 @@ export default function TeamsScreen(){
     setTournament(details);setItems([]);return;
    }
    setTournament(details);setItems(teams);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as equipas.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:tr('Não foi possível carregar as equipas.'));}
   finally{if(version===generation.current&&!silent)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -52,58 +53,58 @@ export default function TeamsScreen(){
   try{
    await createTournamentTeam(cid,tid,newName,auth.token,auth.username);
    if(version!==generation.current)return;
-   setMessage('Equipa criada. Abre a página para convidares jogadores.');setNewName('');
+   setMessage(tr('Equipa criada. Abre a página para convidares jogadores.'));setNewName('');
    await load(version);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível criar.')+
-    ' Confirma as equipas antes de repetires para evitar duplicados.');
+   if(version===generation.current)setError((e instanceof Error?e.message:tr('Não foi possível criar.'))+
+    ' '+tr('Confirma as equipas antes de repetires para evitar duplicados.'));
   }finally{
    creatingRef.current=false;
    if(version===generation.current)setBusy(false);
   }
  }
- return <Page><DemoBanner/><Eyebrow>TORNEIOS · EQUIPAS</Eyebrow>
+ return <Page><DemoBanner/><Eyebrow>{tr('TORNEIOS · EQUIPAS')}</Eyebrow>
   <View style={styles.hero}>
    <View style={styles.heroHead}><View style={styles.heroIcon}><JynloIcon name="tournament" color={C.mint} size={26}/></View>
-     <Text style={styles.heroTag}>TORNEIO POR EQUIPAS</Text></View>
-   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Equipas do torneio'}</Text>
-   <Text style={styles.heroSub}>Acompanha os plantéis, aceita convites e vê os jogos da competição.</Text>
+     <Text style={styles.heroTag}>{tr('TORNEIO POR EQUIPAS')}</Text></View>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||tr('Equipas do torneio')}</Text>
+   <Text style={styles.heroSub}>{tr('Acompanha os plantéis, aceita convites e vê os jogos da competição.')}</Text>
    {tournament?.entryType==='TEAM'?<View style={styles.summary}>
     <Text maxFontSizeMultiplier={1.3} style={styles.summaryCount}>{items.length}</Text>
-    <Text style={styles.summaryLabel}>{items.length===1?'equipa inscrita':'equipas inscritas'}</Text>
+    <Text style={styles.summaryLabel}>{items.length===1?tr('equipa inscrita'):tr('equipas inscritas')}</Text>
    </View>:null}
   </View>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={tr('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}{!!message?<Message>{message}</Message>:null}
-  {tournament?.entryType!=='TEAM'&&tournament?<Message>Este torneio não é uma competição por equipas.</Message>:null}
+  {tournament?.entryType!=='TEAM'&&tournament?<Message>{tr('Este torneio não é uma competição por equipas.')}</Message>:null}
   {!loading&&tournament?.entryType==='TEAM'&&items.length===0?<View style={styles.empty}>
     <JynloIcon name="community" color={C.mint} size={26}/>
-    <Text style={styles.teamName}>Ainda sem equipas</Text>
-    <Text style={styles.note}>Cria a primeira equipa ou convida uma já existente na Jynlo.</Text>
+    <Text style={styles.teamName}>{tr('Ainda sem equipas')}</Text>
+    <Text style={styles.note}>{tr('Cria a primeira equipa ou convida uma já existente na Jynlo.')}</Text>
    </View>:null}
   {items.map(t=><View key={t.id} style={styles.team}>
    <View style={styles.teamTop}>
      <View style={styles.teamIcon}><JynloIcon name="community" color={C.mint} size={25}/></View>
      <View style={styles.teamCopy}><Text style={styles.teamName} numberOfLines={2}>{t.name}</Text>
-       <Text style={styles.note}>{t.players.length} {t.players.length===1?'jogador confirmado':'jogadores confirmados'}{t.playersPerTeam!=null?' · limite '+t.playersPerTeam:''}</Text>
+       <Text style={styles.note}>{t.players.length} {t.players.length===1?tr('jogador confirmado'):tr('jogadores confirmados')}{t.playersPerTeam!=null?' · '+tr('limite {v}',{v:t.playersPerTeam}):''}</Text>
      </View>
    </View>
    {t.playersPerTeam!=null&&t.playersPerTeam>0?<View style={styles.progressTrack}>
       <View style={[styles.progressFill,{width:`${Math.min(100,Math.round(t.players.length/t.playersPerTeam*100))}%` as `${number}%`}]}/>
     </View>:null}
-   <Button title="Ver plantel e jogos" secondary onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(t.id)}})}/>
+   <Button title={tr('Ver plantel e jogos')} secondary onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(t.id)}})}/>
   </View>)}
-  {tournament?.entryType==='TEAM'&&tournament.status!=='DRAFT'?<Message>Este torneio já começou ou terminou. As equipas estão disponíveis apenas para consulta.</Message>:null}
+  {tournament?.entryType==='TEAM'&&tournament.status!=='DRAFT'?<Message>{tr('Este torneio já começou ou terminou. As equipas estão disponíveis apenas para consulta.')}</Message>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'?<View style={styles.team}>
-   <Text style={styles.teamName}>Nova equipa</Text>
-   <TextInput accessibilityLabel="Nome da equipa" value={newName} onChangeText={setNewName} style={styles.input} maxLength={100} placeholder="Nome da equipa" placeholderTextColor={C.muted}/>
-   <Button title={busy?'A guardar…':'Criar equipa'} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
-   <Text style={styles.note}>Só a organização do torneio pode criar equipas.</Text>
+   <Text style={styles.teamName}>{tr('Nova equipa')}</Text>
+   <TextInput accessibilityLabel={tr('Nome da equipa')} value={newName} onChangeText={setNewName} style={styles.input} maxLength={100} placeholder={tr('Nome da equipa')} placeholderTextColor={C.muted}/>
+   <Button title={busy?tr('A guardar…'):tr('Criar equipa')} disabled={busy||newName.trim().length<2} onPress={()=>{void create();}}/>
+   <Text style={styles.note}>{tr('Só a organização do torneio pode criar equipas.')}</Text>
   </View>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<CompetitionTeamSearch communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}
   {tournament?.entryType==='TEAM'&&tournament.status==='DRAFT'&&auth.token?<TeamCompetitionApplications communityId={cid} competitionId={tid} type="TOURNAMENT" token={auth.token} onEnrolled={()=>{void load(generation.current,true);}}/>:null}
-  {DEMO_MODE?<Message>Modo de demonstração: as equipas são apenas locais e não ficam gravadas na Jynlo real.</Message>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  {DEMO_MODE?<Message>{tr('Modo de demonstração: as equipas são apenas locais e não ficam gravadas na Jynlo real.')}</Message>:null}
+  <Button secondary title={tr('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

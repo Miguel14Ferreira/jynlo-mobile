@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {StyleSheet,Switch,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../src/components/UI';
@@ -22,7 +23,7 @@ export default function NotificationSettingsScreen(){
   try{
    const prefs=await myNotificationPreferences(auth.token);
    if(request===version.current){setSaved(prefs);setDraft(prefs);}
-  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:'Não foi possível carregar as preferências.');}
+  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:t('Não foi possível carregar as preferências.'));}
   finally{if(request===version.current)setLoading(false);}
  },[auth.token]);
  useFocusEffect(useCallback(()=>{void load();return()=>{version.current++;};},[load]));
@@ -34,49 +35,49 @@ export default function NotificationSettingsScreen(){
   try{
    const next=await saveNotificationPreferences(draft,auth.token);
    if(request!==version.current)return;
-   setSaved(next);setDraft(next);setNotice('Preferências guardadas. Aplicam-se também ao web e às notificações no telemóvel.');
-  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:'Não foi possível guardar. Tenta novamente.');}
+   setSaved(next);setDraft(next);setNotice(t('Preferências guardadas. Aplicam-se também ao web e às notificações no telemóvel.'));
+  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));}
   finally{saving.current=false;setBusy(false);}
  }
  const set=(patch:Partial<NotificationPreferences>)=>{setNotice('');setDraft(current=>current?{...current,...patch}:current);};
- return <Page><DemoBanner/><Eyebrow>NOTIFICAÇÕES</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Gerir notificações</Text>
-  <Text style={styles.sub}>Escolhe o que queres receber na aplicação (incluindo avisos no telemóvel) e por email.</Text>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('NOTIFICAÇÕES')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Gerir notificações')}</Text>
+  <Text style={styles.sub}>{t('Escolhe o que queres receber na aplicação (incluindo avisos no telemóvel) e por email.')}</Text>
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {error&&!draft&&auth.token?<Button secondary title="Tentar novamente" onPress={()=>{void load();}}/>:null}
+  {error&&!draft&&auth.token?<Button secondary title={t('Tentar novamente')} onPress={()=>{void load();}}/>:null}
   {auth.token?<View style={styles.panel}>
-   <Text style={styles.heading}>Novos jogos perto de ti</Text>
-   <Text style={styles.note}>Escolhe um local, a distância e as modalidades para saberes quando há um jogo novo perto.</Text>
-   <Button secondary title="Configurar avisos de jogos perto" onPress={()=>router.push('/nearby-alerts')}/>
+   <Text style={styles.heading}>{t('Novos jogos perto de ti')}</Text>
+   <Text style={styles.note}>{t('Escolhe um local, a distância e as modalidades para saberes quando há um jogo novo perto.')}</Text>
+   <Button secondary title={t('Configurar avisos de jogos perto')} onPress={()=>router.push('/nearby-alerts')}/>
   </View>:null}
   {draft?<>
    <View style={styles.panel}>
-    <Row label="Avisos na aplicação e no telemóvel" value={draft.inAppEnabled} disabled={busy}
+    <Row label={t('Avisos na aplicação e no telemóvel')} value={draft.inAppEnabled} disabled={busy}
      onChange={value=>set({inAppEnabled:value})}/>
-    <Row label="Emails opcionais" value={draft.emailEnabled} disabled={busy} onChange={value=>set({emailEnabled:value})}/>
-    <Text style={styles.note}>Os emails de segurança, recuperação de conta e confirmação de endereço continuam sempre ativos.</Text>
+    <Row label={t('Emails opcionais')} value={draft.emailEnabled} disabled={busy} onChange={value=>set({emailEnabled:value})}/>
+    <Text style={styles.note}>{t('Os emails de segurança, recuperação de conta e confirmação de endereço continuam sempre ativos.')}</Text>
    </View>
-   <View style={styles.legend}><Text style={styles.legendText}>App</Text><Text style={styles.legendText}>Email</Text></View>
+   <View style={styles.legend}><Text style={styles.legendText}>{t('App')}</Text><Text style={styles.legendText}>{t('Email')}</Text></View>
    {PREFERENCE_GROUPS.map(group=><View key={group.title} style={styles.panel}>
-    <Text style={styles.heading}>{group.title}</Text>
+    <Text style={styles.heading}>{t(group.title)}</Text>
     {group.types.map(item=>{
      const inApp=!draft.disabledInAppTypes.includes(item.type),email=!draft.disabledEmailTypes.includes(item.type);
      return <View key={item.type} style={styles.typeRow}>
-      <Text style={[styles.typeLabel,!draft.inAppEnabled&&!draft.emailEnabled&&styles.dim]}>{item.label}</Text>
+      <Text style={[styles.typeLabel,!draft.inAppEnabled&&!draft.emailEnabled&&styles.dim]}>{t(item.label)}</Text>
       <Switch value={inApp&&draft.inAppEnabled} disabled={busy||!draft.inAppEnabled}
-       accessibilityLabel={item.label+' na aplicação'} onValueChange={value=>setDraft(current=>current?toggleType(current,'inApp',item.type,value):current)}/>
+       accessibilityLabel={t(item.label)+' '+t('na aplicação')} onValueChange={value=>setDraft(current=>current?toggleType(current,'inApp',item.type,value):current)}/>
       <Switch value={email&&draft.emailEnabled} disabled={busy||!draft.emailEnabled}
-       accessibilityLabel={item.label+' por email'} onValueChange={value=>setDraft(current=>current?toggleType(current,'email',item.type,value):current)}/>
+       accessibilityLabel={t(item.label)+' '+t('por email')} onValueChange={value=>setDraft(current=>current?toggleType(current,'email',item.type,value):current)}/>
      </View>;
     })}
    </View>)}
    {notice?<Message>{notice}</Message>:null}
-   <Button title={busy?'A guardar…':dirty?'Guardar alterações':'Sem alterações'} disabled={busy||!dirty} onPress={()=>{void save();}}/>
-   {dirty?<Button secondary title="Descartar alterações" disabled={busy} onPress={()=>{setDraft(saved);setNotice('');}}/>:null}
+   <Button title={busy?t('A guardar…'):dirty?t('Guardar alterações'):t('Sem alterações')} disabled={busy||!dirty} onPress={()=>{void save();}}/>
+   {dirty?<Button secondary title={t('Descartar alterações')} disabled={busy} onPress={()=>{setDraft(saved);setNotice('');}}/>:null}
   </>:null}
-  <Button secondary title="Voltar às notificações" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar às notificações')} onPress={()=>router.back()}/>
  </Page>;
 }
 function Row({label,value,disabled,onChange}:{label:string;value:boolean;disabled:boolean;onChange:(value:boolean)=>void}){

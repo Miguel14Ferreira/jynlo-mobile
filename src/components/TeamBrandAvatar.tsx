@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import {safeTeamKitColor,teamLogoUri,type SportsTeam} from '../lib/sports-teams-api';
 
@@ -9,7 +10,7 @@ export default function TeamBrandAvatar({team,size=56,rounded=false}:Props){
  const source=teamLogoUri(team.logoUrl);
  const [imageFailed,setImageFailed]=useState(false);
  useEffect(()=>{setImageFailed(false);},[source]);
- return <View accessibilityLabel={'Emblema da equipa '+team.name} style={[
+ return <View accessibilityLabel={t('Emblema da equipa {v}',{v:team.name})} style={[
    styles.crest,{width:size,height:size,borderRadius:rounded?size/2:Math.round(size*.24),
      borderColor:secondary,backgroundColor:primary}
   ]}>

@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Button,Message} from './UI';
@@ -26,28 +27,28 @@ export function PostGameCommunities({sessionId,token,username}:{sessionId:number
   try{
    const state=await joinAfterGame(sessionId,g.id,token);
    setGroups(prev=>prev.filter(x=>x.id!==g.id));
-   setNotice(state==='REQUESTED'?{text:'Pedido enviado. A comunidade decidirá sobre a adesão.'}
-    :{text:'Já fazes parte da comunidade! Descobre os próximos jogos.',communityId:g.id});
+   setNotice(state==='REQUESTED'?{text:t('Pedido enviado. A comunidade decidirá sobre a adesão.')}
+    :{text:t('Já fazes parte da comunidade! Descobre os próximos jogos.'),communityId:g.id});
   }catch(e){
    if(e instanceof ApiError&&(e.status===403||e.status===409))setGroups(prev=>prev.filter(x=>x.id!==g.id));
-   setError('Não foi possível concluir a adesão. Tenta novamente.');
+   setError(t('Não foi possível concluir a adesão. Tenta novamente.'));
   }finally{setBusy(null);}
  }
  if(!groups.length&&!notice&&!error)return null;
  return <View style={styles.panel}>
   {groups.length?<>
-   <Text style={styles.kicker}>DEPOIS DO JOGO</Text>
-   <Text style={styles.title}>Gostaste de jogar com esta malta?</Text>
-   <Text style={styles.help}>Se quiseres, junta-te às comunidades que organizaram este jogo e descobre as próximas sessões. É totalmente opcional.</Text>
+   <Text style={styles.kicker}>{t('DEPOIS DO JOGO')}</Text>
+   <Text style={styles.title}>{t('Gostaste de jogar com esta malta?')}</Text>
+   <Text style={styles.help}>{t('Se quiseres, junta-te às comunidades que organizaram este jogo e descobre as próximas sessões. É totalmente opcional.')}</Text>
    {groups.map(g=><View key={g.id} style={styles.option}>
     <Text style={styles.name}>{g.name}</Text>
-    <Text style={styles.help}>{g.requiresApproval?'A adesão requer aprovação de um administrador.':'Comunidade aberta a novos membros.'}</Text>
-    <Button title={busy===g.id?'A enviar…':g.requiresApproval?'Pedir para aderir':'Juntar-me à comunidade'} disabled={busy!==null} onPress={()=>{void join(g);}}/>
-    <Button secondary title="Agora não" disabled={busy!==null} onPress={()=>{void dismiss(username,g.id);setGroups(prev=>prev.filter(x=>x.id!==g.id));}}/>
+    <Text style={styles.help}>{g.requiresApproval?t('A adesão requer aprovação de um administrador.'):t('Comunidade aberta a novos membros.')}</Text>
+    <Button title={busy===g.id?t('A enviar…'):g.requiresApproval?t('Pedir para aderir'):t('Juntar-me à comunidade')} disabled={busy!==null} onPress={()=>{void join(g);}}/>
+    <Button secondary title={t('Agora não')} disabled={busy!==null} onPress={()=>{void dismiss(username,g.id);setGroups(prev=>prev.filter(x=>x.id!==g.id));}}/>
    </View>)}
   </>:null}
   {notice?<Message>{notice.text}</Message>:null}
-  {notice?.communityId?<Button secondary title="Abrir comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(notice.communityId)}})}/>:null}
+  {notice?.communityId?<Button secondary title={t('Abrir comunidade')} onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(notice.communityId)}})}/>:null}
   {error?<Message tone="error">{error}</Message>:null}
  </View>;
 }

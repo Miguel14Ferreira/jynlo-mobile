@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../../src/components/UI';
@@ -19,15 +20,15 @@ export default function CommunityLivesScreen(){
  const generation=useRef(0),inFlight=useRef(false);
  const load=useCallback(async(silent=false)=>{
   const version=++generation.current;
-  if(!auth.token||!Number.isSafeInteger(id)||id<=0){setLoading(false);setError('Inicia sessão numa comunidade válida.');return;}
+  if(!auth.token||!Number.isSafeInteger(id)||id<=0){setLoading(false);setError(t('Inicia sessão numa comunidade válida.'));return;}
   if(!silent)setLoading(true);
   const [permissions,list]=await Promise.allSettled([
    communityLiveCapabilities(auth.token,id),communityLiveEvents(auth.token,id)]);
   if(generation.current!==version)return;
   if(permissions.status==='fulfilled')setCaps(permissions.value);
-  else setError('Não foi possível confirmar o acesso aos diretos desta comunidade.');
+  else setError(t('Não foi possível confirmar o acesso aos diretos desta comunidade.'));
   if(list.status==='fulfilled')setEvents(list.value);
-  else setError('Não foi possível carregar os diretos. Confirma a tua participação na comunidade.');
+  else setError(t('Não foi possível carregar os diretos. Confirma a tua participação na comunidade.'));
   setLoading(false);
  },[id,auth.token]);
  useFocusEffect(useCallback(()=>{
@@ -41,7 +42,7 @@ export default function CommunityLivesScreen(){
   if(inFlight.current)return;
   inFlight.current=true;setBusy(true);setError('');
   try{await task();await load(true);}
-  catch(e){setError(e instanceof Error?e.message:'Operação não concluída.');}
+  catch(e){setError(e instanceof Error?e.message:t('Operação não concluída.'));}
   finally{inFlight.current=false;setBusy(false);}
  };
  const open=(event:CommunityLiveEvent)=>
@@ -52,9 +53,9 @@ export default function CommunityLivesScreen(){
   void run(async()=>{
    if(goNow)await ensureLiveCapturePermissions();
    const date=goNow?new Date():new Date(scheduledAt.replace(' ','T'));
-   if(!Number.isFinite(date.getTime()))throw Error('A data e a hora não são válidas. Usa AAAA-MM-DD HH:mm.');
+   if(!Number.isFinite(date.getTime()))throw Error(t('A data e a hora não são válidas. Usa AAAA-MM-DD HH:mm.'));
    const timestamp=date.toISOString();
-   const event=await scheduleCommunityLive(auth.token!,id,goNow?(title.trim()||'Direto da comunidade'):title,description,timestamp);
+   const event=await scheduleCommunityLive(auth.token!,id,goNow?(title.trim()||t('Direto da comunidade')):title,description,timestamp);
    if(goNow){
     const active=await startCommunityLive(auth.token!,id,event.id);
     open(active);
@@ -70,41 +71,41 @@ export default function CommunityLivesScreen(){
   });
  };
  return <Page>
-  <Text style={styles.eyebrow}>JYNLO · COMUNIDADES</Text>
-  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Diretos da comunidade</Text>
-  <Text style={styles.muted}>Transmissões de jogos, treinos e momentos da comunidade.</Text>
+  <Text style={styles.eyebrow}>{t('JYNLO · COMUNIDADES')}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('Diretos da comunidade')}</Text>
+  <Text style={styles.muted}>{t('Transmissões de jogos, treinos e momentos da comunidade.')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {caps&&!caps.enabled?<Message>Os diretos estão temporariamente indisponíveis nesta comunidade.</Message>:null}
+  {caps&&!caps.enabled?<Message>{t('Os diretos estão temporariamente indisponíveis nesta comunidade.')}</Message>:null}
   {caps?.enabled?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Transmissões</Text>
-   {events.length===0?<Text style={styles.muted}>Ainda não há diretos nesta comunidade.</Text>:null}
+   <Text style={styles.subtitle}>{t('Transmissões')}</Text>
+   {events.length===0?<Text style={styles.muted}>{t('Ainda não há diretos nesta comunidade.')}</Text>:null}
    {events.map(event=><View key={event.id} style={styles.event}>
-    <Text style={styles.eventTitle}>{event.status==='LIVE'?'● LIVE':event.status==='SCHEDULED'?'Agendado':'Terminado'} · {event.title}</Text>
+    <Text style={styles.eventTitle}>{event.status==='LIVE'?t('● LIVE'):event.status==='SCHEDULED'?t('Agendado'):t('Terminado')} · {event.title}</Text>
     <Text style={styles.muted}>{new Date(event.scheduledAt).toLocaleString('pt-PT')}</Text>
     {event.description?<Text style={styles.muted}>{event.description}</Text>:null}
-    {event.status==='LIVE'?<Button secondary title={event.canManage?'Entrar como apresentador':'Assistir'}
+    {event.status==='LIVE'?<Button secondary title={event.canManage?t('Entrar como apresentador'):t('Assistir')}
       disabled={busy} onPress={()=>open(event)}/>:null}
     {event.status==='SCHEDULED'&&caps.canManage&&event.canManage?<Button
-      title="Iniciar direto" disabled={busy} onPress={()=>launch(event)}/>:null}
+      title={t('Iniciar direto')} disabled={busy} onPress={()=>launch(event)}/>:null}
    </View>)}
-   <Button secondary title="Verificar diretos" disabled={loading||busy} onPress={()=>void load()}/>
+   <Button secondary title={t('Verificar diretos')} disabled={loading||busy} onPress={()=>void load()}/>
   </View>:null}
   {caps?.enabled&&caps.canManage?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Organizar um direto</Text>
-   <Text style={styles.muted}>Só o proprietário da comunidade pode iniciar uma transmissão.</Text>
+   <Text style={styles.subtitle}>{t('Organizar um direto')}</Text>
+   <Text style={styles.muted}>{t('Só o proprietário da comunidade pode iniciar uma transmissão.')}</Text>
    <TextInput style={styles.input} value={title} onChangeText={setTitle} maxLength={120} editable={!busy}
-     placeholder="Título da transmissão" placeholderTextColor={C.muted} accessibilityLabel="Título do direto da comunidade"/>
+     placeholder={t('Título da transmissão')} placeholderTextColor={C.muted} accessibilityLabel={t('Título do direto da comunidade')}/>
    <TextInput style={[styles.input,styles.description]} multiline value={description} onChangeText={setDescription}
-     maxLength={1000} editable={!busy} placeholder="Descrição (opcional)"
-     placeholderTextColor={C.muted} accessibilityLabel="Descrição do direto"/>
-   <Text style={styles.muted}>Data e hora para agendar (AAAA-MM-DD HH:mm)</Text>
+     maxLength={1000} editable={!busy} placeholder={t('Descrição (opcional)')}
+     placeholderTextColor={C.muted} accessibilityLabel={t('Descrição do direto')}/>
+   <Text style={styles.muted}>{t('Data e hora para agendar (AAAA-MM-DD HH:mm)')}</Text>
    <TextInput style={styles.input} value={scheduledAt} onChangeText={setScheduledAt}
      editable={!busy} placeholder="2026-11-25 20:00" placeholderTextColor={C.muted}
-     accessibilityLabel="Data e hora do direto"/>
-   <Button secondary title="Agendar transmissão" disabled={busy||!title.trim()||!scheduledAt.trim()}
+     accessibilityLabel={t('Data e hora do direto')}/>
+   <Button secondary title={t('Agendar transmissão')} disabled={busy||!title.trim()||!scheduledAt.trim()}
      onPress={()=>schedule(false)}/>
-   <Button title="● Entrar em direto agora" disabled={busy||events.some(e=>e.status==='LIVE')}
+   <Button title={t('● Entrar em direto agora')} disabled={busy||events.some(e=>e.status==='LIVE')}
      onPress={()=>schedule(true)}/>
   </View>:null}
  </Page>;

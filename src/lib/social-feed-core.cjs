@@ -1,10 +1,11 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 const imageTypes=new Set(['image/jpeg','image/png','image/webp']);
 const videoTypes=new Set(['video/mp4','video/webm']);
 function mediaKind(type){if(imageTypes.has(type))return 'image';if(videoTypes.has(type))return 'video';return null;}
 function validateMedia(type,size,forStory=false){
   const kind=mediaKind(type);
-  if(!kind)return 'Formato não suportado. Usa JPG, PNG, WEBP, MP4 ou WEBM.';
+  if(!kind)return tr('Formato não suportado. Usa JPG, PNG, WEBP, MP4 ou WEBM.');
   const max=kind==='image'?5*1024*1024:20*1024*1024;
   if(!Number.isFinite(size)||size<=0||size>max)return `O ficheiro excede o limite de ${kind==='image'?5:20} MB.`;
   return null;
