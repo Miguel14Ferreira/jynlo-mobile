@@ -2,7 +2,9 @@ import CommunityChatPanel from '../../src/components/CommunityChatPanel';
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
 import React,{useCallback,useRef,useState} from 'react';
-import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '../../src/components/UI';
 import {DEMO_MODE} from '../../src/lib/api';
@@ -189,11 +191,18 @@ export default function CommunityDetailScreen(){
       <View style={styles.identityCard}>
         <Eyebrow>{t('COMUNIDADE JYNLO')}</Eyebrow>
         <View style={styles.identityHeading}>
-          <View style={styles.identityMark}><Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text></View>
+          <View style={styles.identityMark}>{community.photoUrl&&resolveJynloMedia(community.photoUrl)
+            ?<Image source={{uri:resolveJynloMedia(community.photoUrl)!}} style={styles.identityPhoto} resizeMode="cover" accessibilityLabel={t('Fotografia da comunidade {v}',{v:community.name})}/>
+            :<Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text>}</View>
           <View style={styles.identityCopy}>
             <Text style={styles.heading}>{community.name}</Text>
             <Text style={styles.identityStatus}>{role?t('Fazes parte desta comunidade'):t('Descobre esta comunidade')}</Text>
           </View>
+          {owner?<Pressable accessibilityRole="button" accessibilityLabel={t('Gerir comunidade')} accessibilityState={{selected:activeSection==='MANAGE'}}
+            onPress={()=>setActiveSection(activeSection==='MANAGE'?'OVERVIEW':'MANAGE')} hitSlop={6}
+            style={[styles.manageButton,activeSection==='MANAGE'&&styles.manageButtonOn]}>
+            <JynloIcon name="settings" size={22} color={activeSection==='MANAGE'?C.background:C.mint}/>
+          </Pressable>:null}
         </View>
         <Text style={styles.subtitle}>{community.description||t('Mais do que desporto, uma forma de encontrar pessoas.')}</Text>
         <View style={styles.header}>
@@ -218,17 +227,14 @@ export default function CommunityDetailScreen(){
       {teamDestination&&role?<Button title={t('Continuar para a equipa do convite')} onPress={()=>router.replace(teamDestination as any)}/>:null}
       {teamDestination&&!role&&myRequest?<Message>{t('O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.')}</Message>:null}
       {teamDestination&&!role&&auth.token&&!loading?<Button secondary title={t('Verificar aprovação da comunidade')} disabled={busy} onPress={()=>{void reload();}}/>:null}
-      {role?<View style={styles.sectionNav} accessibilityLabel={t('Secções da comunidade')}>
+      {role?<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionNav} contentContainerStyle={styles.sectionNavContent} accessibilityLabel={t('Secções da comunidade')}>
         {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Sessões')},{id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
          accessibilityState={{selected:activeSection===tab.id}} onPress={()=>setActiveSection(tab.id)}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
          <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
         </Pressable>)}
-        {owner?<Pressable accessibilityRole="tab" accessibilityState={{selected:activeSection==='MANAGE'}}
-          onPress={()=>setActiveSection('MANAGE')} style={[styles.sectionTab,activeSection==='MANAGE'&&styles.sectionTabSelected]}>
-          <Text style={[styles.sectionTabText,activeSection==='MANAGE'&&styles.sectionTabTextSelected]}>{t('Gerir')}</Text>
-        </Pressable>:null}
-      </View>:null}
+      </ScrollView>:null}
+      {owner&&activeSection==='MANAGE'?<Text style={styles.manageTitle}>{t('Gerir comunidade')}</Text>:null}
       {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('O espaço da comunidade')}</Text>
         <Text style={styles.muted}>{t('Encontra os próximos jogos, acompanha a conversa e organiza a tua comunidade.')}</Text>
@@ -343,7 +349,7 @@ const styles=StyleSheet.create({
   audienceHint:{color:C.muted,fontSize:12,lineHeight:17},
   identityCard:{backgroundColor:'#082D3A',borderWidth:1,borderColor:'#37CBB366',borderRadius:22,padding:19,gap:14,overflow:'hidden'},
   identityHeading:{flexDirection:'row',alignItems:'center',gap:14,minWidth:0},
-  identityMark:{width:69,height:69,borderRadius:19,borderWidth:1,borderColor:'#4AE4C47F',backgroundColor:'#0F615F',alignItems:'center',justifyContent:'center'},
+  identityMark:{width:69,height:69,borderRadius:19,borderWidth:1,borderColor:'#4AE4C47F',backgroundColor:'#0F615F',alignItems:'center',justifyContent:'center',overflow:'hidden'},
   identityInitial:{color:'#C5FFEE',fontSize:30,fontWeight:'900'},
   identityCopy:{flex:1,minWidth:0,gap:5},
   identityStatus:{fontSize:12,fontWeight:'700',color:'#90E9D4'},
@@ -356,7 +362,9 @@ const styles=StyleSheet.create({
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},
   heading:{flexShrink:1,color:C.white,fontSize:25,fontWeight:'900',lineHeight:30},subtitle:{color:C.muted,fontSize:14,lineHeight:21},
   section:{padding:16,borderRadius:18,backgroundColor:'#092D3B',borderWidth:1,borderColor:'#3BC8B344',gap:13},
-  sectionNav:{flexDirection:'row',flexWrap:'wrap',gap:7,padding:6,borderRadius:15,backgroundColor:'#061F2C',borderWidth:1,borderColor:C.border},
+  sectionNav:{flexGrow:0,borderRadius:15,backgroundColor:'#061F2C',borderWidth:1,borderColor:C.border},sectionNavContent:{flexDirection:'row',gap:7,padding:6},
+  manageButton:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:'#4AE4C47F',alignItems:'center',justifyContent:'center',alignSelf:'flex-start'},manageButtonOn:{backgroundColor:C.mint,borderColor:C.mint},
+  manageTitle:{color:C.white,fontSize:18,fontWeight:'900'},identityPhoto:{width:'100%',height:'100%'},
   sectionTab:{minHeight:44,paddingHorizontal:12,justifyContent:'center',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:'#235460',backgroundColor:'#092F3D'},
   sectionTabSelected:{backgroundColor:C.mint,borderColor:C.mint},
   sectionTabText:{fontSize:12,fontWeight:'800',color:'#C4E1DF'},sectionTabTextSelected:{color:'#052C30'},

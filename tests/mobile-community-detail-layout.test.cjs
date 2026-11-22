@@ -18,7 +18,8 @@ test('community mobile detail has accessibly labelled dashboard navigation',()=>
  assert.match(src,/accessibilityLabel="Secções da comunidade"/);
  for(const tab of ['OVERVIEW','SESSIONS','CHAT','MEMBERS'])
   assert.match(src,new RegExp("id:'"+tab+"'"));
- assert.match(src,/owner\?<Pressable accessibilityRole="tab" accessibilityState=\{\{selected:activeSection==='MANAGE'\}\}/);
+ // Managing is a gear button in the header (organizers only), so the tabs fit on one line.
+ assert.match(src,/owner\?<Pressable accessibilityRole="button" accessibilityLabel="Gerir comunidade" accessibilityState=\{\{selected:activeSection==='MANAGE'\}\}/);
  assert.match(src,/setActiveSection\('OVERVIEW'\)/);
 });
 test('community private data stays protected and main content keeps its existing flows',()=>{
@@ -44,7 +45,7 @@ test('public community joining stays available without exposing member-only navi
  const src=read('app/communities/[id].tsx');
  assert.match(src,/!role&&auth\.token&&community\.visibility==='PUBLIC'/);
  assert.match(src,/!role&&auth\.token&&community\.visibility==='PRIVATE'/);
- assert.match(src,/\{role\?<View style=\{styles\.sectionNav\}/);
+ assert.match(src,/\{role\?<ScrollView horizontal showsHorizontalScrollIndicator=\{false\} style=\{styles\.sectionNav\}/);
  assert.match(src,/teamDestination&&!role&&myRequest/);
  assert.ok(resetsInclude(src,['setCommunity(null)','setSessions([])']));
 });
