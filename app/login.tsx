@@ -83,9 +83,9 @@ export default function LoginScreen(){
      </Pressable>:null}
      <Text style={styles.separator}>{t('ou entra com utilizador e palavra-passe')}</Text>
      <TextInput style={styles.input} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted}
-       value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username"/>
+       value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username" testID="login-username"/>
      <TextInput style={styles.input} placeholder={t('Palavra-passe')} placeholderTextColor={C.muted}
-       value={password} onChangeText={setPassword} secureTextEntry autoComplete="password"/>
+       value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" testID="login-password"/>
      <Button title={busy?t('A entrar…'):t('Entrar')} onPress={()=>{void doLogin();}}
        disabled={busy||!username.trim()||!password}/>
      <Text style={styles.sub}>{t('Se for a tua primeira vez com Google, concluis o registo Jynlo na aplicação. Poderá ser necessária verificação MFA.')}</Text>
