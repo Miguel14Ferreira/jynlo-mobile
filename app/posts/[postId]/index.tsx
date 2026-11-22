@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
+import {KeyboardFrame,useKeyboardReveal} from '../../../src/components/KeyboardFrame';
 import {t} from '../../../src/lib/i18n';
 import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -34,6 +35,7 @@ export default function NotificationPost(){
  const [loading,setLoading]=useState(true),[commentsLoading,setCommentsLoading]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const generation=useRef(0),writing=useRef(false);
+ const keyboard=useKeyboardReveal();
  const refresh=useCallback(async(version:number)=>{
   if(!valid||!auth.token)return;
   const [postResult,commentResult]=await Promise.allSettled([
@@ -135,7 +137,9 @@ export default function NotificationPost(){
  if(!valid)return <SafeAreaView style={styles.screen}><Text style={styles.error}>{t('Publicação inválida.')}</Text></SafeAreaView>;
  const album=post?postMediaItems(post):[];
  return <SafeAreaView style={styles.screen} edges={['bottom','left','right']}>
-  <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+  <KeyboardFrame style={{flex:1}}>
+  <View ref={keyboard.frameRef} style={{flex:1}} collapsable={false}>
+  <ScrollView ref={keyboard.scrollRef} onScroll={keyboard.onScroll} scrollEventThrottle={50} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
    {loading?<ActivityIndicator color={T.accent}/>:null}
    {error?<Text style={styles.error}>{error}</Text>:null}
    {!auth.token?<Pressable onPress={()=>router.push('/login')} accessibilityRole="button"><Text style={styles.link}>{t('Iniciar sessão para consultar a publicação')}</Text></Pressable>:null}
@@ -214,6 +218,8 @@ export default function NotificationPost(){
     </Pressable>
    </View>:null}
   </ScrollView>
+  </View>
+  </KeyboardFrame>
   <ReportSheet visible={!!reportTarget&&!!post} title={reportTarget?.kind==='comment'?t('Denunciar comentário'):t('Denunciar publicação')}
    subject={reportTarget?.kind==='comment'?t('Comentário de @{v}',{v:reportTarget.author}):post?t('Publicação de @{v}',{v:post.authorUsername}):''}
    onClose={()=>setReportTarget(null)}

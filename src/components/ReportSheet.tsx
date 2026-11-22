@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {REPORT_REASONS,composeReportReason,type ReportReasonId} from '../lib/report-reasons.cjs';
@@ -24,7 +25,7 @@ export function ReportSheet({visible,title,subject,onSubmit,onClose,inline=false
   catch(e){setError((e instanceof Error?e.message:t('Não foi possível enviar a denúncia.'))+' '+t('Se já tinhas enviado, não precisas de repetir.'));}
   finally{inFlight.current=false;setBusy(false);}
  }
- const body=<View style={styles.backdrop}>
+ const body=<KeyboardFrame style={styles.backdrop}>
   <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('Fechar denúncia')} onPress={busy?undefined:onClose}/>
   <View style={styles.sheet} accessibilityViewIsModal>
    <Text style={styles.title}>{title}</Text>
@@ -49,7 +50,7 @@ export function ReportSheet({visible,title,subject,onSubmit,onClose,inline=false
     <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>{t('Cancelar')}</Text></Pressable>
    </ScrollView>}
   </View>
- </View>;
+ </KeyboardFrame>;
  if(inline)return <View style={[StyleSheet.absoluteFill,{zIndex:20}]}>{body}</View>;
  return <Modal visible transparent animationType="fade" onRequestClose={busy?()=>{}:onClose}>{body}</Modal>;
 }

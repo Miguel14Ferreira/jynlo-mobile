@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
-import {Alert,Image,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Image,Keyboard,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import type {FeedItem,MobileMedia} from '../lib/types';
 import {editPost,replacePostMedia} from '../lib/social-feed-api';
@@ -117,7 +118,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  }
  return <Modal visible={visible} animationType="slide" onRequestClose={close}>
   <SafeAreaView style={styles.screen}>
-  <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
+  <KeyboardFrame style={styles.keyboardFrame}>
    <View style={styles.header}>
     <Text style={styles.heading}>{t('Editar publicação')}</Text>
     <CloseIconButton onPress={close} label={t('Fechar edição da publicação')} disabled={busy} color={C.text}/>
@@ -161,7 +162,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
     disabled={!changed||busy||picking} style={[styles.save,(!changed||busy||picking)&&styles.disabled]}>
     <Text style={styles.saveText}>{busy?t('A guardar…'):t('Guardar alterações')}</Text>
    </Pressable>
-  </KeyboardAvoidingView>
+  </KeyboardFrame>
   </SafeAreaView>
  </Modal>;
 }

@@ -22,15 +22,15 @@ test('shared form pages provide keyboard avoidance and scrollable content',()=>{
 });
 test('posts, stories, comments, and story replies keep content above keyboard',()=>{
  const source=read('app/(tabs)/index.tsx');
- assert.match(source,/KeyboardAvoidingView/);
+ assert.match(source,/KeyboardFrame/);
  assert.match(source,/visible=\{identityMatches&&composerOpen\}/);
  assert.match(source,/visible=\{identityMatches&&storyComposer\}/);
  assert.match(source,/visible=\{identityMatches&&expandedComments!==null\}/);
- assert.ok((source.match(/KeyboardAvoidingView/g)||[]).length>=8,'four separate keyboard-aware wrappers');
+ assert.ok((source.match(/<KeyboardFrame /g)||[]).length>=4,'four separate keyboard-aware wrappers');
 });
 test('editing a post is keyboard-aware',()=>{
  const source=read('src/components/PostEditSheet.tsx');
- assert.match(source,/KeyboardAvoidingView/);
+ assert.match(source,/<KeyboardFrame style=\{styles\.keyboardFrame\}>/);
  assert.match(source,/keyboardDismissMode="on-drag"/);
 });
 
@@ -66,4 +66,13 @@ test('long forms scroll the actual focused input above the keyboard',()=>{
  assert.match(source,/Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillHide':'keyboardDidHide'/);
  // Android: extra bottom space so mid-form inputs stay reachable above the keyboard.
  assert.match(source,/keyboardHeight>0&&\{paddingBottom:keyboardHeight\+\d+\}/);
+});
+
+test('sheets, dialogs and post comments keep the focused field above the keyboard',()=>{
+ for(const file of ['src/components/AttendanceHistory.tsx','src/components/ReportSheet.tsx','src/components/PollComposer.tsx','src/components/CallChatSidePanel.tsx','app/posts/[postId]/index.tsx'])
+  assert.match(read(file),/<KeyboardFrame/,file);
+ assert.match(read('app/posts/[postId]/index.tsx'),/ref=\{keyboard\.scrollRef\} onScroll=\{keyboard\.onScroll\}/);
+ const frame=read('src/components/KeyboardFrame.tsx');
+ assert.match(frame,/export function useKeyboardReveal\(\)/);
+ assert.match(frame,/keyboardOverlap\(y,height,top\)/);
 });
