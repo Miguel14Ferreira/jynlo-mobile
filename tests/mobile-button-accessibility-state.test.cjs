@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/UI.tsx'),'utf8'));
 test('shared mobile buttons announce disabled state to assistive technology',()=>{
- assert.match(source,/accessibilityRole="button" accessibilityState=\{\{disabled\}\} onPress=\{onPress\} disabled=\{disabled\}/);
+ assert.match(source,/accessibilityRole="button" accessibilityState=\{\{disabled\}\} onPress=\{\(\)=>\{markUserAction\(\);onPress\(\);\}\} disabled=\{disabled\}/);
  assert.match(source,/\(pressed\|\|disabled\)&&\{opacity:0\.65\}/);
 });
 
