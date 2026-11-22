@@ -88,6 +88,8 @@ test('Play corrective build disables native shrinking without weakening API or p
   const properties=built.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-build-properties')[1].android;
   assert.equal(properties.enableMinifyInReleaseBuilds,false);
   assert.equal(properties.enableShrinkResourcesInReleaseBuilds,false);
+  // Play splits per device; store bundles keep every ABI.
+  assert.equal(properties.buildArchs,undefined);
   assert.equal(built.android.package,'com.jynlo.app');
   assert.equal(built.extra.eas.projectId,'5628b5c4-513a-4b82-b0fb-7a50cace5cb6');
  }finally{
@@ -110,4 +112,17 @@ test('preview APK disables R8 after confirmed WorkManager WorkDatabase startup c
  assert.equal(preview.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
  assert.equal(diagnostic.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
  assert.equal(production.env?.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,undefined);
+});
+
+test('test APKs ship only the ARM ABIs real phones use',()=>{
+ const config=require('../app.config.js');
+ const oldProfile=process.env.EAS_BUILD_PROFILE;
+ try{
+  process.env.EAS_BUILD_PROFILE='preview';
+  const built=config({config:{plugins:[],android:{package:'com.jynlo.app'},extra:{}}});
+  const properties=built.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-build-properties')[1].android;
+  assert.deepEqual(properties.buildArchs,['arm64-v8a','armeabi-v7a']);
+ }finally{
+  if(oldProfile===undefined)delete process.env.EAS_BUILD_PROFILE;else process.env.EAS_BUILD_PROFILE=oldProfile;
+ }
 });
