@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
+import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
-import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Modal,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
 import {encodePoll,POLL_MAX_OPTION,POLL_MAX_OPTIONS,POLL_MAX_QUESTION} from '../lib/chat-poll.cjs';
 
@@ -14,7 +15,7 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
   onSend(text);
  }
  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-  <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.overlay}>
+  <KeyboardFrame style={styles.overlay}>
    <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('Fechar')}/>
    <View style={styles.sheet}>
     <Text style={styles.title}>{t('📊 Criar sondagem')}</Text>
@@ -35,7 +36,7 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
     {invalid?<Text style={styles.error}>{t('Escreve a pergunta e pelo menos 2 opções diferentes.')}</Text>:null}
     <Pressable accessibilityRole="button" onPress={submit} style={styles.send}><Text style={styles.sendText}>{t('Enviar sondagem')}</Text></Pressable>
    </View>
-  </KeyboardAvoidingView>
+  </KeyboardFrame>
  </Modal>;
 }
 const styles=StyleSheet.create({

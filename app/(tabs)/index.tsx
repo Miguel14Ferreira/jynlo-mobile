@@ -1,6 +1,7 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {KeyboardFrame} from '../../src/components/KeyboardFrame';
 import {currentLocale,t} from '../../src/lib/i18n';
-import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Keyboard,KeyboardAvoidingView,Linking,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Keyboard,Linking,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Redirect,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -268,7 +269,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     delayLongPress:250
   });
   return <Modal visible transparent={false} animationType="fade" onRequestClose={safeClose}>
-    <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':'height'}>
+    <KeyboardFrame style={{flex:1}}>
     <SafeAreaView style={styles.storyOverlay}
       onTouchStart={event=>{touchStartY.current=event.nativeEvent.pageY;}}
       onTouchEnd={event=>{
@@ -390,7 +391,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       </View>:null}
       {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar a minha Story')} disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>{t('Eliminar Story')}</Text></Pressable>:null}
     </SafeAreaView>
-    </KeyboardAvoidingView>
+    </KeyboardFrame>
   </Modal>;
 }
 export default function JynloFeedHome(){
@@ -1482,7 +1483,7 @@ export default function JynloFeedHome(){
     <PostImageLightbox key={expandedPostImage?.uris[expandedPostImage.index]||'closed'}
       photos={identityMatches?expandedPostImage:null} onClose={()=>setExpandedPostImage(null)}/>
     <Modal visible={identityMatches&&expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
-      <KeyboardAvoidingView style={styles.commentsModal} behavior={Platform.OS==='ios'?'padding':'height'}>
+      <KeyboardFrame style={styles.commentsModal}>
         <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel={t('Fechar comentários')} onPress={closeComments}/>
         <SafeAreaView edges={['bottom']} style={styles.commentsSheet}>
           <View style={styles.commentsHandle}/>
@@ -1523,7 +1524,7 @@ export default function JynloFeedHome(){
           subject={reportTarget?t('Comentário de @{v}',{v:reportTarget.author}):''} onClose={()=>setReportTarget(null)}
           onSubmit={async reason=>{const target=reportTarget;if(!target||target.kind!=='comment'||!auth.token)return;
             await reportComment(target.postId,target.commentId,reason,auth.token);}}/>
-      </KeyboardAvoidingView>
+      </KeyboardFrame>
     </Modal>
     <ReportSheet visible={reportTarget?.kind==='post'} title={t('Denunciar publicação')}
       subject={reportTarget?t('Publicação de @{v}',{v:reportTarget.author}):''} onClose={()=>setReportTarget(null)}
@@ -1595,7 +1596,7 @@ export default function JynloFeedHome(){
       }}/>
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
-        <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
+        <KeyboardFrame style={{flex:1,gap:17}}>
         <View style={styles.composerTopBar}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar nova publicação')} disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable>
           <View style={{flex:1,alignItems:'center'}}><Text style={styles.composerTopTitle}>{t('Nova publicação')}</Text>{composerSessionId?<Text style={styles.storiesIntro}>{t('Recordação do jogo · sessão {v}',{v:composerSessionId})}</Text>:null}</View>
@@ -1692,13 +1693,13 @@ export default function JynloFeedHome(){
         </ScrollView>
 
         {publishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>{t('A enviar para a Jynlo. Mantém este ecrã aberto; a publicação só será confirmada quando o servidor responder.')}</Text>:null}
-        </KeyboardAvoidingView>
+        </KeyboardFrame>
       </SafeAreaView>
     </Modal>
 
     <Modal visible={identityMatches&&storyComposer} animationType="slide" onRequestClose={closeStoryComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
-        <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
+        <KeyboardFrame style={{flex:1,gap:17}}>
         <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>{t('Criar Story')}</Text><Text style={styles.storiesIntro}>{t('Uma fotografia ou vídeo visível durante 24 horas.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Fechar criação de Story')} disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
         <ScrollView ref={storyComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
@@ -1876,7 +1877,7 @@ export default function JynloFeedHome(){
           <View style={styles.publishButtonContent}>{storyPublishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{storyPublishing?t('A enviar Story…'):t('Publicar Story')}</Text></View>
         </Pressable>
         {storyPublishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>{t('A enviar para a Jynlo. Não feches este ecrã até receberes a confirmação.')}</Text>:null}
-        </KeyboardAvoidingView>
+        </KeyboardFrame>
       </SafeAreaView>
     </Modal>
   </SafeAreaView>;

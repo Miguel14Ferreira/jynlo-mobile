@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
@@ -83,7 +84,7 @@ function DisputeSheet({item,token,onClose,onSent}:{item:AttendanceHistoryItem|nu
   finally{inFlight.current=false;setBusy(false);}
  }
  return <Modal visible transparent animationType="fade" onRequestClose={busy?()=>{}:onClose}>
-  <View style={styles.backdrop}>
+  <KeyboardFrame style={styles.backdrop}>
    <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('Fechar contestação')} onPress={busy?undefined:onClose}/>
    <View style={styles.sheet} accessibilityViewIsModal>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:12}}>
@@ -101,7 +102,7 @@ function DisputeSheet({item,token,onClose,onSent}:{item:AttendanceHistoryItem|nu
      <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>{t('Cancelar')}</Text></Pressable>
     </ScrollView>
    </View>
-  </View>
+  </KeyboardFrame>
  </Modal>;
 }
 const styles=StyleSheet.create({

@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
-import {ActivityIndicator,AppState,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,AppState,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {C} from '../lib/theme';
 import {directChatHistory,sendDirectChat,type DirectChatEntry} from '../lib/chat-api';
@@ -157,7 +158,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   }
  }
  if(!visible)return null;
- return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined}
+ return <KeyboardFrame
   style={[styles.container,wide?styles.wide:styles.narrow]} accessibilityLabel={t('Chat da chamada')}>
   <View style={styles.header}>
    <View style={styles.avatar}><Text style={styles.avatarLetter}>{peer.slice(0,1).toUpperCase()}</Text></View>
@@ -221,7 +222,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
     <Text style={styles.sendText}>{sending?'…':t('Enviar')}</Text>
    </Pressable>
   </View>
- </KeyboardAvoidingView>;
+ </KeyboardFrame>;
 }
 const styles=StyleSheet.create({
  container:{gap:10,borderRadius:16,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,padding:12,minWidth:0},
