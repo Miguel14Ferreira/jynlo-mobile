@@ -213,6 +213,7 @@ export default function ProfileScreen(){
     <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
     <Button title={t('As minhas sessões')} secondary onPress={()=>router.push('/my-sessions')}/>
     <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
+    <Button title={t('Enviar opinião ou reportar problema')} secondary onPress={()=>router.push('/feedback')}/>
     {!auth.username?<><Button title={DEMO_MODE?t('Experimentar conta de demonstração'):t('Iniciar sessão')} onPress={()=>router.push('/login')}/><Button title={t('Voltar às boas-vindas')} secondary onPress={()=>router.push('/welcome')}/></>:
       <Button title={t('Terminar sessão')} secondary onPress={()=>{void auth.logout().then(
         ()=>router.replace('/welcome'),

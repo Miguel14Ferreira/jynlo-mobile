@@ -3,7 +3,7 @@ import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/Po
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
 import React,{useCallback,useRef,useState} from 'react';
-import {Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -11,7 +11,8 @@ import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page,SessionCard} from '.
 import {DEMO_MODE} from '../../src/lib/api';
 import {
   acceptCommunityRequest,communityDetails,communitySessions,communityFollowState,setCommunityFollow,inviteCommunityMember,
-  joinPublicCommunity,myPendingCommunityRequest,pendingCommunityRequests,requestCommunityMembership
+  joinPublicCommunity,myPendingCommunityRequest,pendingCommunityRequests,requestCommunityMembership,
+  rejectCommunityRequest,leaveCommunity,removeCommunityMember,setCommunityMemberRole,transferCommunityOwnership
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
@@ -192,6 +193,56 @@ export default function CommunityDetailScreen(){
       if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível aprovar o pedido.'));
     }finally{if(version===generation.current)setBusy(false);}
   }
+  /** Runs one member-management change, then reloads the community. */
+  async function memberAction(run:()=>Promise<unknown>,done:string,fallback:string,afterLeave=false){
+    if(!auth.token||!auth.username||busy)return;
+    const version=generation.current;
+    setBusy(true);setError('');
+    try{
+      await run();
+      if(version!==generation.current)return;
+      if(afterLeave){router.back();return;}
+      await reload(version);
+      if(version===generation.current)setNotice(done);
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:fallback);
+    }finally{if(version===generation.current)setBusy(false);}
+  }
+  function rejectRequest(requestId:number,requester:string){
+    Alert.alert(t('Recusar pedido?'),t('@{a} não vai entrar na comunidade.',{a:requester}),[
+      {text:t('Cancelar'),style:'cancel'},
+      {text:t('Recusar'),style:'destructive',onPress:()=>{void memberAction(()=>rejectCommunityRequest(id,requestId,auth.token!,auth.username!),t('Pedido recusado.'),t('Não foi possível recusar o pedido.'));}}
+    ]);
+  }
+  function confirmLeave(){
+    Alert.alert(t('Sair da comunidade?'),t('Deixas de ver as sessões e o chat desta comunidade. Podes voltar a pedir para entrar.'),[
+      {text:t('Cancelar'),style:'cancel'},
+      {text:t('Sair'),style:'destructive',onPress:()=>{void memberAction(()=>leaveCommunity(id,auth.token!,auth.username!),'',t('Não foi possível sair da comunidade.'),true);}}
+    ]);
+  }
+  function manageMember(m:{username:string;role?:string|null}){
+    if(!auth.token||!auth.username)return;
+    const token=auth.token,me=auth.username,name='@'+m.username;
+    const options:{text:string;style?:'cancel'|'destructive';onPress?:()=>void}[]=[];
+    if(role==='OWNER'){
+      if(m.role==='ADMIN')options.push({text:t('Tirar administrador'),onPress:()=>{void memberAction(()=>setCommunityMemberRole(id,m.username,'MEMBER',token,me),t('{a} já não é administrador.',{a:name}),t('Não foi possível alterar o papel.'));}});
+      else options.push({text:t('Tornar administrador'),onPress:()=>{void memberAction(()=>setCommunityMemberRole(id,m.username,'ADMIN',token,me),t('{a} é agora administrador.',{a:name}),t('Não foi possível alterar o papel.'));}});
+      options.push({text:t('Passar a organização'),onPress:()=>{
+        Alert.alert(t('Passar a organização a {a}?',{a:name}),t('Passas a ser administrador e {a} fica como organizador da comunidade.',{a:name}),[
+          {text:t('Cancelar'),style:'cancel'},
+          {text:t('Passar'),style:'destructive',onPress:()=>{void memberAction(()=>transferCommunityOwnership(id,m.username,token,me),t('{a} é agora o organizador.',{a:name}),t('Não foi possível passar a organização.'));}}
+        ]);
+      }});
+    }
+    if(role==='OWNER'||(role==='ADMIN'&&m.role==='MEMBER'))options.push({text:t('Remover da comunidade'),style:'destructive',onPress:()=>{
+      Alert.alert(t('Remover {a}?',{a:name}),t('Deixa de ter acesso às sessões e ao chat da comunidade.'),[
+        {text:t('Cancelar'),style:'cancel'},
+        {text:t('Remover'),style:'destructive',onPress:()=>{void memberAction(()=>removeCommunityMember(id,m.username,token,me),t('{a} foi removido.',{a:name}),t('Não foi possível remover o membro.'));}}
+      ]);
+    }});
+    options.push({text:t('Cancelar'),style:'cancel'});
+    Alert.alert(name,undefined,options);
+  }
   async function share(){
     if(!owner||!community)return;
     if(DEMO_MODE){setNotice(t('Na demonstração, os convites funcionam entre Tiago e André, sem links para comunidades fictícias.'));return;}
@@ -290,7 +341,13 @@ export default function CommunityDetailScreen(){
             <Text style={styles.memberName}>{m.fullName||m.username}</Text>
             <Text style={styles.muted}>@{m.username}{m.role==='OWNER'?' · '+t('Organizador'):m.role==='ADMIN'?' · '+t('Administrador'):''}</Text>
           </Pressable>
+          {m.username!==auth.username&&m.role!=='OWNER'&&(role==='OWNER'||(role==='ADMIN'&&m.role==='MEMBER'))?
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Gerir @{a}',{a:m.username})} disabled={busy}
+              onPress={()=>manageMember(m)} hitSlop={8} style={styles.memberMenu}><Text style={styles.memberMenuText}>⋯</Text></Pressable>:null}
         </View>)}
+        {role==='OWNER'
+          ?<Text style={styles.muted}>{t('Para saíres, passa primeiro a organização a outro membro (toca em ⋯ ao lado do nome).')}</Text>
+          :<Button secondary title={busy?t('A sair…'):t('Sair da comunidade')} disabled={busy} onPress={confirmLeave}/>}
       </View>:null}
       {auth.token && (role ? activeSection==='OVERVIEW' : community.visibility==='PUBLIC')?
         <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
@@ -321,6 +378,7 @@ export default function CommunityDetailScreen(){
         {requests.map(r=><View key={r.id} style={styles.request}>
           <Text style={styles.memberName}>@{r.requesterUsername}</Text>
           <Button title={busy?t('A aprovar…'):t('Aprovar')} disabled={busy} onPress={()=>{void approve(r.id);}}/>
+          <Button secondary title={t('Recusar')} disabled={busy} onPress={()=>rejectRequest(r.id,r.requesterUsername)}/>
         </View>)}
       </View>:null}
       {role&&activeSection==='OVERVIEW'?<View style={styles.section}>
@@ -408,5 +466,6 @@ const styles=StyleSheet.create({
   avatar:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:'#49D8BF66',alignItems:'center',justifyContent:'center',backgroundColor:'#105B5B'},
   avatarText:{fontSize:18,color:C.mint,fontWeight:'800'},memberName:{fontSize:15,color:C.white,fontWeight:'800'},
   muted:{fontSize:14,color:C.muted,lineHeight:21},input:{minHeight:52,paddingHorizontal:14,borderRadius:14,borderWidth:1,borderColor:C.border,backgroundColor:C.background,color:C.white,fontSize:15},
+  memberMenu:{width:40,height:40,borderRadius:20,alignItems:'center',justifyContent:'center',backgroundColor:C.surface2},memberMenuText:{color:C.white,fontSize:20,fontWeight:'900'},
   request:{padding:12,backgroundColor:C.surface2,borderRadius:12,gap:12}
 });
