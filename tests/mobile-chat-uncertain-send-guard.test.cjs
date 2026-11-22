@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const source=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const {uncertainChatSend}=require('../src/lib/chat-send-uncertainty.cjs');
 
 test('an unconfirmed message stays blocked, while a definitive authorization rejection does not',()=>{

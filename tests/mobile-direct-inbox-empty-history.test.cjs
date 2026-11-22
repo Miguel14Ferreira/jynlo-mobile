@@ -1,14 +1,15 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8'));
 
 test('direct inbox retains server-authorized conversations with no latest message',()=>{
  assert.match(source,/const rawPeers=await directConversationPeers\(token\)/);
  assert.match(source,/filterAuthorizedDirectSummaries\(authorized,summaries\)/);
- const helper=fs.readFileSync(path.join(__dirname,'../src/lib/authorized-inbox-summaries.cjs'),'utf8');
+ const helper=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/authorized-inbox-summaries.cjs'),'utf8'));
  assert.match(helper,/if\(!returned\.has\(key\)\&\&typeof peer==='string'\&\&peer\)/);
  assert.doesNotMatch(source,/summaries\.filter\(s=>s\.kind==='direct'&&s\.latestMessageId!=null\)/);
 });

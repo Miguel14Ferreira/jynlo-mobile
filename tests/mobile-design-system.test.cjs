@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -5,9 +6,9 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.join(__dirname,'..');
-const theme=fs.readFileSync(path.join(root,'src/lib/theme.ts'),'utf8');
-const feed=fs.readFileSync(path.join(root,'app/(tabs)/index.tsx'),'utf8');
-const tabs=fs.readFileSync(path.join(root,'app/(tabs)/_layout.tsx'),'utf8');
+const theme=untranslate(fs.readFileSync(path.join(root,'src/lib/theme.ts'),'utf8'));
+const feed=untranslate(fs.readFileSync(path.join(root,'app/(tabs)/index.tsx'),'utf8'));
+const tabs=untranslate(fs.readFileSync(path.join(root,'app/(tabs)/_layout.tsx'),'utf8'));
 
 test('new native tokens keep the original compatibility palette',()=>{
  assert.match(theme,/export const C =/);

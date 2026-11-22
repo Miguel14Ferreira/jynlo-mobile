@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
 
 test('separate post and Story editors scroll their focused fields above keyboard',()=>{
  assert.match(source,/const postComposerScrollRef=useRef<ScrollViewInstance\|null>\(null\)/);
@@ -24,8 +25,8 @@ test('lower post and Story text fields explicitly scroll into view on focus',()=
  }
 });
 test('post media album uses shared icons for reordering without losing file-level controls',()=>{
- assert.match(source,/accessibilityLabel=\{\x60Mover ficheiro \$\{i\+1\} para trás\x60\}/);
- assert.match(source,/accessibilityLabel=\{\x60Mover ficheiro \$\{i\+1\} para a frente\x60\}/);
+ assert.match(source,/accessibilityLabel=\{t\('Mover ficheiro \{n\} para trás',\{n:i\+1\}\)\}/);
+ assert.match(source,/accessibilityLabel=\{t\('Mover ficheiro \{n\} para a frente',\{n:i\+1\}\)\}/);
  assert.match(source,/<JynloIcon name="back" color=\{TEAL\}/);
  assert.match(source,/<JynloIcon name="chevron-right" color=\{TEAL\}/);
  assert.doesNotMatch(source,/<Text style=\{styles\.removeMediaText\}>[←→]<\/Text>/);
@@ -33,7 +34,7 @@ test('post media album uses shared icons for reordering without losing file-leve
 });
 
 test('editing a published post retains focused description and location above keyboard',()=>{
- const edit=fs.readFileSync(path.join(__dirname,'..','src','components','PostEditSheet.tsx'),'utf8');
+ const edit=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','PostEditSheet.tsx'),'utf8'));
  assert.match(edit,/Keyboard\.addListener\(showEvent/);
  assert.match(edit,/return\(\)=>subscription\.remove\(\)/);
  assert.match(edit,/<ScrollView ref=\{editorScrollRef\}/);

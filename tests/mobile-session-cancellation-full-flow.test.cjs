@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {cancellationNotice}=require('../src/lib/session-cancellation-notice.cjs');
-const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 const detail=read('app/sessions/[id].tsx');
 const feed=read('app/(tabs)/index.tsx');
 

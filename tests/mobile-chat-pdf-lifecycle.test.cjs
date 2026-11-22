@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8'));
 
 test('PDF picker cannot attach an old file after changing chat or account',()=>{
  assert.match(source,/const generation=useRef\(0\)/);

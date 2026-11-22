@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 const core=require('../src/lib/session-preset-core.cjs');
 const empty={sport:'',day:'',time:'',city:'',address:'',latitude:null,longitude:null,locationConfirmed:false,maxParticipants:'10',price:'0',
  privateGame:false,password:'',meetingPointInstructions:'',externalConfirmedParticipants:'0',minParticipants:'2',registrationOpeningMode:'IMMEDIATE',

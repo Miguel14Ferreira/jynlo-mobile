@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/participants.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/participants.tsx'),'utf8'));
 test('switching tournament or account clears private enrollment and organizer data',()=>{
  assert.match(source,/const generation=useRef\(0\),readEpoch=useRef\(0\),mutationRef=useRef\(false\),pageRef=useRef\(false\)/);
  assert.match(source,/const version=\+\+generation\.current/);

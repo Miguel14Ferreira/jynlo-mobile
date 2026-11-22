@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -121,8 +122,8 @@ test('internal preview APK is configured against a real API',()=>{
   assert.notEqual(missing.status,0,'preview must reject missing API URL');
 });
 test('EAS preview preflight checks HTTPS without bypassing production release guards',()=>{
-  const workflow=fs.readFileSync(
-    path.join(__dirname,'../.eas/workflows/mobile-preflight.yml'),'utf8');
+  const workflow=untranslate(fs.readFileSync(
+    path.join(__dirname,'../.eas/workflows/mobile-preflight.yml'),'utf8'));
   assert.match(workflow,/EXPO_PUBLIC_JYNLO_API_URL:\s*https:\/\/desporto24-preview-api\.onrender\.com/);
   assert.match(workflow,/JYNLO_REQUIRE_REAL_API:\s*'1'/);
   assert.match(workflow,/run:\s*node scripts\/verify-release\.cjs/);

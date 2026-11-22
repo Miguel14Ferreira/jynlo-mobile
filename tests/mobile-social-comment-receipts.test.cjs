@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {verifiedCommentReceipt}=require('../src/lib/social-comment-receipt.cjs');
-const source=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
 
 const original={id:21,postId:10,authorUsername:'Miguel',content:'Foi um bom jogo!',likedByMe:false,likeCount:2};
 test('creation receipts require the real post author and submitted content',()=>{

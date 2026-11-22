@@ -1,11 +1,12 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
-const video=fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8');
-const image=fs.readFileSync(path.join(__dirname,'../src/components/PostImageLightbox.tsx'),'utf8');
+const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
+const video=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8'));
+const image=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/PostImageLightbox.tsx'),'utf8'));
 
 test('feed and story avatars authorize protected private photos and show initials on failure',()=>{
  const avatar=feed.slice(feed.indexOf('function CircleAvatar('),feed.indexOf('function SectionHeader('));

@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8'));
 
 test('session chat standalone and embedded share measured scroll history',()=>{
  assert.match(source,/\{<ScrollView ref=\{inlineHistoryRef\}/);
@@ -22,7 +23,7 @@ test('standalone session chat uses compact attachments and does not force page b
 });
 
 test('session chat opens newest history once per focus, like the community chat',()=>{
- const community=fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8');
+ const community=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/CommunityChatPanel.tsx'),'utf8'));
  for(const view of [source,community]){
   assert.match(view,/const firstHistoryPositionPending=useRef\(true\)/);
   assert.match(view,/firstHistoryPositionPending\.current=true/);

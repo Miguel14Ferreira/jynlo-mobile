@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8'));
 const focus=screen.slice(screen.indexOf('useFocusEffect(useCallback('),screen.indexOf('function toggleMute()'));
 const send=screen.slice(screen.indexOf('async function send()'),screen.indexOf('async function choosePhoto()'));
 const picker=screen.slice(screen.indexOf('async function choosePhoto('),screen.indexOf('async function uploadPhoto()'));

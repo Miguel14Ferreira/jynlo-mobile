@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {parseFavoriteSports,normalizeCatalog,toggleFavoriteSport,validateFavoriteSports,filterSports}=require('../src/lib/favorite-sports.cjs');
-const editor=fs.readFileSync(path.join(__dirname,'../app/edit-profile.tsx'),'utf8');
+const editor=untranslate(fs.readFileSync(path.join(__dirname,'../app/edit-profile.tsx'),'utf8'));
 test('catalog is authoritative and deduplicated with deterministic sorting',()=>{
  assert.deepEqual(normalizeCatalog(['Karting','Padel','Karting','Futebol']),['Futebol','Karting','Padel']);
  assert.throws(()=>normalizeCatalog([]),/catálogo/);

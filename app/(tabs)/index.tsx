@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {currentLocale,t} from '../../src/lib/i18n';
 import {ActivityIndicator,Alert,Animated,AppState,FlatList,Image,Keyboard,KeyboardAvoidingView,Linking,Modal,Platform,Pressable,RefreshControl,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -46,7 +47,7 @@ type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory
 const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
 const maxPostLength=1000;
 const startLetter=(s:string)=>s.replace(/^@/,'').charAt(0).toUpperCase()||'J';
-const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return 'Recentemente';const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return 'Agora';if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
+const timeAgo=(date:string)=>{const x=Date.parse(date);if(!Number.isFinite(x))return t('Recentemente');const seconds=Math.max(0,Math.floor((Date.now()-x)/1000));if(seconds<60)return t('Agora');if(seconds<3600)return `${Math.floor(seconds/60)} min`;if(seconds<86400)return `${Math.floor(seconds/3600)} h`;return `${Math.floor(seconds/86400)} d`;};
 const mediaSource=(url:string|null|undefined)=>(url?.startsWith('file:')||url?.startsWith('content:'))?url:resolveJynloMedia(url);
 
 const FeedVideo=lazy(()=>import('../../src/components/FeedVideo'));
@@ -192,7 +193,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       audienceRequest.current===requestId;
     try{const result=await storyAudience(id,actor);
       if(stillCurrent())setAudience(result);
-    }catch(e){if(stillCurrent())setAudienceError(e instanceof Error?e.message:'Não foi possível carregar as visualizações.');}
+    }catch(e){if(stillCurrent())setAudienceError(e instanceof Error?e.message:t('Não foi possível carregar as visualizações.'));}
     finally{if(stillCurrent())setAudienceBusy(false);}
   };
   const sendQuickReaction=async(emoji:string)=>{
@@ -201,8 +202,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     const id=story.id,actor=token,operation=++storyMutationEpoch.current;
     const current=()=>activeAccount.current===actor&&storyMutationEpoch.current===operation;
     try{await replyToStory(id,emoji,actor,username);
-      if(current()&&activeStoryIdRef.current===id)Alert.alert('Reação enviada',emoji+' A reação foi enviada em privado ao autor.');
-    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Reação',e instanceof Error?e.message:'Não foi possível confirmar a reação.');}
+      if(current()&&activeStoryIdRef.current===id)Alert.alert(t('Reação enviada'),emoji+' '+t('A reação foi enviada em privado ao autor.'));
+    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert(t('Reação'),e instanceof Error?e.message:t('Não foi possível confirmar a reação.'));}
     finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   };
   async function toggleLike(){
@@ -211,7 +212,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
     const id=story.id,actor=token,operation=++storyMutationEpoch.current;
     const current=()=>activeAccount.current===actor&&storyMutationEpoch.current===operation;
     try{const updated=await toggleStoryLike(id,Boolean(story.likedByMe),actor,username);if(current()&&activeStoryIdRef.current===id)onUpdated(updated);}
-    catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Gosto na Story',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');}
+    catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert(t('Gosto na Story'),e instanceof Error?e.message:t('Não foi possível atualizar o gosto.'));}
     finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   }
   async function sendReply(){
@@ -224,17 +225,17 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       await replyToStory(id,message,actor,username);
       if(!current()||activeStoryIdRef.current!==id)return;
       setReplyText(value=>value.trim()===message?'':value);
-      Alert.alert('Resposta enviada','A tua resposta ficou guardada em privado. O autor recebe um aviso se tiver as notificações ativadas.');
-    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert('Resposta à Story',e instanceof Error?e.message:'Não foi possível confirmar a resposta. Verifica antes de repetires.');}
+      Alert.alert(t('Resposta enviada'),t('A tua resposta ficou guardada em privado. O autor recebe um aviso se tiver as notificações ativadas.'));
+    }catch(e){if(current()&&activeStoryIdRef.current===id)Alert.alert(t('Resposta à Story'),e instanceof Error?e.message:t('Não foi possível confirmar a resposta. Verifica antes de repetires.'));}
     finally{if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}}
   }
   function confirmDeleteStory(){
     if(!story||!story.canDelete||!token||submittingStory.current)return;
     const storyId=story.id,actorToken=token;
     pauseProgress();
-    Alert.alert('Eliminar Story?', 'Esta Story será removida antes das 24 horas. A ação é definitiva.', [
-      {text:'Cancelar',style:'cancel',onPress:()=>setPaused(false)},
-      {text:'Eliminar',style:'destructive',onPress:()=>{
+    Alert.alert(t('Eliminar Story?'), t('Esta Story será removida antes das 24 horas. A ação é definitiva.'), [
+      {text:t('Cancelar'),style:'cancel',onPress:()=>setPaused(false)},
+      {text:t('Eliminar'),style:'destructive',onPress:()=>{
         // A confirmation opened by an old account or Story is no longer valid.
         if(submittingStory.current||activeAccount.current!==actorToken||activeStoryIdRef.current!==storyId)return;
         submittingStory.current=true;setStoryBusy(true);
@@ -243,7 +244,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         void deleteStory(storyId,actorToken).then(()=>{
           if(current()&&activeStoryIdRef.current===storyId){onClose();onDeleted();}
         }).catch(e=>{
-          if(current()&&activeStoryIdRef.current===storyId)Alert.alert('Story',e instanceof Error?e.message:'Não foi possível confirmar a eliminação.');
+          if(current()&&activeStoryIdRef.current===storyId)Alert.alert(t('Story'),e instanceof Error?e.message:t('Não foi possível confirmar a eliminação.'));
         }).finally(()=>{
           if(current()){submittingStory.current=false;setStoryBusy(false);setPaused(false);}
         });
@@ -253,8 +254,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
   async function shareStory(){
     if(!story||submittingStory.current)return;
     pauseProgress();
-    try{await Share.share({message:[`Story de ${story.displayName} na Jynlo`,story.caption?.trim(),uri?.startsWith('https://')?uri:null].filter(Boolean).join('\n')});}
-    catch(e){Alert.alert('Partilhar Story',e instanceof Error?e.message:'Não foi possível partilhar.');}
+    try{await Share.share({message:[t('Story de {name} na Jynlo',{name:story.displayName}),story.caption?.trim(),uri?.startsWith('https://')?uri:null].filter(Boolean).join('\n')});}
+    catch(e){Alert.alert(t('Partilhar Story'),e instanceof Error?e.message:t('Não foi possível partilhar.'));}
     finally{setPaused(false);}
   }
   const tapZone=(direction:-1|1)=>({
@@ -277,7 +278,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{if(submittingStory.current||replyFocused||!appActive)return;resetProgress();setIndex(i);}} style={styles.progressPart}>
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
-      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel="Fechar Story"><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
+      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel={t('Fechar Story')}><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?
         <MediaVideo key={story.id+'-'+mediaRetry} uri={uri} story muted={storyMuted}
           paused={paused||replyFocused||reactionsOpen||storyBusy||audienceOpen||!appActive||mediaState==='error'}
@@ -286,15 +287,15 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         <Image key={story.id+'-'+mediaRetry} source={mediaRequestSource(uri,token)}
           resizeMode="contain" style={styles.storyImage}
           onLoad={mediaReady} onError={mediaFailed}
-          accessibilityLabel={story.altText||story.caption||'Fotografia da Story'}/>):null}
+          accessibilityLabel={story.altText||story.caption||t('Fotografia da Story')}/>):null}
         {mediaState==='loading'&&uri?<View pointerEvents="none" style={styles.storyMediaStatus}>
-          <ActivityIndicator color={WHITE} size="large"/><Text style={styles.storyMediaStatusText}>A carregar Story…</Text>
+          <ActivityIndicator color={WHITE} size="large"/><Text style={styles.storyMediaStatusText}>{t('A carregar Story…')}</Text>
         </View>:null}
         {(!uri||mediaState==='error')?<View style={styles.storyMediaFailure}>
           <JynloIcon name="gallery" size={32} color={TEAL}/>
-          <Text style={styles.storyMediaFailureTitle}>Não foi possível mostrar esta Story</Text>
-          <Text style={styles.storyMediaStatusText}>Verifica a ligação ou tenta carregar novamente.</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Voltar a carregar Story"
+          <Text style={styles.storyMediaFailureTitle}>{t('Não foi possível mostrar esta Story')}</Text>
+          <Text style={styles.storyMediaStatusText}>{t('Verifica a ligação ou tenta carregar novamente.')}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar a carregar Story')}
             style={styles.storyMediaRetry} onPress={()=>{
               setMediaState('loading');setMediaRetry(n=>n+1);
               if(token)void storyById(story.id,token,username).then(fresh=>{
@@ -303,7 +304,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
                 // A failed retry for an earlier Story must never blank the next one.
                 if(activeAccount.current===token&&activeStoryIdRef.current===story.id)setMediaState('error');
               });
-            }}><Text style={styles.storyMediaRetryText}>Tentar novamente</Text></Pressable>
+            }}><Text style={styles.storyMediaRetryText}>{t('Tentar novamente')}</Text></Pressable>
         </View>:null}
         {story.caption?.trim()?(story.textX!=null&&story.textY!=null?
           <StoryTextPlacement caption={story.caption.trim()} geometry={{x:story.textX,y:story.textY,rotation:story.textRotation??0,zoom:story.textZoom??1}}
@@ -311,8 +312,8 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
              reservedTopPx={storyMetadataReservedHeight(story.locationLabel,story.taggedUsernames)}/>:
           <View pointerEvents="none" style={styles.storyCaptionLayer}><Text style={styles.storyCaptionOverlay}>{story.caption.trim()}</Text></View>):null}
         <View style={styles.storyTapZones} pointerEvents={mediaState==='error'||!uri||audienceOpen?'none':'box-none'}>
-          <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel="Story anterior" style={styles.storyTapZone}/>
-          <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel="Story seguinte" style={styles.storyTapZone}/>
+          <Pressable {...tapZone(-1)} accessibilityRole="button" accessibilityLabel={t('Story anterior')} style={styles.storyTapZone}/>
+          <Pressable {...tapZone(1)} accessibilityRole="button" accessibilityLabel={t('Story seguinte')} style={styles.storyTapZone}/>
         </View>
         <StoryDetailsView locationLabel={story.locationLabel} taggedUsernames={story.taggedUsernames} showTime={story.showTime===true} createdAt={story.createdAt}
          onOpenProfile={profile=>{
@@ -322,70 +323,70 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           }
          }}/>
       </View>
-      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text>{viewerHeight>=720?<Text style={styles.storyCount}>Toca para avançar · mantém premido para pausar</Text>:null}</View>
+      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text>{viewerHeight>=720?<Text style={styles.storyCount}>{t('Toca para avançar · mantém premido para pausar')}</Text>:null}</View>
       <View style={styles.storyEngagement}>
-        {ownStory?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"
+        {ownStory?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver quem viu esta Story')}
           disabled={audienceBusy} onPress={()=>void loadAudience()} style={[styles.storyEngagementAction,styles.storyViewsAction]}>
           <JynloIcon name="views" size={19} color={WHITE}/>
-          <Text style={styles.storyEngagementText}>{audience?audience.viewCount+' visualizações':'Ver visualizações'}</Text>
+          <Text style={styles.storyEngagementText}>{audience?t('{n} visualizações',{n:audience.viewCount}):t('Ver visualizações')}</Text>
         </Pressable>:null}
-        {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?'Ativar som do vídeo':'Silenciar vídeo'} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
+        {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?t('Ativar som do vídeo'):t('Silenciar vídeo')} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
           <JynloIcon name={storyMuted?'volume-off':'volume'} color={WHITE} size={21}/>
         </Pressable>:null}
-        <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?'Retirar gosto da Story':'Gostar da Story'} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
+        <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?t('Retirar gosto da Story'):t('Gostar da Story')} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
           <JynloIcon name="like" size={20} color={story.likedByMe?'#FF778C':WHITE} active={story.likedByMe}/><Text style={styles.storyEngagementText}>{story.likeCount||0}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar Story" disabled={storyBusy} onPress={()=>void shareStory()} style={[styles.storyEngagementAction,styles.storyActionWithIcon]}><JynloIcon name="share" color={WHITE} size={19}/><Text style={styles.storyEngagementText}>Partilhar</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar Story')} disabled={storyBusy} onPress={()=>void shareStory()} style={[styles.storyEngagementAction,styles.storyActionWithIcon]}><JynloIcon name="share" color={WHITE} size={19}/><Text style={styles.storyEngagementText}>{t('Partilhar')}</Text></Pressable>
       </View>
       {!ownStory?<View style={styles.storyReplyRow}>
         <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>{progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});setReplyFocused(true);}} onBlur={()=>setReplyFocused(false)}
-          placeholder="Responder em privado à Story…" placeholderTextColor={MUTED} maxLength={500}
-          accessibilityLabel="Resposta privada ao autor da Story" style={styles.storyReplyInput}/>
-        <Pressable accessibilityRole="button" accessibilityLabel="Enviar resposta privada à Story" disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
+          placeholder={t('Responder em privado à Story…')} placeholderTextColor={MUTED} maxLength={500}
+          accessibilityLabel={t('Resposta privada ao autor da Story')} style={styles.storyReplyInput}/>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar resposta privada à Story')} disabled={storyBusy||!replyText.trim()} onPress={()=>void sendReply()} style={styles.storyReplySend}>
           {storyBusy?<ActivityIndicator size="small" color={INDIGO}/>:<JynloIcon name="send" size={21} color={INDIGO}/>}
         </Pressable>
       </View>:null}
       {!ownStory?<View style={styles.storyReactions}>
-        <Pressable accessibilityRole="button" accessibilityLabel={reactionsOpen?'Ocultar reações à Story':'Mostrar reações à Story'}
+        <Pressable accessibilityRole="button" accessibilityLabel={reactionsOpen?t('Ocultar reações à Story'):t('Mostrar reações à Story')}
          accessibilityState={{expanded:reactionsOpen}} disabled={storyBusy} onPress={()=>{if(!reactionsOpen)pauseProgress();else setPaused(false);setReactionsOpen(value=>!value);}}
          style={styles.storyReactionDisclosure}>
          <JynloIcon name="like" color={TEAL} size={18}/>
-         <Text style={styles.storyReactionsTitle}>Reagir em privado</Text>
+         <Text style={styles.storyReactionsTitle}>{t('Reagir em privado')}</Text>
          <JynloIcon name={reactionsOpen?'chevron-up':'chevron-down'} color={TEAL} size={18}/>
         </Pressable>
         {reactionsOpen?<View style={styles.storyReactionRow}>{['❤️','🔥','👏','😂','😮','⚽'].map(emoji=>
-          <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Reagir à Story com '+emoji}
+          <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={t('Reagir à Story com {v}',{v:emoji})}
             disabled={storyBusy} onPress={()=>void sendQuickReaction(emoji)} style={styles.storyReactionButton}>
             <Text style={styles.storyReactionEmoji}>{emoji}</Text>
           </Pressable>)}</View>:null}
       </View>:null}
-      {!ownStory&&viewerHeight>=720?<Text style={styles.storyReplyHint}>O autor pode ver que visualizaste esta Story. As reações e respostas são privadas.</Text>:null}
+      {!ownStory&&viewerHeight>=720?<Text style={styles.storyReplyHint}>{t('O autor pode ver que visualizaste esta Story. As reações e respostas são privadas.')}</Text>:null}
       {audienceOpen&&ownStory?<View style={styles.storyAudiencePanel}>
         <View style={styles.storyAudienceHeader}>
-          <Text style={styles.storyAudienceTitle}>Quem viu a tua Story</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Fechar visualizações"
+          <Text style={styles.storyAudienceTitle}>{t('Quem viu a tua Story')}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar visualizações')}
             onPress={()=>{setAudienceOpen(false);setPaused(false);}} style={styles.storyAudienceClose}>
             <Text style={styles.storyAudienceCloseText}>✕</Text>
           </Pressable>
         </View>
         {audienceBusy?<ActivityIndicator color={TEAL}/>:null}
         {audienceError?<Text accessibilityRole="alert" style={styles.storyMediaStatusText}>{audienceError}</Text>:null}
-        {audience?<Text style={styles.storyAudienceCount}>{audience.viewCount} visualizações únicas</Text>:null}
-        {audience&&audience.viewers.length===0?<Text style={styles.storyMediaStatusText}>Ainda não há visualizações registadas.</Text>:null}
+        {audience?<Text style={styles.storyAudienceCount}>{t('{a} visualizações únicas',{a:audience.viewCount})}</Text>:null}
+        {audience&&audience.viewers.length===0?<Text style={styles.storyMediaStatusText}>{t('Ainda não há visualizações registadas.')}</Text>:null}
         <ScrollView style={styles.storyAudienceScroll} keyboardShouldPersistTaps="handled">
           {audience?.viewers.map(viewer=><Pressable key={viewer.username} accessibilityRole="button"
-            accessibilityLabel={'Abrir perfil de '+viewer.username} style={styles.storyViewerRow}
+            accessibilityLabel={t('Abrir perfil de {v}',{v:viewer.username})} style={styles.storyViewerRow}
             onPress={()=>{onClose();router.push({pathname:'/social/[username]',params:{username:viewer.username}});}}>
             <CircleAvatar name={viewer.displayName||viewer.username} image={viewer.avatarUrl} size={36}/>
             <View style={{flex:1}}><Text style={styles.storyViewerName}>@{viewer.username}</Text>
-              <Text style={styles.storyViewerTime}>{new Date(viewer.viewedAt).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</Text></View>
+              <Text style={styles.storyViewerTime}>{new Date(viewer.viewedAt).toLocaleString(currentLocale(),{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</Text></View>
           </Pressable>)}
         </ScrollView>
         {audience&&audience.viewCount>audience.viewers.length?<Text style={styles.storyMediaStatusText}>
-          A apresentar as 100 visualizações mais recentes disponíveis.
+          {t('A apresentar as 100 visualizações mais recentes disponíveis.')}
         </Text>:null}
       </View>:null}
-      {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha Story" disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>Eliminar Story</Text></Pressable>:null}
+      {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar a minha Story')} disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>{t('Eliminar Story')}</Text></Pressable>:null}
     </SafeAreaView>
     </KeyboardAvoidingView>
   </Modal>;
@@ -452,7 +453,7 @@ export default function JynloFeedHome(){
    let active=true;
    setStoryFriends([]);setStoryFriendsBusy(true);setStoryFriendsError('');
    void storyMentionFriends(auth.token).then(friends=>{if(active)setStoryFriends(friends);})
-    .catch(()=>{if(active)setStoryFriendsError('Não foi possível carregar os amigos. Podes escrever os nomes manualmente.');})
+    .catch(()=>{if(active)setStoryFriendsError(t('Não foi possível carregar os amigos. Podes escrever os nomes manualmente.'));})
     .finally(()=>{if(active)setStoryFriendsBusy(false);});
    return ()=>{active=false;};
   },[storyComposer,auth.token,auth.username]);
@@ -500,7 +501,7 @@ export default function JynloFeedHome(){
       setStoryManagedCommunities(groups.filter(group=>group.visibility==='PUBLIC'&&
         (group.myRole==='OWNER'||group.myRole==='ADMIN')));
     }).catch(()=>{
-      if(active){setStoryManagedCommunities([]);setStoryManagedCommunitiesError('Não foi possível carregar as comunidades disponíveis.');}
+      if(active){setStoryManagedCommunities([]);setStoryManagedCommunitiesError(t('Não foi possível carregar as comunidades disponíveis.'));}
     }).finally(()=>{if(active)setStoryManagedCommunitiesLoading(false);});
     return()=>{active=false;};
   },[storyComposer,auth.token,auth.username]);
@@ -661,15 +662,15 @@ export default function JynloFeedHome(){
         hiddenKeysRef.current=stored;setHiddenKeys(stored);
         hiddenReadyRef.current=true;setHiddenReady(true);
       }else{
-        setError('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.');
+        setError(t('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.'));
       }
     }
     if(fetches[3].status==='rejected'&&!hiddenReadyRef.current)
-      setError('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.');
+      setError(t('Não foi possível ler as publicações ocultadas neste dispositivo. Tenta novamente para proteger as tuas preferências.'));
     else if(fetches[0].status==='rejected')
-      setError('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.');
+      setError(t('Não foi possível atualizar as publicações. O conteúdo apresentado pode estar desatualizado. Tenta novamente.'));
     else if(fetches[1].status==='rejected'||fetches[2].status==='rejected')
-      setError('Não foi possível atualizar as Stories. As Stories apresentadas podem estar desatualizadas. Tenta novamente.');
+      setError(t('Não foi possível atualizar as Stories. As Stories apresentadas podem estar desatualizadas. Tenta novamente.'));
     setLoading(false);
   },[auth.token,auth.username]);
   useFocusEffect(useCallback(()=>{if(!auth.ready||(!auth.token&&!auth.browsingAsGuest))return;void load();return ()=>{reloadNumber.current++;};},[auth.ready,auth.token,auth.browsingAsGuest,load]));
@@ -692,10 +693,10 @@ export default function JynloFeedHome(){
         void mySportsTeams(actor).then(teams=>{
           if(activeStoryAccount.current!==actor||!storyComposerRef.current)return;
           if(teams.some(team=>team.id===requestedId))setStoryPublishTeamId(requestedId);
-          else setStoryPublishError('Já não tens autorização para publicar como esta equipa.');
+          else setStoryPublishError(t('Já não tens autorização para publicar como esta equipa.'));
         }).catch(()=>{
           if(activeStoryAccount.current===actor&&storyComposerRef.current)
-            setStoryPublishError('Não foi possível confirmar a equipa. Escolhe-a novamente.');
+            setStoryPublishError(t('Não foi possível confirmar a equipa. Escolhe-a novamente.'));
         });
       }
     }
@@ -712,12 +713,12 @@ export default function JynloFeedHome(){
       if(activeStoryAccount.current!==actor)return;
       if(game.status!=='COMPLETED'||game.canSharePublicly!==true||
         (!game.joined&&game.creatorUsername?.toLowerCase()!==username.toLowerCase())){
-        setError('Só os participantes ou o organizador podem partilhar momentos de uma sessão pública concluída.');
+        setError(t('Só os participantes ou o organizador podem partilhar momentos de uma sessão pública concluída.'));
         return;
       }
       openPostComposer(gameId);
     }).catch(()=>{
-      if(activeStoryAccount.current===actor)setError('Não foi possível confirmar a sessão para partilhar o momento.');
+      if(activeStoryAccount.current===actor)setError(t('Não foi possível confirmar a sessão para partilhar o momento.'));
     });
   },[momentSession,auth.ready,auth.token,auth.username,router]);
   useEffect(()=>{
@@ -732,7 +733,7 @@ export default function JynloFeedHome(){
         avatar:story.avatarUrl,stories:[story]});
     }).catch(()=>{
       if(activeStoryAccount.current===originalToken)
-        Alert.alert('Story indisponível','Esta Story pode ter expirado ou já não estar acessível.');
+        Alert.alert(t('Story indisponível'),t('Esta Story pode ter expirado ou já não estar acessível.'));
     });
   },[storyId,auth.ready,auth.token,router]);
   // Only render a notification indicator after a successful server-backed count.
@@ -779,7 +780,7 @@ export default function JynloFeedHome(){
     hiddenKeysRef.current=keys;setHiddenKeys(keys);
     void writeHiddenFeedEntries(username,keys).catch(()=>{
       if(feedIdentity.current===identity)
-        setError('A preferência foi aplicada neste ecrã, mas não foi possível guardá-la no telemóvel.');
+        setError(t('A preferência foi aplicada neste ecrã, mas não foi possível guardá-la no telemóvel.'));
     });
   }
   function hideFromFeed(item:FeedItem){
@@ -792,7 +793,7 @@ export default function JynloFeedHome(){
     if(item.type==='POST'&&item.postId){
       const identity=currentFeedIdentity;
       void hideFeedPost(item.postId,auth.token).catch(()=>{
-        if(feedIdentity.current===identity)setError('A publicação ficou oculta neste telemóvel, mas não foi possível guardá-lo na tua conta.');
+        if(feedIdentity.current===identity)setError(t('A publicação ficou oculta neste telemóvel, mas não foi possível guardá-lo na tua conta.'));
       });
     }
   }
@@ -807,13 +808,13 @@ export default function JynloFeedHome(){
     const author=item.authorUsername;
     if(!auth.token||!author)return;
     const token=auth.token;
-    Alert.alert('Bloquear @'+author+'?','Deixas de ver as publicações desta pessoa e ela deixa de te poder contactar. Podes desbloquear no perfil dela.',[
-      {text:'Cancelar',style:'cancel'},
-      {text:'Bloquear',style:'destructive',onPress:()=>{
+    Alert.alert(t('Bloquear @{v}',{v:author})+'?',t('Deixas de ver as publicações desta pessoa e ela deixa de te poder contactar. Podes desbloquear no perfil dela.'),[
+      {text:t('Cancelar'),style:'cancel'},
+      {text:t('Bloquear'),style:'destructive',onPress:()=>{
         void blockUser(author,token).then(()=>{
           setBlockedAuthors(current=>[...new Set([...current,author.toLowerCase()])]);
-          Alert.alert('Bloqueado','Já não vais ver publicações de @'+author+'.');
-        }).catch(e=>Alert.alert('Não foi possível bloquear',e instanceof Error?e.message:'Tenta novamente.'));
+          Alert.alert(t('Bloqueado'),t('Já não vais ver publicações de @{v}',{v:author})+'.');
+        }).catch(e=>Alert.alert(t('Não foi possível bloquear'),e instanceof Error?e.message:t('Tenta novamente.')));
       }}
     ]);
   }
@@ -825,9 +826,9 @@ export default function JynloFeedHome(){
     if(!auth.token||!auth.username||!item.postId||item.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
     setPostMenuItem(null);
     const id=item.postId,actor=auth.token,identity=currentFeedIdentity;
-    Alert.alert('Eliminar publicação?','A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.',[
-      {text:'Cancelar',style:'cancel'},
-      {text:'Eliminar',style:'destructive',onPress:()=>{
+    Alert.alert(t('Eliminar publicação?'),t('A publicação será removida do perfil e do feed. Esta ação não pode ser desfeita.'),[
+      {text:t('Cancelar'),style:'cancel'},
+      {text:t('Eliminar'),style:'destructive',onPress:()=>{
         if(busyPost!==null||postActionInFlight.current||feedIdentity.current!==identity||!actor)return;
         postActionInFlight.current=true;setBusyPost(id);
         void deletePost(id,actor).then(()=>{
@@ -838,7 +839,7 @@ export default function JynloFeedHome(){
             recentlyConfirmedPosts.current=recentlyConfirmedPosts.current.filter(entry=>entry.item.postId!==id);
             setPosts(old=>old.filter(x=>x.postId!==id));
           }
-        }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.');})
+        }).catch(()=>{if(feedIdentity.current===identity)setError(t('Não foi possível confirmar a eliminação. Atualiza o feed antes de repetir.'));})
         .finally(()=>{if(feedIdentity.current===identity){postActionInFlight.current=false;setBusyPost(null);}});
       }}
     ]);
@@ -854,21 +855,21 @@ export default function JynloFeedHome(){
         if(key)confirmedRemovedFeedKeys.current.add(key);
         setPosts(old=>old.filter(x=>!(x.type==='SESSION_ATTENDED'&&x.sessionId===id&&x.authorUsername===item.authorUsername)));
       }
-    }).catch(()=>{if(feedIdentity.current===identity)setError('Não foi possível ocultar a atividade no servidor.');})
+    }).catch(()=>{if(feedIdentity.current===identity)setError(t('Não foi possível ocultar a atividade no servidor.'));})
     .finally(()=>{if(feedIdentity.current===identity){postActionInFlight.current=false;setBusyPost(null);}});
   }
   async function shareFeedSession(item:FeedItem){
     if(!Number.isSafeInteger(item.sessionId)||!item.sessionId||item.sessionId<=0)return;
     try{
-      await Share.share({message:[item.sport||'Sessão desportiva',item.city||'',sharedPostLink(item)].filter(Boolean).join(' · ')});
+      await Share.share({message:[item.sport||t('Sessão desportiva'),item.city||'',sharedPostLink(item)].filter(Boolean).join(' · ')});
     }catch(e){
-      Alert.alert('Partilhar sessão',e instanceof Error?e.message:'Não foi possível partilhar a sessão.');
+      Alert.alert(t('Partilhar sessão'),e instanceof Error?e.message:t('Não foi possível partilhar a sessão.'));
     }
   }
 
   async function shareCancelledFeedSession(item:Parameters<typeof cancellationNotice>[0]){
     try{await Share.share({message:cancellationNotice(item)});}
-    catch(e){Alert.alert('Partilhar cancelamento',e instanceof Error?e.message:'Não foi possível abrir a partilha.');}
+    catch(e){Alert.alert(t('Partilhar cancelamento'),e instanceof Error?e.message:t('Não foi possível abrir a partilha.'));}
   }
 
   async function requestCancelFeedSession(item:FeedItem){
@@ -885,13 +886,13 @@ export default function JynloFeedHome(){
       if(feedIdentity.current!==identity)return;
       if(detail.creatorUsername?.toLowerCase()!==username.toLowerCase()||
          (detail.status!=='OPEN'&&detail.status!=='FULL')){
-        Alert.alert('Sessão indisponível','Esta sessão já não pode ser cancelada ou não és o organizador.');
+        Alert.alert(t('Sessão indisponível'),t('Esta sessão já não pode ser cancelada ou não és o organizador.'));
         return;
       }
-      Alert.alert('Cancelar sessão',
-        `Vais cancelar a sessão de ${detail.sport||item.sport||'desporto'} para todos os participantes. Esta ação não pode ser anulada. Confirmas?`,[
-        {text:'Manter sessão',style:'cancel'},
-        {text:'Sim, cancelar sessão',style:'destructive',onPress:()=>{
+      Alert.alert(t('Cancelar sessão'),
+        t('Vais cancelar a sessão de {sport} para todos os participantes. Esta ação não pode ser anulada. Confirmas?',{sport:detail.sport||item.sport||t('desporto')}),[
+        {text:t('Manter sessão'),style:'cancel'},
+        {text:t('Sim, cancelar sessão'),style:'destructive',onPress:()=>{
           if(feedIdentity.current!==identity||sessionCancelInFlight.current)return;
           sessionCancelInFlight.current=true;setSessionCancelBusyId(id);
           // Never automatically retry an uncertain POST. The session detail
@@ -901,17 +902,17 @@ export default function JynloFeedHome(){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
             setPosts(current=>current.filter(entry=>!(entry.type==='SESSION_CREATED'&&entry.sessionId===id)));
-            Alert.alert('Sessão cancelada',
-              'A sessão foi cancelada. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.',[
-                {text:'Fechar',style:'cancel'},
-                {text:'Partilhar aviso',onPress:()=>{void shareCancelledFeedSession(detail);}}
+            Alert.alert(t('Sessão cancelada'),
+              t('A sessão foi cancelada. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.'),[
+                {text:t('Fechar'),style:'cancel'},
+                {text:t('Partilhar aviso'),onPress:()=>{void shareCancelledFeedSession(detail);}}
               ]);
             void load();
           }).catch(e=>{
             if(feedIdentity.current===identity)
-              Alert.alert('Cancelamento não confirmado',
-                e instanceof Error&&e.message?e.message+' Verifica o estado da sessão antes de repetir.':
-                'Verifica o estado da sessão antes de repetir.');
+              Alert.alert(t('Cancelamento não confirmado'),
+                e instanceof Error&&e.message?e.message+' '+t('Verifica o estado da sessão antes de repetir.'):
+                t('Verifica o estado da sessão antes de repetir.'));
           }).finally(()=>{
             if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
           });
@@ -919,8 +920,8 @@ export default function JynloFeedHome(){
       ]);
     }catch(e){
       if(feedIdentity.current===identity)
-        Alert.alert('Não foi possível verificar a sessão',
-          e instanceof Error?e.message:'Abre o detalhe e tenta novamente.');
+        Alert.alert(t('Não foi possível verificar a sessão'),
+          e instanceof Error?e.message:t('Abre o detalhe e tenta novamente.'));
     }finally{
       if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
     }
@@ -952,9 +953,9 @@ export default function JynloFeedHome(){
       setStoryPublishCommunityId(null);setStoryPublishTeamId(null);setStoryStyleOpen(false);setStoryDetailsOpen(false);setStoryRetryAcknowledged(true);
     };
     if(storyMedia||storyCaption.trim()||storyLocation.trim()||storyTags.trim()){
-      Alert.alert('Descartar Story?','A fotografia, o vídeo e a legenda deste rascunho serão perdidos.',[
-        {text:'Continuar a editar',style:'cancel'},
-        {text:'Descartar',style:'destructive',onPress:discard}
+      Alert.alert(t('Descartar Story?'),t('A fotografia, o vídeo e a legenda deste rascunho serão perdidos.'),[
+        {text:t('Continuar a editar'),style:'cancel'},
+        {text:t('Descartar'),style:'destructive',onPress:discard}
       ]);
       return;
     }
@@ -967,9 +968,9 @@ export default function JynloFeedHome(){
   function closePostComposer(){
     if(postInFlight.current)return;
     if(composerMediaRef.current.length||composerText.trim()||composerLocation.trim()){
-      Alert.alert('Descartar publicação?','As fotografias, os vídeos e o texto deste rascunho serão perdidos.',[
-        {text:'Continuar a editar',style:'cancel'},
-        {text:'Descartar',style:'destructive',onPress:()=>{
+      Alert.alert(t('Descartar publicação?'),t('As fotografias, os vídeos e o texto deste rascunho serão perdidos.'),[
+        {text:t('Continuar a editar'),style:'cancel'},
+        {text:t('Descartar'),style:'destructive',onPress:()=>{
           postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);setComposerSessionId(null);
         }}
       ]);
@@ -986,15 +987,15 @@ export default function JynloFeedHome(){
     const storyRevision=storyComposerRevision.current;
     const storyComposerWasOpen=!album&&storyComposerRef.current;
     const availableAlbumSlots=album?Math.max(0,MAX_ALBUM_ITEMS-composerMediaRef.current.length):1;
-    if(album&&availableAlbumSlots===0){Alert.alert('Álbum completo','Remove um ficheiro antes de adicionares outro.');return;}
+    if(album&&availableAlbumSlots===0){Alert.alert(t('Álbum completo'),t('Remove um ficheiro antes de adicionares outro.'));return;}
     mediaPickerInFlight.current=true;
     try{const ImagePicker=await import('expo-image-picker');
       if(source==='camera'){
         const permission=await ImagePicker.requestCameraPermissionsAsync();
         if(!permission.granted){
-          Alert.alert('Câmara sem autorização','Autoriza o acesso à câmara nas definições do telemóvel ou escolhe a galeria.',[
-            {text:'Cancelar',style:'cancel'},
-            {text:'Abrir definições',onPress:()=>{void Linking.openSettings().catch(()=>Alert.alert('Permissões','Abre as definições da Jynlo e autoriza a câmara.'));}}
+          Alert.alert(t('Câmara sem autorização'),t('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe a galeria.'),[
+            {text:t('Cancelar'),style:'cancel'},
+            {text:t('Abrir definições'),onPress:()=>{void Linking.openSettings().catch(()=>Alert.alert(t('Permissões'),t('Abre as definições da Jynlo e autoriza a câmara.')));}}
           ]);
           return;
         }
@@ -1007,7 +1008,7 @@ export default function JynloFeedHome(){
       for(const asset of result.assets){
         const kind=asset.type==='video'?'video':'image';
         const mime=pickerMediaMime(asset);
-        if(!mime){Alert.alert('Formato não suportado','Escolhe JPG, PNG, WebP, MP4 ou WebM. Os formatos MOV e HEIC ainda não são aceites.');return;}
+        if(!mime){Alert.alert(t('Formato não suportado'),t('Escolhe JPG, PNG, WebP, MP4 ou WebM. Os formatos MOV e HEIC ainda não são aceites.'));return;}
         let size=asset.fileSize||0;
         if(!size){
           try{const {File}=await import('expo-file-system');const f=new File(asset.uri);if(f.exists)size=f.size;}catch{}
@@ -1015,7 +1016,7 @@ export default function JynloFeedHome(){
         // Some Android gallery providers expose content:// without a file size.
         // Keep the selection and validate the real bytes after copying into cache on upload.
         const validation=size>0?validateMedia(mime,size,!album&&setter===setStoryMedia):null;
-        if(validation){Alert.alert('Ficheiro não aceite',validation);return;}
+        if(validation){Alert.alert(t('Ficheiro não aceite'),validation);return;}
         prepared.push({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||`${kind==='video'?'video':'foto'}-${Date.now()}.${kind==='video'?'mp4':'jpg'}`,fileSize:size});
       }
       // The picker can remain open while authentication changes in the app.
@@ -1024,10 +1025,10 @@ export default function JynloFeedHome(){
       if(album){
         if(!postComposerWasOpen||!composerOpenRef.current||postComposerRevision.current!==postRevision||postInFlight.current)return;
         const result=appendAlbumSelection(composerMediaRef.current,prepared);
-        if(result.error){Alert.alert('Álbum não aceite',result.error);return;}
+        if(result.error){Alert.alert(t('Álbum não aceite'),result.error);return;}
         changeComposerMedia(()=>result.items);
       }else if(storyComposerWasOpen&&storyComposerRef.current&&storyComposerRevision.current===storyRevision&&prepared[0]&&!storyInFlight.current)setter(prepared[0]);
-    }catch(e){if(activeStoryAccount.current===actorToken)Alert.alert(source==='camera'?'Não foi possível abrir a câmara':'Não foi possível abrir a galeria',e instanceof Error?e.message:'Confirma as permissões do teu telemóvel.');}
+    }catch(e){if(activeStoryAccount.current===actorToken)Alert.alert(source==='camera'?t('Não foi possível abrir a câmara'):t('Não foi possível abrir a galeria'),e instanceof Error?e.message:t('Confirma as permissões do teu telemóvel.'));}
     finally{if(activeStoryAccount.current===actorToken)mediaPickerInFlight.current=false;}
   }
   async function checkRecentlyPublishedPosts(){
@@ -1041,7 +1042,7 @@ export default function JynloFeedHome(){
         setPostVerifyItems(items.filter(item=>item.type==='POST').slice(0,5));
     }catch(e){
       if(feedIdentity.current===identity&&postVerifyRevision.current===revision)
-        setPostVerifyError(e instanceof Error?e.message:'Não foi possível consultar o perfil.');
+        setPostVerifyError(e instanceof Error?e.message:t('Não foi possível consultar o perfil.'));
     }finally{
       if(feedIdentity.current===identity&&postVerifyRevision.current===revision)setPostVerifyLoading(false);
     }
@@ -1049,7 +1050,7 @@ export default function JynloFeedHome(){
   async function submitPost(){
     if(!requireLogin()||postInFlight.current||!postRetryAcknowledged||(!composerMedia.length&&!composerText.trim()))return;
     if(composerLocation.trim()&&verifiedPostPlace!==composerLocation.trim()){
-      setPostPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
+      setPostPublishError(t('Escolhe uma localização das sugestões ou limpa o campo.'));return;
     }
     const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
     const linkedSessionId=composerSessionId;
@@ -1059,7 +1060,7 @@ export default function JynloFeedHome(){
       const created=await publishPost(body,media,actor,username,place,linkedSessionId??undefined);
       // Do not display a previous account's session association in a new account.
       if(feedIdentity.current===`${username}:${actor}`&&linkedSessionId&&created.sessionId!==linkedSessionId)
-        Alert.alert('Publicação enviada','O servidor confirmou a publicação, mas não a associação à sessão. Não voltes a enviar sem verificar o teu feed.');
+        Alert.alert(t('Publicação enviada'),t('O servidor confirmou a publicação, mas não a associação à sessão. Não voltes a enviar sem verificar o teu feed.'));
       // Show the server-confirmed item immediately. A delayed feed refresh must
       // never make a successful post look as if it vanished.
       if(feedIdentity.current===`${username}:${actor}`){
@@ -1081,17 +1082,17 @@ export default function JynloFeedHome(){
           setComposerLocation('');composerLocationRef.current='';
           changeComposerMedia(()=>[]);setComposerOpen(false);setComposerSessionId(null);
         }else{
-          Alert.alert('Publicação enviada','As alterações feitas durante o envio ficaram guardadas no editor. Podes criar outra publicação.');
+          Alert.alert(t('Publicação enviada'),t('As alterações feitas durante o envio ficaram guardadas no editor. Podes criar outra publicação.'));
         }
         // Refresh failure must not be interpreted as a failed published POST.
         void load().catch(()=>{
           if(feedIdentity.current===`${username}:${actor}`)
-            setError('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.');
+            setError(t('Publicação enviada. Não foi possível atualizar o feed; desliza para atualizar.'));
         });
       }
     }catch(e){
       if(feedIdentity.current===`${username}:${actor}`){
-        const message=e instanceof Error?e.message:'Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.';
+        const message=e instanceof Error?e.message:t('Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
         setPostPublishError(message);
         setPostRetryAcknowledged(!uncertainPostOutcome(message));
       }
@@ -1101,18 +1102,18 @@ export default function JynloFeedHome(){
     if(!requireLogin()||storyInFlight.current||!storyRetryAcknowledged||!storyMedia)return;
     const actor=auth.token,username=auth.username,body=storyCaption,media=storyMedia,geometry={...storyGeometryRef.current},appearance={...storyAppearance},showTime=showStoryTime,altText=storyAltText;
     if(storyLocation.trim()&&verifiedStoryPlace!==storyLocation.trim()){
-      setStoryPublishError('Escolhe uma localização das sugestões ou limpa o campo.');return;
+      setStoryPublishError(t('Escolhe uma localização das sugestões ou limpa o campo.'));return;
     }
     const tagsDraft=storyTags,locationDraft=storyLocation;
     let details:StoryDetails;
-    try{details=prepareStoryDetails(locationDraft,tagsDraft);}catch(e){Alert.alert('Story',e instanceof Error?e.message:'Verifica a localização e as identificações.');return;}
+    try{details=prepareStoryDetails(locationDraft,tagsDraft);}catch(e){Alert.alert(t('Story'),e instanceof Error?e.message:t('Verifica a localização e as identificações.'));return;}
     const selectedCommunityId=storyPublishCommunityId;
     const selectedTeamId=storyPublishTeamId;
     if(selectedTeamId!==null&&(!storyManagedTeams.some(team=>team.id===selectedTeamId)||selectedCommunityId!==null)){
-      setStoryPublishError('Já não tens permissão para publicar esta Story como equipa.');return;
+      setStoryPublishError(t('Já não tens permissão para publicar esta Story como equipa.'));return;
     }
     if(selectedCommunityId!==null&&!storyManagedCommunities.some(group=>group.id===selectedCommunityId)){
-      setStoryPublishError('Já não tens permissão para publicar Stories nesta comunidade.');return;
+      setStoryPublishError(t('Já não tens permissão para publicar Stories nesta comunidade.'));return;
     }
     const revision=storyComposerRevision.current;
     storyInFlight.current=true;setStoryPublishing(true);setStoryPublishError('');
@@ -1142,19 +1143,19 @@ export default function JynloFeedHome(){
           setStoryLocation('');setStoryTags('');storyLocationRef.current='';storyTagsRef.current='';
           setStoryPublishCommunityId(null);setStoryPublishTeamId(null);
         }else{
-          Alert.alert('Story publicada','As alterações feitas durante o envio ficaram guardadas no editor.');
+          Alert.alert(t('Story publicada'),t('As alterações feitas durante o envio ficaram guardadas no editor.'));
         }
         void load().catch(()=>{
           if(feedIdentity.current===`${username}:${actor}`)
-            setError('Story enviada. Não foi possível atualizar o feed.');
+            setError(t('Story enviada. Não foi possível atualizar o feed.'));
         });
       }
     }catch(e){
       if(feedIdentity.current===`${username}:${actor}`){
-        const message=e instanceof Error?e.message:'Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.';
+        const message=e instanceof Error?e.message:t('Não foi possível confirmar a Story. Verifica se já aparece no perfil antes de repetir.');
         setStoryPublishError(message);
         setStoryRetryAcknowledged(!uncertainPostOutcome(message));
-        Alert.alert('Story',message);
+        Alert.alert(t('Story'),message);
       }
     }finally{if(feedIdentity.current===`${username}:${actor}`){storyInFlight.current=false;setStoryPublishing(false);}}
   }
@@ -1174,7 +1175,7 @@ export default function JynloFeedHome(){
       setPosts(current=>current.map(apply));
     }catch(e){
       if(feedIdentity.current===account)
-        Alert.alert('Gosto',e instanceof Error?e.message:'Não foi possível atualizar o gosto.');
+        Alert.alert(t('Gosto'),e instanceof Error?e.message:t('Não foi possível atualizar o gosto.'));
     }finally{
       if(feedIdentity.current===account){postActionInFlight.current=false;setBusyPost(null);}
     }
@@ -1188,7 +1189,7 @@ export default function JynloFeedHome(){
       const next=await postComments(id,auth.token);
       if(requestId===commentsRequest.current)setComments(next);
     }catch{
-      if(requestId===commentsRequest.current)Alert.alert('Comentários','Não foi possível carregar os comentários.');
+      if(requestId===commentsRequest.current)Alert.alert(t('Comentários'),t('Não foi possível carregar os comentários.'));
     }finally{
       if(requestId===commentsRequest.current)setCommentsLoading(false);
     }
@@ -1203,7 +1204,7 @@ export default function JynloFeedHome(){
       const created=await addPostComment(postId,body,auth.token,auth.username);
       if(!created||!Number.isSafeInteger(created.id)||created.id<=0||created.postId!==postId||
          created.content?.trim()!==body)
-        throw Error('O servidor não confirmou o comentário. Verifica a conversa antes de repetir.');
+        throw Error(t('O servidor não confirmou o comentário. Verifica a conversa antes de repetir.'));
       if(account===feedIdentity.current){
         // The POST was persisted. Until a later GET includes it, ignore old
         // aggregate counts returned by feed requests already in flight.
@@ -1221,14 +1222,14 @@ export default function JynloFeedHome(){
       }
     }catch(e){
       if(account===feedIdentity.current&&requestId===commentsRequest.current)
-        Alert.alert('Comentário',e instanceof Error?e.message:'Não foi possível comentar.');
+        Alert.alert(t('Comentário'),e instanceof Error?e.message:t('Não foi possível comentar.'));
     }finally{
       if(account===feedIdentity.current){commentWriteLock.current=false;setBusyPost(null);}
     }
   }
   async function sharePost(item:FeedItem){
-    try{await Share.share({message:[item.content?.trim()||'Publicação na Jynlo',sharedPostLink(item)].join('\n')});}
-    catch(e){Alert.alert('Partilhar publicação',e instanceof Error?e.message:'Não foi possível partilhar.');}
+    try{await Share.share({message:[item.content?.trim()||t('Publicação na Jynlo'),sharedPostLink(item)].join('\n')});}
+    catch(e){Alert.alert(t('Partilhar publicação'),e instanceof Error?e.message:t('Não foi possível partilhar.'));}
   }
   async function toggleCommentLikeInFeed(c:SocialComment){
     if(!auth.token||!auth.username||expandedComments!==c.postId||commentWriteLock.current)return;
@@ -1239,7 +1240,7 @@ export default function JynloFeedHome(){
       if(account===feedIdentity.current&&revision===commentsRequest.current)
         setComments(old=>old.map(item=>item.id===c.id?updated:item));
     }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
-      Alert.alert('Gosto no comentário',e instanceof Error?e.message:'Não foi possível atualizar.');}
+      Alert.alert(t('Gosto no comentário'),e instanceof Error?e.message:t('Não foi possível atualizar.'));}
     finally{if(account===feedIdentity.current){commentWriteLock.current=false;setCommentWriteBusy(null);}}
   }
   async function saveCommentEditInFeed(c:SocialComment){
@@ -1254,16 +1255,16 @@ export default function JynloFeedHome(){
         setEditingComment(null);setEditCommentDraft('');
       }
     }catch(e){if(account===feedIdentity.current&&revision===commentsRequest.current)
-      Alert.alert('Editar comentário',e instanceof Error?e.message:'Não foi possível guardar.');}
+      Alert.alert(t('Editar comentário'),e instanceof Error?e.message:t('Não foi possível guardar.'));}
     finally{if(account===feedIdentity.current){commentWriteLock.current=false;setCommentWriteBusy(null);}}
   }
   function AttendanceDigest(){
     if(!attendanceGroups.length)return null;
     const groups=showAllAttendance?attendanceGroups:attendanceGroups.slice(0,5);
-    return <View style={styles.attendanceDigest} accessibilityLabel="Atividade de sessões">
+    return <View style={styles.attendanceDigest} accessibilityLabel={t('Atividade de sessões')}>
       {groups.map(group=>{
         const when=group.item.gameDate?new Date(group.item.gameDate):null;
-        const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}):null;
+        const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString(currentLocale(),{day:'2-digit',month:'2-digit',year:'numeric'}):null;
         const place=[group.item.city?.trim(),date].filter(Boolean).join(' · ');
         return <View key={group.sessionId} style={styles.attendanceRow}>
           <View style={styles.attendanceCheck}><Text maxFontSizeMultiplier={1.3} style={styles.attendanceCheckText}>✓</Text></View>
@@ -1273,22 +1274,22 @@ export default function JynloFeedHome(){
             <View style={styles.attendanceActions}>
               <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão ${group.sessionId}`}
                 style={styles.attendanceButton} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(group.sessionId)}})}>
-                <Text style={styles.attendanceActionText}>Ver sessão →</Text>
+                <Text style={styles.attendanceActionText}>{t('Ver sessão →')}</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed"
+              <Pressable accessibilityRole="button" accessibilityLabel={t('Ocultar do meu feed')}
                 disabled={!auth.token||!hiddenReady}
                 style={styles.attendanceButton} onPress={()=>hideFromFeed(group.item)}>
-                <Text style={styles.attendanceHideText}>Ocultar do meu feed</Text>
+                <Text style={styles.attendanceHideText}>{t('Ocultar do meu feed')}</Text>
               </Pressable>
             </View>
           </View>
         </View>;
       })}
       {attendanceGroups.length>5?<Pressable accessibilityRole="button"
-        accessibilityLabel={showAllAttendance?'Mostrar menos atividades':'Ver todas as atividades'}
+        accessibilityLabel={showAllAttendance?t('Mostrar menos atividades'):t('Ver todas as atividades')}
         accessibilityState={{expanded:showAllAttendance}}
         onPress={()=>setShowAllAttendance(value=>!value)} style={styles.attendanceMore}>
-        <Text style={styles.attendanceActionText}>{showAllAttendance?'Mostrar menos':'Ver todas'}</Text>
+        <Text style={styles.attendanceActionText}>{showAllAttendance?t('Mostrar menos'):t('Ver todas')}</Text>
       </Pressable>:null}
     </View>;
   }
@@ -1296,27 +1297,27 @@ export default function JynloFeedHome(){
     const id=item.sessionId;
     if(!Number.isSafeInteger(id)||!id||id<=0)return null;
     const scheduled= item.gameDate?Date.parse(item.gameDate):NaN;
-    const when=Number.isFinite(scheduled)?new Date(scheduled).toLocaleString('pt-PT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null;
+    const when=Number.isFinite(scheduled)?new Date(scheduled).toLocaleString(currentLocale(),{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null;
     const mine=item.type==='SESSION_CREATED'&&Boolean(auth.token&&auth.username&&
       item.authorUsername.toLowerCase()===auth.username.toLowerCase());
     return <View style={{gap:9}}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Consultar sessão associada à publicação" onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Consultar sessão associada à publicação')} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
         <View style={styles.postSessionIcon}><JynloIcon name="session" size={26} color={TEAL}/></View>
         <View style={{flex:1,gap:4}}>
-          <Text style={styles.postSessionTitle}>{item.sport?.trim()||'Sessão desportiva'}</Text>
+          <Text style={styles.postSessionTitle}>{item.sport?.trim()||t('Sessão desportiva')}</Text>
           {(item.city?.trim()||when)?<Text style={styles.postSessionMeta}>{[item.city?.trim(),when].filter(Boolean).join(' · ')}</Text>:null}
-          <Text style={styles.postSessionLink}>Ver detalhes da sessão</Text>
+          <Text style={styles.postSessionLink}>{t('Ver detalhes da sessão')}</Text>
         </View>
       </Pressable>
       {item.type==='SESSION_CREATED'?<View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Partilhar sessão" style={styles.attendanceButton}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar sessão')} style={styles.attendanceButton}
           onPress={()=>void shareFeedSession(item)}>
-          <Text style={styles.attendanceActionText}>Partilhar sessão</Text>
+          <Text style={styles.attendanceActionText}>{t('Partilhar sessão')}</Text>
         </Pressable>
-        {mine?<Pressable accessibilityRole="button" accessibilityLabel="Cancelar a minha sessão" style={styles.attendanceButton}
+        {mine?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar a minha sessão')} style={styles.attendanceButton}
           disabled={sessionCancelBusyId!==null} onPress={()=>void requestCancelFeedSession(item)}>
           <Text style={{color:'#FF9292',fontWeight:'700'}}>
-            {sessionCancelBusyId===id?'A verificar…':'Cancelar sessão'}
+            {sessionCancelBusyId===id?t('A verificar…'):t('Cancelar sessão')}
           </Text>
         </Pressable>:null}
       </View>:null}
@@ -1326,10 +1327,10 @@ export default function JynloFeedHome(){
     const album=postMediaItems(item);const likeBusy=busyPost===item.postId;
     return <View style={[styles.postCard,screenWidth<360&&styles.postCardCompact]}>
       <View style={styles.postTop}><CircleAvatar name={item.authorDisplayName||item.authorUsername} image={item.authorProfilePicUrl} size={43}/>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de ${item.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
-          <Text style={styles.postMeta}>{item.type==='POST'?'Publicação':'Atividade desportiva'}  ·  {timeAgo(item.createdAt)}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de {v}',{v:item.authorUsername})} onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.authorUsername}})} style={{flex:1,gap:3}}><Text style={styles.postName}>{item.authorDisplayName||item.authorUsername}</Text>
+          <Text style={styles.postMeta}>{item.type==='POST'?t('Publicação'):t('Atividade desportiva')}  ·  {timeAgo(item.createdAt)}</Text></Pressable>
         
-        {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel="Opções desta publicação" disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><JynloIcon name="more" color={MUTED} size={24}/></Pressable>:null}</View>
+        {auth.token?<Pressable onPress={()=>openPostMenu(item)} accessibilityRole="button" accessibilityLabel={t('Opções desta publicação')} disabled={busyPost!==null} hitSlop={8} style={{paddingHorizontal:8,minHeight:40,justifyContent:'center'}}><JynloIcon name="more" color={MUTED} size={24}/></Pressable>:null}</View>
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {item.type==='POST'&&item.location?.trim()?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={MUTED} size={15}/><Text style={styles.postMeta}>{item.location.trim()}</Text></View>:null}
       {album.length?<PostAlbumCarousel items={album} onExpand={setExpandedPostImage}
@@ -1338,17 +1339,17 @@ export default function JynloFeedHome(){
         <View style={styles.postActions}>
           <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postPrimaryAction}
             accessibilityRole="button" accessibilityState={{selected:Boolean(item.likedByMe),disabled:likeBusy}}
-            accessibilityLabel={item.likedByMe?'Retirar gosto':'Gostar'}>
+            accessibilityLabel={item.likedByMe?t('Retirar gosto'):t('Gostar')}>
             <JynloIcon name="like" color={item.likedByMe?'#FF7797':TEAL} size={23} active={item.likedByMe}/>
-            <Text style={[styles.postPrimaryLabel,item.likedByMe&&styles.postLikedLabel]}>Gostar</Text>
+            <Text style={[styles.postPrimaryLabel,item.likedByMe&&styles.postLikedLabel]}>{t('Gostar')}</Text>
           </Pressable>
-          <Pressable onPress={()=>{void openComments(item);}} style={styles.postPrimaryAction} accessibilityRole="button" accessibilityLabel="Abrir comentários">
+          <Pressable onPress={()=>{void openComments(item);}} style={styles.postPrimaryAction} accessibilityRole="button" accessibilityLabel={t('Abrir comentários')}>
             <JynloIcon name="comment" color={TEAL} size={23}/>
-            <Text style={styles.postPrimaryLabel}>Comentar</Text>
+            <Text style={styles.postPrimaryLabel}>{t('Comentar')}</Text>
           </Pressable>
-          <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel="Partilhar publicação" style={styles.postPrimaryAction}>
+          <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel={t('Partilhar publicação')} style={styles.postPrimaryAction}>
             <JynloIcon name="share" color={TEAL} size={23}/>
-            <Text style={styles.postPrimaryLabel}>Partilhar</Text>
+            <Text style={styles.postPrimaryLabel}>{t('Partilhar')}</Text>
           </Pressable>
         </View>
         <View style={styles.postEngagementSummary}>
@@ -1357,14 +1358,14 @@ export default function JynloFeedHome(){
             onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(item.postId)}})} style={styles.postSummaryAction}>
             <Text style={styles.actionCount}>{item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${item.likeCount} gostos`}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Abrir comentários desta publicação" style={styles.postSummaryAction}
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir comentários desta publicação')} style={styles.postSummaryAction}
             onPress={()=>{void openComments(item);}}>
-            <Text style={styles.actionCount}>{item.commentCount} comentários</Text>
+            <Text style={styles.actionCount}>{t('{a} comentários',{a:item.commentCount})}</Text>
           </Pressable>
           {Number.isSafeInteger(item.postId)&&item.postId!>0?<Pressable accessibilityRole="button"
-            accessibilityLabel="Abrir detalhe completo da publicação"
+            accessibilityLabel={t('Abrir detalhe completo da publicação')}
             onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}
-            style={styles.postDetailAction}><Text style={styles.postDetailLabel}>Ver publicação ›</Text></Pressable>:null}
+            style={styles.postDetailAction}><Text style={styles.postDetailLabel}>{t('Ver publicação ›')}</Text></Pressable>:null}
         </View>
         {item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       </>:null}
@@ -1374,48 +1375,48 @@ export default function JynloFeedHome(){
   const Header=()=> <View style={styles.screenPad}>
     <View style={styles.navHeader}><View style={styles.brand}><Image source={require('../../assets/jynlo-icon.png')} style={styles.brandLogo}/><Text maxFontSizeMultiplier={1.2} style={styles.brandName}>JYNLO</Text></View><View style={styles.headerRight}>
       <Pressable onPress={()=>router.push(auth.token?'/live':'/login')}
-        accessibilityRole="button" accessibilityLabel="Abrir diretos Jynlo" style={styles.headerCircle}>
+        accessibilityRole="button" accessibilityLabel={t('Abrir diretos Jynlo')} style={styles.headerCircle}>
         <JynloIcon name="video" color={WHITE} size={22}/></Pressable>
-      <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel="Notificações"><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={unreadNotifications+' notificações por ler'}/>:null}</Pressable>
-      <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?'Perfil e conta ativa':'Iniciar sessão'}><CircleAvatar name={auth.username||'Visitante'} image={myProfilePhoto} size={32}/><Text maxFontSizeMultiplier={1.2} style={styles.headerName} numberOfLines={1}>{auth.username||'Entrar'}</Text></Pressable></View></View>
-    {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO</Text></View>:null}
+      <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel={t('Notificações')}><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={t('{n} notificações por ler',{n:unreadNotifications})}/>:null}</Pressable>
+      <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?t('Perfil e conta ativa'):t('Iniciar sessão')}><CircleAvatar name={auth.username||t('Visitante')} image={myProfilePhoto} size={32}/><Text maxFontSizeMultiplier={1.2} style={styles.headerName} numberOfLines={1}>{auth.username||t('Entrar')}</Text></Pressable></View></View>
+    {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>{t('◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO')}</Text></View>:null}
     <HomeUpNext/>
     <View style={styles.storiesCard}>
-      <SectionHeader eyebrow="MOMENTOS DESPORTIVOS" title="Stories"/>
-      {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>A tua story</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={`Ver Stories de ${group.name}`}>
+      <SectionHeader eyebrow={t('MOMENTOS DESPORTIVOS')} title={t('Stories')}/>
+      {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Criar a minha story')} onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>{t('A tua story')}</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={t('Ver Stories de {name}',{name:group.name})}>
         <View style={styles.storyRing}><CircleAvatar name={group.name} image={group.avatar} size={57}/></View><Text style={styles.storyItemName} numberOfLines={1}>{group.name}</Text></Pressable>)}</ScrollView>
-        :<Pressable accessibilityRole="button" accessibilityLabel="Criar a minha story" onPress={()=>requireLogin()&&openStoryComposer()} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><JynloIcon name={auth.token?'plus':'camera'} color={TEAL} size={23}/></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?'Partilha o teu primeiro momento':'Descobre os momentos da comunidade'}</Text><Text style={styles.storiesEmptyText}>{auth.token?'Fotografias e vídeos que duram 24 horas.':'Entra com a tua conta para veres e partilhares Stories.'}</Text></View></Pressable>}
+        :<Pressable accessibilityRole="button" accessibilityLabel={t('Criar a minha story')} onPress={()=>requireLogin()&&openStoryComposer()} style={styles.emptyStories}><View style={styles.storyEmptyIcon}><JynloIcon name={auth.token?'plus':'camera'} color={TEAL} size={23}/></View><View style={{flex:1}}><Text style={styles.storiesEmptyTitle}>{auth.token?t('Partilha o teu primeiro momento'):t('Descobre os momentos da comunidade')}</Text><Text style={styles.storiesEmptyText}>{auth.token?t('Fotografias e vídeos que duram 24 horas.'):t('Entra com a tua conta para veres e partilhares Stories.')}</Text></View></Pressable>}
     </View>
     {auth.token?<Pressable accessibilityRole="button"
-      accessibilityLabel="Criar publicação no Feed" onPress={()=>openPostComposer()}
+      accessibilityLabel={t('Criar publicação no Feed')} onPress={()=>openPostComposer()}
       style={styles.feedComposerPrompt}>
       <CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={39}/>
       <View style={styles.feedComposerCopy}>
-        <Text style={styles.feedComposerTitle}>Em que estás a pensar?</Text>
-        <Text style={styles.feedComposerHint}>Partilha fotografias, vídeos e momentos desportivos</Text>
+        <Text style={styles.feedComposerTitle}>{t('Em que estás a pensar?')}</Text>
+        <Text style={styles.feedComposerHint}>{t('Partilha fotografias, vídeos e momentos desportivos')}</Text>
       </View>
       <JynloIcon name="post" color={TEAL} size={23}/>
     </Pressable>:null}
-    {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>Entra para partilhares momentos e acompanhares os teus amigos.</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>Iniciar sessão</Text></Pressable></View>:null}
-    <View style={styles.latestTitle}><Text style={styles.sectionTitle}>Publicações</Text></View>
+    {!auth.token?<View style={styles.visitorCard}><Text style={styles.visitorDescription}>{t('Entra para partilhares momentos e acompanhares os teus amigos.')}</Text><Pressable onPress={()=>router.push('/login')} style={styles.visitorPrimary}><Text style={styles.visitorPrimaryText}>{t('Iniciar sessão')}</Text></Pressable></View>:null}
+    <View style={styles.latestTitle}><Text style={styles.sectionTitle}>{t('Publicações')}</Text></View>
     <AttendanceDigest/>
     {identityMatches&&recentlyHidden?<View style={styles.hiddenNotice}>
-      <Text style={styles.hiddenNoticeText}>{recentlyHidden?.startsWith('attendance:')?'Atividade ocultada do teu feed neste dispositivo.':
-        recentlyHidden?.startsWith('post:')?'Publicação ocultada na tua conta.':'Ocultado do teu feed neste dispositivo.'}</Text>
-      {recentlyHidden?.startsWith('post:')?<Pressable accessibilityRole="button" accessibilityLabel="Gerir publicações ocultas" onPress={()=>router.push('/feed-hidden')} style={styles.hiddenUndo}><Text style={styles.link}>Gerir</Text></Pressable>:null}
-      <Pressable accessibilityRole="button" accessibilityLabel="Desfazer ocultação" onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>Desfazer</Text></Pressable>
+      <Text style={styles.hiddenNoticeText}>{recentlyHidden?.startsWith('attendance:')?t('Atividade ocultada do teu feed neste dispositivo.'):
+        recentlyHidden?.startsWith('post:')?t('Publicação ocultada na tua conta.'):t('Ocultado do teu feed neste dispositivo.')}</Text>
+      {recentlyHidden?.startsWith('post:')?<Pressable accessibilityRole="button" accessibilityLabel={t('Gerir publicações ocultas')} onPress={()=>router.push('/feed-hidden')} style={styles.hiddenUndo}><Text style={styles.link}>{t('Gerir')}</Text></Pressable>:null}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Desfazer ocultação')} onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>{t('Desfazer')}</Text></Pressable>
     </View>:null}
     {identityMatches&&publishNotice?<View style={styles.hiddenNotice}>
-      <Text style={styles.hiddenNoticeText}>{publishNotice==='post'?'Publicação confirmada! Já aparece no teu feed.':'Story confirmada! Já aparece nas tuas Stories.'}</Text>
-      {publishNotice==='post'&&confirmedPostId!==null?<Pressable accessibilityRole="button" accessibilityLabel="Ver publicação confirmada"
+      <Text style={styles.hiddenNoticeText}>{publishNotice==='post'?t('Publicação confirmada! Já aparece no teu feed.'):t('Story confirmada! Já aparece nas tuas Stories.')}</Text>
+      {publishNotice==='post'&&confirmedPostId!==null?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver publicação confirmada')}
         onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(confirmedPostId)}})} style={styles.hiddenUndo}>
-        <Text style={styles.link}>Ver publicação</Text>
+        <Text style={styles.link}>{t('Ver publicação')}</Text>
       </Pressable>:null}
-      <Pressable accessibilityRole="button" accessibilityLabel="Fechar confirmação de publicação" onPress={()=>{setPublishNotice(null);setConfirmedPostId(null);}} style={styles.hiddenUndo}><Text style={styles.link}>Fechar</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar confirmação de publicação')} onPress={()=>{setPublishNotice(null);setConfirmedPostId(null);}} style={styles.hiddenUndo}><Text style={styles.link}>{t('Fechar')}</Text></Pressable>
     </View>:null}
-    {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>Tentar novamente</Text></Pressable></View>:null}
+    {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>{t('Tentar novamente')}</Text></Pressable></View>:null}
     {(loading||!identityMatches)&&visiblePosts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
-    {!loading&&!error&&identityMatches&&auth.token&&normalPosts.length===0&&attendanceGroups.length===0?<Text style={styles.mutedText}>Ainda não há publicações. Partilha o teu primeiro momento!</Text>:null}
+    {!loading&&!error&&identityMatches&&auth.token&&normalPosts.length===0&&attendanceGroups.length===0?<Text style={styles.mutedText}>{t('Ainda não há publicações. Partilha o teu primeiro momento!')}</Text>:null}
   </View>;
   if(!auth.ready)return <SafeAreaView style={{flex:1,backgroundColor:INDIGO,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></SafeAreaView>;
   if(!auth.token&&!auth.browsingAsGuest)return <Redirect href="/welcome"/>;
@@ -1428,11 +1429,11 @@ export default function JynloFeedHome(){
       photos={identityMatches?expandedPostImage:null} onClose={()=>setExpandedPostImage(null)}/>
     <Modal visible={identityMatches&&expandedComments!==null} transparent animationType="slide" onRequestClose={closeComments}>
       <KeyboardAvoidingView style={styles.commentsModal} behavior={Platform.OS==='ios'?'padding':'height'}>
-        <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel="Fechar comentários" onPress={closeComments}/>
+        <Pressable style={styles.commentsBackdrop} accessibilityRole="button" accessibilityLabel={t('Fechar comentários')} onPress={closeComments}/>
         <SafeAreaView edges={['bottom']} style={styles.commentsSheet}>
           <View style={styles.commentsHandle}/>
-          <View style={styles.commentsHeader}><Text style={styles.commentsTitle}>Comentários</Text>
-            <Pressable onPress={closeComments} accessibilityRole="button" accessibilityLabel="Fechar comentários" hitSlop={12}><JynloIcon name="close" color={WHITE} size={24}/></Pressable>
+          <View style={styles.commentsHeader}><Text style={styles.commentsTitle}>{t('Comentários')}</Text>
+            <Pressable onPress={closeComments} accessibilityRole="button" accessibilityLabel={t('Fechar comentários')} hitSlop={12}><JynloIcon name="close" color={WHITE} size={24}/></Pressable>
           </View>
           {commentsLoading?<ActivityIndicator color={TEAL} style={{marginVertical:24}}/>:
             <ScrollView style={styles.commentsList} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.commentsListContent}>
@@ -1440,83 +1441,83 @@ export default function JynloFeedHome(){
                 <CircleAvatar name={c.authorUsername} image={c.authorProfilePicUrl} size={34}/>
                 <View style={{flex:1,gap:5}}><Text style={styles.commentAuthor}>@{c.authorUsername}</Text>
                   {editingComment===c.id?<><TextInput value={editCommentDraft} onChangeText={setEditCommentDraft}
-                    maxLength={500} multiline style={styles.commentInput} placeholder="Editar comentário" placeholderTextColor={MUTED}/>
+                    maxLength={500} multiline style={styles.commentInput} placeholder={t('Editar comentário')} placeholderTextColor={MUTED}/>
                     <View style={{flexDirection:'row',gap:12}}>
-                     <Pressable disabled={commentWriteBusy!==null||!editCommentDraft.trim()} onPress={()=>void saveCommentEditInFeed(c)} accessibilityRole="button" accessibilityLabel="Guardar comentário"><Text style={styles.commentAuthor}>Guardar</Text></Pressable>
-                     <Pressable disabled={commentWriteBusy!==null} onPress={()=>{setEditingComment(null);setEditCommentDraft('');}} accessibilityRole="button"><Text style={styles.commentAuthor}>Cancelar</Text></Pressable>
-                    </View></>:<Text style={styles.commentBody}>{c.content}{c.editedAt?' · editado':''}</Text>}
+                     <Pressable disabled={commentWriteBusy!==null||!editCommentDraft.trim()} onPress={()=>void saveCommentEditInFeed(c)} accessibilityRole="button" accessibilityLabel={t('Guardar comentário')}><Text style={styles.commentAuthor}>{t('Guardar')}</Text></Pressable>
+                     <Pressable disabled={commentWriteBusy!==null} onPress={()=>{setEditingComment(null);setEditCommentDraft('');}} accessibilityRole="button"><Text style={styles.commentAuthor}>{t('Cancelar')}</Text></Pressable>
+                    </View></>:<Text style={styles.commentBody}>{c.content}{c.editedAt?' · '+t('editado'):''}</Text>}
                   <View style={{flexDirection:'row',gap:16,alignItems:'center'}}>
-                    <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?'Retirar gosto do comentário':'Gostar do comentário'} disabled={!auth.token||commentWriteBusy!==null}
+                    <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?t('Retirar gosto do comentário'):t('Gostar do comentário')} disabled={!auth.token||commentWriteBusy!==null}
                      onPress={()=>void toggleCommentLikeInFeed(c)}>
                      <Text style={styles.commentAuthor}>{c.likedByMe?'♥':'♡'} {c.likeCount||0}</Text>
                     </Pressable>
                     {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
-                     <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={commentWriteBusy!==null}
-                      onPress={()=>{setEditingComment(c.id);setEditCommentDraft(c.content);}}><Text style={styles.commentAuthor}>Editar</Text></Pressable>:null}
+                     <Pressable accessibilityRole="button" accessibilityLabel={t('Editar o meu comentário')} disabled={commentWriteBusy!==null}
+                      onPress={()=>{setEditingComment(c.id);setEditCommentDraft(c.content);}}><Text style={styles.commentAuthor}>{t('Editar')}</Text></Pressable>:null}
                     {auth.token&&auth.username&&c.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
-                     <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar comentário de @'+c.authorUsername}
+                     <Pressable accessibilityRole="button" accessibilityLabel={t('Denunciar comentário de @{v}',{v:c.authorUsername})}
                       onPress={()=>setReportTarget({kind:'comment',postId:c.postId,commentId:c.id,author:c.authorUsername})}>
-                      <Text style={styles.commentReport}>Denunciar</Text></Pressable>:null}
+                      <Text style={styles.commentReport}>{t('Denunciar')}</Text></Pressable>:null}
                   </View></View>
-              </View>):<Text style={styles.commentsEmpty}>Ainda não há comentários. Inicia a conversa!</Text>}
+              </View>):<Text style={styles.commentsEmpty}>{t('Ainda não há comentários. Inicia a conversa!')}</Text>}
             </ScrollView>}
-          <View style={styles.commentCompose}><TextInput value={commentText} onChangeText={setCommentText} style={styles.commentInput} maxLength={500} placeholder={auth.token?'Escrever comentário…':'Inicia sessão para comentar'} placeholderTextColor={MUTED} editable={!!auth.token&&busyPost===null} multiline/>
-            <Pressable onPress={()=>expandedComments!==null&&void submitComment(expandedComments)} disabled={!auth.token||!commentText.trim()||busyPost!==null||commentsLoading} style={[styles.sendComment,(!auth.token||!commentText.trim()||busyPost!==null||commentsLoading)&&{opacity:.45}]} accessibilityRole="button" accessibilityLabel="Enviar comentário"><JynloIcon name="send" size={23} color={INDIGO}/></Pressable>
+          <View style={styles.commentCompose}><TextInput value={commentText} onChangeText={setCommentText} style={styles.commentInput} maxLength={500} placeholder={auth.token?t('Escrever comentário…'):t('Inicia sessão para comentar')} placeholderTextColor={MUTED} editable={!!auth.token&&busyPost===null} multiline/>
+            <Pressable onPress={()=>expandedComments!==null&&void submitComment(expandedComments)} disabled={!auth.token||!commentText.trim()||busyPost!==null||commentsLoading} style={[styles.sendComment,(!auth.token||!commentText.trim()||busyPost!==null||commentsLoading)&&{opacity:.45}]} accessibilityRole="button" accessibilityLabel={t('Enviar comentário')}><JynloIcon name="send" size={23} color={INDIGO}/></Pressable>
           </View>
         </SafeAreaView>
-        <ReportSheet inline visible={reportTarget?.kind==='comment'} title="Denunciar comentário"
-          subject={reportTarget?'Comentário de @'+reportTarget.author:''} onClose={()=>setReportTarget(null)}
+        <ReportSheet inline visible={reportTarget?.kind==='comment'} title={t('Denunciar comentário')}
+          subject={reportTarget?t('Comentário de @{v}',{v:reportTarget.author}):''} onClose={()=>setReportTarget(null)}
           onSubmit={async reason=>{const target=reportTarget;if(!target||target.kind!=='comment'||!auth.token)return;
             await reportComment(target.postId,target.commentId,reason,auth.token);}}/>
       </KeyboardAvoidingView>
     </Modal>
-    <ReportSheet visible={reportTarget?.kind==='post'} title="Denunciar publicação"
-      subject={reportTarget?'Publicação de @'+reportTarget.author:''} onClose={()=>setReportTarget(null)}
+    <ReportSheet visible={reportTarget?.kind==='post'} title={t('Denunciar publicação')}
+      subject={reportTarget?t('Publicação de @{v}',{v:reportTarget.author}):''} onClose={()=>setReportTarget(null)}
       onSubmit={async reason=>{const target=reportTarget;if(!target||target.kind!=='post'||!auth.token)return;
         await reportPost(target.postId,reason,auth.token);}}/>
 
     <Modal visible={identityMatches&&!!postMenuItem} transparent animationType="fade" onRequestClose={()=>setPostMenuItem(null)}>
       <View style={styles.commentsModal}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" style={styles.commentsBackdrop} onPress={()=>setPostMenuItem(null)}/>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar opções da publicação')} style={styles.commentsBackdrop} onPress={()=>setPostMenuItem(null)}/>
         <SafeAreaView edges={['bottom']} style={styles.postMenuSafeArea}>
          <View style={[styles.postMenuContainer,{maxHeight:Math.max(220,Math.floor(screenHeight*.72))}]}>
           <View style={styles.commentsHandle}/>
           <View style={styles.postMenuHeading}>
-           <Text style={styles.commentsTitle}>Opções da publicação</Text>
-           <Pressable accessibilityRole="button" accessibilityLabel="Fechar opções da publicação" onPress={()=>setPostMenuItem(null)} style={styles.postMenuClose}>
+           <Text style={styles.commentsTitle}>{t('Opções da publicação')}</Text>
+           <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar opções da publicação')} onPress={()=>setPostMenuItem(null)} style={styles.postMenuClose}>
             <JynloIcon name="close" color={WHITE} size={24}/>
            </Pressable>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.postMenuContents}>
-          {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel="Ocultar do meu feed" style={styles.postMenuAction} onPress={()=>{
+          {postMenuItem?<Pressable accessibilityRole="button" accessibilityLabel={t('Ocultar do meu feed')} style={styles.postMenuAction} onPress={()=>{
             const post=postMenuItem;setPostMenuItem(null);hideFromFeed(post);
-          }}><Text style={styles.postMenuText}>Ocultar do meu feed</Text></Pressable>:null}
-          {postMenuItem&&auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Gerir publicações ocultas" style={styles.postMenuAction} onPress={()=>{
+          }}><Text style={styles.postMenuText}>{t('Ocultar do meu feed')}</Text></Pressable>:null}
+          {postMenuItem&&auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Gerir publicações ocultas')} style={styles.postMenuAction} onPress={()=>{
             setPostMenuItem(null);router.push('/feed-hidden');
-          }}><Text style={styles.postMenuText}>Gerir publicações ocultas</Text></Pressable>:null}
+          }}><Text style={styles.postMenuText}>{t('Gerir publicações ocultas')}</Text></Pressable>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()!==auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?<>
-            <Pressable accessibilityRole="button" accessibilityLabel="Denunciar publicação" style={styles.postMenuAction} onPress={()=>{
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Denunciar publicação')} style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);
               if(post.postId)setReportTarget({kind:'post',postId:post.postId,author:post.authorUsername});
-            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Denunciar publicação</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={'Bloquear @'+postMenuItem.authorUsername} style={styles.postMenuAction} onPress={()=>{
+            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>{t('Denunciar publicação')}</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Bloquear @{v}',{v:postMenuItem.authorUsername})} style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);confirmBlockAuthor(post);
-            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Bloquear @{postMenuItem.authorUsername}</Text></Pressable>
+            }}><Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>{t('Bloquear @{v}',{v:postMenuItem.authorUsername})}</Text></Pressable>
           </>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
-            <Pressable accessibilityRole="button" accessibilityLabel="Editar publicação" style={styles.postMenuAction} onPress={()=>{
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Editar publicação')} style={styles.postMenuAction} onPress={()=>{
               const post=postMenuItem;setPostMenuItem(null);setEditingPost(post);
-            }}><Text style={styles.postMenuText}>Editar publicação e multimédia</Text></Pressable>:null}
+            }}><Text style={styles.postMenuText}>{t('Editar publicação e multimédia')}</Text></Pressable>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='POST'&&postMenuItem.postId?
-            <Pressable accessibilityRole="button" accessibilityLabel="Eliminar publicação" style={styles.postMenuAction} onPress={()=>deleteOwnedPost(postMenuItem)}>
-              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Eliminar publicação</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar publicação')} style={styles.postMenuAction} onPress={()=>deleteOwnedPost(postMenuItem)}>
+              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>{t('Eliminar publicação')}</Text>
             </Pressable>:null}
           {postMenuItem&&auth.username&&postMenuItem.authorUsername.toLowerCase()===auth.username.toLowerCase()&&postMenuItem.type==='SESSION_ATTENDED'&&postMenuItem.sessionId?
-            <Pressable accessibilityRole="button" accessibilityLabel="Ocultar esta atividade para todos" style={styles.postMenuAction} onPress={()=>hideOwnAttendance(postMenuItem)}>
-              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>Ocultar atividade para todos</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Ocultar esta atividade para todos')} style={styles.postMenuAction} onPress={()=>hideOwnAttendance(postMenuItem)}>
+              <Text style={[styles.postMenuText,{color:'#FF8C8C'}]}>{t('Ocultar atividade para todos')}</Text>
             </Pressable>:null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Cancelar opções da publicação" style={styles.postMenuAction} onPress={()=>setPostMenuItem(null)}>
-            <Text style={styles.postMenuText}>Cancelar</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar opções da publicação')} style={styles.postMenuAction} onPress={()=>setPostMenuItem(null)}>
+            <Text style={styles.postMenuText}>{t('Cancelar')}</Text>
           </Pressable>
           </ScrollView>
          </View>
@@ -1541,64 +1542,64 @@ export default function JynloFeedHome(){
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
         <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
-        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>Nova publicação</Text><Text style={styles.storiesIntro}>{composerSessionId?'Recordação do jogo · sessão '+composerSessionId:'Partilha texto, fotografias ou vídeos com a comunidade.'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar nova publicação" disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>{t('Nova publicação')}</Text><Text style={styles.storiesIntro}>{composerSessionId?t('Recordação do jogo · sessão {v}',{v:composerSessionId}):t('Partilha texto, fotografias ou vídeos com a comunidade.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Fechar nova publicação')} disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
         <ScrollView ref={postComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           <View style={styles.mediaChooseRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Tirar fotografia ou gravar vídeo" disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><JynloIcon name="camera" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>Câmara</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Escolher fotografia ou vídeo da galeria" disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><JynloIcon name="gallery" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>Galeria</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Tirar fotografia ou gravar vídeo')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><JynloIcon name="camera" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>{t('Câmara')}</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Escolher fotografia ou vídeo da galeria')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><JynloIcon name="gallery" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>{t('Galeria')}</Text></Pressable>
           </View>
           <View style={styles.postCaptionBlock}>
-           <Text style={styles.postCaptionLabel}>A tua legenda <Text style={styles.postCaptionOptional}>· opcional com fotografias</Text></Text>
-           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder="Conta o que aconteceu neste momento…" placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
+           <Text style={styles.postCaptionLabel}>{t('A tua legenda')} <Text style={styles.postCaptionOptional}>{t('· opcional com fotografias')}</Text></Text>
+           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder={t('Conta o que aconteceu neste momento…')} placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
            <Text style={styles.postCaptionCount}>{composerText.length}/{maxPostLength}</Text>
           </View>
           {postPublishError?<View style={styles.postInlineError} accessibilityRole="alert">
-            <Text style={styles.postInlineErrorTitle}>Não foi possível confirmar a publicação</Text>
+            <Text style={styles.postInlineErrorTitle}>{t('Não foi possível confirmar a publicação')}</Text>
             <Text style={styles.postInlineErrorBody}>{postPublishError}</Text>
-            <Text style={styles.postInlineErrorHelp}>O rascunho foi mantido. Antes de tentares novamente, verifica se a publicação já apareceu no teu perfil.</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Consultar as minhas últimas publicações sem reenviar"
+            <Text style={styles.postInlineErrorHelp}>{t('O rascunho foi mantido. Antes de tentares novamente, verifica se a publicação já apareceu no teu perfil.')}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Consultar as minhas últimas publicações sem reenviar')}
               disabled={postVerifyLoading} onPress={()=>void checkRecentlyPublishedPosts()} style={styles.postVerifyAction}>
-              {postVerifyLoading?<ActivityIndicator color={INDIGO}/>:<Text style={styles.postVerifyActionText}>Ver últimas publicações</Text>}
+              {postVerifyLoading?<ActivityIndicator color={INDIGO}/>:<Text style={styles.postVerifyActionText}>{t('Ver últimas publicações')}</Text>}
             </Pressable>
             {postVerifyError?<Text style={styles.postInlineErrorHelp}>{postVerifyError}</Text>:null}
-            {!postRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel="Já confirmei no perfil, permitir novo envio"
+            {!postRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel={t('Já confirmei no perfil, permitir novo envio')}
              onPress={()=>setPostRetryAcknowledged(true)} style={styles.postRetryConfirmAction}>
-             <Text style={styles.postRetryConfirmText}>Já confirmei no perfil · Permitir novo envio</Text>
+             <Text style={styles.postRetryConfirmText}>{t('Já confirmei no perfil · Permitir novo envio')}</Text>
             </Pressable>:null}
             {postVerifyItems? <View style={styles.postVerifyList}>
-              <Text style={styles.postVerifyHeading}>Publicações mais recentes no teu perfil</Text>
-              {postVerifyItems.length===0?<Text style={styles.postInlineErrorHelp}>Ainda não aparecem publicações. Não é uma confirmação de que o envio falhou.</Text>:null}
+              <Text style={styles.postVerifyHeading}>{t('Publicações mais recentes no teu perfil')}</Text>
+              {postVerifyItems.length===0?<Text style={styles.postInlineErrorHelp}>{t('Ainda não aparecem publicações. Não é uma confirmação de que o envio falhou.')}</Text>:null}
               {postVerifyItems.map(post=><View key={'verify-'+post.postId} style={styles.postVerifyItem}>
-                <Text style={styles.postVerifyItemTitle} numberOfLines={2}>{post.content?.trim()||'Publicação com fotografia ou vídeo'}</Text>
-                <Text style={styles.postInlineErrorHelp}>{Number.isFinite(Date.parse(post.createdAt))?new Date(post.createdAt).toLocaleString('pt-PT'):'Data não disponível'}</Text>
+                <Text style={styles.postVerifyItemTitle} numberOfLines={2}>{post.content?.trim()||t('Publicação com fotografia ou vídeo')}</Text>
+                <Text style={styles.postInlineErrorHelp}>{Number.isFinite(Date.parse(post.createdAt))?new Date(post.createdAt).toLocaleString(currentLocale()):t('Data não disponível')}</Text>
               </View>)}
-              <Text style={styles.postInlineErrorHelp}>Esta lista serve apenas para verificares o perfil. A app não repetiu o envio.</Text>
+              <Text style={styles.postInlineErrorHelp}>{t('Esta lista serve apenas para verificares o perfil. A app não repetiu o envio.')}</Text>
             </View>:null}
           </View>:null}
           {composerMedia.length?<View style={styles.postMediaPreview}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Remover todos os ficheiros da publicação" disabled={publishing} onPress={()=>Alert.alert('Limpar álbum?','Remover todas as fotografias e vídeos deste rascunho?',[
-              {text:'Cancelar',style:'cancel'},
-              {text:'Limpar álbum',style:'destructive',onPress:()=>changeComposerMedia(()=>[])}
-            ])} style={[styles.removeMediaButton,{alignSelf:'flex-end'}]}><Text style={styles.removeMediaText}>Limpar álbum</Text></Pressable>
-            <Text style={styles.postAlbumHint}>{composerMedia.length===1?'1 fotografia ou vídeo selecionado · Capa da publicação':composerMedia.length+' de 6 ficheiros · Desliza para organizar o álbum'}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Remover todos os ficheiros da publicação')} disabled={publishing} onPress={()=>Alert.alert(t('Limpar álbum?'),t('Remover todas as fotografias e vídeos deste rascunho?'),[
+              {text:t('Cancelar'),style:'cancel'},
+              {text:t('Limpar álbum'),style:'destructive',onPress:()=>changeComposerMedia(()=>[])}
+            ])} style={[styles.removeMediaButton,{alignSelf:'flex-end'}]}><Text style={styles.removeMediaText}>{t('Limpar álbum')}</Text></Pressable>
+            <Text style={styles.postAlbumHint}>{composerMedia.length===1?t('1 fotografia ou vídeo selecionado · Capa da publicação'):t('{n} de 6 ficheiros · Desliza para organizar o álbum',{n:composerMedia.length})}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{gap:10,paddingVertical:8}}>
               {composerMedia.map((media,i)=><View key={media.uri} style={{width:composerMedia.length===1?Math.max(200,screenWidth-68):Math.max(200,screenWidth-92),gap:7}}>
                 {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
-                <View style={styles.postMediaPreviewFooter}><Text style={styles.postMediaPosition}>{media.type==='video'?'Vídeo':'Fotografia'} {i+1} de {composerMedia.length}{i===0?' · Capa':''}</Text>
+                <View style={styles.postMediaPreviewFooter}><Text style={styles.postMediaPosition}>{t('{kind} {n} de {total}',{kind:media.type==='video'?t('Vídeo'):t('Fotografia'),n:i+1,total:composerMedia.length})}{i===0?' · '+t('Capa'):''}</Text>
                   <View style={{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para trás`} disabled={publishing||i===0} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><JynloIcon name="back" color={TEAL} size={19}/></Pressable>:null}
-                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={`Mover ficheiro ${i+1} para a frente`} disabled={publishing||i===composerMedia.length-1} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><JynloIcon name="chevron-right" color={TEAL} size={19}/></Pressable>:null}
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Remover ficheiro ${i+1}`} disabled={publishing} onPress={()=>changeComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>Remover</Text></Pressable>
+                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para trás',{n:i+1})} disabled={publishing||i===0} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><JynloIcon name="back" color={TEAL} size={19}/></Pressable>:null}
+                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para a frente',{n:i+1})} disabled={publishing||i===composerMedia.length-1} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><JynloIcon name="chevron-right" color={TEAL} size={19}/></Pressable>:null}
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {n}',{n:i+1})} disabled={publishing} onPress={()=>changeComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>{t('Remover')}</Text></Pressable>
                   </View>
                 </View>
               </View>)}
             </ScrollView>
-          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>O teu próximo momento desportivo</Text><Text style={styles.storiesIntro}>Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.</Text></View>}
+          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>{t('O teu próximo momento desportivo')}</Text><Text style={styles.storiesIntro}>{t('Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.')}</Text></View>}
 
-          <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);setVerifiedPostPlace('');setPostPlaceOptions([]);}} placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da publicação" placeholderTextColor={MUTED} maxLength={160}/>
-          {postPlaceLoading?<Text style={styles.storiesIntro}>A procurar localizações…</Text>:null}
+          <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);setVerifiedPostPlace('');setPostPlaceOptions([]);}} placeholder={t('Adicionar localização (opcional)')} accessibilityLabel={t('Localização da publicação')} placeholderTextColor={MUTED} maxLength={160}/>
+          {postPlaceLoading?<Text style={styles.storiesIntro}>{t('A procurar localizações…')}</Text>:null}
           {postPlaceOptions.map(place=><Pressable key={place.id} accessibilityRole="button"
-            accessibilityLabel={'Escolher localização '+socialPlaceLabel(place)} disabled={publishing}
+            accessibilityLabel={t('Escolher localização {v}',{v:socialPlaceLabel(place)})} disabled={publishing}
             onPress={()=>{const label=socialPlaceLabel(place);composerLocationRef.current=label;
               setComposerLocation(label);setVerifiedPostPlace(label);setPostPlaceOptions([]);}}
             style={styles.storyFriendOption}>
@@ -1607,14 +1608,14 @@ export default function JynloFeedHome(){
               <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
           </Pressable>)}
           {composerLocation.trim()&&!verifiedPostPlace&&!postPlaceLoading&&postPlaceOptions.length===0?
-            <Text style={styles.storiesIntro}>Seleciona uma localização real nas sugestões para publicar.</Text>:null}
+            <Text style={styles.storiesIntro}>{t('Seleciona uma localização real nas sugestões para publicar.')}</Text>:null}
 
         </ScrollView>
 
-        <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?'Partilhar publicação':'Verificar o envio antes de repetir'} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
-          <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{publishing?'A enviar publicação…':postRetryAcknowledged?'Partilhar publicação':'Confirma primeiro o envio'}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?t('Partilhar publicação'):t('Verificar o envio antes de repetir')} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
+          <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{publishing?t('A enviar publicação…'):postRetryAcknowledged?t('Partilhar publicação'):t('Confirma primeiro o envio')}</Text></View>
         </Pressable>
-        {publishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>A enviar para a Jynlo. Mantém este ecrã aberto; a publicação só será confirmada quando o servidor responder.</Text>:null}
+        {publishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>{t('A enviar para a Jynlo. Mantém este ecrã aberto; a publicação só será confirmada quando o servidor responder.')}</Text>:null}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
@@ -1622,7 +1623,7 @@ export default function JynloFeedHome(){
     <Modal visible={identityMatches&&storyComposer} animationType="slide" onRequestClose={closeStoryComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
         <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
-        <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>Criar Story</Text><Text style={styles.storiesIntro}>Uma fotografia ou vídeo visível durante 24 horas.</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Fechar criação de Story" disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
+        <View style={styles.storyComposerHead}><View style={{flex:1,gap:4}}><Text style={styles.storyComposerTitle}>{t('Criar Story')}</Text><Text style={styles.storiesIntro}>{t('Uma fotografia ou vídeo visível durante 24 horas.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Fechar criação de Story')} disabled={storyPublishing} onPress={closeStoryComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
         <ScrollView ref={storyComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           {!storyMedia?<Suspense fallback={<View style={{height:440,alignItems:'center',justifyContent:'center'}}><ActivityIndicator color={TEAL}/></View>}>
             <StoryCameraCapture key={storyComposerRevision.current} onCaptured={media=>{if(activeStoryAccount.current===auth.token&&storyComposerRef.current&&storyComposerRevision.current===storyCaptureRevision&&!storyInFlight.current)setStoryMedia(media);}} onPickGallery={()=>void pickMedia(setStoryMedia,'gallery')}/>
@@ -1635,114 +1636,114 @@ export default function JynloFeedHome(){
               onChange={value=>{storyGeometryRef.current=value;setStoryTextGeometry(value);}} disabled={storyPublishing}/>:null}
           </View>:null}
           {storyMedia?<View style={styles.storyMediaActions}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Tirar nova fotografia ou vídeo para a Story"
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Tirar nova fotografia ou vídeo para a Story')}
              disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'camera')} style={styles.storyMediaAction}>
-             <JynloIcon name="camera" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Câmara</Text>
+             <JynloIcon name="camera" color={TEAL} size={19}/><Text style={styles.removeMediaText}>{t('Câmara')}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Trocar fotografia ou vídeo da Story pela galeria"
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Trocar fotografia ou vídeo da Story pela galeria')}
              disabled={storyPublishing} onPress={()=>void pickMedia(setStoryMedia,'gallery')} style={styles.storyMediaAction}>
-             <JynloIcon name="gallery" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Galeria</Text>
+             <JynloIcon name="gallery" color={TEAL} size={19}/><Text style={styles.removeMediaText}>{t('Galeria')}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Remover fotografia ou vídeo da Story"
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Remover fotografia ou vídeo da Story')}
              disabled={storyPublishing} onPress={()=>setStoryMedia(null)} style={styles.storyMediaAction}>
-             <JynloIcon name="remove" color={TEAL} size={19}/><Text style={styles.removeMediaText}>Remover</Text>
+             <JynloIcon name="remove" color={TEAL} size={19}/><Text style={styles.removeMediaText}>{t('Remover')}</Text>
             </Pressable>
            </View>:null}
           {storyMedia?<View style={styles.storyCaptionBlock}>
-            <Text style={styles.storyStyleLabel}>Legenda da Story</Text>
+            <Text style={styles.storyStyleLabel}>{t('Legenda da Story')}</Text>
             <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyCaption} onChangeText={value=>{storyCaptionRef.current=value;setStoryCaption(value);}} maxLength={180}
-             placeholder="Escreve sobre o momento (opcional)…" placeholderTextColor={MUTED} accessibilityLabel="Legenda da Story" style={styles.storyCaptionInput}/>
+             placeholder={t('Escreve sobre o momento (opcional)…')} placeholderTextColor={MUTED} accessibilityLabel={t('Legenda da Story')} style={styles.storyCaptionInput}/>
             <Text style={styles.countText}>{storyCaption.length}/180</Text>
-            {storyCaption.trim()?<Text style={styles.storiesIntro}>Arrasta o texto na imagem com um dedo. Usa dois dedos para rodar e ampliar.</Text>:null}
+            {storyCaption.trim()?<Text style={styles.storiesIntro}>{t('Arrasta o texto na imagem com um dedo. Usa dois dedos para rodar e ampliar.')}</Text>:null}
           </View>:null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Personalizar cores e tipo de letra da Story"
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Personalizar cores e tipo de letra da Story')}
            accessibilityState={{expanded:storyStyleOpen}} disabled={storyPublishing}
            onPress={()=>setStoryStyleOpen(value=>!value)} style={styles.storyEditorDisclosure}>
-           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="edit" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Estilo e texto</Text></View>
+           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="edit" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>{t('Estilo e texto')}</Text></View>
            <JynloIcon name={storyStyleOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
           </Pressable>
           {storyStyleOpen?<View style={styles.storyStylePanel}>
-           <Text style={styles.storyStyleTitle}>Personalizar texto da Story</Text>
+           <Text style={styles.storyStyleTitle}>{t('Personalizar texto da Story')}</Text>
            <Pressable accessibilityRole="checkbox" accessibilityState={{checked:showStoryTime}} disabled={storyPublishing}
             onPress={()=>setShowStoryTime(value=>!value)} style={styles.storyStyleChoice}>
-            <Text style={styles.storyStyleChoiceText}>{showStoryTime?'☑':'☐'} Mostrar data e hora na Story</Text>
+            <Text style={styles.storyStyleChoiceText}>{t('{a} Mostrar data e hora na Story',{a:showStoryTime?'☑':'☐'})}</Text>
            </Pressable>
-           <Text style={styles.storyStyleLabel}>Cor</Text>
+           <Text style={styles.storyStyleLabel}>{t('Cor')}</Text>
            <View style={styles.storyStyleRow}>{([
             ['white','Branco'],['black','Preto'],['yellow','Amarelo'],['mint','Verde'],['pink','Rosa'],['blue','Azul']
-           ] as const).map(([color,label])=><Pressable key={color} accessibilityRole="button" accessibilityLabel={'Cor do texto: '+label}
+           ] as const).map(([color,label])=><Pressable key={color} accessibilityRole="button" accessibilityLabel={t('Cor do texto: {label}',{label:t(label)})}
              accessibilityState={{selected:storyAppearance.color===color}} disabled={storyPublishing}
              onPress={()=>setStoryAppearance(prev=>({...prev,color}))}
              style={[styles.storyStyleChoice,storyAppearance.color===color&&styles.storyStyleSelected]}>
-             <Text style={styles.storyStyleChoiceText}>{storyAppearance.color===color?'✓ ':''}{label}</Text>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.color===color?'✓ ':''}{t(label)}</Text>
             </Pressable>)}</View>
-           <Text style={styles.storyStyleLabel}>Fundo do texto</Text>
+           <Text style={styles.storyStyleLabel}>{t('Fundo do texto')}</Text>
            <View style={styles.storyStyleRow}>{([
             ['dark','Escuro'],['light','Claro'],['none','Sem fundo']
            ] as const).map(([background,label])=><Pressable key={background} accessibilityRole="button"
-             accessibilityLabel={'Fundo do texto: '+label} accessibilityState={{selected:storyAppearance.background===background}}
+             accessibilityLabel={t('Fundo do texto: {label}',{label:t(label)})} accessibilityState={{selected:storyAppearance.background===background}}
              disabled={storyPublishing} onPress={()=>setStoryAppearance(prev=>({...prev,background}))}
              style={[styles.storyStyleChoice,storyAppearance.background===background&&styles.storyStyleSelected]}>
-             <Text style={styles.storyStyleChoiceText}>{storyAppearance.background===background?'✓ ':''}{label}</Text>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.background===background?'✓ ':''}{t(label)}</Text>
             </Pressable>)}</View>
-           <Text style={styles.storyStyleLabel}>Fonte</Text>
+           <Text style={styles.storyStyleLabel}>{t('Fonte')}</Text>
            <View style={styles.storyStyleRow}>{([
             ['modern','Moderna'],['classic','Clássica'],['mono','Monoespaçada']
            ] as const).map(([font,label])=><Pressable key={font} accessibilityRole="button"
-             accessibilityLabel={'Fonte: '+label} accessibilityState={{selected:storyAppearance.font===font}}
+             accessibilityLabel={t('Fonte: {label}',{label:t(label)})} accessibilityState={{selected:storyAppearance.font===font}}
              disabled={storyPublishing} onPress={()=>setStoryAppearance(prev=>({...prev,font}))}
              style={[styles.storyStyleChoice,storyAppearance.font===font&&styles.storyStyleSelected]}>
-             <Text style={styles.storyStyleChoiceText}>{storyAppearance.font===font?'✓ ':''}{label}</Text>
+             <Text style={styles.storyStyleChoiceText}>{storyAppearance.font===font?'✓ ':''}{t(label)}</Text>
             </Pressable>)}</View>
           </View>:null}
-          <Pressable accessibilityRole="button" accessibilityLabel="Abrir opções de publicação e identificação da Story"
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir opções de publicação e identificação da Story')}
            accessibilityState={{expanded:storyDetailsOpen}} disabled={storyPublishing}
            onPress={()=>setStoryDetailsOpen(value=>!value)} style={styles.storyEditorDisclosure}>
-           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="settings" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>Localização, amigos e mais opções</Text></View>
+           <View style={styles.storyEditorDisclosureCopy}><JynloIcon name="settings" size={20} color={TEAL}/><Text style={styles.storyEditorDisclosureTitle}>{t('Localização, amigos e mais opções')}</Text></View>
            <JynloIcon name={storyDetailsOpen?'chevron-up':'chevron-down'} size={20} color={TEAL}/>
           </Pressable>
           {!storyDetailsOpen&&(storyPublishCommunityId!==null||storyPublishTeamId!==null||storyLocation.trim()||storyTags.trim())?<View style={styles.storyEditorSummary}>
            <Text style={styles.storiesIntro} numberOfLines={2}>{[
-            storyPublishTeamId!==null?('Equipa: '+(storyManagedTeams.find(team=>team.id===storyPublishTeamId)?.name||'selecionada')):storyPublishCommunityId!==null?('Comunidade: '+(storyManagedCommunities.find(group=>group.id===storyPublishCommunityId)?.name||'selecionada')):'O meu perfil',
-            storyLocation.trim()?('Local: '+storyLocation.trim()):null,
-            storyMentionUsernames(storyTags).length?('Amigos: '+storyMentionUsernames(storyTags).map(name=>'@'+name).join(', ')):null
+            storyPublishTeamId!==null?(t('Equipa: {v}',{v:(storyManagedTeams.find(team=>team.id===storyPublishTeamId)?.name||'selecionada')})):storyPublishCommunityId!==null?(t('Comunidade: {v}',{v:(storyManagedCommunities.find(group=>group.id===storyPublishCommunityId)?.name||'selecionada')})):t('O meu perfil'),
+            storyLocation.trim()?(t('Local: {v}',{v:storyLocation.trim()})):null,
+            storyMentionUsernames(storyTags).length?(t('Amigos: {v}',{v:storyMentionUsernames(storyTags).map(name=>'@'+name).join(', ')})):null
            ].filter(Boolean).join(' · ')}</Text>
           </View>:null}
           {storyDetailsOpen?<View style={styles.storyEditorAdvanced}>
-          <Text style={styles.storiesIntro}>Publicar como</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story no meu perfil"
+          <Text style={styles.storiesIntro}>{t('Publicar como')}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Publicar Story no meu perfil')}
             disabled={storyPublishing} onPress={()=>{setStoryPublishCommunityId(null);setStoryPublishTeamId(null);}}
             style={styles.storyFriendOption}>
             <JynloIcon name="profile" size={19} color={TEAL}/>
-            <Text style={styles.storyFriendName}>{storyPublishCommunityId===null&&storyPublishTeamId===null?'✓  ':''}O meu perfil</Text>
+            <Text style={styles.storyFriendName}>{t('{a}O meu perfil',{a:storyPublishCommunityId===null&&storyPublishTeamId===null?'✓  ':''})}</Text>
           </Pressable>
-          {storyManagedCommunitiesLoading?<Text style={styles.storiesIntro}>A carregar comunidades…</Text>:null}
+          {storyManagedCommunitiesLoading?<Text style={styles.storiesIntro}>{t('A carregar comunidades…')}</Text>:null}
           {storyManagedCommunitiesError?<Text style={styles.storiesIntro}>{storyManagedCommunitiesError}</Text>:null}
           {storyManagedCommunities.map(group=><Pressable key={group.id} accessibilityRole="button"
-            accessibilityLabel={'Publicar Story na comunidade '+group.name}
+            accessibilityLabel={t('Publicar Story na comunidade {v}',{v:group.name})}
             disabled={storyPublishing} onPress={()=>{setStoryPublishCommunityId(group.id);setStoryPublishTeamId(null);}}
             style={styles.storyFriendOption}>
             <JynloIcon name="community" size={19} color={TEAL}/>
             <Text style={styles.storyFriendName}>{storyPublishCommunityId===group.id?'✓  ':''}{group.name}</Text>
           </Pressable>)}
           {storyManagedTeams.map(team=><Pressable key={'team-'+team.id} accessibilityRole="button"
-            accessibilityLabel={'Publicar Story como equipa '+team.name} disabled={storyPublishing}
+            accessibilityLabel={t('Publicar Story como equipa {v}',{v:team.name})} disabled={storyPublishing}
             onPress={()=>{setStoryPublishTeamId(team.id);setStoryPublishCommunityId(null);}} style={styles.storyFriendOption}>
             <JynloIcon name="community" size={19} color={TEAL}/>
-            <Text style={styles.storyFriendName}>{storyPublishTeamId===team.id?'✓  ':''}{team.name} · Equipa</Text>
+            <Text style={styles.storyFriendName}>{storyPublishTeamId===team.id?'✓  ':''}{team.name} · {t('Equipa')}</Text>
           </Pressable>)}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyAltText}
             onChangeText={setStoryAltText} maxLength={350} multiline
-            placeholder="Descreve a imagem ou o vídeo para acessibilidade (opcional)"
-            accessibilityLabel="Descrição acessível da Story" placeholderTextColor={MUTED}
+            placeholder={t('Descreve a imagem ou o vídeo para acessibilidade (opcional)')}
+            accessibilityLabel={t('Descrição acessível da Story')} placeholderTextColor={MUTED}
             style={styles.storyCaptionInput}/>
           <Text style={styles.countText}>{storyAltText.length}/350</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyLocation} onChangeText={value=>{storyLocationRef.current=value;setStoryLocation(value);setVerifiedStoryPlace('');setStoryPlaceOptions([]);}}
-            placeholder="Adicionar localização (opcional)" accessibilityLabel="Localização da Story"
+            placeholder={t('Adicionar localização (opcional)')} accessibilityLabel={t('Localização da Story')}
             maxLength={160} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
-          {storyPlaceLoading?<Text style={styles.storiesIntro}>A procurar localizações…</Text>:null}
+          {storyPlaceLoading?<Text style={styles.storiesIntro}>{t('A procurar localizações…')}</Text>:null}
           {storyPlaceOptions.map(place=><Pressable key={place.id} accessibilityRole="button"
-            accessibilityLabel={'Escolher localização da Story '+socialPlaceLabel(place)} disabled={storyPublishing}
+            accessibilityLabel={t('Escolher localização da Story {v}',{v:socialPlaceLabel(place)})} disabled={storyPublishing}
             onPress={()=>{const label=socialPlaceLabel(place);storyLocationRef.current=label;
               setStoryLocation(label);setVerifiedStoryPlace(label);setStoryPlaceOptions([]);}}
             style={styles.storyFriendOption}>
@@ -1751,16 +1752,16 @@ export default function JynloFeedHome(){
               <Text style={styles.storiesIntro}>{place.subtitle}</Text></View>
           </Pressable>)}
           {storyLocation.trim()&&!verifiedStoryPlace&&!storyPlaceLoading&&storyPlaceOptions.length===0?
-            <Text style={styles.storiesIntro}>Seleciona uma localização real nas sugestões para publicar a Story.</Text>:null}
+            <Text style={styles.storiesIntro}>{t('Seleciona uma localização real nas sugestões para publicar a Story.')}</Text>:null}
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyTags} onChangeText={value=>{storyTagsRef.current=value;setStoryTags(value);}}
-            placeholder="Identificar amigos: @ana, @joao" accessibilityLabel="Identificar amigos na Story"
+            placeholder={t('Identificar amigos: @ana, @joao')} accessibilityLabel={t('Identificar amigos na Story')}
             maxLength={500} autoCapitalize="none" autoCorrect={false} placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
-          <Text style={styles.storiesIntro}>Podes identificar até 5 perfis. Pesquisa pelo nome de utilizador ou seleciona uma sugestão.</Text>
+          <Text style={styles.storiesIntro}>{t('Podes identificar até 5 perfis. Pesquisa pelo nome de utilizador ou seleciona uma sugestão.')}</Text>
           <TextInput onFocus={event=>scrollComposerInput('story',event.target)} value={storyFriendSearch} onChangeText={setStoryFriendSearch}
-           placeholder="Procurar amigos para identificar" accessibilityLabel="Procurar amigos na Story"
+           placeholder={t('Procurar amigos para identificar')} accessibilityLabel={t('Procurar amigos na Story')}
            autoCapitalize="none" placeholderTextColor={MUTED} style={styles.storyCaptionInput}/>
-          {storyFriendsBusy?<Text style={styles.storiesIntro}>A carregar amigos…</Text>:null}
-          {storyProfileSearchBusy?<Text style={styles.storiesIntro}>A procurar perfis…</Text>:null}
+          {storyFriendsBusy?<Text style={styles.storiesIntro}>{t('A carregar amigos…')}</Text>:null}
+          {storyProfileSearchBusy?<Text style={styles.storiesIntro}>{t('A procurar perfis…')}</Text>:null}
           {storyFriendsError?<Text style={styles.storiesIntro}>{storyFriendsError}</Text>:null}
           {(storyFriendSearch.trim().length>=3
            ?[...storySearchedProfiles,...storyFriends.filter(friend=>
@@ -1771,12 +1772,12 @@ export default function JynloFeedHome(){
              .slice(0,15).map(friend=>{
            const selected=storyMentionUsernames(storyTags).includes(friend.username.toLowerCase());
            return <Pressable key={friend.username} accessibilityRole="button" disabled={storyPublishing}
-            accessibilityLabel={(selected?'Remover identificação de ':'Identificar ')+friend.username}
+            accessibilityLabel={selected?t('Remover identificação de {user}',{user:friend.username}):t('Identificar {user}',{user:friend.username})}
             style={styles.storyFriendOption} onPress={()=>{
              try{
               const updated=toggleStoryMention(storyTagsRef.current,friend.username);
               storyTagsRef.current=updated;setStoryTags(updated);
-             }catch(e){Alert.alert('Identificações',e instanceof Error?e.message:'Limite de identificações atingido.');}
+             }catch(e){Alert.alert(t('Identificações'),e instanceof Error?e.message:t('Limite de identificações atingido.'));}
             }}>
             <CircleAvatar name={friend.nickname||friend.fullName||friend.username} image={friend.profilePicUrl} size={36}/>
             <View style={{flex:1}}><Text style={styles.storyFriendName}>{friend.nickname||friend.fullName||friend.username}</Text>
@@ -1786,19 +1787,19 @@ export default function JynloFeedHome(){
           })}
           </View>:null}
         </ScrollView>
-        {!storyMedia?<Text style={styles.storyUploadHint}>Escolhe uma fotografia ou um vídeo para publicares a Story.</Text>:null}
+        {!storyMedia?<Text style={styles.storyUploadHint}>{t('Escolhe uma fotografia ou um vídeo para publicares a Story.')}</Text>:null}
         {storyPublishError?<View style={styles.errorBox} accessibilityRole="alert">
           <Text style={{color:'#FFB8B8'}}>{storyPublishError}</Text>
-          <Text style={styles.mutedText}>O rascunho continua aqui. Verifica as tuas Stories antes de repetires o envio.</Text>
-          {!storyRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel="Já confirmei as minhas Stories, permitir novo envio"
+          <Text style={styles.mutedText}>{t('O rascunho continua aqui. Verifica as tuas Stories antes de repetires o envio.')}</Text>
+          {!storyRetryAcknowledged?<Pressable accessibilityRole="button" accessibilityLabel={t('Já confirmei as minhas Stories, permitir novo envio')}
             onPress={()=>setStoryRetryAcknowledged(true)} style={styles.postRetryConfirmAction}>
-            <Text style={styles.postRetryConfirmText}>Já confirmei as minhas Stories · Permitir novo envio</Text>
+            <Text style={styles.postRetryConfirmText}>{t('Já confirmei as minhas Stories · Permitir novo envio')}</Text>
           </Pressable>:null}
         </View>:null}
-        <Pressable accessibilityRole="button" accessibilityLabel="Publicar Story" accessibilityState={{disabled:!storyMedia||storyPublishing||!storyRetryAcknowledged,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing||!storyRetryAcknowledged)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing||!storyRetryAcknowledged}>
-          <View style={styles.publishButtonContent}>{storyPublishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{storyPublishing?'A enviar Story…':'Publicar Story'}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Publicar Story')} accessibilityState={{disabled:!storyMedia||storyPublishing||!storyRetryAcknowledged,busy:storyPublishing}} onPress={()=>void submitStory()} style={[styles.primaryButton,{minHeight:54,marginLeft:0},(!storyMedia||storyPublishing||!storyRetryAcknowledged)&&{opacity:.5}]} disabled={!storyMedia||storyPublishing||!storyRetryAcknowledged}>
+          <View style={styles.publishButtonContent}>{storyPublishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{storyPublishing?t('A enviar Story…'):t('Publicar Story')}</Text></View>
         </Pressable>
-        {storyPublishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>A enviar para a Jynlo. Não feches este ecrã até receberes a confirmação.</Text>:null}
+        {storyPublishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>{t('A enviar para a Jynlo. Não feches este ecrã até receberes a confirmação.')}</Text>:null}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>

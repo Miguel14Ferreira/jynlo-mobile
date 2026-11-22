@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const {classificationKind,label,standingsColumns,validTournamentId}=require('../src/lib/competition-core.cjs');
@@ -48,7 +49,7 @@ test('um scoringMode desconhecido nunca é silenciosamente interpretado como fut
 });
 test('listagem de torneios não se limita às primeiras 12 comunidades',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/competition-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/competition-api.ts'),'utf8'));
  assert.doesNotMatch(api, /communities\.slice\(0,12\)/);
  assert.match(api, /offset\+=4/);
 });

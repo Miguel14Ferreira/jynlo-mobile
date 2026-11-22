@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=name=>fs.readFileSync(path.join(root,name),'utf8');
+const read=name=>untranslate(fs.readFileSync(path.join(root,name),'utf8'));
 
 test('all three chat composers attach one caption to a single atomic media message',()=>{
  for(const [screen,scope,media] of [

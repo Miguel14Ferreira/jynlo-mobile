@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/build-android-signed-apk.yml'),'utf8');
+const workflow=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/build-android-signed-apk.yml'),'utf8'));
 
 test('failed signed APK exposes full stage logs as downloadable evidence',()=>{
  const logs=['install.log','tests.log','typescript.log','release-check.log','expo-prebuild.log','gradle-assemble.log'];

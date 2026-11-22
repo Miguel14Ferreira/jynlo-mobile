@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 const {validateChatAlbum,MAX_FILES,MAX_TOTAL_BYTES}=require('../src/lib/chat-attachments-core.cjs');
 const img=(uri,n=1000)=>({type:'image',uri,mimeType:'image/jpeg',fileSize:n});
 const video=(uri,n=2000)=>({type:'video',uri,mimeType:'video/mp4',fileSize:n});

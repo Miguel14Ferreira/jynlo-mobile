@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8'));
 
 test('session chat closes only after a confirmed access-denied response',()=>{
  const start=screen.indexOf('}catch(e){',screen.indexOf('const refresh=useCallback'));

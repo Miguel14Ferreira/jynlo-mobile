@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const picker=fs.readFileSync(path.join(__dirname,'../src/components/BirthDatePicker.tsx'),'utf8');
+const picker=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/BirthDatePicker.tsx'),'utf8'));
 
 test('birth year picker pages through a bounded range rather than 103 scrolling items',()=>{
  assert.match(picker,/YEAR_PAGE_SIZE=20/);

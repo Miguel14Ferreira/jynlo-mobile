@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
@@ -30,10 +31,10 @@ test('create payload sends the level only when one is chosen',()=>{
 });
 
 test('search sends skillLevel and the organizer can change it',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
  assert.match(api,/q\.set\('skillLevel',filters\.skillLevel\)/);
  assert.match(api,/\/skill-level`,\{token,method:'PATCH',body:\{skillLevel\}\}/);
- const explore=fs.readFileSync(path.join(__dirname,'../app/(tabs)/explore.tsx'),'utf8');
+ const explore=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/explore.tsx'),'utf8'));
  assert.match(explore,/filterChoices\(\)/);
  assert.match(explore,/setSkillLevel\(''\)/);
 });

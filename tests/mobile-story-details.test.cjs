@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {prepareStoryDetails:parse}=require('../src/lib/story-details.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('Story details support any location text and up to five accepted-friend usernames',()=>{
  assert.deepEqual(parse(' Benfica, Lisboa ',' @Joao, @ana_2 '),{locationLabel:'Benfica, Lisboa',taggedUsernames:'joao,ana_2'});
  assert.deepEqual(parse('',''),{locationLabel:'',taggedUsernames:''});

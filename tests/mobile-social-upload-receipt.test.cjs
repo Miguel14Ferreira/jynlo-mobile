@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {confirmedSocialMediaReceipt}=require('../src/lib/social-upload-receipt.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const one={postId:15,imageUrl:'/media/p.jpg',videoUrl:null,extraMedia:[]};
 const album={postId:19,imageUrl:'/media/cover.jpg',extraMedia:[
  {url:'/media/second.mp4',mimeType:'video/mp4'},

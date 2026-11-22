@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {organizeMySessions}=require('../src/lib/my-sessions-core.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const now=Date.parse('2026-11-13T12:00:00Z');
 const session=(id,offsetHours,status='OPEN')=>({id,gameDate:new Date(now+offsetHours*3600000).toISOString(),status,sport:'Futebol',city:'Lisboa'});
 test('future sessions appear in chronological order, with no duplicates across owned, confirmed and waitlist',()=>{

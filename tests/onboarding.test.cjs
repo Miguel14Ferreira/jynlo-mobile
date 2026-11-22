@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('Primeira entrada mostra escolha explícita e bloqueia feed até visitante ou conta',()=>{
  const root=read('app/_layout.tsx'),welcome=read('app/welcome.tsx'),feed=read('app/(tabs)/index.tsx');
  assert.ok(root.includes('name="welcome"'));

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {albumError,mergeAlbum,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS}=require('../src/lib/post-album.cjs');
@@ -65,7 +66,7 @@ test('reordering only moves the selected file and leaves original media untouche
 });
 test('TypeScript declaration exposes the album functions used by the mobile composer',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const declaration=fs.readFileSync(path.join(__dirname,'../src/lib/post-album.d.cts'),'utf8');
+ const declaration=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/post-album.d.cts'),'utf8'));
  assert.match(declaration,/export declare function appendAlbumSelection\(/);
  assert.match(declaration,/export declare function moveAlbumItem\(/);
  assert.match(declaration,/items:MobileMedia\[\];error:string\|null/);

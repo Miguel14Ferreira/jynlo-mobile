@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/sessions/create.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/create.tsx'),'utf8'));
 test('session creation uses a native accessible monthly date calendar',()=>{
  assert.match(source,/function SessionDateCalendar\(/);
  assert.match(source,/accessibilityLabel="Mês anterior"/);

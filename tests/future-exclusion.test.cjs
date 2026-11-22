@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 const fx=require('../src/lib/future-exclusion.cjs');
 test('"Falta registada" is only offered after a recorded no-show (server rule)',()=>{
  assert.equal(fx.reasonsFor('ATTENDED').some(r=>r.id==='NO_SHOW'),false);

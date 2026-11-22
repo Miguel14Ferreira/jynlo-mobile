@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const source=p=>fs.readFileSync(path.join(root,p),'utf8');
+const source=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 const core=require('../src/lib/chat-attachments-core.cjs');
 
 test('CJS attachment helpers used by TypeScript screens have matching public declarations',()=>{

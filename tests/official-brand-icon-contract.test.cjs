@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -7,11 +8,11 @@ const root=path.resolve(__dirname,'..');
 const expo=require('../app.json').expo;
 const pkg=require('../package.json');
 const artifact=path.join(root,'assets/approved-jynlo-icon.webp.base64');
-const iconScript=fs.readFileSync(path.join(root,'scripts/prepare-jynlo-icon.sh'),'utf8');
-const workflow=fs.readFileSync(path.join(root,'.github/workflows/sync-jynlo-official-icon.yml'),'utf8');
+const iconScript=untranslate(fs.readFileSync(path.join(root,'scripts/prepare-jynlo-icon.sh'),'utf8'));
+const workflow=untranslate(fs.readFileSync(path.join(root,'.github/workflows/sync-jynlo-official-icon.yml'),'utf8'));
 
 test('the approved artwork is committed offline as a real WebP',()=>{
- const raw=fs.readFileSync(artifact,'utf8').trim();
+ const raw=untranslate(fs.readFileSync(artifact,'utf8')).trim();
  const image=Buffer.from(raw,'base64');
  assert.ok(image.length>1000);
  assert.equal(image.toString('ascii',0,4),'RIFF');

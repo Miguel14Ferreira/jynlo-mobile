@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const tabs=fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8');
-const championship=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/championships/create.tsx'),'utf8');
+const tabs=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8'));
+const championship=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/[id]/championships/create.tsx'),'utf8'));
 
 test('central plus offers championship creation only to authorized community organizers',()=>{
  assert.match(tabs,/groups\.filter\(c=>c\.myRole==='OWNER'\|\|c\.myRole==='ADMIN'\)/);

@@ -17,7 +17,7 @@ def run(path):
         v=m.group(2)
         if not is_ui(v) and not (m.group(1) in('accessibilityLabel','placeholder','title','subtitle') and PT.search(v)): return m.group(0)
         found.append(v); return f"{m.group(1)}={{t('{esc(v)}')}}"
-    s=re.sub(r'\b(title|placeholder|accessibilityLabel|subtitle|label|caption|hint|accessibilityHint)="([^"{}]+)"',attr,s)
+    s=re.sub(r'\b(title|placeholder|accessibilityLabel|subtitle|label|caption|hint|accessibilityHint|eyebrow)="([^"{}]+)"',attr,s)
     # JSX text
     def txt(m):
         v=m.group(1)
@@ -37,7 +37,7 @@ def run(path):
         def lit(m):
             pre=line[:m.start()]
             v=m.group(1)
-            if pre.rstrip().endswith(('t(','==','===','!==','!=','case')) : return m.group(0)
+            if re.search(r'(^|[^\w.])t\($',pre.rstrip()) or pre.rstrip().endswith(('==','===','!==','!=','case')) : return m.group(0)
             if re.search(r"(pathname|href|name|key|icon|tone|kind|testID|nativeID|style|router\.(push|replace))\s*[:=(]\s*$",pre): return m.group(0)
             if not is_ui(v): return m.group(0)
             if "\\'" in v: return m.group(0)

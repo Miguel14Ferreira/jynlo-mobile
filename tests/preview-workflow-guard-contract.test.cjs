@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -6,7 +7,7 @@ const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 
 const root=path.join(__dirname,'..');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(root,file),'utf8'));
 const script=path.join(root,'scripts','verify-release.cjs');
 const previewApi='https://desporto24-preview-api.onrender.com';
 

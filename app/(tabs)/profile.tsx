@@ -80,7 +80,7 @@ export default function ProfileScreen(){
   const canDelete=Boolean(!DEMO_MODE&&auth.username&&auth.token&&confirmUsername.trim()===auth.username&&!deleting);
   const deleteAccount=()=>{
     if(!canDelete||!auth.token)return;
-    Alert.alert('Eliminar a tua conta?', t('Esta ação é irreversível. Os dados pessoais serão apagados ou anonimizados. Se tens comunidades próprias, transfere primeiro a propriedade.'), [
+    Alert.alert(t('Eliminar a tua conta?'), t('Esta ação é irreversível. Os dados pessoais serão apagados ou anonimizados. Se tens comunidades próprias, transfere primeiro a propriedade.'), [
       {text:t('Manter a conta'),style:'cancel'},
       {text:t('Eliminar definitivamente'),style:'destructive',onPress:()=>{void (async()=>{
         setDeleting(true);
@@ -93,7 +93,7 @@ export default function ProfileScreen(){
             :e instanceof ApiError&&e.status===401
             ?t('A sessão expirou. Inicia sessão novamente para verificares o estado da conta.')
             :t('Não foi possível confirmar a resposta do servidor. Verifica se a conta ainda existe antes de repetires o pedido.');
-          Alert.alert('Eliminação não confirmada',detail);
+          Alert.alert(t('Eliminação não confirmada'),detail);
           setDeleting(false);
           return;
         }
@@ -101,10 +101,10 @@ export default function ProfileScreen(){
         try{
           await auth.logout();
           router.replace('/welcome');
-          Alert.alert('Conta eliminada',t('A tua conta foi eliminada e a sessão foi terminada.'));
+          Alert.alert(t('Conta eliminada'),t('A tua conta foi eliminada e a sessão foi terminada.'));
         }catch{
           router.replace('/welcome');
-          Alert.alert('Conta eliminada',t('O servidor confirmou a eliminação, mas não foi possível concluir a limpeza local. Fecha a aplicação antes de a voltar a utilizar.'));
+          Alert.alert(t('Conta eliminada'),t('O servidor confirmou a eliminação, mas não foi possível concluir a limpeza local. Fecha a aplicação antes de a voltar a utilizar.'));
         }finally{setDeleting(false);}
       })();}}
     ]);
@@ -229,7 +229,7 @@ export default function ProfileScreen(){
         ()=>router.replace('/welcome'),
         error=>{
           router.replace('/welcome');
-          Alert.alert('Verifica a sessão',error instanceof Error?error.message:
+          Alert.alert(t('Verifica a sessão'),error instanceof Error?error.message:
             t('Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.'));
         }
       );}}/>}

@@ -33,7 +33,7 @@ test('users can open public profiles from social lists and feed',()=>{
  assert.match(lists,/accessibilityLabel=\{\x60Abrir perfil de \$\{person\.username\}\x60\}/);
  assert.match(lists,/pathname:'\/social\/\[username\]'/);
  assert.match(feed,/pathname:'\/social\/\[username\]'/);
- assert.match(feed,/accessibilityLabel=\{\x60Abrir perfil de \$\{item\.authorUsername\}\x60\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Abrir perfil de \{v\}',\{v:item\.authorUsername\}\)\}/);
  assert.match(screen,/kind:'followers'/);
  assert.match(screen,/kind:'following'/);
 });

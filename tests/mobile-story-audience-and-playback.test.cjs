@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const home=read('app/(tabs)/index.tsx');
 const viewer=home.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0]||'';
 
@@ -44,7 +45,7 @@ test('the author alone sees the real unique view count and user list',()=>{
  assert.match(api,/Number\.isSafeInteger\(result\?\.viewCount\)/);
  assert.match(viewer,/ownStory\?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"/);
  assert.match(viewer,/await storyAudience\(id,actor\)/);
- assert.match(viewer,/audience\?audience\.viewCount\+' visualizações':'Ver visualizações'/);
+ assert.match(viewer,/audience\?t\('\{n\} visualizações',\{n:audience\.viewCount\}\):'Ver visualizações'/);
  assert.match(viewer,/storyAudiencePanel/);
  assert.match(viewer,/audience\?\.viewers\.map\(viewer=>/);
  assert.match(viewer,/router\.push\(\{pathname:'\/social\/\[username\]'/);

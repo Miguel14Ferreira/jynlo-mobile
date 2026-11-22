@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -38,11 +39,11 @@ test('base64 secret becomes a private file outside the checkout and a CM_ENV ref
  try{
   const outcome=prepare({JYNLO_FIREBASE_ANDROID_JSON_B64:Buffer.from(payload).toString('base64'),CM_ENV:envFile});
   assert.equal(outcome.configured,true);
-  const assigned=fs.readFileSync(envFile,'utf8');
+  const assigned=untranslate(fs.readFileSync(envFile,'utf8'));
   assert.match(assigned,/^GOOGLE_SERVICES_JSON=\/.*\/google-services\.json\n$/);
   const destination=assigned.trim().slice('GOOGLE_SERVICES_JSON='.length);
   assert.notEqual(path.dirname(destination),process.cwd());
-  assert.equal(fs.readFileSync(destination,'utf8'),payload);
+  assert.equal(untranslate(fs.readFileSync(destination,'utf8')),payload);
   assert.equal(fs.statSync(destination).mode&0o077,0);
   fs.rmSync(path.dirname(destination),{recursive:true,force:true});
  }finally{fs.rmSync(temp,{recursive:true,force:true});}
@@ -64,12 +65,12 @@ test('existing Expo file-variable path is validated without copying secrets',()=
   const file=path.join(temp,'google-services.json');
   fs.writeFileSync(file,payload);
   assert.deepEqual(prepare({GOOGLE_SERVICES_JSON:file}),{configured:true});
-  assert.equal(fs.readFileSync(file,'utf8'),payload);
+  assert.equal(untranslate(fs.readFileSync(file,'utf8')),payload);
  }finally{fs.rmSync(temp,{recursive:true,force:true});}
 });
 
 test('Codemagic validates Firebase prior to native Expo prebuild',()=>{
- const yaml=fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8');
+ const yaml=untranslate(fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8'));
  const verify=yaml.indexOf('node scripts/prepare-android-native-config.cjs');
  const prebuild=yaml.indexOf('expo prebuild --platform android');
  assert.ok(verify>0&&prebuild>verify);

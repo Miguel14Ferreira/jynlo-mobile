@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {rememberCommentFloor,reconcileCommentCounts,RECEIPT_TTL_MS}=require('../src/lib/feed-interaction-reconciliation.cjs');
-const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const post=(id,count)=>({type:'POST',postId:id,commentCount:count,likedByMe:false,likeCount:0});
 
 test('a confirmed comment never disappears from the aggregate after a stale GET',()=>{

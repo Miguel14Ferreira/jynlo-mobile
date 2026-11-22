@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
 const preview=code.slice(code.indexOf('async function previewBalancedTeams()'),code.indexOf('function persistBalancedTeams()'));
 const confirm=code.slice(code.indexOf('function persistBalancedTeams()'),code.indexOf('const renderTeam='));
 

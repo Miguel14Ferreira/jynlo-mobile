@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
@@ -21,7 +22,7 @@ test('estado de assiduidade so aparece quando sessao terminou',()=>{
  assert.equal(rosterAttendanceLabel('PENDING','COMPLETED'),null);
 });
 test('Quem vai protege lista e utiliza avatares sem criar endpoints novos',()=>{
- const view=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+ const view=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
  assert.ok(view.includes('canViewRoster(full,auth.username)'));
  assert.ok(view.includes('detail&&canViewRoster(detail,auth.username)'));
  assert.ok(view.includes('resolveJynloMedia(participant.profilePicUrl)'));

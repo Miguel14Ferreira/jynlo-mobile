@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=(file)=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const source=(file)=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 
 test('private conversation keeps the composer outside the scrollable history',()=>{
  const code=source('app/messages/[peer].tsx');

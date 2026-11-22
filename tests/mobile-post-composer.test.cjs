@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('text-only posts remain available and use the real authenticated JSON API',()=>{
  const home=read('app/(tabs)/index.tsx'),api=read('src/lib/social-feed-api.ts');
  assert.match(home,/async function submitPost\(\)\{/);

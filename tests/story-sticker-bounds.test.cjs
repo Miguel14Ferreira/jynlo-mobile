@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
@@ -42,8 +43,8 @@ test('extremely large sticker remains centered when it cannot fit',()=>{
 });
 test('Story composer uses responsive preview and compact layout on short screens',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
- const placement=fs.readFileSync(path.join(__dirname,'..','src','components','StoryTextPlacement.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
+ const placement=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','StoryTextPlacement.tsx'),'utf8'));
  assert.match(screen,/screenHeight\*0\.48/);
  assert.match(screen,/screenHeight<700&&styles\.storyComposerCompact/);
  assert.match(placement,/clampStickerPosition\(next,area,sticker,reservedTopPx\)/);
@@ -64,8 +65,8 @@ test('Story metadata badges reserve space so caption does not overlap them',()=>
 });
 test('published Stories and the editor both reserve the same metadata zone',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
- const details=fs.readFileSync(path.join(__dirname,'..','src','components','StoryDetailsView.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
+ const details=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','StoryDetailsView.tsx'),'utf8'));
  assert.match(screen,/storyMetadataReservedHeight\(story\.locationLabel,story\.taggedUsernames\)/);
  assert.match(screen,/storyMetadataReservedHeight\(storyLocation,storyTags\)/);
  assert.match(details,/<ScrollView horizontal showsHorizontalScrollIndicator=\{false\}/);
@@ -75,7 +76,7 @@ test('published Stories and the editor both reserve the same metadata zone',()=>
 
 test('editing a captured Story keeps native camera and gallery available in a compact toolbar',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const feed=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ const feed=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
  assert.match(feed,/accessibilityLabel="Tirar nova fotografia ou vídeo para a Story"/);
  assert.match(feed,/pickMedia\(setStoryMedia,'camera'\)/);
  assert.match(feed,/accessibilityLabel="Trocar fotografia ou vídeo da Story pela galeria"/);

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 const {REPORT_REASONS,composeReportReason}=require('../src/lib/report-reasons.cjs');
 
 test('report reasons compose a clear server note',()=>{
@@ -20,8 +21,8 @@ test('posts, comments and profiles can be reported where they are seen (store re
  assert.match(api,/\/comments\/\$\{validId\(commentId\)\}\/report`/);
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/accessibilityLabel="Denunciar publicação"/);
- assert.match(feed,/accessibilityLabel=\{'Bloquear @'\+postMenuItem\.authorUsername\}/);
- assert.match(feed,/accessibilityLabel=\{'Denunciar comentário de @'\+c\.authorUsername\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Bloquear @\{v\}',\{v:postMenuItem\.authorUsername\}\)\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Denunciar comentário de @\{v\}',\{v:c\.authorUsername\}\)\}/);
  assert.match(feed,/<ReportSheet inline visible=\{reportTarget\?\.kind==='comment'\}/);
  // Own content is never offered for reporting.
  assert.match(feed,/postMenuItem\.authorUsername\.toLowerCase\(\)!==auth\.username\.toLowerCase\(\)&&postMenuItem\.type==='POST'/);

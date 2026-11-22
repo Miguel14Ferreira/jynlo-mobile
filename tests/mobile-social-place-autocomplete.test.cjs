@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
-const search=fs.readFileSync(path.join(__dirname,'../src/lib/social-place-search.ts'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
+const search=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-place-search.ts'),'utf8'));
 
 test('post and Story geographic inputs require an explicitly selected real suggestion',()=>{
  assert.match(source,/verifiedPostPlace!==composerLocation\.trim\(\)/);

@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {recentPreviewMessageIds}=require('../src/lib/chat-attachments-core.cjs');
-const source=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const source=relative=>untranslate(fs.readFileSync(path.join(__dirname,'..',relative),'utf8'));
 const image=(id,deletedAt=null)=>({
  id,deletedAt,attachments:[{index:0,filename:'a.jpg',mimeType:'image/jpeg',size:1200},
  {index:1,filename:'b.jpg',mimeType:'image/jpeg',size:1500}]

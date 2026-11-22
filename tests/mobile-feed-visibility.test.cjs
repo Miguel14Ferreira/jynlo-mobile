@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -27,9 +28,9 @@ test('hiding is undoable and bounded per account without duplicating entries',()
 });
 
 test('mobile feed has viewer-local hide, undo and protected author actions',()=>{
- const code=fs.readFileSync(path.join(root,'app/(tabs)/index.tsx'),'utf8');
- const api=fs.readFileSync(path.join(root,'src/lib/social-feed-api.ts'),'utf8');
- const store=fs.readFileSync(path.join(root,'src/lib/feed-visibility-store.ts'),'utf8');
+ const code=untranslate(fs.readFileSync(path.join(root,'app/(tabs)/index.tsx'),'utf8'));
+ const api=untranslate(fs.readFileSync(path.join(root,'src/lib/social-feed-api.ts'),'utf8'));
+ const store=untranslate(fs.readFileSync(path.join(root,'src/lib/feed-visibility-store.ts'),'utf8'));
  assert.match(code,/Ocultar do meu feed/);
  assert.match(code,/Desfazer/);
  assert.match(code,/Ocultar esta atividade para todos/);

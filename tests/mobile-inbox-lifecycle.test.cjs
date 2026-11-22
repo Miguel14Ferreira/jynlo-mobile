@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8'));
 
 test('chat inbox refreshes on foreground push and on app resume',()=>{
  assert.match(source,/Notifications\.addNotificationReceivedListener\(notification=>/);
@@ -39,5 +40,5 @@ test('chat inbox reports freshness without erasing loaded conversations on parti
 
 test('partial sync failures never masquerade as an empty inbox',()=>{
  assert.match(source,/items\.length===0&&!error&&!chatWarning\?<Message>Não foram encontradas conversas acessíveis/);
- assert.match(source,/setChatWarning\(partial\?`Não foi possível sincronizar:/);
+ assert.match(source,/setChatWarning\(partial\?t\('Não foi possível sincronizar: \{areas\}/);
 });

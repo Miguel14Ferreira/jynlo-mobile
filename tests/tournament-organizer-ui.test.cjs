@@ -1,15 +1,16 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const root=path.join(__dirname,'..');
 test('ecrã exige confirmação antes de escrever resultados e iniciar ou terminar torneio',()=>{
- const file=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const file=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  for(const label of ['Publicar calendário?','Confirmar resultado?','Encerrar a liga?'])assert.ok(file.includes(label),label);
  assert.match(file,/canGenerateSchedule/);assert.match(file,/canRecordTournamentResult/);assert.match(file,/canCompleteTournament/);
  assert.match(file,/allVisibleFinished/);assert.match(file,/DEMO_MODE/);
  assert.doesNotMatch(file,/setInterval\(|retry\(/);
 });
 test('integra só as rotas reais e preserva bloqueio de publicação na demonstração',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/src\/lib\/performance-api/);
  assert.match(screen,/src\/lib\/tournament-fixtures-api/);
  assert.match(screen,/!DEMO_MODE/);
@@ -17,8 +18,8 @@ test('integra só as rotas reais e preserva bloqueio de publicação na demonstr
 });
 
 test('organizer editor validates the actual match and explains special scoring rules',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
- const types=fs.readFileSync(path.join(root,'src/lib/tournament-organizer-core.d.cts'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
+ const types=untranslate(fs.readFileSync(path.join(root,'src/lib/tournament-organizer-core.d.cts'),'utf8'));
  assert.match(screen,/validateTournamentMatchScore\(tournament,match,home,away\)/);
  assert.match(screen,/const match=matches\.find\(item=>item\.id===id\)/);
  assert.match(screen,/groupNumber:m\.groupNumber/);
@@ -30,7 +31,7 @@ test('organizer editor validates the actual match and explains special scoring r
 });
 
 test('guardar um marcador atualiza calendário, classificação e fases da competição',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  for(const token of [
   'tournamentTable(cid,info,auth.token,auth.username)',
   'teamTournamentGroups(cid,tid,auth.token,auth.username)',
@@ -55,7 +56,7 @@ test('guardar um marcador atualiza calendário, classificação e fases da compe
 });
 
 test('finalized cups retain read-only match results and official outcome',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/tournament\.status!=='DRAFT'\?<View style=\{styles\.panel\}>/);
  assert.match(screen,/tournament\.status==='COMPLETED'\?'Jogos e resultados finais'/);
  assert.match(screen,/canRecord\?<ScoreEditor/);
@@ -64,7 +65,7 @@ test('finalized cups retain read-only match results and official outcome',()=>{
 });
 
 test('failed post-result refresh blocks stale scores and premature league closure',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/\[fixturesVerified,setFixturesVerified\]=useState\(false\)/);
  assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);/);
  assert.match(screen,/setFixturesVerified\(true\);setSnapshotVerified\(true\);\s*setMatches\(response\.matches\.map/);
@@ -77,7 +78,7 @@ test('failed post-result refresh blocks stale scores and premature league closur
 });
 
 test('organizer can recover from an uncertain server result without replaying the write',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/title="Voltar a sincronizar dados"/);
  assert.match(screen,/onPress=\{\(\)=>\{void load\(generation\.current,!!tournament\);\}\}/);
  assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);/);
@@ -89,7 +90,7 @@ test('organizer can recover from an uncertain server result without replaying th
 });
 
 test('unconfirmed results and tables are never presented as current during recovery',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\);\s*setStandings\(null\);setGroups\(null\)/);
  assert.match(screen,/fixturesVerified&&standings\?<View/);
  assert.match(screen,/fixturesVerified&&tournament\.format==='GROUP_KNOCKOUT'&&type==='TEAM'&&groups/);
@@ -100,7 +101,7 @@ test('unconfirmed results and tables are never presented as current during recov
 });
 
 test('unconfirmed schedule publishing cannot be repeated after stale status',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/\[snapshotVerified,setSnapshotVerified\]=useState\(false\)/);
  assert.match(screen,/setFixturesVerified\(false\);setSnapshotVerified\(false\)/);
  assert.match(screen,/setStandings\(null\);setGroups\(null\);\s*setSnapshotVerified\(true\);\s*return true/);
@@ -110,7 +111,7 @@ test('unconfirmed schedule publishing cannot be repeated after stale status',()=
 });
 
 test('stale confirmation dialogs cannot publish, score or close a competition',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/expectedVersion!==generation\.current\|\|expectedReadVersion!==readVersion\.current/);
  assert.match(screen,/confirmationVersion=generation\.current,confirmationReadVersion=readVersion\.current/g);
  for(const action of [
@@ -123,7 +124,7 @@ test('stale confirmation dialogs cannot publish, score or close a competition',(
 });
 
 test('editor explains backend-locked group and knockout matches without offering a write',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/writeGuard:\{allowed:boolean;reason:string\|null\}/);
  assert.match(screen,/!writeGuard\.allowed\?<Text style=\{styles\.helper\}>\{writeGuard\.reason\}/);
  assert.match(screen,/disabled=\{busy\|\|!valid\|\|!writeGuard\.allowed\}/);
@@ -133,14 +134,14 @@ test('editor explains backend-locked group and knockout matches without offering
 });
 
 test('organizer calendar distinguishes group stage, knockout round and league match day',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  for(const label of ['Jornada ${m.roundNumber}','Grupo ${m.groupNumber} · Jornada ${m.roundNumber}','Eliminatória · Ronda ${m.roundNumber}'])
   assert.ok(screen.includes(label),label);
 });
 
 
 test('competition detail keeps official standings legible without computing local results',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8'));
  assert.match(screen,/tournamentTable\(communityId,result,auth\.token,auth\.username\)/);
  assert.match(screen,/standingsColumns\(kind\)/);
  assert.match(screen,/style=\{styles\.standingIdentity\}/);
@@ -149,7 +150,7 @@ test('competition detail keeps official standings legible without computing loca
  assert.doesNotMatch(screen,/setTable\(.*\.reduce\(/);
 });
 test('organizer fixture cards show only confirmed results and preserve write guards',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id]/manage.tsx'),'utf8'));
  assert.match(screen,/style=\{styles\.fixtureScoreRow\}/);
  assert.match(screen,/m\.status==='COMPLETED'\?\x60\$\{m\.homeScore\?\?'—'\} : \$\{m\.awayScore\?\?'—'\}\x60:'vs'/);
  assert.match(screen,/organizerMatchWriteGuard\(tournament,m,matches,groups,groups!==null\)/);
@@ -158,7 +159,7 @@ test('organizer fixture cards show only confirmed results and preserve write gua
 
 
 test('tournament detail invalidates stale standings before retry and ignores overlapping reads',()=>{
- const screen=fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(root,'app/tournaments/[communityId]/[id].tsx'),'utf8'));
  assert.match(screen,/const generation=useRef\(0\),requestVersion=useRef\(0\)/);
  assert.match(screen,/const request=\+\+requestVersion\.current/);
  assert.match(screen,/setTournament\(null\);setOrganizerRole\(null\);setTable\(null\);setTableError\(''\);setError\(''\)/);

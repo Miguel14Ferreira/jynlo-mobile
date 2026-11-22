@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const source=relative=>untranslate(fs.readFileSync(path.join(__dirname,'..',relative),'utf8'));
 test('only one authenticated camera/gallery picker can mutate composers at a time',()=>{
  const home=source('app/(tabs)/index.tsx');
  assert.match(home,/mediaPickerInFlight=useRef\(false\)/);

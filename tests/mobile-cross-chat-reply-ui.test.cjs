@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
+const read=name=>untranslate(fs.readFileSync(path.join(__dirname,'..',name),'utf8'));
 
 test('one accessible reply preview is shared by all three chat surfaces',()=>{
  const component=read('src/components/ChatReplyPreview.tsx');

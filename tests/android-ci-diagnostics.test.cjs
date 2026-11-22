@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/mobile-code-checks.yml'),'utf8');
+const workflow=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/mobile-code-checks.yml'),'utf8'));
 
 test('Android CI retains failure evidence for each validation stage',()=>{
  for(const label of ['jynlo-install.log','jynlo-release-check.log','jynlo-typescript.log','jynlo-tests.log','jynlo-android-bundle.log']){

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/_layout.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/_layout.tsx'),'utf8'));
 
 test('cold-start notification is retained until authentication is available',()=>{
  const authGuard=source.indexOf('if(!auth.token||!auth.username)return;',source.indexOf('function open(response:'));

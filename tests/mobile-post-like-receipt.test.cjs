@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {verifiedPostLikeReceipt}=require('../src/lib/social-like-receipt.cjs');
-const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 
 test('accepts authoritative liked and unliked states including zero likes',()=>{
  assert.deepEqual(verifiedPostLikeReceipt({likedByMe:true,likeCount:15}),{likedByMe:true,likeCount:15});

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -28,7 +29,7 @@ test('result message',()=>{
 });
 
 test('the organiser sees "Jogar outra vez" and creation invites the previous players',()=>{
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  const detail=read('app/sessions/[id].tsx');
  assert.match(detail,/detail\.status==='COMPLETED'\?<View style=\{styles\.panel\}>/);
  assert.match(detail,/params:\{repeatFrom:String\(id\)/);

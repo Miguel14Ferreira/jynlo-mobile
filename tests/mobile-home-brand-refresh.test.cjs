@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const home=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
-const tabs=fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8');
+const home=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
+const tabs=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/_layout.tsx'),'utf8'));
 
 // The home became the social feed with "Próximos jogos" (PR #26). The earlier
 // hero with quick actions was removed on purpose; these tests guard the current home.

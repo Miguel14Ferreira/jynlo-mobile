@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=name=>fs.readFileSync(path.join(root,name),'utf8');
+const read=name=>untranslate(fs.readFileSync(path.join(root,name),'utf8'));
 test('community replies preserve backend contract for text and attachment messages',()=>{
  const api=read('src/lib/chat-api.ts');
  assert.match(api,/sendCommunityMessage\(id:number,body:string,token:string,username:string,replyToMessageId\?:number\|null\)/);

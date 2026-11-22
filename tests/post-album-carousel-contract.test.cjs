@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 
 test('feed carousels measure their own cards rather than assuming device width',()=>{
  const carousel=read('src/components/PostAlbumCarousel.tsx');
@@ -41,10 +42,10 @@ test('multi-media posts show accessible current position and pagination dots',()
 test('album editor adapts preview width and allows long filenames to wrap without hiding controls',()=>{
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/width:composerMedia\.length===1\?Math\.max\(200,screenWidth-68\):Math\.max\(200,screenWidth-92\)/);
- assert.match(feed,/i===0\?' · Capa':''/);
+ assert.match(feed,/i===0\?' · '\+'Capa':''/);
  assert.match(feed,/postMediaPreviewFooter:\{gap:8/);
- assert.match(feed,/accessibilityLabel=\{\x60Mover ficheiro \$\{i\+1\} para trás\x60\}/);
- assert.match(feed,/accessibilityLabel=\{\x60Remover ficheiro \$\{i\+1\}\x60\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Mover ficheiro \{n\} para trás',\{n:i\+1\}\)\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Remover ficheiro \{n\}',\{n:i\+1\}\)\}/);
 });
 
 test('fullscreen gallery keeps images uncropped with visible close and album controls',()=>{

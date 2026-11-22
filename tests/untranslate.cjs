@@ -4,5 +4,6 @@
 module.exports=function untranslate(source){
  return String(source)
   .replace(/=\{t\('((?:[^'\\"]|\\.)*)'\)\}/g,(m,v)=>'="'+v.replace(/\\'/g,"'")+'"')
+  .replace(/>\{t\('((?:[^'\\]|\\.)*)'\)\}</g,(m,v)=>'>'+v.replace(/\\'/g,"'")+'<')
   .replace(/\bt\(('(?:[^'\\]|\\.)*')\)/g,'$1');
 };

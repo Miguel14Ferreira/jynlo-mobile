@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/my-sessions.tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../app/my-sessions.tsx'),'utf8'));
 
 test('my-sessions invalidates stale responses after account or focus change',()=>{
  assert.match(code,/const generation=useRef\(0\)/);

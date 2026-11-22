@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -7,7 +8,7 @@ const path = require('node:path');
 // Media uploads bypass the shared JSON request() helper because they send FormData.
 // Keep their bearer-only transport policy aligned with src/lib/api.ts.
 test('authenticated media uploads explicitly omit browser credentials', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../src/lib/social-feed-api.ts'), 'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname, '../src/lib/social-feed-api.ts'), 'utf8'));
   const upload = source.match(/async function sendMedia\([\s\S]*?\n}\n/);
   assert.ok(upload, 'expected sendMedia upload implementation');
   assert.match(source, /import \{fetch as expoFetch\} from 'expo\/fetch'/);

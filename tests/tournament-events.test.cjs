@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -34,8 +35,8 @@ test('pontos das corridas seguem a validação exata do backend',()=>{
   assert.throws(()=>validateRacePointsCsv(value));
 });
 test('endpoints e métodos vêm dos controllers existentes, sem mutações em mount',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-events-api.ts'),'utf8');
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/events.tsx'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-events-api.ts'),'utf8'));
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/events.tsx'),'utf8'));
  assert.match(api,/method:action==='link'\?'PUT':'DELETE'/);
  assert.match(api,/method:'PUT',body:\{pointsByPlace\}/);
  assert.match(api,/DEMO_MODE/);
@@ -45,6 +46,6 @@ test('endpoints e métodos vêm dos controllers existentes, sem mutações em mo
  assert.match(screen,/locked\.current/);
  assert.match(screen,/changeTournamentRound/);
  assert.match(screen,/updateTournamentRacePoints/);
- const detail=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id].tsx'),'utf8');
+ const detail=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id].tsx'),'utf8'));
  assert.match(detail,/\/tournaments\/\[communityId\]\/\[id\]\/events/);
 });

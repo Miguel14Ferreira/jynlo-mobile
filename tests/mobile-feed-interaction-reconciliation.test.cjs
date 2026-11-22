@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {rememberPostLike,reconcilePostLikes,RECEIPT_TTL_MS}=require('../src/lib/feed-interaction-reconciliation.cjs');
-const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const post=(id,liked=false,count=0)=>({type:'POST',postId:id,likedByMe:liked,likeCount:count,content:'olá'});
 
 test('old feed response cannot undo a confirmed post like',()=>{

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const chat=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
+const chat=untranslate(fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8'));
 const focus=chat.slice(chat.indexOf('useFocusEffect(useCallback('),chat.indexOf('async function updateBlock()'));
 const blocking=chat.slice(chat.indexOf('async function updateBlock()'),chat.indexOf('async function submitReport()'));
 const reporting=chat.slice(chat.indexOf('async function submitReport()'),chat.indexOf('async function send()'));

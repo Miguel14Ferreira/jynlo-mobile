@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const {publicSessionResultMessage}=require('../src/lib/session-result-share.cjs');
 
 const publicGame={id:7,sport:'Futebol',status:'COMPLETED',canSharePublicly:true};

@@ -1,11 +1,12 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const eas=JSON.parse(fs.readFileSync(path.join(root,'eas.json'),'utf8'));
-const app=JSON.parse(fs.readFileSync(path.join(root,'app.json'),'utf8')).expo;
+const eas=JSON.parse(untranslate(fs.readFileSync(path.join(root,'eas.json'),'utf8')));
+const app=JSON.parse(untranslate(fs.readFileSync(path.join(root,'app.json'),'utf8'))).expo;
 test('TestFlight is a store-signed iOS build, separate from Android diagnostics',()=>{
  const ios=eas.build['ios-testflight'];
  assert.equal(ios.distribution,'store');
@@ -42,7 +43,7 @@ test('iOS TestFlight blocks preview API without asking for Android Maps/Firebase
 });
 
 test('Codemagic iOS workflow uses production API credentials and signs only validated builds',()=>{
- const yaml=fs.readFileSync(path.join(root,'codemagic.yaml'),'utf8');
+ const yaml=untranslate(fs.readFileSync(path.join(root,'codemagic.yaml'),'utf8'));
  const start=yaml.indexOf('  jynlo-ios-testflight:');
  const stop=yaml.indexOf('\n# Diagnostic-only:',start);
  assert.ok(start>=0&&stop>start,'Missing isolated Codemagic TestFlight workflow');

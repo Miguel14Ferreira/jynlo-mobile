@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 const cal=require('../src/lib/session-calendar.cjs');
 const session={id:7,sport:'Futsal',gameDate:'2026-12-04T21:00:00Z',city:'Odivelas',creatorUsername:'miguel'};
 

@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {editSessionPayload,toDateTime}=require('../src/lib/session-details-edit-core.cjs');
-const source=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const source=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 const future=new Date(Date.now()+86400000*10);
 const date=[future.getFullYear(),String(future.getMonth()+1).padStart(2,'0'),String(future.getDate()).padStart(2,'0')].join('-');
 const input=()=>({sport:'Padel',date,hour:'20:00',city:'Lisboa',address:'Rua do Desporto 12',

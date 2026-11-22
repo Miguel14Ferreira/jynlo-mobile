@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const viewer=feed.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0];
 const post=feed.split('function PostCard(')[1]?.split('const Header=')[0];
 
@@ -31,14 +32,14 @@ test('image-led posts show caption after engagement controls; session activities
 });
 
 test('native video pauses while story viewer is held',()=>{
- const source=fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8');
+ const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8'));
  assert.match(source,/paused=false/);
  assert.match(source,/if\(paused\)player\.pause\(\)/);
  assert.match(source,/else player\.play\(\)/);
 });
 
 test('story videos advance once at native playback completion, without looping',()=>{
- const source=fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8');
+ const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/FeedVideo.tsx'),'utf8'));
  assert.match(source,/p\.loop=false/);
  assert.match(source,/player\.addListener\('playToEnd'/);
  assert.match(source,/if\(ended\.current\)return/);
@@ -73,7 +74,7 @@ test('Stories open the device camera and still offer a gallery without a tall bl
  assert.match(composer,/StoryCameraCapture key=\{storyComposerRevision\.current\}/);
  assert.match(composer,/pickMedia\(setStoryMedia,'gallery'\)/);
  assert.match(composer,/accessibilityLabel="Fechar criação de Story"/);
- const camera=fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8');
+ const camera=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/StoryCameraCapture.tsx'),'utf8'));
  assert.match(camera,/ImagePicker\.launchCameraAsync/);
  assert.doesNotMatch(camera,/<CameraView/);
 });
@@ -91,7 +92,7 @@ test('post creation supports camera, multiple gallery assets and one-item remova
  assert.match(composer,/composerMedia\.map\(\(media,i\)=>/);
  assert.match(composer,/Image source=\{\{uri:media.uri\}\} resizeMode="contain"/);
  assert.match(composer,/MediaVideo key=\{media.uri\} uri=\{media.uri\}/);
- assert.match(composer,/accessibilityLabel=\{`Remover ficheiro \$\{i\+1\}`\}/);
+ assert.match(composer,/accessibilityLabel=\{t\('Remover ficheiro \{n\}',\{n:i\+1\}\)\}/);
  assert.match(composer,/changeComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
  assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);
@@ -133,11 +134,11 @@ test('sharing a post or attendance activity uses the correct canonical URL',()=>
  assert.ok(share);
  assert.match(share,/sharedPostLink\(item\)/);
  assert.match(share,/Share\.share/);
- const shared=fs.readFileSync(path.join(__dirname,'../src/lib/shared-post-link.cjs'),'utf8');
+ const shared=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/shared-post-link.cjs'),'utf8'));
  assert.match(shared,/\/posts\//);assert.match(shared,/\/sessions\//);
 });
 test('posting media without typed caption uses a valid default backend caption',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  assert.match(api,/const caption=content\.trim\(\)/);
  assert.match(api,/const confirmed=await sendMedia\('\/api\/feed\/posts',\{content:caption,/);
 });

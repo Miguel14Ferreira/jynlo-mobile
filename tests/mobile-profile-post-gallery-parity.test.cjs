@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('profile gallery renders complete images, labels videos and preserves album counts',()=>{
  const s=read('src/components/ProfilePosts.tsx');
  assert.match(s,/postMediaItems\(item\)/);

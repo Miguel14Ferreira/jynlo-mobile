@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {confirmedChatAlbumReply}=require('../src/lib/chat-attachments-core.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const mimes=['image/jpeg','video/mp4'];
 const valid={id:123,attachments:[
  {index:0,filename:'one.jpg',mimeType:'image/jpeg',size:123},

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('organizer can quickly edit and share without opening advanced tools',()=>{
  const view=read('app/sessions/[id].tsx');
  const panel=view.indexOf('FERRAMENTAS DO ORGANIZADOR');
@@ -36,8 +37,8 @@ test('session detail uses accessible metadata and 44pt attendance actions',()=>{
  assert.match(view,/attendanceButton:\{[^\n]*minHeight:44/);
  assert.match(view,/removePlayerButton:\{[^\n]*minHeight:44/);
  assert.match(view,/memberStatus:\{color:C\.muted,fontSize:13/);
- assert.match(view,/accessibilityLabel=\{'Confirmar presença de '\+p\.username\}/);
- assert.match(view,/accessibilityLabel=\{'Registar falta de '\+p\.username\}/);
+ assert.match(view,/accessibilityLabel=\{t\('Confirmar presença de \{user\}',\{user:p\.username\}\)\}/);
+ assert.match(view,/accessibilityLabel=\{t\('Registar falta de \{user\}',\{user:p\.username\}\)\}/);
 });
 
 
@@ -61,5 +62,5 @@ test('session roster has accessible disclosure without changing management permi
  assert.match(s,/showParticipantRoster\?<>/);
  assert.match(s,/participants\.map\(p=>/);
  assert.match(s,/owner&&\['OPEN','FULL'\]\.includes\(detail\.status\)/);
- assert.match(s,/accessibilityLabel=\{'Confirmar presença de '\+p\.username\}/);
+ assert.match(s,/accessibilityLabel=\{t\('Confirmar presença de \{user\}',\{user:p\.username\}\)\}/);
 });

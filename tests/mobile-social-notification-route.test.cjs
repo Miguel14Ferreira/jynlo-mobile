@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {notificationDestination}=require('../src/lib/notification-route.cjs');
-const inbox=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+const inbox=untranslate(fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8'));
 
 test('new follower opens only a validated related public profile',()=>{
  assert.deepEqual(notificationDestination({type:'SOCIAL_NEW_FOLLOWER',relatedUsername:'jogador_1'}),{kind:'social-profile',peer:'jogador_1'});
@@ -39,8 +40,8 @@ test('inbox resolves push IDs against own notification history and routes social
 });
 
 test('social post route uses server lookup, safe account-scoped state and explicit sends',()=>{
- const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const post=untranslate(fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8'));
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  assert.match(inbox,/case 'social-post':router\.push/);
  assert.match(api,/\/api\/feed\/posts\/\$\{postId\}/);
  assert.match(post,/socialPostById\(id,auth\.token\)/);
@@ -50,8 +51,8 @@ test('social post route uses server lookup, safe account-scoped state and explic
 });
 
 test('post detail respects authors hidden liker list without disabling heart',()=>{
- const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
- const types=fs.readFileSync(path.join(__dirname,'../src/lib/types.ts'),'utf8');
+ const post=untranslate(fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8'));
+ const types=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/types.ts'),'utf8'));
  assert.match(types,/hideLikers\?:boolean/);
  assert.match(post,/post\.hideLikers&&post\.authorUsername\.toLowerCase\(\)!==auth\.username\?\.toLowerCase\(\)/);
  assert.match(post,/disabled=\{Boolean\(post\.hideLikers/);
@@ -60,7 +61,7 @@ test('post detail respects authors hidden liker list without disabling heart',()
 });
 
 test('older post write cannot clear the in-flight lock of a newly opened account',()=>{
- const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
+ const post=untranslate(fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8'));
  const release='finally{if(version===generation.current){writing.current=false;setBusy(false);}}';
  assert.ok(post.split(release).length-1>=2,'likes and comments must guard current screen generation');
  const privacy=post.slice(post.indexOf('async function toggleLikerPrivacy()'),post.indexOf('async function comment()'));
@@ -70,8 +71,8 @@ test('older post write cannot clear the in-flight lock of a newly opened account
 });
 
 test('post owner can change liker visibility only after server confirmation',()=>{
- const post=fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const post=untranslate(fs.readFileSync(path.join(__dirname,'../app/posts/[postId]/index.tsx'),'utf8'));
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  assert.match(api,/export async function setPostLikerPrivacy/);
  assert.match(api,/\/api\/feed\/posts\/\$\{postId\}\/likers\/privacy/);
  assert.match(api,/method:'PUT',body:\{hidden\}/);
@@ -92,7 +93,7 @@ test('story likes target live stories but replies open durable private history',
  }
  assert.match(inbox,/case 'social-story':router\.push/);
  assert.match(inbox,/case 'story-replies':router\.push\('\/stories\/replies'\)/);
- const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+ const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
  assert.match(feed,/storyById\(Number\(storyId\),originalToken,auth\.username\)/);
  assert.match(feed,/Story indisponível/);
 });

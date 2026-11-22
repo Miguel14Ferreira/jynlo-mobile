@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {currentLocale,t} from '../lib/i18n';
 import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -67,8 +68,8 @@ export function Brand({subtitle}:{subtitle?:string}){
   </View>;
 }
 export function DemoBanner(){return DEMO_MODE?<View style={styles.demoBanner}>
-  <Text style={styles.demoText}>● MODO DEMONSTRAÇÃO</Text>
-  <Text style={styles.demoSub}>Sessões e perfis fictícios. Nada é enviado para a Jynlo real.</Text>
+  <Text style={styles.demoText}>{t('● MODO DEMONSTRAÇÃO')}</Text>
+  <Text style={styles.demoSub}>{t('Sessões e perfis fictícios. Nada é enviado para a Jynlo real.')}</Text>
 </View>:null;}
 export function Eyebrow({children}:{children:React.ReactNode}){
   return <Text style={styles.eyebrow}>{children}</Text>;
@@ -94,30 +95,30 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   const progress=participationProgress(session);
   const hasCapacity=Number.isFinite(session.maxParticipants)&&session.maxParticipants>0;
   const count=Number.isFinite(session.participantCount)?Math.max(0,session.participantCount):0;
-  const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString('pt-PT')} km`:null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão de ${session.sport} em ${session.city||'local a confirmar'}`}
+  const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString(currentLocale())} km`:null].filter(Boolean).join(' · ');
+  return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessão de {sport} em {city}',{sport:session.sport,city:session.city||t('local a confirmar')})}
     onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
     <View style={styles.cardTop}>
       <View style={styles.sportBox}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
       <View style={styles.cardIdentity}>
         <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
-        <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||'Local a confirmar'}</Text></View>
+        <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||t('Local a confirmar')}</Text></View>
         {isLevel(session.skillLevel)?<Text style={styles.cardLevel}>🎯 {levelLabel(session.skillLevel)}</Text>:null}
       </View>
       <JynloIcon name="chevron-right" size={25} color={MobileTheme.colors.accent}/>
     </View>
     <View style={styles.metrics}>
-      <View style={styles.metricCell}><Text style={styles.metricKey}>DATA E HORA</Text><Text style={styles.metricValue}>{formatDate(session.gameDate)}</Text></View>
-      <View style={styles.metricCell}><Text style={styles.metricKey}>PREÇO</Text><Text style={styles.metricValue}>{money(session.priceAmount)}</Text></View>
+      <View style={styles.metricCell}><Text style={styles.metricKey}>{t('DATA E HORA')}</Text><Text style={styles.metricValue}>{formatDate(session.gameDate)}</Text></View>
+      <View style={styles.metricCell}><Text style={styles.metricKey}>{t('PREÇO')}</Text><Text style={styles.metricValue}>{money(session.priceAmount)}</Text></View>
     </View>
     <View style={styles.participationHead}>
-      <Text style={styles.participationLabel}>{hasCapacity?`${count}/${session.maxParticipants} jogadores`:'Participantes por confirmar'}</Text>
+      <Text style={styles.participationLabel}>{hasCapacity?t('{count}/{max} jogadores',{count,max:session.maxParticipants}):t('Participantes por confirmar')}</Text>
       <View style={[styles.statusPill,status.tone==='available'&&styles.statusAvailable,status.tone==='joined'&&styles.statusJoined]}>
         <Text style={[styles.statusText,(status.tone==='available'||status.tone==='joined')&&styles.statusTextHighlight]}>{status.label}</Text>
       </View>
     </View>
-    {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel="Ocupação da sessão"><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
-    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>Ver detalhes da sessão</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
+    {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel={t('Ocupação da sessão')}><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
+    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>{t('Ver detalhes da sessão')}</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
   </Pressable>;
 }
 const styles=StyleSheet.create({

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {sharedPostLink}=require('../src/lib/shared-post-link.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('post links target a post, while session activity links to its session',()=>{
  assert.equal(sharedPostLink({type:'POST',postId:44,sessionId:null}),'https://d24sports.com/posts/44');
  assert.equal(sharedPostLink({type:'SESSION_ATTENDED',postId:null,sessionId:18}),'https://d24sports.com/sessions/18');

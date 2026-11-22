@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8'));
 const logout=code.slice(code.indexOf('const logout=useCallback'),code.indexOf('const value=useMemo'));
 
 test('logout removes in-memory identity before remote network cleanup',()=>{

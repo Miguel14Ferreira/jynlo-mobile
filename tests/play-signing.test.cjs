@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {configurePlaySigning}=require('../scripts/configure-play-signing.cjs');
@@ -14,7 +15,7 @@ test('Play signing refuses unknown gradle templates',()=>{
  assert.throws(()=>configurePlaySigning('android { buildTypes { debug {} release {} } }'));
 });
 test('Internal Play AAB workflow accepts guarded versioned requests and requires secrets',()=>{
- const y=fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8');
+ const y=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8'));
  assert.match(y,/workflow_dispatch:/);
   // Confirmation is manual and restricted to develop; never trigger on push.
   assert.doesNotMatch(y,/^  push:/m);
@@ -30,7 +31,7 @@ test('Internal Play AAB workflow accepts guarded versioned requests and requires
 });
 
 test('Play upload key is verified before the expensive Gradle signing build',()=>{
- const y=fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8');
+ const y=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/build-play-internal-aab.yml'),'utf8'));
  const preflight=y.indexOf('name: Validar chave e passwords antes do Gradle');
  const gradle=y.indexOf('name: Gerar AAB release com assinatura do proprietário');
  assert.ok(preflight>0&&gradle>preflight);

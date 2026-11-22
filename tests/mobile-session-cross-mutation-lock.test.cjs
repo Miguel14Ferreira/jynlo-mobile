@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
 const section=(start,end)=>code.slice(code.indexOf(start),code.indexOf(end,code.indexOf(start)));
 const perform=section('const perform=async(','const s=detail||preview');
 const removal=section('function confirmRemoveParticipant(','function confirmAttendance(');

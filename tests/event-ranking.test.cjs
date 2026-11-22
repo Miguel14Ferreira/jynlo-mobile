@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
@@ -61,7 +62,7 @@ test('event series accept entries while in progress, but leaving only before the
 
 test('mobile sport list matches the web list',()=>{
  const {EVENT_RANKING_SPORTS}=require('../src/lib/tournament-create-core.cjs');
- const sports=fs.readFileSync(path.join(__dirname,'../src/lib/sports.ts'),'utf8');
+ const sports=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/sports.ts'),'utf8'));
  for(const sport of EVENT_RANKING_SPORTS)assert.ok(sports.includes(`'${sport}'`),sport+' missing from catalog');
  assert.equal(EVENT_RANKING_SPORTS.size,47);
 });
@@ -73,6 +74,6 @@ test('public share links only point to the two public pages',()=>{
  for(const bad of ['https://evil.example/x','/torneio/0','/torneio/1?x=1','//evil.com/torneio/1',''])
   assert.throws(()=>publicShareUrl(bad),bad);
  assert.match(shareMessage('TOURNAMENT','Taça',publicShareUrl('/torneio/12')),/Taça[\s\S]*d24sports\.com\/torneio\/12/);
- const source=fs.readFileSync(path.join(__dirname,'../src/components/PublicShareCard.tsx'),'utf8');
+ const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/PublicShareCard.tsx'),'utf8'));
  assert.match(source,/\(!setting\.enabled&&!canManage\)\)return null/);
 });

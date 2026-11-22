@@ -1,6 +1,7 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 
 test('Google sign-in is native and uses server-provided OAuth web client ID',()=>{
  const google=read('src/lib/google-credential.ts');

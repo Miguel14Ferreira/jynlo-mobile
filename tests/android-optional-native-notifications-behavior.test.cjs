@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -5,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 
-const source=fs.readFileSync(path.join(__dirname,'../src/lib/optional-notifications.cjs'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/optional-notifications.cjs'),'utf8'));
 function loadWithNative(nativeRequire){
  const module={exports:{}};
  vm.runInNewContext(source,{module,exports:module.exports,require:nativeRequire},{filename:'optional-notifications.cjs',timeout:1000});

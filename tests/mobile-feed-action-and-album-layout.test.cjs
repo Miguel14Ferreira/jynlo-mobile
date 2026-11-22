@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 
 test('feed keeps like, comment and share buttons visible and separate from counters',()=>{
  const home=read('app/(tabs)/index.tsx');
@@ -17,7 +18,7 @@ test('feed keeps like, comment and share buttons visible and separate from count
  assert.match(card,/openComments\(item\)/);
  assert.match(card,/sharePost\(item\)/);
  assert.match(card,/item\.hideLikers/);
- assert.match(card,/item\.commentCount\} comentários/);
+ assert.match(card,/t\('\{a\} comentários',\{a:item\.commentCount\}\)/);
  assert.match(card,/pathname:'\/posts\/\[postId\]\/likers'/);
  assert.match(card,/pathname:'\/posts\/\[postId\]'/);
 });

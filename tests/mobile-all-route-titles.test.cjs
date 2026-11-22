@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const app=path.join(__dirname,'../app');
-const layout=fs.readFileSync(path.join(app,'_layout.tsx'),'utf8');
+const layout=untranslate(fs.readFileSync(path.join(app,'_layout.tsx'),'utf8'));
 function screens(folder,parts=[]){
  return fs.readdirSync(folder,{withFileTypes:true}).flatMap(entry=>{
   if(entry.name==='(tabs)'||entry.name.startsWith('+'))return [];

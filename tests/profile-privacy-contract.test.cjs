@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const read=path=>fs.readFileSync(path,'utf8');
+const read=path=>untranslate(fs.readFileSync(path,'utf8'));
 
 test('privacy changes are authorized server operations, never local-only toggles',()=>{
  const client=read('src/lib/profile-privacy-api.ts');

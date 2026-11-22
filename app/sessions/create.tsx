@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {currentLocale,t} from '../../src/lib/i18n';
 import {Alert,Linking,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
@@ -46,21 +47,21 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
  });
  const today=new Date();
  const todayKey=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
- const label=month.toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
+ const label=month.toLocaleDateString(currentLocale(),{month:'long',year:'numeric'});
  return <View style={{borderWidth:1,borderColor:C.muted,borderRadius:14,padding:12,gap:10,marginVertical:8}}>
   <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Mês anterior" disabled={disabled}
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Mês anterior')} disabled={disabled}
     onPress={()=>setMonth(new Date(year,index-1,1))} style={{padding:10}}>
     <Text style={{color:C.white,fontSize:19}}>‹</Text>
    </Pressable>
    <Text style={{color:C.white,fontWeight:'700',textTransform:'capitalize'}}>{label}</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel="Mês seguinte" disabled={disabled}
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Mês seguinte')} disabled={disabled}
     onPress={()=>setMonth(new Date(year,index+1,1))} style={{padding:10}}>
     <Text style={{color:C.white,fontSize:19}}>›</Text>
    </Pressable>
   </View>
   <View style={{flexDirection:'row'}}>
-   {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(day=><Text key={day} style={{width:'14.285%',textAlign:'center',color:C.muted,fontSize:12}}>{day}</Text>)}
+   {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(day=><Text key={day} style={{width:'14.285%',textAlign:'center',color:C.muted,fontSize:12}}>{t(day)}</Text>)}
   </View>
   <View style={{flexDirection:'row',flexWrap:'wrap'}}>
    {cells.map((day,i)=>{
@@ -78,7 +79,7 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
     </View>;
    })}
   </View>
-  <Text style={{color:C.muted,fontSize:12}}>Escolhe uma data de hoje em diante. A hora é definida abaixo.</Text>
+  <Text style={{color:C.muted,fontSize:12}}>{t('Escolhe uma data de hoje em diante. A hora é definida abaixo.')}</Text>
  </View>;
 }
 
@@ -108,7 +109,7 @@ export default function CreateSessionScreen(){
  const [showExtraCalendar,setShowExtraCalendar]=useState(false);
  // Selection controls whether an existing group of players must be counted explicitly.
  const [hasExistingPlayers,setHasExistingPlayers]=useState(false);
- const stepLabels=['Modalidade','Local e data','Participação','Rever'];
+ const stepLabels=[t('Modalidade'),t('Local e data'),t('Participação'),t('Rever')];
  const [sportSearch,setSportSearch]=useState('');
  const [showSportResults,setShowSportResults]=useState(false);
  const [customSportMode,setCustomSportMode]=useState(false);
@@ -120,10 +121,10 @@ export default function CreateSessionScreen(){
   try{
    const input={...form,additionalWeeklySlots:next};
    const count=Number(form.recurrenceOccurrences||'0');
-   if(!Number.isInteger(count)||count<2||count>52)throw Error('Escolhe entre 2 e 52 ciclos de repetição.');
+   if(!Number.isInteger(count)||count<2||count>52)throw Error(t('Escolhe entre 2 e 52 ciclos de repetição.'));
    validateWeeklySlots(form.day,form.time,next,form.recurrence||'NONE',count);
    setForm(input);setExtraDay('');setExtraTime('');setError('');
-  }catch(e){setError(e instanceof Error?e.message:'Horário adicional inválido.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Horário adicional inválido.'));}
  }
  function removeWeeklySlot(index:number){
   setForm(prev=>({...prev,additionalWeeklySlots:(prev.additionalWeeklySlots||[]).filter((_,i)=>i!==index)}));
@@ -170,15 +171,15 @@ export default function CreateSessionScreen(){
     city:address?.city||prev.city,address:address?.address||prev.address,
     latitude:point.latitude,longitude:point.longitude,locationConfirmed:false}));
   setLocationMessage(address?
-    'Morada aproximada. Confirma o ponto no mapa antes de continuar.':
-    'O ponto GPS foi obtido, mas não foi possível identificar a morada. Preenche a localidade e a morada manualmente; o ponto mantém-se inalterado.');
+    t('Morada aproximada. Confirma o ponto no mapa antes de continuar.'):
+    t('O ponto GPS foi obtido, mas não foi possível identificar a morada. Preenche a localidade e a morada manualmente; o ponto mantém-se inalterado.'));
  }
  async function useCurrentLocation(){
   if(busy||locationLoading)return;
   const requestId=++locationRequest.current;
   setLocationLoading(true);setLocationMessage('');
   try{await useMappedPoint(await getCurrentSessionCoordinates(),requestId);}
-  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível obter a localização.');}
+  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:t('Não foi possível obter a localização.'));}
   finally{if(locationRequest.current===requestId)setLocationLoading(false);}
  }
  async function useMapsLink(){
@@ -191,12 +192,12 @@ export default function CreateSessionScreen(){
    await useMappedPoint(point,requestId);
    if(locationRequest.current===requestId)setVerifiedMapsLink(requestedUrl);
   }
-  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:'Não foi possível resolver a ligação.');}
+  catch(e){if(locationRequest.current===requestId)setLocationMessage(e instanceof Error?e.message:t('Não foi possível resolver a ligação.'));}
   finally{if(locationRequest.current===requestId)setLocationLoading(false);}
  }
  function previewMappedPoint(){
   if(form.latitude==null||form.longitude==null)return;
-  void Linking.openURL(googleMapsPreview(form.latitude,form.longitude)).catch(()=>setLocationMessage('Não foi possível abrir o Google Maps. Confirma o ponto antes de continuar.'));
+  void Linking.openURL(googleMapsPreview(form.latitude,form.longitude)).catch(()=>setLocationMessage(t('Não foi possível abrir o Google Maps. Confirma o ponto antes de continuar.')));
  }
  function clearVenueSearch(){
   venueSearchVersion.current+=1;
@@ -221,7 +222,7 @@ export default function CreateSessionScreen(){
    setVenueHasMore(results.hasMore);
    setVenueSearched(true);
   }catch(e){
-   if(version===venueSearchVersion.current)setVenueError(e instanceof Error?e.message:'Não foi possível procurar recintos.');
+   if(version===venueSearchVersion.current)setVenueError(e instanceof Error?e.message:t('Não foi possível procurar recintos.'));
   }finally{
    if(version===venueSearchVersion.current)setVenueLoading(false);
   }
@@ -257,12 +258,12 @@ export default function CreateSessionScreen(){
      setCommunityMode('SINGLE');
      setForm(previous=>({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
       sport:chosenSport||(sports.includes(previous.sport)?previous.sport:''),communityRankingsEnabled:chosen.rankingsEnabled}));
-    }else setCommunityError('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.');
+    }else setCommunityError(t('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.'));
    }
   }
   catch{
    if(version===communityLoadVersion.current){
-    setCommunities([]);setCommunityError('Não foi possível carregar as tuas comunidades.');
+    setCommunities([]);setCommunityError(t('Não foi possível carregar as tuas comunidades.'));
    }
   }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
@@ -284,8 +285,8 @@ export default function CreateSessionScreen(){
      const patchFields=repeatFormPatch(detail);
      if(!patchFields)return;
      setForm(previous=>({...previous,...patchFields} as CreateSessionForm));
-     setRepeatNote('Copiámos o jogo anterior para '+patchFields.day+' às '+patchFields.time+'. Revê os dados; depois de criares, convidamos os jogadores da última vez.');
-    }).catch(()=>setRepeatNote('Não foi possível copiar o jogo anterior. Preenche os dados normalmente.'));
+     setRepeatNote(t('Copiámos o jogo anterior para {day} às {time}. Revê os dados; depois de criares, convidamos os jogadores da última vez.',{day:String(patchFields.day??''),time:String(patchFields.time??'')}));
+    }).catch(()=>setRepeatNote(t('Não foi possível copiar o jogo anterior. Preenche os dados normalmente.')));
    }
    setStep(0);setHasExistingPlayers(false);
    setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
@@ -321,7 +322,7 @@ export default function CreateSessionScreen(){
    setPresets([]);setPresetId(null);setPresetName('');setPresetMessage('');setPresetNotes([]);untemplated.current=null;}
   setPresetError('');
   if(auth.token&&!DEMO_MODE)myPresets(auth.token).then(list=>{if(live)setPresets(Array.isArray(list)?list:[]);})
-   .catch(()=>{if(live)setPresetError('Não foi possível carregar os perfis de sessões.');});
+   .catch(()=>{if(live)setPresetError(t('Não foi possível carregar os perfis de sessões.'));});
   return()=>{live=false;};
  },[auth.token]));
  function resetLocationUi(){
@@ -341,7 +342,7 @@ export default function CreateSessionScreen(){
   const preset=presets.find(p=>p.id===id);if(!preset)return;
   let next:ReturnType<typeof formFromPreset>;
   try{next=formFromPreset(emptySessionForm(),preset.settings,{sports:SPORTS,communityIds:communities.map(c=>c.id)});}
-  catch(e){setPresetError(e instanceof Error?e.message:'Não foi possível aplicar o perfil.');return;}
+  catch(e){setPresetError(e instanceof Error?e.message:t('Não foi possível aplicar o perfil.'));return;}
   if(!untemplated.current)untemplated.current={form,communityMode,hasExistingPlayers};
   const chosenCommunity=communities.find(c=>c.id===next.form.communityId);
   resetLocationUi();setCustomSportMode(false);setSportSearch('');setShowSportResults(false);setExtraDay('');setExtraTime('');
@@ -350,14 +351,14 @@ export default function CreateSessionScreen(){
   if(next.mapsLink){setMapsLink(next.mapsLink);setVerifiedMapsLink(next.mapsLink);}
   setForm({...next.form,communityRankingsEnabled:!!chosenCommunity?.rankingsEnabled});
   setPresetNotes(presetNotesText(next.notes));
-  setPresetMessage('Configuração aplicada. Escolhe agora o dia e a hora do próximo jogo.');
+  setPresetMessage(t('Configuração aplicada. Escolhe agora o dia e a hora do próximo jogo.'));
   if(next.venueId){
    const sport=next.form.sport;
    venueDetails(next.venueId,auth.token).then(v=>{
     if(revision!==presetRevision.current)return;
-    if(!venueSupportsSport(v,sport)){setPresetError('O recinto guardado não tem esta modalidade. Escolhe outro recinto.');return;}
+    if(!venueSupportsSport(v,sport)){setPresetError(t('O recinto guardado não tem esta modalidade. Escolhe outro recinto.'));return;}
     useVenue(v);
-   }).catch(()=>{if(revision===presetRevision.current)setPresetError('Este recinto guardado já não está disponível. Escolhe outro recinto.');});
+   }).catch(()=>{if(revision===presetRevision.current)setPresetError(t('Este recinto guardado já não está disponível. Escolhe outro recinto.'));});
   }
  }
  async function savePreset(update:boolean){
@@ -365,15 +366,15 @@ export default function CreateSessionScreen(){
   setPresetError('');setPresetMessage('');
   let name:string,settings:ReturnType<typeof presetFromForm>;
   try{name=validatePresetName(presetName);settings=presetFromForm(form,{hasExistingPlayers,locationMode,verifiedMapsLink});}
-  catch(e){setPresetError(e instanceof Error?e.message:'Confirma os dados do perfil.');return;}
-  if(!update&&presets.length>=MAX_PRESETS){setPresetError('Já tens 20 perfis. Elimina um antes de criares outro.');return;}
+  catch(e){setPresetError(e instanceof Error?e.message:t('Confirma os dados do perfil.'));return;}
+  if(!update&&presets.length>=MAX_PRESETS){setPresetError(t('Já tens 20 perfis. Elimina um antes de criares outro.'));return;}
   if(update&&presetId===null)return;
   setPresetBusy(true);
   try{
    const saved=update?await updatePreset(presetId!,name,settings,auth.token):await createPreset(name,settings,auth.token);
    setPresets(prev=>[saved,...prev.filter(p=>p.id!==saved.id)]);setPresetId(saved.id);setPresetName(saved.name);
-   setPresetMessage(update?'Perfil atualizado.':'Perfil guardado na tua conta.');
-  }catch(e){setPresetError((e instanceof Error?e.message:'Não foi possível guardar o perfil.')+' Confirma a lista de perfis antes de tentar de novo.');}
+   setPresetMessage(update?t('Perfil atualizado.'):t('Perfil guardado na tua conta.'));
+  }catch(e){setPresetError((e instanceof Error?e.message:t('Não foi possível guardar o perfil.'))+' '+t('Confirma a lista de perfis antes de tentar de novo.'));}
   finally{setPresetBusy(false);}
  }
  async function removePreset(){
@@ -382,8 +383,8 @@ export default function CreateSessionScreen(){
   setPresetBusy(true);setPresetError('');
   try{await deletePreset(presetId,auth.token);const gone=presetId;
    setPresets(prev=>prev.filter(p=>p.id!==gone));setPresetId(null);setPresetName('');untemplated.current=null;
-   setPresetConfirmDelete(false);setPresetMessage('Perfil eliminado. Os dados que já estão no formulário mantêm-se.');}
-  catch(e){setPresetError(e instanceof Error?e.message:'Não foi possível eliminar o perfil.');}
+   setPresetConfirmDelete(false);setPresetMessage(t('Perfil eliminado. Os dados que já estão no formulário mantêm-se.'));}
+  catch(e){setPresetError(e instanceof Error?e.message:t('Não foi possível eliminar o perfil.'));}
   finally{setPresetBusy(false);}
  }
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
@@ -391,7 +392,7 @@ export default function CreateSessionScreen(){
     clearVenueSearch();
     if(form.latitude!=null||form.longitude!=null){
       setForm(prev=>({...prev,locationConfirmed:false}));
-      setLocationMessage('Morada editada. O ponto GPS original mantém-se; confirma novamente o ponto no mapa.');
+      setLocationMessage(t('Morada editada. O ponto GPS original mantém-se; confirma novamente o ponto no mapa.'));
     }
   }
   const next=typeof value==='string'?
@@ -431,38 +432,38 @@ export default function CreateSessionScreen(){
   if(busy)return;
   setError('');
   if(step===0){
-   if(!form.sport.trim()){setError('Escolhe uma modalidade.');return;}
+   if(!form.sport.trim()){setError(t('Escolhe uma modalidade.'));return;}
    if(customSportMode&&!customSportValid){
-    setError('Corrige o nome do desporto (2–60 caracteres) ou seleciona uma modalidade existente.');return;
+    setError(t('Corrige o nome do desporto (2–60 caracteres) ou seleciona uma modalidade existente.'));return;
    }
    if(!customSportMode&&!SPORTS.includes(form.sport)){
-    setError('Seleciona uma modalidade do catálogo ou escolhe a opção Outro.');return;
+    setError(t('Seleciona uma modalidade do catálogo ou escolhe a opção Outro.'));return;
    }
-   if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError('Seleciona pelo menos uma comunidade ou escolhe sessão independente.');return;}
-   if(form.communityId&&!selectedCommunity){setError('Seleciona novamente a comunidade.');return;}
+   if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError(t('Seleciona pelo menos uma comunidade ou escolhe sessão independente.'));return;}
+   if(form.communityId&&!selectedCommunity){setError(t('Seleciona novamente a comunidade.'));return;}
    if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport)){
-    setError('Escolhe uma modalidade permitida nesta comunidade.');return;
+    setError(t('Escolhe uma modalidade permitida nesta comunidade.'));return;
    }
    if(sharedCommunities.some(c=>!communitySports(c).includes(form.sport))){
-    setError('A modalidade tem de pertencer a todas as comunidades selecionadas.');return;
+    setError(t('A modalidade tem de pertencer a todas as comunidades selecionadas.'));return;
    }
-   if(sharedCommunities.length!==sharedIds.length){setError('Atualiza a seleção de comunidades.');return;}
+   if(sharedCommunities.length!==sharedIds.length){setError(t('Atualiza a seleção de comunidades.'));return;}
   }
   if(step===1){
    try{
     parseSessionDate(form.day,form.time);
-    if(!form.city.trim()||!form.address.trim())throw new Error('Indica a localidade e a morada.');
-    if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error('Confirma o ponto no mapa antes de continuar.');
+    if(!form.city.trim()||!form.address.trim())throw new Error(t('Indica a localidade e a morada.'));
+    if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error(t('Confirma o ponto no mapa antes de continuar.'));
     if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
-     throw new Error('O recinto selecionado já não é compatível com a modalidade.');
-   }catch(e){setError(e instanceof Error?e.message:'Verifica a data e o local.');return;}
+     throw new Error(t('O recinto selecionado já não é compatível com a modalidade.'));
+   }catch(e){setError(e instanceof Error?e.message:t('Verifica a data e o local.'));return;}
   }
   if(step===2){
    try{
     if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
-     throw Error('Indica quantos jogadores já tens confirmados, sem contar contigo.');
+     throw Error(t('Indica quantos jogadores já tens confirmados, sem contar contigo.'));
     createSessionPayload(form,SPORTS);
-   }catch(e){setError(e instanceof Error?e.message:'Verifica as informações da sessão.');return;}
+   }catch(e){setError(e instanceof Error?e.message:t('Verifica as informações da sessão.'));return;}
   }
   setStep(current=>Math.min(3,current+1));
  }
@@ -471,35 +472,35 @@ export default function CreateSessionScreen(){
   let payload:ReturnType<typeof createSessionPayload>;
   try{
    if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
-    throw Error('Indica quantos jogadores já tens confirmados antes de criar a sessão.');
-   if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error('Escolhe uma comunidade para continuar.');
-   if(form.communityId&&!selectedCommunity)throw Error('Atualiza a lista de comunidades antes de continuar.');
+    throw Error(t('Indica quantos jogadores já tens confirmados antes de criar a sessão.'));
+   if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error(t('Escolhe uma comunidade para continuar.'));
+   if(form.communityId&&!selectedCommunity)throw Error(t('Atualiza a lista de comunidades antes de continuar.'));
    if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport))
-    throw Error('Esta modalidade não está configurada na comunidade selecionada.');
+    throw Error(t('Esta modalidade não está configurada na comunidade selecionada.'));
    if(sharedCommunities.some(c=>!communitySports(c).includes(form.sport)))
-    throw Error('A modalidade tem de estar disponível em todas as comunidades selecionadas.');
-   if(sharedCommunities.length!==sharedIds.length)throw Error('Uma comunidade partilhada já não está disponível. Atualiza a seleção.');
+    throw Error(t('A modalidade tem de estar disponível em todas as comunidades selecionadas.'));
+   if(sharedCommunities.length!==sharedIds.length)throw Error(t('Uma comunidade partilhada já não está disponível. Atualiza a seleção.'));
    if(form.seasonGame&&(!selectedCommunity||form.communityRankingsEnabled!==selectedCommunity.rankingsEnabled))
-    throw Error('O estado das classificações da comunidade mudou. Seleciona novamente a comunidade.');
+    throw Error(t('O estado das classificações da comunidade mudou. Seleciona novamente a comunidade.'));
    if(form.venueId&&(!venueChosen||venueChosen.id!==form.venueId||!venueSupportsSport(venueChosen,form.sport)))
-    throw Error('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.');
-   if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error('Confirma a localização escolhida antes de criar.');
+    throw Error(t('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.'));
+   if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error(t('Confirma a localização escolhida antes de criar.'));
    if(locationMode==='link'&&(!verifiedMapsLink||verifiedMapsLink!==mapsLink.trim()))
-    throw Error('Confirma novamente a ligação Google Maps antes de criar a sessão.');
+    throw Error(t('Confirma novamente a ligação Google Maps antes de criar a sessão.'));
    payload={...createSessionPayload(form,SPORTS),
     googleMapsUrl:locationMode==='link'?verifiedMapsLink:null};setError('');
   }
-  catch(e){setError(e instanceof Error?e.message:'Verifica os dados da sessão.');return;}
+  catch(e){setError(e instanceof Error?e.message:t('Verifica os dados da sessão.'));return;}
   const identity=communityLoadIdentity.current;
   const version=communityLoadVersion.current;
   const actorToken=auth.token,actorUsername=auth.username;
-  Alert.alert('Criar sessão desportiva?',describeSessionConfirmation(payload,{
+  Alert.alert(t('Criar sessão desportiva?'),describeSessionConfirmation(payload,{
    communityName:selectedCommunity?.name,
    sharedCommunityNames:sharedCommunities.map(c=>c.name),
    venueName:venueChosen?.name
   }),[
-   {text:'Voltar',style:'cancel'},
-   {text:'Criar sessão',onPress:async()=>{
+   {text:t('Voltar'),style:'cancel'},
+   {text:t('Criar sessão'),onPress:async()=>{
     if(locked.current||confirmedCreation.current||
        version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
     const operation=++createOperation.current;
@@ -511,16 +512,16 @@ export default function CreateSessionScreen(){
      confirmedCreation.current={id:result.id,identity};
      setCreatedId(result.id);
      if(repeatFrom&&actorToken){
-      try{const summary=await inviteFromPreviousSession(result.id,repeatFrom,actorToken);Alert.alert('Jogar outra vez',repeatInviteMessage(summary));}
-      catch{Alert.alert('Jogar outra vez','A sessão foi criada, mas não foi possível convidar os jogadores da última vez. Podes convidá-los na sessão.');}
+      try{const summary=await inviteFromPreviousSession(result.id,repeatFrom,actorToken);Alert.alert(t('Jogar outra vez'),repeatInviteMessage(summary));}
+      catch{Alert.alert(t('Jogar outra vez'),t('A sessão foi criada, mas não foi possível convidar os jogadores da última vez. Podes convidá-los na sessão.'));}
      }
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){
      if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current)
       setError(confirmedCreation.current?
-       'A sessão foi criada, mas não foi possível abrir o detalhe automaticamente. Usa o botão «Abrir sessão criada» para continuar.':
-       (e instanceof Error?e.message:'Não foi possível criar a sessão.')+
-       ' Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.');
+       t('A sessão foi criada, mas não foi possível abrir o detalhe automaticamente. Usa o botão «Abrir sessão criada» para continuar.'):
+       (e instanceof Error?e.message:t('Não foi possível criar a sessão.'))+' '+
+       t('Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.'));
     }finally{
      // Do not allow another POST until this one has actually settled, even after navigation.
      locked.current=false;
@@ -539,48 +540,48 @@ export default function CreateSessionScreen(){
  return <Page>
   <Modal visible={showSeasonHelp} transparent animationType="fade" onRequestClose={()=>setShowSeasonHelp(false)}>
    <View style={styles.helpOverlay}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fechar explicação do jogo de época" onPress={()=>setShowSeasonHelp(false)} style={styles.helpBackdrop}/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar explicação do jogo de época')} onPress={()=>setShowSeasonHelp(false)} style={styles.helpBackdrop}/>
     <View style={styles.helpDialog} accessibilityViewIsModal>
-     <Text style={styles.helpTitle}>O que é um jogo de época?</Text>
+     <Text style={styles.helpTitle}>{t('O que é um jogo de época?')}</Text>
      <ScrollView style={styles.helpScroll} contentContainerStyle={styles.helpContent} showsVerticalScrollIndicator>
-      <Text style={styles.helpHeading}>Contar para a época</Text>
-      <Text style={styles.helpBody}>O resultado deste jogo pode contar para a classificação da tua comunidade, conforme as regras da modalidade.</Text>
-      <Text style={styles.helpHeading}>Não contar para a época</Text>
-      <Text style={styles.helpBody}>É um jogo normal: os participantes jogam, mas o resultado não altera a classificação.</Text>
-      <Text style={styles.helpHint}>Se a comunidade ainda não tiver classificações, tens de autorizar a sua ativação antes de criar um jogo de época.</Text>
+      <Text style={styles.helpHeading}>{t('Contar para a época')}</Text>
+      <Text style={styles.helpBody}>{t('O resultado deste jogo pode contar para a classificação da tua comunidade, conforme as regras da modalidade.')}</Text>
+      <Text style={styles.helpHeading}>{t('Não contar para a época')}</Text>
+      <Text style={styles.helpBody}>{t('É um jogo normal: os participantes jogam, mas o resultado não altera a classificação.')}</Text>
+      <Text style={styles.helpHint}>{t('Se a comunidade ainda não tiver classificações, tens de autorizar a sua ativação antes de criar um jogo de época.')}</Text>
      </ScrollView>
-     <Pressable accessibilityRole="button" accessibilityLabel="Percebi, fechar explicação" onPress={()=>setShowSeasonHelp(false)} style={styles.helpClose}><Text style={styles.helpCloseText}>Percebi</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Percebi, fechar explicação')} onPress={()=>setShowSeasonHelp(false)} style={styles.helpClose}><Text style={styles.helpCloseText}>{t('Percebi')}</Text></Pressable>
     </View>
    </View>
-  </Modal><DemoBanner/><Eyebrow>JYNLO · ORGANIZAR</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Criar uma sessão</Text>
-  <Text style={styles.note}>Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.</Text>
+  </Modal><DemoBanner/><Eyebrow>{t('JYNLO · ORGANIZAR')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Criar uma sessão')}</Text>
+  <Text style={styles.note}>{t('Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.')}</Text>
   {repeatNote?<Message>{repeatNote}</Message>:null}
   <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}
    accessibilityRole="button" disabled={busy||index>step} onPress={()=>{setStep(index);setError('');}}
    style={[styles.stepChip,index===step&&styles.stepActive]}>
    <Text style={[styles.stepText,index===step&&styles.stepTextActive]}>{index+1}. {label}</Text>
   </Pressable>)}</View>
-  <Text style={styles.note}>Etapa {step+1} de 4 · {stepLabels[step]}</Text>
-  {!auth.token?<Button title="Entrar para criar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
-  {DEMO_MODE?<Message>Na demonstração não são criadas sessões reais.</Message>:null}
+  <Text style={styles.note}>{t('Etapa {step} de 4',{step:step+1})} · {stepLabels[step]}</Text>
+  {!auth.token?<Button title={t('Entrar para criar')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
+  {DEMO_MODE?<Message>{t('Na demonstração não são criadas sessões reais.')}</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {createdId&&confirmedCreation.current?.identity===communityLoadIdentity.current?
    <View style={{gap:9}}>
-    <Message>Sessão criada com sucesso. Já não é necessário repetir a criação.</Message>
-    <Button title="Abrir sessão criada" onPress={()=>router.replace({pathname:'/sessions/[id]',params:{id:String(createdId)}})}/>
+    <Message>{t('Sessão criada com sucesso. Já não é necessário repetir a criação.')}</Message>
+    <Button title={t('Abrir sessão criada')} onPress={()=>router.replace({pathname:'/sessions/[id]',params:{id:String(createdId)}})}/>
    </View>:null}
   {communityError?<Message tone="error">{communityError}</Message>:null}
-  {communityError&&auth.token&&auth.username?<Button secondary title="Voltar a carregar comunidades" disabled={busy} onPress={()=>{void loadCommunities();}}/>:null}
+  {communityError&&auth.token&&auth.username?<Button secondary title={t('Voltar a carregar comunidades')} disabled={busy} onPress={()=>{void loadCommunities();}}/>:null}
   {step===0?<>
   {auth.token&&!DEMO_MODE&&(presets.length||presetError)?<View style={styles.panel}>
-   <Text style={styles.presetKicker}>PERFIS DE SESSÕES</Text>
-   <Text style={styles.heading}>Reutilizar uma configuração</Text>
-   <Text style={styles.note}>Escolhe uma configuração habitual e altera apenas os detalhes deste jogo. A data e a hora ficam sempre por preencher.</Text>
+   <Text style={styles.presetKicker}>{t('PERFIS DE SESSÕES')}</Text>
+   <Text style={styles.heading}>{t('Reutilizar uma configuração')}</Text>
+   <Text style={styles.note}>{t('Escolhe uma configuração habitual e altera apenas os detalhes deste jogo. A data e a hora ficam sempre por preencher.')}</Text>
    <View style={styles.presetChips}>
     <Pressable accessibilityRole="radio" accessibilityState={{checked:presetId===null,disabled:busy||presetBusy}} disabled={busy||presetBusy}
      onPress={()=>applyPreset(null)} style={[styles.presetChip,presetId===null&&styles.presetChipOn]}>
-     <Text style={[styles.presetChipText,presetId===null&&styles.presetChipTextOn]}>Criar sem perfil</Text></Pressable>
+     <Text style={[styles.presetChipText,presetId===null&&styles.presetChipTextOn]}>{t('Criar sem perfil')}</Text></Pressable>
     {presets.map(p=><Pressable key={p.id} accessibilityRole="radio" accessibilityState={{checked:presetId===p.id,disabled:busy||presetBusy}}
      disabled={busy||presetBusy} onPress={()=>applyPreset(p.id)} style={[styles.presetChip,presetId===p.id&&styles.presetChipOn]}>
      <Text style={[styles.presetChipText,presetId===p.id&&styles.presetChipTextOn]} numberOfLines={1}>{p.name}</Text></Pressable>)}
@@ -589,18 +590,18 @@ export default function CreateSessionScreen(){
    {presetNotes.map(n=><Text key={n} style={styles.note}>• {n}</Text>)}
    {presetError?<Message tone="error">{presetError}</Message>:null}
    {presetId!==null?<Button danger={presetConfirmDelete} secondary={!presetConfirmDelete} disabled={busy||presetBusy}
-    title={presetConfirmDelete?'Confirmar eliminação do perfil':'Eliminar este perfil'} onPress={()=>{void removePreset();}}/>:null}
+    title={presetConfirmDelete?t('Confirmar eliminação do perfil'):t('Eliminar este perfil')} onPress={()=>{void removePreset();}}/>:null}
   </View>:null}
-  <View style={styles.panel}><Text style={styles.heading}>Modalidade</Text>
+  <View style={styles.panel}><Text style={styles.heading}>{t('Modalidade')}</Text>
    {form.sport?<Badge text={form.sport}/>:null}
    {!customSportMode?<TextInput style={styles.input} value={sportSearch}
     onChangeText={v=>{setSportSearch(v);setShowSportResults(true);}}
     onFocus={()=>setShowSportResults(true)}
-    placeholder={'Procurar entre '+SPORTS.length+' modalidades'} placeholderTextColor={C.muted} editable={!busy}
-    autoCorrect={false} accessibilityLabel="Pesquisar modalidade"/>:null}
+    placeholder={t('Procurar entre {count} modalidades',{count:SPORTS.length})} placeholderTextColor={C.muted} editable={!busy}
+    autoCorrect={false} accessibilityLabel={t('Pesquisar modalidade')}/>:null}
    {!customSportMode&&showSportResults&&sportSearch.trim()?<>
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
-     accessibilityLabel={'Escolher '+s} onPress={()=>{
+     accessibilityLabel={t('Escolher {sport}',{sport:s})} onPress={()=>{
       // A late membership request must not overwrite a sport chosen by the user.
       preselectionOverridden.current=true;
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
@@ -609,10 +610,10 @@ export default function CreateSessionScreen(){
      }} style={[styles.option,form.sport===s&&styles.chosen]}>
      <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
     </Pressable>)}
-    {!suggestions.length?<Text style={styles.note}>Nenhuma modalidade corresponde à pesquisa.</Text>:null}
+    {!suggestions.length?<Text style={styles.note}>{t('Nenhuma modalidade corresponde à pesquisa.')}</Text>:null}
    </>:null}
    {communityMode==='INDEPENDENT'?<Button secondary
-    title={customSportMode?'Escolher modalidade do catálogo':'Não encontras o teu desporto? Sugerir outro'}
+    title={customSportMode?t('Escolher modalidade do catálogo'):t('Não encontras o teu desporto? Sugerir outro')}
     disabled={busy} onPress={()=>{
      preselectionOverridden.current=true;
      const nextCustom=!customSportMode;
@@ -622,47 +623,47 @@ export default function CreateSessionScreen(){
      setForm(prev=>({...prev,sport:proposedName,venueId:null,seasonGame:false,confirmActivateRankings:false}));
     }}/>:null}
    {customSportMode?<>
-    <Text style={styles.note}>Escreve a modalidade. A sessão é independente e a sugestão será revista antes de entrar no catálogo oficial.</Text>
+    <Text style={styles.note}>{t('Escreve a modalidade. A sessão é independente e a sugestão será revista antes de entrar no catálogo oficial.')}</Text>
     <TextInput style={styles.input} value={form.sport} maxLength={60}
       onChangeText={value=>{preselectionOverridden.current=true;setForm(prev=>({...prev,sport:value,venueId:null}));}}
-      placeholder="Ex.: Bossaball" placeholderTextColor={C.muted}
-      editable={!busy} accessibilityLabel="Nome da modalidade personalizada"/>
+      placeholder={t('Ex.: Bossaball')} placeholderTextColor={C.muted}
+      editable={!busy} accessibilityLabel={t('Nome da modalidade personalizada')}/>
     {form.sport.trim().length>0&&!customSportValid?
       <Text accessibilityRole="alert" style={styles.note}>
        Verifica o nome (2–60 caracteres, sem símbolos especiais) ou escolhe uma modalidade existente.
       </Text>:null}
-    {customMatches.length?<Text style={styles.note}>Modalidades semelhantes:</Text>:null}
+    {customMatches.length?<Text style={styles.note}>{t('Modalidades semelhantes:')}</Text>:null}
     {customMatches.map(s=><Pressable key={'similar-'+s} style={styles.option} onPress={()=>{
       setCustomSportMode(false);setForm(prev=>({...prev,sport:s,venueId:null}));
     }}><Text style={styles.optionText}>{s}</Text></Pressable>)}
    </>:null}
-   {!form.sport?<Text style={styles.note}>Escolhe uma modalidade ou sugere outra.</Text>:null}
+   {!form.sport?<Text style={styles.note}>{t('Escolhe uma modalidade ou sugere outra.')}</Text>:null}
    {communityMode!=='INDEPENDENT'&&hasCommunity?<Text style={styles.note}>
-    {availableSports.length?`${availableSports.length} modalidades compatíveis com ${communityMode==='SINGLE'?'a comunidade':'as comunidades'} selecionadas.`:
-     'Estas comunidades não têm modalidades em comum. Retira uma comunidade ou escolhe outra combinação.'}
+    {availableSports.length?(communityMode==='SINGLE'?t('{count} modalidades compatíveis com a comunidade selecionada.',{count:availableSports.length}):t('{count} modalidades compatíveis com as comunidades selecionadas.',{count:availableSports.length})):
+     t('Estas comunidades não têm modalidades em comum. Retira uma comunidade ou escolhe outra combinação.')}
    </Text>:null}
   </View>
-  <View style={styles.panel}><Text style={styles.heading}>Tipo de sessão</Text>
+  <View style={styles.panel}><Text style={styles.heading}>{t('Tipo de sessão')}</Text>
    <View style={styles.inline}>
     {(['INDEPENDENT','SINGLE','SHARED'] as const).map(mode=>
-     <Button key={mode} title={mode==='INDEPENDENT'?'Independente':mode==='SINGLE'?'Comunidade':'Partilhar'}
+     <Button key={mode} title={mode==='INDEPENDENT'?t('Independente'):mode==='SINGLE'?t('Comunidade'):t('Partilhar')}
       secondary={communityMode!==mode} disabled={busy}
       onPress={()=>{preselectionOverridden.current=true;if(communityMode===mode)return;setCommunityMode(mode);setCommunitySearch('');
        if(mode!=='INDEPENDENT')setCustomSportMode(false);
        setForm(prev=>({...changeCommunityMode(prev,mode),
          sport:mode==='INDEPENDENT'?prev.sport:SPORTS.includes(prev.sport)?prev.sport:''}));setError('');}}/>)}
    </View>
-   {communityMode==='INDEPENDENT'?<Text style={styles.note}>Sessão aberta a jogadores da Jynlo, sem comunidade associada.</Text>:null}
+   {communityMode==='INDEPENDENT'?<Text style={styles.note}>{t('Sessão aberta a jogadores da Jynlo, sem comunidade associada.')}</Text>:null}
    {communityMode!=='INDEPENDENT'?<>
     <Text style={styles.note}>{communityMode==='SINGLE'
-     ?'Escolhe uma comunidade. As sessões associadas são apenas para os seus membros.'
-     :'Escolhe até cinco comunidades. Os respetivos membros poderão participar, sem palavra-passe.'}</Text>
+     ?t('Escolhe uma comunidade. As sessões associadas são apenas para os seus membros.')
+     :t('Escolhe até cinco comunidades. Os respetivos membros poderão participar, sem palavra-passe.')}</Text>
     <TextInput style={styles.input} value={communitySearch} onChangeText={setCommunitySearch}
-     placeholder="Pesquisar as minhas comunidades" placeholderTextColor={C.muted}
+     placeholder={t('Pesquisar as minhas comunidades')} placeholderTextColor={C.muted}
      autoCorrect={false} editable={!busy}/>
-    {!visibleCommunities.length?<Text style={styles.note}>Sem comunidades para mostrar. Experimenta outra pesquisa.</Text>:null}
+    {!visibleCommunities.length?<Text style={styles.note}>{t('Sem comunidades para mostrar. Experimenta outra pesquisa.')}</Text>:null}
     {visibleCommunities.map(c=><Pressable key={c.id} accessibilityRole="button"
-     accessibilityLabel={(communityMode==='SINGLE'?'Selecionar ':'Partilhar com ')+c.name}
+     accessibilityLabel={communityMode==='SINGLE'?t('Selecionar {name}',{name:c.name}):t('Partilhar com {name}',{name:c.name})}
      disabled={busy||(communityMode==='SHARED'&&!sharedIds.includes(c.id)&&sharedIds.length>=5)}
      onPress={()=>{
       preselectionOverridden.current=true;
@@ -679,49 +680,49 @@ export default function CreateSessionScreen(){
       }else toggleShared(c.id);
      }} style={[styles.option,(form.communityId===c.id||sharedIds.includes(c.id))&&styles.chosen]}>
       <Text style={styles.optionText}>{(form.communityId===c.id||sharedIds.includes(c.id))?'✓  ':''}{c.name}</Text>
-      <Text style={styles.note}>{c.sport||'Modalidade não indicada'}</Text>
+      <Text style={styles.note}>{c.sport||t('Modalidade não indicada')}</Text>
     </Pressable>)}
-    {communityMode==='SHARED'?<Text style={styles.note}>Selecionadas: {sharedIds.length}/5. O servidor confirma as permissões em cada comunidade.</Text>:null}
+    {communityMode==='SHARED'?<Text style={styles.note}>{t('Selecionadas: {count}/5. O servidor confirma as permissões em cada comunidade.',{count:sharedIds.length})}</Text>:null}
    </>:null}
   </View>
   {selectedCommunity?<View style={styles.panel}>
    <View style={styles.seasonHead}>
-    <Text style={styles.heading}>Jogo de época</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Saber mais sobre jogos de época" onPress={()=>setShowSeasonHelp(true)} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>ⓘ Saber mais sobre o jogo de época</Text></Pressable>
+    <Text style={styles.heading}>{t('Jogo de época')}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Saber mais sobre jogos de época')} onPress={()=>setShowSeasonHelp(true)} style={styles.seasonHelp}><Text style={styles.seasonHelpText}>{t('ⓘ Saber mais sobre o jogo de época')}</Text></Pressable>
    </View>
-   <Text style={styles.note}>Queres que o resultado deste jogo conte para a classificação da comunidade?</Text>
+   <Text style={styles.note}>{t('Queres que o resultado deste jogo conte para a classificação da comunidade?')}</Text>
    <View style={styles.playerChoices}>
-    <Button title="Não contar para a época" secondary={form.seasonGame===true} disabled={busy}
+    <Button title={t('Não contar para a época')} secondary={form.seasonGame===true} disabled={busy}
      onPress={()=>setForm(prev=>({...prev,seasonGame:false,confirmActivateRankings:false}))}/>
-    <Button title="Contar para a época" secondary={form.seasonGame!==true} disabled={busy}
+    <Button title={t('Contar para a época')} secondary={form.seasonGame!==true} disabled={busy}
      onPress={()=>setForm(prev=>({...prev,seasonGame:true,confirmActivateRankings:false}))}/>
    </View>
    {form.seasonGame&&!selectedCommunity.rankingsEnabled?<View style={styles.option}>
-    <Message>Esta comunidade ainda não tem classificações ativas. Para contar este jogo, tens de autorizar a ativação da época e das classificações.</Message>
-    <Button title={form.confirmActivateRankings?'Ativação autorizada ✓':'Autorizar ativação das classificações'}
+    <Message>{t('Esta comunidade ainda não tem classificações ativas. Para contar este jogo, tens de autorizar a ativação da época e das classificações.')}</Message>
+    <Button title={form.confirmActivateRankings?t('Ativação autorizada ✓'):t('Autorizar ativação das classificações')}
      secondary={form.confirmActivateRankings!==true} disabled={busy}
      onPress={()=>patch('confirmActivateRankings',!form.confirmActivateRankings)}/>
    </View>:null}
-   {form.seasonGame&&selectedCommunity.rankingsEnabled?<Message>As classificações desta comunidade já estão ativas.</Message>:null}
+   {form.seasonGame&&selectedCommunity.rankingsEnabled?<Message>{t('As classificações desta comunidade já estão ativas.')}</Message>:null}
   </View>:null}
   </>:null}
-  {step===1?<View style={styles.panel}><Text style={styles.heading}>Quando e onde?</Text>
-   <Text style={styles.label}>Data da sessão</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário da sessão"
+  {step===1?<View style={styles.panel}><Text style={styles.heading}>{t('Quando e onde?')}</Text>
+   <Text style={styles.label}>{t('Data da sessão')}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir calendário da sessão')}
     disabled={busy} onPress={()=>setShowDateCalendar(open=>!open)}
     style={[styles.option,{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}]}>
-    <Text style={styles.optionText}>{form.day||'Escolher data no calendário'}</Text>
-    <Text style={styles.optionText}>{showDateCalendar?'Fechar calendário':'📅 Calendário'}</Text>
+    <Text style={styles.optionText}>{form.day||t('Escolher data no calendário')}</Text>
+    <Text style={styles.optionText}>{showDateCalendar?t('Fechar calendário'):t('📅 Calendário')}</Text>
    </Pressable>
    {showDateCalendar?<SessionDateCalendar value={form.day} disabled={busy}
     onSelect={date=>{patch('day',date);setShowDateCalendar(false);setError('');}}/>:null}
-   {field('Hora local','time','HH:mm (24h)','numeric')}
-   <Text style={styles.note}>Escolhe o dia no calendário e escreve a hora com quatro dígitos (ex.: 1930 → 19:30).</Text>
+   {field(t('Hora local'),'time',t('HH:mm (24h)'),'numeric')}
+   <Text style={styles.note}>{t('Escolhe o dia no calendário e escreve a hora com quatro dígitos (ex.: 1930 → 19:30).')}</Text>
    <View style={styles.locationOptions}>
-    <Text style={styles.heading}>Usar um recinto conhecido</Text>
-    <Text style={styles.note}>Escolhe um recinto da Jynlo, partilha um link Google Maps ou confirma a localização onde estás.</Text>
+    <Text style={styles.heading}>{t('Usar um recinto conhecido')}</Text>
+    <Text style={styles.note}>{t('Escolhe um recinto da Jynlo, partilha um link Google Maps ou confirma a localização onde estás.')}</Text>
     <View style={styles.locationModes}>
-      {([{id:'saved',title:'Recinto guardado'},{id:'link',title:'Ligação Google Maps'},{id:'gps',title:'Estou no recinto'}] as const).map(mode=>
+      {([{id:'saved',title:t('Recinto guardado')},{id:'link',title:t('Ligação Google Maps')},{id:'gps',title:t('Estou no recinto')}] as const).map(mode=>
        <Pressable key={mode.id} accessibilityRole="button"
         accessibilityState={{selected:locationMode===mode.id}}
         disabled={busy||locationLoading} onPress={()=>selectLocationMode(mode.id)}
@@ -730,73 +731,73 @@ export default function CreateSessionScreen(){
        </Pressable>)}
     </View>
     {locationMode==='gps'?<View style={styles.locationModePanel}>
-      <Text style={styles.note}>Já estás no campo? Autoriza o GPS apenas ao tocar no botão. Depois confirma o ponto no Google Maps.</Text>
-      <Button title={locationLoading?'A obter localização…':'Usar localização atual'}
+      <Text style={styles.note}>{t('Já estás no campo? Autoriza o GPS apenas ao tocar no botão. Depois confirma o ponto no Google Maps.')}</Text>
+      <Button title={locationLoading?t('A obter localização…'):t('Usar localização atual')}
        secondary disabled={busy||locationLoading} onPress={()=>{void useCurrentLocation();}}/>
     </View>:null}
     {locationMode==='link'?<View style={styles.locationModePanel}>
-      <Text style={styles.note}>Cola o link do pin partilhado no Google Maps.</Text>
+      <Text style={styles.note}>{t('Cola o link do pin partilhado no Google Maps.')}</Text>
       <TextInput value={mapsLink} onChangeText={v=>{setMapsLink(v);clearMappedLocation();}} editable={!locationLoading&&!busy}
        style={styles.input} autoCapitalize="none" keyboardType="url"
-       placeholder="https://maps.app.goo.gl/…" placeholderTextColor={C.muted}
-       accessibilityLabel="Ligação do Google Maps"/>
-      <Button title={locationLoading?'A localizar…':'Usar ponto do Google Maps'}
+       placeholder={t('https://maps.app.goo.gl/…')} placeholderTextColor={C.muted}
+       accessibilityLabel={t('Ligação do Google Maps')}/>
+      <Button title={locationLoading?t('A localizar…'):t('Usar ponto do Google Maps')}
        secondary disabled={busy||locationLoading||!mapsLink.trim()} onPress={()=>{void useMapsLink();}}/>
     </View>:null}
     {locationMessage?<Message>{locationMessage}</Message>:null}
     {locationMode!=='saved'&&form.latitude!=null&&form.longitude!=null?<View style={styles.locationModePanel}>
-      <Text style={styles.optionText}>Ponto GPS identificado</Text>
-      <Text style={styles.note}>Localidade: {form.city} · Morada aproximada: {form.address}</Text>
-      {locationAccuracy!=null?<Text style={styles.note}>Precisão estimada: ±{Math.round(locationAccuracy)} m.</Text>:null}
-      {locationAccuracy!=null&&locationAccuracy>100?<Message>O GPS tem precisão reduzida. Confirma cuidadosamente o local antes de publicar.</Message>:null}
-      <Button secondary title="Confirmar ponto no Google Maps" disabled={busy} onPress={previewMappedPoint}/>
+      <Text style={styles.optionText}>{t('Ponto GPS identificado')}</Text>
+      <Text style={styles.note}>{t('Localidade: {city} · Morada aproximada: {address}',{city:form.city,address:form.address})}</Text>
+      {locationAccuracy!=null?<Text style={styles.note}>{t('Precisão estimada: ±{m} m.',{m:Math.round(locationAccuracy)})}</Text>:null}
+      {locationAccuracy!=null&&locationAccuracy>100?<Message>{t('O GPS tem precisão reduzida. Confirma cuidadosamente o local antes de publicar.')}</Message>:null}
+      <Button secondary title={t('Confirmar ponto no Google Maps')} disabled={busy} onPress={previewMappedPoint}/>
       <Pressable accessibilityRole="checkbox" accessibilityState={{checked:form.locationConfirmed===true}}
        onPress={()=>setForm(prev=>({...prev,locationConfirmed:!prev.locationConfirmed}))}
        style={styles.locationConfirm}>
-        <Text style={styles.optionText}>{form.locationConfirmed?'☑':'☐'} Confirmei que o ponto corresponde ao recinto correto</Text>
+        <Text style={styles.optionText}>{form.locationConfirmed?'☑':'☐'} {t('Confirmei que o ponto corresponde ao recinto correto')}</Text>
       </Pressable>
-      <Button secondary title="Remover ponto GPS" disabled={busy} onPress={clearMappedLocation}/>
+      <Button secondary title={t('Remover ponto GPS')} disabled={busy} onPress={clearMappedLocation}/>
     </View>:null}
    </View>
    {locationMode==='saved'?<>
    {venueChosen?<View style={styles.option}>
-    <Text style={styles.optionText}>Recinto selecionado: {venueChosen.name}</Text>
-    <Text style={styles.note}>{venueChosen.address||'Morada por indicar'} · {venueChosen.city||'Localidade por indicar'}</Text>
-    <Button title="Retirar recinto" secondary disabled={busy} onPress={removeVenue}/>
+    <Text style={styles.optionText}>{t('Recinto selecionado: {name}',{name:venueChosen.name})}</Text>
+    <Text style={styles.note}>{venueChosen.address||t('Morada por indicar')} · {venueChosen.city||t('Localidade por indicar')}</Text>
+    <Button title={t('Retirar recinto')} secondary disabled={busy} onPress={removeVenue}/>
    </View>:null}
-   <Text style={styles.label}>Procurar recinto Jynlo (opcional)</Text>
+   <Text style={styles.label}>{t('Procurar recinto Jynlo (opcional)')}</Text>
    <TextInput style={styles.input} value={venueQuery} onChangeText={v=>{setVenueQuery(v);clearVenueSearch();}}
-    placeholder="Nome do recinto" placeholderTextColor={C.muted} editable={!busy}
-    accessibilityLabel="Nome do recinto a procurar"/>
+    placeholder={t('Nome do recinto')} placeholderTextColor={C.muted} editable={!busy}
+    accessibilityLabel={t('Nome do recinto a procurar')}/>
    <TextInput style={styles.input} value={venueCityQuery} onChangeText={v=>{setVenueCityQuery(v);clearVenueSearch();}}
-    placeholder="Filtrar por localidade (opcional)" placeholderTextColor={C.muted} editable={!busy}
-    accessibilityLabel="Localidade para procurar recintos"/>
-   <Text style={styles.note}>Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade da sessão serão atualizadas automaticamente.</Text>
-   <Button secondary title={venueLoading?'A pesquisar…':'Procurar recintos'} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
+    placeholder={t('Filtrar por localidade (opcional)')} placeholderTextColor={C.muted} editable={!busy}
+    accessibilityLabel={t('Localidade para procurar recintos')}/>
+   <Text style={styles.note}>{t('Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade da sessão serão atualizadas automaticamente.')}</Text>
+   <Button secondary title={venueLoading?t('A pesquisar…'):t('Procurar recintos')} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
    {venueError?<Message tone="error">{venueError}</Message>:null}
    {venueMatches.map(v=><Pressable key={v.id} accessibilityRole="button" style={styles.option} disabled={busy}
     onPress={()=>useVenue(v)}>
     <Text style={styles.optionText}>{v.name}</Text>
-    <Text style={styles.note}>{v.city||'Localidade por indicar'} · {v.address||'Morada por indicar'}</Text>
+    <Text style={styles.note}>{v.city||t('Localidade por indicar')} · {v.address||t('Morada por indicar')}</Text>
    </Pressable>)}
    {venueSearched&&!venueLoading&&!venueMatches.length&&!venueHasMore?
-    <Text style={styles.note}>Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.</Text>:null}
-   {venueHasMore?<Button secondary title={venueLoading?'A carregar…':'Mostrar mais recintos'}
+    <Text style={styles.note}>{t('Não foram encontrados recintos com estes filtros. Tenta outra localidade ou pesquisa por nome.')}</Text>:null}
+   {venueHasMore?<Button secondary title={venueLoading?t('A carregar…'):t('Mostrar mais recintos')}
     disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
    </>:null}
    {locationMode==='saved'&&venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
-    <Text style={styles.note}>A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.</Text>:<>
-    {venueChosen?<Message>Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.</Message>:null}
-    {field('Localidade','city','Ex.: Lisboa')}
-    {field('Morada','address','Rua e número, recinto ou ponto de referência')}
+    <Text style={styles.note}>{t('A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.')}</Text>:<>
+    {venueChosen?<Message>{t('Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.')}</Message>:null}
+    {field(t('Localidade'),'city',t('Ex.: Lisboa'))}
+    {field(t('Morada'),'address',t('Rua e número, recinto ou ponto de referência'))}
    </>}
-   {field('Ponto de encontro (opcional)','meetingPointInstructions','Ex.: Entrada principal')}
+   {field(t('Ponto de encontro (opcional)'),'meetingPointInstructions',t('Ex.: Entrada principal'))}
   </View>:null}
-  {step===2?<View style={styles.panel}><Text style={styles.heading}>Participação</Text>
-   {field('Capacidade total, incluindo organizador','maxParticipants','10','numeric')}
-   {field('Preço por participante (€)','price','0','decimal-pad')}
-   {field('Mínimo de participantes para realizar','minParticipants','2','numeric')}
-   <Text style={styles.label}>Nível da sessão</Text>
+  {step===2?<View style={styles.panel}><Text style={styles.heading}>{t('Participação')}</Text>
+   {field(t('Capacidade total, incluindo organizador'),'maxParticipants','10','numeric')}
+   {field(t('Preço por participante (€)'),'price','0','decimal-pad')}
+   {field(t('Mínimo de participantes para realizar'),'minParticipants','2','numeric')}
+   <Text style={styles.label}>{t('Nível da sessão')}</Text>
    <View style={styles.levelRow}>
     {sessionChoices().map(choice=>{const selected=(form.skillLevel||'')===choice.value;
      return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected}} disabled={busy}
@@ -804,98 +805,98 @@ export default function CreateSessionScreen(){
       <Text style={[styles.levelChipText,selected&&styles.levelChipTextSelected]}>{choice.label}</Text>
      </Pressable>;})}
    </View>
-   <Text style={styles.note}>Ajuda quem procura jogos ao seu nível. Deixa “Todos os níveis” se qualquer pessoa é bem-vinda.</Text>
-   <Text style={styles.label}>Como vais reunir os jogadores?</Text>
+   <Text style={styles.note}>{t('Ajuda quem procura jogos ao seu nível. Deixa “Todos os níveis” se qualquer pessoa é bem-vinda.')}</Text>
+   <Text style={styles.label}>{t('Como vais reunir os jogadores?')}</Text>
    <View style={styles.playerChoices}>
     <Pressable accessibilityRole="radio" accessibilityState={{checked:!hasExistingPlayers}} disabled={busy}
       style={[styles.playerChoice,!hasExistingPlayers&&styles.playerChoiceSelected]}
       onPress={()=>{setHasExistingPlayers(false);patch('externalConfirmedParticipants','0');setError('');}}>
-      <Text style={styles.playerChoiceTitle}>{!hasExistingPlayers?'✓  ':''}Ainda não tenho jogadores</Text>
-      <Text style={styles.note}>Quero abrir a sessão para encontrar participantes na Jynlo.</Text>
+      <Text style={styles.playerChoiceTitle}>{!hasExistingPlayers?'✓  ':''}{t('Ainda não tenho jogadores')}</Text>
+      <Text style={styles.note}>{t('Quero abrir a sessão para encontrar participantes na Jynlo.')}</Text>
     </Pressable>
     <Pressable accessibilityRole="radio" accessibilityState={{checked:hasExistingPlayers}} disabled={busy}
       style={[styles.playerChoice,hasExistingPlayers&&styles.playerChoiceSelected]}
       onPress={()=>{setHasExistingPlayers(true);setError('');}}>
-      <Text style={styles.playerChoiceTitle}>{hasExistingPlayers?'✓  ':''}Já tenho jogadores e quero completar</Text>
-      <Text style={styles.note}>Conta os jogadores já confirmados fora da app para procurares apenas as vagas que faltam.</Text>
+      <Text style={styles.playerChoiceTitle}>{hasExistingPlayers?'✓  ':''}{t('Já tenho jogadores e quero completar')}</Text>
+      <Text style={styles.note}>{t('Conta os jogadores já confirmados fora da app para procurares apenas as vagas que faltam.')}</Text>
     </Pressable>
    </View>
    {hasExistingPlayers?<>
-    {field('Jogadores já confirmados sem conta (não incluas o organizador)','externalConfirmedParticipants','Ex.: 4','numeric')}
-    <Text style={styles.note}>Indica um número real de jogadores já confirmados. Não são criados perfis ou convites automaticamente.</Text>
-   </>:<Text style={styles.note}>O organizador ficará automaticamente inscrito. Os restantes lugares ficam disponíveis para participantes.</Text>}
+    {field(t('Jogadores já confirmados sem conta (não incluas o organizador)'),'externalConfirmedParticipants',t('Ex.: 4'),'numeric')}
+    <Text style={styles.note}>{t('Indica um número real de jogadores já confirmados. Não são criados perfis ou convites automaticamente.')}</Text>
+   </>:<Text style={styles.note}>{t('O organizador ficará automaticamente inscrito. Os restantes lugares ficam disponíveis para participantes.')}</Text>}
    {Number.isInteger(Number(form.maxParticipants))&&Number(form.maxParticipants)>=2&&
     Number.isInteger(Number(form.externalConfirmedParticipants))&&Number(form.externalConfirmedParticipants)>=0&&
     Number(form.externalConfirmedParticipants)<Number(form.maxParticipants)?
-    <Message>Vagas inicialmente disponíveis para novas inscrições: {Number(form.maxParticipants)-1-Number(form.externalConfirmedParticipants)}. O organizador ocupa uma vaga.</Message>:null}
-   <Text style={styles.label}>Repetição</Text>
+    <Message>{t('Vagas inicialmente disponíveis para novas inscrições: {count}. O organizador ocupa uma vaga.',{count:Number(form.maxParticipants)-1-Number(form.externalConfirmedParticipants)})}</Message>:null}
+   <Text style={styles.label}>{t('Repetição')}</Text>
    <View style={styles.inline}>
-    <Button title="Única" secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
-    <Button title="Semanal" secondary={form.recurrence!=='WEEKLY'} disabled={busy} onPress={()=>patch('recurrence','WEEKLY')}/>
-    <Button title="Quinzenal" secondary={form.recurrence!=='BIWEEKLY'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
+    <Button title={t('Única')} secondary={form.recurrence!=='NONE'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'NONE',additionalWeeklySlots:[]}))}/>
+    <Button title={t('Semanal')} secondary={form.recurrence!=='WEEKLY'} disabled={busy} onPress={()=>patch('recurrence','WEEKLY')}/>
+    <Button title={t('Quinzenal')} secondary={form.recurrence!=='BIWEEKLY'} disabled={busy} onPress={()=>setForm(prev=>({...prev,recurrence:'BIWEEKLY',additionalWeeklySlots:[]}))}/>
    </View>
    {form.recurrence!=='NONE'?<>
-    {field('Número de ciclos (2 a '+(hasCommunity?52:12)+')','recurrenceOccurrences','4','numeric')}
+    {field(t('Número de ciclos (2 a {max})',{max:hasCommunity?52:12}),'recurrenceOccurrences','4','numeric')}
     <Text style={styles.note}>{hasCommunity
-     ?'O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.'
-     :'Repete o mesmo jogo, até 12 sessões (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.'}</Text>
+     ?t('O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.')
+     :t('Repete o mesmo jogo, até 12 sessões (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.')}</Text>
     {form.recurrence==='WEEKLY'?<View style={styles.field}>
-     <Text style={styles.label}>Mais horários na primeira semana (até seis adicionais)</Text>
+     <Text style={styles.label}>{t('Mais horários na primeira semana (até seis adicionais)')}</Text>
      {(form.additionalWeeklySlots||[]).map((slot,index)=><View key={index} style={styles.option}>
       <Text style={styles.optionText}>{index+2}. {slot.day} às {slot.time}</Text>
-      <Button secondary title="Remover horário" disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
+      <Button secondary title={t('Remover horário')} disabled={busy} onPress={()=>removeWeeklySlot(index)}/>
      </View>)}
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário do horário adicional"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir calendário do horário adicional')}
       disabled={busy} onPress={()=>setShowExtraCalendar(value=>!value)} style={styles.option}>
-      <Text style={styles.optionText}>📅 {extraDay||'Escolher dia adicional'} {showExtraCalendar?'▴':'▾'}</Text>
+      <Text style={styles.optionText}>📅 {extraDay||t('Escolher dia adicional')} {showExtraCalendar?'▴':'▾'}</Text>
      </Pressable>
      {showExtraCalendar?<SessionDateCalendar value={extraDay} disabled={busy}
       onSelect={date=>{setExtraDay(date);setShowExtraCalendar(false);}}/>:null}
      <TextInput style={styles.input} value={extraTime} onChangeText={value=>setExtraTime(formatLocalTimeInput(value))}
-      placeholder="Hora adicional (HH:mm)" placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
-     <Button secondary title="Adicionar horário" disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
+      placeholder={t('Hora adicional (HH:mm)')} placeholderTextColor={C.muted} keyboardType="numeric" editable={!busy}/>
+     <Button secondary title={t('Adicionar horário')} disabled={busy||(form.additionalWeeklySlots||[]).length>=6||!extraDay||!extraTime}
       onPress={addWeeklySlot}/>
     </View>:null}
    </>:null}
-   <Text style={styles.label}>Abertura das inscrições</Text>
+   <Text style={styles.label}>{t('Abertura das inscrições')}</Text>
    <View style={styles.inline}>
-    <Button secondary={form.registrationOpeningMode!=='IMMEDIATE'} title="Imediata" disabled={busy} onPress={()=>patch('registrationOpeningMode','IMMEDIATE')}/>
-    <Button secondary={form.registrationOpeningMode!=='MANUAL'} title="Manual" disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','MANUAL')}/>
-    <Button secondary={form.registrationOpeningMode!=='SCHEDULED'} title="Programada" disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','SCHEDULED')}/>
+    <Button secondary={form.registrationOpeningMode!=='IMMEDIATE'} title={t('Imediata')} disabled={busy} onPress={()=>patch('registrationOpeningMode','IMMEDIATE')}/>
+    <Button secondary={form.registrationOpeningMode!=='MANUAL'} title={t('Manual')} disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','MANUAL')}/>
+    <Button secondary={form.registrationOpeningMode!=='SCHEDULED'} title={t('Programada')} disabled={busy||!hasCommunity} onPress={()=>patch('registrationOpeningMode','SCHEDULED')}/>
    </View>
    {form.registrationOpeningMode==='SCHEDULED'?<>
-    <Text style={styles.label}>Data de abertura das inscrições</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Abrir calendário das inscrições"
+    <Text style={styles.label}>{t('Data de abertura das inscrições')}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir calendário das inscrições')}
      disabled={busy} onPress={()=>setShowRegistrationCalendar(value=>!value)} style={styles.option}>
-     <Text style={styles.optionText}>📅 {form.registrationDay||'Escolher data de abertura'} {showRegistrationCalendar?'▴':'▾'}</Text>
+     <Text style={styles.optionText}>📅 {form.registrationDay||t('Escolher data de abertura')} {showRegistrationCalendar?'▴':'▾'}</Text>
     </Pressable>
     {showRegistrationCalendar?<SessionDateCalendar value={form.registrationDay||''} disabled={busy}
      onSelect={date=>{patch('registrationDay',date);setShowRegistrationCalendar(false);}}/>:null}
-    {field('Hora de abertura','registrationTime','HH:mm (24h)','numeric')}
+    {field(t('Hora de abertura'),'registrationTime',t('HH:mm (24h)'),'numeric')}
    </>:null}
-   {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>As inscrições só abrem quando o organizador as ativar na sessão.</Text>:null}
-   <Text style={styles.label}>Visibilidade</Text>
-   {sharedIds.length>0?<Message>Partilha entre comunidades: visibilidade apenas para membros, sem palavra-passe.</Message>:null}
-   <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?'Sem palavra-passe':'Pública'} disabled={busy} onPress={()=>patch('privateGame',false)}/>
-    <Button secondary={!form.privateGame} title="Privada" disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
-   {form.privateGame?<><Text style={styles.note}>A palavra-passe fica oculta enquanto escreves. Só os jogadores com a palavra-passe podem entrar.</Text>
-    {field('Palavra-passe da sessão','password','Mínimo de 4 caracteres')}</>:null}
-   <Text style={styles.note}>Os jogadores externos já confirmados contam para a ocupação da sessão.</Text>
+   {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>{t('As inscrições só abrem quando o organizador as ativar na sessão.')}</Text>:null}
+   <Text style={styles.label}>{t('Visibilidade')}</Text>
+   {sharedIds.length>0?<Message>{t('Partilha entre comunidades: visibilidade apenas para membros, sem palavra-passe.')}</Message>:null}
+   <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?t('Sem palavra-passe'):t('Pública')} disabled={busy} onPress={()=>patch('privateGame',false)}/>
+    <Button secondary={!form.privateGame} title={t('Privada')} disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
+   {form.privateGame?<><Text style={styles.note}>{t('A palavra-passe fica oculta enquanto escreves. Só os jogadores com a palavra-passe podem entrar.')}</Text>
+    {field(t('Palavra-passe da sessão'),'password',t('Mínimo de 4 caracteres'))}</>:null}
+   <Text style={styles.note}>{t('Os jogadores externos já confirmados contam para a ocupação da sessão.')}</Text>
   </View>:null}
   {step===3?<View style={styles.panel}>
-   <Text style={styles.heading}>Rever antes de publicar</Text>
-   <Text style={styles.note}>Confirma todos os detalhes. A aplicação não publica nada até autorizares a criação.</Text>
-   <Text style={styles.summaryTitle}>Modalidade e comunidade</Text>
+   <Text style={styles.heading}>{t('Rever antes de publicar')}</Text>
+   <Text style={styles.note}>{t('Confirma todos os detalhes. A aplicação não publica nada até autorizares a criação.')}</Text>
+   <Text style={styles.summaryTitle}>{t('Modalidade e comunidade')}</Text>
    <Text style={styles.summaryValue}>{form.sport}</Text>
-   <Text style={styles.summaryValue}>{selectedCommunity?'Comunidade: '+selectedCommunity.name:
-    sharedCommunities.length?'Partilhada com: '+sharedCommunities.map(c=>c.name).join(', '):
-    'Sessão independente'}</Text>
-   <Button secondary title="Editar modalidade e comunidades" disabled={busy} onPress={()=>setStep(0)}/>
-   <Text style={styles.summaryTitle}>Data e recinto</Text>
+   <Text style={styles.summaryValue}>{selectedCommunity?t('Comunidade: {name}',{name:selectedCommunity.name}):
+    sharedCommunities.length?t('Partilhada com: {names}',{names:sharedCommunities.map(c=>c.name).join(', ')}):
+    t('Sessão independente')}</Text>
+   <Button secondary title={t('Editar modalidade e comunidades')} disabled={busy} onPress={()=>setStep(0)}/>
+   <Text style={styles.summaryTitle}>{t('Data e recinto')}</Text>
    <Text style={styles.summaryValue}>{form.day} às {form.time}</Text>
-   <Text style={styles.summaryValue}>{venueChosen?'Recinto: '+venueChosen.name:form.address}</Text>
+   <Text style={styles.summaryValue}>{venueChosen?t('Recinto: {name}',{name:venueChosen.name}):form.address}</Text>
    <Text style={styles.summaryValue}>{form.city}</Text>
-   {form.meetingPointInstructions?<Text style={styles.note}>Ponto de encontro: {form.meetingPointInstructions}</Text>:null}
+   {form.meetingPointInstructions?<Text style={styles.note}>{t('Ponto de encontro: {text}',{text:form.meetingPointInstructions})}</Text>:null}
    <SessionDraftLocationMap
     point={form.venueId&&venueChosen&&venueChosen.id===form.venueId
       ?(typeof venueChosen.latitude==='number'&&typeof venueChosen.longitude==='number'&&validCoordinates(venueChosen.latitude,venueChosen.longitude)
@@ -905,35 +906,35 @@ export default function CreateSessionScreen(){
     venueName={venueChosen && venueChosen.id===form.venueId ? venueChosen.name : null}
     address={form.address} city={form.city}
     onEdit={()=>setStep(1)}/>
-   <Button secondary title="Editar data e recinto" disabled={busy} onPress={()=>setStep(1)}/>
-   <Text style={styles.summaryTitle}>Participação e regras</Text>
-   <Text style={styles.summaryValue}>Nível: {levelLabel(form.skillLevel)} · Até {form.maxParticipants} participantes · mínimo {form.minParticipants} · {hasExistingPlayers?form.externalConfirmedParticipants:'0'} já confirmados externamente (sem contar o organizador)</Text>
-   <Text style={styles.summaryValue}>{hasExistingPlayers?'Vou completar um grupo existente':'Vou encontrar jogadores na Jynlo'}</Text>
-   <Text style={styles.summaryValue}>Preço: {form.price||'0'} € · {sharedIds.length?'Apenas membros das comunidades':form.privateGame?'Privada com palavra-passe':selectedCommunity?'Apenas membros da comunidade':'Pública'}</Text>
-   <Text style={styles.summaryValue}>Inscrições: {form.registrationOpeningMode==='SCHEDULED'?'Abertura '+form.registrationDay+' às '+form.registrationTime:form.registrationOpeningMode==='MANUAL'?'Abertura manual':'Abertura imediata'}</Text>
-   <Text style={styles.summaryValue}>{form.recurrence==='NONE'?'Sessão única':
-    (form.recurrence==='WEEKLY'?'Semanal':'Quinzenal')+' · '+form.recurrenceOccurrences+' ciclos · '+((form.additionalWeeklySlots?.length||0)+1)+' horário(s) por ciclo'}</Text>
-   {form.seasonGame?<Text style={styles.summaryValue}>Jogo de época{form.confirmActivateRankings?' · ativa as classificações com autorização':''}</Text>:null}
-   <Button secondary title="Editar participação e inscrições" disabled={busy} onPress={()=>setStep(2)}/>
-   <Message>O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta a sessão criada antes de tentares repetir a operação se houver uma falha de ligação.</Message>
+   <Button secondary title={t('Editar data e recinto')} disabled={busy} onPress={()=>setStep(1)}/>
+   <Text style={styles.summaryTitle}>{t('Participação e regras')}</Text>
+   <Text style={styles.summaryValue}>{t('Nível: {level} · Até {max} participantes · mínimo {min} · {external} já confirmados externamente (sem contar o organizador)',{level:levelLabel(form.skillLevel),max:String(form.maxParticipants??''),min:String(form.minParticipants??''),external:String(hasExistingPlayers?form.externalConfirmedParticipants??'0':'0')})}</Text>
+   <Text style={styles.summaryValue}>{hasExistingPlayers?t('Vou completar um grupo existente'):t('Vou encontrar jogadores na Jynlo')}</Text>
+   <Text style={styles.summaryValue}>{t('Preço: {price} €',{price:form.price||'0'})} · {sharedIds.length?t('Apenas membros das comunidades'):form.privateGame?t('Privada com palavra-passe'):selectedCommunity?t('Apenas membros da comunidade'):t('Pública')}</Text>
+   <Text style={styles.summaryValue}>{t('Inscrições:')} {form.registrationOpeningMode==='SCHEDULED'?t('Abertura {day} às {time}',{day:String(form.registrationDay??''),time:String(form.registrationTime??'')}):form.registrationOpeningMode==='MANUAL'?t('Abertura manual'):t('Abertura imediata')}</Text>
+   <Text style={styles.summaryValue}>{form.recurrence==='NONE'?t('Sessão única'):
+    t('{frequency} · {cycles} ciclos · {slots} horário(s) por ciclo',{frequency:form.recurrence==='WEEKLY'?t('Semanal'):t('Quinzenal'),cycles:String(form.recurrenceOccurrences??''),slots:(form.additionalWeeklySlots?.length||0)+1})}</Text>
+   {form.seasonGame?<Text style={styles.summaryValue}>{t('Jogo de época')}{form.confirmActivateRankings?' · '+t('ativa as classificações com autorização'):''}</Text>:null}
+   <Button secondary title={t('Editar participação e inscrições')} disabled={busy} onPress={()=>setStep(2)}/>
+   <Message>{t('O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta a sessão criada antes de tentares repetir a operação se houver uma falha de ligação.')}</Message>
   </View>:null}
   {step===3&&auth.token&&!DEMO_MODE?<View style={styles.panel}>
-   <Text style={styles.presetKicker}>PERFIS DE SESSÕES</Text>
-   <Text style={styles.heading}>{presetId!==null?'Atualizar o perfil':'Guardar como perfil'}</Text>
-   <Text style={styles.note}>Guarda a modalidade, o recinto, os jogadores e as preferências para voltares a criar este jogo. Datas, horas e palavras-passe não são guardadas. Não cria um jogo.</Text>
+   <Text style={styles.presetKicker}>{t('PERFIS DE SESSÕES')}</Text>
+   <Text style={styles.heading}>{presetId!==null?t('Atualizar o perfil'):t('Guardar como perfil')}</Text>
+   <Text style={styles.note}>{t('Guarda a modalidade, o recinto, os jogadores e as preferências para voltares a criar este jogo. Datas, horas e palavras-passe não são guardadas. Não cria um jogo.')}</Text>
    <TextInput style={styles.input} value={presetName} onChangeText={v=>{setPresetName(v);setPresetError('');}} maxLength={70}
-    placeholder="Ex.: Futsal de sexta-feira" placeholderTextColor={C.muted} editable={!busy&&!presetBusy} accessibilityLabel="Nome do perfil"/>
+    placeholder={t('Ex.: Futsal de sexta-feira')} placeholderTextColor={C.muted} editable={!busy&&!presetBusy} accessibilityLabel={t('Nome do perfil')}/>
    {presetError?<Message tone="error">{presetError}</Message>:null}
-   {presetMessage&&!presetMessage.startsWith('Configuração')?<Message>{presetMessage}</Message>:null}
-   {presetId!==null?<Button secondary title={presetBusy?'A guardar…':'Atualizar perfil'} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(true);}}/>:null}
-   <Button secondary title={presetBusy?'A guardar…':'Guardar novo perfil'} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(false);}}/>
+   {presetMessage&&presetMessage!==t('Configuração aplicada. Escolhe agora o dia e a hora do próximo jogo.')?<Message>{presetMessage}</Message>:null}
+   {presetId!==null?<Button secondary title={presetBusy?t('A guardar…'):t('Atualizar perfil')} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(true);}}/>:null}
+   <Button secondary title={presetBusy?t('A guardar…'):t('Guardar novo perfil')} disabled={busy||presetBusy||!presetName.trim()} onPress={()=>{void savePreset(false);}}/>
   </View>:null}
   <View style={styles.actions}>
-   {step>0?<Button secondary title="Anterior" disabled={busy} onPress={()=>{setStep(current=>Math.max(0,current-1));setError('');}}/>:null}
-   {step<3?<Button title="Continuar" disabled={busy} onPress={nextStep}/>:
-    <Button title={busy?'A criar…':'Confirmar e criar sessão'} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
+   {step>0?<Button secondary title={t('Anterior')} disabled={busy} onPress={()=>{setStep(current=>Math.max(0,current-1));setError('');}}/>:null}
+   {step<3?<Button title={t('Continuar')} disabled={busy} onPress={nextStep}/>:
+    <Button title={busy?t('A criar…'):t('Confirmar e criar sessão')} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
   </View>
-  <Button secondary title="Voltar às minhas sessões" onPress={()=>router.push('/my-sessions')}/>
+  <Button secondary title={t('Voltar às minhas sessões')} onPress={()=>router.push('/my-sessions')}/>
  </Page>;
 }
 const styles=StyleSheet.create({presetKicker:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1.2},

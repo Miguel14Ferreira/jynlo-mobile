@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const viewer=source.split('function StoryViewer(')[1]?.split('export default function JynloFeedHome()')[0];
 
 test('inactive mobile app pauses story photo timer and native video, and prevents tapping ahead',()=>{

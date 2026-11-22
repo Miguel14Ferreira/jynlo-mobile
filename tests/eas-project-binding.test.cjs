@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -24,7 +25,7 @@ test('a different Expo project, account or malformed ID blocks the build',()=>{
  assert.throws(()=>validateEasBinding({config:{...expected,extra:{eas:{projectId:'invalid'}}}}),/inválido/);
 });
 test('preview workflow checks dynamic binding without attempting a second EAS init',()=>{
- const workflow=fs.readFileSync(path.join(__dirname,'..','.github','workflows','mobile-preview-apk.yml'),'utf8');
+ const workflow=untranslate(fs.readFileSync(path.join(__dirname,'..','.github','workflows','mobile-preview-apk.yml'),'utf8'));
  assert.match(workflow,/run: node scripts\/check-eas-project\.cjs/);
  assert.doesNotMatch(workflow,/eas-cli init --id/);
  assert.doesNotMatch(workflow,/require\('\.\/app\.json'\)\.expo\.extra\?\.eas\?\.projectId/);
@@ -43,7 +44,7 @@ test('normal preview configuration validates with no EAS token or network',()=>{
 });
 
 test('local Windows preflight rejects mismatched project and incompatible Expo SDK before TypeScript',()=>{
- const script=fs.readFileSync(path.join(__dirname,'..','scripts','validate-local.ps1'),'utf8');
+ const script=untranslate(fs.readFileSync(path.join(__dirname,'..','scripts','validate-local.ps1'),'utf8'));
  const project=script.indexOf("'scripts/check-eas-project.cjs'");
  const sdk=script.indexOf("'expo','install','--check'");
  const types=script.indexOf("'run','typecheck'");

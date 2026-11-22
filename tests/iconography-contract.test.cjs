@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('the Jynlo mobile icon system uses one real vector provider and active variants',()=>{
  const pkg=require('../package.json');
  assert.equal(pkg.dependencies['@expo/vector-icons'],'15.0.3');

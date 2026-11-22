@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('team endpoints are authenticated and random confirmation sends exact team lists',()=>{
  const api=read('src/lib/api.ts');
  for(const term of ['/teams/suggestion','/teams/confirm','export async function suggestSessionTeams',

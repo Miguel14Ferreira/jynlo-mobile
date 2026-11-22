@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('session and community details contain the real chat without opening another route',()=>{
  const session=read('app/sessions/[id].tsx'),community=read('app/communities/[id].tsx');
  assert.match(session,/import SessionChatPanel from/);

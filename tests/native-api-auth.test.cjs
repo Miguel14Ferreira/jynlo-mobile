@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=file=>fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));
 
 test('native API uses bearer tokens without browser refresh cookies',()=>{
   const source=read('src/lib/api.ts');

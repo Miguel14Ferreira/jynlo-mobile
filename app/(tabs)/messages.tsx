@@ -1,4 +1,5 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
+import {currentLocale,t} from '../../src/lib/i18n';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
@@ -66,24 +67,24 @@ export default function MessagesScreen(){
    if(muted.status==='fulfilled'){
     // Do not overwrite freshly changed preferences with a stale poll response.
     if(muteWrites.current.size===0&&muteRevision.current===initialMuteRevision){setMutes(muted.value);setMuteKnown(true);setMuteError('');}
-   }else if(!muteKnown){setMuteError('Não foi possível consultar as preferências de avisos.');}
+   }else if(!muteKnown){setMuteError(t('Não foi possível consultar as preferências de avisos.'));}
    if(call.status==='fulfilled')setIncomingCall(call.value&&Number.isFinite(Date.parse(call.value.expiresAt))&&Date.parse(call.value.expiresAt)>Date.now()?call.value:null);
    else setIncomingCall(null); // Never present an unverified stale invitation as active.
    const failedSources=[
-    ...(privateChats.status==='rejected'?['mensagens privadas']:[]),
-    ...(groups.status==='rejected'?['comunidades']:[]),
-    ...(sessionChats.status==='rejected'?['sessões']:[]),
-    ...(groupChats.status==='rejected'?['grupos']:[]),
-    ...(teamChats.status==='rejected'?['equipas']:[]),
-    ...(requests.status==='rejected'?['convites']:[])
+    ...(privateChats.status==='rejected'?[t('mensagens privadas')]:[]),
+    ...(groups.status==='rejected'?[t('comunidades')]:[]),
+    ...(sessionChats.status==='rejected'?[t('sessões')]:[]),
+    ...(groupChats.status==='rejected'?[t('grupos')]:[]),
+    ...(teamChats.status==='rejected'?[t('equipas')]:[]),
+    ...(requests.status==='rejected'?[t('convites')]:[])
    ];
    const partial=failedSources.length>0;
-   setChatWarning(partial?`Não foi possível sincronizar: ${failedSources.join(', ')}. Os dados anteriores podem estar desatualizados. Tenta atualizar novamente.`:'');
+   setChatWarning(partial?t('Não foi possível sincronizar: {areas}. Os dados anteriores podem estar desatualizados. Tenta atualizar novamente.',{areas:failedSources.join(', ')}):'');
    if(!partial)setLastSyncedAt(new Date());
   }catch(e){
    if(version===generation.current&&identity.current===auth.username+'|'+auth.token){
-    if(!silent)setError(e instanceof Error?e.message:'Não foi possível carregar as conversas.');
-    else setChatWarning('A atualização automática falhou. Confirma a ligação e volta a atualizar.');
+    if(!silent)setError(e instanceof Error?e.message:t('Não foi possível carregar as conversas.'));
+    else setChatWarning(t('A atualização automática falhou. Confirma a ligação e volta a atualizar.'));
    }
   }finally{
    if(busyVersion.current===version)busyVersion.current=null;
@@ -135,17 +136,17 @@ export default function MessagesScreen(){
   const muted=isConversationMuted(mutes,item.kind,item.id);
   const actor=auth.username+'|'+auth.token;
   const token=auth.token;
-  Alert.alert(muted?'Ativar avisos?':'Silenciar conversa?',
-   muted?'Vais voltar a receber notificações desta conversa.':'As mensagens continuarão a chegar e a contar como não lidas. Apenas os avisos desta conversa serão silenciados.',[
-    {text:'Cancelar',style:'cancel'},
-    {text:muted?'Ativar avisos':'Silenciar',onPress:()=>{
+  Alert.alert(muted?t('Ativar avisos?'):t('Silenciar conversa?'),
+   muted?t('Vais voltar a receber notificações desta conversa.'):t('As mensagens continuarão a chegar e a contar como não lidas. Apenas os avisos desta conversa serão silenciados.'),[
+    {text:t('Cancelar'),style:'cancel'},
+    {text:muted?t('Ativar avisos'):t('Silenciar'),onPress:()=>{
       if(identity.current!==actor||muteWrites.current.has(key))return;
       muteWrites.current.add(key);muteRevision.current++;setMutingKey(key);setMuteError('');
       void setConversationMuted(item.kind,item.id,!muted,token).then(async()=>{
         const confirmed=await listConversationMutes(token);
         if(identity.current===actor){muteRevision.current++;setMutes(confirmed);setMuteKnown(true);}
       }).catch(()=>{
-        if(identity.current===actor)setMuteError('Não foi possível confirmar a alteração. Volta a atualizar antes de repetir.');
+        if(identity.current===actor)setMuteError(t('Não foi possível confirmar a alteração. Volta a atualizar antes de repetir.'));
       }).finally(()=>{
         muteWrites.current.delete(key);
         if(identity.current===actor)setMutingKey(null);
@@ -153,71 +154,71 @@ export default function MessagesScreen(){
     }}
    ]);
  }
- return <Page><Brand subtitle="A CONVERSA CONTINUA"/><DemoBanner/>
+ return <Page><Brand subtitle={t('A CONVERSA CONTINUA')}/><DemoBanner/>
   <View style={styles.headerRow}>
-   <View style={styles.headerCopy}><Eyebrow>COMUNIDADE É CONVERSA</Eyebrow><Text maxFontSizeMultiplier={1.3} style={styles.title}>Mensagens</Text>
-    <Text style={styles.sub}>Conversas privadas, grupos, comunidades e sessões, num só lugar.</Text>
+   <View style={styles.headerCopy}><Eyebrow>{t('COMUNIDADE É CONVERSA')}</Eyebrow><Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Mensagens')}</Text>
+    <Text style={styles.sub}>{t('Conversas privadas, grupos, comunidades e sessões, num só lugar.')}</Text>
    </View>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificações" onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir notificações')} onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
   </View>
   {auth.token?<View style={styles.searchBox}>
-   <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar conversas…"
+   <TextInput value={search} onChangeText={setSearch} placeholder={t('Pesquisar conversas…')}
     placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
-    accessibilityLabel="Pesquisar conversas pelo contacto ou mensagem"/>
+    accessibilityLabel={t('Pesquisar conversas pelo contacto ou mensagem')}/>
    <View style={styles.filterRow}>
-    {([['all','Todas'],['direct','Privadas'],['private','Grupos'],['team','Equipas'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={'Filtrar conversas: '+label} accessibilityState={{selected:conversationKind===kind}}
+    {([['all','Todas'],['direct','Privadas'],['private','Grupos'],['team','Equipas'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={t('Filtrar conversas: {label}',{label:t(label)})} accessibilityState={{selected:conversationKind===kind}}
       onPress={()=>setConversationKind(kind)} style={[styles.kindChip,conversationKind===kind&&styles.kindChipActive]}>
-      <Text style={[styles.kindText,conversationKind===kind&&styles.kindTextActive]}>{label}</Text>
+      <Text style={[styles.kindText,conversationKind===kind&&styles.kindTextActive]}>{t(label)}</Text>
     </Pressable>)}
    </View>
    <View style={styles.filterRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar apenas conversas não lidas" accessibilityState={{selected:unreadOnly}}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar apenas conversas não lidas')} accessibilityState={{selected:unreadOnly}}
       onPress={()=>setUnreadOnly(current=>!current)} style={[styles.filterChip,unreadOnly&&styles.filterActive]}>
-      <Text style={[styles.filterText,unreadOnly&&styles.filterTextActive]}>Não lidas · {unreadTotal}</Text>
+      <Text style={[styles.filterText,unreadOnly&&styles.filterTextActive]}>{t('Não lidas · {a}',{a:unreadTotal})}</Text>
     </Pressable>
-    {!!search?<Pressable accessibilityRole="button" accessibilityLabel="Limpar pesquisa de conversas" onPress={()=>setSearch('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>Limpar ×</Text></Pressable>:null}
+    {!!search?<Pressable accessibilityRole="button" accessibilityLabel={t('Limpar pesquisa de conversas')} onPress={()=>setSearch('')} style={styles.clearSearch}><Text style={styles.clearSearchText}>{t('Limpar ×')}</Text></Pressable>:null}
    </View>
-   <Text style={styles.tiny}>{displayed.length} de {sameIdentity?items.length:0} conversas</Text>
+   <Text style={styles.tiny}>{t('{a} de {b} conversas',{a:displayed.length,b:sameIdentity?items.length:0})}</Text>
   </View>:null}
-  {!auth.token?<Button title="Entrar para ver mensagens" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={t('Entrar para ver mensagens')} onPress={()=>router.push('/login')}/>:null}
   {sameIdentity&&incomingCall?<Pressable accessibilityRole="button"
-    accessibilityLabel={'Atender chamada de '+incomingCall.caller}
+    accessibilityLabel={t('Atender chamada de {v}',{v:incomingCall.caller})}
     onPress={()=>router.push({pathname:'/messages/call',params:{peer:incomingCall.caller}})}
     style={styles.alert}>
     <View style={{flex:1,gap:4}}>
-     <Text style={styles.alertText}>Chamada {incomingCall.media==='video'?'de vídeo':'de voz'} de {incomingCall.caller}</Text>
-     <Text style={styles.tiny}>Abrir chamada para aceitar ou recusar</Text>
+     <Text style={styles.alertText}>{t('Chamada {a} de {b}',{a:incomingCall.media==='video'?t('de vídeo'):t('de voz'),b:incomingCall.caller})}</Text>
+     <Text style={styles.tiny}>{t('Abrir chamada para aceitar ou recusar')}</Text>
     </View><Text style={styles.arrow}>›</Text>
    </Pressable>:null}
   {sameIdentity&&invites.length>0?<Pressable onPress={()=>router.push('/communities/invites')} style={styles.alert}>
-    <Text style={styles.alertText}>✉  Tens {invites.length} convite(s) para comunidades</Text><Text style={styles.arrow}>›</Text>
+    <Text style={styles.alertText}>{t('✉  Tens {a} convite(s) para comunidades',{a:invites.length})}</Text><Text style={styles.arrow}>›</Text>
   </Pressable>:null}
-  {sameIdentity?<Pressable accessibilityRole="button" accessibilityLabel="Ver reações e respostas privadas às minhas Stories"
+  {sameIdentity?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver reações e respostas privadas às minhas Stories')}
    onPress={()=>router.push('/stories/replies')} style={styles.storyRepliesShortcut}>
    <View style={styles.storyRepliesSymbol}><Text maxFontSizeMultiplier={1.3} style={styles.storyRepliesEmoji}>❤️</Text></View>
-   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Reações às tuas Stories</Text>
-    <Text style={styles.storyRepliesCaption}>Respostas privadas, com acesso à Story e à conversa</Text></View>
+   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>{t('Reações às tuas Stories')}</Text>
+    <Text style={styles.storyRepliesCaption}>{t('Respostas privadas, com acesso à Story e à conversa')}</Text></View>
    <JynloIcon name="chevron-right" size={20} color={T.accent}/>
   </Pressable>:null}
-  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Abrir conversas de grupo"
+  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir conversas de grupo')}
    onPress={()=>router.push('/groups')} style={styles.storyRepliesShortcut}>
    <View style={styles.storyRepliesSymbol}><Text maxFontSizeMultiplier={1.3} style={styles.storyRepliesEmoji}>👥</Text></View>
-   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>Conversas de grupo</Text>
-    <Text style={styles.storyRepliesCaption}>Grupos privados com os teus amigos, fora das comunidades</Text></View>
+   <View style={{flex:1,gap:3}}><Text style={styles.storyRepliesTitle}>{t('Conversas de grupo')}</Text>
+    <Text style={styles.storyRepliesCaption}>{t('Grupos privados com os teus amigos, fora das comunidades')}</Text></View>
    <JynloIcon name="chevron-right" size={20} color={T.accent}/>
   </Pressable>:null}
-  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel="Ver convites e pedidos" onPress={()=>router.push('/communities/invites')} style={styles.invitesShortcut}><JynloIcon name="community" size={17} color={T.accent}/><Text style={styles.invitesText}>Convites e pedidos</Text><JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
+  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver convites e pedidos')} onPress={()=>router.push('/communities/invites')} style={styles.invitesShortcut}><JynloIcon name="community" size={17} color={T.accent}/><Text style={styles.invitesText}>{t('Convites e pedidos')}</Text><JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {chatWarning?<Message>{chatWarning}</Message>:null}
   {muteError?<Message tone="error">{muteError}</Message>:null}
-  {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>Última sincronização completa: {lastSyncedAt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</Text>:null}
-  {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.</Message>:null}
-  {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>Não foram encontradas conversas com estes filtros.</Message>:null}
-  {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>Conversas recentes</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
+  {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>{t('Última sincronização completa: {a}',{a:lastSyncedAt.toLocaleTimeString(currentLocale(),{hour:'2-digit',minute:'2-digit'})})}</Text>:null}
+  {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>{t('Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.')}</Message>:null}
+  {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>{t('Não foram encontradas conversas com estes filtros.')}</Message>:null}
+  {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>{t('Conversas recentes')}</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
   {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
    <Pressable
     accessibilityRole="button"
-    accessibilityLabel={`${item.kind==='direct'?'Conversa com':item.kind==='private'?'Grupo':item.kind==='team'?'Chat da equipa':item.kind==='community'?'Comunidade':'Chat da sessão'} ${item.title||item.id}, ${item.unreadCount>0?`${item.unreadCount} mensagens não lidas`:'sem mensagens não lidas'}`}
+    accessibilityLabel={`${item.kind==='direct'?t('Conversa com'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Chat da equipa'):item.kind==='community'?t('Comunidade'):t('Chat da sessão')} ${item.title||item.id}, ${item.unreadCount>0?t('{n} mensagens não lidas',{n:item.unreadCount}):t('sem mensagens não lidas')}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='private'?router.push({pathname:'/groups/[id]',params:{id:item.id,title:item.title||''}}):
       item.kind==='team'?router.push({pathname:'/teams/[id]',params:{id:item.id,tab:'CHAT'}}):
@@ -229,16 +230,16 @@ export default function MessagesScreen(){
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
-       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?'Comunidade':item.kind==='private'?'Grupo':item.kind==='team'?'Equipa':'Sessão desportiva')}</Text>
+       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?t('Comunidade'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Equipa'):t('Sessão desportiva'))}</Text>
        {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
-      <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||'Abre para começar a conversa'}</Text>
+      <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||t('Abre para começar a conversa')}</Text>
       {!!item.latestSender&&<Text numberOfLines={1} style={styles.tiny}>{item.latestSender}</Text>}
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
    </Pressable>
    {muteKnown?<Pressable accessibilityRole="button"
-      accessibilityLabel={isConversationMuted(mutes,item.kind,item.id)?'Ativar avisos da conversa':'Silenciar avisos da conversa'}
+      accessibilityLabel={isConversationMuted(mutes,item.kind,item.id)?t('Ativar avisos da conversa'):t('Silenciar avisos da conversa')}
       disabled={mutingKey!==null} onPress={()=>toggleConversationMute(item)}
       style={styles.muteAction}>
       <JynloIcon name={isConversationMuted(mutes,item.kind,item.id)?'volume-off':'volume'} size={21} color={T.accent}/>

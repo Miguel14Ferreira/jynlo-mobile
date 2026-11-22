@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -5,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {sessionCardStatus,participationProgress}=require('../src/lib/session-card-core.cjs');
 
-const card=fs.readFileSync(path.join(__dirname,'../src/components/UI.tsx'),'utf8');
+const card=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/UI.tsx'),'utf8'));
 test('session availability reflects backend status and actual capacity',()=>{
  const base={status:'OPEN',maxParticipants:10,participantCount:3};
  assert.deepEqual(sessionCardStatus(base),{label:'7 vagas',tone:'available'});

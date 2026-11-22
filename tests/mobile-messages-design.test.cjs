@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const inbox=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
+const inbox=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8'));
 
 test('modern inbox keeps real conversation sources and refresh protections',()=>{
  assert.match(inbox,/communityInbox\(auth\.token,auth\.username\)/);
@@ -14,7 +15,7 @@ test('modern inbox keeps real conversation sources and refresh protections',()=>
  assert.match(inbox,/pendingDirectCall\(auth\.token\)/);
 });
 test('accessible unread tabs, search reset and visual hierarchy',()=>{
- assert.match(inbox,/accessibilityLabel=\{'Filtrar conversas: '\+label\}/);
+ assert.match(inbox,/accessibilityLabel=\{t\('Filtrar conversas: \{label\}',\{label:t\(label\)\}\)\}/);
  assert.match(inbox,/\['all','Todas'\]/);
  assert.match(inbox,/accessibilityLabel="Mostrar apenas conversas não lidas"/);
  assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(current=>!current\)\}/);

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 const core=require('../src/lib/private-groups-core.cjs');
 
 test('group name and messages follow the server limits',()=>{

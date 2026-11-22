@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -9,7 +10,7 @@ for (const [kind, file, denied, receipt] of [
   ['session', 'SessionChatPanel.tsx', 'closed', 'markSessionChatRead'],
   ['community', 'CommunityChatPanel.tsx', 'accessRevoked', 'markCommunityRead'],
 ]) {
-  const source = fs.readFileSync(path.join(__dirname, '../src/components', file), 'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname, '../src/components', file), 'utf8'));
   const start = source.indexOf('onScroll={event=>');
   const end = source.indexOf('onLayout={event=>', start);
   const scroll = source.slice(start, end);

@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
-const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
+const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
 test('Mobile offers a personal destination and public communities the user manages',()=>{
  assert.match(source,/storyPublishCommunityId,setStoryPublishCommunityId/);
  assert.match(source,/group\.visibility==='PUBLIC'/);
@@ -28,7 +29,7 @@ test('Story targeting and profile suggestions cannot survive an account switch',
  assert.match(source,/if\(active\)setStoryManagedCommunitiesLoading\(false\)/);
 });
 test('Mobile searches existing discoverable profiles for Story mentions',()=>{
- const relation=fs.readFileSync(path.join(__dirname,'../src/lib/social-relations-api.ts'),'utf8');
+ const relation=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-relations-api.ts'),'utf8'));
  assert.match(relation,/export async function searchStoryMentionProfiles/);
  assert.match(relation,/\/api\/profile\/name\//);
  assert.match(source,/searchStoryMentionProfiles\(term,auth\.token\)/);

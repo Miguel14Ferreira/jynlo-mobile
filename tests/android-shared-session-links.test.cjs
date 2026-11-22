@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const app=JSON.parse(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8')).expo;
+const app=JSON.parse(untranslate(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8'))).expo;
 const {nativeRouteForWebLink}=require('../src/lib/native-app-links.cjs');
 const intentFilters=app.android.intentFilters;
 function hasAndroidLink(prefix){

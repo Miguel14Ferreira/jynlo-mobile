@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/people.tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../app/people.tsx'),'utf8'));
 
 test('people search clears prior identities and filters delayed responses',()=>{
  assert.match(code,/const generation=useRef\(0\)/);

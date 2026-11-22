@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/android-launch-diagnostic.yml'),'utf8');
+const workflow=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/android-launch-diagnostic.yml'),'utf8'));
 
 test('Android launch diagnostic accepts a specific signed APK workflow run',()=>{
  assert.match(workflow,/workflow_dispatch:\s*\n\s*inputs:/);

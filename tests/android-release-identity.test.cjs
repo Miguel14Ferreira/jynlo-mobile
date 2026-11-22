@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -5,7 +6,7 @@ const path=require('node:path');
 const root=path.join(__dirname,'..');
 
 test('Google Play Android identity stays fixed to registered app',()=>{
-  const config=JSON.parse(fs.readFileSync(path.join(root,'app.json'),'utf8'));
+  const config=JSON.parse(untranslate(fs.readFileSync(path.join(root,'app.json'),'utf8')));
   assert.equal(config.expo.android.package,'com.jynlo.app');
   assert.equal(config.expo.ios.bundleIdentifier,'com.jynlo.app');
   assert.ok(Number.isSafeInteger(config.expo.android.versionCode));
@@ -16,7 +17,7 @@ test('Google Play Android identity stays fixed to registered app',()=>{
 });
 
 test('internal Play workflow uses real HTTPS API, private upload key and no auto publishing',()=>{
-  const source=fs.readFileSync(path.join(root,'.github/workflows/build-play-internal-aab.yml'),'utf8');
+  const source=untranslate(fs.readFileSync(path.join(root,'.github/workflows/build-play-internal-aab.yml'),'utf8'));
   assert.match(source,/workflow_dispatch:/);
   // Play internal builds are deliberately manual while the GitHub Actions quota
   // is unavailable. A workflow must never publish automatically.

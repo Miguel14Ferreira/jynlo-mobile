@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
 const sync=screen.slice(screen.indexOf('const syncSession=useCallback('),screen.indexOf('useFocusEffect(useCallback(',screen.indexOf('const syncSession=useCallback(')));
 
 test('session detail polls authoritative roster while open and refreshes when app resumes',()=>{

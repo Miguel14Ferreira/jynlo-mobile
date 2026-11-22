@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -44,8 +45,8 @@ test('mantém compatibilidade com comunidades antigas e evita modalidades invál
  assert.equal(communityAllowsTournamentSport(old,''),false);
 });
 test('ecrãs não criam torneios automaticamente nem inventam classificações',()=>{
- const hub=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/competitions.tsx'),'utf8');
- const create=fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8');
+ const hub=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/[id]/competitions.tsx'),'utf8'));
+ const create=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8'));
  assert.match(hub,/tournamentsForCommunity/);
  assert.match(hub,/classificationKind|label\(tournament.kind\)/);
  assert.match(hub,/canCreateTournamentForSport/);

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -22,7 +23,7 @@ function resolved(file,specifier){
 test('every local import in Expo Router app screens resolves inside the repository',()=>{
  const missing=[];
  for(const file of pages(app)){
-  const source=fs.readFileSync(file,'utf8');
+  const source=untranslate(fs.readFileSync(file,'utf8'));
   // ESM imports/exports and literal dynamic imports; external packages are handled by Metro.
   const pattern=/(?:\bfrom\s*|\bimport\s*\(|\bimport\s*|\brequire\s*\()\s*['"]((?:\.\.?\/)[^'"]+)['"]/g;
   for(const match of source.matchAll(pattern)){
