@@ -621,7 +621,7 @@ export default function TeamDetail(){
       <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{a}',{a:m.username})} style={styles.playerInfo}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
        <Text numberOfLines={1} style={styles.playerName}>{m.fullName||m.username}</Text>
-       <Text numberOfLines={1} style={styles.playerHandle}>@{m.username}</Text>
+       <Text numberOfLines={1} style={styles.playerHandle}>@{m.username}{m.shirtNumber!=null?' · nº '+m.shirtNumber:''}{m.position?' · '+m.position:''}</Text>
        {m.bio?<Text numberOfLines={2} style={styles.playerBio}>{m.bio}</Text>:null}
       </Pressable>
       <View style={styles.playerTrailing}>

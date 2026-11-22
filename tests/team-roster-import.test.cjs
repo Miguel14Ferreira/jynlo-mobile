@@ -16,3 +16,17 @@ test('errors after a button press open as a pop-up',()=>{
  assert.match(ui,/Alert\.alert\(t\('Algo correu mal'\),text\)/);
  assert.match(ui,/ACTION_ERROR_WINDOW_MS=10000/);
 });
+test('team roster: personal links, manual linking and suggestions that need a yes',()=>{
+ const api=read('src/lib/team-roster-api.ts'),ui=read('src/components/TeamRosterImport.tsx'),claim=read('app/teams/claim/[token].tsx');
+ assert.match(api,/\/claim-link'/);assert.match(api,/\/api\/teams\/roster-claims\/'\+claim\+'\/accept'/);
+ assert.match(ui,/Partilhar convite/);assert.match(ui,/Associar a utilizador/);assert.match(ui,/Será a mesma pessoa\?/);
+ assert.match(claim,/Sim, sou eu · Entrar na equipa/);assert.match(claim,/Não sou eu/);
+ const {nativeRouteForWebLink}=require('../src/lib/native-app-links.cjs');
+ const {safeRedirect}=require('../src/lib/routes.cjs');
+ const id='123e4567-e89b-12d3-a456-426614174000';
+ assert.equal(nativeRouteForWebLink('https://jynlosports.com/menu/teams/claim/'+id),'/teams/claim/'+id);
+ assert.equal(nativeRouteForWebLink('https://evil.example/menu/teams/claim/'+id),'https://evil.example/menu/teams/claim/'+id);
+ assert.equal(safeRedirect('/teams/claim/'+id),'/teams/claim/'+id);
+ assert.equal(safeRedirect('/teams/claim/nope'),'/(tabs)');
+ assert.match(read('app.json'),/"pathPrefix": "\/menu\/teams\/claim\/"/);
+});

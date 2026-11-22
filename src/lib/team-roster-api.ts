@@ -6,7 +6,9 @@ import {API_BASE,DEMO_MODE,request} from './api';
 export type RosterRowStatus='INVITE'|'ALREADY_IN_TEAM'|'NEW'|'DUPLICATE'|'UNKNOWN_USERNAME';
 export type TeamRosterPreview={rows:{line:number;name:string;shirtNumber:number|null;position:string|null;username:string|null;status:RosterRowStatus}[];
  invites:number;newPlayers:number;skipped:number;warnings:string[]};
-export type TeamRosterEntry={id:number;name:string;shirtNumber:number|null;position:string|null;username:string|null;memberStatus:'INVITED'|'ACTIVE'|'DECLINED'|null};
+export type TeamRosterEntry={id:number;name:string;shirtNumber:number|null;position:string|null;username:string|null;memberStatus:'INVITED'|'ACTIVE'|'DECLINED'|null;hasClaimLink?:boolean};
+export type TeamRosterSuggestion={entryId:number;entryName:string;shirtNumber:number|null;profileId:number;username:string;fullName:string|null};
+export type TeamRosterClaim={teamId:number;teamName:string;teamSlug:string;name:string;shirtNumber:number|null;position:string|null;alreadyLinked:boolean};
 export const ROSTER_MAX_BYTES=2*1024*1024;
 const ACCEPTED=/\.(xlsx|xls|csv|tsv)$/i;
 
@@ -50,4 +52,29 @@ export function teamRoster(teamId:number,token:string|null):Promise<TeamRosterEn
 export function removeRosterEntry(teamId:number,token:string|null,entryId:number):Promise<void>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir o plantel.');
  return request<void>(base(teamId)+'/'+entryId,{token,method:'DELETE'});
+}
+
+const CLAIM=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function needToken(token:string|null):string{if(DEMO_MODE||!token)throw Error('Inicia sessão para continuar.');return token;}
+export const ROSTER_CLAIM_ORIGIN='https://jynlosports.com';
+export async function rosterClaimLink(teamId:number,token:string|null,entryId:number):Promise<string>{
+ const link=await request<{token:string;path:string}>(base(teamId)+'/'+entryId+'/claim-link',{token:needToken(token),method:'POST'});
+ if(!CLAIM.test(link?.token||''))throw Error('Não foi possível criar o convite.');
+ return ROSTER_CLAIM_ORIGIN+'/menu/teams/claim/'+link.token;
+}
+export const linkRosterEntry=(teamId:number,token:string|null,entryId:number,profileId:number)=>
+ request<TeamRosterEntry>(base(teamId)+'/'+entryId+'/link',{token:needToken(token),method:'POST',body:{profileId}});
+export const unlinkRosterEntry=(teamId:number,token:string|null,entryId:number)=>
+ request<void>(base(teamId)+'/'+entryId+'/link',{token:needToken(token),method:'DELETE'});
+export const updateRosterEntry=(teamId:number,token:string|null,entryId:number,line:{name:string;shirtNumber:number|null;position:string|null})=>
+ request<TeamRosterEntry>(base(teamId)+'/'+entryId,{token:needToken(token),method:'PUT',body:line});
+export const rosterSuggestions=(teamId:number,token:string|null)=>
+ DEMO_MODE||!token?Promise.resolve([] as TeamRosterSuggestion[]):request<TeamRosterSuggestion[]>(base(teamId)+'/suggestions',{token});
+export function rosterClaim(claim:string,token:string|null):Promise<TeamRosterClaim>{
+ if(!CLAIM.test(claim))return Promise.reject(Error('Link inválido ou já usado.'));
+ return request<TeamRosterClaim>('/api/teams/roster-claims/'+claim,{token:needToken(token)});
+}
+export function acceptRosterClaim(claim:string,token:string|null):Promise<TeamRosterClaim>{
+ if(!CLAIM.test(claim))return Promise.reject(Error('Link inválido ou já usado.'));
+ return request<TeamRosterClaim>('/api/teams/roster-claims/'+claim+'/accept',{token:needToken(token),method:'POST'});
 }

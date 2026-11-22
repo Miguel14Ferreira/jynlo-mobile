@@ -60,6 +60,12 @@ function nativeRouteForWebLink(path){
     return url.pathname+'?guest='+encodeURIComponent(guest);
    return url.pathname;
   }
+  // Personal squad links: the native screen asks the player to confirm.
+  const claim=url.pathname.match(/^\/menu\/teams\/claim\/([^/]+)$/);
+  if(claim){
+   const t=token(decodeURIComponent(claim[1]));
+   return t?'/teams/claim/'+t:path;
+  }
   // Published post links lead to the existing authenticated post detail screen.
   // The detail API remains responsible for authorization.
   const post=url.pathname.match(/^\/posts\/([1-9]\d*)$/);

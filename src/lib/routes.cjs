@@ -12,6 +12,8 @@ function safeRedirect(target){
  if(target==='/communities/create'||target==='/communities/invites')return target;
  match=target.match(/^\/tournaments\/([1-9]\d*)\/([1-9]\d*)\/teams\/([1-9]\d*)$/);
  if(match)return match.slice(1).every(validId)?target:'/(tabs)';
+ match=target.match(/^\/teams\/claim\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+ if(match)return target;
  if(['/feed','/venues','/my-sessions','/notifications'].includes(target))return target;
  match=target.match(/^\/venues\/([1-9]\d*)$/);
  if(match)return validId(match[1])?target:'/(tabs)';
