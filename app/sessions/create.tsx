@@ -876,11 +876,10 @@ export default function CreateSessionScreen(){
    </>:null}
    {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>{t('As inscrições só abrem quando o organizador as ativar na sessão.')}</Text>:null}
    <Text style={styles.label}>{t('Visibilidade')}</Text>
-   {sharedIds.length>0?<Message>{t('Partilha entre comunidades: visibilidade apenas para membros, sem palavra-passe.')}</Message>:null}
-   <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?t('Sem palavra-passe'):t('Pública')} disabled={busy} onPress={()=>patch('privateGame',false)}/>
-    <Button secondary={!form.privateGame} title={t('Privada')} disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
-   {form.privateGame?<><Text style={styles.note}>{t('A palavra-passe fica oculta enquanto escreves. Só os jogadores com a palavra-passe podem entrar.')}</Text>
-    {field(t('Palavra-passe da sessão'),'password',t('Mínimo de 4 caracteres'))}</>:null}
+   {sharedIds.length>0?<Message>{t('Partilha entre comunidades: visibilidade apenas para membros.')}</Message>:null}
+   <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?t('Toda a comunidade'):t('Pública')} disabled={busy} onPress={()=>patch('privateGame',false)}/>
+    <Button secondary={!form.privateGame} title={t('Só por convite')} disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
+   {form.privateGame?<Text style={styles.note}>{t('Não aparece no Explorar. Depois de criares o jogo, partilha o link de convite (quem o tiver entra, com ou sem conta) ou convida pessoas diretamente.')}</Text>:null}
    <Text style={styles.note}>{t('Os jogadores externos já confirmados contam para a ocupação da sessão.')}</Text>
   </View>:null}
   {step===3?<View style={styles.panel}>
