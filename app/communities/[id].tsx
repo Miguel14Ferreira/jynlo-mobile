@@ -14,7 +14,7 @@ import {
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
-import {setCommunitySessionAudience,setCommunityPostingPolicy} from '../../src/lib/community-api';
+import {setCommunitySessionAudience,setCommunityPostingPolicy,setCommunitySessionPolicy} from '../../src/lib/community-api';
 import {canOpenToPublic,canRestrictToMembers} from '../../src/lib/community-session-audience.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
@@ -115,6 +115,22 @@ export default function CommunityDetailScreen(){
       if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));
     }finally{if(version===generation.current)setPostingPolicyBusy(false);}
   }
+  const [sessionPolicyBusy,setSessionPolicyBusy]=useState(false);
+  async function toggleSessionPolicy(){
+    if(!auth.token||!community||!owner||sessionPolicyBusy)return;
+    const version=generation.current;
+    const next=(community as CommunityGroup).membersCanCreateSessions===false;
+    setSessionPolicyBusy(true);setError('');setNotice('');
+    try{
+      const updated=await setCommunitySessionPolicy(id,next,auth.token);
+      if(version!==generation.current)return;
+      setCommunity(updated);setNotice(t('Configuração guardada.'));
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));
+    }finally{if(version===generation.current)setSessionPolicyBusy(false);}
+  }
+  const onlyOrganizersCreate=!!community&&'membersCanCreateSessions' in community&&(community as CommunityGroup).membersCanCreateSessions===false;
+  const canCreateSession=owner||!onlyOrganizersCreate;
   async function toggleFollow(){
     if(!auth.token||!auth.username||!community||community.visibility!=='PUBLIC'||!followState||followBusy)return;
     const previous=followState,version=generation.current;
@@ -252,7 +268,8 @@ export default function CommunityDetailScreen(){
            <Text style={styles.quickLinkDescription}>{t('{a} jogadores',{a:(community as CommunityGroup).memberCount})}</Text>
           </Pressable>
         </View>
-        <Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        {canCreateSession?<Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam sessões.')}</Text>}
         {auth.token?<AvailabilityPanel kind="community" targetId={id} token={auth.token} communityId={id}/>:null}
         <Button secondary title={t('Ver competições por modalidade')} onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
         {isMember(community)&&community.rankingsEnabled?<Button secondary title={t('Resultados e classificações')} onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
@@ -275,6 +292,17 @@ export default function CommunityDetailScreen(){
       </View>:null}
       {auth.token && (role ? activeSection==='OVERVIEW' : community.visibility==='PUBLIC')?
         <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
+      {owner&&activeSection==='MANAGE'?<View style={styles.section}>
+        <Eyebrow>{t('PERMISSÕES')}</Eyebrow>
+        <Text style={styles.sectionTitle}>{t('Quem pode criar sessões?')}</Text>
+        <Text style={styles.muted}>{onlyOrganizersCreate?t('Só os organizadores'):t('Todos os membros')}</Text>
+        <Button secondary disabled={sessionPolicyBusy} title={sessionPolicyBusy?t('A guardar…'):onlyOrganizersCreate?t('Deixar todos os membros criar sessões'):t('Só os organizadores criam sessões')}
+          onPress={()=>{void toggleSessionPolicy();}}/>
+        <Text style={styles.sectionTitle}>{t('Quem pode publicar?')}</Text>
+        <Text style={styles.muted}>{(community as CommunityGroup|null)?.membersCanPost===false?t('Só os organizadores'):t('Todos os membros')}</Text>
+        <Button secondary disabled={postingPolicyBusy} title={postingPolicyBusy?t('A guardar…'):(community as CommunityGroup|null)?.membersCanPost===false?t('Deixar todos os membros publicar'):t('Só os organizadores publicam')}
+          onPress={()=>{void togglePostingPolicy();}}/>
+      </View>:null}
       {owner&&activeSection==='MANAGE'?<View style={styles.section}>
         <Eyebrow>{t('FAZ A COMUNIDADE CRESCER')}</Eyebrow>
         <Text style={styles.sectionTitle}>{t('Convidar pessoas')}</Text>
@@ -315,7 +343,8 @@ export default function CommunityDetailScreen(){
       </View>:null}
       {role&&activeSection==='SESSIONS'?<View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('Próximas sessões')}</Text>
-        <Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+        {canCreateSession?<Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam sessões.')}</Text>}
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
         {sessionsError?<Button secondary title={t('Tentar carregar sessões novamente')} disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
         {audienceError?<Message tone="error">{audienceError}</Message>:null}

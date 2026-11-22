@@ -115,6 +115,8 @@ export interface CommunityGroup extends CommunitySummary {
   teamTournamentsEnabled?:boolean; ownerUsername:string;
   /** Organizers decide whether every member may post in the feed and Stories. */
   membersCanPost?:boolean;
+  /** false: only owners/admins create sessions for this community. */
+  membersCanCreateSessions?:boolean;
   myRole:CommunityRole|null; memberCount:number; createdAt:string; members:CommunityMember[];
 }
 export interface CommunitySearchResponse { communities:CommunitySummary[]; page:number; hasMore:boolean; }
