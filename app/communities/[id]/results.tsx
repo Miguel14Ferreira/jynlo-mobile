@@ -127,9 +127,9 @@ export default function CommunityResultsScreen(){
    {manage&&!formOpen?<View style={styles.actions}>
     <Button secondary title={t('Nova época')} disabled={busy} onPress={openSeasonForm}/>
     {selectedSeason?.active?<Button secondary title={t('Encerrar época')} disabled={busy} onPress={confirmCloseSeason}/>:null}
+    <Button secondary title={t('Definições da competição')} onPress={()=>router.push({pathname:'/communities/[id]/competition-settings',params:{id:String(id)}})}/>
     {sports.length>1?<Button secondary disabled={busy} title={overallEnabled?t('Desligar classificação Geral'):t('Ligar classificação Geral')} onPress={()=>{void toggleOverall();}}/>:null}
    </View>:null}
-   {manage&&!formOpen?<Text style={styles.hint}>{t('Tens o histórico num Excel? Importa-o no computador em jynlosports.com (Comunidade → Classificações → Importar histórico).')}</Text>:null}
    {manage&&sports.length>1&&!formOpen?<Text style={styles.hint}>{t('A classificação Geral junta todas as modalidades de uma época partilhada: conta vitórias e jogos, sem somar pontos de modalidades diferentes.')}</Text>:null}
    {manage&&formOpen?<View style={styles.form}>
     <Text style={styles.label}>{t('Nome da época')}</Text>

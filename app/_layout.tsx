@@ -144,6 +144,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="teams/index" options={{title:t("Equipas")}}/>
     <Stack.Screen name="teams/competitions" options={{title:t("Encontrar competições")}}/>
     <Stack.Screen name="teams/[id]" options={{title:t("Perfil da equipa")}}/>
+    <Stack.Screen name="communities/[id]/competition-settings" options={{title:t("Definições da competição")}}/>
     <Stack.Screen name="teams/claim/[token]" options={{title:t("Convite para o plantel")}}/>
     <Stack.Screen name="notifications" options={{title:t("Notificações")}}/>
     <Stack.Screen name="live/index" options={{title:t("Lives Jynlo")}}/>
