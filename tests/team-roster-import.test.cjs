@@ -30,3 +30,12 @@ test('team roster: personal links, manual linking and suggestions that need a ye
  assert.equal(safeRedirect('/teams/claim/nope'),'/(tabs)');
  assert.match(read('app.json'),/"pathPrefix": "\/menu\/teams\/claim\/"/);
 });
+test('server reasons reach the person, technical text never does',()=>{
+ const {userFacingMessage}=require('../src/lib/response-body.cjs');
+ assert.equal(userFacingMessage('Já existe uma época ativa para esta modalidade'),'Já existe uma época ativa para esta modalidade');
+ assert.equal(userFacingMessage('java.lang.IllegalStateException: x'),null);
+ assert.equal(userFacingMessage('Could not initialize proxy [Profile#1]'),null);
+ assert.equal(userFacingMessage('CONFLICT'),null);
+ assert.equal(userFacingMessage(42),null);
+ assert.match(read('src/lib/api.ts'),/\[400,403,404,409,422\]\.includes\(response\.status\)\?await readErrorMessage\(response\)/);
+});
