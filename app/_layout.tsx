@@ -96,7 +96,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRoute
     <Stack.Screen name="communities/[id]/chat" options={{title:t("Chat da comunidade")}}/>
     <Stack.Screen name="communities/[id]/live/index" options={{title:t("Diretos da comunidade")}}/>
     <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:t("Em direto")}}/>
-    <Stack.Screen name="messages/[peer]" options={{title:t("Chat privado")}}/>
+    <Stack.Screen name="messages/[peer]" options={{headerShown:false,title:t("Chat privado")}}/>
     <Stack.Screen name="messages/call" options={{title:t("Chamada privada")}}/>
     <Stack.Screen name="groups/index" options={{title:t("Conversas de grupo")}}/>
     <Stack.Screen name="groups/[id]" options={{title:t("Grupo")}}/>

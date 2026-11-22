@@ -14,7 +14,9 @@ test('Android resizes the screen rather than panning behind the keyboard',()=>{
 test('shared form pages provide keyboard avoidance and scrollable content',()=>{
  const source=read('src/components/UI.tsx');
  assert.match(source,/KeyboardAvoidingView/);
- assert.match(source,/behavior=\{Platform\.OS==='ios'\?'padding':'height'\}/);
+ // iOS pads; Android (edge-to-edge) measures the focused field against the keyboard.
+ assert.match(source,/<KeyboardAvoidingView style=\{styles\.keyboardFrame\} behavior="padding">/);
+ assert.match(source,/scrollToReveal\(y,height,top,frameY\)/);
  assert.match(source,/keyboardShouldPersistTaps="handled"/);
  assert.match(source,/keyboardDismissMode="on-drag"/);
 });
