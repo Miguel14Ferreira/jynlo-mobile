@@ -1,3 +1,4 @@
+import {KeyboardFrame} from '../../src/components/KeyboardFrame';
 import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
 import {t} from '../../src/lib/i18n';
 import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
@@ -8,7 +9,7 @@ import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} fro
 import {confirmedDirectChatSend} from '../../src/lib/chat-send-receipt.cjs';
 import {uncertainChatSend} from '../../src/lib/chat-send-uncertainty.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import type * as NotificationTypes from 'expo-notifications';
@@ -544,7 +545,7 @@ export default function DirectConversation(){
  const recentPhotoIds=new Set(recentPreviewMessageIds(messages));
  const reactions=useChatReactions('direct',peer,auth.token,messages.map(m=>m.id),!blocked&&blockStatusKnown);
  return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
-  <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
+  <KeyboardFrame style={styles.keyboardFrame}>
   <View style={styles.fixedChatHeader}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar às conversas')} onPress={()=>router.back()} style={styles.headerIcon}><JynloIcon name="back" size={23} color={C.white}/></Pressable>
     <View style={styles.peerAvatar}><JynloIcon name="profile" size={25} color={C.mint}/></View>
@@ -673,13 +674,13 @@ export default function DirectConversation(){
    {!m.deletedAt&&chatLocationUrl(m.text)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
     onPress={()=>void Linking.openURL(chatLocationUrl(m.text)!).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))}
     style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={15} color={C.mint}/><Text style={styles.replyActionText}>{t('Abrir localização no mapa')}</Text></View></Pressable>:null}
-   <View style={{flexDirection:'row',justifyContent:'flex-end',gap:8}}>
-    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {a}',{a:m.username1})} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||t('Anexo')).slice(0,150)});}} style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="reply" size={16} color={C.mint}/><Text style={styles.replyActionText}>{t('Responder')}</Text></View></Pressable>:null}
+   <View style={styles.metaRow}>
+    <View style={styles.metaReactions}>{!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}</View>
+    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {a}',{a:m.username1})} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||t('Anexo')).slice(0,150)});}} style={styles.replyAction}><JynloIcon name="reply" size={18} color={C.mint}/></Pressable>:null}
     {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da minha mensagem')} disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
-   </View>
-   {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-   <Text style={styles.time}>{m.date&&Number.isFinite(Date.parse(m.date))?
+    <Text style={styles.metaTime}>{m.date&&Number.isFinite(Date.parse(m.date))?
      new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · '+t('editada'):''}</Text>
+   </View>
   </View>)}
   {syncWarning?<Pressable accessibilityRole="button" accessibilityLabel={t('Tentar sincronizar novamente')} onPress={()=>{void refresh();}} disabled={sending||loading||photoBusy} style={styles.refreshLink}><Text style={styles.refreshText}>{t('↻ Tentar novamente')}</Text></Pressable>:null}
   </ScrollView>
@@ -773,7 +774,7 @@ export default function DirectConversation(){
   </View>:null}
 
   </View>
-  </KeyboardAvoidingView>
+  </KeyboardFrame>
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
@@ -797,6 +798,7 @@ const styles=StyleSheet.create({
  headerIcon:{width:44,height:44,alignItems:'center',justifyContent:'center'},
  peerAvatar:{width:38,height:38,borderRadius:19,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
  peerTitle:{flex:1,fontSize:17,fontWeight:'900',color:C.white},
+ metaRow:{flexDirection:'row',alignItems:'center',gap:2,marginTop:2},metaReactions:{flex:1,minWidth:0},metaTime:{fontSize:11,color:C.muted,marginLeft:4},
  historyScroll:{flex:1},history:{paddingHorizontal:12,paddingTop:10,paddingBottom:18,gap:8,flexGrow:1},
  footer:{flexShrink:0,paddingHorizontal:12,paddingTop:8,paddingBottom:10,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background,gap:7},
  refreshLink:{alignSelf:'center',padding:10,minHeight:44,justifyContent:'center'},refreshText:{color:C.muted,fontSize:12,fontWeight:'700'},

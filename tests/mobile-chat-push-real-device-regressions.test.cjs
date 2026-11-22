@@ -9,7 +9,7 @@ const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('direct chat is safe above Android navigation bar and keyboard',()=>{
  const s=read('app/messages/[peer].tsx');
  assert.match(s,/edges=\{\['top','bottom','left','right'\]\}/);
- assert.match(s,/<KeyboardAvoidingView style=\{styles\.keyboardFrame\} behavior=\{Platform\.OS==='ios'\?'padding':'height'\}/);
+ assert.match(s,/<KeyboardFrame style=\{styles\.keyboardFrame\}>/);
  assert.match(s,/<ScrollView ref=\{conversationScroll\} style=\{styles\.historyScroll\}/);
  assert.match(s,/<View style=\{styles\.footer\}>/);
  assert.match(s,/keyboardFrame:\{flex:1\}/);
