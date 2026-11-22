@@ -20,10 +20,11 @@ appId: com.jynlo.app
 - extendedWaitUntil:
     visible: "(Nome de utilizador|Username)"
     timeout: 20000
-- takeScreenshot: 02_login
-- tapOn: "(Nome de utilizador|Username)"
+- tapOn:
+    id: "login-username"
 - inputText: ${JYNLO_USER}
-- tapOn: "(Palavra-passe|Password)"
+- tapOn:
+    id: "login-password"
 - inputText: ${JYNLO_PASS}
 - hideKeyboard
 - tapOn: "^(Entrar|Sign in)$"

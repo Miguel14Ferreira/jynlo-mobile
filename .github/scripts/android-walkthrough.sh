@@ -26,6 +26,9 @@ kill "$rec1" "$rec2" 2>/dev/null; sleep 3
 adb pull /sdcard/parte1.mp4 "$out/" 2>/dev/null || true
 adb pull /sdcard/parte2.mp4 "$out/" 2>/dev/null || true
 find "$out/maestro" -name '*.png' -exec cp {} "$out/screens/" \; 2>/dev/null || true
+# Maestro's own logs, command list and screen hierarchies contain the typed text
+# (including the QA password): they are never kept or published.
+rm -rf "$out/maestro"
 find . -maxdepth 1 -name '*.png' -exec mv {} "$out/screens/" \; 2>/dev/null || true
 adb logcat -d -v threadtime > "$out/logcat.txt"
 grep -E "ReactNativeJS|FATAL EXCEPTION|AndroidRuntime" "$out/logcat.txt" > "$out/erros.txt" || true
