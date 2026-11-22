@@ -1,4 +1,5 @@
 import React,{useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
@@ -23,7 +24,7 @@ export default function LoginScreen(){
      if(outcome==='ONBOARDING_REQUIRED')router.replace({pathname:'/google-onboarding',params:{redirect}});
      else if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
      else router.replace(redirect as any);
-   }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar sessão com a Google.');}
+   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão com a Google.'));}
    finally{loginInFlight.current=false;setBusy(false);}
  }
  async function doLogin(){
@@ -33,42 +34,42 @@ export default function LoginScreen(){
       setPassword('');
       if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
       else router.replace(redirect as any);
-   }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar sessão.');}
+   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão.'));}
    finally{loginInFlight.current=false;setBusy(false);}
  }
- function demoAs(name:string){try{auth.loginDemo(name);router.replace(redirect as any);}catch(e){setError(e instanceof Error?e.message:'Inicia sessão novamente.');}}
+ function demoAs(name:string){try{auth.loginDemo(name);router.replace(redirect as any);}catch(e){setError(e instanceof Error?e.message:t('Inicia sessão novamente.'));}}
  return <Page>
-   <Brand subtitle="ENTRA NO JOGO"/>
+   <Brand subtitle={t('ENTRA NO JOGO')}/>
    <DemoBanner/>
-   <Eyebrow>A TUA CONTA</Eyebrow>
-   {auth.username?<Message>Já tens sessão iniciada como {auth.username}. Termina essa sessão no Perfil antes de entrares com outra conta.</Message>:null}
-   <Text maxFontSizeMultiplier={1.3} style={styles.headline}>Joga com a tua malta.</Text>
-   <Text style={styles.sub}>{DEMO_MODE?'Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.':'Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.'}</Text>
+   <Eyebrow>{t('A TUA CONTA')}</Eyebrow>
+   {auth.username?<Message>{t('Já tens sessão iniciada como {user}. Termina essa sessão no Perfil antes de entrares com outra conta.',{user:auth.username})}</Message>:null}
+   <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('Joga com a tua malta.')}</Text>
+   <Text style={styles.sub}>{DEMO_MODE?t('Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.'):t('Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.')}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {auth.username?null:DEMO_MODE?<View style={styles.demoPanel}>
-     <Text style={styles.panelTitle}>Experimentar com personagens fictícias</Text>
-     <Text style={styles.sub}>Escolhe um dos amigos do anúncio. A inscrição é simulada apenas neste dispositivo.</Text>
-     <Button title="Continuar como Tiago" onPress={()=>demoAs('Tiago')}/>
-     <Button title="Continuar como André" secondary onPress={()=>demoAs('André')}/>
+     <Text style={styles.panelTitle}>{t('Experimentar com personagens fictícias')}</Text>
+     <Text style={styles.sub}>{t('Escolhe um dos amigos do anúncio. A inscrição é simulada apenas neste dispositivo.')}</Text>
+     <Button title={t('Continuar como Tiago')} onPress={()=>demoAs('Tiago')}/>
+     <Button title={t('Continuar como André')} secondary onPress={()=>demoAs('André')}/>
    </View>:<View style={{gap:15}}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Continuar com Google"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Continuar com Google')}
        disabled={busy} onPress={()=>{void doGoogleLogin();}}
        style={({pressed})=>[styles.googleButton,(busy||pressed)&&{opacity:0.65}]}>
        <Image source={{uri:'https://developers.google.com/static/identity/images/g-logo.png'}}
-         style={styles.googleLogo} accessibilityLabel="Símbolo da Google"/>
-       <Text style={styles.googleLabel}>{busy?'A autenticar…':'Continuar com Google'}</Text>
+         style={styles.googleLogo} accessibilityLabel={t('Símbolo da Google')}/>
+       <Text style={styles.googleLabel}>{busy?t('A autenticar…'):t('Continuar com Google')}</Text>
      </Pressable>
-     <Text style={styles.separator}>ou entra com utilizador e palavra-passe</Text>
-     <TextInput style={styles.input} placeholder="Nome de utilizador" placeholderTextColor={C.muted}
+     <Text style={styles.separator}>{t('ou entra com utilizador e palavra-passe')}</Text>
+     <TextInput style={styles.input} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted}
        value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username"/>
-     <TextInput style={styles.input} placeholder="Palavra-passe" placeholderTextColor={C.muted}
+     <TextInput style={styles.input} placeholder={t('Palavra-passe')} placeholderTextColor={C.muted}
        value={password} onChangeText={setPassword} secureTextEntry autoComplete="password"/>
-     <Button title={busy?'A entrar…':'Entrar'} onPress={()=>{void doLogin();}}
+     <Button title={busy?t('A entrar…'):t('Entrar')} onPress={()=>{void doLogin();}}
        disabled={busy||!username.trim()||!password}/>
-     <Text style={styles.sub}>Se for a tua primeira vez com Google, concluis o registo Jynlo na aplicação. Poderá ser necessária verificação MFA.</Text>
-     <Button title="Criar conta na Jynlo" secondary onPress={()=>router.push('/register')}/>
-     <Button title="Esqueci-me da palavra-passe" secondary onPress={()=>router.push('/reset-password')}/>
-     <Button title="Confirmar email ou reenviar confirmação" secondary onPress={()=>router.push('/confirm-email')}/>
+     <Text style={styles.sub}>{t('Se for a tua primeira vez com Google, concluis o registo Jynlo na aplicação. Poderá ser necessária verificação MFA.')}</Text>
+     <Button title={t('Criar conta na Jynlo')} secondary onPress={()=>router.push('/register')}/>
+     <Button title={t('Esqueci-me da palavra-passe')} secondary onPress={()=>router.push('/reset-password')}/>
+     <Button title={t('Confirmar email ou reenviar confirmação')} secondary onPress={()=>router.push('/confirm-email')}/>
    </View>}
  </Page>;
 }

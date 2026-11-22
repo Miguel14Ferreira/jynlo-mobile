@@ -1,4 +1,5 @@
 import React,{useEffect,useRef} from 'react';
+import {LanguageProvider,t} from '../src/lib/i18n';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
@@ -84,79 +85,79 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRoute
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
     <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
     <Stack.Screen name="welcome" options={{headerShown:false}}/>
-    <Stack.Screen name="sessions/[id]" options={{title:'Detalhes da sessão'}}/>
-    <Stack.Screen name="sessions/[id]/edit" options={{title:'Editar sessão'}}/>
-    <Stack.Screen name="sessions/[id]/chat" options={{title:'Chat da sessão'}}/>
-    <Stack.Screen name="communities/index" options={{title:"Comunidades"}}/>
-    <Stack.Screen name="tournaments/index" options={{title:"Torneios"}}/>
-    <Stack.Screen name="communities/create" options={{title:"Criar comunidade"}}/>
-    <Stack.Screen name="communities/[id]" options={{title:"Comunidade"}}/>
-    <Stack.Screen name="communities/invites" options={{title:"Convites"}}/>
-    <Stack.Screen name="communities/[id]/chat" options={{title:"Chat da comunidade"}}/>
-    <Stack.Screen name="communities/[id]/live/index" options={{title:"Diretos da comunidade"}}/>
-    <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:"Em direto"}}/>
-    <Stack.Screen name="messages/[peer]" options={{title:"Chat privado"}}/>
-    <Stack.Screen name="messages/call" options={{title:"Chamada privada"}}/>
-    <Stack.Screen name="groups/index" options={{title:"Conversas de grupo"}}/>
-    <Stack.Screen name="groups/[id]" options={{title:"Grupo"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:"Torneio"}}/>
-    <Stack.Screen name="tournaments/create" options={{title:"Criar torneio"}}/>
-    <Stack.Screen name="teams/index" options={{title:"Equipas"}}/>
-    <Stack.Screen name="teams/competitions" options={{title:"Encontrar competições"}}/>
-    <Stack.Screen name="teams/[id]" options={{title:"Perfil da equipa"}}/>
-    <Stack.Screen name="notifications" options={{title:"Notificações"}}/>
-    <Stack.Screen name="live/index" options={{title:"Lives Jynlo"}}/>
-    <Stack.Screen name="live/[id]" options={{title:"Em direto"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:"Equipas do torneio"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/fixtures" options={{title:"Jogos e fases"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/teams/[teamId]" options={{title:"Equipa"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/results" options={{title:"Resultados por prova"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/matches" options={{title:"Jogos individuais"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/participants" options={{title:"Participantes e inscrições"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/manage" options={{title:"Gerir torneio"}}/>
-    <Stack.Screen name="posts/[postId]/index" options={{title:"Publicação"}}/>
-    <Stack.Screen name="posts/[postId]/likers" options={{title:"Quem gostou"}}/>
-    <Stack.Screen name="feed" options={{title:"Feed"}}/>
-    <Stack.Screen name="feed-hidden" options={{title:"Publicações ocultas"}}/>
-    <Stack.Screen name="people" options={{title:"Pessoas para conhecer"}}/>
-    <Stack.Screen name="search" options={{title:"Pesquisar"}}/>
-    <Stack.Screen name="first-steps" options={{title:"Primeiros passos"}}/>
-    <Stack.Screen name="venues" options={{title:"Recintos"}}/>
-    <Stack.Screen name="venues/create" options={{title:"Sugerir recinto"}}/>
-    <Stack.Screen name="venues/[id]" options={{title:"Recinto"}}/>
-    <Stack.Screen name="venues/[id]/suggest-edit" options={{title:"Sugerir correção"}}/>
-    <Stack.Screen name="sessions/create" options={{title:'Criar sessão'}}/>
-    <Stack.Screen name="social/[username]/index" options={{title:'Perfil'}}/>
-    <Stack.Screen name="social/[username]/[kind]" options={{title:'Seguidores e seguindo'}}/>
-    <Stack.Screen name="communities/[id]/competitions" options={{title:'Competições da comunidade'}}/>
-    <Stack.Screen name="communities/[id]/championships/create" options={{title:'Criar campeonato'}}/>
-    <Stack.Screen name="communities/[id]/championships/[championshipId]" options={{title:'Campeonato'}}/>
-    <Stack.Screen name="communities/[id]/championships/teams" options={{title:'Equipas do campeonato'}}/>
-    <Stack.Screen name="communities/[id]/championships/honours" options={{title:'Palmarés do campeonato'}}/>
-    <Stack.Screen name="communities/[id]/championships/events" options={{title:"Provas do campeonato"}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/events" options={{title:'Eventos do torneio'}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:'Estafetas do torneio'}}/>
-    <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:"Provas"}}/>
-    <Stack.Screen name="notification-settings" options={{title:"Gerir notificações"}}/>
-    <Stack.Screen name="nearby-alerts" options={{title:"Jogos perto de ti"}}/>
-    <Stack.Screen name="communities/[id]/championships/fixture" options={{title:"Calendário do campeonato"}}/>
-    <Stack.Screen name="communities/[id]/results" options={{title:"Resultados da comunidade"}}/>
-    <Stack.Screen name="sessions/[id]/result" options={{title:"Resultado da sessão"}}/>
-    <Stack.Screen name="stories/replies" options={{title:"Respostas às Stories"}}/>
-    <Stack.Screen name="my-sessions" options={{title:"As minhas sessões"}}/>
-    <Stack.Screen name="login" options={{title:'Entrar na Jynlo'}}/>
-    <Stack.Screen name="change-password" options={{title:'Alterar palavra-passe'}}/>
-    <Stack.Screen name="security-mfa" options={{title:'Verificação em dois passos'}}/>
-    <Stack.Screen name="edit-profile" options={{title:'Editar perfil'}}/>
-    <Stack.Screen name="register" options={{title:'Criar conta'}}/>
-    <Stack.Screen name="confirm-email" options={{title:'Confirmar email'}}/>
-    <Stack.Screen name="reset-password" options={{title:'Recuperar palavra-passe'}}/>
-    <Stack.Screen name="legal" options={{title:'Informação legal'}}/>
-    <Stack.Screen name="google-onboarding" options={{title:'Registo com Google'}}/>
-    <Stack.Screen name="mfa" options={{title:'Verificação MFA'}}/>
+    <Stack.Screen name="sessions/[id]" options={{title:t('Detalhes da sessão')}}/>
+    <Stack.Screen name="sessions/[id]/edit" options={{title:t('Editar sessão')}}/>
+    <Stack.Screen name="sessions/[id]/chat" options={{title:t('Chat da sessão')}}/>
+    <Stack.Screen name="communities/index" options={{title:t("Comunidades")}}/>
+    <Stack.Screen name="tournaments/index" options={{title:t("Torneios")}}/>
+    <Stack.Screen name="communities/create" options={{title:t("Criar comunidade")}}/>
+    <Stack.Screen name="communities/[id]" options={{title:t("Comunidade")}}/>
+    <Stack.Screen name="communities/invites" options={{title:t("Convites")}}/>
+    <Stack.Screen name="communities/[id]/chat" options={{title:t("Chat da comunidade")}}/>
+    <Stack.Screen name="communities/[id]/live/index" options={{title:t("Diretos da comunidade")}}/>
+    <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:t("Em direto")}}/>
+    <Stack.Screen name="messages/[peer]" options={{title:t("Chat privado")}}/>
+    <Stack.Screen name="messages/call" options={{title:t("Chamada privada")}}/>
+    <Stack.Screen name="groups/index" options={{title:t("Conversas de grupo")}}/>
+    <Stack.Screen name="groups/[id]" options={{title:t("Grupo")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]" options={{title:t("Torneio")}}/>
+    <Stack.Screen name="tournaments/create" options={{title:t("Criar torneio")}}/>
+    <Stack.Screen name="teams/index" options={{title:t("Equipas")}}/>
+    <Stack.Screen name="teams/competitions" options={{title:t("Encontrar competições")}}/>
+    <Stack.Screen name="teams/[id]" options={{title:t("Perfil da equipa")}}/>
+    <Stack.Screen name="notifications" options={{title:t("Notificações")}}/>
+    <Stack.Screen name="live/index" options={{title:t("Lives Jynlo")}}/>
+    <Stack.Screen name="live/[id]" options={{title:t("Em direto")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/teams" options={{title:t("Equipas do torneio")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/fixtures" options={{title:t("Jogos e fases")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/teams/[teamId]" options={{title:t("Equipa")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/results" options={{title:t("Resultados por prova")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/matches" options={{title:t("Jogos individuais")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/participants" options={{title:t("Participantes e inscrições")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/manage" options={{title:t("Gerir torneio")}}/>
+    <Stack.Screen name="posts/[postId]/index" options={{title:t("Publicação")}}/>
+    <Stack.Screen name="posts/[postId]/likers" options={{title:t("Quem gostou")}}/>
+    <Stack.Screen name="feed" options={{title:t("Feed")}}/>
+    <Stack.Screen name="feed-hidden" options={{title:t("Publicações ocultas")}}/>
+    <Stack.Screen name="people" options={{title:t("Pessoas para conhecer")}}/>
+    <Stack.Screen name="search" options={{title:t("Pesquisar")}}/>
+    <Stack.Screen name="first-steps" options={{title:t("Primeiros passos")}}/>
+    <Stack.Screen name="venues" options={{title:t("Recintos")}}/>
+    <Stack.Screen name="venues/create" options={{title:t("Sugerir recinto")}}/>
+    <Stack.Screen name="venues/[id]" options={{title:t("Recinto")}}/>
+    <Stack.Screen name="venues/[id]/suggest-edit" options={{title:t("Sugerir correção")}}/>
+    <Stack.Screen name="sessions/create" options={{title:t('Criar sessão')}}/>
+    <Stack.Screen name="social/[username]/index" options={{title:t('Perfil')}}/>
+    <Stack.Screen name="social/[username]/[kind]" options={{title:t('Seguidores e seguindo')}}/>
+    <Stack.Screen name="communities/[id]/competitions" options={{title:t('Competições da comunidade')}}/>
+    <Stack.Screen name="communities/[id]/championships/create" options={{title:t('Criar campeonato')}}/>
+    <Stack.Screen name="communities/[id]/championships/[championshipId]" options={{title:t('Campeonato')}}/>
+    <Stack.Screen name="communities/[id]/championships/teams" options={{title:t('Equipas do campeonato')}}/>
+    <Stack.Screen name="communities/[id]/championships/honours" options={{title:t('Palmarés do campeonato')}}/>
+    <Stack.Screen name="communities/[id]/championships/events" options={{title:t("Provas do campeonato")}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/events" options={{title:t('Eventos do torneio')}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/relays" options={{title:t('Estafetas do torneio')}}/>
+    <Stack.Screen name="tournaments/[communityId]/[id]/provas" options={{title:t("Provas")}}/>
+    <Stack.Screen name="notification-settings" options={{title:t("Gerir notificações")}}/>
+    <Stack.Screen name="nearby-alerts" options={{title:t("Jogos perto de ti")}}/>
+    <Stack.Screen name="communities/[id]/championships/fixture" options={{title:t("Calendário do campeonato")}}/>
+    <Stack.Screen name="communities/[id]/results" options={{title:t("Resultados da comunidade")}}/>
+    <Stack.Screen name="sessions/[id]/result" options={{title:t("Resultado da sessão")}}/>
+    <Stack.Screen name="stories/replies" options={{title:t("Respostas às Stories")}}/>
+    <Stack.Screen name="my-sessions" options={{title:t("As minhas sessões")}}/>
+    <Stack.Screen name="login" options={{title:t('Entrar na Jynlo')}}/>
+    <Stack.Screen name="change-password" options={{title:t('Alterar palavra-passe')}}/>
+    <Stack.Screen name="security-mfa" options={{title:t('Verificação em dois passos')}}/>
+    <Stack.Screen name="edit-profile" options={{title:t('Editar perfil')}}/>
+    <Stack.Screen name="register" options={{title:t('Criar conta')}}/>
+    <Stack.Screen name="confirm-email" options={{title:t('Confirmar email')}}/>
+    <Stack.Screen name="reset-password" options={{title:t('Recuperar palavra-passe')}}/>
+    <Stack.Screen name="legal" options={{title:t('Informação legal')}}/>
+    <Stack.Screen name="google-onboarding" options={{title:t('Registo com Google')}}/>
+    <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
 </>;}
-export default function RootLayout(){return <AuthProvider><Navigation/></AuthProvider>;}
+export default function RootLayout(){return <AuthProvider><LanguageProvider><Navigation/></LanguageProvider></AuthProvider>;}
 
 // Expo Router renders a recoverable error screen instead of a blank page for
 // route exceptions; the error is reported first so we see it in the server log.

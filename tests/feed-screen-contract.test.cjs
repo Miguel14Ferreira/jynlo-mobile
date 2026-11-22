@@ -1,5 +1,6 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
-const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const root=path.resolve(__dirname,'..');const read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',()=>{
   const tabs=read('app/(tabs)/_layout.tsx');
   assert.match(tabs, /name="index" options=\{\{title:'Início'/);

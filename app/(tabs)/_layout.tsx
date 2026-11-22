@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Tabs,useRouter} from 'expo-router';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -78,63 +79,63 @@ export default function TabsLayout(){
    tabBarShowLabel:false,
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
-   <Tabs.Screen name="index" options={{title:'Início',tabBarAccessibilityLabel:'Início',tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:'Explorar',tabBarAccessibilityLabel:'Explorar',tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="create" options={{title:'Criar',tabBarButton:()=>(
-    <Pressable accessibilityRole="button" accessibilityLabel="Abrir menu de criação" onPress={()=>setOpen(true)} style={styles.createTab}>
+   <Tabs.Screen name="index" options={{title:t('Início'),tabBarAccessibilityLabel:t('Início'),tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{title:t('Explorar'),tabBarAccessibilityLabel:t('Explorar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="create" options={{title:t('Criar'),tabBarButton:()=>(
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir menu de criação')} onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:'Mensagens',tabBarAccessibilityLabel:badge?'Mensagens, '+badge+' por ler':'Mensagens',
+   <Tabs.Screen name="messages" options={{title:t('Mensagens'),tabBarAccessibilityLabel:badge?t('Mensagens, {count} por ler',{count:badge}):t('Mensagens'),
     tabBarBadge:badge||undefined,tabBarBadgeStyle:{backgroundColor:'#FF5A5F',color:'#FFFFFF',fontSize:10,fontWeight:'800'},tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="profile" options={{title:'Perfil',tabBarAccessibilityLabel:'Perfil',tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="profile" options={{title:t('Perfil'),tabBarAccessibilityLabel:t('Perfil'),tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
   </Tabs>
   <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
    <View style={styles.overlay}>
-    <Pressable style={styles.scrim} onPress={close} accessibilityRole="button" accessibilityLabel="Fechar menu de criação"/>
+    <Pressable style={styles.scrim} onPress={close} accessibilityRole="button" accessibilityLabel={t('Fechar menu de criação')}/>
     <View style={[styles.sheet,{paddingBottom:Math.max(insets.bottom,16)}]}>
      <View style={styles.handle}/>
      <View style={styles.sheetHeader}><View style={{flex:1,gap:5}}>
-      <Text style={styles.sheetTitle}>O que vamos criar?</Text>
-      <Text style={styles.sheetSubtitle}>Junta pessoas através do desporto.</Text>
-     </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Fechar" style={styles.close}><JynloIcon name="close" size={25} color={colors.text}/></Pressable></View>
+      <Text style={styles.sheetTitle}>{t('O que vamos criar?')}</Text>
+      <Text style={styles.sheetSubtitle}>{t('Junta pessoas através do desporto.')}</Text>
+     </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Fechar')} style={styles.close}><JynloIcon name="close" size={25} color={colors.text}/></Pressable></View>
      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.actions}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Criar sessão desportiva" accessibilityHint="Organiza um jogo, convida participantes e gere equipas" style={styles.sessionHero} onPress={()=>action('session')}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Criar sessão desportiva')} accessibilityHint={t('Organiza um jogo, convida participantes e gere equipas')} style={styles.sessionHero} onPress={()=>action('session')}>
        <View style={styles.sessionHeroIcon}><JynloIcon name="session" size={26} color={colors.accent}/></View>
-       <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>AÇÃO PRINCIPAL</Text><Text style={styles.sessionHeroTitle}>Criar sessão</Text><Text style={styles.sessionHeroSubtitle}>Marca o jogo, reúne jogadores e organiza as equipas.</Text></View>
+       <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>{t('AÇÃO PRINCIPAL')}</Text><Text style={styles.sessionHeroTitle}>{t('Criar sessão')}</Text><Text style={styles.sessionHeroSubtitle}>{t('Marca o jogo, reúne jogadores e organiza as equipas.')}</Text></View>
        <JynloIcon name="chevron-right" size={25} color={colors.background}/>
       </Pressable>
-      <Text style={styles.moreActionsTitle}>Também podes criar</Text>
+      <Text style={styles.moreActionsTitle}>{t('Também podes criar')}</Text>
       <View style={styles.primaryGrid}>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('post')}>
-        <JynloIcon name="post" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Publicação</Text><Text style={styles.actionHint}>Partilha um momento</Text>
+        <JynloIcon name="post" size={27} color={colors.accent}/><Text style={styles.actionTitle}>{t('Publicação')}</Text><Text style={styles.actionHint}>{t('Partilha um momento')}</Text>
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
-        <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>Comunidade</Text><Text style={styles.actionHint}>Junta a tua malta</Text>
+        <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>{t('Comunidade')}</Text><Text style={styles.actionHint}>{t('Junta a tua malta')}</Text>
        </Pressable>
-       <Pressable accessibilityRole="button" accessibilityLabel="Criar torneio" accessibilityHint="Organiza um torneio ou liga numa comunidade tua" style={[styles.actionCard,styles.teamCard]} onPress={()=>action('tournament')}>
-        <View style={styles.teamIcon}><JynloIcon name="championship" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>Torneio</Text><Text style={styles.actionHint}>Liga, eliminatórias ou grupos, com classificação automática</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Criar torneio')} accessibilityHint={t('Organiza um torneio ou liga numa comunidade tua')} style={[styles.actionCard,styles.teamCard]} onPress={()=>action('tournament')}>
+        <View style={styles.teamIcon}><JynloIcon name="championship" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>{t('Torneio')}</Text><Text style={styles.actionHint}>{t('Liga, eliminatórias ou grupos, com classificação automática')}</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
        </Pressable>
-       <Pressable accessibilityRole="button" accessibilityLabel="Criar uma equipa" style={[styles.actionCard,styles.teamCard]} onPress={()=>action('team')}>
-        <View style={styles.teamIcon}><JynloIcon name="tournament" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>Equipa</Text><Text style={styles.actionHint}>Cria a tua equipa e gere o plantel</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Criar uma equipa')} style={[styles.actionCard,styles.teamCard]} onPress={()=>action('team')}>
+        <View style={styles.teamIcon}><JynloIcon name="tournament" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>{t('Equipa')}</Text><Text style={styles.actionHint}>{t('Cria a tua equipa e gere o plantel')}</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
        </Pressable>
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Mostrar outras ferramentas de criação"
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar outras ferramentas de criação')}
        accessibilityState={{expanded:moreOpen}} style={styles.moreToggle} onPress={()=>setMoreOpen(value=>!value)}>
-       <Text style={styles.moreToggleLabel}>Outras ferramentas</Text><JynloIcon name={moreOpen?'chevron-up':'chevron-down'} size={23} color={colors.accent}/>
+       <Text style={styles.moreToggleLabel}>{t('Outras ferramentas')}</Text><JynloIcon name={moreOpen?'chevron-up':'chevron-down'} size={23} color={colors.accent}/>
       </Pressable>
       {moreOpen?<>
-      <Pressable accessibilityRole="button" accessibilityLabel="Sugerir um recinto desportivo" style={styles.secondaryAction} onPress={()=>action('venue')}>
-       <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Sugerir recinto</Text><Text style={styles.secondaryHint}>Acrescenta um espaço desportivo à Jynlo</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Sugerir um recinto desportivo')} style={styles.secondaryAction} onPress={()=>action('venue')}>
+       <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>{t('Sugerir recinto')}</Text><Text style={styles.secondaryHint}>{t('Acrescenta um espaço desportivo à Jynlo')}</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
       </Pressable>
-      {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>A verificar as tuas comunidades…</Text></View>:checkError?<Text style={styles.info}>Não foi possível verificar as tuas comunidades. Abre novamente este menu para tentar.</Text>:null
-       :<Text style={styles.info}>Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.</Text>}
+      {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>{t('A verificar as tuas comunidades…')}</Text></View>:checkError?<Text style={styles.info}>{t('Não foi possível verificar as tuas comunidades. Abre novamente este menu para tentar.')}</Text>:null
+       :<Text style={styles.info}>{t('Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.')}</Text>}
       {auth.token&&auth.username&&!checking&&!checkError&&eligible.length>0?<>
-       <Pressable accessibilityRole="button" accessibilityLabel="Criar campeonato" style={styles.secondaryAction} onPress={openChampionshipPicker}>
-        <JynloIcon name="championship" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>Criar campeonato</Text><Text style={styles.secondaryHint}>Várias provas numa época · comunidade que administras</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Criar campeonato')} style={styles.secondaryAction} onPress={openChampionshipPicker}>
+        <JynloIcon name="championship" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>{t('Criar campeonato')}</Text><Text style={styles.secondaryHint}>{t('Várias provas numa época · comunidade que administras')}</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
        </Pressable>
        {chooseChampionship?<View style={styles.communityPicker}>
-        <Text style={styles.pickerTitle}>Escolhe a comunidade</Text>
-        {eligible.map(group=><Pressable key={group.id} accessibilityRole="button" accessibilityLabel={'Criar campeonato na comunidade '+group.name} style={styles.communityChoice} onPress={()=>selectChampionshipCommunity(group.id)}>
+        <Text style={styles.pickerTitle}>{t('Escolhe a comunidade')}</Text>
+        {eligible.map(group=><Pressable key={group.id} accessibilityRole="button" accessibilityLabel={t('Criar campeonato na comunidade {name}',{name:group.name})} style={styles.communityChoice} onPress={()=>selectChampionshipCommunity(group.id)}>
           <Text style={styles.communityChoiceText} numberOfLines={1}>{group.name}</Text><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
         </Pressable>)}
        </View>:null}

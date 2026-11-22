@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Linking,Platform,Pressable,RefreshControl,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import Constants from 'expo-constants';
 import type {Region} from 'react-native-maps';
@@ -50,7 +51,7 @@ export default function DiscoverScreen(){
    const longitude=pin?.longitude??PORTUGAL.longitude;
    // Launch the official Google Maps web viewer instead of relying on OSM volunteer tile servers.
    const url=`https://www.google.com/maps/@${latitude},${longitude},10z`;
-   try{await Linking.openURL(url);}catch{setError('Não foi possível abrir o mapa no navegador. Consulta as sessões na lista.');}
+   try{await Linking.openURL(url);}catch{setError(t('Não foi possível abrir o mapa no navegador. Consulta as sessões na lista.'));}
  };
  const [mapArea,setMapArea]=useState<{latitude:number;longitude:number;radiusKm:number}|null>(null);
  const mappedSessions=useMemo(()=>sessions.filter(validPin),[sessions]);
@@ -95,7 +96,7 @@ export default function DiscoverScreen(){
        if(custom.length)setDiscoveredCustomSports(previous=>[...new Set([...previous,...custom])].slice(-40));
      }
    }catch(e){
-     if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:'Não foi possível carregar as sessões.');}
+     if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:t('Não foi possível carregar as sessões.'));}
    }finally{if(version===loadVersion.current)setLoading(false);}
  },[sport,debouncedCity,mapArea,availableOnly,skillLevel,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{loadVersion.current++;};},[load]));
@@ -104,94 +105,94 @@ export default function DiscoverScreen(){
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
    refreshControl={<RefreshControl refreshing={loading&&sessions.length>0} onRefresh={()=>{void load();}} tintColor={C.mint}/>}
    showsVerticalScrollIndicator={false}>
-   <Brand subtitle="ENCONTRA O TEU DESPORTO"/>
+   <Brand subtitle={t('ENCONTRA O TEU DESPORTO')}/>
    <DemoBanner/>
    <View style={styles.hero}>
-     <Eyebrow>O JOGO COMEÇA AQUI</Eyebrow>
-     <Text maxFontSizeMultiplier={1.3} style={styles.headline}>O teu próximo jogo.{'\n'}<Text style={{color:C.mint}}>A tua próxima equipa.</Text></Text>
-     <Text style={styles.sub}>Descobre sessões abertas e encontra pessoas com quem jogar.</Text>
+     <Eyebrow>{t('O JOGO COMEÇA AQUI')}</Eyebrow>
+     <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('O teu próximo jogo.')}{'\n'}<Text style={{color:C.mint}}>{t('A tua próxima equipa.')}</Text></Text>
+     <Text style={styles.sub}>{t('Descobre sessões abertas e encontra pessoas com quem jogar.')}</Text>
    </View>
-   <Pressable accessibilityRole="search" accessibilityLabel="Pesquisar pessoas, comunidades, equipas, recintos e jogos"
+   <Pressable accessibilityRole="search" accessibilityLabel={t('Pesquisar pessoas, comunidades, equipas, recintos e jogos')}
      onPress={()=>router.push('/search' as never)} style={styles.searchEntry}>
      <JynloIcon name="search" size={20} color={C.muted}/>
-     <Text style={styles.searchEntryText} numberOfLines={1}>Pesquisar pessoas, comunidades, recintos…</Text>
+     <Text style={styles.searchEntryText} numberOfLines={1}>{t('Pesquisar pessoas, comunidades, recintos…')}</Text>
    </Pressable>
    {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
-   <View style={styles.discover} accessibilityLabel="Descobrir mais na Jynlo">
-     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={item.label+': '+item.caption}
+   <View style={styles.discover} accessibilityLabel={t('Descobrir mais na Jynlo')}>
+     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={t(item.label)+': '+t(item.caption)}
        onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
        <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
-        <Text style={styles.discoverLabel} numberOfLines={2}>{item.label}</Text></View>
-       <Text style={styles.discoverCaption} numberOfLines={2}>{item.caption}</Text>
+        <Text style={styles.discoverLabel} numberOfLines={2}>{t(item.label)}</Text></View>
+       <Text style={styles.discoverCaption} numberOfLines={2}>{t(item.caption)}</Text>
      </Pressable>)}
    </View>
-   <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder="Procurar por cidade…" placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel="Filtrar por cidade"/>
+   <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder={t('Procurar por cidade…')} placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel={t('Filtrar por cidade')}/>
    {/* Full catalogue first (always visible), then the popular sports. */}
    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:sportPickerVisible}}
-       accessibilityLabel={'Todos os desportos, '+SPORTS.length+' no total'}
+       accessibilityLabel={t('Todos os desportos, {count} no total',{count:SPORTS.length})}
        onPress={()=>setSportPickerVisible(previous=>!previous)} style={[styles.chip,sportPickerVisible&&styles.selected]}>
-       <Text style={[styles.chipText,sportPickerVisible&&{color:C.background}]}>Desportos {sportPickerVisible?'⌃':'⌄'}</Text>
+       <Text style={[styles.chipText,sportPickerVisible&&{color:C.background}]}>{t('Desportos')} {sportPickerVisible?'⌃':'⌄'}</Text>
      </Pressable>
      {['',...POPULAR_SPORTS,...(sport&&!(POPULAR_SPORTS as readonly string[]).includes(sport)?[sport]:[])].map(item=><Pressable key={item||'Todas'} accessibilityRole="button"
        accessibilityState={{selected:sport===item}} onPress={()=>{setSportPickerVisible(false);chooseSport(item);}} style={[styles.chip,sport===item&&styles.selected]}>
-       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||'Todas'}</Text>
+       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||t('Todas')}</Text>
      </Pressable>)}
    </ScrollView>
    {sportPickerVisible?<View style={styles.sportResults}>
      <TextInput style={styles.search} value={sportQuery} onChangeText={setSportQuery}
-       placeholder="Pesquisar modalidade…" placeholderTextColor={C.muted} autoCapitalize="none"
-       accessibilityLabel="Pesquisar todas as modalidades" autoCorrect={false}/>
+       placeholder={t('Pesquisar modalidade…')} placeholderTextColor={C.muted} autoCapitalize="none"
+       accessibilityLabel={t('Pesquisar todas as modalidades')} autoCorrect={false}/>
      <Pressable accessibilityRole="button" onPress={()=>chooseSport('')} style={styles.sportResult}>
-       <Text style={styles.sportResultText}>Todas as modalidades</Text>
+       <Text style={styles.sportResultText}>{t('Todas as modalidades')}</Text>
      </Pressable>
      {sportSuggestions.map(name=><Pressable key={name} accessibilityRole="button" onPress={()=>chooseSport(name)} style={styles.sportResult}>
        <Text style={styles.sportResultText}>{name}</Text>
      </Pressable>)}
      {canSearchCustomSport?<Pressable accessibilityRole="button"
-       accessibilityLabel={'Pesquisar sessões de '+typedCustomSport}
+       accessibilityLabel={t('Pesquisar sessões de {sport}',{sport:typedCustomSport})}
        onPress={()=>chooseSport(typedCustomSport)} style={styles.sportResult}>
-       <Text style={styles.sportResultText}>Pesquisar sessões de “{typedCustomSport}”</Text>
+       <Text style={styles.sportResultText}>{t('Pesquisar sessões de “{sport}”',{sport:typedCustomSport})}</Text>
      </Pressable>:null}
      {sportSuggestions.length===0&&!canSearchCustomSport?
-       <Text style={styles.emptySport}>Não encontrámos essa modalidade. Verifica o nome.</Text>:null}
-     <Text style={styles.pickerHint}>Pesquisa uma modalidade oficial ou uma sugerida pela comunidade.</Text>
+       <Text style={styles.emptySport}>{t('Não encontrámos essa modalidade. Verifica o nome.')}</Text>:null}
+     <Text style={styles.pickerHint}>{t('Pesquisa uma modalidade oficial ou uma sugerida pela comunidade.')}</Text>
    </View>:null}
    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:availableOnly}} style={styles.filter} onPress={()=>setAvailableOnly(!availableOnly)}>
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
-     <Text style={{color:C.white}}>Apenas sessões com vagas</Text>
+     <Text style={{color:C.white}}>{t('Apenas sessões com vagas')}</Text>
    </Pressable>
-   <View style={styles.levelFilter} accessibilityLabel="Filtrar por nível">
-     <Text style={styles.levelFilterLabel}>🎯 Nível</Text>
+   <View style={styles.levelFilter} accessibilityLabel={t('Filtrar por nível')}>
+     <Text style={styles.levelFilterLabel}>{t('🎯 Nível')}</Text>
      {filterChoices().map(choice=><Pressable key={choice.value||'any'} accessibilityRole="button"
        accessibilityState={{selected:skillLevel===choice.value}} onPress={()=>setSkillLevel(choice.value)}
        style={[styles.levelChip,skillLevel===choice.value&&styles.selected]}>
-       <Text style={[styles.levelChipText,skillLevel===choice.value&&{color:C.background}]}>{choice.label}</Text>
+       <Text style={[styles.levelChipText,skillLevel===choice.value&&{color:C.background}]}>{t(choice.label)}</Text>
      </Pressable>)}
    </View>
-   {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel="Limpar filtros de pesquisa" style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
-     <Text style={styles.resetFiltersText}>Limpar filtros</Text><Text style={styles.resetFiltersIcon}>×</Text>
+   {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel={t('Limpar filtros de pesquisa')} style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
+     <Text style={styles.resetFiltersText}>{t('Limpar filtros')}</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
-   <View style={styles.section}><Text style={styles.sectionTitle}>Encontrar jogos</Text><Text style={styles.total}>{loading?'A pesquisar…':`${sessions.length} encontradas`}</Text></View>
+   <View style={styles.section}><Text style={styles.sectionTitle}>{t('Encontrar jogos')}</Text><Text style={styles.total}>{loading?t('A pesquisar…'):`${sessions.length} encontradas`}</Text></View>
    <View style={styles.switcher}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões no mapa" accessibilityState={{selected:display==='map'}}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessões no mapa')} accessibilityState={{selected:display==='map'}}
        style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
-       <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={17} color={display==='map'?C.mint:C.muted}/><Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>Mapa</Text></View>
+       <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={17} color={display==='map'?C.mint:C.muted}/><Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>{t('Mapa')}</Text></View>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Ver sessões em lista" accessibilityState={{selected:display==='list'}}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessões em lista')} accessibilityState={{selected:display==='list'}}
        style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
-       <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>☷ Lista</Text>
+       <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>{t('☷ Lista')}</Text>
      </Pressable>
    </View>
    {loading&&sessions.length===0?<Loader/>:null}
    {error?<View style={styles.retryPanel}>
      <Message tone="error">{error}</Message>
-     <Pressable accessibilityRole="button" accessibilityLabel="Repetir pesquisa de sessões" style={styles.retryAction}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Repetir pesquisa de sessões')} style={styles.retryAction}
        disabled={loading} onPress={()=>{void load();}}>
-       <JynloIcon name="search" size={18} color={C.background}/><Text style={styles.retryActionText}>Tentar novamente</Text>
+       <JynloIcon name="search" size={18} color={C.background}/><Text style={styles.retryActionText}>{t('Tentar novamente')}</Text>
      </Pressable>
    </View>:null}
-   {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>Ainda não encontrámos jogos</Text><Text style={styles.emptyDetail}>Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>Ver todas as modalidades</Text></Pressable></View>:null}
+   {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{t('Ainda não encontrámos jogos')}</Text><Text style={styles.emptyDetail}>{t('Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.')}</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>{t('Ver todas as modalidades')}</Text></Pressable></View>:null}
    {display==='map'?<View style={styles.mapPanel}>
      {NATIVE_MAP_READY?<Suspense fallback={<Loader/>}>
        <SessionNativeMap initialRegion={PORTUGAL} sessions={mappedSessions}
@@ -199,10 +200,10 @@ export default function DiscoverScreen(){
          onSelectSession={setSelectedPin}/>
      </Suspense>:<>
        <OfflineSessionMap sessions={mappedSessions} selectedId={selectedPin} onSelect={setSelectedPin}/>
-       <Message>Esta APK não tem o mapa Google configurado. Mostramos um esquema geográfico simplificado e seguro; o mapa com ruas requer uma APK com a chave da SDK Android.</Message>
+       <Message>{t('Esta APK não tem o mapa Google configurado. Mostramos um esquema geográfico simplificado e seguro; o mapa com ruas requer uma APK com a chave da SDK Android.')}</Message>
      </>}
      {NATIVE_MAP_READY?<View style={styles.mapActions}>
-       <Pressable accessibilityRole="button" accessibilityLabel="Pesquisar sessões nesta área do mapa"
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Pesquisar sessões nesta área do mapa')}
          style={styles.areaSearch} onPress={()=>{
            const r=viewport.current;
            if(![r.latitude,r.longitude,r.latitudeDelta,r.longitudeDelta].every(Number.isFinite)||
@@ -212,24 +213,24 @@ export default function DiscoverScreen(){
            setMapArea({latitude:r.latitude,longitude:r.longitude,
              radiusKm:Math.max(5,Math.min(500,Math.ceil(Math.hypot(latKm,lonKm))))});
          }}>
-         <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="search" size={17} color={C.background}/><Text style={styles.areaSearchText}>Pesquisar nesta zona</Text></View>
+         <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="search" size={17} color={C.background}/><Text style={styles.areaSearchText}>{t('Pesquisar nesta zona')}</Text></View>
        </Pressable>
        {mapArea?<Pressable accessibilityRole="button" style={styles.clearArea} onPress={()=>setMapArea(null)}>
-         <Text style={styles.clearAreaText}>Limpar zona</Text>
+         <Text style={styles.clearAreaText}>{t('Limpar zona')}</Text>
        </Pressable>:null}
      </View>:null}
-     {mapArea?<Text style={styles.mapNotice}>Pesquisa num raio aproximado de {mapArea.radiusKm} km</Text>:null}
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir mapa no navegador" style={styles.areaSearch} onPress={()=>{void openMap();}}>
-       <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="location" size={17} color={C.background}/><Text style={styles.areaSearchText}>Abrir Google Maps</Text></View>
+     {mapArea?<Text style={styles.mapNotice}>{t('Pesquisa num raio aproximado de {km} km',{km:mapArea.radiusKm})}</Text>:null}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir mapa no navegador')} style={styles.areaSearch} onPress={()=>{void openMap();}}>
+       <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="location" size={17} color={C.background}/><Text style={styles.areaSearchText}>{t('Abrir Google Maps')}</Text></View>
      </Pressable>
-     {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>Toca num pino para consultar a sessão correspondente.</Text>:null}
+     {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>{t('Toca num pino para consultar a sessão correspondente.')}</Text>:null}
      {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin}
        onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
-     <Text style={styles.mapNotice}>{mappedSessions.length} sessões com coordenadas públicas · {sessions.length} resultados</Text>
-     {NATIVE_MAP_READY?<Text style={styles.mapNotice}>Mapa Google · coordenadas fornecidas pelos organizadores</Text>:null}
-     {sessions.length>0&&mappedSessions.length===0?<Message>Estas sessões não têm coordenadas públicas. Consulta a vista Lista para ver todos os resultados.</Message>:null}
+     <Text style={styles.mapNotice}>{t('{mapped} sessões com coordenadas públicas · {total} resultados',{mapped:mappedSessions.length,total:sessions.length})}</Text>
+     {NATIVE_MAP_READY?<Text style={styles.mapNotice}>{t('Mapa Google · coordenadas fornecidas pelos organizadores')}</Text>:null}
+     {sessions.length>0&&mappedSessions.length===0?<Message>{t('Estas sessões não têm coordenadas públicas. Consulta a vista Lista para ver todos os resultados.')}</Message>:null}
    </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
-   {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>Ver todas as sessões na lista →</Text></Pressable>:null}
+   {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>{t('Ver todas as sessões na lista →')}</Text></Pressable>:null}
   </ScrollView>
  </SafeAreaView>;
 }

@@ -21,7 +21,7 @@ test('every root navigation destination has a human-readable title',()=>{
   assert.ok(titles.has(route),`Missing Stack.Screen declaration for ${route}`);
   const options=titles.get(route);
   if(/headerShown:false/.test(options))continue; // Intentionally full-screen welcome flow.
-  assert.match(options,/title:\s*['"][^'"]+['"]/,`Route ${route} needs a readable title`);
+  assert.match(options,/title:\s*(?:t\()?['"][^'"]+['"]/,`Route ${route} needs a readable title`);
   assert.doesNotMatch(options,/\b(?:id|username|peer|postId|championshipId)\b/,`Route ${route} must not expose a raw parameter as its title`);
  }
 });

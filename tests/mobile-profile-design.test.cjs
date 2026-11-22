@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const src=fs.readFileSync(path.join(__dirname,'../app/(tabs)/profile.tsx'),'utf8');
+const src=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/profile.tsx'),'utf8'));
 
 test('profile presentation is fetched for its authenticated owner, never invented',()=>{
  assert.match(src,/request<ProfilePresentation>\('\/api\/profile\/me\/mobile',\{token:auth\.token\}\)/);

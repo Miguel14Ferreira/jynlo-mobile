@@ -1,4 +1,6 @@
 import React,{useCallback,useState} from 'react';
+import {currentLocale,t} from '../../src/lib/i18n';
+import {LanguageSwitch} from '../../src/components/LanguageSwitch';
 import {Alert,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
@@ -70,7 +72,7 @@ export default function ProfileScreen(){
   },[auth.token,auth.username]));
   const favoriteSports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
   const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
-  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||auth.username||'Visitante';
+  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||auth.username||t('Visitante');
   const location=[profile?.location?.trim(),profile?.country?.trim()].filter(Boolean).join(' · ');
   const [showDelete,setShowDelete]=useState(false);
   const [moreOptionsOpen,setMoreOptionsOpen]=useState(false);
@@ -78,19 +80,19 @@ export default function ProfileScreen(){
   const canDelete=Boolean(!DEMO_MODE&&auth.username&&auth.token&&confirmUsername.trim()===auth.username&&!deleting);
   const deleteAccount=()=>{
     if(!canDelete||!auth.token)return;
-    Alert.alert('Eliminar a tua conta?', 'Esta ação é irreversível. Os dados pessoais serão apagados ou anonimizados. Se tens comunidades próprias, transfere primeiro a propriedade.', [
-      {text:'Manter a conta',style:'cancel'},
-      {text:'Eliminar definitivamente',style:'destructive',onPress:()=>{void (async()=>{
+    Alert.alert('Eliminar a tua conta?', t('Esta ação é irreversível. Os dados pessoais serão apagados ou anonimizados. Se tens comunidades próprias, transfere primeiro a propriedade.'), [
+      {text:t('Manter a conta'),style:'cancel'},
+      {text:t('Eliminar definitivamente'),style:'destructive',onPress:()=>{void (async()=>{
         setDeleting(true);
         try{
           await request<void>('/api/profile/me',{token:auth.token,method:'DELETE'});
         }catch(e){
           // No automatic retry: a timeout can happen AFTER the server has deleted the account.
           const detail=e instanceof ApiError&&[403,409].includes(e.status)
-            ?'O servidor não autorizou a eliminação. Se tens comunidades próprias, transfere primeiro a propriedade.'
+            ?t('O servidor não autorizou a eliminação. Se tens comunidades próprias, transfere primeiro a propriedade.')
             :e instanceof ApiError&&e.status===401
-            ?'A sessão expirou. Inicia sessão novamente para verificares o estado da conta.'
-            :'Não foi possível confirmar a resposta do servidor. Verifica se a conta ainda existe antes de repetires o pedido.';
+            ?t('A sessão expirou. Inicia sessão novamente para verificares o estado da conta.')
+            :t('Não foi possível confirmar a resposta do servidor. Verifica se a conta ainda existe antes de repetires o pedido.');
           Alert.alert('Eliminação não confirmada',detail);
           setDeleting(false);
           return;
@@ -99,15 +101,15 @@ export default function ProfileScreen(){
         try{
           await auth.logout();
           router.replace('/welcome');
-          Alert.alert('Conta eliminada','A tua conta foi eliminada e a sessão foi terminada.');
+          Alert.alert('Conta eliminada',t('A tua conta foi eliminada e a sessão foi terminada.'));
         }catch{
           router.replace('/welcome');
-          Alert.alert('Conta eliminada','O servidor confirmou a eliminação, mas não foi possível concluir a limpeza local. Fecha a aplicação antes de a voltar a utilizar.');
+          Alert.alert('Conta eliminada',t('O servidor confirmou a eliminação, mas não foi possível concluir a limpeza local. Fecha a aplicação antes de a voltar a utilizar.'));
         }finally{setDeleting(false);}
       })();}}
     ]);
   };
-  return <Page><Brand subtitle="A TUA JYNLO"/><DemoBanner/><Eyebrow>PERFIL</Eyebrow>
+  return <Page><Brand subtitle={t('A TUA JYNLO')}/><DemoBanner/><Eyebrow>{t('PERFIL')}</Eyebrow>
     <View style={styles.profile}>
       <View style={styles.profileTop}>
         <View style={styles.avatar}>{profile?.profilePicUrl?<Image source={{uri:profile.profilePicUrl}} style={styles.avatarImage}/>:
@@ -115,139 +117,140 @@ export default function ProfileScreen(){
         <View style={styles.identity}>
           <Text style={styles.name} numberOfLines={2}>{displayName}</Text>
           {auth.username?<Text style={styles.handle}>@{auth.username}</Text>:null}
-          <Text style={styles.sub}>{auth.username?'Perfil desportivo':'Entra para participares nas atividades'}</Text>
+          <Text style={styles.sub}>{auth.username?t('Perfil desportivo'):t('Entra para participares nas atividades')}</Text>
         </View>
       </View>
-      {profileLoading?<Text style={styles.profileHint}>A carregar o teu perfil…</Text>:null}
-      {profileError?<Text style={styles.profileHint}>Não foi possível carregar os detalhes do perfil. Podes tentar novamente ao regressar a este ecrã.</Text>:null}
+      {profileLoading?<Text style={styles.profileHint}>{t('A carregar o teu perfil…')}</Text>:null}
+      {profileError?<Text style={styles.profileHint}>{t('Não foi possível carregar os detalhes do perfil. Podes tentar novamente ao regressar a este ecrã.')}</Text>:null}
       {profile?.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}
       {location?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={16} color={C.muted}/><Text style={styles.location}>{location}</Text></View>:null}
       {favoriteSports.length>0?<View style={styles.favoriteSection}>
-        <Text style={styles.favoriteHeading}>MODALIDADES FAVORITAS</Text>
+        <Text style={styles.favoriteHeading}>{t('MODALIDADES FAVORITAS')}</Text>
         <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
       </View>:null}
       {auth.username?<View style={styles.socialNav}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver os meus seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>Seguidores</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Ver quem sigo" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString('pt-PT'):'—'}</Text><Text style={styles.socialActionHint}>A seguir</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Ver os meus seguidores')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString(currentLocale()):'—'}</Text><Text style={styles.socialActionHint}>{t('Seguidores')}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Ver quem sigo')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'following'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.following.toLocaleString(currentLocale()):'—'}</Text><Text style={styles.socialActionHint}>{t('A seguir')}</Text></Pressable>
       </View>:null}
-      {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel="Editar o meu perfil desportivo" onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
-        <Text style={styles.editProfileText}>Editar perfil</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
+      {auth.token&&!DEMO_MODE?<Pressable accessibilityRole="button" accessibilityLabel={t('Editar o meu perfil desportivo')} onPress={()=>router.push('/edit-profile')} style={styles.editProfileAction}>
+        <Text style={styles.editProfileText}>{t('Editar perfil')}</Text><JynloIcon name="chevron-right" size={21} color={C.mint}/>
       </Pressable>:null}
     </View>
     {auth.token&&auth.username&&!DEMO_MODE&&completedParticipations.length>0?
       <View style={styles.history}>
-       <Text style={styles.historyTitle}>Competições individuais concluídas</Text>
-       <Text style={styles.historyHint}>Participações confirmadas em torneios públicos. Sem classificações presumidas.</Text>
+       <Text style={styles.historyTitle}>{t('Competições individuais concluídas')}</Text>
+       <Text style={styles.historyHint}>{t('Participações confirmadas em torneios públicos. Sem classificações presumidas.')}</Text>
        {completedParticipations.map(entry=><Pressable key={'competition-'+entry.tournamentId}
-         accessibilityRole="button" accessibilityLabel={'Ver competição '+entry.tournamentName}
+         accessibilityRole="button" accessibilityLabel={t('Ver competição {name}',{name:entry.tournamentName})}
          style={styles.competitionCard}
          onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(entry.communityId)}})}>
          <Text style={styles.membershipName}>{entry.tournamentName}</Text>
          <Text style={styles.historyHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
-         <Text style={styles.competitionResult}>{entry.individualChampion?'🏆 Campeão individual':'Participação confirmada'}</Text>
+         <Text style={styles.competitionResult}>{entry.individualChampion?t('🏆 Campeão individual'):t('Participação confirmada')}</Text>
          {entry.wins!=null&&entry.draws!=null&&entry.losses!=null?<Text style={styles.competitionResult}>{entry.wins}V · {entry.draws}E · {entry.losses}D</Text>:null}
          <Text style={styles.historyHint}>{entry.completedAt?.slice(0,7)||''}</Text>
        </Pressable>)}
       </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE&&activity?<View style={styles.history}>
-      <Text style={styles.historyTitle}>O meu histórico desportivo</Text>
-      <Text style={styles.historyHint}>Resultados e conquistas registados na Jynlo.</Text>
+      <Text style={styles.historyTitle}>{t('O meu histórico desportivo')}</Text>
+      <Text style={styles.historyHint}>{t('Resultados e conquistas registados na Jynlo.')}</Text>
       <View style={styles.historyGrid}>
        {([
-        [activity.activitiesCompleted,'Atividades realizadas'],
-        [activity.peoplePlayedWith,'Pessoas com quem joguei'],
-        [activity.sportsPractised,'Modalidades'],
-        [activity.eventsCreated,'Eventos criados'],
-        [activity.participantsMobilized,'Participantes mobilizados'],
-        [activity.communitiesJoined,'Comunidades']
+        [activity.activitiesCompleted,t('Atividades realizadas')],
+        [activity.peoplePlayedWith,t('Pessoas com quem joguei')],
+        [activity.sportsPractised,t('Modalidades')],
+        [activity.eventsCreated,t('Eventos criados')],
+        [activity.participantsMobilized,t('Participantes mobilizados')],
+        [activity.communitiesJoined,t('Comunidades')]
        ] as const).map(([value,label])=><View style={styles.historyStat} key={label}>
         <Text style={styles.historyValue}>{Math.max(0,Number(value)||0)}</Text>
         <Text style={styles.historyHint}>{label}</Text>
        </View>)}
       </View>
       {earnedAchievements.length>0?<View style={styles.historyTrophies}>
-       <Text style={styles.historyTitle}>Conquistas</Text>
+       <Text style={styles.historyTitle}>{t('Conquistas')}</Text>
        <View style={styles.historyBadges}>
         {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
-         <Text key={code} style={styles.historyBadge}>{achievementLabels[code]}</Text>)}
+         <Text key={code} style={styles.historyBadge}>{achievementLabels[code]?t(achievementLabels[code]):code}</Text>)}
        </View>
        {earnedAchievements.length>3?<Pressable accessibilityRole="button"
-         accessibilityLabel={showAllAchievements?'Mostrar menos conquistas':'Ver todas as conquistas'}
+         accessibilityLabel={showAllAchievements?t('Mostrar menos conquistas'):t('Ver todas as conquistas')}
          accessibilityState={{expanded:showAllAchievements}}
          style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
-         <Text style={styles.showAchievementsText}>{showAllAchievements?'Mostrar menos':'Ver todas as conquistas'} ({earnedAchievements.length})</Text>
+         <Text style={styles.showAchievementsText}>{showAllAchievements?t('Mostrar menos'):t('Ver todas as conquistas')} ({earnedAchievements.length})</Text>
        </Pressable>:null}
       </View>:null}
     </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE?<View style={styles.memberships}>
-      <Text style={styles.membershipsTitle}>As minhas equipas e comunidades</Text>
-      <Text style={styles.membershipsHint}>Associações confirmadas pela tua conta Jynlo.</Text>
-      {membershipsLoading?<Text style={styles.membershipsHint}>A verificar associações…</Text>:<>
+      <Text style={styles.membershipsTitle}>{t('As minhas equipas e comunidades')}</Text>
+      <Text style={styles.membershipsHint}>{t('Associações confirmadas pela tua conta Jynlo.')}</Text>
+      {membershipsLoading?<Text style={styles.membershipsHint}>{t('A verificar associações…')}</Text>:<>
         {verifiedTeams.length>0?<View style={styles.membershipList}>
-          <Text style={styles.membershipsGroupTitle}>EQUIPAS</Text>
+          <Text style={styles.membershipsGroupTitle}>{t('EQUIPAS')}</Text>
           {verifiedTeams.map(team=><Pressable key={'team-'+team.id} accessibilityRole="button"
-            accessibilityLabel={'Abrir equipa '+team.name}
+            accessibilityLabel={t('Abrir equipa {name}',{name:team.name})}
             onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}
             style={styles.membershipCard}>
             <Text style={styles.membershipName}>{team.name}</Text>
-            <Text style={styles.membershipsHint}>{team.sport||'Equipa desportiva'}</Text>
+            <Text style={styles.membershipsHint}>{team.sport||t('Equipa desportiva')}</Text>
           </Pressable>)}
         </View>:null}
         {verifiedCommunities.length>0?<View style={styles.membershipList}>
-          <Text style={styles.membershipsGroupTitle}>COMUNIDADES</Text>
+          <Text style={styles.membershipsGroupTitle}>{t('COMUNIDADES')}</Text>
           {verifiedCommunities.map(group=><Pressable key={'community-'+group.id} accessibilityRole="button"
-            accessibilityLabel={'Abrir comunidade '+group.name}
+            accessibilityLabel={t('Abrir comunidade {name}',{name:group.name})}
             onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})}
             style={styles.membershipCard}>
             <Text style={styles.membershipName}>{group.name}</Text>
-            <Text style={styles.membershipsHint}>{group.sport||'Comunidade desportiva'}</Text>
+            <Text style={styles.membershipsHint}>{group.sport||t('Comunidade desportiva')}</Text>
           </Pressable>)}
         </View>:null}
         {!verifiedTeams.length&&!verifiedCommunities.length&&!membershipsError?
-          <Text style={styles.membershipsHint}>Ainda não tens associações confirmadas.</Text>:null}
-        {membershipsError?<Text style={styles.membershipsHint}>Não foi possível verificar todas as associações.</Text>:null}
+          <Text style={styles.membershipsHint}>{t('Ainda não tens associações confirmadas.')}</Text>:null}
+        {membershipsError?<Text style={styles.membershipsHint}>{t('Não foi possível verificar todas as associações.')}</Text>:null}
       </>}
     </View>:null}
     {auth.token&&!DEMO_MODE?<ProfilePrivacySettings token={auth.token}/>:null}
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
-    <Pressable accessibilityRole="button" accessibilityLabel="Mostrar mais opções do perfil" accessibilityState={{expanded:moreOptionsOpen}}
+    <LanguageSwitch/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar mais opções do perfil')} accessibilityState={{expanded:moreOptionsOpen}}
       onPress={()=>setMoreOptionsOpen(open=>!open)} style={styles.moreOptionsAction}>
-      <View style={styles.moreOptionsLabel}><JynloIcon name="settings" size={20} color={C.mint}/><Text style={styles.moreOptionsText}>Mais opções</Text></View>
+      <View style={styles.moreOptionsLabel}><JynloIcon name="settings" size={20} color={C.mint}/><Text style={styles.moreOptionsText}>{t('Mais opções')}</Text></View>
       <JynloIcon name={moreOptionsOpen?'chevron-up':'chevron-down'} size={21} color={C.mint}/>
     </Pressable>
     {moreOptionsOpen?<>
-    <Eyebrow>EXPLORAR A JYNLO</Eyebrow>
-    <Button title="Feed" secondary onPress={()=>router.push('/feed')}/>
-    <Button title="Recintos desportivos" secondary onPress={()=>router.push('/venues')}/>
-    <Button title="As minhas sessões" secondary onPress={()=>router.push('/my-sessions')}/>
-    <Button title="As minhas equipas" secondary onPress={()=>router.push('/teams')}/>
-    {!auth.username?<><Button title={DEMO_MODE?'Experimentar conta de demonstração':'Iniciar sessão'} onPress={()=>router.push('/login')}/><Button title="Voltar às boas-vindas" secondary onPress={()=>router.push('/welcome')}/></>:
-      <Button title="Terminar sessão" secondary onPress={()=>{void auth.logout().then(
+    <Eyebrow>{t('EXPLORAR A JYNLO')}</Eyebrow>
+    <Button title={t('Feed')} secondary onPress={()=>router.push('/feed')}/>
+    <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
+    <Button title={t('As minhas sessões')} secondary onPress={()=>router.push('/my-sessions')}/>
+    <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
+    {!auth.username?<><Button title={DEMO_MODE?t('Experimentar conta de demonstração'):t('Iniciar sessão')} onPress={()=>router.push('/login')}/><Button title={t('Voltar às boas-vindas')} secondary onPress={()=>router.push('/welcome')}/></>:
+      <Button title={t('Terminar sessão')} secondary onPress={()=>{void auth.logout().then(
         ()=>router.replace('/welcome'),
         error=>{
           router.replace('/welcome');
           Alert.alert('Verifica a sessão',error instanceof Error?error.message:
-            'Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.');
+            t('Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.'));
         }
       );}}/>}
-    {auth.username&&!DEMO_MODE?<><Eyebrow>GESTÃO DA CONTA</Eyebrow>
+    {auth.username&&!DEMO_MODE?<><Eyebrow>{t('GESTÃO DA CONTA')}</Eyebrow>
 
-    <Button title="Alterar palavra-passe" secondary onPress={()=>router.push('/change-password')}/>
-    <Button title="Verificação em dois passos" secondary onPress={()=>router.push('/security-mfa')}/>
-    <Button title={showDelete?'Ocultar eliminação de conta':'Eliminar a minha conta'} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>
+    <Button title={t('Alterar palavra-passe')} secondary onPress={()=>router.push('/change-password')}/>
+    <Button title={t('Verificação em dois passos')} secondary onPress={()=>router.push('/security-mfa')}/>
+    <Button title={showDelete?t('Ocultar eliminação de conta'):t('Eliminar a minha conta')} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>
     {showDelete?<View style={styles.deleteBox}>
-      <Text style={styles.deleteWarning}>A eliminação é definitiva. As tuas publicações e os teus dados pessoais são apagados ou anonimizados. Se és proprietário de comunidades, transfere primeiro a propriedade.</Text>
-      <Text style={styles.deleteHint}>Para confirmar, escreve exatamente: {auth.username}</Text>
-      <TextInput style={styles.deleteInput} value={confirmUsername} onChangeText={setConfirmUsername} autoCapitalize="none" autoCorrect={false} placeholder="Nome de utilizador" placeholderTextColor={C.muted} accessibilityLabel="Confirmação do nome de utilizador para eliminar a conta"/>
-      <Button title={deleting?'A eliminar conta…':'Eliminar definitivamente'} danger disabled={!canDelete} onPress={deleteAccount}/>
+      <Text style={styles.deleteWarning}>{t('A eliminação é definitiva. As tuas publicações e os teus dados pessoais são apagados ou anonimizados. Se és proprietário de comunidades, transfere primeiro a propriedade.')}</Text>
+      <Text style={styles.deleteHint}>{t('Para confirmar, escreve exatamente: {user}',{user:auth.username??''})}</Text>
+      <TextInput style={styles.deleteInput} value={confirmUsername} onChangeText={setConfirmUsername} autoCapitalize="none" autoCorrect={false} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted} accessibilityLabel={t('Confirmação do nome de utilizador para eliminar a conta')}/>
+      <Button title={deleting?t('A eliminar conta…'):t('Eliminar definitivamente')} danger disabled={!canDelete} onPress={deleteAccount}/>
     </View>:null}
     </>:null}
-    <Eyebrow>INFORMAÇÃO LEGAL</Eyebrow>
-    <Button title="Política de Privacidade" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
-    <Button title="Termos de Utilização" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
-    <Button title="Como pedir a eliminação da conta" secondary onPress={()=>router.push({pathname:'/legal',params:{document:'delete'}})}/>
-    {!auth.username?<Message>Inicia sessão para participares nas atividades desportivas.</Message>:null}
-    {DEMO_MODE?<Message>Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.</Message>:null}
+    <Eyebrow>{t('INFORMAÇÃO LEGAL')}</Eyebrow>
+    <Button title={t('Política de Privacidade')} secondary onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})}/>
+    <Button title={t('Termos de Utilização')} secondary onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})}/>
+    <Button title={t('Como pedir a eliminação da conta')} secondary onPress={()=>router.push({pathname:'/legal',params:{document:'delete'}})}/>
+    {!auth.username?<Message>{t('Inicia sessão para participares nas atividades desportivas.')}</Message>:null}
+    {DEMO_MODE?<Message>{t('Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.')}</Message>:null}
     </>:null}
   </Page>;
 }

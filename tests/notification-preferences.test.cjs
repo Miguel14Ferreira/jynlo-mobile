@@ -32,6 +32,6 @@ test('screen saves explicitly and is reachable from notifications',()=>{
  assert.match(screen,/disabled=\{busy\|\|!dirty\}/);
  assert.match(screen,/saving\.current/);
  assert.match(read('app/notifications.tsx'),/router\.push\('\/notification-settings'\)/);
- assert.match(read('app/_layout.tsx'),/name="notification-settings" options=\{\{title:"Gerir notificações"\}\}/);
+ assert.match(read('app/_layout.tsx'),/name="notification-settings" options=\{\{title:t\("Gerir notificações"\)\}\}/);
  assert.match(read('src/lib/notifications-api.ts'),/'\/api\/notifications\/me\/preferences',\{token,method:'PUT'/);
 });

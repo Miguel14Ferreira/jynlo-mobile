@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {currentLocale,t} from '../src/lib/i18n';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {Message,Page} from '../src/components/UI';
@@ -10,7 +11,7 @@ import {resolveJynloMedia} from '../src/lib/social-feed-api';
 import {C,MobileTheme} from '../src/lib/theme';
 
 const when=(iso:string)=>{const d=new Date(iso);return Number.isNaN(d.getTime())?'':
- d.toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});};
+ d.toLocaleDateString(currentLocale(),{weekday:'short',day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(currentLocale(),{hour:'2-digit',minute:'2-digit'});};
 
 /** One search box for people, communities, teams, venues and games. */
 export default function SearchScreen(){
@@ -33,25 +34,25 @@ export default function SearchScreen(){
  return <Page>
   <View style={styles.box}>
    <JynloIcon name="search" size={20} color={C.muted}/>
-   <TextInput autoFocus value={query} onChangeText={setQuery} placeholder="Pessoas, comunidades, equipas, recintos, modalidade ou cidade…"
-    placeholderTextColor={C.muted} style={styles.input} returnKeyType="search" maxLength={80} accessibilityLabel="Pesquisar na Jynlo"/>
+   <TextInput autoFocus value={query} onChangeText={setQuery} placeholder={t('Pessoas, comunidades, equipas, recintos, modalidade ou cidade…')}
+    placeholderTextColor={C.muted} style={styles.input} returnKeyType="search" maxLength={80} accessibilityLabel={t('Pesquisar na Jynlo')}/>
    {loading?<ActivityIndicator color={C.mint}/>:null}
   </View>
-  {!cleanQuery(query)?<Text style={styles.hint}>Escreve pelo menos 2 letras. Uma modalidade («Padel») ou uma cidade («Porto») também mostra os próximos jogos.</Text>:null}
-  {results?.failed.length?<Message tone="error">Não foi possível pesquisar: {results.failed.join(', ')}.</Message>:null}
-  {view&&!loading&&view.total===0?<Message>Nada encontrado para «{cleanQuery(query)}».</Message>:null}
+  {!cleanQuery(query)?<Text style={styles.hint}>{t('Escreve pelo menos 2 letras. Uma modalidade («Padel») ou uma cidade («Porto») também mostra os próximos jogos.')}</Text>:null}
+  {results?.failed.length?<Message tone="error">{t('Não foi possível pesquisar: {areas}.',{areas:results.failed.map(a=>t(a)).join(', ')})}</Message>:null}
+  {view&&!loading&&view.total===0?<Message>{t('Nada encontrado para «{query}».',{query:cleanQuery(query)})}</Message>:null}
   {view?<>
-   <Section title="Pessoas" icon="profile" items={view.sections.people} render={p=><Row key={p.username} title={p.nickname||p.fullName||p.username}
+   <Section title={t('Pessoas')} icon="profile" items={view.sections.people} render={p=><Row key={p.username} title={p.nickname||p.fullName||p.username}
     subtitle={'@'+p.username+(p.location?' · '+p.location:'')} image={p.profilePicUrl?resolveJynloMedia(p.profilePicUrl):null}
     onPress={()=>router.push({pathname:'/social/[username]',params:{username:p.username}})}/>}/>
-   <Section title="Jogos" icon="session" items={view.sections.sessions} render={s=><Row key={s.id} title={s.sport+' · '+s.city}
+   <Section title={t('Jogos')} icon="session" items={view.sections.sessions} render={s=><Row key={s.id} title={s.sport+' · '+s.city}
     subtitle={when(s.gameDate)+' · '+s.participantCount+'/'+s.maxParticipants} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>}/>
-   <Section title="Comunidades" icon="community" items={view.sections.communities} render={c=><Row key={c.id} title={c.name}
+   <Section title={t('Comunidades')} icon="community" items={view.sections.communities} render={c=><Row key={c.id} title={c.name}
     subtitle={c.sport||c.description||''} image={c.photoUrl?resolveJynloMedia(c.photoUrl):null}
     onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(c.id)}})}/>}/>
-   <Section title="Equipas" icon="championship" items={view.sections.teams} render={t=><Row key={t.id} title={t.name}
+   <Section title={t('Equipas')} icon="championship" items={view.sections.teams} render={t=><Row key={t.id} title={t.name}
     subtitle={[t.sport,t.location].filter(Boolean).join(' · ')} onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(t.id)}})}/>}/>
-   <Section title="Recintos" icon="venue" items={view.sections.venues} render={v=><Row key={v.id} title={v.name}
+   <Section title={t('Recintos')} icon="venue" items={view.sections.venues} render={v=><Row key={v.id} title={v.name}
     subtitle={v.city} onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(v.id)}})}/>}/>
   </>:null}
  </Page>;
