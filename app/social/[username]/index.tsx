@@ -4,7 +4,9 @@ import {Alert,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
 import {useAuth} from '../../../src/lib/auth';
-import {resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import {profileStories,resolveJynloMedia} from '../../../src/lib/social-feed-api';
+import type {SocialStory} from '../../../src/lib/types';
+import {reliabilitySummary} from '../../../src/lib/reliability-api';
 import ProfilePosts from '../../../src/components/ProfilePosts';
 import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,publicSportsActivity,publicIndividualTitles,publicCompletedParticipations,type PublicCompletedParticipation,type PublicIndividualTitle,type PublicSportsActivity,type PublicProfileAffiliations,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
@@ -14,14 +16,6 @@ import {ReportSheet} from '../../../src/components/ReportSheet';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../../src/lib/user-safety-api';
 import {sportName} from '../../../src/lib/sport-names.cjs';
 const T=MobileTheme.colors;
-const achievementLabels:Record<string,string>={
- FIRST_ACTIVITY:'🏅 Primeira atividade',
- TEN_ACTIVITIES:'🔥 10 atividades',
- EXPLORER:'🌍 Explorador',
- ORGANIZER:'👥 Organizador',
- COMMUNITY_BUILDER:'🤝 Criador de comunidades',
- REGULAR:'📅 Regular'
-};
 export default function PublicSocialProfile(){
  const {username}=useLocalSearchParams<{username:string}>();
  const name=typeof username==='string'&&/^[a-zA-Z0-9_.@-]{1,128}$/.test(username)?username:'';
@@ -29,17 +23,19 @@ export default function PublicSocialProfile(){
  const [profile,setProfile]=useState<PublicSportsProfile|null>(null);
  const [status,setStatus]=useState<FollowStatus|null>(null);
  const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
+ const [stories,setStories]=useState<SocialStory[]>([]);
+ // Attendance: shown once there are enough finished games to mean something.
+ const [attendance,setAttendance]=useState<{rate:number;games:number}|null>(null);
  const [affiliations,setAffiliations]=useState<PublicProfileAffiliations|null>(null);
  const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
  const [titles,setTitles]=useState<PublicIndividualTitle[]>([]);
  const [participations,setParticipations]=useState<PublicCompletedParticipation[]>([]);
- const [showAllAchievements,setShowAllAchievements]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [blocked,setBlocked]=useState<boolean|null>(null),[safetyBusy,setSafetyBusy]=useState(false),[reporting,setReporting]=useState(false);
  const version=useRef(0),inFlight=useRef(false);
  const own=!!name&&name.toLowerCase()===auth.username?.toLowerCase();
  useFocusEffect(useCallback(()=>{
-  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setAffiliations(null);setActivity(null);setTitles([]);setParticipations([]);setShowAllAchievements(false);setError('');setLoading(true);inFlight.current=false;setBusy(false);
+  const request=++version.current;setProfile(null);setStatus(null);setPrivacy(null);setStories([]);setAttendance(null);setAffiliations(null);setActivity(null);setTitles([]);setParticipations([]);setError('');setLoading(true);inFlight.current=false;setBusy(false);
   setBlocked(null);setReporting(false);
   if(!name||!auth.token){setLoading(false);return()=>{version.current++;};}
   if(!own)void userBlockStatus(name,auth.token).then(value=>{if(version.current===request)setBlocked(value);}).catch(()=>{});
@@ -56,6 +52,13 @@ export default function PublicSocialProfile(){
   void profilePrivacyStatus(auth.token,name).then(value=>{
    if(request!==version.current)return;
    setPrivacy(value);
+   if(value.canViewContent)void profileStories(name,auth.token).then(list=>{
+    if(request===version.current)setStories(list.filter(story=>Date.parse(story.expiresAt)>Date.now()));
+   }).catch(()=>{if(request===version.current)setStories([]);});
+   if(value.canViewContent)void reliabilitySummary(name,auth.token).then(summary=>{
+    if(request===version.current&&summary&&Number.isFinite(summary.attendanceRate))
+     setAttendance({rate:summary.attendanceRate,games:summary.completedSessions});
+   }).catch(()=>{if(request===version.current)setAttendance(null);});
    if(value.canViewContent)void publicSportsActivity(name,auth.token).then(activityValue=>{
     if(request===version.current)setActivity(activityValue);
    }).catch(()=>{/* No inferred achievements when stats are unavailable. */});
@@ -94,7 +97,6 @@ export default function PublicSocialProfile(){
  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||name;
  const image=resolveJynloMedia(profile?.profilePicUrl);
  const sports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
- const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
  function toggleBlock(){
   if(!name||!auth.token||safetyBusy||blocked===null)return;
   const token=auth.token,wasBlocked=blocked,request=version.current;
@@ -115,7 +117,12 @@ export default function PublicSocialProfile(){
   {!auth.token?<Button title={t('Entrar para ver este perfil')} onPress={()=>router.push('/login')}/>:null}
   {profile?<View style={styles.hero}>
    <View style={styles.identity}>
-    <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text maxFontSizeMultiplier={1.3} style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
+    <Pressable accessibilityRole="button" disabled={!stories.length}
+     accessibilityLabel={stories.length?t('Ver stories de {v}',{v:name}):t('Sem stories ativas')}
+     onPress={()=>{const first=stories[0];if(first)router.push({pathname:'/(tabs)',params:{storyId:String(first.id)}});}}
+     style={[styles.storyRing,stories.length>0&&styles.storyRingActive]}>
+     <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text maxFontSizeMultiplier={1.3} style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
+    </Pressable>
     <View style={{flex:1,gap:5}}><Text style={styles.name}>{displayName}</Text><Text style={styles.handle}>@{name}</Text></View>
    </View>
    {profile.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}
@@ -187,6 +194,7 @@ export default function PublicSocialProfile(){
    <Text style={styles.discoveryHint}>{t('Estatísticas calculadas pela Jynlo.')}</Text>
    <View style={styles.activityGrid}>
     {([
+     ...(attendance&&attendance.games>=3?[[Math.round(attendance.rate)+'%',t('Presença nos jogos')] as const]:[]),
      [activity.activitiesCompleted,t('Atividades')],
      [activity.peoplePlayedWith,t('Pessoas com quem jogou')],
      [activity.sportsPractised,t('Modalidades')],
@@ -194,25 +202,10 @@ export default function PublicSocialProfile(){
      [activity.participantsMobilized,t('Participantes mobilizados')],
      [activity.communitiesJoined,t('Comunidades')]
     ] as const).map(([count,label])=><View key={label} style={styles.activityCard}>
-     <Text style={styles.activityNumber}>{Math.max(0,Number(count)||0)}</Text>
+     <Text style={styles.activityNumber}>{typeof count==='string'?count:Math.max(0,Number(count)||0)}</Text>
      <Text style={styles.activityLabel}>{label}</Text>
     </View>)}
    </View>
-   {earnedAchievements.length>0?<View style={styles.achievementSection}>
-    <Text style={styles.discoveryTitle}>{t('Conquistas')}</Text>
-    <View style={styles.achievementList}>
-     {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
-      <View key={code} style={styles.achievementBadge}>
-       <Text style={styles.achievementLabel}>{t(achievementLabels[code]??code)}</Text>
-      </View>)}
-    </View>
-    {earnedAchievements.length>3?<Pressable accessibilityRole="button"
-     accessibilityState={{expanded:showAllAchievements}}
-     accessibilityLabel={showAllAchievements?t('Mostrar menos conquistas'):t('Ver todas as conquistas')}
-     style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
-     <Text style={styles.showAchievementsText}>{showAllAchievements?t('Mostrar menos'):t('Ver todas as conquistas')} ({earnedAchievements.length})</Text>
-    </Pressable>:null}
-   </View>:null}
   </View>:null}
   {profile&&affiliations&&(affiliations.teams.length>0||affiliations.communities.length>0)?
    <View style={styles.discovery}>
@@ -282,7 +275,7 @@ const styles=StyleSheet.create({
  discoveryLink:{minHeight:48,justifyContent:'center',paddingHorizontal:14,backgroundColor:T.raised,borderRadius:12,borderWidth:1,borderColor:T.border},
  discoveryLinkText:{fontSize:14,fontWeight:'800',color:T.accent},
  hero:{padding:18,gap:17,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,borderRadius:MobileTheme.radius.xl},
- identity:{flexDirection:'row',alignItems:'center',gap:14},avatar:{height:72,width:72,borderRadius:36,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ identity:{flexDirection:'row',alignItems:'center',gap:14},storyRing:{padding:3,borderRadius:42,borderWidth:2,borderColor:'transparent'},storyRingActive:{borderColor:T.accent},avatar:{height:72,width:72,borderRadius:36,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
  photo:{width:'100%',height:'100%'},letter:{fontSize:27,fontWeight:'900',color:T.accent},
  name:{fontSize:22,fontWeight:'900',color:T.text},handle:{color:T.accent,fontSize:13},bio:{fontSize:14,lineHeight:21,color:T.text},sub:{fontSize:12,color:T.muted},
  tags:{flexDirection:'row',flexWrap:'wrap',gap:8},tag:{paddingHorizontal:11,paddingVertical:8,backgroundColor:T.raised,borderRadius:MobileTheme.radius.pill},tagLabel:{color:T.accent,fontWeight:'800',fontSize:12},

@@ -26,10 +26,11 @@ test('private reaction tray pauses both image progress and native video playback
 
 test('small phones prioritize Story media and use consistent icon actions',()=>{
  assert.match(viewer,/const \{height:viewerHeight\}=useWindowDimensions\(\)/);
- assert.match(viewer,/viewerHeight>=720\?<Text style=\{styles\.storyCount\}>/);
+ // The progress bars already say which Story this is: no counter or gesture hint line.
+ assert.doesNotMatch(viewer,/Toca para avançar/);
  assert.match(viewer,/!ownStory&&viewerHeight>=720\?<Text style=\{styles\.storyReplyHint\}>/);
  assert.match(viewer,/accessibilityLabel="Partilhar Story"/);
- assert.match(viewer,/<JynloIcon name="share" color=\{WHITE\} size=\{19\}\/>/);
+ assert.match(viewer,/<JynloIcon name="share" color=\{WHITE\} size=\{21\}\/>/);
  assert.match(viewer,/<JynloIcon name="send" size=\{21\} color=\{INDIGO\}\/>/);
  assert.match(viewer,/disabled=\{storyBusy\|\|!replyText\.trim\(\)\}/);
  assert.match(viewer,/accessibilityLabel="Ver quem viu esta Story"/);
