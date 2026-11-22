@@ -3,11 +3,12 @@
 /** Only known links on our verified HTTPS domain become native routes.
  * Never map credentials or tokens from a non-Jynlo host.
  */
+const JYNLO_HOSTS=['d24sports.com','jynlosports.com'];
 function nativeRouteForWebLink(path){
  if(typeof path!=='string'||!path.trim())return path;
  try{
   const url=new URL(path,'https://d24sports.com');
-  if(url.protocol!=='https:'||url.hostname!=='d24sports.com'||
+  if(url.protocol!=='https:'||!JYNLO_HOSTS.includes(url.hostname)||
      url.port||url.username||url.password)return path;
   // Browsers sometimes normalize shared links with a trailing slash.
   // Keep the path canonical without trusting arbitrary hosts or route names.

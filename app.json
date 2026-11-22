@@ -32,6 +32,11 @@
               "scheme": "https",
               "host": "d24sports.com",
               "pathPrefix": "/login/registerNewUser/confirmTokenRegistration/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
+              "pathPrefix": "/login/registerNewUser/confirmTokenRegistration/"
             }
           ],
           "category": [
@@ -46,6 +51,11 @@
             {
               "scheme": "https",
               "host": "d24sports.com",
+              "pathPrefix": "/login/resetPassword/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
               "pathPrefix": "/login/resetPassword/"
             }
           ],
@@ -62,6 +72,11 @@
               "scheme": "https",
               "host": "d24sports.com",
               "pathPrefix": "/menu/communities/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
+              "pathPrefix": "/menu/communities/"
             }
           ],
           "category": [
@@ -76,6 +91,11 @@
             {
               "scheme": "https",
               "host": "d24sports.com",
+              "pathPrefix": "/sessions/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
               "pathPrefix": "/sessions/"
             }
           ],
@@ -92,6 +112,11 @@
               "scheme": "https",
               "host": "d24sports.com",
               "pathPrefix": "/posts/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
+              "pathPrefix": "/posts/"
             }
           ],
           "category": [
@@ -107,6 +132,11 @@
               "scheme": "https",
               "host": "d24sports.com",
               "pathPrefix": "/menu/events/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
+              "pathPrefix": "/menu/events/"
             }
           ],
           "category": [
@@ -121,6 +151,11 @@
             {
               "scheme": "https",
               "host": "d24sports.com",
+              "pathPrefix": "/venues/"
+            },
+            {
+              "scheme": "https",
+              "host": "jynlosports.com",
               "pathPrefix": "/venues/"
             }
           ],

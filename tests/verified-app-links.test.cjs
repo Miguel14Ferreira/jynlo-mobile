@@ -25,3 +25,13 @@ test('asset link config is scoped to Jynlo package and verified HTTPS paths',()=
  assert.ok(filters.some(f=>f.autoVerify===true&&f.data.some(d=>d.host==='d24sports.com'&&d.scheme==='https')));
  assert.equal(cfg.expo.android.package,'com.jynlo.app');
 });
+test('the new jynlosports.com domain routes like d24sports.com and is verified in app.json',()=>{
+ assert.equal(route('https://jynlosports.com/login/resetPassword/'+token),'/reset-password?token='+token);
+ assert.equal(route('https://jynlosports.com/sessions/12'),'/sessions/12');
+ assert.equal(route('https://jynlosports.com.attacker.example/sessions/12'),'https://jynlosports.com.attacker.example/sessions/12');
+ const {expo}=require('../app.json');
+ for(const filter of expo.android.intentFilters){
+  const hosts=filter.data.map(d=>d.host);
+  assert.ok(hosts.includes('d24sports.com')&&hosts.includes('jynlosports.com'));
+ }
+});
