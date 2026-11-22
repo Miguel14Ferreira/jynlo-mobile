@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Linking,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {MobileMedia} from '../lib/types';
 import {pickerMediaMime} from '../lib/picker-media-format.cjs';
@@ -22,7 +23,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    if(!alive.current)return;
    if(!permission.granted){
     setPermissionDenied(true);
-     setError('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe um ficheiro da galeria.');
+     setError(t('Autoriza o acesso à câmara nas definições do telemóvel ou escolhe um ficheiro da galeria.'));
     return;
    }
    // The native camera chooses photo/video without a custom preview overlay.
@@ -35,7 +36,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
    if(!asset)return;
    const kind=asset.type==='video'?'video':'image';
    const mime=pickerMediaMime(asset);
-   if(!mime){setError('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.');return;}
+   if(!mime){setError(t('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.'));return;}
    let size=asset.fileSize||0;
    if(!size){
     // Android can return a content:// URI without readable picker metadata.
@@ -56,7 +57,7 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
      kind==='video'?(mime==='video/webm'?'webm':'mp4'):'jpg';
    onCaptured({uri:asset.uri,type:kind,mimeType:mime,fileName:asset.fileName||'jynlo-story-'+Date.now()+'.'+extension,fileSize:size});
   }catch(e){
-   if(alive.current)setError(e instanceof Error?e.message:'Não foi possível abrir a câmara do telemóvel.');
+   if(alive.current)setError(e instanceof Error?e.message:t('Não foi possível abrir a câmara do telemóvel.'));
   }finally{
    busyRef.current=false;
    if(alive.current)setBusy(false);
@@ -72,19 +73,19 @@ export default function StoryCameraCapture({onCaptured,onPickGallery}:Props){
   return()=>{alive.current=false;clearTimeout(timer);};
  },[]);
  return <View style={styles.panel}>
-  <Text style={styles.heading}>Fotografia ou vídeo</Text>
-  <Text style={styles.description}>Usa a câmara do teu telemóvel para capturar um momento ou escolhe da galeria.</Text>
-  {busy?<View style={styles.loading}><ActivityIndicator color={C.mint}/><Text style={styles.description}>A abrir a câmara…</Text></View>:null}
+  <Text style={styles.heading}>{t('Fotografia ou vídeo')}</Text>
+  <Text style={styles.description}>{t('Usa a câmara do teu telemóvel para capturar um momento ou escolhe da galeria.')}</Text>
+  {busy?<View style={styles.loading}><ActivityIndicator color={C.mint}/><Text style={styles.description}>{t('A abrir a câmara…')}</Text></View>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
-  {permissionDenied?<Pressable accessibilityRole="button" accessibilityLabel="Abrir definições de permissões da câmara" onPress={()=>void Linking.openSettings().catch(()=>setError('Abre as definições da Jynlo e autoriza a câmara.'))} style={styles.settingsAction}><Text style={styles.settingsText}>Abrir definições</Text></Pressable>:null}
+  {permissionDenied?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir definições de permissões da câmara')} onPress={()=>void Linking.openSettings().catch(()=>setError(t('Abre as definições da Jynlo e autoriza a câmara.')))} style={styles.settingsAction}><Text style={styles.settingsText}>{t('Abrir definições')}</Text></Pressable>:null}
   <View style={styles.actions}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara do dispositivo"
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara do dispositivo')}
     disabled={busy} style={[styles.action,styles.primary,busy&&styles.disabled]} onPress={()=>{void capture();}}>
-    <Text style={styles.primaryText}>Abrir câmara</Text>
+    <Text style={styles.primaryText}>{t('Abrir câmara')}</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir galeria de fotografias e vídeos"
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir galeria de fotografias e vídeos')}
     disabled={busy} style={[styles.action,styles.secondary,busy&&styles.disabled]} onPress={onPickGallery}>
-    <Text style={styles.secondaryText}>Escolher da galeria</Text>
+    <Text style={styles.secondaryText}>{t('Escolher da galeria')}</Text>
    </Pressable>
   </View>
  </View>;

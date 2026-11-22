@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -37,7 +38,7 @@ const MODEL_HINTS:Record<string,string>={
  UNAVAILABLE:'Esta modalidade existe no catálogo, mas o torneio ainda não tem um modelo de resultados validado.'
 };
 const normalized=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-const titleOf=(code:string)=>EVENT_LABELS[code]||code.replace(/_/g,' ').replace(/(\d+)X(\d+)/g,'$1×$2');
+const titleOf=(code:string)=>(EVENT_LABELS[code]?t(EVENT_LABELS[code]):null)||code.replace(/_/g,' ').replace(/(\d+)X(\d+)/g,'$1×$2');
 function Choice({title,active,onPress}:{title:string;active:boolean;onPress:()=>void}){
  return <Pressable accessibilityRole="button" accessibilityState={{selected:active}}
    style={[styles.choice,active&&styles.activeChoice]} onPress={onPress}>
@@ -77,7 +78,7 @@ export default function CreateTournamentScreen(){
     return communityOverridden.current&&allowed.some(c=>c.id===current)?current:
      allowed.some(c=>c.id===preferred)?preferred:allowed.some(c=>c.id===current)?current:(allowed[0]?.id??null);
    });
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar as comunidades.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível consultar as comunidades.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[auth.token,auth.username,params.communityId,scopedToCommunity,requestedCommunityId]);
  useFocusEffect(useCallback(()=>{
@@ -118,7 +119,7 @@ export default function CreateTournamentScreen(){
   winPoints:win.trim()?Number(win):NaN,drawPoints:draw.trim()?Number(draw):NaN,lossPoints:loss.trim()?Number(loss):NaN
  };
  let validation='';
- try{createTournamentDraft(data);}catch(e){validation=e instanceof Error?e.message:'Confirma os campos.';}
+ try{createTournamentDraft(data);}catch(e){validation=e instanceof Error?e.message:t('Confirma os campos.');}
  const ready=Boolean(sportIsAllowed&&name.trim().length>=2&&!validation&&!DEMO_MODE&&!busy);
  function pickSport(value:string){if(!selectedSports.includes(value))return;setSport(value);setSearch('');setEntryType('INDIVIDUAL');setFormat('LEAGUE');setEvent('');setDiscipline('');}
  function setMode(value:TournamentEntryChoice){setEntryType(value);setFormat('LEAGUE');setEvent('');setDiscipline('');}
@@ -127,7 +128,7 @@ export default function CreateTournamentScreen(){
   if(!selected||!auth.token||!auth.username||savingRef.current||DEMO_MODE||
     version!==generation.current||identity!==identityRef.current||selected.id!==communityIdAtConfirmation||
     currentCommunityRef.current!==communityIdAtConfirmation)return;
-  if(!communityAllowsTournamentSport(selected,payload.sport)){setError('A modalidade escolhida não pertence a esta comunidade.');return;}
+  if(!communityAllowsTournamentSport(selected,payload.sport)){setError(t('A modalidade escolhida não pertence a esta comunidade.'));return;}
   savingRef.current=true;setBusy(true);setError('');
   try{
    const tournament=await createTournament(selected.id,payload,auth.token,auth.username,selected.myRole,communitySports(selected));
@@ -135,107 +136,107 @@ export default function CreateTournamentScreen(){
    router.replace({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(selected.id),id:String(tournament.id)}});
   }catch(e){
    if(version===generation.current&&identity===identityRef.current)
-    setError((e instanceof Error?e.message:'Não foi possível criar o torneio.')+' Confirma o estado antes de tentar novamente.');
+    setError((e instanceof Error?e.message:t('Não foi possível criar o torneio.'))+' '+t('Confirma o estado antes de tentar novamente.'));
   }finally{savingRef.current=false;setBusy(false);}
  }
  function confirmCreate(){
   if(!ready||!selected||!sportIsAllowed)return;
   let payload:CreateTournamentInput;
   try{createTournamentDraft(data);payload={...data};}
-  catch(e){setError(e instanceof Error?e.message:'Configuração inválida.');return;}
+  catch(e){setError(e instanceof Error?e.message:t('Configuração inválida.'));return;}
   const version=generation.current,identity=identityRef.current,communityIdAtConfirmation=selected.id;
-  Alert.alert('Criar torneio?',selected.name+' · '+sport+' · '+FORMAT_LABELS[effectiveFormat]+'. O torneio fica em preparação e não inicia jogos automaticamente.',[
-   {text:'Voltar',style:'cancel'},
-   {text:'Criar torneio',onPress:()=>{void save(payload,version,identity,communityIdAtConfirmation);}}
+  Alert.alert(t('Criar torneio?'),selected.name+' · '+sport+' · '+t(FORMAT_LABELS[effectiveFormat])+t('. O torneio fica em preparação e não inicia jogos automaticamente.'),[
+   {text:t('Voltar'),style:'cancel'},
+   {text:t('Criar torneio'),onPress:()=>{void save(payload,version,identity,communityIdAtConfirmation);}}
   ]);
  }
- return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Criar competição</Text>
-  <Text style={styles.sub}>Escolhe uma das modalidades da comunidade. O formato e a classificação dependem da prova, nunca de uma tabela genérica de futebol.</Text>
-  {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('TORNEIOS · ORGANIZAÇÃO')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Criar competição')}</Text>
+  <Text style={styles.sub}>{t('Escolhe uma das modalidades da comunidade. O formato e a classificação dependem da prova, nunca de uma tabela genérica de futebol.')}</Text>
+  {!auth.token?<Button title={t('Entrar')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {!loading&&auth.token&&communities.length===0?(scopedToCommunity
-   ?<Message>Só quem administra esta comunidade pode criar torneios nela.</Message>
+   ?<Message>{t('Só quem administra esta comunidade pode criar torneios nela.')}</Message>
    :<View style={styles.panel}>
-     <Text style={styles.emptyTitle}>Cria primeiro a tua comunidade</Text>
-     <Text style={styles.emptyText}>Cada torneio pertence a uma comunidade, onde ficam as inscrições, os jogos e a classificação. Demora menos de um minuto.</Text>
-     <Button title="Criar comunidade e torneio" onPress={()=>router.push({pathname:'/communities/create',params:{next:'tournament'}})}/>
+     <Text style={styles.emptyTitle}>{t('Cria primeiro a tua comunidade')}</Text>
+     <Text style={styles.emptyText}>{t('Cada torneio pertence a uma comunidade, onde ficam as inscrições, os jogos e a classificação. Demora menos de um minuto.')}</Text>
+     <Button title={t('Criar comunidade e torneio')} onPress={()=>router.push({pathname:'/communities/create',params:{next:'tournament'}})}/>
     </View>):null}
   {!loading&&communities.length>0?<><View style={styles.panel}>
-   <Text style={styles.heading}>1. Comunidade</Text>
-   {scopedToCommunity?<Text style={styles.helper}>{selected?.name||'Comunidade selecionada'} · estás a criar um torneio nesta comunidade.</Text>:<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+   <Text style={styles.heading}>{t('1. Comunidade')}</Text>
+   {scopedToCommunity?<Text style={styles.helper}>{t('{a} · estás a criar um torneio nesta comunidade.',{a:selected?.name||t('Comunidade selecionada')})}</Text>:<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
     {communities.map(c=><Choice key={c.id} title={c.name} active={selected?.id===c.id} onPress={()=>{
       communityOverridden.current=true;currentCommunityRef.current=c.id;setCommunityId(c.id);setSport('');setSearch('');setEvent('');setDiscipline('');setFormat('LEAGUE');
     }}/>)}
    </ScrollView>}
-   <Text style={styles.helper}>A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.</Text>
+   <Text style={styles.helper}>{t('A comunidade gere os participantes e define quem pode organizar. Os torneios usam as modalidades já associadas a esta comunidade.')}</Text>
   </View>
   <View style={styles.panel}>
-   <Text style={styles.heading}>2. Modalidade</Text>
-   <TextInput value={search} onChangeText={setSearch} placeholder="Pesquisar modalidades desta comunidade"
-    placeholderTextColor={C.muted} accessibilityLabel="Pesquisar modalidade" style={styles.input}/>
+   <Text style={styles.heading}>{t('2. Modalidade')}</Text>
+   <TextInput value={search} onChangeText={setSearch} placeholder={t('Pesquisar modalidades desta comunidade')}
+    placeholderTextColor={C.muted} accessibilityLabel={t('Pesquisar modalidade')} style={styles.input}/>
    {sport?<Badge text={sport}/>:null}
    <View style={styles.chips}>{suggestions.map(value=><Choice key={value} title={value} active={sport===value} onPress={()=>pickSport(value)}/>)}</View>
-   {selectedSports.length===0?<Message>Esta comunidade ainda não tem modalidades do catálogo atual. Configura-as primeiro na Jynlo Web.</Message>:null}
-   {!sport&&selectedSports.length>0?<Text style={styles.helper}>Escolhe uma das {selectedSports.length} modalidades associadas. Podes pesquisar quando a lista é extensa.</Text>:null}
-   {!!sport&&!sportIsAllowed?<Message tone="error">Este desporto deixou de pertencer à comunidade. Escolhe uma modalidade válida.</Message>:null}
-   {sport?<><Text style={styles.label}>TIPO DE COMPETIÇÃO</Text>
+   {selectedSports.length===0?<Message>{t('Esta comunidade ainda não tem modalidades do catálogo atual. Configura-as primeiro na Jynlo Web.')}</Message>:null}
+   {!sport&&selectedSports.length>0?<Text style={styles.helper}>{t('Escolhe uma das {a} modalidades associadas. Podes pesquisar quando a lista é extensa.',{a:selectedSports.length})}</Text>:null}
+   {!!sport&&!sportIsAllowed?<Message tone="error">{t('Este desporto deixou de pertencer à comunidade. Escolhe uma modalidade válida.')}</Message>:null}
+   {sport?<><Text style={styles.label}>{t('TIPO DE COMPETIÇÃO')}</Text>
     <View style={styles.chips}>
-     <Choice title="Individual" active={entryType==='INDIVIDUAL'} onPress={()=>setMode('INDIVIDUAL')}/>
-     <Choice title="Equipas" active={entryType==='TEAM'} onPress={()=>setMode('TEAM')}/>
+     <Choice title={t('Individual')} active={entryType==='INDIVIDUAL'} onPress={()=>setMode('INDIVIDUAL')}/>
+     <Choice title={t('Equipas')} active={entryType==='TEAM'} onPress={()=>setMode('TEAM')}/>
     </View>
    </>:null}
-   {sport==='Atletismo'&&entryType==='INDIVIDUAL'?<><Text style={styles.label}>TIPO DE RESULTADO</Text>
+   {sport==='Atletismo'&&entryType==='INDIVIDUAL'?<><Text style={styles.label}>{t('TIPO DE RESULTADO')}</Text>
     <View style={styles.chips}>
-     <Choice title="Saltos e lançamentos" active={athleticsMode==='FIELD'} onPress={()=>{setAthleticsMode('FIELD');setEvent('');setDiscipline('');}}/>
-     <Choice title="Pista / tempo" active={athleticsMode==='TRACK'} onPress={()=>{setAthleticsMode('TRACK');setEvent('');setDiscipline('');}}/>
+     <Choice title={t('Saltos e lançamentos')} active={athleticsMode==='FIELD'} onPress={()=>{setAthleticsMode('FIELD');setEvent('');setDiscipline('');}}/>
+     <Choice title={t('Pista / tempo')} active={athleticsMode==='TRACK'} onPress={()=>{setAthleticsMode('TRACK');setEvent('');setDiscipline('');}}/>
     </View></>:null}
-   {sport?<Message>{MODEL_HINTS[profile.model]||'Formato específico em preparação.'}</Message>:null}
-   {sport&&selected&&sportIsAllowed&&!canCreateTournamentForSport(selected,sport)?<Message>É possível consultar competições existentes, mas o motor de criação deste desporto ainda não está validado na app mobile.</Message>:null}
+   {sport?<Message>{(MODEL_HINTS[profile.model]?t(MODEL_HINTS[profile.model]!):null)||t('Formato específico em preparação.')}</Message>:null}
+   {sport&&selected&&sportIsAllowed&&!canCreateTournamentForSport(selected,sport)?<Message>{t('É possível consultar competições existentes, mas o motor de criação deste desporto ainda não está validado na app mobile.')}</Message>:null}
   </View>
   {profile.model!=='UNAVAILABLE'?<>
    <View style={styles.panel}>
-    <Text style={styles.heading}>3. Configuração</Text>
-    <Text style={styles.label}>NOME DA COMPETIÇÃO</Text>
+    <Text style={styles.heading}>{t('3. Configuração')}</Text>
+    <Text style={styles.label}>{t('NOME DA COMPETIÇÃO')}</Text>
     <TextInput value={name} onChangeText={setName} maxLength={120} style={styles.input}
-      accessibilityLabel="Nome do torneio" placeholder="Ex.: Taça de Primavera" placeholderTextColor={C.muted}/>
-    <Text style={styles.label}>FORMATO</Text>
-    <View style={styles.chips}>{profile.formats.map(option=><Choice key={option} title={FORMAT_LABELS[option]} active={effectiveFormat===option} onPress={()=>selectFormat(option)}/>)}</View>
-    {effectiveFormat==='GROUP_KNOCKOUT'?<><Text style={styles.label}>NÚMERO DE GRUPOS</Text>
-      <View style={styles.chips}>{([2,4] as const).map(n=><Choice key={n} title={String(n)+' grupos'} active={groupCount===n} onPress={()=>setGroupCount(n)}/>)}</View></>:null}
+      accessibilityLabel={t('Nome do torneio')} placeholder={t('Ex.: Taça de Primavera')} placeholderTextColor={C.muted}/>
+    <Text style={styles.label}>{t('FORMATO')}</Text>
+    <View style={styles.chips}>{profile.formats.map(option=><Choice key={option} title={t(FORMAT_LABELS[option])} active={effectiveFormat===option} onPress={()=>selectFormat(option)}/>)}</View>
+    {effectiveFormat==='GROUP_KNOCKOUT'?<><Text style={styles.label}>{t('NÚMERO DE GRUPOS')}</Text>
+      <View style={styles.chips}>{([2,4] as const).map(n=><Choice key={n} title={t('{n} grupos',{n})} active={groupCount===n} onPress={()=>setGroupCount(n)}/>)}</View></>:null}
     {entryType==='TEAM'&&profile.model!=='RELAY_BEST_TIME'?<><Text style={styles.label}>JOGADORES POR EQUIPA (1–30)</Text>
-     <TextInput style={styles.input} keyboardType="number-pad" maxLength={2} value={teamSize} onChangeText={setTeamSize} accessibilityLabel="Jogadores por equipa"/></>:null}
-    {profile.model==='RELAY_BEST_TIME'?<Text style={styles.helper}>As equipas de estafeta têm quatro atletas.</Text>:null}
-    {effectiveFormat==='LEAGUE'&&profile.model==='NUMERIC_TEAM'?<><Text style={styles.label}>VOLTAS DO CAMPEONATO</Text>
-      <View style={styles.chips}>{([1,2] as const).map(n=><Choice key={n} title={String(n)+' volta'+(n===2?'s':'')} active={legs===n} onPress={()=>setLegs(n)}/>)}</View></>:null}
+     <TextInput style={styles.input} keyboardType="number-pad" maxLength={2} value={teamSize} onChangeText={setTeamSize} accessibilityLabel={t('Jogadores por equipa')}/></>:null}
+    {profile.model==='RELAY_BEST_TIME'?<Text style={styles.helper}>{t('As equipas de estafeta têm quatro atletas.')}</Text>:null}
+    {effectiveFormat==='LEAGUE'&&profile.model==='NUMERIC_TEAM'?<><Text style={styles.label}>{t('VOLTAS DO CAMPEONATO')}</Text>
+      <View style={styles.chips}>{([1,2] as const).map(n=><Choice key={n} title={n===2?t('2 voltas'):t('1 volta')} active={legs===n} onPress={()=>setLegs(n)}/>)}</View></>:null}
     {isNumericModel(profile.model)&&profile.model!=='CHESS_HALF_POINTS'?<>
-      <Text style={styles.label}>PONTOS POR VITÓRIA / EMPATE / DERROTA</Text>
+      <Text style={styles.label}>{t('PONTOS POR VITÓRIA / EMPATE / DERROTA')}</Text>
       <View style={styles.numberRow}>
-       {([{value:win,set:setWin,label:'Vitória'},{value:draw,set:setDraw,label:'Empate'},{value:loss,set:setLoss,label:'Derrota'}] as const).map(x=><View key={x.label} style={styles.numberField}>
+       {([{value:win,set:setWin,label:t('Vitória')},{value:draw,set:setDraw,label:t('Empate')},{value:loss,set:setLoss,label:t('Derrota')}] as const).map(x=><View key={x.label} style={styles.numberField}>
         <Text style={styles.helper}>{x.label}</Text>
         <TextInput style={styles.input} keyboardType="number-pad" maxLength={3} value={x.value}
-          onChangeText={x.set} accessibilityLabel={'Pontos '+x.label}/>
+          onChangeText={x.set} accessibilityLabel={t('Pontos {v}',{v:x.label})}/>
        </View>)}
       </View>
     </>:null}
-    {profile.events.length>1?<><Text style={styles.label}>TIPO DE PROVA</Text>
+    {profile.events.length>1?<><Text style={styles.label}>{t('TIPO DE PROVA')}</Text>
       <View style={styles.chips}>{profile.events.map(e=><Choice key={e} title={titleOf(e)} active={effectiveEvent===e}
        onPress={()=>{setEvent(e);setDiscipline('');}}/>)}</View></>:null}
-    {profile.events.length===1?<Text style={styles.helper}>Prova: {titleOf(effectiveEvent)}</Text>:null}
-    {disciplines.length>0?<><Text style={styles.label}>DISCIPLINA / DISTÂNCIA</Text>
+    {profile.events.length===1?<Text style={styles.helper}>{t('Prova: {a}',{a:titleOf(effectiveEvent)})}</Text>:null}
+    {disciplines.length>0?<><Text style={styles.label}>{t('DISCIPLINA / DISTÂNCIA')}</Text>
       <View style={styles.chips}>{disciplines.map(d=><Choice key={d} title={titleOf(d)}
         active={effectiveDiscipline===d} onPress={()=>setDiscipline(d)}/>)}</View></>:null}
    </View>
    <View style={styles.panel}>
-    <Text style={styles.heading}>4. Confirmar</Text>
-    <Text style={styles.helper}>O torneio será criado em preparação. Inscrições, equipas e publicação de calendário são passos separados. Nenhum resultado será fabricado.</Text>
-    {DEMO_MODE?<Message>Modo de demonstração: podes explorar a configuração, mas a criação real está bloqueada.</Message>:null}
+    <Text style={styles.heading}>{t('4. Confirmar')}</Text>
+    <Text style={styles.helper}>{t('O torneio será criado em preparação. Inscrições, equipas e publicação de calendário são passos separados. Nenhum resultado será fabricado.')}</Text>
+    {DEMO_MODE?<Message>{t('Modo de demonstração: podes explorar a configuração, mas a criação real está bloqueada.')}</Message>:null}
     {name.trim().length>=2&&validation?<Message tone="error">{validation}</Message>:null}
-    <Button title={busy?'A criar…':'Criar torneio'} disabled={!ready} onPress={confirmCreate}/>
+    <Button title={busy?t('A criar…'):t('Criar torneio')} disabled={!ready} onPress={confirmCreate}/>
    </View>
   </>:null}
   </>:null}
-  <Button secondary title="Voltar" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

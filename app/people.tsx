@@ -1,4 +1,5 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {Page,DemoBanner,Loader,Message} from '../src/components/UI';
@@ -19,7 +20,7 @@ export default function DiscoverPeople(){
       const next=await discoverPeople(auth.token);
       if(requestId===generation.current)setPeople(next);
     }catch{
-      if(requestId===generation.current)setError('Não foi possível procurar pessoas.');
+      if(requestId===generation.current)setError(t('Não foi possível procurar pessoas.'));
     }finally{
       if(requestId===generation.current)setLoading(false);
     }
@@ -30,11 +31,11 @@ export default function DiscoverPeople(){
   },[load]));
   const filtered=useMemo(()=>people.filter(p=>(`${p.username} ${p.displayName} ${p.sport||''} ${p.city||''}`).toLowerCase().includes(query.trim().toLowerCase())),[people,query]);
   return <Page><DemoBanner/>
-    <Text maxFontSizeMultiplier={1.3} style={styles.title}>Pessoas para conhecer</Text>
-    <Text style={styles.note}>Descobre desportistas na Jynlo. Só vês o que cada pessoa decidiu partilhar.</Text>
-    <TextInput style={styles.search} placeholder="Pesquisar por nome ou modalidade…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery} accessibilityLabel="Pesquisar desportistas"/>
+    <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Pessoas para conhecer')}</Text>
+    <Text style={styles.note}>{t('Descobre desportistas na Jynlo. Só vês o que cada pessoa decidiu partilhar.')}</Text>
+    <TextInput style={styles.search} placeholder={t('Pesquisar por nome ou modalidade…')} placeholderTextColor={C.muted} value={query} onChangeText={setQuery} accessibilityLabel={t('Pesquisar desportistas')}/>
     {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-    {!loading&&!error&&!filtered.length?<Message>Não encontrámos pessoas para estes filtros.</Message>:null}
+    {!loading&&!error&&!filtered.length?<Message>{t('Não encontrámos pessoas para estes filtros.')}</Message>:null}
     {filtered.map(person=><View key={person.username} style={styles.person}>
       {resolveJynloMedia(person.photoUrl)?<Image source={{uri:resolveJynloMedia(person.photoUrl)!}} style={styles.avatar}/>:<View style={styles.avatar}><Text style={styles.initial}>{person.displayName.charAt(0).toUpperCase()}</Text></View>}
       <View style={{flex:1}}><Text style={styles.name}>{person.displayName}</Text><Text style={styles.handle}>@{person.username}</Text><Text style={styles.handle}>{[person.sport,person.city].filter(Boolean).join(' · ')}</Text></View>

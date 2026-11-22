@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
@@ -20,7 +21,7 @@ export default function CommunityCreateScreen(){
   useEffect(()=>{let alive=true;(async()=>{
     if(!auth.token||!auth.username){if(alive)setQuotaLoading(false);return;}
     try{const data=await creationQuota(auth.token,auth.username);if(alive)setQuota(data);}
-    catch(e){if(alive)setError(e instanceof Error?e.message:'Não foi possível verificar o limite de criação.');}
+    catch(e){if(alive)setError(e instanceof Error?e.message:t('Não foi possível verificar o limite de criação.'));}
     finally{if(alive)setQuotaLoading(false);}
   })();return()=>{alive=false;};},[auth.token,auth.username]);
   const normalized=sportQuery.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -35,54 +36,54 @@ export default function CommunityCreateScreen(){
       const created=await createCommunity(payload,auth.token,auth.username);
       if(thenTournament)router.replace({pathname:'/tournaments/create',params:{communityId:String(created.id),...(selectedSports[0]?{sport:selectedSports[0]}:{})}});
       else router.replace({pathname:'/communities/[id]',params:{id:String(created.id),created:'1'}});
-    }catch(e){setError(e instanceof Error?e.message:'Não foi possível criar a comunidade. Verifica as tuas comunidades antes de repetir.');}
+    }catch(e){setError(e instanceof Error?e.message:t('Não foi possível criar a comunidade. Verifica as tuas comunidades antes de repetir.'));}
     finally{setSaving(false);}
   }
-  return <Page><DemoBanner/><Eyebrow>CRIAR COMUNIDADE</Eyebrow>
-    <Text maxFontSizeMultiplier={1.3} style={styles.title}>Tudo começa com <Text style={{color:C.mint}}>uma boa malta.</Text></Text>
-    <Text style={styles.subtitle}>{thenTournament?'Primeiro, a comunidade onde o torneio vai viver. A seguir passas logo à criação do torneio.':'Dá um nome ao grupo, escolhe o desporto e convida pessoas para jogar.'}</Text>
-    {!auth.token?<Message>Precisas de iniciar sessão para criares uma comunidade.</Message>:null}
-    {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/>:null}
+  return <Page><DemoBanner/><Eyebrow>{t('CRIAR COMUNIDADE')}</Eyebrow>
+    <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Tudo começa com')} <Text style={{color:C.mint}}>{t('uma boa malta.')}</Text></Text>
+    <Text style={styles.subtitle}>{thenTournament?t('Primeiro, a comunidade onde o torneio vai viver. A seguir passas logo à criação do torneio.'):t('Dá um nome ao grupo, escolhe o desporto e convida pessoas para jogar.')}</Text>
+    {!auth.token?<Message>{t('Precisas de iniciar sessão para criares uma comunidade.')}</Message>:null}
+    {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/>:null}
     {quotaLoading&&auth.token?<Loader/>:null}
-    {quota?<Message>{quota.owned} de {quota.limit} comunidades próprias. {quota.canCreate?'Podes criar mais uma.':'A criação está temporariamente indisponível devido aos limites.'}</Message>:null}
+    {quota?<Message>{t('{a} de {b} comunidades próprias.',{a:quota.owned,b:quota.limit})} {quota.canCreate?t('Podes criar mais uma.'):t('A criação está temporariamente indisponível devido aos limites.')}</Message>:null}
     {error?<Message tone="error">{error}</Message>:null}
     <View style={styles.form}>
-      <Text style={styles.label}>Nome da comunidade *</Text>
-      <TextInput maxLength={100} style={styles.input} placeholder="Ex.: Futeboladas à Balda"
-        placeholderTextColor={C.muted} value={name} onChangeText={setName} accessibilityLabel="Nome da comunidade"/>
-      <Text style={styles.label}>Modalidades * · {selectedSports.length} selecionadas</Text>
-      <Text style={styles.help}>Seleciona os desportos da comunidade. A primeira modalidade é a principal, sem esconder as restantes.</Text>
+      <Text style={styles.label}>{t('Nome da comunidade *')}</Text>
+      <TextInput maxLength={100} style={styles.input} placeholder={t('Ex.: Futeboladas à Balda')}
+        placeholderTextColor={C.muted} value={name} onChangeText={setName} accessibilityLabel={t('Nome da comunidade')}/>
+      <Text style={styles.label}>{t('Modalidades * · {a} selecionadas',{a:selectedSports.length})}</Text>
+      <Text style={styles.help}>{t('Seleciona os desportos da comunidade. A primeira modalidade é a principal, sem esconder as restantes.')}</Text>
       {selectedSports.length?<View style={styles.sportsSelected}>
         {selectedSports.map((s,index)=><Pressable key={s} accessibilityRole="button"
-          accessibilityLabel={'Retirar '+s} onPress={()=>removeSport(s)} style={styles.sportChip}>
+          accessibilityLabel={t('Retirar {v}',{v:s})} onPress={()=>removeSport(s)} style={styles.sportChip}>
           <Text style={styles.sportChipText}>{index===0?'★ ':''}{s}  ×</Text>
         </Pressable>)}
-      </View>:<Text style={styles.help}>Escolhe pelo menos uma das 121 modalidades.</Text>}
+      </View>:<Text style={styles.help}>{t('Escolhe pelo menos uma das 121 modalidades.')}</Text>}
       <TextInput style={styles.input} value={sportQuery} onChangeText={setSportQuery}
-        placeholder="Pesquisar modalidades…" placeholderTextColor={C.muted} autoCorrect={false}
-        accessibilityLabel="Pesquisar modalidades da comunidade"/>
+        placeholder={t('Pesquisar modalidades…')} placeholderTextColor={C.muted} autoCorrect={false}
+        accessibilityLabel={t('Pesquisar modalidades da comunidade')}/>
       {suggestions.map(s=><Pressable key={s} onPress={()=>selectSport(s)}
-        accessibilityRole="button" accessibilityLabel={'Adicionar '+s} style={styles.suggestion}>
+        accessibilityRole="button" accessibilityLabel={t('Adicionar {v}',{v:s})} style={styles.suggestion}>
         <Text style={{color:C.white,fontWeight:'700'}}>{s}</Text><Text style={{color:C.mint}}>+</Text>
       </Pressable>)}
-      {sportQuery.trim()&&!suggestions.length?<Text style={styles.help}>Nenhuma outra modalidade corresponde à pesquisa.</Text>:null}
-      <Text style={styles.label}>Visibilidade</Text>
+      {sportQuery.trim()&&!suggestions.length?<Text style={styles.help}>{t('Nenhuma outra modalidade corresponde à pesquisa.')}</Text>:null}
+      <Text style={styles.label}>{t('Visibilidade')}</Text>
       <View style={styles.visibility}>
         {(['PRIVATE','PUBLIC'] as const).map(value=><Pressable key={value} accessibilityRole="radio"
-          accessibilityLabel={value==='PRIVATE'?'Comunidade privada':'Comunidade pública'}
+          accessibilityLabel={value==='PRIVATE'?t('Comunidade privada'):t('Comunidade pública')}
           accessibilityState={{checked:visibility===value}} onPress={()=>setVisibility(value)}
           style={[styles.choice,visibility===value&&styles.active]}>
-          <Text style={[styles.choiceText,visibility===value&&{color:C.background}]}>{value==='PRIVATE'?'🔒 Privada':'🌍 Pública'}</Text>
+          <Text style={[styles.choiceText,visibility===value&&{color:C.background}]}>{value==='PRIVATE'?t('🔒 Privada'):t('🌍 Pública')}</Text>
         </Pressable>)}
       </View>
-      <Text style={styles.help}>{visibility==='PRIVATE'?'A entrada exige convite ou aprovação do organizador.':'Qualquer pessoa com conta poderá aderir.'}</Text>
-      <Text style={styles.label}>Descrição (opcional)</Text>
+      <Text style={styles.help}>{visibility==='PRIVATE'?t('A entrada exige convite ou aprovação do organizador.'):t('Qualquer pessoa com conta poderá aderir.')}</Text>
+      <Text style={styles.label}>{t('Descrição (opcional)')}</Text>
       <TextInput style={[styles.input,styles.multi]} multiline maxLength={2000}
         value={description} onChangeText={setDescription} textAlignVertical="top"
-        placeholder="Conta às pessoas o que podem esperar…" placeholderTextColor={C.muted} accessibilityLabel="Descrição da comunidade"/>
-      <Button title={saving?'A criar…':'Criar comunidade'} disabled={saving||quotaLoading||!quota?.canCreate||!auth.token||name.trim().length<3||selectedSports.length===0}
+        placeholder={t('Conta às pessoas o que podem esperar…')} placeholderTextColor={C.muted} accessibilityLabel={t('Descrição da comunidade')}/>
+      <Button title={saving?t('A criar…'):t('Criar comunidade')} disabled={saving||quotaLoading||!quota?.canCreate||!auth.token||name.trim().length<3||selectedSports.length===0}
         onPress={()=>{void submit();}}/>
-      <Text style={styles.foot}>Após a criação podes enviar convites e organizar novas sessões.</Text>
+      <Text style={styles.foot}>{t('Após a criação podes enviar convites e organizar novas sessões.')}</Text>
     </View>
   </Page>;
 }

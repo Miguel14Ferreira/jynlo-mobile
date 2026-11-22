@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {JynloIcon} from '../components/JynloIcon';
 import CallChatSidePanel from '../components/CallChatSidePanel';
@@ -25,7 +26,7 @@ async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
  if(media==='video')needed.push(PermissionsAndroid.PERMISSIONS.CAMERA);
  const results=await PermissionsAndroid.requestMultiple(needed);
  if(needed.some(permission=>results[permission]!==PermissionsAndroid.RESULTS.GRANTED)){
-  throw Error('Para participares nesta chamada, permite o acesso ao microfone'+(media==='video'?' e à câmara':'')+' nas definições do Android.');
+  throw Error(t('Para participares nesta chamada, permite o acesso ao microfone')+(media==='video'?' '+t('e à câmara'):'')+' '+t('nas definições do Android.'));
  }
 }
 function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;onHangup:()=>void;peer:string;self:string;token:string}){
@@ -53,21 +54,21 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
     await room.localParticipant.setCameraEnabled(cameraOff);
     setCameraOff(!cameraOff);
    }
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar o dispositivo.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar o dispositivo.'));}
   finally{setChanging(false);}
  }
  return <View style={styles.mediaPanel}>
   <View style={styles.callHeadingRow}>
-   <Text style={styles.heading}>Chamada {media==='video'?'de vídeo':'de voz'}</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel={showChat?'Ocultar chat da chamada':'Abrir chat da chamada'}
+   <Text style={styles.heading}>{t('Chamada {a}',{a:media==='video'?t('de vídeo'):t('de voz')})}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={showChat?t('Ocultar chat da chamada'):t('Abrir chat da chamada')}
     accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(current=>!current)}
     style={[styles.chatToggle,showChat&&styles.chatToggleActive]}>
     <JynloIcon name="messages" size={19} color={C.mint}/>
-    <Text style={styles.chatToggleText}>{showChat?'Fechar chat':'Chat'}</Text>
+    <Text style={styles.chatToggleText}>{showChat?t('Fechar chat'):t('Chat')}</Text>
    </Pressable>
   </View>
-  <View style={styles.participants} accessibilityLabel="Participantes da chamada">
-   <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>Tu</Text></View>
+  <View style={styles.participants} accessibilityLabel={t('Participantes da chamada')}>
+   <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>{t('Tu')}</Text></View>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{peer.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>@{peer}</Text></View>
   </View>
   <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide,compactChatVideo&&styles.callColumnsChatOpen]}>
@@ -79,38 +80,38 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
      <View style={[styles.videoStage,{height:stageHeight}]}>
       {dominant?<View style={styles.mainVideo}>
        <VideoTrack trackRef={dominant} style={styles.video}/>
-       <Text style={styles.videoTag}>{dominant.participant.isLocal?'Tu':'Participante'}</Text>
-      </View>:<View style={styles.videoFallback}><Text style={styles.note}>A aguardar vídeo dos participantes…</Text></View>}
+       <Text style={styles.videoTag}>{dominant.participant.isLocal?t('Tu'):t('Participante')}</Text>
+      </View>:<View style={styles.videoFallback}><Text style={styles.note}>{t('A aguardar vídeo dos participantes…')}</Text></View>}
       {previews.map(track=><View key={track.participant.identity+'-'+track.source} style={[styles.previewVideo,{width:compactChatVideo?Math.min(dimensions.previewWidth,96):dimensions.previewWidth,height:compactChatVideo?Math.min(dimensions.previewHeight,76):dimensions.previewHeight}]}>
        <VideoTrack trackRef={track} style={styles.video}/>
-       <Text style={styles.previewTag}>{track.participant.isLocal?'Tu':'Participante'}</Text>
+       <Text style={styles.previewTag}>{track.participant.isLocal?t('Tu'):t('Participante')}</Text>
       </View>)}
-      {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>+{remaining} câmaras</Text></View>:null}
+      {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>{t('+{a} câmaras',{a:remaining})}</Text></View>:null}
      </View>
-     <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?'Reduzir vídeo da chamada':'Ampliar vídeo da chamada'}
+     <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?t('Reduzir vídeo da chamada'):t('Ampliar vídeo da chamada')}
       accessibilityState={{selected:expandedVideo}} onPress={()=>setExpandedVideo(value=>!value)} style={styles.expandVideoAction}>
-      <Text style={styles.expandVideoText}>{expandedVideo?'Reduzir vídeo':'Ampliar vídeo'}</Text>
+      <Text style={styles.expandVideoText}>{expandedVideo?t('Reduzir vídeo'):t('Ampliar vídeo')}</Text>
      </Pressable>
     </>;
    })()}
-  </View>:<View style={styles.audioCall}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>Chamada de voz ativa · O chat continua disponível.</Text></View>}
+  </View>:<View style={styles.audioCall}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>{t('Chamada de voz ativa · O chat continua disponível.')}</Text></View>}
    </View>
    <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={[styles.callActions,compactChatVideo&&styles.callActionsCompact]}>
-   <Pressable accessibilityRole="button" accessibilityLabel={muted?'Ligar microfone':'Desligar microfone'} accessibilityState={{disabled:changing}} disabled={changing}
+   <Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ligar microfone'):t('Desligar microfone')} accessibilityState={{disabled:changing}} disabled={changing}
     onPress={()=>{void toggle('microphone');}} style={styles.callAction}>
     <JynloIcon name="microphone" size={23} color={muted?C.muted:C.mint}/>
-    <Text style={styles.callActionText}>{muted?'Ligar áudio':'Silenciar'}</Text>
+    <Text style={styles.callActionText}>{muted?t('Ligar áudio'):t('Silenciar')}</Text>
    </Pressable>
-   {media==='video'?<Pressable accessibilityRole="button" accessibilityLabel={cameraOff?'Ligar câmara':'Desligar câmara'} accessibilityState={{disabled:changing}} disabled={changing}
+   {media==='video'?<Pressable accessibilityRole="button" accessibilityLabel={cameraOff?t('Ligar câmara'):t('Desligar câmara')} accessibilityState={{disabled:changing}} disabled={changing}
     onPress={()=>{void toggle('camera');}} style={styles.callAction}>
     <JynloIcon name="video" size={23} color={cameraOff?C.muted:C.mint}/>
-    <Text style={styles.callActionText}>{cameraOff?'Ligar vídeo':'Desligar vídeo'}</Text>
+    <Text style={styles.callActionText}>{cameraOff?t('Ligar vídeo'):t('Desligar vídeo')}</Text>
    </Pressable>:null}
-   <Pressable accessibilityRole="button" accessibilityLabel="Terminar chamada" onPress={onHangup} style={[styles.callAction,styles.hangupAction]}>
-    <JynloIcon name="close" size={24} color={C.white}/><Text style={styles.callActionText}>Desligar</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Terminar chamada')} onPress={onHangup} style={[styles.callAction,styles.hangupAction]}>
+    <JynloIcon name="close" size={24} color={C.white}/><Text style={styles.callActionText}>{t('Desligar')}</Text>
    </Pressable>
   </View>
  </View>;
@@ -134,7 +135,7 @@ export default function DirectCallScreen(){
    if(version!==generation.current)return;
    setAvailable(status.enabled&&status.status==='ready');setProviderStatus(status.status);
    setPending(invitation&&invitation.caller.toLowerCase()===peer.toLowerCase()?invitation:null);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível consultar as chamadas.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível consultar as chamadas.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[auth.token,peer]);
  useFocusEffect(useCallback(()=>{
@@ -172,7 +173,7 @@ export default function DirectCallScreen(){
    setAudioReady(true);
   }).catch(e=>{
    if(!active)return;
-   setError((e instanceof Error?e.message:'Não foi possível iniciar o áudio.')+' A chamada foi terminada.');
+   setError((e instanceof Error?e.message:t('Não foi possível iniciar o áudio.'))+' '+t('A chamada foi terminada.'));
    const failedSession=sessionRef.current;
    if(failedSession?.callId===session.callId){
     sessionRef.current=null;
@@ -200,7 +201,7 @@ export default function DirectCallScreen(){
     if(e instanceof ApiError&&e.status===403&&!connectedToPeer)return;
     if(e instanceof ApiError&&[403,404,410].includes(e.status)){
      sessionRef.current=null;setSession(null);setConnectedToPeer(false);
-     setError('A chamada terminou, expirou ou deixou de estar acessível.');
+     setError(t('A chamada terminou, expirou ou deixou de estar acessível.'));
     }
    }finally{inspectInFlight=false;}
   };
@@ -217,7 +218,7 @@ export default function DirectCallScreen(){
    const result=await startDirectCall(peer,media,auth.token);
    if(version!==generation.current){void endDirectCall(result.callId,auth.token).catch(()=>{});return;}
    setPending(null);setConnectedToPeer(false);ending.current=false;sessionRef.current=result;setSession(result);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível iniciar a chamada.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível iniciar a chamada.'));}
   finally{if(version===generation.current){operation.current=false;setBusy(false);}}
  }
  async function answer(accept:boolean){
@@ -233,7 +234,7 @@ export default function DirectCallScreen(){
     setConnectedToPeer(true);ending.current=false;sessionRef.current=result;setSession(result);
    }else await declineDirectCall(invitation.callId,auth.token);
    if(version===generation.current)setPending(null);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível responder à chamada.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível responder à chamada.'));}
   finally{if(version===generation.current){operation.current=false;setBusy(false);}}
  }
  const hangup=useCallback(async()=>{
@@ -242,36 +243,36 @@ export default function DirectCallScreen(){
   const activeSession=sessionRef.current;
   sessionRef.current=null;setSession(null);
   try{await endDirectCall(activeSession.callId,auth.token);}
-  catch{setError('A ligação terminou neste dispositivo, mas não foi possível confirmar o fim da chamada no servidor.');}
+  catch{setError(t('A ligação terminou neste dispositivo, mas não foi possível confirmar o fim da chamada no servidor.'));}
   finally{ending.current=false;}
  },[auth.token]);
- if(!auth.token||!PEER.test(peer))return <Page><Message tone="error">Inicia sessão e escolhe um contacto válido para realizar chamadas.</Message><Button title="Voltar" secondary onPress={()=>router.back()}/></Page>;
- return <Page><DemoBanner/><Eyebrow>CHAMADAS PRIVADAS</Eyebrow>
-  <Text style={styles.heading}>Chamada com {peer}</Text>
-  {!session?<Text style={styles.note}>Para receberes um convite, abre este ecrã. As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa.</Text>:null}
+ if(!auth.token||!PEER.test(peer))return <Page><Message tone="error">{t('Inicia sessão e escolhe um contacto válido para realizar chamadas.')}</Message><Button title={t('Voltar')} secondary onPress={()=>router.back()}/></Page>;
+ return <Page><DemoBanner/><Eyebrow>{t('CHAMADAS PRIVADAS')}</Eyebrow>
+  <Text style={styles.heading}>{t('Chamada com {a}',{a:peer})}</Text>
+  {!session?<Text style={styles.note}>{t('Para receberes um convite, abre este ecrã. As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa.')}</Text>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>A preparar o áudio da chamada…</Text><Button title="Terminar chamada" danger onPress={()=>{void hangup();}}/></View>:null}
-  {session&&!connectedToPeer?<Text style={styles.note}>À espera de resposta do contacto…</Text>:null}
+  {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>{t('A preparar o áudio da chamada…')}</Text><Button title={t('Terminar chamada')} danger onPress={()=>{void hangup();}}/></View>:null}
+  {session&&!connectedToPeer?<Text style={styles.note}>{t('À espera de resposta do contacto…')}</Text>:null}
   {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
-   onError={e=>{setError('Falha ao ligar ao LiveKit: '+e.message);void hangup();}}>
+   onError={e=>{setError(t('Falha ao ligar ao LiveKit: {v}',{v:e.message}));void hangup();}}>
     <MediaControls media={session.media} peer={peer} self={auth.username||''} token={auth.token}
      onHangup={()=>{void hangup();}}/>
    </LiveKitRoom>:!session?<>
-   {!loading&&!available?<Message>As chamadas estão indisponíveis neste momento ({providerStatus||'sem ligação ao servidor'}). O chat continua disponível.</Message>:null}
+   {!loading&&!available?<Message>{t('As chamadas estão indisponíveis neste momento ({a}). O chat continua disponível.',{a:providerStatus||t('sem ligação ao servidor')})}</Message>:null}
    {pending?<View style={styles.mediaPanel}>
-    <Text style={styles.heading}>{peer} está a ligar</Text>
-    <Text style={styles.note}>Chamada {pending.media==='video'?'de vídeo':'de voz'}. Só entrarás na sala quando aceitares.</Text>
-    <Button title={busy?'A ligar…':'Aceitar chamada'} disabled={busy||!available} onPress={()=>{void answer(true);}}/>
-    <Button title="Recusar chamada" secondary disabled={busy} onPress={()=>{void answer(false);}}/>
+    <Text style={styles.heading}>{t('{a} está a ligar',{a:peer})}</Text>
+    <Text style={styles.note}>{t('Chamada {a}. Só entrarás na sala quando aceitares.',{a:pending.media==='video'?t('de vídeo'):t('de voz')})}</Text>
+    <Button title={busy?t('A ligar…'):t('Aceitar chamada')} disabled={busy||!available} onPress={()=>{void answer(true);}}/>
+    <Button title={t('Recusar chamada')} secondary disabled={busy} onPress={()=>{void answer(false);}}/>
    </View>:null}
    {!pending&&available?<View style={styles.mediaPanel}>
-    <Button title={busy?'A iniciar…':'Chamada de voz'} disabled={busy} onPress={()=>{void create('voice');}}/>
-    <Button title="Chamada de vídeo" secondary disabled={busy} onPress={()=>{void create('video');}}/>
+    <Button title={busy?t('A iniciar…'):t('Chamada de voz')} disabled={busy} onPress={()=>{void create('voice');}}/>
+    <Button title={t('Chamada de vídeo')} secondary disabled={busy} onPress={()=>{void create('video');}}/>
    </View>:null}
   </>:null}
-  {!session?<Button title="Voltar ao chat" secondary onPress={()=>router.back()}/>:null}
+  {!session?<Button title={t('Voltar ao chat')} secondary onPress={()=>router.back()}/>:null}
  </Page>;
 }
 const styles=StyleSheet.create({

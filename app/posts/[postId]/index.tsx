@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -40,7 +41,7 @@ export default function NotificationPost(){
   ]);
   if(version!==generation.current)return;
   if(postResult.status==='fulfilled')setPost(postResult.value);
-  else{setPost(null);setError('Esta publicação já não está disponível ou não tens permissão para a consultar.');}
+  else{setPost(null);setError(t('Esta publicação já não está disponível ou não tens permissão para a consultar.'));}
   if(commentResult.status==='fulfilled')setComments(commentResult.value);
   else setComments([]);
   setCommentsLoading(false);
@@ -58,7 +59,7 @@ export default function NotificationPost(){
   writing.current=true;setBusy(true);setError('');
   const version=generation.current;
   try{await likePost(id,post.likedByMe,auth.token,auth.username);await refresh(version);}
-  catch{if(version===generation.current)setError('Não foi possível confirmar o gosto. Atualiza antes de repetir.');}
+  catch{if(version===generation.current)setError(t('Não foi possível confirmar o gosto. Atualiza antes de repetir.'));}
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  async function toggleLikerPrivacy(){
@@ -72,7 +73,7 @@ export default function NotificationPost(){
     setPost(current=>current?.postId===id?{...current,hideLikers:confirmed}:current);
    }
   }catch{
-   if(version===generation.current)setError('Não foi possível guardar a privacidade dos gostos. Confirma o estado antes de repetir.');
+   if(version===generation.current)setError(t('Não foi possível guardar a privacidade dos gostos. Confirma o estado antes de repetir.'));
   }finally{
    if(version===generation.current){writing.current=false;setBusy(false);}
   }
@@ -81,16 +82,16 @@ export default function NotificationPost(){
   if(!post||!auth.token||!auth.username||!valid||writing.current||
      post.authorUsername.toLowerCase()!==auth.username.toLowerCase())return;
   const token=auth.token,version=generation.current;
-  Alert.alert('Eliminar publicação?', 'A publicação desaparece do perfil e do feed. Esta ação é definitiva.', [
-   {text:'Cancelar',style:'cancel'},
-   {text:'Eliminar',style:'destructive',onPress:()=>{
+  Alert.alert(t('Eliminar publicação?'), t('A publicação desaparece do perfil e do feed. Esta ação é definitiva.'), [
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Eliminar'),style:'destructive',onPress:()=>{
     if(version!==generation.current||writing.current)return;
     writing.current=true;setBusy(true);setError('');
     void deletePost(id,token).then(()=>{
      if(version===generation.current)router.back();
     }).catch(e=>{
      if(version===generation.current)
-      setError(e instanceof Error?e.message:'Eliminação não confirmada. Verifica a publicação antes de repetir.');
+      setError(e instanceof Error?e.message:t('Eliminação não confirmada. Verifica a publicação antes de repetir.'));
     }).finally(()=>{
      if(version===generation.current){writing.current=false;setBusy(false);}
     });
@@ -99,17 +100,17 @@ export default function NotificationPost(){
  }
  async function sharePost(){
   if(!post||!valid)return;
-  const contents=[post.content?.trim()||'Publicação desportiva na Jynlo',
-   'Por @'+post.authorUsername,sharedPostLink(post)].filter(Boolean).join('\n');
+  const contents=[post.content?.trim()||t('Publicação desportiva na Jynlo'),
+   t('Por @{v}',{v:post.authorUsername}),sharedPostLink(post)].filter(Boolean).join('\n');
   try{await Share.share({message:contents});}
-  catch(e){Alert.alert('Partilhar publicação',e instanceof Error?e.message:'Não foi possível partilhar.');}
+  catch(e){Alert.alert(t('Partilhar publicação'),e instanceof Error?e.message:t('Não foi possível partilhar.'));}
  }
  async function commentLike(c:SocialComment){
   if(!auth.token||!auth.username||writing.current||!valid)return;
   const version=generation.current;writing.current=true;setBusy(true);
   try{const updated=await togglePostCommentLike(id,c,auth.token,auth.username);
     if(version===generation.current)setComments(old=>old.map(item=>item.id===c.id?updated:item));
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível gostar do comentário.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível gostar do comentário.'));}
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  async function saveEditedComment(c:SocialComment){
@@ -118,7 +119,7 @@ export default function NotificationPost(){
   const version=generation.current;writing.current=true;setBusy(true);
   try{const updated=await editPostComment(id,c.id,editDraft,auth.token,auth.username);
     if(version===generation.current){setComments(old=>old.map(item=>item.id===c.id?updated:item));setEditingComment(null);setEditDraft('');}
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível editar o comentário.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível editar o comentário.'));}
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
  async function comment(){
@@ -128,18 +129,18 @@ export default function NotificationPost(){
   try{
    await addPostComment(id,original,auth.token,auth.username);
    if(version===generation.current){setDraft(current=>current===original?'':current);await refresh(version);}
-  }catch{if(version===generation.current)setError('Envio não confirmado. Consulta os comentários antes de repetir.');}
+  }catch{if(version===generation.current)setError(t('Envio não confirmado. Consulta os comentários antes de repetir.'));}
   finally{if(version===generation.current){writing.current=false;setBusy(false);}}
  }
- if(!valid)return <SafeAreaView style={styles.screen}><Text style={styles.error}>Publicação inválida.</Text></SafeAreaView>;
+ if(!valid)return <SafeAreaView style={styles.screen}><Text style={styles.error}>{t('Publicação inválida.')}</Text></SafeAreaView>;
  const album=post?postMediaItems(post):[];
  return <SafeAreaView style={styles.screen} edges={['bottom','left','right']}>
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
    {loading?<ActivityIndicator color={T.accent}/>:null}
    {error?<Text style={styles.error}>{error}</Text>:null}
-   {!auth.token?<Pressable onPress={()=>router.push('/login')} accessibilityRole="button"><Text style={styles.link}>Iniciar sessão para consultar a publicação</Text></Pressable>:null}
+   {!auth.token?<Pressable onPress={()=>router.push('/login')} accessibilityRole="button"><Text style={styles.link}>{t('Iniciar sessão para consultar a publicação')}</Text></Pressable>:null}
    {post?<View style={styles.post}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Ver perfil do autor" onPress={()=>router.push({pathname:'/social/[username]',params:{username:post.authorUsername}})}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver perfil do autor')} onPress={()=>router.push({pathname:'/social/[username]',params:{username:post.authorUsername}})}>
      <Text style={styles.author}>{post.authorDisplayName||post.authorUsername}</Text>
      <Text style={styles.handle}>@{post.authorUsername}</Text>
     </Pressable>
@@ -150,71 +151,71 @@ export default function NotificationPost(){
         {album.map((media,index)=><View key={index} style={{width:Math.max(220,screenWidth-64),gap:5}}>
           <ProtectedPostMedia src={media.url} type={media.type} token={auth.token}
             width={Math.max(220,screenWidth-64)}
-            label={'Ampliar fotografia '+(index+1)+' de '+album.length}
+            label={t('Ampliar fotografia {v} de {total}',{v:index+1,total:album.length})}
             onExpand={setExpandedImage}/>
           {album.length>1?<Text style={styles.note}>{index+1} / {album.length}</Text>:null}
         </View>)}
       </ScrollView>
-      {album.length>1?<Text style={styles.note}>Desliza para ver todas as fotografias e vídeos.</Text>:null}
+      {album.length>1?<Text style={styles.note}>{t('Desliza para ver todas as fotografias e vídeos.')}</Text>:null}
     </View>:null}
     <View style={styles.actions}>
-     <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?'Retirar gosto':'Gostar'} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{post.likedByMe?'♥':'♡'} Gostar</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={post.likedByMe?t('Retirar gosto'):t('Gostar')} disabled={busy} onPress={()=>{void like();}} style={styles.action}><Text style={styles.link}>{t('{a} Gostar',{a:post.likedByMe?'♥':'♡'})}</Text></Pressable>
      <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou"} disabled={Boolean(post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase())} onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(id)}})} style={styles.action}><Text style={styles.link}>{post.hideLikers&&post.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${post.likeCount} gostos`}</Text></Pressable>
-     <Text style={styles.note}>{post.commentCount} comentários</Text>
-     <Pressable accessibilityRole="button" accessibilityLabel="Partilhar publicação" onPress={()=>{void sharePost();}} style={styles.action}><Text style={styles.link}>↗ Partilhar</Text></Pressable>
+     <Text style={styles.note}>{t('{a} comentários',{a:post.commentCount})}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar publicação')} onPress={()=>{void sharePost();}} style={styles.action}><Text style={styles.link}>{t('↗ Partilhar')}</Text></Pressable>
     </View>
     {auth.token&&auth.username&&post.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
-     <Pressable accessibilityRole="button" accessibilityLabel="Denunciar publicação" disabled={busy} onPress={()=>setReportTarget({kind:'post'})} style={styles.privacy}>
-      <Text style={[styles.link,{color:T.danger}]}>Denunciar publicação</Text>
-      <Text style={styles.note}>Se esta publicação for ofensiva ou enganadora, a equipa Jynlo revê-a.</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Denunciar publicação')} disabled={busy} onPress={()=>setReportTarget({kind:'post'})} style={styles.privacy}>
+      <Text style={[styles.link,{color:T.danger}]}>{t('Denunciar publicação')}</Text>
+      <Text style={styles.note}>{t('Se esta publicação for ofensiva ou enganadora, a equipa Jynlo revê-a.')}</Text>
      </Pressable>:null}
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
-     <Pressable accessibilityRole="button" accessibilityLabel="Editar texto e localização da publicação" disabled={busy} onPress={()=>setEditingPost(post)} style={styles.privacy}>
-      <Text style={styles.link}>Editar publicação</Text>
-      <Text style={styles.note}>Corrige a descrição ou localização sem perder os gostos e comentários.</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Editar texto e localização da publicação')} disabled={busy} onPress={()=>setEditingPost(post)} style={styles.privacy}>
+      <Text style={styles.link}>{t('Editar publicação')}</Text>
+      <Text style={styles.note}>{t('Corrige a descrição ou localização sem perder os gostos e comentários.')}</Text>
      </Pressable>:null}
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
-     <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?'Mostrar pessoas que gostaram':'Ocultar pessoas que gostaram'} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
-      <Text style={styles.link}>{post.hideLikers?'Mostrar quem gostou':'Ocultar quem gostou'}</Text>
-      <Text style={styles.note}>Só tu podes alterar esta preferência.</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={post.hideLikers?t('Mostrar pessoas que gostaram'):t('Ocultar pessoas que gostaram')} disabled={busy} onPress={()=>{void toggleLikerPrivacy();}} style={styles.privacy}>
+      <Text style={styles.link}>{post.hideLikers?t('Mostrar quem gostou'):t('Ocultar quem gostou')}</Text>
+      <Text style={styles.note}>{t('Só tu podes alterar esta preferência.')}</Text>
      </Pressable>:null}
     {auth.username&&post.authorUsername.toLowerCase()===auth.username.toLowerCase()?
-     <Pressable accessibilityRole="button" accessibilityLabel="Eliminar a minha publicação" disabled={busy} onPress={confirmDelete} style={styles.privacy}>
-      <Text style={[styles.link,{color:T.danger}]}>Eliminar publicação</Text>
-      <Text style={styles.note}>Esta ação é definitiva.</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar a minha publicação')} disabled={busy} onPress={confirmDelete} style={styles.privacy}>
+      <Text style={[styles.link,{color:T.danger}]}>{t('Eliminar publicação')}</Text>
+      <Text style={styles.note}>{t('Esta ação é definitiva.')}</Text>
      </Pressable>:null}
    </View>:null}
-   {post?<Text style={styles.heading}>Comentários</Text>:null}
+   {post?<Text style={styles.heading}>{t('Comentários')}</Text>:null}
    {post&&commentsLoading?<ActivityIndicator color={T.accent}/>:null}
-   {post&&!commentsLoading&&comments.length===0?<Text style={styles.note}>Ainda não há comentários.</Text>:null}
+   {post&&!commentsLoading&&comments.length===0?<Text style={styles.note}>{t('Ainda não há comentários.')}</Text>:null}
    {post?comments.map(c=><View key={c.id} style={styles.comment}>
-    <Pressable accessibilityRole="button" accessibilityLabel={`Ver perfil de ${c.authorUsername}`} onPress={()=>router.push({pathname:'/social/[username]',params:{username:c.authorUsername}})}><Text style={styles.author}>@{c.authorUsername}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver perfil de {a}',{a:c.authorUsername})} onPress={()=>router.push({pathname:'/social/[username]',params:{username:c.authorUsername}})}><Text style={styles.author}>@{c.authorUsername}</Text></Pressable>
     {editingComment===c.id?<><TextInput multiline maxLength={2000} value={editDraft} onChangeText={setEditDraft}
-      style={styles.input} placeholder="Editar comentário" placeholderTextColor={T.muted}/>
+      style={styles.input} placeholder={t('Editar comentário')} placeholderTextColor={T.muted}/>
       <View style={styles.actions}>
-       <Pressable accessibilityRole="button" disabled={busy||!editDraft.trim()} onPress={()=>void saveEditedComment(c)}><Text style={styles.link}>Guardar</Text></Pressable>
-       <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{setEditingComment(null);setEditDraft('');}}><Text style={styles.link}>Cancelar</Text></Pressable>
-      </View></>:<Text style={styles.body}>{c.content}{c.editedAt?' · editado':''}</Text>}
+       <Pressable accessibilityRole="button" disabled={busy||!editDraft.trim()} onPress={()=>void saveEditedComment(c)}><Text style={styles.link}>{t('Guardar')}</Text></Pressable>
+       <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{setEditingComment(null);setEditDraft('');}}><Text style={styles.link}>{t('Cancelar')}</Text></Pressable>
+      </View></>:<Text style={styles.body}>{c.content}{c.editedAt?' · '+t('editado'):''}</Text>}
     <View style={styles.actions}>
-     <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?'Retirar gosto do comentário':'Gostar do comentário'} disabled={busy||!auth.token}
+     <Pressable accessibilityRole="button" accessibilityLabel={c.likedByMe?t('Retirar gosto do comentário'):t('Gostar do comentário')} disabled={busy||!auth.token}
       onPress={()=>void commentLike(c)}><Text style={styles.link}>{c.likedByMe?'♥':'♡'} {c.likeCount||0}</Text></Pressable>
      {auth.username&&c.authorUsername.toLowerCase()===auth.username.toLowerCase()&&editingComment!==c.id?
-      <Pressable accessibilityRole="button" accessibilityLabel="Editar o meu comentário" disabled={busy}
-       onPress={()=>{setEditingComment(c.id);setEditDraft(c.content);}}><Text style={styles.link}>Editar</Text></Pressable>:null}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Editar o meu comentário')} disabled={busy}
+       onPress={()=>{setEditingComment(c.id);setEditDraft(c.content);}}><Text style={styles.link}>{t('Editar')}</Text></Pressable>:null}
      {auth.token&&auth.username&&c.authorUsername.toLowerCase()!==auth.username.toLowerCase()?
-      <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar comentário de @'+c.authorUsername}
-       onPress={()=>setReportTarget({kind:'comment',commentId:c.id,author:c.authorUsername})}><Text style={[styles.link,{color:T.danger}]}>Denunciar</Text></Pressable>:null}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Denunciar comentário de @{v}',{v:c.authorUsername})}
+       onPress={()=>setReportTarget({kind:'comment',commentId:c.id,author:c.authorUsername})}><Text style={[styles.link,{color:T.danger}]}>{t('Denunciar')}</Text></Pressable>:null}
     </View>
    </View>):null}
    {post&&auth.token?<View style={styles.editor}>
-    <TextInput multiline maxLength={2000} placeholder="Escrever comentário…" placeholderTextColor={T.muted} value={draft} onChangeText={setDraft} style={styles.input} accessibilityLabel="Escrever comentário"/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Enviar comentário" disabled={busy||!draft.trim()} onPress={()=>{void comment();}} style={[styles.send,(busy||!draft.trim())&&styles.disabled]}>
-     <Text style={styles.sendLabel}>{busy?'A enviar…':'Enviar'}</Text>
+    <TextInput multiline maxLength={2000} placeholder={t('Escrever comentário…')} placeholderTextColor={T.muted} value={draft} onChangeText={setDraft} style={styles.input} accessibilityLabel={t('Escrever comentário')}/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar comentário')} disabled={busy||!draft.trim()} onPress={()=>{void comment();}} style={[styles.send,(busy||!draft.trim())&&styles.disabled]}>
+     <Text style={styles.sendLabel}>{busy?t('A enviar…'):t('Enviar')}</Text>
     </Pressable>
    </View>:null}
   </ScrollView>
-  <ReportSheet visible={!!reportTarget&&!!post} title={reportTarget?.kind==='comment'?'Denunciar comentário':'Denunciar publicação'}
-   subject={reportTarget?.kind==='comment'?'Comentário de @'+reportTarget.author:post?'Publicação de @'+post.authorUsername:''}
+  <ReportSheet visible={!!reportTarget&&!!post} title={reportTarget?.kind==='comment'?t('Denunciar comentário'):t('Denunciar publicação')}
+   subject={reportTarget?.kind==='comment'?t('Comentário de @{v}',{v:reportTarget.author}):post?t('Publicação de @{v}',{v:post.authorUsername}):''}
    onClose={()=>setReportTarget(null)}
    onSubmit={async reason=>{const target=reportTarget;if(!target||!post?.postId||!auth.token)return;
     if(target.kind==='comment')await reportComment(post.postId,target.commentId,reason,auth.token);
@@ -224,7 +225,7 @@ export default function NotificationPost(){
   <Modal visible={!!expandedImage&&!!post&&!!auth.token} transparent animationType="fade" onRequestClose={()=>setExpandedImage(null)}>
    <View style={styles.photoOverlay}>
     {expandedImage?<Image source={mediaRequestSource(expandedImage,auth.token)} resizeMode="contain" style={styles.fullImage}/>:null}
-    <Pressable accessibilityRole="button" accessibilityLabel="Fechar fotografia ampliada" onPress={()=>setExpandedImage(null)} style={styles.closePhoto}><Text style={styles.closePhotoText}>✕ Fechar</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar fotografia ampliada')} onPress={()=>setExpandedImage(null)} style={styles.closePhoto}><Text style={styles.closePhotoText}>{t('✕ Fechar')}</Text></Pressable>
    </View>
   </Modal>
  </SafeAreaView>;

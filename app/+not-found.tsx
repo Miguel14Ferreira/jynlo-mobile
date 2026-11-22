@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../src/lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -9,11 +10,11 @@ export default function NotFoundScreen(){
  const router=useRouter();
  return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>
   <View style={styles.panel}>
-   <Text accessibilityRole="header" style={styles.title}>Não encontramos esta página</Text>
-   <Text style={styles.description}>O link pode ter expirado ou o conteúdo pode já não estar disponível. Podes continuar a utilizar a Jynlo.</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel="Voltar à Jynlo"
+   <Text accessibilityRole="header" style={styles.title}>{t('Não encontramos esta página')}</Text>
+   <Text style={styles.description}>{t('O link pode ter expirado ou o conteúdo pode já não estar disponível. Podes continuar a utilizar a Jynlo.')}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar à Jynlo')}
      style={styles.button} onPress={()=>router.replace('/(tabs)')}>
-    <Text style={styles.buttonText}>Voltar à Jynlo</Text>
+    <Text style={styles.buttonText}>{t('Voltar à Jynlo')}</Text>
    </Pressable>
   </View>
  </SafeAreaView>;

@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {ActivityIndicator,Alert,Image,Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Stack,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
@@ -60,7 +61,7 @@ export default function GroupChatScreen(){
  const creator=isCreator(group,me);
 
  const refresh=useCallback(async(full:boolean)=>{
-  if(!auth.token||!Number.isSafeInteger(groupId)||groupId<=0){setLoading(false);setError('Grupo inválido.');return;}
+  if(!auth.token||!Number.isSafeInteger(groupId)||groupId<=0){setLoading(false);setError(t('Grupo inválido.'));return;}
   const id=++generation.current;
   try{
    const [g,latest]=await Promise.all([getGroup(groupId,auth.token),groupMessages(groupId,auth.token)]);
@@ -74,7 +75,7 @@ export default function GroupChatScreen(){
   }catch(e){
    if(id!==generation.current)return;
    if(e instanceof ApiError&&(e.status===403||e.status===404)){setGone(true);setGroup(null);setMessages([]);}
-   else setError('Não foi possível carregar as mensagens do grupo.');
+   else setError(t('Não foi possível carregar as mensagens do grupo.'));
   }finally{if(id===generation.current)setLoading(false);}
  },[auth.token,groupId]);
 
@@ -90,7 +91,7 @@ export default function GroupChatScreen(){
   const first=messages[0];if(loadingOlder||!auth.token||!first)return;
   setLoadingOlder(true);
   try{const page=await groupMessages(groupId,auth.token,first.id);setMessages(prev=>mergeMessages(page,prev));setHasMore(page.length>=50);}
-  catch{setActionError('Não foi possível carregar mensagens anteriores.');}
+  catch{setActionError(t('Não foi possível carregar mensagens anteriores.'));}
   finally{setLoadingOlder(false);}
  }
  async function send(){
@@ -98,7 +99,7 @@ export default function GroupChatScreen(){
   let text:string;try{text=validateGroupMessage(draft);}catch(e){setActionError(e instanceof Error?e.message:'');return;}
   sendInFlight.current=true;setSending(true);setActionError('');
   try{const m=await sendGroupMessage(groupId,text,auth.token,replyTarget?.id);setDraft('');setReplyTarget(null);setMessages(prev=>mergeMessages(prev,[m]));}
-  catch(e){setActionError((e instanceof Error?e.message:'Não foi possível enviar a mensagem.')+' A mensagem ficou na caixa; confirma a conversa antes de reenviar.');void refresh(false);}
+  catch(e){setActionError((e instanceof Error?e.message:t('Não foi possível enviar a mensagem.'))+' '+t('A mensagem ficou na caixa; confirma a conversa antes de reenviar.'));void refresh(false);}
   finally{sendInFlight.current=false;setSending(false);}
  }
  function messageOptions(m:PrivateGroupMessage){
@@ -106,31 +107,31 @@ export default function GroupChatScreen(){
   const own=isMine(m,me);
   if(!own&&!creator)return;
   const items:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
-  if(editableGroupMessage(m,me))items.push({text:'Editar mensagem',onPress:()=>{setEditing(m);setEditText(m.text);setReplyTarget(null);}});
-  items.push({text:'Apagar para todos',style:'destructive',onPress:()=>Alert.alert('Apagar mensagem para todos?',
-   'O conteúdo ficará identificado como apagado no grupo.',[{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>{void removeMessage(m);}}])});
-  items.push({text:'Cancelar',style:'cancel'});
-  Alert.alert(own?'A minha mensagem':'Mensagem do grupo',own?'Seleciona uma ação.':'Como criador do grupo, podes apagar esta mensagem.',items);
+  if(editableGroupMessage(m,me))items.push({text:t('Editar mensagem'),onPress:()=>{setEditing(m);setEditText(m.text);setReplyTarget(null);}});
+  items.push({text:t('Apagar para todos'),style:'destructive',onPress:()=>Alert.alert(t('Apagar mensagem para todos?'),
+   t('O conteúdo ficará identificado como apagado no grupo.'),[{text:t('Cancelar'),style:'cancel'},{text:t('Apagar'),style:'destructive',onPress:()=>{void removeMessage(m);}}])});
+  items.push({text:t('Cancelar'),style:'cancel'});
+  Alert.alert(own?t('A minha mensagem'):t('Mensagem do grupo'),own?t('Seleciona uma ação.'):t('Como criador do grupo, podes apagar esta mensagem.'),items);
  }
  async function saveEdit(){
   if(!editing||!auth.token||busy)return;
   let text:string;try{text=validateGroupMessage(editText);}catch(e){setActionError(e instanceof Error?e.message:'');return;}
   setBusy(true);setActionError('');
   try{const m=await editGroupMessage(groupId,editing.id,text,auth.token);setMessages(prev=>mergeMessages(prev,[m]));setEditing(null);setEditText('');}
-  catch(e){setActionError(e instanceof ApiError&&e.status===409?'Já não é possível editar: só até 15 minutos após o envio.':'Não foi possível editar a mensagem.');}
+  catch(e){setActionError(e instanceof ApiError&&e.status===409?t('Já não é possível editar: só até 15 minutos após o envio.'):t('Não foi possível editar a mensagem.'));}
   finally{setBusy(false);}
  }
  async function removeMessage(m:PrivateGroupMessage){
   if(!auth.token||busy)return;
   setBusy(true);setActionError('');
   try{await deleteGroupMessage(groupId,m.id,auth.token);setMessages(prev=>prev.map(x=>x.id===m.id?{...x,deleted:true,text:'',attachments:[]}:x));}
-  catch{setActionError('Não foi possível apagar a mensagem.');}
+  catch{setActionError(t('Não foi possível apagar a mensagem.'));}
   finally{setBusy(false);}
  }
  async function chooseMedia(source:'gallery'|'camera'){
   if(mediaBusy||!filesAvailable)return;
   const remaining=4-media.length;
-  if(remaining<=0){setActionError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
+  if(remaining<=0){setActionError(t('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.'));return;}
   setActionError('');
   try{
    const ImagePicker=await import('expo-image-picker');
@@ -143,14 +144,14 @@ export default function GroupChatScreen(){
    const result=appendChatMediaSelection(media,selected.assets);
    if(result.error)throw Error(result.error);
    setMedia(result.items as ImagePickerAsset[]);
-  }catch(e){setActionError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');}
+  }catch(e){setActionError(e instanceof Error?e.message:t('Não foi possível abrir a câmara ou a galeria.'));}
  }
  async function sendMedia(){
   if(mediaBusy||!media.length||!auth.token)return;
   setMediaBusy(true);setActionError('');
   try{await sendChatPhotoAlbum({scope:'private',id:groupId},auth.token,media,replyTarget?.id,caption);
    setMedia([]);setCaption('');setReplyTarget(null);await refresh(false);}
-  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível enviar os ficheiros.');}
+  catch(e){setActionError(e instanceof Error?e.message:t('Não foi possível enviar os ficheiros.'));}
   finally{setMediaBusy(false);}
  }
  async function sendPoll(text:string){
@@ -158,23 +159,23 @@ export default function GroupChatScreen(){
   if(sendInFlight.current||!auth.token)return;
   sendInFlight.current=true;setSending(true);setActionError('');
   try{const m=await sendGroupMessage(groupId,text,auth.token);setMessages(prev=>mergeMessages(prev,[m]));}
-  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível enviar a sondagem.');}
+  catch(e){setActionError(e instanceof Error?e.message:t('Não foi possível enviar a sondagem.'));}
   finally{sendInFlight.current=false;setSending(false);}
  }
  function prepareLocation(){
   if(locationBusy)return;
-  Alert.alert('Partilhar localização atual?','A Jynlo só consulta a localização nesta ação. O link fica na mensagem para reveres antes de enviar ao grupo.',[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Continuar',onPress:()=>{
+  Alert.alert(t('Partilhar localização atual?'),t('A Jynlo só consulta a localização nesta ação. O link fica na mensagem para reveres antes de enviar ao grupo.'),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Continuar'),onPress:()=>{
     setLocationBusy(true);setActionError('');
     void (async()=>{
      const Location=await import('expo-location');
      const permission=await Location.requestForegroundPermissionsAsync();
-     if(permission.status!=='granted')throw Error('Não autorizaste o acesso à localização.');
+     if(permission.status!=='granted')throw Error(t('Não autorizaste o acesso à localização.'));
      const point=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
      const url='https://www.google.com/maps?q='+point.coords.latitude.toFixed(5)+','+point.coords.longitude.toFixed(5);
      setDraft(previous=>[previous.trim(),url].filter(Boolean).join('\n'));
-    })().catch(e=>setActionError(e instanceof Error?e.message:'Não foi possível obter a localização.')).finally(()=>setLocationBusy(false));
+    })().catch(e=>setActionError(e instanceof Error?e.message:t('Não foi possível obter a localização.'))).finally(()=>setLocationBusy(false));
    }}]);
  }
  async function doRename(){
@@ -182,20 +183,20 @@ export default function GroupChatScreen(){
   try{validateGroupTitle(renameTitle);}catch(e){setActionError(e instanceof Error?e.message:'');return;}
   setBusy(true);setActionError('');
   try{setGroup(await renameGroup(groupId,renameTitle,auth.token));setPanel(null);}
-  catch{setActionError('Não foi possível alterar o nome do grupo.');}finally{setBusy(false);}
+  catch{setActionError(t('Não foi possível alterar o nome do grupo.'));}finally{setBusy(false);}
  }
  async function doAdd(){
   if(busy||!auth.token||!group)return;
   setBusy(true);setActionError('');
   try{setGroup(await addGroupMembers(group,picked,me,auth.token));setPanel(null);setPicked([]);}
-  catch(e){setActionError((e instanceof Error&&/30|amigo/.test(e.message)?e.message:'Não foi possível adicionar os participantes.'));}
+  catch(e){setActionError((e instanceof Error&&/30|amigo/.test(e.message)?e.message:t('Não foi possível adicionar os participantes.')));}
   finally{setBusy(false);}
  }
  function askRemove(username:string,displayName:string){
   const leaving=username.toLowerCase()===me.toLowerCase();
-  Alert.alert(leaving?'Sair do grupo':'Remover membro',
-   leaving?'Queres sair deste grupo? Deixarás de receber novas mensagens.':'Queres remover '+displayName+' do grupo?',
-   [{text:'Cancelar',style:'cancel'},{text:leaving?'Sair':'Remover',style:'destructive',onPress:()=>{void remove(username,leaving);}}]);
+  Alert.alert(leaving?t('Sair do grupo'):t('Remover membro'),
+   leaving?t('Queres sair deste grupo? Deixarás de receber novas mensagens.'):t('Queres remover {v} do grupo?',{v:displayName}),
+   [{text:t('Cancelar'),style:'cancel'},{text:leaving?t('Sair'):t('Remover'),style:'destructive',onPress:()=>{void remove(username,leaving);}}]);
  }
  async function remove(username:string,leaving:boolean){
   if(busy||!auth.token)return;
@@ -203,7 +204,7 @@ export default function GroupChatScreen(){
   try{const g=await removeGroupMember(groupId,username,auth.token);
    if(leaving){router.replace('/groups');return;}
    if(g)setGroup(g);else void refresh(false);}
-  catch{setActionError('Não foi possível alterar os membros do grupo.');}finally{setBusy(false);}
+  catch{setActionError(t('Não foi possível alterar os membros do grupo.'));}finally{setBusy(false);}
  }
  async function choosePhoto(){
   if(busy)return;setActionError('');
@@ -211,28 +212,28 @@ export default function GroupChatScreen(){
    const ImagePicker=await import('expo-image-picker');
    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:['images'],allowsEditing:true,aspect:[1,1],quality:0.75,exif:false,base64:false});
    if(!result.canceled&&result.assets?.[0]){setPhoto(result.assets[0]);setPanel('photo');}
-  }catch{setActionError('Não foi possível abrir a galeria de fotografias.');}
+  }catch{setActionError(t('Não foi possível abrir a galeria de fotografias.'));}
  }
  async function savePhoto(){
   if(busy||!photo||!auth.token)return;
   setBusy(true);setActionError('');
   try{setGroup(await uploadGroupPhoto(groupId,auth.token,photo));setPhoto(null);setPanel(null);}
-  catch(e){setActionError(e instanceof Error?e.message:'Não foi possível alterar a fotografia do grupo.');}
+  catch(e){setActionError(e instanceof Error?e.message:t('Não foi possível alterar a fotografia do grupo.'));}
   finally{setBusy(false);}
  }
  async function toggleMute(){
   if(muteBusy||!auth.token)return;
   setMuteBusy(true);
   try{await setConversationMuted('private',String(groupId),!muted,auth.token);setMuted(!muted);}
-  catch{setActionError('Não foi possível alterar o silêncio desta conversa.');}finally{setMuteBusy(false);}
+  catch{setActionError(t('Não foi possível alterar o silêncio desta conversa.'));}finally{setMuteBusy(false);}
  }
 
- const title=group?.title||(typeof params.title==='string'?params.title:'Grupo');
+ const title=group?.title||(typeof params.title==='string'?params.title:t('Grupo'));
  return <Page autoScrollToEnd>
   <Stack.Screen options={{title}}/>
   {loading?<Loader/>:null}
-  {gone?<><Message>Já não fazes parte deste grupo ou ele deixou de existir.</Message><Button title="Ver os meus grupos" onPress={()=>router.replace('/groups')}/></>:null}
-  {error?<><Message tone="error">{error}</Message><Button secondary title="Tentar novamente" onPress={()=>{setLoading(true);void refresh(true);}}/></>:null}
+  {gone?<><Message>{t('Já não fazes parte deste grupo ou ele deixou de existir.')}</Message><Button title={t('Ver os meus grupos')} onPress={()=>router.replace('/groups')}/></>:null}
+  {error?<><Message tone="error">{error}</Message><Button secondary title={t('Tentar novamente')} onPress={()=>{setLoading(true);void refresh(true);}}/></>:null}
   {group?<>
    <View style={styles.header}>
     <View style={styles.avatar}>{group.photoUrl?<Image source={{uri:group.photoUrl}} style={styles.avatarImg}/>:<Text style={{fontSize:22}}>👥</Text>}</View>
@@ -240,43 +241,43 @@ export default function GroupChatScreen(){
    </View>
    <View style={styles.actions}>
     <Pressable accessibilityRole="button" disabled={muteBusy} onPress={()=>{void toggleMute();}} style={styles.action}>
-     <Text style={styles.actionText}>{muted?'🔕 Ativar notificações':'🔔 Silenciar'}</Text></Pressable>
+     <Text style={styles.actionText}>{muted?t('🔕 Ativar notificações'):t('🔔 Silenciar')}</Text></Pressable>
     {creator?<>
-     <Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='rename'?null:'rename');setRenameTitle(group.title);setActionError('');}} style={styles.action}><Text style={styles.actionText}>Alterar nome</Text></Pressable>
-     <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void choosePhoto();}} style={styles.action}><Text style={styles.actionText}>Alterar fotografia</Text></Pressable>
-     {group.members.length<MAX_MEMBERS?<Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='add'?null:'add');setPicked([]);setActionError('');}} style={styles.action}><Text style={styles.actionText}>＋ Adicionar membros</Text></Pressable>:null}
-    </>:<Pressable accessibilityRole="button" disabled={busy} onPress={()=>askRemove(me,me)} style={styles.action}><Text style={[styles.actionText,{color:C.danger}]}>Sair do grupo</Text></Pressable>}
+     <Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='rename'?null:'rename');setRenameTitle(group.title);setActionError('');}} style={styles.action}><Text style={styles.actionText}>{t('Alterar nome')}</Text></Pressable>
+     <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void choosePhoto();}} style={styles.action}><Text style={styles.actionText}>{t('Alterar fotografia')}</Text></Pressable>
+     {group.members.length<MAX_MEMBERS?<Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='add'?null:'add');setPicked([]);setActionError('');}} style={styles.action}><Text style={styles.actionText}>{t('＋ Adicionar membros')}</Text></Pressable>:null}
+    </>:<Pressable accessibilityRole="button" disabled={busy} onPress={()=>askRemove(me,me)} style={styles.action}><Text style={[styles.actionText,{color:C.danger}]}>{t('Sair do grupo')}</Text></Pressable>}
    </View>
    <View style={styles.chips}>
     {group.members.map(m=><View key={m.username} style={styles.chip}>
      <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
       <Text style={styles.chipText} numberOfLines={1}>{m.displayName}{m.admin?' ★':''}</Text></Pressable>
-     {creator&&!m.admin?<Pressable accessibilityRole="button" accessibilityLabel={'Remover membro: '+m.displayName} hitSlop={10}
+     {creator&&!m.admin?<Pressable accessibilityRole="button" accessibilityLabel={t('Remover membro: {v}',{v:m.displayName})} hitSlop={10}
       disabled={busy} onPress={()=>askRemove(m.username,m.displayName)}><Text style={styles.chipX}>×</Text></Pressable>:null}
     </View>)}
    </View>
    {auth.token?<AvailabilityPanel kind="private" targetId={groupId} token={auth.token}/>:null}
    {panel==='rename'?<View style={styles.panel}>
-    <Text style={styles.label}>Nome do grupo</Text>
-    <TextInput value={renameTitle} onChangeText={setRenameTitle} maxLength={90} editable={!busy} style={styles.input} accessibilityLabel="Novo nome do grupo"/>
-    <Button title={busy?'A guardar…':'Alterar nome'} disabled={busy||renameTitle.trim().length<2} onPress={()=>{void doRename();}}/>
-    <Button secondary title="Cancelar" disabled={busy} onPress={()=>setPanel(null)}/>
+    <Text style={styles.label}>{t('Nome do grupo')}</Text>
+    <TextInput value={renameTitle} onChangeText={setRenameTitle} maxLength={90} editable={!busy} style={styles.input} accessibilityLabel={t('Novo nome do grupo')}/>
+    <Button title={busy?t('A guardar…'):t('Alterar nome')} disabled={busy||renameTitle.trim().length<2} onPress={()=>{void doRename();}}/>
+    <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>setPanel(null)}/>
    </View>:null}
    {panel==='photo'&&photo?<View style={styles.panel}>
-    <Text style={styles.label}>Nova fotografia do grupo</Text>
-    <Image source={{uri:photo.uri}} style={styles.photoPreview} accessibilityLabel="Pré-visualização da fotografia do grupo"/>
-    <Button title={busy?'A enviar…':'Guardar fotografia'} disabled={busy} onPress={()=>{void savePhoto();}}/>
-    <Button secondary title="Cancelar" disabled={busy} onPress={()=>{setPanel(null);setPhoto(null);}}/>
+    <Text style={styles.label}>{t('Nova fotografia do grupo')}</Text>
+    <Image source={{uri:photo.uri}} style={styles.photoPreview} accessibilityLabel={t('Pré-visualização da fotografia do grupo')}/>
+    <Button title={busy?t('A enviar…'):t('Guardar fotografia')} disabled={busy} onPress={()=>{void savePhoto();}}/>
+    <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>{setPanel(null);setPhoto(null);}}/>
    </View>:null}
    {panel==='add'&&auth.token?<View style={styles.panel}>
-    <Text style={styles.muted}>Escolhe os amigos que queres juntar a esta conversa.</Text>
+    <Text style={styles.muted}>{t('Escolhe os amigos que queres juntar a esta conversa.')}</Text>
     <FriendPicker token={auth.token} group={group} selected={picked} onChange={setPicked} disabled={busy} max={MAX_MEMBERS-group.members.length}/>
-    <Button title={busy?'A adicionar…':'Adicionar ao grupo'} disabled={busy||!picked.length} onPress={()=>{void doAdd();}}/>
-    <Button secondary title="Cancelar" disabled={busy} onPress={()=>setPanel(null)}/>
+    <Button title={busy?t('A adicionar…'):t('Adicionar ao grupo')} disabled={busy||!picked.length} onPress={()=>{void doAdd();}}/>
+    <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>setPanel(null)}/>
    </View>:null}
    {hasMore?<Pressable accessibilityRole="button" disabled={loadingOlder} onPress={()=>{void older();}} style={styles.more}>
-    {loadingOlder?<ActivityIndicator color={C.mint}/>:<Text style={styles.moreText}>Carregar mensagens anteriores</Text>}</Pressable>:null}
-   {!loading&&!messages.length?<Text style={[styles.muted,{textAlign:'center',paddingVertical:16}]}>Ainda não há mensagens neste grupo.</Text>:null}
+    {loadingOlder?<ActivityIndicator color={C.mint}/>:<Text style={styles.moreText}>{t('Carregar mensagens anteriores')}</Text>}</Pressable>:null}
+   {!loading&&!messages.length?<Text style={[styles.muted,{textAlign:'center',paddingVertical:16}]}>{t('Ainda não há mensagens neste grupo.')}</Text>:null}
    {auth.token?<ChatSearchPanel kind="private" conversationId={String(groupId)} token={auth.token}/>:null}
    {messages.map(m=>{const mine=isMine(m,me);const quote=replyQuote(messages,m);const gif=!m.deleted?giphyImageUrl(m.text):null;
     const files=chatAttachmentList({...m,deletedAt:m.deleted?m.createdAt:null});
@@ -285,64 +286,64 @@ export default function GroupChatScreen(){
     return <View key={m.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
     {!mine?<Text style={styles.sender}>{group.members.find(x=>x.username.toLowerCase()===m.sender.toLowerCase())?.displayName||m.sender}</Text>:null}
     {quote?<Text style={[styles.quote,mine&&{color:'#0B3B36',borderLeftColor:'#0B3B36'}]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
-    {m.deleted?<Text style={[styles.text,styles.deleted,mine&&{color:'#0B3B36'}]}>Mensagem apagada</Text>:
-     gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel="GIF enviado no grupo"/>:
+    {m.deleted?<Text style={[styles.text,styles.deleted,mine&&{color:'#0B3B36'}]}>{t('Mensagem apagada')}</Text>:
+     gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel={t('GIF enviado no grupo')}/>:
      readPoll(m.text)?<PollCard poll={readPoll(m.text)!} kind="private" conversationId={groupId} messageId={m.id} token={auth.token}/>:
      onlyFileName?null:<Text style={[styles.text,mine&&{color:C.background}]} selectable>{m.text}</Text>}
     {files.map(file=><SecureChatAttachment key={file.index} index={file.index} scope="private" conversationId={groupId} messageId={m.id}
      token={auth.token} name={file.name} mime={file.mime} size={file.size} onAuthorizationError={()=>{void refresh(true);}}/>)}
-    {location?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no Google Maps"
-     onPress={()=>void Linking.openURL(location).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))} style={styles.msgAction}>
-     <JynloIcon name="location" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>Abrir localização no mapa</Text></Pressable>:null}
+    {location?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
+     onPress={()=>void Linking.openURL(location).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))} style={styles.msgAction}>
+     <JynloIcon name="location" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>{t('Abrir localização no mapa')}</Text></Pressable>:null}
     {!m.deleted?<View style={styles.msgActions}>
-     <Pressable accessibilityRole="button" accessibilityLabel={'Responder à mensagem de '+m.sender}
-      onPress={()=>{setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||'Anexo').slice(0,150)});}} style={styles.msgAction}>
-      <JynloIcon name="reply" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>Responder</Text></Pressable>
-     {mine||creator?<Pressable accessibilityRole="button" accessibilityLabel="Opções da mensagem" disabled={busy} onPress={()=>messageOptions(m)} style={styles.msgAction}>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {v}',{v:m.sender})}
+      onPress={()=>{setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||t('Anexo')).slice(0,150)});}} style={styles.msgAction}>
+      <JynloIcon name="reply" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>{t('Responder')}</Text></Pressable>
+     {mine||creator?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da mensagem')} disabled={busy} onPress={()=>messageOptions(m)} style={styles.msgAction}>
       <JynloIcon name="more" size={18} color={mine?C.background:C.mint}/></Pressable>:null}
     </View>:null}
     {!m.deleted?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-    <Text style={[styles.time,mine&&{color:'#0B3B36'}]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · editada':''}</Text>
+    <Text style={[styles.time,mine&&{color:'#0B3B36'}]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · '+t('editada'):''}</Text>
    </View>;})}
    {actionError?<Message tone="error">{actionError}</Message>:null}
    {editing?<View style={styles.panel}>
-    <Text style={styles.label}>Editar mensagem · até 15 minutos após o envio</Text>
-    <TextInput multiline maxLength={MAX_MESSAGE} value={editText} onChangeText={setEditText} editable={!busy} style={styles.input} accessibilityLabel="Editar mensagem"/>
-    <Button title={busy?'A guardar…':'Guardar edição'} disabled={busy||!editText.trim()} onPress={()=>{void saveEdit();}}/>
-    <Button secondary title="Cancelar edição" disabled={busy} onPress={()=>{setEditing(null);setEditText('');}}/>
+    <Text style={styles.label}>{t('Editar mensagem · até 15 minutos após o envio')}</Text>
+    <TextInput multiline maxLength={MAX_MESSAGE} value={editText} onChangeText={setEditText} editable={!busy} style={styles.input} accessibilityLabel={t('Editar mensagem')}/>
+    <Button title={busy?t('A guardar…'):t('Guardar edição')} disabled={busy||!editText.trim()} onPress={()=>{void saveEdit();}}/>
+    <Button secondary title={t('Cancelar edição')} disabled={busy} onPress={()=>{setEditing(null);setEditText('');}}/>
    </View>:null}
    {replyTarget?<ChatReplyPreview sender={replyTarget.sender} body={replyTarget.text} onCancel={()=>setReplyTarget(null)} disabled={sending||mediaBusy}/>:null}
    {media.length?<View style={styles.panel}>
     <View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>
-     {media.map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={mediaBusy}
+     {media.map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {v}',{v:(index+1)})} disabled={mediaBusy}
       onPress={()=>setMedia(list=>list.filter((_,i)=>i!==index))} style={{width:80,gap:3}}>
       {file.type==='video'?<View style={styles.videoThumb}><JynloIcon name="video" color={C.white} size={19}/></View>:<Image source={{uri:file.uri}} style={{width:80,height:80,borderRadius:10}}/>}
-      <Text style={styles.muted}>Remover</Text></Pressable>)}
+      <Text style={styles.muted}>{t('Remover')}</Text></Pressable>)}
     </View>
-    <Text style={styles.muted}>{media.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB.</Text>
-    <TextInput multiline maxLength={2000} value={caption} onChangeText={setCaption} editable={!mediaBusy} placeholder="Legenda (opcional)" placeholderTextColor={C.muted} style={styles.input} accessibilityLabel="Legenda dos anexos"/>
-    <Button title={mediaBusy?'A enviar ficheiros…':'Enviar ficheiros'} disabled={mediaBusy} onPress={()=>{void sendMedia();}}/>
-    <Button secondary title="Cancelar anexos" disabled={mediaBusy} onPress={()=>{setMedia([]);setCaption('');}}/>
+    <Text style={styles.muted}>{t('{a}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB.',{a:media.length})}</Text>
+    <TextInput multiline maxLength={2000} value={caption} onChangeText={setCaption} editable={!mediaBusy} placeholder={t('Legenda (opcional)')} placeholderTextColor={C.muted} style={styles.input} accessibilityLabel={t('Legenda dos anexos')}/>
+    <Button title={mediaBusy?t('A enviar ficheiros…'):t('Enviar ficheiros')} disabled={mediaBusy} onPress={()=>{void sendMedia();}}/>
+    <Button secondary title={t('Cancelar anexos')} disabled={mediaBusy} onPress={()=>{setMedia([]);setCaption('');}}/>
    </View>:null}
    <View style={styles.tools}>
-    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos" disabled={mediaBusy||sending||media.length>=4}
+    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel={t('Selecionar fotografias ou vídeos')} disabled={mediaBusy||sending||media.length>=4}
      onPress={()=>{void chooseMedia('gallery');}} style={styles.tool}><JynloIcon name="gallery" size={23} color={C.mint}/></Pressable>:null}
-    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={mediaBusy||sending||media.length>=4}
+    {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara')} disabled={mediaBusy||sending||media.length>=4}
      onPress={()=>{void chooseMedia('camera');}} style={styles.tool}><JynloIcon name="camera" size={23} color={C.mint}/></Pressable>:null}
     {filesAvailable?<ChatPdfComposer compact target={{scope:'private',id:groupId}} token={auth.token} enabled={!sending&&!mediaBusy} replyId={replyTarget?.id}
      onSent={async()=>{setReplyTarget(null);await refresh(false);}}/>:null}
-    <Pressable accessibilityRole="button" accessibilityLabel={locationBusy?'A obter localização…':'Partilhar localização atual'} disabled={locationBusy||sending}
+    <Pressable accessibilityRole="button" accessibilityLabel={locationBusy?t('A obter localização…'):t('Partilhar localização atual')} disabled={locationBusy||sending}
      onPress={prepareLocation} style={styles.tool}><JynloIcon name="location" size={23} color={C.mint}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem" disabled={sending}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')} disabled={sending}
      onPress={()=>setPollOpen(true)} style={styles.tool}><Text style={{fontSize:20}}>📊</Text></Pressable>
     <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>
    </View>
    <View style={styles.compose}>
     <TextInput value={draft} onChangeText={setDraft} multiline maxLength={MAX_MESSAGE} editable={!sending}
-     placeholder="Escreve uma mensagem ao grupo…" placeholderTextColor={C.muted} style={styles.composeInput} accessibilityLabel="Mensagem para o grupo"/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Enviar" disabled={sending||!draft.trim()} onPress={()=>{void send();}}
+     placeholder={t('Escreve uma mensagem ao grupo…')} placeholderTextColor={C.muted} style={styles.composeInput} accessibilityLabel={t('Mensagem para o grupo')}/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar')} disabled={sending||!draft.trim()} onPress={()=>{void send();}}
      style={[styles.send,(sending||!draft.trim())&&{opacity:.5}]}>
-     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>Enviar</Text>}</Pressable>
+     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>{t('Enviar')}</Text>}</Pressable>
    </View>
   </>:null}
  </Page>;

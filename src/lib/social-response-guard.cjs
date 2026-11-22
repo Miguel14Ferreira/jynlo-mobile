@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 
 /** Validate the structure needed to render social API responses.
  * Never silently turn a broken API response into an apparently empty feed:
@@ -6,41 +7,41 @@
  */
 function requireSocialCollection(raw,kind){
  if(!['feed','story','comment','reply'].includes(kind)||!Array.isArray(raw))
-  throw Error('Resposta de conteúdo social inválida.');
+  throw Error(tr('Resposta de conteúdo social inválida.'));
  for(const item of raw){
   if(!item||typeof item!=='object'||Array.isArray(item))
-   throw Error('O servidor devolveu um elemento social inválido.');
+   throw Error(tr('O servidor devolveu um elemento social inválido.'));
   if(kind==='story'){
    if(!Number.isSafeInteger(item.id)||item.id<=0||typeof item.authorUsername!=='string'||
       !item.authorUsername.trim()||typeof item.mediaUrl!=='string'||!item.mediaUrl.trim()||
       typeof item.expiresAt!=='string'||!Number.isFinite(Date.parse(item.expiresAt)))
-    throw Error('O servidor devolveu uma Story inválida.');
+    throw Error(tr('O servidor devolveu uma Story inválida.'));
   }else if(kind==='feed'){
    if(!['POST','SESSION_CREATED','SESSION_ATTENDED'].includes(item.type)||
       typeof item.authorUsername!=='string'||!item.authorUsername.trim()||
       typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt))||
       (item.postId!==null&&(!Number.isSafeInteger(item.postId)||item.postId<=0)))
-    throw Error('O servidor devolveu uma publicação inválida.');
+    throw Error(tr('O servidor devolveu uma publicação inválida.'));
   }else if(kind==='reply'){
    if(!Number.isSafeInteger(item.id)||item.id<=0||
       !Number.isSafeInteger(item.storyId)||item.storyId<=0||
       typeof item.senderUsername!=='string'||!item.senderUsername.trim()||
       typeof item.content!=='string'||
       typeof item.createdAt!=='string'||!Number.isFinite(Date.parse(item.createdAt)))
-    throw Error('O servidor devolveu uma resposta privada inválida.');
+    throw Error(tr('O servidor devolveu uma resposta privada inválida.'));
   }else if(kind==='comment'){
    if(!Number.isSafeInteger(item.id)||item.id<=0||
       typeof item.authorUsername!=='string'||!item.authorUsername.trim()||
       typeof item.content!=='string')
-    throw Error('O servidor devolveu um comentário inválido.');
-  }else throw Error('Tipo de conteúdo social inválido.');
+    throw Error(tr('O servidor devolveu um comentário inválido.'));
+  }else throw Error(tr('Tipo de conteúdo social inválido.'));
  }
  return raw;
 }
 
 /** The discovery endpoint is not a trusted display or navigation source. */
 function safeDiscoveredPeople(raw,limit=12){
- if(!Array.isArray(raw))throw Error('Resposta de descoberta de pessoas inválida.');
+ if(!Array.isArray(raw))throw Error(tr('Resposta de descoberta de pessoas inválida.'));
  const result=[],seen=new Set();
  for(const person of raw){
   if(!person||typeof person!=='object'||Array.isArray(person))continue;

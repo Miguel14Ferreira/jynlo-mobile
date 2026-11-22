@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {ActivityIndicator,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
@@ -21,7 +22,7 @@ export default function HiddenPostsScreen(){
   if(!auth.token){setItems([]);setLoading(false);return;}
   setLoading(true);
   try{const list=await hiddenFeedPosts(auth.token);if(id===generation.current)setItems(list);}
-  catch{if(id===generation.current)setError('Não foi possível carregar as publicações ocultas.');}
+  catch{if(id===generation.current)setError(t('Não foi possível carregar as publicações ocultas.'));}
   finally{if(id===generation.current)setLoading(false);}
  },[auth.token]);
  useFocusEffect(useCallback(()=>{void load();return()=>{generation.current++;};},[load]));
@@ -36,33 +37,33 @@ export default function HiddenPostsScreen(){
     const local=await readHiddenFeedEntries(auth.username).catch(()=>[] as string[]);
     await writeHiddenFeedEntries(auth.username,showEntry(local,'post:'+postId)).catch(()=>{});
    }
-   setNotice('A publicação voltou a aparecer no teu feed.');
-  }catch{setError('Não foi possível repor a publicação. Atualiza a lista e tenta de novo.');}
+   setNotice(t('A publicação voltou a aparecer no teu feed.'));
+  }catch{setError(t('Não foi possível repor a publicação. Atualiza a lista e tenta de novo.'));}
   finally{setRestoring(null);}
  }
  return <Page>
-  <Eyebrow>FEED</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Publicações ocultas</Text>
-  <Text style={styles.sub}>O que ocultaste do teu feed, nesta conta. Quem publicou não é avisado.</Text>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push({pathname:'/login',params:{redirect:'/feed-hidden'}})}/>:null}
+  <Eyebrow>{t('FEED')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('Publicações ocultas')}</Text>
+  <Text style={styles.sub}>{t('O que ocultaste do teu feed, nesta conta. Quem publicou não é avisado.')}</Text>
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/feed-hidden'}})}/>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<Loader/>:null}
-  {error?<><Message tone="error">{error}</Message><Button secondary title="Tentar novamente" onPress={()=>{void load();}}/></>:null}
-  {!loading&&!error&&auth.token&&!items.length?<Message>Não tens publicações ocultas nesta conta.</Message>:null}
+  {error?<><Message tone="error">{error}</Message><Button secondary title={t('Tentar novamente')} onPress={()=>{void load();}}/></>:null}
+  {!loading&&!error&&auth.token&&!items.length?<Message>{t('Não tens publicações ocultas nesta conta.')}</Message>:null}
   {items.map(item=><View key={item.postId} style={styles.card}>
    <View style={styles.row}>
     {item.imageUrl?<Image source={{uri:item.imageUrl}} style={styles.thumb}/>:null}
     <View style={{flex:1,gap:3}}>
      <Text style={styles.author} numberOfLines={1}>{item.authorDisplayName||item.authorUsername}</Text>
-     <Text style={styles.sub} numberOfLines={3}>{item.content?.trim()||'Publicação com fotografia ou vídeo'}</Text>
+     <Text style={styles.sub} numberOfLines={3}>{item.content?.trim()||t('Publicação com fotografia ou vídeo')}</Text>
     </View>
    </View>
    <View style={styles.actions}>
     <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})} style={styles.link}>
-     <Text style={styles.linkText}>Ver publicação</Text></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={'Voltar a mostrar a publicação de '+(item.authorDisplayName||item.authorUsername)}
+     <Text style={styles.linkText}>{t('Ver publicação')}</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar a mostrar a publicação de {v}',{v:(item.authorDisplayName||item.authorUsername)})}
      disabled={restoring!==null} onPress={()=>{void restore(item.postId!);}} style={[styles.outline,restoring!==null&&{opacity:.6}]}>
-     {restoring===item.postId?<ActivityIndicator color={C.mint}/>:<Text style={styles.outlineText}>Voltar a mostrar</Text>}</Pressable>
+     {restoring===item.postId?<ActivityIndicator color={C.mint}/>:<Text style={styles.outlineText}>{t('Voltar a mostrar')}</Text>}</Pressable>
    </View>
   </View>)}
  </Page>;

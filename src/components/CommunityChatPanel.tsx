@@ -1,4 +1,5 @@
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
+import {t} from '../lib/i18n';
 import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
 import SecureChatAttachment from './SecureChatAttachment';
@@ -136,10 +137,10 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     if(forbidden){
      revokedRef.current=true;setAccessRevoked(true);setMessages([]);setDraft('');setReply(null);setEditing(null);setEditText('');setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');setCanSendPhoto(false);setAttachmentsOpen(false);
      historyError.current=null;
-     setRefreshWarning('');setError('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.');
+     setRefreshWarning('');setError(t('Já não tens acesso a esta comunidade. Atualiza para confirmar as permissões.'));
     }else{
-     setRefreshWarning('Não foi possível sincronizar o chat. As mensagens apresentadas podem estar desatualizadas.');
-     if(!silent){const message=e instanceof Error?e.message:'Não foi possível abrir o chat.';
+     setRefreshWarning(t('Não foi possível sincronizar o chat. As mensagens apresentadas podem estar desatualizadas.'));
+     if(!silent){const message=e instanceof Error?e.message:t('Não foi possível abrir o chat.');
       historyError.current=message;setError(message);}
     }
   }}
@@ -187,7 +188,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      if(active&&version===generation.current&&!muteWrites.current.has(identity)){
       setMuted(isConversationMuted(items,'community',String(id)));setMuteKnown(true);
      }
-    }).catch(()=>{if(active&&version===generation.current)setMuteError('Não foi possível consultar os avisos deste chat.');});
+    }).catch(()=>{if(active&&version===generation.current)setMuteError(t('Não foi possível consultar os avisos deste chat.'));});
    }
    void refresh(version);
    if(!auth.token||!auth.username||!Number.isSafeInteger(id)||id<=0)return ()=>{active=false;generation.current++;if(activeChat.current===identity)activeChat.current='';};
@@ -222,8 +223,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   const token=auth.token,identity=id+'|'+token;
   if(!token||accessRevoked||!muteKnown||muteBusy||muteWrites.current.has(identity))return;
   const version=generation.current,next=!muted;
-  Alert.alert(next?'Silenciar avisos?':'Ativar avisos?','As mensagens continuam disponíveis.',[
-   {text:'Cancelar',style:'cancel'},
+  Alert.alert(next?t('Silenciar avisos?'):t('Ativar avisos?'),t('As mensagens continuam disponíveis.'),[
+   {text:t('Cancelar'),style:'cancel'},
    {text:next?'Silenciar':'Ativar',onPress:()=>{
     if(activeChat.current!==identity||muteWrites.current.has(identity))return;
     muteWrites.current.add(identity);setMuteBusy(true);setMuteError('');
@@ -233,7 +234,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       setMuted(isConversationMuted(saved,'community',String(id)));setMuteKnown(true);
      }
     }).catch(()=>{
-     if(version===generation.current&&activeChat.current===identity)setMuteError('Não foi possível confirmar os avisos.');
+     if(version===generation.current&&activeChat.current===identity)setMuteError(t('Não foi possível confirmar os avisos.'));
     }).finally(()=>{
      muteWrites.current.delete(identity);
      if(version===generation.current&&activeChat.current===identity)setMuteBusy(false);
@@ -244,26 +245,26 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  function prepareLocation(){
   const token=auth.token,identity=id+'|'+token,version=generation.current;
   if(!token||accessRevoked||locationBusy||sendingNow.current||pendingWrites.current.has(identity))return;
-  Alert.alert('Partilhar localização?','A localização só será obtida com a tua autorização e ficará no rascunho para confirmares antes de enviar.',[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Continuar',onPress:()=>{
+  Alert.alert(t('Partilhar localização?'),t('A localização só será obtida com a tua autorização e ficará no rascunho para confirmares antes de enviar.'),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Continuar'),onPress:()=>{
     if(activeChat.current!==identity)return;
     setLocationBusy(true);setError('');
     void (async()=>{
      const Location=await import('expo-location');
      const permission=await Location.requestForegroundPermissionsAsync();
-     if(permission.status!=='granted')throw Error('Acesso à localização não autorizado.');
+     if(permission.status!=='granted')throw Error(t('Acesso à localização não autorizado.'));
      const point=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Balanced});
      const lat=point.coords.latitude,lng=point.coords.longitude;
-     if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)throw Error('Localização inválida.');
+     if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)throw Error(t('Localização inválida.'));
      const url='https://www.google.com/maps?q='+lat.toFixed(5)+','+lng.toFixed(5);
      if(version===generation.current&&activeChat.current===identity){
       setDraft(current=>[current.trim(),url].filter(Boolean).join('\n'));
         setAttachmentsOpen(false);
-      Alert.alert('Localização pronta','Confirma o destinatário e toca em Enviar.');
+      Alert.alert(t('Localização pronta'),t('Confirma o destinatário e toca em Enviar.'));
      }
     })().catch(e=>{
-     if(version===generation.current&&activeChat.current===identity)setError(e instanceof Error?e.message:'Não foi possível obter a localização.');
+     if(version===generation.current&&activeChat.current===identity)setError(e instanceof Error?e.message:t('Não foi possível obter a localização.'));
     }).finally(()=>{if(version===generation.current&&activeChat.current===identity)setLocationBusy(false);});
    }}
   ]);
@@ -271,12 +272,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  /** Sondagem: sent alone, exactly as encoded by the composer. */
  async function sendPoll(text:string){
   setPollOpen(false);
-  await sendStructured(text,'Não foi possível enviar a sondagem.');
+  await sendStructured(text,t('Não foi possível enviar a sondagem.'));
  }
  /** Convocatória: one of my sessions, sent alone as the server envelope. */
  async function sendCallUp(sessionId:number){
   setCallUpOpen(false);
-  await sendStructured(encodeCallUp(sessionId),'Não foi possível enviar a convocatória.');
+  await sendStructured(encodeCallUp(sessionId),t('Não foi possível enviar a convocatória.'));
  }
  async function sendStructured(text:string,failure:string){
   const identity=id+'|'+auth.token;
@@ -290,7 +291,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   try{
    const confirmed=await sendCommunityMessage(id,text,token,username);
    if(!confirmedCommunityChatSend(confirmed,id,username,text,null))
-    throw Error('O servidor respondeu, mas não confirmou esta mensagem.');
+    throw Error(t('O servidor respondeu, mas não confirmou esta mensagem.'));
    if(version!==generation.current||activeChat.current!==identity)return;
    if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===text&&uncertainSendRef.current.replyId===null){
     uncertainSendRef.current=null;setUncertainSend(null);
@@ -303,7 +304,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      const uncertain={identity,body:text,replyId:null};
      uncertainSendRef.current=uncertain;setUncertainSend(uncertain);
     }
-    setError((e instanceof Error?e.message:failure)+' Confirma o histórico antes de repetir.');
+    setError((e instanceof Error?e.message:failure)+' '+t('Confirma o histórico antes de repetir.'));
    }
   }finally{
    pendingWrites.current.delete(identity);
@@ -322,7 +323,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   try{
    const confirmed=await sendCommunityMessage(id,message,token,username,originalReplyId);
    if(!confirmedCommunityChatSend(confirmed,id,username,message,originalReplyId))
-    throw Error('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.');
+    throw Error(t('O servidor respondeu, mas não confirmou esta mensagem. Confirma o histórico antes de repetir.'));
    if(version!==generation.current)return;
    if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===originalDraft.trim()&&uncertainSendRef.current.replyId===(originalReplyId??null)){uncertainSendRef.current=null;setUncertainSend(null);}
    // The verified server receipt is already an authorized chat entry. Show it
@@ -335,7 +336,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }catch(e){
    if(version===generation.current&&activeChat.current===identity&&uncertainChatSend(e))
     {const uncertain={identity,body:originalDraft.trim(),replyId:originalReplyId??null};uncertainSendRef.current=uncertain;setUncertainSend(uncertain);}
-   if(version===generation.current)setError((e instanceof Error?e.message:'Não foi possível enviar.')+' Verifica o histórico antes de repetir.');
+   if(version===generation.current)setError((e instanceof Error?e.message:t('Não foi possível enviar.'))+' '+t('Verifica o histórico antes de repetir.'));
   }finally{
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){sendingNow.current=false;setSending(false);}
@@ -353,23 +354,23 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  function messageOptions(message:CommunityChatEntry){
   if(!ownMessage(message)||mutationLock.current||sendingNow.current||uploadingNow.current)return;
   const actions:Array<{text:string;style?:'cancel'|'destructive';onPress?:()=>void}>=[];
-  if(editable(message))actions.push({text:'Editar mensagem',onPress:()=>{
+  if(editable(message))actions.push({text:t('Editar mensagem'),onPress:()=>{
     setEditing(message);setEditText(message.body||'');setReply(null);
   }});
-  actions.push({text:'Apagar para todos',style:'destructive',onPress:()=>{
-    Alert.alert('Apagar mensagem para todos?',
-      'O conteúdo será removido da conversa. A mensagem ficará identificada como removida.',
-      [{text:'Cancelar',style:'cancel'},{text:'Apagar',style:'destructive',onPress:()=>void deleteMessage(message)}]);
+  actions.push({text:t('Apagar para todos'),style:'destructive',onPress:()=>{
+    Alert.alert(t('Apagar mensagem para todos?'),
+      t('O conteúdo será removido da conversa. A mensagem ficará identificada como removida.'),
+      [{text:t('Cancelar'),style:'cancel'},{text:t('Apagar'),style:'destructive',onPress:()=>void deleteMessage(message)}]);
   }});
-  actions.push({text:'Cancelar',style:'cancel'});
-  Alert.alert('A minha mensagem','Seleciona uma ação.',actions);
+  actions.push({text:t('Cancelar'),style:'cancel'});
+  Alert.alert(t('A minha mensagem'),t('Seleciona uma ação.'),actions);
  }
  async function saveEdit(){
   if(!editing||!editable(editing)||!auth.token||!auth.username||mutationLock.current||
    sendingNow.current||uploadingNow.current)return;
   const text=editText.trim(),version=generation.current,identity=id+'|'+auth.token,original=editing;
   if(!text||text.length>2000||text.startsWith('[JYNLO:GIPHY:1]')){
-   setError('A edição deve conter entre 1 e 2000 caracteres.');return;
+   setError(t('A edição deve conter entre 1 e 2000 caracteres.'));return;
   }
   const operation=++mutationEpoch.current;
   mutationOwner.current=identity;mutationLock.current=true;setMutationBusy(true);setError('');
@@ -382,7 +383,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    await refresh(version,true);
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
-    setError((e instanceof Error?e.message:'Edição não confirmada.')+' Consulta o histórico antes de repetir.');
+    setError((e instanceof Error?e.message:t('Edição não confirmada.'))+' '+t('Consulta o histórico antes de repetir.'));
   }finally{
    if(mutationOwner.current===identity&&mutationEpoch.current===operation){
     mutationLock.current=false;mutationOwner.current='';setMutationBusy(false);
@@ -399,13 +400,13 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    const updated=await deleteCommunityChatMessageForEveryone(id,message.id,auth.token,auth.username);
    if(version!==generation.current||activeChat.current!==identity)return;
    setMessages(old=>old.map(item=>item.id===updated.id?updated:
-    item.replyToMessageId===updated.id?{...item,replyToText:'Mensagem removida'}:item));
+    item.replyToMessageId===updated.id?{...item,replyToText:t('Mensagem removida')}:item));
    setEditing(current=>current?.id===message.id?null:current);
    setReply(current=>current?.id===message.id?null:current);
    await refresh(version,true);
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
-    setError((e instanceof Error?e.message:'Eliminação não confirmada.')+' Consulta o histórico antes de repetir.');
+    setError((e instanceof Error?e.message:t('Eliminação não confirmada.'))+' '+t('Consulta o histórico antes de repetir.'));
   }finally{
    if(mutationOwner.current===identity&&mutationEpoch.current===operation){
     mutationLock.current=false;mutationOwner.current='';setMutationBusy(false);
@@ -417,7 +418,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   if(!auth.token||!canSendPhoto||revokedRef.current||uploadingNow.current||sendingNow.current||mutationLock.current||pendingWrites.current.has(identity)||pickerInFlight.current)return;
   const current=photo?[photo,...extraPhotos]:[];
   const remaining=4-current.length;
-  if(remaining<=0){setError('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.');return;}
+  if(remaining<=0){setError(t('Já selecionaste 4 ficheiros. Remove um antes de adicionares outro.'));return;}
   const version=generation.current,token=auth.token;
   const operation=++pickerEpoch.current;
   pickerOwner.current=identity;pickerInFlight.current=true;setError('');
@@ -435,7 +436,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    setPhoto(result.items[0]||null);setExtraPhotos(result.items.slice(1));
   }catch(e){
    if(version===generation.current&&activeChat.current===identity)
-    setError(e instanceof Error?e.message:'Não foi possível abrir a câmara ou a galeria.');
+    setError(e instanceof Error?e.message:t('Não foi possível abrir a câmara ou a galeria.'));
   }finally{
    if(pickerOwner.current===identity&&pickerEpoch.current===operation){
     pickerInFlight.current=false;pickerOwner.current='';
@@ -457,7 +458,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    // Reconcile history separately after a confirmed photo/album upload.
    void refresh(version,true);
   }catch(e){
-   if(version===generation.current)setError((e instanceof Error?e.message:'Envio não confirmado.')+' Confirma o histórico antes de tentar novamente.');
+   if(version===generation.current)setError((e instanceof Error?e.message:t('Envio não confirmado.'))+' '+t('Confirma o histórico antes de tentar novamente.'));
   }finally{
    pendingWrites.current.delete(identity);
    if(activeChat.current===identity){uploadingNow.current=false;setUploading(false);}
@@ -467,12 +468,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const reactions=useChatReactions('community',String(id),auth.token,(embedded?messages.slice(-historyLimit):messages).map(m=>m.id),!accessRevoked);
  const renderedMessages=(embedded?messages.slice(-historyLimit):messages).map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
      <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
-       <Pressable accessibilityRole="button" accessibilityLabel={'Abrir perfil de @'+m.username}
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{v}',{v:m.username})}
         onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
         <Text style={styles.sender}>{m.username}</Text>
        </Pressable>
        {!m.deletedAt&&!accessRevoked?
-        <Pressable accessibilityRole="button" accessibilityLabel={'Mostrar ações da mensagem de @'+m.username}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar ações da mensagem de @{v}',{v:m.username})}
          accessibilityState={{expanded:expandedMessageActions===m.id}}
          onPress={()=>setExpandedMessageActions(current=>current===m.id?null:m.id)}
          style={styles.replyAction}>
@@ -481,47 +482,47 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      </View>
      {expandedMessageActions===m.id&&!m.deletedAt&&!accessRevoked?
       <View style={styles.contextActions}>
-        <Pressable accessibilityRole="button" accessibilityLabel={'Responder a '+m.username}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Responder a {v}',{v:m.username})}
           onPress={()=>{setReply(m);setExpandedMessageActions(null);}} style={styles.replyAction}>
           <JynloIcon name="reply" size={18} color={C.mint}/>
-          <Text style={styles.quoteTitle}>Responder</Text>
+          <Text style={styles.quoteTitle}>{t('Responder')}</Text>
         </Pressable>
-        {ownMessage(m)?<Pressable accessibilityRole="button" accessibilityLabel="Editar ou eliminar a minha mensagem"
+        {ownMessage(m)?<Pressable accessibilityRole="button" accessibilityLabel={t('Editar ou eliminar a minha mensagem')}
           disabled={mutationBusy} onPress={()=>{setExpandedMessageActions(null);messageOptions(m);}}
           style={styles.replyAction}>
           <JynloIcon name="more" size={20} color={C.mint}/>
-          <Text style={styles.quoteTitle}>Mais opções</Text>
+          <Text style={styles.quoteTitle}>{t('Mais opções')}</Text>
         </Pressable>:null}
       </View>:null}
-     {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||'Mensagem anterior'}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||'Mensagem citada'}</Text></View>:null}
+     {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||t('Mensagem anterior')}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||t('Mensagem citada')}</Text></View>:null}
      {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
      {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="community" conversationId={id} messageId={m.id} token={auth.token}/>:
      !m.deletedAt&&readCallUp(m.body)?<CallUpCard sessionId={readCallUp(m.body)!} token={auth.token} username={auth.username}/>:
-     <ChatMentionText body={m.deletedAt?'Mensagem removida':giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>}
-     {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel="Abrir localização partilhada no mapa" onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert('Localização','Não foi possível abrir o mapa.'))}>
-      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>Abrir localização no mapa</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
+     <ChatMentionText body={m.deletedAt?t('Mensagem removida'):giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>}
+     {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no mapa')} onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))}>
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>{t('Abrir localização no mapa')}</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
      </Pressable>:null}
      {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}
       onAuthorizationError={()=>{setMessages([]);void refresh(generation.current,false);}}/>):null}
      {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={accessRevoked||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · editada':''}</Text>
+     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · '+t('editada'):''}</Text>
    </View>);
  const content=<>
-   {!embedded?<DemoBanner/>:null}<Eyebrow>CHAT DA COMUNIDADE</Eyebrow>{!embedded?<Text maxFontSizeMultiplier={1.3} style={styles.title}>{name}</Text>:null}
+   {!embedded?<DemoBanner/>:null}<Eyebrow>{t('CHAT DA COMUNIDADE')}</Eyebrow>{!embedded?<Text maxFontSizeMultiplier={1.3} style={styles.title}>{name}</Text>:null}
    <ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/>
-   <Text style={styles.note}>Apenas os membros podem ler e enviar mensagens. · {connection==='online'?'● Ligado':connection==='connecting'?'○ A ligar':'○ A sincronizar sem ligação em tempo real'}</Text>
-   {!auth.token?<Button title="Entrar para conversar" onPress={()=>router.push('/login')}/>:null}
+   <Text style={styles.note}>{t('Apenas os membros podem ler e enviar mensagens. · {a}',{a:connection==='online'?t('● Ligado'):connection==='connecting'?t('○ A ligar'):t('○ A sincronizar sem ligação em tempo real')})}</Text>
+   {!auth.token?<Button title={t('Entrar para conversar')} onPress={()=>router.push('/login')}/>:null}
    {muteError&&!accessRevoked?<Message tone="error">{muteError}</Message>:null}
    {!embedded&&auth.token&&muteKnown&&!accessRevoked?<View style={styles.muteRow}>
-    <Text style={styles.note}>{muted?'Avisos deste chat silenciados':'Avisos deste chat ativos'}</Text>
-    <Button title={muteBusy?'A guardar…':muted?'Ativar avisos':'Silenciar avisos'} secondary disabled={muteBusy} onPress={toggleMute}/>
+    <Text style={styles.note}>{muted?t('Avisos deste chat silenciados'):t('Avisos deste chat ativos')}</Text>
+    <Button title={muteBusy?t('A guardar…'):muted?t('Ativar avisos'):t('Silenciar avisos')} secondary disabled={muteBusy} onPress={toggleMute}/>
    </View>:null}
    {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
-  {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.</Text>:null}
-  {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title="Já confirmei no histórico · Permitir novo envio"
+  {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>{t('Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.')}</Text>:null}
+  {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title={t('Já confirmei no histórico · Permitir novo envio')}
    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
    {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
-   {!loading&&!error&&messages.length===0?<Message>Começa a conversa. A primeira mensagem pode ser tua!</Message>:null}
+   {!loading&&!error&&messages.length===0?<Message>{t('Começa a conversa. A primeira mensagem pode ser tua!')}</Message>:null}
    {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScrollBeginDrag={()=>{initialAutoScrollPending.current=false;}}
     onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
@@ -582,75 +583,75 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    }}
    contentContainerStyle={{gap:8,padding:8}}>
    {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
-    <Text style={styles.quoteTitle}>Ver mensagens anteriores</Text>
+    <Text style={styles.quoteTitle}>{t('Ver mensagens anteriores')}</Text>
    </Pressable>:null}{renderedMessages}
   </ScrollView>}
-  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ver mensagens novas"
+  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver mensagens novas')}
     onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
-    <Text style={styles.newMessagesText}>Mensagens novas</Text></Pressable>:null}
+    <Text style={styles.newMessagesText}>{t('Mensagens novas')}</Text></Pressable>:null}
    {auth.token&&!accessRevoked?<View style={styles.quickActions}>
-    {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?'Ativar avisos deste chat':'Silenciar avisos deste chat'}
+    {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ativar avisos deste chat'):t('Silenciar avisos deste chat')}
       style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
       <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
     </Pressable>:null}
-    {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel="Selecionar fotografias ou vídeos" disabled={sending||uploading}
+    {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel={t('Selecionar fotografias ou vídeos')} disabled={sending||uploading}
      style={styles.iconAction} onPress={()=>{void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/></Pressable>:null}
-    {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel="Abrir câmara" disabled={sending||uploading}
+    {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara')} disabled={sending||uploading}
      style={styles.iconAction} onPress={()=>{void choosePhoto('camera');}}><JynloIcon name="camera" size={22} color={C.mint}/></Pressable>:null}
     <ChatPdfComposer compact target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)}
       replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Partilhar localização atual" disabled={locationBusy||sending||uploading}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar localização atual')} disabled={locationBusy||sending||uploading}
      style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Convocatória: convocar para um dos teus jogos"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Convocatória: convocar para um dos teus jogos')}
      style={styles.iconAction} disabled={sending} onPress={()=>setCallUpOpen(true)}><JynloIcon name="session" size={22} color={C.mint}/></Pressable>
     <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Criar sondagem"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')}
      style={styles.iconAction} disabled={sending} onPress={()=>setPollOpen(true)}><Text style={{fontSize:20}}>📊</Text></Pressable>
     <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
    </View>:null}
    {false&&auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
      onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
-     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?'Fechar anexos':'Anexar ficheiro'}</Text></View>
+     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?t('Fechar anexos'):t('Anexar ficheiro')}</Text></View>
     </Pressable>:null}
     {false&&attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
-    {auth.token&&!accessRevoked?<Button title={locationBusy?'A obter localização…':'Partilhar localização atual'} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
+    {auth.token&&!accessRevoked?<Button title={locationBusy?t('A obter localização…'):t('Partilhar localização atual')} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
    <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
    {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title="Abrir câmara" disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
+   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={t('Abrir câmara')} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
    </View>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
-     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={'Remover ficheiro '+(index+1)} disabled={uploading} onPress={()=>{
+     {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {v}',{v:(index+1)})} disabled={uploading} onPress={()=>{
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{gap:4}}>
-      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:12}}>Vídeo</Text></View></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
-      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>Remover</Text></View>
+      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:12}}>{t('Vídeo')}</Text></View></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>{t('Remover')}</Text></View>
      </Pressable>)}
     </View>
-     <Text style={styles.note}>{1+extraPhotos.length}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.</Text>
-   <TextInput accessibilityLabel="Legenda dos anexos" multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder="Legenda para as fotografias ou vídeos (opcional)" placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
-     <Button title={uploading?'A enviar…':'Enviar ficheiros'} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
-     <Button secondary title="Cancelar anexos" disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
+     <Text style={styles.note}>{t('{a}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.',{a:1+extraPhotos.length})}</Text>
+   <TextInput accessibilityLabel={t('Legenda dos anexos')} multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder={t('Legenda para as fotografias ou vídeos (opcional)')} placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
+     <Button title={uploading?t('A enviar…'):t('Enviar ficheiros')} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
+     <Button secondary title={t('Cancelar anexos')} disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
    </View>:null}
    {editing&&!accessRevoked?<View style={styles.editPanel}>
-     <Text style={styles.quoteTitle}>Editar a minha mensagem · até 15 minutos após o envio</Text>
-     <TextInput accessibilityLabel="Editar mensagem" multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder="Mensagem…" placeholderTextColor={C.muted} style={styles.editInput}/>
-     <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?'A guardar…':'Guardar edição'} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title="Cancelar" disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
+     <Text style={styles.quoteTitle}>{t('Editar a minha mensagem · até 15 minutos após o envio')}</Text>
+     <TextInput accessibilityLabel={t('Editar mensagem')} multiline maxLength={2000} editable={!mutationBusy} value={editText} onChangeText={setEditText} placeholder={t('Mensagem…')} placeholderTextColor={C.muted} style={styles.editInput}/>
+     <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?t('A guardar…'):t('Guardar edição')} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title={t('Cancelar')} disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
    </View>:null}
    {reply&&!accessRevoked?<ChatReplyPreview sender={reply.username} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
    {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
-     <TextInput multiline style={styles.input} placeholder="Escreve uma mensagem…" placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-       maxLength={2000} accessibilityLabel="Mensagem para a comunidade"
+     <TextInput multiline style={styles.input} placeholder={t('Escreve uma mensagem…')} placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
+       maxLength={2000} accessibilityLabel={t('Mensagem para a comunidade')}
        onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
      <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
-     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?'A enviar mensagem…':'Enviar mensagem para a comunidade'}>
+     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem para a comunidade')}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
    </KeyboardAvoidingView>:null}
-   {refreshWarning&&!accessRevoked?<Button secondary title="Tentar novamente" disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
+   {refreshWarning&&!accessRevoked?<Button secondary title={t('Tentar novamente')} disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
   </>;
  return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }

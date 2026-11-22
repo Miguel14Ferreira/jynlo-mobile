@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Attendance history and disputes — same rules and wording as the web "Minhas sessões" page. */
 const ATTENDANCE_LABELS={ATTENDED:'Presente',NO_SHOW:'Faltou',LATE_CANCELLED:'Cancelamento tardio',PENDING:'Pendente'};
 const DISPUTE_LABELS={OPEN:'Em análise',ACCEPTED:'Aceite',REJECTED:'Rejeitada'};
@@ -13,8 +14,8 @@ function externalHistory(items,ownedSessionIds){
 }
 function validateDisputeReason(reason){
  const text=String(reason||'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,'').trim();
- if(!text)throw new Error('Explica por que motivo queres contestar esta falta.');
- if(text.length>MAX_REASON)throw new Error('A justificação não pode ter mais de 2000 caracteres.');
+ if(!text)throw new Error(tr('Explica por que motivo queres contestar esta falta.'));
+ if(text.length>MAX_REASON)throw new Error(tr('A justificação não pode ter mais de 2000 caracteres.'));
  return text;
 }
 /** After a successful dispute the item shows "Em análise" and can't be disputed again. */

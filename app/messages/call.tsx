@@ -1,4 +1,5 @@
 import React,{Suspense,lazy} from 'react';
+import {t} from '../../src/lib/i18n';
 import {ActivityIndicator,Pressable,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 
@@ -14,10 +15,10 @@ class CallLoadBoundary extends React.Component<
  static getDerivedStateFromError(){return {failed:true};}
  render(){
   if(this.state.failed)return <View style={{flex:1,justifyContent:'center',padding:24,gap:16}}>
-   <Text style={{fontSize:19,fontWeight:'700'}}>Não foi possível abrir a chamada.</Text>
-   <Text>O módulo de chamadas não está disponível neste dispositivo. Podes continuar a utilizar o chat.</Text>
+   <Text style={{fontSize:19,fontWeight:'700'}}>{t('Não foi possível abrir a chamada.')}</Text>
+   <Text>{t('O módulo de chamadas não está disponível neste dispositivo. Podes continuar a utilizar o chat.')}</Text>
    <Pressable accessibilityRole="button" onPress={this.props.onBack} style={{padding:14,alignItems:'center'}}>
-    <Text>Voltar ao chat</Text>
+    <Text>{t('Voltar ao chat')}</Text>
    </Pressable>
   </View>;
   return this.props.children;

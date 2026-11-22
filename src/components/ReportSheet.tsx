@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {REPORT_REASONS,composeReportReason,type ReportReasonId} from '../lib/report-reasons.cjs';
 import {C} from '../lib/theme';
@@ -17,35 +18,35 @@ export function ReportSheet({visible,title,subject,onSubmit,onClose,inline=false
  async function submit(){
   if(inFlight.current)return;
   let text:string;
-  try{text=composeReportReason(reason,details);}catch(e){setError(e instanceof Error?e.message:'Confirma o motivo.');return;}
+  try{text=composeReportReason(reason,details);}catch(e){setError(e instanceof Error?e.message:t('Confirma o motivo.'));return;}
   inFlight.current=true;setBusy(true);setError('');
   try{await onSubmit(text);setDone(true);}
-  catch(e){setError((e instanceof Error?e.message:'Não foi possível enviar a denúncia.')+' Se já tinhas enviado, não precisas de repetir.');}
+  catch(e){setError((e instanceof Error?e.message:t('Não foi possível enviar a denúncia.'))+' '+t('Se já tinhas enviado, não precisas de repetir.'));}
   finally{inFlight.current=false;setBusy(false);}
  }
  const body=<View style={styles.backdrop}>
-  <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel="Fechar denúncia" onPress={busy?undefined:onClose}/>
+  <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('Fechar denúncia')} onPress={busy?undefined:onClose}/>
   <View style={styles.sheet} accessibilityViewIsModal>
    <Text style={styles.title}>{title}</Text>
    {done?<>
-    <Text style={styles.text}>Obrigado. A equipa Jynlo vai rever esta denúncia. Quem denunciou não é identificado à outra pessoa.</Text>
-    <Pressable accessibilityRole="button" onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>Fechar</Text></Pressable>
+    <Text style={styles.text}>{t('Obrigado. A equipa Jynlo vai rever esta denúncia. Quem denunciou não é identificado à outra pessoa.')}</Text>
+    <Pressable accessibilityRole="button" onPress={onClose} style={styles.primary}><Text style={styles.primaryText}>{t('Fechar')}</Text></Pressable>
    </>:<ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:10}}>
     <Text style={styles.text} numberOfLines={2}>{subject}</Text>
-    <Text style={styles.label}>Qual é o problema?</Text>
+    <Text style={styles.label}>{t('Qual é o problema?')}</Text>
     {REPORT_REASONS.map(r=><Pressable key={r.id} accessibilityRole="radio" accessibilityState={{checked:reason===r.id,disabled:busy}} disabled={busy}
       onPress={()=>{setReason(r.id);setError('');}} style={[styles.option,reason===r.id&&styles.optionSelected]}>
       <Text style={[styles.optionText,reason===r.id&&styles.optionTextSelected]}>{r.label}</Text>
      </Pressable>)}
     <TextInput value={details} onChangeText={setDetails} editable={!busy} multiline maxLength={800}
-     placeholder={reason==='OTHER'?'Explica o motivo (obrigatório)':'Detalhes (opcional)'} placeholderTextColor={C.muted}
-     style={styles.input} accessibilityLabel="Detalhes da denúncia"/>
+     placeholder={reason==='OTHER'?t('Explica o motivo (obrigatório)'):t('Detalhes (opcional)')} placeholderTextColor={C.muted}
+     style={styles.input} accessibilityLabel={t('Detalhes da denúncia')}/>
     {error?<Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>:null}
     <Pressable accessibilityRole="button" disabled={busy||!reason} onPress={()=>{void submit();}}
      style={[styles.primary,(busy||!reason)&&{opacity:.5}]}>
-     {busy?<ActivityIndicator color={C.background}/>:<Text style={styles.primaryText}>Enviar denúncia</Text>}
+     {busy?<ActivityIndicator color={C.background}/>:<Text style={styles.primaryText}>{t('Enviar denúncia')}</Text>}
     </Pressable>
-    <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>Cancelar</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.secondary}><Text style={styles.secondaryText}>{t('Cancelar')}</Text></Pressable>
    </ScrollView>}
   </View>
  </View>;

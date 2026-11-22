@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import {request} from '../lib/api';
@@ -20,7 +21,7 @@ export function FutureExclusionSheet({sessionId,participant,token,onClose}:{
   let live=true;
   request<{excluded:boolean}>(path(sessionId,participant.id),{token})
    .then(r=>{if(live)setExcluded(!!r?.excluded);})
-   .catch(()=>{if(live)setError('Não foi possível verificar a restrição.');});
+   .catch(()=>{if(live)setError(t('Não foi possível verificar a restrição.'));});
   return()=>{live=false;};
  },[sessionId,participant?.id,token]);
  if(!participant)return null;
@@ -31,35 +32,35 @@ export function FutureExclusionSheet({sessionId,participant,token,onClose}:{
   try{
    const r=await request<{excluded:boolean}>(path(sessionId,p.id),block?{token,method:'PUT',body:{reason}}:{token,method:'DELETE'});
    setExcluded(!!r?.excluded);
-   setDone(r?.excluded?p.username+' já não se pode inscrever nas tuas próximas sessões.':p.username+' pode voltar a inscrever-se nas tuas sessões.');
-  }catch{setError(block?'Não foi possível guardar a restrição.':'Não foi possível retirar a restrição.');}
+   setDone(r?.excluded?p.username+' '+t('já não se pode inscrever nas tuas próximas sessões.'):p.username+' '+t('pode voltar a inscrever-se nas tuas sessões.'));
+  }catch{setError(block?t('Não foi possível guardar a restrição.'):t('Não foi possível retirar a restrição.'));}
   finally{inFlight.current=false;setBusy(false);}
  }
  return <Modal visible transparent animationType="fade" onRequestClose={busy?()=>{}:onClose}>
   <View style={styles.backdrop}>
-   <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel="Fechar" onPress={busy?undefined:onClose}/>
+   <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('Fechar')} onPress={busy?undefined:onClose}/>
    <View style={styles.sheet} accessibilityViewIsModal>
     <ScrollView contentContainerStyle={{gap:12}}>
-     <Text style={styles.kicker}>INSCRIÇÕES FUTURAS</Text>
+     <Text style={styles.kicker}>{t('INSCRIÇÕES FUTURAS')}</Text>
      <Text style={styles.title}>{p.username}</Text>
-     <Text style={styles.text}>Decisão privada e reversível. Só afeta futuras inscrições nas tuas sessões; não altera presenças nem classificações, e o jogador não é avisado do motivo.</Text>
+     <Text style={styles.text}>{t('Decisão privada e reversível. Só afeta futuras inscrições nas tuas sessões; não altera presenças nem classificações, e o jogador não é avisado do motivo.')}</Text>
      {excluded===null&&!error?<ActivityIndicator color={C.mint}/>:null}
      {done?<Text style={styles.done}>{done}</Text>:null}
      {excluded===true?<>
-      {done?null:<Text style={styles.state}>Este jogador está impedido de se inscrever nas tuas próximas sessões.</Text>}
+      {done?null:<Text style={styles.state}>{t('Este jogador está impedido de se inscrever nas tuas próximas sessões.')}</Text>}
       <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void apply(false);}} style={styles.secondaryBtn}>
-       {busy?<ActivityIndicator color={C.white}/>:<Text style={styles.secondaryText}>Voltar a permitir</Text>}</Pressable>
+       {busy?<ActivityIndicator color={C.white}/>:<Text style={styles.secondaryText}>{t('Voltar a permitir')}</Text>}</Pressable>
      </>:null}
      {excluded===false?<>
-      <Text style={styles.label}>Motivo da restrição</Text>
+      <Text style={styles.label}>{t('Motivo da restrição')}</Text>
       {reasonsFor(p.attendanceStatus).map(r=><Pressable key={r.id} accessibilityRole="radio" accessibilityState={{checked:reason===r.id,disabled:busy}}
        disabled={busy} onPress={()=>setReason(r.id)} style={[styles.option,reason===r.id&&styles.optionOn]}>
        <Text style={[styles.optionText,reason===r.id&&{color:C.mint}]}>{r.label}</Text></Pressable>)}
       <Pressable accessibilityRole="button" disabled={busy||!reason} onPress={()=>{void apply(true);}} style={[styles.dangerBtn,(busy||!reason)&&{opacity:.5}]}>
-       {busy?<ActivityIndicator color={C.white}/>:<Text style={styles.dangerText}>Impedir futuras inscrições</Text>}</Pressable>
+       {busy?<ActivityIndicator color={C.white}/>:<Text style={styles.dangerText}>{t('Impedir futuras inscrições')}</Text>}</Pressable>
      </>:null}
      {error?<Text style={styles.error}>{error}</Text>:null}
-     <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.close}><Text style={styles.secondaryText}>Fechar</Text></Pressable>
+     <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={styles.close}><Text style={styles.secondaryText}>{t('Fechar')}</Text></Pressable>
     </ScrollView>
    </View>
   </View>

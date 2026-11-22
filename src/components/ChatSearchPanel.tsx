@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
 import {C} from '../lib/theme';
@@ -23,7 +24,7 @@ export default function ChatSearchPanel({kind,conversationId,token,enabled=true}
  const run=async(nextPage:number,term:string)=>{
   if(!enabled||!token||working.current)return;
   const normalized=term.trim();
-  if(normalized.length<2||normalized.length>80){setError('Escreve entre 2 e 80 caracteres.');return;}
+  if(normalized.length<2||normalized.length>80){setError(t('Escreve entre 2 e 80 caracteres.'));return;}
   working.current=true;setBusy(true);setError('');
   const version=++generation.current;
   try{
@@ -35,7 +36,7 @@ export default function ChatSearchPanel({kind,conversationId,token,enabled=true}
    ]);
    if(nextPage===0){setSelected(null);setContext([]);}
   }catch(e){
-   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível pesquisar mensagens.');
+   if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível pesquisar mensagens.'));
   }finally{
    if(version===generation.current){setBusy(false);working.current=false;}
   }
@@ -49,48 +50,48 @@ export default function ChatSearchPanel({kind,conversationId,token,enabled=true}
    if(version!==generation.current)return;
    setSelected(messageId);setContext(around);
   }catch(e){
-   if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível abrir a mensagem.');
+   if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível abrir a mensagem.'));
   }finally{
    if(version===generation.current){setBusy(false);working.current=false;}
   }
  };
  if(!token||!enabled)return null;
  return <View style={styles.wrap}>
-  <Pressable accessibilityRole="button" accessibilityLabel={open?'Fechar pesquisa de mensagens':'Pesquisar mensagens'}
+  <Pressable accessibilityRole="button" accessibilityLabel={open?t('Fechar pesquisa de mensagens'):t('Pesquisar mensagens')}
    accessibilityState={{expanded:open}} onPress={()=>{generation.current++;working.current=false;setOpen(v=>!v);setBusy(false);setError('');}}
-   style={[styles.toggle,open&&styles.toggleOpen]}><JynloIcon name="search" size={20} color={C.mint}/>{open?<Text style={styles.toggleText}>Fechar pesquisa</Text>:null}</Pressable>
+   style={[styles.toggle,open&&styles.toggleOpen]}><JynloIcon name="search" size={20} color={C.mint}/>{open?<Text style={styles.toggleText}>{t('Fechar pesquisa')}</Text>:null}</Pressable>
   {open?<View style={styles.body}>
    <View style={styles.searchLine}>
     <TextInput value={query} onChangeText={setQuery} maxLength={80} editable={!busy} style={styles.input}
-      placeholder="Pesquisar nesta conversa…" placeholderTextColor={C.muted}
-      accessibilityLabel="Termo a pesquisar no chat" returnKeyType="search" onSubmitEditing={()=>{void run(0,query);}}/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Iniciar pesquisa" disabled={busy||query.trim().length<2}
+      placeholder={t('Pesquisar nesta conversa…')} placeholderTextColor={C.muted}
+      accessibilityLabel={t('Termo a pesquisar no chat')} returnKeyType="search" onSubmitEditing={()=>{void run(0,query);}}/>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Iniciar pesquisa')} disabled={busy||query.trim().length<2}
      onPress={()=>{void run(0,query);}} style={styles.action}>
      <JynloIcon name="search" size={21} color={C.background}/>
     </Pressable>
    </View>
    {error?<Text style={styles.error}>{error}</Text>:null}
-   {busy?<Text style={styles.note}>A consultar mensagens…</Text>:null}
-   {!busy&&searched&&hits.length===0?<Text style={styles.note}>Não foram encontradas mensagens.</Text>:null}
+   {busy?<Text style={styles.note}>{t('A consultar mensagens…')}</Text>:null}
+   {!busy&&searched&&hits.length===0?<Text style={styles.note}>{t('Não foram encontradas mensagens.')}</Text>:null}
    {hits.length>0?<ScrollView style={styles.results} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-    {hits.map(hit=><Pressable key={hit.id} accessibilityRole="button" accessibilityLabel={'Ver contexto da mensagem de '+hit.sender}
+    {hits.map(hit=><Pressable key={hit.id} accessibilityRole="button" accessibilityLabel={t('Ver contexto da mensagem de {v}',{v:hit.sender})}
       onPress={()=>{void viewContext(hit.id);}} style={[styles.hit,selected===hit.id&&styles.selected]}>
       <Text style={styles.sender}>{hit.sender}</Text>
-      <Text style={styles.message} numberOfLines={3}>{hit.text||'Mensagem com anexo'}</Text>
+      <Text style={styles.message} numberOfLines={3}>{hit.text||t('Mensagem com anexo')}</Text>
      </Pressable>)}
    </ScrollView>:null}
-   {hasMore&&!busy?<Pressable accessibilityRole="button" accessibilityLabel="Carregar mais resultados"
-     onPress={()=>{void run(page+1,searched);}} style={styles.more}><Text style={styles.moreText}>Ver mais resultados</Text></Pressable>:null}
+   {hasMore&&!busy?<Pressable accessibilityRole="button" accessibilityLabel={t('Carregar mais resultados')}
+     onPress={()=>{void run(page+1,searched);}} style={styles.more}><Text style={styles.moreText}>{t('Ver mais resultados')}</Text></Pressable>:null}
    {selected!==null&&context.length>0?<View style={styles.context}>
-    <View style={styles.contextHeader}><Text style={styles.heading}>Contexto da mensagem</Text>
-     <Pressable accessibilityRole="button" accessibilityLabel="Fechar contexto" onPress={()=>{setSelected(null);setContext([]);}}>
+    <View style={styles.contextHeader}><Text style={styles.heading}>{t('Contexto da mensagem')}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar contexto')} onPress={()=>{setSelected(null);setContext([]);}}>
       <JynloIcon name="close" size={20} color={C.mint}/>
      </Pressable>
     </View>
     <ScrollView style={styles.contextScroll} nestedScrollEnabled>
     {context.map(hit=><View key={hit.id} style={[styles.hit,hit.id===selected&&styles.selected]}>
      <Text style={styles.sender}>{hit.sender}</Text>
-     <Text style={styles.message}>{hit.text||'Mensagem com anexo'}</Text>
+     <Text style={styles.message}>{hit.text||t('Mensagem com anexo')}</Text>
     </View>)}
     </ScrollView>
    </View>:null}

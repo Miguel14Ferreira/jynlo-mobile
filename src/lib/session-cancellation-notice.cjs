@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Public-only cancellation message suitable for external invitees.
  * Never accept address, precise coordinates, password or private notes.
  */
@@ -11,7 +12,7 @@ function cancellationNotice({sport,gameDate,city}={}){
    hour:'2-digit',minute:'2-digit'
  }):'';
  const summary=[label(sport,'desporto'),date,label(city)].filter(Boolean).join(' · ');
- return '⚠️ Sessão cancelada — '+summary+
+ return tr('⚠️ Sessão cancelada — ')+summary+
   '. O organizador cancelou esta sessão e o jogo não se vai realizar. '+
   'Por favor, não te desloques ao recinto.';
 }

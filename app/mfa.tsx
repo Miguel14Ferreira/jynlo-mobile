@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {StyleSheet,Text,TextInput} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Eyebrow,Message,Page} from '../src/components/UI';
@@ -22,25 +23,25 @@ export default function MfaScreen(){
  },[resendAfter]);
  async function submit(){if(requestInFlight.current)return;requestInFlight.current=true;setBusy(true);setError('');setNotice('');
    try{await auth.completeMfa(code.trim());setCode('');router.replace(redirect as any);}
-   catch(e){setError(e instanceof Error?e.message:'Código não aceite.');}
+   catch(e){setError(e instanceof Error?e.message:t('Código não aceite.'));}
    finally{requestInFlight.current=false;setBusy(false);}}
  async function requestNewCode(){
    if(requestInFlight.current||secondsUntilResend>0)return;requestInFlight.current=true;setBusy(true);setError('');setNotice('');
-   try{await auth.resendMfa();setCode('');setResendAfter(Date.now()+60000);setNow(Date.now());setNotice('Novo código enviado.');}
-   catch(e){setError(e instanceof Error?e.message:'Não foi possível reenviar o código. Aguarda um minuto antes de tentar novamente.');}
+   try{await auth.resendMfa();setCode('');setResendAfter(Date.now()+60000);setNow(Date.now());setNotice(t('Novo código enviado.'));}
+   catch(e){setError(e instanceof Error?e.message:t('Não foi possível reenviar o código. Aguarda um minuto antes de tentar novamente.'));}
    finally{requestInFlight.current=false;setBusy(false);}
  }
  return <Page>
-   <Eyebrow>SEGURANÇA DA CONTA</Eyebrow>
-   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Verificação em dois passos</Text>
-   <Text style={styles.sub}>Introduz o código de verificação associado à tua conta Jynlo.</Text>
+   <Eyebrow>{t('SEGURANÇA DA CONTA')}</Eyebrow>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Verificação em dois passos')}</Text>
+   <Text style={styles.sub}>{t('Introduz o código de verificação associado à tua conta Jynlo.')}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {notice?<Message>{notice}</Message>:null}
    <TextInput style={styles.input} value={code} onChangeText={setCode} keyboardType="number-pad"
-     autoComplete="one-time-code" placeholder="Código MFA" placeholderTextColor={C.muted}/>
-   <Button title={busy?'A verificar…':'Confirmar código'} disabled={busy||!code.trim()||!auth.challengeId} onPress={()=>{void submit();}}/>
-   <Button title={secondsUntilResend>0?`Reenviar código (${secondsUntilResend}s)`:'Reenviar código'} secondary disabled={busy||!auth.challengeId||secondsUntilResend>0} onPress={()=>{void requestNewCode();}}/>
-   {!auth.challengeId?<Message>Para receberes um código, volta ao ecrã de login.</Message>:null}
+     autoComplete="one-time-code" placeholder={t('Código MFA')} placeholderTextColor={C.muted}/>
+   <Button title={busy?t('A verificar…'):t('Confirmar código')} disabled={busy||!code.trim()||!auth.challengeId} onPress={()=>{void submit();}}/>
+   <Button title={secondsUntilResend>0?t('Reenviar código ({a}s)',{a:secondsUntilResend}):t('Reenviar código')} secondary disabled={busy||!auth.challengeId||secondsUntilResend>0} onPress={()=>{void requestNewCode();}}/>
+   {!auth.challengeId?<Message>{t('Para receberes um código, volta ao ecrã de login.')}</Message>:null}
  </Page>;
 }
 const styles=StyleSheet.create({

@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {SessionSummary} from '../lib/types';
 
@@ -12,23 +13,23 @@ const isMainland=(s:SessionSummary)=>s.latitude!=null&&s.longitude!=null&&
 /** Safe geographic fallback when the signed APK does not contain Google Maps. */
 export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
  const mainland=sessions.filter(isMainland);
- return <View style={styles.frame} accessibilityLabel="Esquema aproximado das sessões em Portugal continental">
-   <Text style={styles.heading}>Portugal continental · esquema de localizações</Text>
-   <Text style={styles.hint}>Pinos baseados nas coordenadas públicas. Sem fundo cartográfico nem ruas.</Text>
+ return <View style={styles.frame} accessibilityLabel={t('Esquema aproximado das sessões em Portugal continental')}>
+   <Text style={styles.heading}>{t('Portugal continental · esquema de localizações')}</Text>
+   <Text style={styles.hint}>{t('Pinos baseados nas coordenadas públicas. Sem fundo cartográfico nem ruas.')}</Text>
    <View style={styles.plot}>
-    <Text style={styles.north}>N ↑</Text>
+    <Text style={styles.north}>{t('N ↑')}</Text>
     <View pointerEvents="none" style={styles.continent}/>
     {mainland.map(s=><Pressable key={s.id} accessibilityRole="button"
-      accessibilityLabel={'Ver sessão de '+s.sport+(s.city?' em '+s.city:'')}
+      accessibilityLabel={t('Ver sessão de {v}',{v:s.sport})+(s.city?' em '+s.city:'')}
       onPress={()=>onSelect(s.id)} style={[styles.pin,{
        left:(clamp(100*((s.longitude!-boundaries.west)/(boundaries.east-boundaries.west))))+'%' as `${number}%`,
        top:(clamp(100*((boundaries.north-s.latitude!)/(boundaries.north-boundaries.south))))+'%' as `${number}%`,
       },selectedId===s.id&&styles.selected]}>
       <Text style={styles.pinText}>{selectedId===s.id?'●':'•'}</Text>
      </Pressable>)}
-    <Text style={styles.south}>S ↓</Text>
+    <Text style={styles.south}>{t('S ↓')}</Text>
    </View>
-   <Text style={styles.hint}>{mainland.length} sessões neste esquema · {sessions.length-mainland.length} fora da área continental ou sem posição representável</Text>
+   <Text style={styles.hint}>{t('{a} sessões neste esquema · {b} fora da área continental ou sem posição representável',{a:mainland.length,b:sessions.length-mainland.length})}</Text>
   </View>;
 }
 const styles=StyleSheet.create({

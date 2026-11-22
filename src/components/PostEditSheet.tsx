@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Alert,Image,Keyboard,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import type {FeedItem,MobileMedia} from '../lib/types';
@@ -51,9 +52,9 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
  function close(){
    if(lock.current)return;
    if(changed){
-     Alert.alert('Descartar alterações?','As alterações à publicação e aos ficheiros selecionados serão perdidas.',[
-       {text:'Continuar a editar',style:'cancel'},
-       {text:'Descartar',style:'destructive',onPress:onClose}
+     Alert.alert(t('Descartar alterações?'),t('As alterações à publicação e aos ficheiros selecionados serão perdidas.'),[
+       {text:t('Continuar a editar'),style:'cancel'},
+       {text:t('Descartar'),style:'destructive',onPress:onClose}
      ]);
    }else onClose();
  }
@@ -69,7 +70,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
      const files:MobileMedia[]=[];
      for(const asset of selected.assets){
        const mime=pickerMediaMime(asset);
-       if(!mime)throw Error('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.');
+       if(!mime)throw Error(t('Formato não suportado. Escolhe JPG, PNG, WebP, MP4 ou WebM.'));
        const kind=asset.type==='video'?'video':'image';
        let size=asset.fileSize||0;
        if(size===0){try{const {File}=await import('expo-file-system');const source=new File(asset.uri);if(source.exists)size=source.size;}catch{}}
@@ -80,14 +81,14 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
      if(validation)throw Error(validation);
      if(version===generation.current&&identity===currentIdentity)setReplacementMedia(files);
    }catch(e){if(version===generation.current&&identity===currentIdentity)
-     setError(e instanceof Error?e.message:'Não foi possível escolher fotografias ou vídeos.');}
+     setError(e instanceof Error?e.message:t('Não foi possível escolher fotografias ou vídeos.'));}
    finally{if(version===generation.current)setPicking(false);}
  }
  async function save(){
    if(replacing){
-     Alert.alert('Substituir multimédia?','As fotografias e vídeos atuais serão substituídos pelos novos. Os gostos e comentários mantêm-se.',[
-       {text:'Manter os ficheiros atuais',style:'cancel'},
-       {text:'Substituir',style:'destructive',onPress:()=>{void persist();}}
+     Alert.alert(t('Substituir multimédia?'),t('As fotografias e vídeos atuais serão substituídos pelos novos. Os gostos e comentários mantêm-se.'),[
+       {text:t('Manter os ficheiros atuais'),style:'cancel'},
+       {text:t('Substituir'),style:'destructive',onPress:()=>{void persist();}}
      ]);
      return;
    }
@@ -97,7 +98,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
    if(!visible||!post||!token||!username||lock.current||!changed)return;
    const initialIdentity=currentIdentity,version=generation.current;
    if(!text.trim()&&!replacing&&postMediaItems(post).length===0){
-     setError('Uma publicação sem fotografias ou vídeos precisa de uma descrição.');return;
+     setError(t('Uma publicação sem fotografias ou vídeos precisa de uma descrição.'));return;
    }
    lock.current=true;setBusy(true);setError('');
    try{
@@ -107,7 +108,7 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
      if(version===generation.current&&currentIdentity===initialIdentity)onSaved(result,replacing);
    }catch(e){
      if(version===generation.current&&currentIdentity===initialIdentity){
-       setError(e instanceof Error?e.message:'Não foi possível guardar. Confirma a publicação antes de repetir.');
+       setError(e instanceof Error?e.message:t('Não foi possível guardar. Confirma a publicação antes de repetir.'));
      }
    }finally{
      lock.current=false;
@@ -118,47 +119,47 @@ export default function PostEditSheet({post,token,username,onClose,onSaved}:Prop
   <SafeAreaView style={styles.screen}>
   <KeyboardAvoidingView style={styles.keyboardFrame} behavior={Platform.OS==='ios'?'padding':'height'}>
    <View style={styles.header}>
-    <Text style={styles.heading}>Editar publicação</Text>
-    <CloseIconButton onPress={close} label="Fechar edição da publicação" disabled={busy} color={C.text}/>
+    <Text style={styles.heading}>{t('Editar publicação')}</Text>
+    <CloseIconButton onPress={close} label={t('Fechar edição da publicação')} disabled={busy} color={C.text}/>
    </View>
    <ScrollView ref={editorScrollRef} style={{flex:1}} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-    <Text style={styles.hint}>Podes alterar a descrição e localização. Para trocar fotografias ou vídeos, escolhe novos ficheiros e confirma a substituição.</Text>
-    <Text style={styles.label}>Descrição (opcional com fotografias ou vídeos)</Text>
-    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel="Editar descrição da publicação" multiline maxLength={1000}
-     value={text} onChangeText={setText} editable={!busy} placeholder="O que queres partilhar?"
+    <Text style={styles.hint}>{t('Podes alterar a descrição e localização. Para trocar fotografias ou vídeos, escolhe novos ficheiros e confirma a substituição.')}</Text>
+    <Text style={styles.label}>{t('Descrição (opcional com fotografias ou vídeos)')}</Text>
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel={t('Editar descrição da publicação')} multiline maxLength={1000}
+     value={text} onChangeText={setText} editable={!busy} placeholder={t('O que queres partilhar?')}
      placeholderTextColor={C.muted} style={[styles.input,styles.description]}/>
     <Text style={styles.counter}>{text.length}/1000</Text>
-    <Text style={styles.label}>Localização opcional</Text>
-    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel="Editar localização da publicação" maxLength={160} editable={!busy}
-     value={location} onChangeText={setLocation} placeholder="Ex.: Campo do Bairro, Lisboa"
+    <Text style={styles.label}>{t('Localização opcional')}</Text>
+    <TextInput onFocus={event=>editorScrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(event.target!,28,true)} accessibilityLabel={t('Editar localização da publicação')} maxLength={160} editable={!busy}
+     value={location} onChangeText={setLocation} placeholder={t('Ex.: Campo do Bairro, Lisboa')}
      placeholderTextColor={C.muted} style={styles.input}/>
     <Text style={styles.counter}>{location.length}/160</Text>
-    <Text style={styles.label}>Fotografias e vídeos</Text>
-    <Text style={styles.hint}>Atualmente: {post?postMediaItems(post).length:0} ficheiro(s). Seleciona entre 1 e 6 novos ficheiros para substituir todos os existentes.</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Escolher novas fotografias ou vídeos" disabled={busy||picking}
+    <Text style={styles.label}>{t('Fotografias e vídeos')}</Text>
+    <Text style={styles.hint}>{t('Atualmente: {a} ficheiro(s). Seleciona entre 1 e 6 novos ficheiros para substituir todos os existentes.',{a:post?postMediaItems(post).length:0})}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Escolher novas fotografias ou vídeos')} disabled={busy||picking}
       onPress={()=>void pickReplacement()} style={styles.mediaButton}>
-      <Text style={styles.mediaButtonText}>{picking?'A abrir galeria…':'Escolher novos ficheiros'}</Text>
+      <Text style={styles.mediaButtonText}>{picking?t('A abrir galeria…'):t('Escolher novos ficheiros')}</Text>
     </Pressable>
     {replacing?<View style={styles.replacement}>
-     <Text style={styles.replacementLabel}>{replacementMedia.length} novo(s) ficheiro(s) selecionado(s)</Text>
+     <Text style={styles.replacementLabel}>{t('{a} novo(s) ficheiro(s) selecionado(s)',{a:replacementMedia.length})}</Text>
      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaPreviewRow}>
       {replacementMedia.map((file,index)=><View key={file.uri+'-'+index} style={styles.mediaPreview}>
        {file.type==='image'?<Image source={{uri:file.uri}} style={styles.mediaImage} resizeMode="cover"
-        accessibilityLabel={'Fotografia nova '+(index+1)}/>:<View style={styles.mediaVideo}>
-        <Text style={styles.mediaVideoText}>Vídeo {index+1}</Text></View>}
+        accessibilityLabel={t('Fotografia nova {v}',{v:(index+1)})}/>:<View style={styles.mediaVideo}>
+        <Text style={styles.mediaVideoText}>{t('Vídeo {a}',{a:index+1})}</Text></View>}
        <Text style={styles.previewName} numberOfLines={2}>{file.fileName}</Text>
       </View>)}
      </ScrollView>
-     <Pressable accessibilityRole="button" accessibilityLabel="Manter fotografias e vídeos atuais" disabled={busy}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Manter fotografias e vídeos atuais')} disabled={busy}
        onPress={()=>setReplacementMedia([])} style={styles.mediaButton}>
-       <Text style={styles.mediaButtonText}>Manter multimédia atual</Text>
+       <Text style={styles.mediaButtonText}>{t('Manter multimédia atual')}</Text>
      </Pressable>
     </View>:null}
     {error?<Text style={styles.error}>{error}</Text>:null}
    </ScrollView>
-   <Pressable accessibilityRole="button" accessibilityLabel="Guardar alterações da publicação" onPress={()=>void save()}
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Guardar alterações da publicação')} onPress={()=>void save()}
     disabled={!changed||busy||picking} style={[styles.save,(!changed||busy||picking)&&styles.disabled]}>
-    <Text style={styles.saveText}>{busy?'A guardar…':'Guardar alterações'}</Text>
+    <Text style={styles.saveText}>{busy?t('A guardar…'):t('Guardar alterações')}</Text>
    </Pressable>
   </KeyboardAvoidingView>
   </SafeAreaView>

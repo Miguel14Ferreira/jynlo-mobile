@@ -1,4 +1,5 @@
 import React,{useCallback,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ImagePickerAsset} from 'expo-image-picker';
 import {useFocusEffect,useRouter} from 'expo-router';
@@ -68,7 +69,7 @@ export default function EditProfileScreen(){
     initial.gender=normalize(profile.gender);
     initial.skillLevel=normalize(profile.skillLevel);
     setValues(initial);
-   }).catch(()=>{if(active)setError('Não foi possível carregar o perfil. Tenta abrir novamente.');})
+   }).catch(()=>{if(active)setError(t('Não foi possível carregar o perfil. Tenta abrir novamente.'));})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[auth.token]));
@@ -83,7 +84,7 @@ export default function EditProfileScreen(){
     exif:false,base64:false
    });
    if(!result.canceled&&result.assets?.[0])setSelectedPhoto(result.assets[0]);
-  }catch{setError('Não foi possível abrir a galeria de fotografias.');}
+  }catch{setError(t('Não foi possível abrir a galeria de fotografias.'));}
  }
  async function savePhoto(){
   if(!selectedPhoto||photoBusy||busy||!auth.token||DEMO_MODE)return;
@@ -93,20 +94,20 @@ export default function EditProfileScreen(){
    setOriginal(prev=>prev?{...prev,profilePicUrl:updated.profilePicUrl}:prev);
    setSelectedPhoto(null);
    setPhotoSuccess(true);
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível confirmar o envio da fotografia.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível confirmar o envio da fotografia.'));}
   finally{setPhotoBusy(false);}
  }
  async function save(){
   if(busy||!original||!auth.token||DEMO_MODE)return;
   const date=normalize(values.dateOfBirth),email=normalize(values.email).trim();
   const sportsError=validateFavoriteSports(normalize(values.favoriteSports),catalog);
-  if(!catalogReady||sportsError){setError(sportsError||'Carrega o catálogo de modalidades antes de guardar.');return;}
-  if(!isAdult(date)){setError('Introduz uma data de nascimento válida (mínimo de 18 anos).');return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError('Introduz um email válido.');return;}
+  if(!catalogReady||sportsError){setError(sportsError||t('Carrega o catálogo de modalidades antes de guardar.'));return;}
+  if(!isAdult(date)){setError(t('Introduz uma data de nascimento válida (mínimo de 18 anos).'));return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setError(t('Introduz um email válido.'));return;}
   const indicativePhone=normalize(values.indicativePhone).trim(),phone=normalize(values.phone).trim();
   if(Boolean(indicativePhone)!==Boolean(phone)|| (indicativePhone&&!/^\d{1,4}$/.test(indicativePhone))||
     (phone&&!/^\d{4,15}$/.test(phone))||indicativePhone.length+phone.length>15){
-    setError('Confirma o indicativo e o número de telemóvel.');return;
+    setError(t('Confirma o indicativo e o número de telemóvel.'));return;
   }
   setBusy(true);setError('');setSuccess(false);
   try{
@@ -122,30 +123,30 @@ export default function EditProfileScreen(){
    };
    const updated=await request<Profile>('/api/profile/me',{token:auth.token,method:'PUT',body:payload});
    setOriginal(updated);setSuccess(true);
-  }catch(e){setError('Não foi possível guardar. Verifica os dados e tenta novamente.');}
+  }catch(e){setError(t('Não foi possível guardar. Verifica os dados e tenta novamente.'));}
   finally{setBusy(false);}
  }
- return <Page><Eyebrow>EDITAR DADOS</Eyebrow>
-  {!auth.token||DEMO_MODE?<Message>Inicia sessão numa conta real para editar o perfil.</Message>:null}
+ return <Page><Eyebrow>{t('EDITAR DADOS')}</Eyebrow>
+  {!auth.token||DEMO_MODE?<Message>{t('Inicia sessão numa conta real para editar o perfil.')}</Message>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {success?<Message>Dados guardados com sucesso.</Message>:null}
-  {photoSuccess?<Message>Fotografia atualizada com sucesso.</Message>:null}
+  {success?<Message>{t('Dados guardados com sucesso.')}</Message>:null}
+  {photoSuccess?<Message>{t('Fotografia atualizada com sucesso.')}</Message>:null}
   {original&&!loading?<View style={styles.form}>
-   <Text style={styles.identity}>Conta: {original.username}</Text>
-   <Eyebrow>FOTOGRAFIA DE PERFIL</Eyebrow>
+   <Text style={styles.identity}>{t('Conta: {a}',{a:original.username})}</Text>
+   <Eyebrow>{t('FOTOGRAFIA DE PERFIL')}</Eyebrow>
    {selectedPhoto?.uri||original.profilePicUrl?
     <Image source={{uri:selectedPhoto?.uri||original.profilePicUrl||''}} style={styles.photo}/>:
-    <Message>Ainda não tens fotografia de perfil.</Message>}
-   <Button title="Escolher fotografia" secondary onPress={()=>{void choosePhoto();}} disabled={busy||photoBusy}/>
+    <Message>{t('Ainda não tens fotografia de perfil.')}</Message>}
+   <Button title={t('Escolher fotografia')} secondary onPress={()=>{void choosePhoto();}} disabled={busy||photoBusy}/>
    {selectedPhoto?<View style={styles.photoActions}>
-    <Message>A fotografia selecionada só será enviada quando confirmares.</Message>
-    <Button title={photoBusy?'A enviar…':'Guardar fotografia'} disabled={photoBusy||busy}
+    <Message>{t('A fotografia selecionada só será enviada quando confirmares.')}</Message>
+    <Button title={photoBusy?t('A enviar…'):t('Guardar fotografia')} disabled={photoBusy||busy}
      onPress={()=>{void savePhoto();}}/>
-    <Button title="Cancelar seleção" secondary disabled={photoBusy}
+    <Button title={t('Cancelar seleção')} secondary disabled={photoBusy}
      onPress={()=>setSelectedPhoto(null)}/>
    </View>:null}
-   {fields.map(({key,label,limit})=><View key={key} style={styles.field}>
+   {fields.map(f=>({...f,label:t(f.label)})).map(({key,label,limit})=><View key={key} style={styles.field}>
     <Text style={styles.label}>{label}</Text>
     <TextInput style={[styles.input,key==='bio'&&styles.bio]} value={normalize(values[key])}
      onChangeText={v=>set(key,v)} maxLength={limit}
@@ -153,46 +154,46 @@ export default function EditProfileScreen(){
      keyboardType={key==='email'?'email-address':key==='phone'||key==='indicativePhone'?'phone-pad':'default'}
      editable={!busy} placeholderTextColor={C.muted}/>
    </View>)}
-   <Eyebrow>MODALIDADES FAVORITAS</Eyebrow>
-   <Text style={styles.label}>Escolhe as modalidades que praticas</Text>
-   <Text style={styles.identity}>{parseFavoriteSports(values.favoriteSports).length} selecionadas</Text>
+   <Eyebrow>{t('MODALIDADES FAVORITAS')}</Eyebrow>
+   <Text style={styles.label}>{t('Escolhe as modalidades que praticas')}</Text>
+   <Text style={styles.identity}>{t('{a} selecionadas',{a:parseFavoriteSports(values.favoriteSports).length})}</Text>
    <View style={styles.options}>{parseFavoriteSports(values.favoriteSports).map(sport=><Pressable
      accessibilityRole="checkbox" accessibilityState={{checked:true}} key={sport}
      style={[styles.option,styles.selected]} disabled={busy||!catalogReady}
      onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));}
-      catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar a seleção.');}}}>
+      catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar a seleção.'));}}}>
      <Text style={styles.selected}>✓ {sport} ×</Text>
     </Pressable>)}</View>
-   <Button title={showSports?'Fechar modalidades':'Adicionar modalidades'} secondary
+   <Button title={showSports?t('Fechar modalidades'):t('Adicionar modalidades')} secondary
      disabled={!catalogReady||busy} onPress={()=>setShowSports(v=>!v)}/>
    {showSports&&catalogReady?<View style={styles.sportsSearchBox}>
     <TextInput style={styles.input} value={sportsSearch} onChangeText={setSportsSearch}
-      placeholder="Pesquisar modalidades" placeholderTextColor={C.muted}/>
+      placeholder={t('Pesquisar modalidades')} placeholderTextColor={C.muted}/>
     {filterSports(catalog,sportsSearch).slice(0,30).map(sport=>{
      const checked=parseFavoriteSports(values.favoriteSports).includes(sport);
      return <Pressable key={sport} accessibilityRole="checkbox" accessibilityState={{checked}}
        style={[styles.sportRow,checked&&styles.sportRowSelected]}
        disabled={busy||photoBusy}
        onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));setError('');}
-        catch(e){setError(e instanceof Error?e.message:'Não foi possível alterar a seleção.');}}}>
+        catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar a seleção.'));}}}>
       <Text style={styles.sportText}>{checked?'☑':'☐'} {sport}</Text>
      </Pressable>;
     })}
-    {filterSports(catalog,sportsSearch).length>30?<Text style={styles.identity}>Mostradas 30 modalidades. Pesquisa para veres mais.</Text>:null}
+    {filterSports(catalog,sportsSearch).length>30?<Text style={styles.identity}>{t('Mostradas 30 modalidades. Pesquisa para veres mais.')}</Text>:null}
    </View>:null}
-   <Text style={styles.label}>Género</Text>
+   <Text style={styles.label}>{t('Género')}</Text>
    <View style={styles.options}>{(['','masculino','feminino','outro'] as const).map(v=>
     <Text key={v} style={[styles.option,values.gender===v&&styles.selected]} onPress={()=>set('gender',v)}>
-     {v||'Não indicar'}
+     {v||t('Não indicar')}
     </Text>)}</View>
-   <Text style={styles.label}>Nível</Text>
+   <Text style={styles.label}>{t('Nível')}</Text>
    <View style={styles.options}>{(['','BEGINNER','INTERMEDIATE','ADVANCED'] as const).map(v=>
     <Text key={v} style={[styles.option,values.skillLevel===v&&styles.selected]}
-     onPress={()=>set('skillLevel',v)}>{v||'Não indicar'}</Text>)}</View>
-   <Message>Modalidades sincronizadas com o catálogo da Jynlo. A segurança MFA é gerida separadamente.</Message>
-   <Button title={busy?'A guardar…':'Guardar alterações'} disabled={busy||!catalogReady||photoBusy} onPress={()=>{void save();}}/>
+     onPress={()=>set('skillLevel',v)}>{v||t('Não indicar')}</Text>)}</View>
+   <Message>{t('Modalidades sincronizadas com o catálogo da Jynlo. A segurança MFA é gerida separadamente.')}</Message>
+   <Button title={busy?t('A guardar…'):t('Guardar alterações')} disabled={busy||!catalogReady||photoBusy} onPress={()=>{void save();}}/>
   </View>:null}
-  <Button title="Voltar ao perfil" secondary onPress={()=>router.back()}/>
+  <Button title={t('Voltar ao perfil')} secondary onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

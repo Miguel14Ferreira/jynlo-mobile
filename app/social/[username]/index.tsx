@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {Alert,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
@@ -46,7 +47,7 @@ export default function PublicSocialProfile(){
   void publicSportsProfile(name,auth.token).then(value=>{
    if(request===version.current)setProfile(value);
   }).catch(()=>{
-   if(request===version.current)setError('Não foi possível carregar este perfil.');
+   if(request===version.current)setError(t('Não foi possível carregar este perfil.'));
   }).finally(()=>{if(request===version.current)setLoading(false);});
   void followStatus(name,auth.token).then(value=>{
    if(request===version.current)setStatus(value);
@@ -85,10 +86,10 @@ export default function PublicSocialProfile(){
    const next=await changeFollow(name,shouldFollow,auth.token);
    if(request===version.current)setStatus(next);
   }catch{
-   if(request===version.current)setError('Não foi possível confirmar a alteração. Verifica o estado antes de repetir.');
+   if(request===version.current)setError(t('Não foi possível confirmar a alteração. Verifica o estado antes de repetir.'));
   }finally{if(request===version.current){inFlight.current=false;setBusy(false);}}
  }
- if(!name)return <Page><Message tone="error">Utilizador inválido.</Message></Page>;
+ if(!name)return <Page><Message tone="error">{t('Utilizador inválido.')}</Message></Page>;
  const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||name;
  const image=resolveJynloMedia(profile?.profilePicUrl);
  const sports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
@@ -99,18 +100,18 @@ export default function PublicSocialProfile(){
   const run=async()=>{
    setSafetyBusy(true);
    try{const value=wasBlocked?await unblockUser(name,token):await blockUser(name,token);if(version.current===request)setBlocked(value);}
-   catch(e){Alert.alert('Não foi possível concluir',e instanceof Error?e.message:'Tenta novamente.');}
+   catch(e){Alert.alert(t('Não foi possível concluir'),e instanceof Error?e.message:t('Tenta novamente.'));}
    finally{if(version.current===request)setSafetyBusy(false);}
   };
   if(wasBlocked){void run();return;}
-  Alert.alert('Bloquear @'+name+'?','Deixas de ver o conteúdo desta pessoa e ela deixa de te poder contactar. Podes desbloquear aqui.',[
-   {text:'Cancelar',style:'cancel'},{text:'Bloquear',style:'destructive',onPress:()=>{void run();}}
+  Alert.alert(t('Bloquear @{v}',{v:name})+'?',t('Deixas de ver o conteúdo desta pessoa e ela deixa de te poder contactar. Podes desbloquear aqui.'),[
+   {text:t('Cancelar'),style:'cancel'},{text:t('Bloquear'),style:'destructive',onPress:()=>{void run();}}
   ]);
  }
  return <Page>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {!auth.token?<Button title="Entrar para ver este perfil" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={t('Entrar para ver este perfil')} onPress={()=>router.push('/login')}/>:null}
   {profile?<View style={styles.hero}>
    <View style={styles.identity}>
     <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text maxFontSizeMultiplier={1.3} style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
@@ -120,40 +121,40 @@ export default function PublicSocialProfile(){
    {[profile.location,profile.country].filter(Boolean).length?<Text style={styles.sub}>⌖  {[profile.location,profile.country].filter(Boolean).join(' · ')}</Text>:null}
    {sports.length?<View style={styles.tags}>{sports.map(s=><View key={s} style={styles.tag}><Text style={styles.tagLabel}>{s}</Text></View>)}</View>:null}
    {status?<View style={styles.metrics}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Ver seguidores" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'followers'}})} style={styles.metric}>
-     <Text style={styles.metricNum}>{status.followers}</Text><Text style={styles.sub}>Seguidores</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver seguidores')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'followers'}})} style={styles.metric}>
+     <Text style={styles.metricNum}>{status.followers}</Text><Text style={styles.sub}>{t('Seguidores')}</Text>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Ver pessoas seguidas" onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'following'}})} style={styles.metric}>
-     <Text style={styles.metricNum}>{status.following}</Text><Text style={styles.sub}>A seguir</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver pessoas seguidas')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'following'}})} style={styles.metric}>
+     <Text style={styles.metricNum}>{status.following}</Text><Text style={styles.sub}>{t('A seguir')}</Text>
     </Pressable>
    </View>:null}
    {!own&&status?<Pressable accessibilityRole="button"
-    accessibilityLabel={status.followedByMe?'Deixar de seguir':status.requestPending?'Cancelar pedido para seguir':status.privateProfile?'Pedir para seguir':'Seguir utilizador'}
+    accessibilityLabel={status.followedByMe?t('Deixar de seguir'):status.requestPending?t('Cancelar pedido para seguir'):status.privateProfile?t('Pedir para seguir'):t('Seguir utilizador')}
     disabled={busy} onPress={()=>{void toggle();}} style={[styles.follow,(status.followedByMe||status.requestPending)&&styles.unfollow,busy&&styles.disabled]}>
     <Text style={[styles.followText,(status.followedByMe||status.requestPending)&&styles.unfollowText]}>
-     {busy?'A confirmar…':status.followedByMe?'A seguir ✓':status.requestPending?'Pedido enviado ✓':status.privateProfile?'Pedir para seguir +':'Seguir +'}
+     {busy?t('A confirmar…'):status.followedByMe?t('A seguir ✓'):status.requestPending?t('Pedido enviado ✓'):status.privateProfile?t('Pedir para seguir +'):t('Seguir +')}
     </Text>
-   </Pressable>:!own?<Text style={styles.sub}>Não foi possível confirmar a relação de seguimento.</Text>:null}
+   </Pressable>:!own?<Text style={styles.sub}>{t('Não foi possível confirmar a relação de seguimento.')}</Text>:null}
    {!own&&auth.token?<View style={styles.safetyRow}>
     <Pressable accessibilityRole="button" disabled={safetyBusy||blocked===null} onPress={toggleBlock}
-     accessibilityLabel={blocked?'Desbloquear @'+name:'Bloquear @'+name} style={[styles.safetyAction,(safetyBusy||blocked===null)&&styles.disabled]}>
-     <Text style={styles.safetyText}>{safetyBusy?'A confirmar…':blocked?'Desbloquear':'Bloquear'}</Text>
+     accessibilityLabel={blocked?t('Desbloquear @{v}',{v:name}):t('Bloquear @{v}',{v:name})} style={[styles.safetyAction,(safetyBusy||blocked===null)&&styles.disabled]}>
+     <Text style={styles.safetyText}>{safetyBusy?t('A confirmar…'):blocked?t('Desbloquear'):t('Bloquear')}</Text>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={'Denunciar perfil de @'+name} onPress={()=>setReporting(true)} style={styles.safetyAction}>
-     <Text style={styles.safetyText}>Denunciar</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Denunciar perfil de @{v}',{v:name})} onPress={()=>setReporting(true)} style={styles.safetyAction}>
+     <Text style={styles.safetyText}>{t('Denunciar')}</Text>
     </Pressable>
    </View>:null}
   </View>:null}
   {privacy?.privateProfile&&!privacy.canViewContent?<View style={styles.hero}>
-    <Text style={styles.name}>Perfil privado</Text>
-    <Text style={styles.sub}>Segue esta pessoa e aguarda a aprovação para veres as suas publicações e stories.</Text>
+    <Text style={styles.name}>{t('Perfil privado')}</Text>
+    <Text style={styles.sub}>{t('Segue esta pessoa e aguarda a aprovação para veres as suas publicações e stories.')}</Text>
    </View>:null}
   {profile&&participations.length>0?<View style={styles.discovery}>
-   <Text style={styles.discoveryTitle}>Competições individuais concluídas</Text>
-   <Text style={styles.discoveryHint}>Participação confirmada em torneios públicos finalizados. Sem classificações presumidas.</Text>
+   <Text style={styles.discoveryTitle}>{t('Competições individuais concluídas')}</Text>
+   <Text style={styles.discoveryHint}>{t('Participação confirmada em torneios públicos finalizados. Sem classificações presumidas.')}</Text>
    {participations.map(entry=><Pressable key={'competition-'+entry.tournamentId}
      accessibilityRole="button"
-     accessibilityLabel={'Ver competição '+entry.tournamentName}
+     accessibilityLabel={t('Ver competição {v}',{v:entry.tournamentName})}
      style={styles.competitionRow}
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(entry.communityId)}})}>
      <View style={styles.competitionBody}>
@@ -161,17 +162,17 @@ export default function PublicSocialProfile(){
       <Text style={styles.discoveryHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
      </View>
      <View style={styles.competitionResult}>
-      <Text style={styles.competitionStatus}>{entry.individualChampion?'🏆 Campeão individual':'Participação confirmada'}</Text>
+      <Text style={styles.competitionStatus}>{entry.individualChampion?t('🏆 Campeão individual'):t('Participação confirmada')}</Text>
       {entry.wins!=null&&entry.draws!=null&&entry.losses!=null?<Text style={styles.competitionStatus}>{entry.wins}V · {entry.draws}E · {entry.losses}D</Text>:null}
       <Text style={styles.discoveryHint}>{entry.completedAt?.slice(0,7)||''}</Text>
      </View>
    </Pressable>)}
   </View>:null}
   {profile&&titles.length>0?<View style={styles.discovery}>
-   <Text style={styles.discoveryTitle}>Títulos individuais oficiais</Text>
-   <Text style={styles.discoveryHint}>Vitórias confirmadas em torneios concluídos de comunidades públicas.</Text>
+   <Text style={styles.discoveryTitle}>{t('Títulos individuais oficiais')}</Text>
+   <Text style={styles.discoveryHint}>{t('Vitórias confirmadas em torneios concluídos de comunidades públicas.')}</Text>
    {titles.map(title=><Pressable key={title.tournamentId}
-     accessibilityRole="button" accessibilityLabel={'Ver torneio '+title.tournamentName}
+     accessibilityRole="button" accessibilityLabel={t('Ver torneio {v}',{v:title.tournamentName})}
      style={styles.titleCard}
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(title.communityId)}})}>
      <Text style={styles.titleIcon}>🏆</Text>
@@ -181,74 +182,74 @@ export default function PublicSocialProfile(){
    </Pressable>)}
   </View>:null}
   {profile&&privacy?.canViewContent&&activity?<View style={styles.discovery}>
-   <Text style={styles.discoveryTitle}>Histórico desportivo</Text>
-   <Text style={styles.discoveryHint}>Estatísticas calculadas pela Jynlo.</Text>
+   <Text style={styles.discoveryTitle}>{t('Histórico desportivo')}</Text>
+   <Text style={styles.discoveryHint}>{t('Estatísticas calculadas pela Jynlo.')}</Text>
    <View style={styles.activityGrid}>
     {([
-     [activity.activitiesCompleted,'Atividades'],
-     [activity.peoplePlayedWith,'Pessoas com quem jogou'],
-     [activity.sportsPractised,'Modalidades'],
-     [activity.eventsCreated,'Eventos organizados'],
-     [activity.participantsMobilized,'Participantes mobilizados'],
-     [activity.communitiesJoined,'Comunidades']
+     [activity.activitiesCompleted,t('Atividades')],
+     [activity.peoplePlayedWith,t('Pessoas com quem jogou')],
+     [activity.sportsPractised,t('Modalidades')],
+     [activity.eventsCreated,t('Eventos organizados')],
+     [activity.participantsMobilized,t('Participantes mobilizados')],
+     [activity.communitiesJoined,t('Comunidades')]
     ] as const).map(([count,label])=><View key={label} style={styles.activityCard}>
      <Text style={styles.activityNumber}>{Math.max(0,Number(count)||0)}</Text>
      <Text style={styles.activityLabel}>{label}</Text>
     </View>)}
    </View>
    {earnedAchievements.length>0?<View style={styles.achievementSection}>
-    <Text style={styles.discoveryTitle}>Conquistas</Text>
+    <Text style={styles.discoveryTitle}>{t('Conquistas')}</Text>
     <View style={styles.achievementList}>
      {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
       <View key={code} style={styles.achievementBadge}>
-       <Text style={styles.achievementLabel}>{achievementLabels[code]}</Text>
+       <Text style={styles.achievementLabel}>{t(achievementLabels[code]??code)}</Text>
       </View>)}
     </View>
     {earnedAchievements.length>3?<Pressable accessibilityRole="button"
      accessibilityState={{expanded:showAllAchievements}}
-     accessibilityLabel={showAllAchievements?'Mostrar menos conquistas':'Ver todas as conquistas'}
+     accessibilityLabel={showAllAchievements?t('Mostrar menos conquistas'):t('Ver todas as conquistas')}
      style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
-     <Text style={styles.showAchievementsText}>{showAllAchievements?'Mostrar menos':'Ver todas as conquistas'} ({earnedAchievements.length})</Text>
+     <Text style={styles.showAchievementsText}>{showAllAchievements?t('Mostrar menos'):t('Ver todas as conquistas')} ({earnedAchievements.length})</Text>
     </Pressable>:null}
    </View>:null}
   </View>:null}
   {profile&&affiliations&&(affiliations.teams.length>0||affiliations.communities.length>0)?
    <View style={styles.discovery}>
-    <Text style={styles.discoveryTitle}>Equipas e comunidades públicas</Text>
-    <Text style={styles.discoveryHint}>Associações confirmadas e visíveis publicamente.</Text>
+    <Text style={styles.discoveryTitle}>{t('Equipas e comunidades públicas')}</Text>
+    <Text style={styles.discoveryHint}>{t('Associações confirmadas e visíveis publicamente.')}</Text>
     {affiliations.teams.map(team=><Pressable key={'team-'+team.id}
-     accessibilityRole="button" accessibilityLabel={'Abrir equipa '+team.name}
+     accessibilityRole="button" accessibilityLabel={t('Abrir equipa {v}',{v:team.name})}
      style={styles.discoveryLink} onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
      <Text style={styles.discoveryLinkText}>{team.name}</Text>
-     <Text style={styles.discoveryHint}>{team.sport||'Equipa desportiva'}</Text>
+     <Text style={styles.discoveryHint}>{team.sport||t('Equipa desportiva')}</Text>
     </Pressable>)}
     {affiliations.communities.map(group=><Pressable key={'community-'+group.id}
-     accessibilityRole="button" accessibilityLabel={'Abrir comunidade '+group.name}
+     accessibilityRole="button" accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})}
      style={styles.discoveryLink} onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})}>
      <Text style={styles.discoveryLinkText}>{group.name}</Text>
-     <Text style={styles.discoveryHint}>{group.sport||'Comunidade desportiva'}</Text>
+     <Text style={styles.discoveryHint}>{group.sport||t('Comunidade desportiva')}</Text>
     </Pressable>)}
    </View>:null}
   {profile?<View style={styles.discovery}>
-   <Text style={styles.discoveryTitle}>Continuar a descobrir</Text>
-   <Text style={styles.discoveryHint}>Encontra sessões, equipas e comunidades na Jynlo.</Text>
+   <Text style={styles.discoveryTitle}>{t('Continuar a descobrir')}</Text>
+   <Text style={styles.discoveryHint}>{t('Encontra sessões, equipas e comunidades na Jynlo.')}</Text>
    <View style={styles.discoveryLinks}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Procurar sessões desportivas"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Procurar sessões desportivas')}
      style={styles.discoveryLink} onPress={()=>router.push('/explore')}>
-     <Text style={styles.discoveryLinkText}>⌖  Procurar sessões</Text>
+     <Text style={styles.discoveryLinkText}>{t('⌖  Procurar sessões')}</Text>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Explorar equipas"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Explorar equipas')}
      style={styles.discoveryLink} onPress={()=>router.push('/teams')}>
-     <Text style={styles.discoveryLinkText}>♜  Explorar equipas</Text>
+     <Text style={styles.discoveryLinkText}>{t('♜  Explorar equipas')}</Text>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="Explorar comunidades"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Explorar comunidades')}
      style={styles.discoveryLink} onPress={()=>router.push('/communities')}>
-     <Text style={styles.discoveryLinkText}>♧  Explorar comunidades</Text>
+     <Text style={styles.discoveryLinkText}>{t('♧  Explorar comunidades')}</Text>
     </Pressable>
    </View>
   </View>:null}
   {profile&&privacy?.canViewContent?<ProfilePosts username={name} token={auth.token}/>:null}
-   <ReportSheet visible={reporting&&!!name} title="Denunciar perfil" subject={'Perfil de @'+(name||'')}
+   <ReportSheet visible={reporting&&!!name} title={t('Denunciar perfil')} subject={t('Perfil de @{v}',{v:(name||'')})}
    onClose={()=>setReporting(false)}
    onSubmit={async reason=>{if(!name||!auth.token)return;await reportUser(name,reason,auth.token);}}/>
  </Page>;

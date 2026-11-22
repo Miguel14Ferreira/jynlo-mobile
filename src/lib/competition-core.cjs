@@ -1,10 +1,11 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Keep source-specific sporting results separated. The API owns all rankings. */
 const TEAM_MATCH_SPORTS=new Set(['Futebol','Futsal']);
 const RACE_SPORTS=new Set(['Karting','BMX','Ciclismo','Mountain Bike','Ciclocrosse','Ciclismo de Estrada','Ciclismo de Pista','Automobilismo','Motociclismo','Motocross','Corrida','Trail Running','Corrida de obstáculos','Motonáutica']);
 const TIMED_MODES=new Set(['SWIM_BEST_TIME','TRACK_BEST_TIME','CANOE_BEST_TIME','ROWING_BEST_TIME']);
 function classificationKind(t){
- if(!t||typeof t!=='object')throw Error('Torneio inválido.');
+ if(!t||typeof t!=='object')throw Error(tr('Torneio inválido.'));
  const mode=t.scoringMode||null;
  if(mode==='RACE_POINTS')return 'RACE';
  if(TIMED_MODES.has(mode))return 'TIMED';
@@ -17,7 +18,7 @@ function classificationKind(t){
  if(['Futebol','Futsal','Padel','Ténis','Xadrez'].includes(t.sport||''))return 'INDIVIDUAL';
  return 'UNSUPPORTED';
 }
-function label(kind){return ({RACE:'Campeonato por pontos de corrida',TEAM:'Classificação por equipas',INDIVIDUAL:'Classificação individual',TIMED:'Melhores tempos',MEASURED:'Melhores marcas',RELAY:'Estafetas por tempo',CHESS:'Pontos de xadrez',EVENT_RANKING:'Classificação por provas',UNSUPPORTED:'Classificação específica indisponível'})[kind]||'Classificação';}
+function label(kind){return ({RACE:tr('Campeonato por pontos de corrida'),TEAM:tr('Classificação por equipas'),INDIVIDUAL:tr('Classificação individual'),TIMED:tr('Melhores tempos'),MEASURED:tr('Melhores marcas'),RELAY:tr('Estafetas por tempo'),CHESS:tr('Pontos de xadrez'),EVENT_RANKING:tr('Classificação por provas'),UNSUPPORTED:tr('Classificação específica indisponível')})[kind]||'Classificação';}
 function standingsColumns(kind){
  if(kind==='RACE')return ['Pos.','Piloto','Corridas','Pódios','Pontos'];
  if(kind==='TEAM')return ['Pos.','Equipa','J','V','E','D','Pts'];
@@ -28,5 +29,5 @@ function standingsColumns(kind){
  return ['Pos.','Participante','Resultado'];
 }
 function isPerformanceKind(kind){return ['RACE','TIMED','MEASURED','RELAY'].includes(kind);}
-function validTournamentId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error('Identificador de torneio inválido.');return n;}
+function validTournamentId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error(tr('Identificador de torneio inválido.'));return n;}
 module.exports={RACE_SPORTS,TEAM_MATCH_SPORTS,classificationKind,label,standingsColumns,isPerformanceKind,validTournamentId};

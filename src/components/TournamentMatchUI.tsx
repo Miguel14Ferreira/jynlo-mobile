@@ -1,4 +1,5 @@
 import React from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {TournamentTeamMatch} from '../lib/types';
 import {matchRound,matchScore} from '../lib/tournament-fixtures-core.cjs';
@@ -6,7 +7,7 @@ import {C} from '../lib/theme';
 export function TournamentMatchCard({match,onTeamPress}:{match:TournamentTeamMatch;onTeamPress?:(teamId:number)=>void}){
  const names=[{id:match.homeTeamId,name:match.homeTeamName},{id:match.awayTeamId,name:match.awayTeamName}];
  return <View style={styles.match}>
-   <View style={styles.row}><Text style={styles.label}>{matchRound(match)}</Text><Text style={styles.status}>{match.status==='COMPLETED'?'Terminado':'Por disputar'}</Text></View>
+   <View style={styles.row}><Text style={styles.label}>{matchRound(match)}</Text><Text style={styles.status}>{match.status==='COMPLETED'?t('Terminado'):t('Por disputar')}</Text></View>
    <View style={styles.row}><View style={{flex:1,gap:10}}>{names.map(t=><Pressable key={t.id} disabled={!onTeamPress} onPress={()=>onTeamPress?.(t.id)} accessibilityRole={onTeamPress?'button':undefined}><Text style={styles.name}>{t.name}</Text></Pressable>)}</View><Text style={styles.result}>{matchScore(match)}</Text></View>
  </View>;
 }

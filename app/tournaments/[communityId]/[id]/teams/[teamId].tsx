@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t as tr} from '../../../../../src/lib/i18n';
 import {Alert,Share,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../../src/components/UI';
@@ -24,7 +25,7 @@ export default function TournamentTeamProfileScreen(){
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){if(version===generation.current)setLoading(false);return;}
   if(![cid,tid,teamId].every(n=>Number.isSafeInteger(n)&&n>0)){
-   if(version===generation.current){setError('Identificador de equipa inválido.');setLoading(false);}
+   if(version===generation.current){setError(tr('Identificador de equipa inválido.'));setLoading(false);}
    return;
   }
   setLoading(true);setError('');setNeedsCommunity(false);setTournament(null);setTeam(null);setMatches([]);setHasMore(false);setPage(0);setPromotion(null);
@@ -33,15 +34,15 @@ export default function TournamentTeamProfileScreen(){
    if(version!==generation.current)return;
    if(!('myRole' in community)||!community.myRole){
     setNeedsCommunity(true);
-    setError('Para participares nesta equipa, primeiro tens de aderir à comunidade.');
+    setError(tr('Para participares nesta equipa, primeiro tens de aderir à comunidade.'));
     return;
    }
    const [t,teams]=await Promise.all([tournamentDetails(cid,tid,auth.token,auth.username),tournamentTeams(cid,tid,auth.token,auth.username)]);
    if(version!==generation.current)return;
    setTournament(t);
-   if(t.entryType!=='TEAM')throw Error('Este torneio não tem equipas.');
+   if(t.entryType!=='TEAM')throw Error(tr('Este torneio não tem equipas.'));
    const selected=teams.find(x=>x.id===teamId);
-   if(!selected)throw Error('Equipa não encontrada ou sem acesso.');
+   if(!selected)throw Error(tr('Equipa não encontrada ou sem acesso.'));
    setTeam(selected);
    try{
     const status=await tournamentTeamPromotionStatus(cid,tid,teamId,auth.token);
@@ -53,7 +54,7 @@ export default function TournamentTeamProfileScreen(){
     const response=await teamProfileMatches(cid,tid,teamId,0,auth.token,auth.username);
     if(version===generation.current){setMatches(response.matches);setPage(response.page);setHasMore(response.hasMore);}
    }
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar a equipa.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:tr('Não foi possível carregar a equipa.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,teamId,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -72,14 +73,14 @@ export default function TournamentTeamProfileScreen(){
   joining.current=true;setBusy(true);setError('');setMessage('');
   try{await acceptTeamPlace(cid,tid,teamId,auth.token,auth.username);
    if(version!==generation.current)return;
-   setMessage('Presença na equipa confirmada pelo servidor.');await load(version);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível entrar na equipa.');}
+   setMessage(tr('Presença na equipa confirmada pelo servidor.'));await load(version);
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:tr('Não foi possível entrar na equipa.'));}
   finally{joining.current=false;if(version===generation.current)setBusy(false);}
  }
  async function share(){if(!team)return;
   try{const url=shareableTeamInvite(cid,tid,team.id);
-   await Share.share({message:`🏆 ${team.name} — ${tournament?.name||'Torneio Jynlo'}\nPara participar, entra na comunidade e aguarda a validação do servidor.\n${url}`});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível partilhar.');}
+   await Share.share({message:`🏆 ${team.name} — ${tournament?.name||tr('Torneio Jynlo')}\n${tr('Para participar, entra na comunidade e aguarda a validação do servidor.')}\n${url}`});
+  }catch(e){setError(e instanceof Error?e.message:tr('Não foi possível partilhar.'));}
  }
  async function promote(){
   if(!auth.token||!promotion?.canPromote||promotionLock.current||loading)return;
@@ -89,8 +90,8 @@ export default function TournamentTeamProfileScreen(){
    const permanent=await promoteTournamentTeam(cid,tid,teamId,token);
    if(version!==generation.current)return;
    setPromotion({globalTeamId:permanent.id,canPromote:false,archived:false});
-   setMessage('Equipa guardada na Jynlo. O histórico do torneio foi preservado.');
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível guardar a equipa.');}
+   setMessage(tr('Equipa guardada na Jynlo. O histórico do torneio foi preservado.'));
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:tr('Não foi possível guardar a equipa.'));}
   finally{promotionLock.current=false;if(version===generation.current)setPromoting(false);}
  }
  async function more(){if(!auth.token||!auth.username||paging.current||loading||!hasMore)return;
@@ -102,58 +103,58 @@ export default function TournamentTeamProfileScreen(){
    if(version!==generation.current)return;
    setMatches(prev=>[...prev,...part.matches.filter(m=>!prev.some(x=>x.id===m.id))]);
    setPage(part.page);setHasMore(part.hasMore);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:tr('Não foi possível carregar mais jogos.'));}
   finally{paging.current=false;if(version===generation.current)setLoadingMore(false);}
  }
  const isMember=!!team?.players.some(p=>p.username===auth.username);
  const full=!!team&&team.playersPerTeam!=null&&team.players.length>=team.playersPerTeam;
  const accepting=!!tournament&&tournament.status==='DRAFT';
- return <Page><DemoBanner/><Eyebrow>TORNEIO · EQUIPA</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team?.name||'Perfil da equipa'}</Text>
-  {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||'Multidesporto'}</Text>:null}
-  {!auth.token?<><Message>Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.</Message>
-   <Button title="Iniciar sessão para participar" onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}
+ return <Page><DemoBanner/><Eyebrow>{tr('TORNEIO · EQUIPA')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team?.name||tr('Perfil da equipa')}</Text>
+  {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||tr('Multidesporto')}</Text>:null}
+  {!auth.token?<><Message>{tr('Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.')}</Message>
+   <Button title={tr('Iniciar sessão para participar')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-  {needsCommunity?<Button title="Entrar na comunidade" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(cid),returnTo:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/>:null}{message?<Message>{message}</Message>:null}
+  {needsCommunity?<Button title={tr('Entrar na comunidade')} onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(cid),returnTo:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/>:null}{message?<Message>{message}</Message>:null}
   {team?<>
    <View style={styles.panel}>
-    <Text style={styles.heading}>Plantel</Text>
-    <Text style={styles.subtitle}>{team.players.length}/{team.playersPerTeam??'Sem limite definido'} jogadores</Text>
+    <Text style={styles.heading}>{tr('Plantel')}</Text>
+    <Text style={styles.subtitle}>{tr('{a}/{b} jogadores',{a:team.players.length,b:team.playersPerTeam??tr('Sem limite definido')})}</Text>
     {team.players.length?team.players.map(player=><View key={player.profileId} style={styles.player}>
      <Text style={styles.playerName}>{player.displayName}</Text><Text style={styles.subtitle}>@{player.username}</Text>
-    </View>):<Text style={styles.subtitle}>Ainda não há jogadores inscritos.</Text>}
+    </View>):<Text style={styles.subtitle}>{tr('Ainda não há jogadores inscritos.')}</Text>}
    </View>
    {promotion?.canPromote?<View style={styles.panel}>
-    <Text style={styles.heading}>O futuro desta equipa é contigo</Text>
-    <Text style={styles.subtitle}>Podes continuar a usá-la apenas neste torneio, ou criar uma equipa permanente da Jynlo. A escolha não altera os resultados nem inscreve jogadores automaticamente noutras competições.</Text>
-    <Button title={promoting?'A guardar…':'Tornar equipa permanente'}
-     disabled={promoting||loading} onPress={()=>Alert.alert('Criar equipa permanente?',
-      'A equipa ficará no teu perfil Jynlo e poderá participar noutras comunidades. O torneio e o seu histórico serão mantidos.',
-      [{text:'Agora não',style:'cancel'},{text:'Criar equipa permanente',onPress:()=>{void promote();}}])}/>
-    <Text style={styles.subtitle}>Se não converteres, esta equipa permanece apenas no torneio.</Text>
+    <Text style={styles.heading}>{tr('O futuro desta equipa é contigo')}</Text>
+    <Text style={styles.subtitle}>{tr('Podes continuar a usá-la apenas neste torneio, ou criar uma equipa permanente da Jynlo. A escolha não altera os resultados nem inscreve jogadores automaticamente noutras competições.')}</Text>
+    <Button title={promoting?tr('A guardar…'):tr('Tornar equipa permanente')}
+     disabled={promoting||loading} onPress={()=>Alert.alert(tr('Criar equipa permanente?'),
+      tr('A equipa ficará no teu perfil Jynlo e poderá participar noutras comunidades. O torneio e o seu histórico serão mantidos.'),
+      [{text:tr('Agora não'),style:'cancel'},{text:tr('Criar equipa permanente'),onPress:()=>{void promote();}}])}/>
+    <Text style={styles.subtitle}>{tr('Se não converteres, esta equipa permanece apenas no torneio.')}</Text>
    </View>:null}
    {promotion?.archived&&!promotion.globalTeamId?<View style={styles.panel}>
-    <Text style={styles.heading}>Equipa temporária arquivada</Text>
-    <Text style={styles.subtitle}>O torneio terminou. Esta equipa já não pode ser convertida, mas os resultados e o plantel histórico continuam preservados.</Text>
+    <Text style={styles.heading}>{tr('Equipa temporária arquivada')}</Text>
+    <Text style={styles.subtitle}>{tr('O torneio terminou. Esta equipa já não pode ser convertida, mas os resultados e o plantel histórico continuam preservados.')}</Text>
    </View>:null}
    {promotion?.globalTeamId?<View style={styles.panel}>
-    <Text style={styles.heading}>Equipa permanente Jynlo</Text>
-    <Text style={styles.subtitle}>Esta equipa já tem uma identidade própria, independente do torneio.</Text>
-    <Button title="Abrir equipa na Jynlo" secondary onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(promotion.globalTeamId)}})}/>
+    <Text style={styles.heading}>{tr('Equipa permanente Jynlo')}</Text>
+    <Text style={styles.subtitle}>{tr('Esta equipa já tem uma identidade própria, independente do torneio.')}</Text>
+    <Button title={tr('Abrir equipa na Jynlo')} secondary onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(promotion.globalTeamId)}})}/>
    </View>:null}
-   <Button title="Partilhar convite da equipa" onPress={()=>{void share();}} secondary/>
-   {isMember?<Message>Já fazes parte desta equipa.</Message>:
-    !accepting?<Message>As inscrições nesta equipa estão encerradas.</Message>:
-    full?<Message>Esta equipa já tem o plantel completo.</Message>:
-    <Button title={busy?'A confirmar…':'Pedir lugar na equipa'} onPress={()=>{void join();}} disabled={busy||loading}/> }
-   <Text style={styles.heading}>Jogos da equipa</Text>
+   <Button title={tr('Partilhar convite da equipa')} onPress={()=>{void share();}} secondary/>
+   {isMember?<Message>{tr('Já fazes parte desta equipa.')}</Message>:
+    !accepting?<Message>{tr('As inscrições nesta equipa estão encerradas.')}</Message>:
+    full?<Message>{tr('Esta equipa já tem o plantel completo.')}</Message>:
+    <Button title={busy?tr('A confirmar…'):tr('Pedir lugar na equipa')} onPress={()=>{void join();}} disabled={busy||loading}/> }
+   <Text style={styles.heading}>{tr('Jogos da equipa')}</Text>
    {canListMatches(tournament)?<>
      {matches.map(match=><TournamentMatchCard key={match.id} match={match}/>)}
-     {!matches.length&&!loading?<Message>Esta equipa ainda não tem jogos disponíveis.</Message>:null}
-     {hasMore?<Button secondary disabled={loadingMore} title={loadingMore?'A carregar…':'Carregar mais jogos'} onPress={()=>{void more();}}/>:null}
-   </>:<Message>Os resultados desta modalidade têm regras específicas e ainda não são apresentados nesta página.</Message>}
+     {!matches.length&&!loading?<Message>{tr('Esta equipa ainda não tem jogos disponíveis.')}</Message>:null}
+     {hasMore?<Button secondary disabled={loadingMore} title={loadingMore?tr('A carregar…'):tr('Carregar mais jogos')} onPress={()=>{void more();}}/>:null}
+   </>:<Message>{tr('Os resultados desta modalidade têm regras específicas e ainda não são apresentados nesta página.')}</Message>}
   </>:null}
-  <Button secondary title="Voltar às equipas" onPress={()=>router.back()}/>
+  <Button secondary title={tr('Voltar às equipas')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({title:{fontSize:29,color:C.white,fontWeight:'900'},subtitle:{color:C.muted,fontSize:12,lineHeight:18},

@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 // "Jogar outra vez": a new session that copies a previous one, one week later
 // (or the next same weekday in the future), with the same time and place.
 
@@ -35,8 +36,8 @@ function repeatFormPatch(detail,now=new Date()){
 function repeatInviteMessage(summary){
  const invited=summary&&Number.isSafeInteger(summary.invited)?summary.invited:0;
  const skipped=summary&&Number.isSafeInteger(summary.skipped)?summary.skipped:0;
- if(!invited&&!skipped)return 'A sessão foi criada. Não havia jogadores da sessão anterior para convidar.';
- return 'A sessão foi criada e '+(invited===1?'1 jogador da última vez foi convidado':invited+' jogadores da última vez foram convidados')+
+ if(!invited&&!skipped)return tr('A sessão foi criada. Não havia jogadores da sessão anterior para convidar.');
+ return tr('A sessão foi criada e ')+(invited===1?tr('1 jogador da última vez foi convidado'):invited+' jogadores da última vez foram convidados')+
   (skipped?' ('+skipped+' já estavam inscritos ou não podiam ser convidados).':'.');
 }
 

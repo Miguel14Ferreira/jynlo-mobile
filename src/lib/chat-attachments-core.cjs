@@ -1,25 +1,26 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 const MAX_FILES=4,MAX_TOTAL_BYTES=40*1024*1024,MAX_PHOTO_BYTES=5*1024*1024,MAX_VIDEO_BYTES=20*1024*1024;
 const MIME=new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm']);
 function validateChatAlbum(files,{allowUnknownSize=false}={}){
  if(!Array.isArray(files)||files.length===0||files.length>MAX_FILES)
-  return 'Escolhe entre 1 e 4 fotografias ou vídeos.';
+  return tr('Escolhe entre 1 e 4 fotografias ou vídeos.');
  let total=0;
  for(const item of files){
   if(!item||(item.type!=='image'&&item.type!=='video')||typeof item.uri!=='string'||!item.uri)
-   return 'Seleciona fotografias ou vídeos válidos.';
+   return tr('Seleciona fotografias ou vídeos válidos.');
   const mime=item.mimeType||'';
   if(!MIME.has(mime)||((item.type==='video')!==mime.startsWith('video/')))
-   return 'Formato não suportado. Usa JPG, PNG, WebP, GIF, MP4 ou WebM.';
+   return tr('Formato não suportado. Usa JPG, PNG, WebP, GIF, MP4 ou WebM.');
   const max=mime.startsWith('video/')?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES;
   if(item.fileSize!=null){
    if(!Number.isSafeInteger(item.fileSize)||item.fileSize<0||item.fileSize>max)
-    return 'O ficheiro excede o limite permitido ('+(max/1024/1024)+' MB).';
-   if(item.fileSize===0&&!allowUnknownSize)return 'Não foi possível confirmar o tamanho de um ficheiro.';
+    return tr('O ficheiro excede o limite permitido (')+(max/1024/1024)+' MB).';
+   if(item.fileSize===0&&!allowUnknownSize)return tr('Não foi possível confirmar o tamanho de um ficheiro.');
    total+=item.fileSize;
-  }else if(!allowUnknownSize)return 'Não foi possível confirmar o tamanho de um ficheiro.';
+  }else if(!allowUnknownSize)return tr('Não foi possível confirmar o tamanho de um ficheiro.');
  }
- return total>MAX_TOTAL_BYTES?'O conjunto não pode exceder 40 MB.':null;
+ return total>MAX_TOTAL_BYTES?tr('O conjunto não pode exceder 40 MB.'):null;
 }
 /** Merge one or more picker selections without dropping earlier attachments.
  * Preserve order and deduplicate URIs. Invalid additions never change the draft.
@@ -29,7 +30,7 @@ function appendChatMediaSelection(existing,selected){
  const additions=Array.isArray(selected)?selected:[];
  const merged=[...current],seen=new Set(current.map(file=>file?.uri));
  for(const item of additions){
-  if(!item||typeof item.uri!=='string'||!item.uri)return {items:current,error:'Ficheiro inválido.'};
+  if(!item||typeof item.uri!=='string'||!item.uri)return {items:current,error:tr('Ficheiro inválido.')};
   if(seen.has(item.uri))continue;
   seen.add(item.uri);merged.push(item);
  }
@@ -38,13 +39,13 @@ function appendChatMediaSelection(existing,selected){
 }
 /** Single authoritative native-file check used before every private media upload. */
 function verifiedLocalChatMediaSize(size,type){
- if(type!=='image'&&type!=='video')throw Error('Tipo de anexo inválido.');
+ if(type!=='image'&&type!=='video')throw Error(tr('Tipo de anexo inválido.'));
  if(!Number.isSafeInteger(size)||size<=0)
   throw Error(type==='video'?
    'Não foi possível confirmar o tamanho real do vídeo. Escolhe novamente o ficheiro.':
    'Não foi possível confirmar o tamanho real da fotografia. Escolhe novamente o ficheiro.');
  if(size>(type==='video'?MAX_VIDEO_BYTES:MAX_PHOTO_BYTES))
-  throw Error(type==='video'?'O vídeo deve ter até 20 MB.':'A fotografia deve ter até 5 MB.');
+  throw Error(type==='video'?tr('O vídeo deve ter até 20 MB.'):tr('A fotografia deve ter até 5 MB.'));
  return size;
 }
 // Trust the actual local file over picker metadata, which may be stale.

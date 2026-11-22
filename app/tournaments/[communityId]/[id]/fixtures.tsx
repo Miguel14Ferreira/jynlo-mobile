@@ -1,4 +1,5 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -24,7 +25,7 @@ export default function TeamFixturesScreen(){
    return;
   }
   if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){
-   if(version===generation.current){setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setError('Competição inválida.');setLoading(false);}
+   if(version===generation.current){setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setError(t('Competição inválida.'));setLoading(false);}
    return;
   }
   setLoading(true);setError('');setTournament(null);setGroups(null);setMatches([]);setHasMore(false);setPage(0);
@@ -40,7 +41,7 @@ export default function TeamFixturesScreen(){
    if(version!==generation.current)return;
    const verified=validateFirstFixturePage<TournamentTeamMatch>(matchData);
    setGroups(groupData);setMatches(verified.matches);setPage(verified.page);setHasMore(verified.hasMore);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar os jogos do torneio.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar os jogos do torneio.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -60,46 +61,46 @@ export default function TeamFixturesScreen(){
    if(version!==generation.current)return;
    const part=validateNextFixturePage<TournamentTeamMatch>(response,next);
    setMatches(previous=>[...previous,...part.matches.filter(m=>!previous.some(x=>x.id===m.id))]);setPage(part.page);setHasMore(part.hasMore);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar mais jogos.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar mais jogos.'));}
   finally{if(version===generation.current){paging.current=false;setLoadingMore(false);}}
  }
  const teamPage=(teamId:number)=>router.push({pathname:'/tournaments/[communityId]/[id]/teams/[teamId]',params:{communityId:String(cid),id:String(tid),teamId:String(teamId)}});
  const renderMatches=(entries:TournamentTeamMatch[])=>entries.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>);
- return <Page><DemoBanner/><Eyebrow>TORNEIO · JOGOS</Eyebrow>
-   <View style={styles.hero}><Text style={styles.heroLabel}>CALENDÁRIO · JYNLO</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Grupos e eliminatórias'}</Text>
-    {tournament?<Text style={styles.heroInfo}>{tournament.sport||'Multidesporto'} · {tournament.format==='GROUP_KNOCKOUT'?'Grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Eliminatórias':'Liga'}</Text>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('TORNEIO · JOGOS')}</Eyebrow>
+   <View style={styles.hero}><Text style={styles.heroLabel}>{t('CALENDÁRIO · JYNLO')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Grupos e eliminatórias')}</Text>
+    {tournament?<Text style={styles.heroInfo}>{tournament.sport||t('Multidesporto')} · {tournament.format==='GROUP_KNOCKOUT'?t('Grupos e eliminatórias'):tournament.format==='KNOCKOUT'?t('Eliminatórias'):t('Liga')}</Text>:null}
    </View>
-   {!auth.token?<Button title="Entrar para consultar os jogos" onPress={()=>router.push('/login')}/>:null}
+   {!auth.token?<Button title={t('Entrar para consultar os jogos')} onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
-   {!loading&&tournament&&!canListMatches(tournament)?<Message>Esta competição tem um sistema próprio de resultados. Não vamos apresentar resultados de jogos genéricos para esta modalidade.</Message>:null}
+   {!loading&&tournament&&!canListMatches(tournament)?<Message>{t('Esta competição tem um sistema próprio de resultados. Não vamos apresentar resultados de jogos genéricos para esta modalidade.')}</Message>:null}
    {!loading&&tournament&&canListMatches(tournament)&&(!error||matches.length>0)?<>
     {isGroups?<>
-      <View style={styles.tabs}>{([{id:'GROUP',title:'Fase de grupos'},{id:'KNOCKOUT',title:'Eliminatórias'}] as const).map(t=><Pressable key={t.id} onPress={()=>setActive(t.id)} style={[styles.tab,active===t.id&&styles.tabActive]} accessibilityRole="button" accessibilityState={{selected:active===t.id}}>
+      <View style={styles.tabs}>{([{id:'GROUP',title:t('Fase de grupos')},{id:'KNOCKOUT',title:t('Eliminatórias')}] as const).map(t=><Pressable key={t.id} onPress={()=>setActive(t.id)} style={[styles.tab,active===t.id&&styles.tabActive]} accessibilityRole="button" accessibilityState={{selected:active===t.id}}>
         <Text style={[styles.tabText,active===t.id&&styles.tabTextActive]}>{t.title}</Text>
       </Pressable>)}</View>
       {active==='GROUP'?<>
         {groups?.groups.length?groups.groups.map(g=><View key={g.groupNumber} style={styles.group}>
-          <Text style={styles.heading}>Grupo {g.groupNumber}</Text>
-          {g.standings.map(row=><Pressable key={row.teamId} onPress={()=>teamPage(row.teamId)} style={styles.standing} accessibilityRole="button" accessibilityLabel={'Ver equipa '+row.teamName}>
+          <Text style={styles.heading}>{t('Grupo {a}',{a:g.groupNumber})}</Text>
+          {g.standings.map(row=><Pressable key={row.teamId} onPress={()=>teamPage(row.teamId)} style={styles.standing} accessibilityRole="button" accessibilityLabel={t('Ver equipa {v}',{v:row.teamName})}>
             <View style={styles.rankPill}><Text maxFontSizeMultiplier={1.3} style={styles.rank}>{row.position}</Text></View><Text style={styles.team} numberOfLines={2}>{row.teamName}</Text>
-            <View style={styles.pointsBlock}><Text style={styles.points}>{row.points} pts</Text><Text style={styles.played}>{row.played} J</Text></View>
+            <View style={styles.pointsBlock}><Text style={styles.points}>{t('{a} pts',{a:row.points})}</Text><Text style={styles.played}>{row.played} J</Text></View>
           </Pressable>)}
           {split.groups.find(x=>x.number===g.groupNumber)?.matches.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>)||null}
-        </View>):<Message>Os grupos ainda não têm uma classificação publicada pelo servidor.</Message>}
+        </View>):<Message>{t('Os grupos ainda não têm uma classificação publicada pelo servidor.')}</Message>}
       </>:<>
-        {!groups?.knockoutStarted?<Message>A fase a eliminar ainda não começou. A passagem de equipas será indicada pelo servidor, não calculada pela app.</Message>:null}
+        {!groups?.knockoutStarted?<Message>{t('A fase a eliminar ainda não começou. A passagem de equipas será indicada pelo servidor, não calculada pela app.')}</Message>:null}
         {groups?.knockoutStarted?renderMatches(split.knockout):null}
-        {groups?.knockoutStarted&&split.knockout.length===0?<Message>{hasMore?'Os jogos desta fase podem estar nas páginas seguintes.':'Ainda não existem jogos de eliminação disponíveis.'}</Message>:null}
+        {groups?.knockoutStarted&&split.knockout.length===0?<Message>{hasMore?t('Os jogos desta fase podem estar nas páginas seguintes.'):t('Ainda não existem jogos de eliminação disponíveis.')}</Message>:null}
       </>}
     </>:<>
-      <Text style={styles.heading}>{tournament.format==='KNOCKOUT'?'Eliminatórias':'Calendário de jogos'}</Text>
+      <Text style={styles.heading}>{tournament.format==='KNOCKOUT'?t('Eliminatórias'):t('Calendário de jogos')}</Text>
       {renderMatches(tournament.format==='KNOCKOUT'?split.knockout:split.league)}
-      {matches.length===0?<Message>Ainda não há jogos gerados para este torneio.</Message>:null}
+      {matches.length===0?<Message>{t('Ainda não há jogos gerados para este torneio.')}</Message>:null}
     </>}
-    {hasMore?<Button secondary title={loadingMore?'A carregar…':'Carregar mais jogos'} disabled={loadingMore} onPress={()=>{void more();}}/>:null}
-    <Message>Os grupos, resultados e apuramentos são atualizados à medida que a organização regista os jogos.</Message>
+    {hasMore?<Button secondary title={loadingMore?t('A carregar…'):t('Carregar mais jogos')} disabled={loadingMore} onPress={()=>{void more();}}/>:null}
+    <Message>{t('Os grupos, resultados e apuramentos são atualizados à medida que a organização regista os jogos.')}</Message>
    </>:null}
-   <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+   <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

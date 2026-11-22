@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 /** Session presets ("perfis de sessões") — shared with the web through /api/sessions/presets.
  * Never stores dates, passwords or photos; GPS positions are not saved (only map-link points). */
 const MAX_PRESETS=20,MAX_NAME=70;
@@ -7,14 +8,14 @@ const LOCATION_FROM_SERVER={venue:'saved',maps:'link',gps:'gps'};
 const int=(v,f)=>{const n=Number(v);return Number.isFinite(n)?Math.trunc(n):f;};
 function validatePresetName(name){
  const t=String(name||'').replace(/[\u0000-\u001F\u007F]/g,'').trim();
- if(!t||t.length>MAX_NAME)throw new Error('Indica um nome de perfil (até 70 caracteres).');
+ if(!t||t.length>MAX_NAME)throw new Error(tr('Indica um nome de perfil (até 70 caracteres).'));
  return t;
 }
 function presetFromForm(form,ctx){
  const f=form||{},c=ctx||{};
- if(!String(f.sport||'').trim())throw new Error('Escolhe primeiro a modalidade que queres guardar.');
+ if(!String(f.sport||'').trim())throw new Error(tr('Escolhe primeiro a modalidade que queres guardar.'));
  const max=int(f.maxParticipants,NaN);
- if(!Number.isInteger(max)||max<2||max>100)throw new Error('O número de jogadores tem de estar entre 2 e 100.');
+ if(!Number.isInteger(max)||max<2||max>100)throw new Error(tr('O número de jogadores tem de estar entre 2 e 100.'));
  const external=c.hasExistingPlayers?Math.max(0,int(f.externalConfirmedParticipants,0)):0;
  const price=Number(String(f.price||'0').replace(',','.'));
  const shares=Array.isArray(f.communityShareIds)?f.communityShareIds.filter(id=>Number.isSafeInteger(id)&&id>0).slice(0,5):[];
@@ -43,7 +44,7 @@ function presetFromForm(form,ctx){
 function formFromPreset(empty,settings,ctx){
  const s=settings||{},c=ctx||{},notes=[];
  const sports=c.sports||[];
- if(!s.sport||(sports.length&&!sports.includes(s.sport)))throw new Error('A modalidade deste perfil já não está disponível. Seleciona outra.');
+ if(!s.sport||(sports.length&&!sports.includes(s.sport)))throw new Error(tr('A modalidade deste perfil já não está disponível. Seleciona outra.'));
  const allowed=new Set((c.communityIds||[]).map(Number));
  const max=Math.min(100,Math.max(2,int(s.maxParticipants,10)));
  const complete=s.creationMode==='COMPLETE';

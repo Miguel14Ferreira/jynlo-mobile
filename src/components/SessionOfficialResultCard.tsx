@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {View,Text,StyleSheet,Share,Alert} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import {Button,Loader,Message} from './UI';
@@ -26,14 +27,14 @@ export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:numb
    const response=await sessionOfficialResult(sessionId,token);
    if(version!==requestVersion.current)return;
    if(response.sessionId!==sessionId||!Number.isSafeInteger(response.roundId)||response.roundId<=0)
-    throw Error('O resultado devolvido pelo servidor não corresponde à sessão.');
+    throw Error(t('O resultado devolvido pelo servidor não corresponde à sessão.'));
    setResult(response);
    setLoadedFor(identity);
   }catch(e){
    if(version!==requestVersion.current)return;
    // A missing result is normal. Never imply that a played game has a score.
    if(!(e instanceof ApiError&&e.status===404))
-    setError(e instanceof Error?e.message:'Não foi possível consultar o marcador.');
+    setError(e instanceof Error?e.message:t('Não foi possível consultar o marcador.'));
   }finally{
    if(version===requestVersion.current)setLoading(false);
   }
@@ -44,30 +45,30 @@ export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:numb
  },[load]));
  if(!token)return null;
  return <View style={styles.panel}>
-  <Text style={styles.label}>RESULTADO OFICIAL</Text>
+  <Text style={styles.label}>{t('RESULTADO OFICIAL')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {result&&loadedFor===identity?<>
    <View style={styles.scoreRow}>
-    <View style={styles.side}><Text style={styles.team}>Equipa A</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreA??'—'}</Text></View>
+    <View style={styles.side}><Text style={styles.team}>{t('Equipa A')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreA??'—'}</Text></View>
     <Text style={styles.separator}>–</Text>
-    <View style={styles.side}><Text style={styles.team}>Equipa B</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreB??'—'}</Text></View>
+    <View style={styles.side}><Text style={styles.team}>{t('Equipa B')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{result.scoreB??'—'}</Text></View>
    </View>
-   {game&&publicSessionResultMessage(game,result,sessionId)?<Button secondary title="Partilhar marcador oficial"
+   {game&&publicSessionResultMessage(game,result,sessionId)?<Button secondary title={t('Partilhar marcador oficial')}
      onPress={()=>{
        const message=publicSessionResultMessage(game,result,sessionId);
-       if(message)void Share.share({message}).catch(()=>Alert.alert('Partilhar resultado','Não foi possível abrir a partilha.'));
+       if(message)void Share.share({message}).catch(()=>Alert.alert(t('Partilhar resultado'),t('Não foi possível abrir a partilha.')));
      }}/>:null}
    <Text style={styles.caption}>{result.scoreA===null||result.scoreB===null?
-    'Jornada registada; o marcador oficial não foi indicado.':
-    'Marcador confirmado na jornada da comunidade.'}</Text>
+    t('Jornada registada; o marcador oficial não foi indicado.'):
+    t('Marcador confirmado na jornada da comunidade.')}</Text>
    {Array.isArray(result.contributions)&&result.contributions.length>0?<View style={styles.contributions}>
-    <Text style={styles.contributionHeader}>MARCADORES E ASSISTÊNCIAS</Text>
+    <Text style={styles.contributionHeader}>{t('MARCADORES E ASSISTÊNCIAS')}</Text>
     {result.contributions.filter(player=>player&&typeof player.username==='string'&&
        Number.isInteger(player.goals)&&Number.isInteger(player.assists)&&
        (player.goals>0||player.assists>0)).map((player,index)=>
       <View key={player.username+'-'+index} style={styles.contributionRow}>
-       <Text style={styles.player}>{player.username} · Equipa {player.team||'?'}</Text>
+       <Text style={styles.player}>{t('{a} · Equipa {b}',{a:player.username,b:player.team||'?'})}</Text>
        <Text style={styles.stats}>{[
         player.goals>0?player.goals+' golos':null,
         player.assists>0?player.assists+' assistências':null
@@ -75,8 +76,8 @@ export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:numb
       </View>)}
    </View>:null}
   </>:null}
-  {!result&&!loading&&!error?<Text style={styles.caption}>O resultado ainda não foi registado na classificação.</Text>:null}
-  {error?<Button title="Voltar a consultar o resultado" secondary onPress={()=>{void load();}}/>:null}
+  {!result&&!loading&&!error?<Text style={styles.caption}>{t('O resultado ainda não foi registado na classificação.')}</Text>:null}
+  {error?<Button title={t('Voltar a consultar o resultado')} secondary onPress={()=>{void load();}}/>:null}
  </View>;
 }
 const styles=StyleSheet.create({

@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,AppState,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {C} from '../lib/theme';
@@ -53,7 +54,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   try{
    const rows=await directChatHistory(peer,token);
    if(generation.current!==version||owner.current!==identity)return;
-   if(!Array.isArray(rows))throw Error('Histórico da conversa inválido.');
+   if(!Array.isArray(rows))throw Error(t('Histórico da conversa inválido.'));
    setMessages(()=>{
     // The API is authoritative for deletes, edits and moderation.
     // Only a newly acknowledged POST may survive a lagging GET.
@@ -74,8 +75,8 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
    if(generation.current===version&&owner.current===identity){
     if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
      setMessages([]);setDraft('');recentlyConfirmed.current.clear();setAccessRevoked(true);
-     setError('Já não tens acesso ao chat deste contacto.');
-    }else setSyncWarning('Sem ligação ao histórico. As mensagens apresentadas podem estar desatualizadas.');
+     setError(t('Já não tens acesso ao chat deste contacto.'));
+    }else setSyncWarning(t('Sem ligação ao histórico. As mensagens apresentadas podem estar desatualizadas.'));
    }
   }finally{
    if(readOwner.current!==identity+'|'+version)return;
@@ -133,7 +134,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
   try{
    const confirmed=await sendDirectChat(peer,body,token);
    if(!confirmedDirectChatSend(confirmed,self,peer,body,null))
-    throw Error('O servidor não confirmou a mensagem. Consulta o histórico antes de repetir.');
+    throw Error(t('O servidor não confirmou a mensagem. Consulta o histórico antes de repetir.'));
    if(owner.current!==actor)return;
    if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===body){
     uncertainSendRef.current=null;setUncertainSend(null);
@@ -148,7 +149,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
     if(uncertainChatSend(e)){
      const uncertain={identity,body};uncertainSendRef.current=uncertain;setUncertainSend(uncertain);
     }
-    setError((e instanceof Error?e.message:'Não foi possível enviar a mensagem.')+' Verifica o histórico antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível enviar a mensagem.'))+' '+t('Verifica o histórico antes de repetir.'));
    }
   }finally{
    if(pendingSend.current?.request===request)pendingSend.current=null;
@@ -157,12 +158,12 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  }
  if(!visible)return null;
  return <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined}
-  style={[styles.container,wide?styles.wide:styles.narrow]} accessibilityLabel="Chat da chamada">
+  style={[styles.container,wide?styles.wide:styles.narrow]} accessibilityLabel={t('Chat da chamada')}>
   <View style={styles.header}>
    <View style={styles.avatar}><Text style={styles.avatarLetter}>{peer.slice(0,1).toUpperCase()}</Text></View>
-   <View style={{flex:1}}><Text style={styles.title}>Chat da chamada</Text>
-    <Text style={styles.subtitle}>Conversa privada com @{peer} · histórico Jynlo</Text></View>
-   <View style={styles.liveBadge}><View style={styles.liveDot}/><Text style={styles.liveLabel}>Na chamada</Text></View>
+   <View style={{flex:1}}><Text style={styles.title}>{t('Chat da chamada')}</Text>
+    <Text style={styles.subtitle}>{t('Conversa privada com @{a} · histórico Jynlo',{a:peer})}</Text></View>
+   <View style={styles.liveBadge}><View style={styles.liveDot}/><Text style={styles.liveLabel}>{t('Na chamada')}</Text></View>
   </View>
   {loading?<ActivityIndicator color={C.mint}/>:null}
   {visibleSyncWarning?<Text style={styles.warning}>{visibleSyncWarning}</Text>:null}
@@ -184,40 +185,40 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
      list.current?.scrollToEnd({animated:false});
     }
    }}>
-   {!loading&&visibleMessages.length===0?<Text style={styles.empty}>Ainda não há mensagens nesta conversa.</Text>:null}
+   {!loading&&visibleMessages.length===0?<Text style={styles.empty}>{t('Ainda não há mensagens nesta conversa.')}</Text>:null}
    {visibleMessages.map(message=>{
     const mine=message.username1.toLowerCase()===self.toLowerCase();
     return <View key={message.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
-     <Text style={styles.sender}>{mine?'Tu':'@'+peer}</Text>
+     <Text style={styles.sender}>{mine?t('Tu'):'@'+peer}</Text>
      {message.replyToText?<Text style={styles.reply}>↳ {message.replyToText}</Text>:null}
-     <Text style={styles.body}>{message.deletedAt?'Mensagem removida':
-      message.text||message.attachmentName||(message.attachments?.length?'Anexo partilhado':'Mensagem')}</Text>
+     <Text style={styles.body}>{message.deletedAt?t('Mensagem removida'):
+      message.text||message.attachmentName||(message.attachments?.length?t('Anexo partilhado'):t('Mensagem'))}</Text>
      <Text style={styles.time}>{message.date&&Number.isFinite(Date.parse(message.date))?
       new Date(message.date).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
     </View>;
    })}
   </ScrollView>
-  {sameConversation&&unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel="Ir para as mensagens novas da chamada"
+  {sameConversation&&unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel={t('Ir para as mensagens novas da chamada')}
    onPress={()=>{nearBottom.current=true;setUnseenBelow(false);list.current?.scrollToEnd({animated:true});}}
    style={styles.newMessagesAction}>
-   <Text style={styles.newMessagesText}>Novas mensagens · Ver mais recentes</Text>
+   <Text style={styles.newMessagesText}>{t('Novas mensagens · Ver mais recentes')}</Text>
   </Pressable>:null}
   {visibleError?<Text accessibilityRole="alert" style={styles.warning}>{visibleError}</Text>:null}
   {sameConversation&&uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()?<View style={styles.retryNotice}>
-   <Text accessibilityRole="alert" style={styles.warning}>Este envio não foi confirmado. Consulta o histórico antes de repetir a mensagem.</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel="Já confirmei no histórico, permitir novo envio na chamada"
+   <Text accessibilityRole="alert" style={styles.warning}>{t('Este envio não foi confirmado. Consulta o histórico antes de repetir a mensagem.')}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Já confirmei no histórico, permitir novo envio na chamada')}
     onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);setError('');}}>
-    <Text style={styles.retryText}>Já confirmei no histórico · Permitir novo envio</Text>
+    <Text style={styles.retryText}>{t('Já confirmei no histórico · Permitir novo envio')}</Text>
    </Pressable>
   </View>:null}
   <View style={styles.composer}>
    <TextInput value={visibleDraft} onChangeText={setDraft} editable={sameConversation&&!sending&&!accessRevoked}
-    placeholder="Mensagem para o chat…" placeholderTextColor={C.muted}
-    multiline maxLength={2000} style={styles.input} accessibilityLabel="Escrever mensagem na chamada"/>
-   <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem durante a chamada"
+    placeholder={t('Mensagem para o chat…')} placeholderTextColor={C.muted}
+    multiline maxLength={2000} style={styles.input} accessibilityLabel={t('Escrever mensagem na chamada')}/>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar mensagem durante a chamada')}
     disabled={!sameConversation||sending||accessRevoked||!draft.trim()||(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim())} onPress={()=>{void send();}}
     style={[styles.send,(!sameConversation||sending||accessRevoked||!draft.trim()||(uncertainSend?.identity===identity&&uncertainSend.body===draft.trim()))&&styles.disabled]}>
-    <Text style={styles.sendText}>{sending?'…':'Enviar'}</Text>
+    <Text style={styles.sendText}>{sending?'…':t('Enviar')}</Text>
    </Pressable>
   </View>
  </KeyboardAvoidingView>;

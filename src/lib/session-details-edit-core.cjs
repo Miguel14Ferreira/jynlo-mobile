@@ -1,4 +1,5 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 
 /** Validate the existing Jynlo /api/sessions/{id}/details contract. */
 function asInt(value,label,min,max){
@@ -11,41 +12,41 @@ function asInt(value,label,min,max){
 }
 function toDateTime(date,hour){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hour))
-  throw Error('Indica uma data e hora válidas.');
+  throw Error(tr('Indica uma data e hora válidas.'));
  const dt=new Date(date+'T'+hour+':00');
  if(!Number.isFinite(dt.getTime())||dt.getFullYear()!==Number(date.slice(0,4))||
     dt.getMonth()+1!==Number(date.slice(5,7))||dt.getDate()!==Number(date.slice(8,10))||
     dt.getHours()!==Number(hour.slice(0,2))||dt.getMinutes()!==Number(hour.slice(3,5)))
-  throw Error('A data e hora não existem no calendário local.');
+  throw Error(tr('A data e hora não existem no calendário local.'));
  return dt.toISOString();
 }
 function editSessionPayload(fields,allowedSports,now=Date.now()){
  const sport=String(fields.sport||'').trim();
- if(!allowedSports.includes(sport))throw Error('Escolhe uma modalidade válida do catálogo Jynlo.');
+ if(!allowedSports.includes(sport))throw Error(tr('Escolhe uma modalidade válida do catálogo Jynlo.'));
  const city=String(fields.city||'').trim(),address=String(fields.address||'').trim();
- if(city.length<2||city.length>120)throw Error('Indica uma cidade entre 2 e 120 caracteres.');
- if(address.length<1||address.length>500)throw Error('Indica uma morada até 500 caracteres.');
+ if(city.length<2||city.length>120)throw Error(tr('Indica uma cidade entre 2 e 120 caracteres.'));
+ if(address.length<1||address.length>500)throw Error(tr('Indica uma morada até 500 caracteres.'));
  const description=String(fields.description??'').trim();
  if(description.length>1000||/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(description))
-  throw Error('A descrição deve ter até 1000 caracteres e não pode conter caracteres de controlo.');
+  throw Error(tr('A descrição deve ter até 1000 caracteres e não pode conter caracteres de controlo.'));
  const meeting=String(fields.meetingPointInstructions||'').trim();
  if(meeting.length>240||/[\r\n\x00-\x1f\x7f]/.test(meeting))
-  throw Error('O ponto de encontro deve ter uma linha até 240 caracteres.');
+  throw Error(tr('O ponto de encontro deve ter uma linha até 240 caracteres.'));
  const maxParticipants=asInt(fields.maxParticipants,'Máximo de jogadores',2,100);
  const occupied=Number(fields.currentParticipantCount);
  const external=Number(fields.currentExternalConfirmedParticipants);
  if(fields.currentParticipantCount!=null&&Number.isSafeInteger(occupied)&&occupied>=0&&maxParticipants<occupied)
-  throw Error('A capacidade não pode ser inferior ao número de jogadores já inscritos.');
+  throw Error(tr('A capacidade não pode ser inferior ao número de jogadores já inscritos.'));
  if(fields.currentExternalConfirmedParticipants!=null&&Number.isSafeInteger(external)&&external>=0&&maxParticipants<external+1)
-  throw Error('A capacidade deve incluir os jogadores externos e a vaga do organizador.');
+  throw Error(tr('A capacidade deve incluir os jogadores externos e a vaga do organizador.'));
  const minParticipants=asInt(fields.minParticipants,'Mínimo de jogadores',2,maxParticipants);
  const priceText=String(fields.priceAmount??'').trim().replace(',','.');
  if(!/^\d+(\.\d{1,2})?$/.test(priceText))throw Error('Indica um preço válido até duas casas decimais.');
  const priceAmount=Number(priceText);
  if(!Number.isFinite(priceAmount)||priceAmount<0||priceAmount>100000)
-  throw Error('O preço indicado não é válido.');
+  throw Error(tr('O preço indicado não é válido.'));
  const gameDate=toDateTime(String(fields.date||''),String(fields.hour||''));
- if(Date.parse(gameDate)<=now)throw Error('A data e hora devem ser futuras.');
+ if(Date.parse(gameDate)<=now)throw Error(tr('A data e hora devem ser futuras.'));
  return {sport,gameDate,maxParticipants,minParticipants,priceAmount,city,address,meetingPointInstructions:meeting||null,description};
 }
 module.exports={editSessionPayload,toDateTime};

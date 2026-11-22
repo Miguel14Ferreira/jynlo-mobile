@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {discoverSportsTeams,type SportsTeam} from '../lib/sports-teams-api';
@@ -45,12 +46,12 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
        &&(!sport||!game.sport||game.sport.toLowerCase()===sport.toLowerCase())));
      setOwnSessionsError('');
     }catch{
-     if(version===generation.current){setOwnSessions([]);setOwnSessionsError('Não foi possível consultar as tuas sessões.');}
+     if(version===generation.current){setOwnSessions([]);setOwnSessionsError(t('Não foi possível consultar as tuas sessões.'));}
     }
    }
   }catch{
    if(version!==generation.current)return;
-   setItems([]);setError('Não foi possível confirmar os desafios. Tenta novamente.');
+   setItems([]);setError(t('Não foi possível confirmar os desafios. Tenta novamente.'));
   }finally{if(version===generation.current&&!silent)setLoading(false);}
  },[teamId,token,isOwner,sport]);
  useFocusEffect(useCallback(()=>{
@@ -70,7 +71,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
    if(version!==searchVersion.current)return;
    setCandidates(found.filter(t=>t.id!==teamId
     &&(!sport||!t.sport||sport.toLowerCase()===t.sport.toLowerCase())));
-  }catch{if(version===searchVersion.current)setError('Não foi possível pesquisar equipas.');}
+  }catch{if(version===searchVersion.current)setError(t('Não foi possível pesquisar equipas.'));}
   finally{if(version===searchVersion.current)setSearching(false);}
  };
  const mutate=async(run:()=>Promise<TeamChallenge>,success:string)=>{
@@ -85,7 +86,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
    setFeedback(success);
   }catch{
    if(version!==generation.current)return;
-   setError('Não foi possível confirmar a ação. Verifica o estado antes de tentares novamente.');
+   setError(t('Não foi possível confirmar a ação. Verifica o estado antes de tentares novamente.'));
   }finally{
    if(version===generation.current){
     writing.current=false;setBusy(false);
@@ -98,47 +99,46 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
  const invite=()=>{
   if(!isOwner||!selectedId||!candidates.some(x=>x.id===selectedId))return;
   void mutate(()=>issueTeamChallenge(teamId,selectedId,message,token),
-   'Convite enviado. A outra equipa terá de aceitar.');
+   t('Convite enviado. A outra equipa terá de aceitar.'));
  };
  const joinSession=(item:TeamChallenge)=>{
   const value=sessionInputs[item.id]||'';
   if(!/^[1-9][0-9]*$/.test(value)||!Number.isSafeInteger(Number(value)))return;
-  void mutate(()=>linkTeamChallengeSession(item.id,Number(value),token),'Sessão associada ao desafio.');
+  void mutate(()=>linkTeamChallengeSession(item.id,Number(value),token),t('Sessão associada ao desafio.'));
  };
- if(!token)return <Text style={styles.hint}>Inicia sessão para acompanhar os desafios.</Text>;
+ if(!token)return <Text style={styles.hint}>{t('Inicia sessão para acompanhar os desafios.')}</Text>;
  return <View style={styles.container}>
-  <Text style={styles.eyebrow}>JYNLO · RIVALIDADES</Text>
-  <Text style={styles.title}>Desafios entre equipas</Text>
-  <Text style={styles.hint}>Aceita o desafio e depois associa uma sessão pública.
-   A Jynlo não inscreve jogadores automaticamente.</Text>
-  {!isOwner?<Text style={styles.hint}>Os convites e respostas são privados dos responsáveis das equipas.</Text>:null}
-  {isOwner&&loading?<Text style={styles.hint}>A consultar desafios…</Text>:null}
+  <Text style={styles.eyebrow}>{t('JYNLO · RIVALIDADES')}</Text>
+  <Text style={styles.title}>{t('Desafios entre equipas')}</Text>
+  <Text style={styles.hint}>{t('Aceita o desafio e depois associa uma sessão pública. A Jynlo não inscreve jogadores automaticamente.')}</Text>
+  {!isOwner?<Text style={styles.hint}>{t('Os convites e respostas são privados dos responsáveis das equipas.')}</Text>:null}
+  {isOwner&&loading?<Text style={styles.hint}>{t('A consultar desafios…')}</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
   {feedback?<Text style={styles.feedback}>{feedback}</Text>:null}
-  {isOwner&&!loading&&!items.length?<Text style={styles.hint}>Ainda não há desafios desta equipa.</Text>:null}
+  {isOwner&&!loading&&!items.length?<Text style={styles.hint}>{t('Ainda não há desafios desta equipa.')}</Text>:null}
   {items.map(item=><View key={item.id} style={styles.card}>
    <Text style={styles.versus}>{item.challengerTeamName} × {item.challengedTeamName}</Text>
-   <Text style={styles.status}>{label[item.status]}</Text>
+   <Text style={styles.status}>{t(label[item.status])}</Text>
    {item.message?<Text style={styles.hint}>{item.message}</Text>:null}
    {isOwner&&item.status==='PENDING'&&item.challengedTeamId===teamId?
     <View style={styles.actions}>
      <Pressable disabled={busy} style={[styles.button,styles.primary]}
-      onPress={()=>void mutate(()=>answerTeamChallenge(item.id,true,token),'Desafio aceite.')}>
-      <Text style={styles.action}>Aceitar</Text></Pressable>
+      onPress={()=>void mutate(()=>answerTeamChallenge(item.id,true,token),t('Desafio aceite.'))}>
+      <Text style={styles.action}>{t('Aceitar')}</Text></Pressable>
      <Pressable disabled={busy} style={styles.button}
-      onPress={()=>void mutate(()=>answerTeamChallenge(item.id,false,token),'Desafio recusado.')}>
-      <Text style={styles.action}>Recusar</Text></Pressable>
+      onPress={()=>void mutate(()=>answerTeamChallenge(item.id,false,token),t('Desafio recusado.'))}>
+      <Text style={styles.action}>{t('Recusar')}</Text></Pressable>
     </View>:null}
    {isOwner&&item.status==='PENDING'&&item.challengerTeamId===teamId?
     <Pressable disabled={busy} style={styles.button}
-      onPress={()=>Alert.alert('Cancelar desafio?','A outra equipa já não poderá aceitar este convite.',[
-       {text:'Manter',style:'cancel'},
-       {text:'Cancelar desafio',style:'destructive',
-        onPress:()=>void mutate(()=>cancelTeamChallenge(item.id,token),'Convite cancelado.')}
-      ])}><Text style={styles.action}>Cancelar convite</Text></Pressable>:null}
+      onPress={()=>Alert.alert(t('Cancelar desafio?'),t('A outra equipa já não poderá aceitar este convite.'),[
+       {text:t('Manter'),style:'cancel'},
+       {text:t('Cancelar desafio'),style:'destructive',
+        onPress:()=>void mutate(()=>cancelTeamChallenge(item.id,token),t('Convite cancelado.'))}
+      ])}><Text style={styles.action}>{t('Cancelar convite')}</Text></Pressable>:null}
    {isOwner&&item.status==='ACCEPTED'&&!item.sessionId?
     <View style={styles.link}>
-     <Text style={styles.hint}>Escolhe uma sessão pública criada por ti para este desafio.</Text>
+     <Text style={styles.hint}>{t('Escolhe uma sessão pública criada por ti para este desafio.')}</Text>
      {ownSessions.map(game=><Pressable key={game.id}
       accessibilityRole="button"
       accessibilityState={{selected:sessionInputs[item.id]===String(game.id)}}
@@ -147,34 +147,34 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
       <Text style={styles.action}>{game.sport} · {game.city} · {game.gameDate.slice(0,10)}</Text>
      </Pressable>)}
      {ownSessionsError?<Text style={styles.error}>{ownSessionsError}</Text>:null}
-     {!ownSessions.length?<Text style={styles.hint}>Ainda não tens uma sessão pública elegível.</Text>:null}
+     {!ownSessions.length?<Text style={styles.hint}>{t('Ainda não tens uma sessão pública elegível.')}</Text>:null}
      <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/create')}
-       style={styles.button}><Text style={styles.action}>Criar sessão</Text></Pressable>
+       style={styles.button}><Text style={styles.action}>{t('Criar sessão')}</Text></Pressable>
      <Pressable disabled={busy||!ownSessions.some(game=>String(game.id)===sessionInputs[item.id])}
       onPress={()=>joinSession(item)} style={[styles.button,styles.primary]}>
-      <Text style={styles.action}>Associar jogo</Text></Pressable>
+      <Text style={styles.action}>{t('Associar jogo')}</Text></Pressable>
     </View>:null}
    {item.sessionId?<Pressable accessibilityRole="link" style={styles.button}
     onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(item.sessionId)}})}>
-    <Text style={styles.action}>Abrir jogo associado</Text></Pressable>:null}
+    <Text style={styles.action}>{t('Abrir jogo associado')}</Text></Pressable>:null}
   </View>)}
   {isOwner?<View style={styles.create}>
-   <Text style={styles.subtitle}>Desafiar outra equipa</Text>
+   <Text style={styles.subtitle}>{t('Desafiar outra equipa')}</Text>
    <TextInput value={query} onChangeText={value=>{searchVersion.current++;setQuery(value);setCandidates([]);setSelectedId(null);}}
-    placeholder="Pesquisar adversário" placeholderTextColor={C.muted}
+    placeholder={t('Pesquisar adversário')} placeholderTextColor={C.muted}
     maxLength={80} style={styles.input}/>
    <Pressable onPress={()=>void search()} disabled={busy||searching||query.trim().length<2}
-    style={styles.button}><Text style={styles.action}>{searching?'A procurar…':'Pesquisar equipas'}</Text></Pressable>
+    style={styles.button}><Text style={styles.action}>{searching?t('A procurar…'):t('Pesquisar equipas')}</Text></Pressable>
    {candidates.map(team=><Pressable key={team.id}
     accessibilityRole="button" accessibilityState={{selected:selectedId===team.id}}
     onPress={()=>setSelectedId(team.id)}
     style={[styles.button,selectedId===team.id&&styles.selected]}>
     <Text style={styles.action}>{team.name} · {team.sport||'Multidesporto'}</Text></Pressable>)}
    <TextInput value={message} onChangeText={setMessage} maxLength={280} multiline
-    placeholder="Mensagem opcional" placeholderTextColor={C.muted}
+    placeholder={t('Mensagem opcional')} placeholderTextColor={C.muted}
     style={[styles.input,styles.message]}/>
    <Pressable disabled={!selectedId||busy} onPress={invite}
-    style={[styles.button,styles.primary]}><Text style={styles.action}>Enviar desafio</Text></Pressable>
+    style={[styles.button,styles.primary]}><Text style={styles.action}>{t('Enviar desafio')}</Text></Pressable>
   </View>:null}
  </View>;
 }

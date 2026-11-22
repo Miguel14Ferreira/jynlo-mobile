@@ -1,9 +1,10 @@
 'use strict';
+const {tr}=require('./i18n-core.cjs');
 // "Quem pode?": pure helpers for availability requests in groups and communities.
 
 const MAX_SLOTS=5;
 const MAX_NOTE=200;
-const ANSWERS=Object.freeze([{value:'YES',label:'Posso'},{value:'MAYBE',label:'Talvez'},{value:'NO',label:'Não posso'}]);
+const ANSWERS=Object.freeze([{value:'YES',label:'Posso'},{value:'MAYBE',label:'Talvez'},{value:'NO',label:tr('Não posso')}]);
 const WEEKDAYS=['dom','seg','ter','qua','qui','sex','sáb'];
 const pad=n=>String(n).padStart(2,'0');
 
@@ -23,14 +24,14 @@ function slotInstant(day,time,now=Date.now()){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(day||''))return{error:'Escolhe o dia.'};
  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test((time||'').trim()))return{error:'Indica a hora no formato HH:mm.'};
  const local=new Date(day+'T'+time.trim()+':00');
- if(!Number.isFinite(local.getTime()))return{error:'Data inválida.'};
- if(local.getTime()<now+60*60000)return{error:'Escolhe uma hora daqui a pelo menos 1 hora.'};
- if(local.getTime()>now+60*86400000)return{error:'Escolhe uma data nos próximos 60 dias.'};
+ if(!Number.isFinite(local.getTime()))return{error:tr('Data inválida.')};
+ if(local.getTime()<now+60*60000)return{error:tr('Escolhe uma hora daqui a pelo menos 1 hora.')};
+ if(local.getTime()>now+60*86400000)return{error:tr('Escolhe uma data nos próximos 60 dias.')};
  return{iso:local.toISOString()};
 }
 
 function addSlot(slots,iso){
- if(slots.includes(iso))return{slots,error:'Essa opção já está na lista.'};
+ if(slots.includes(iso))return{slots,error:tr('Essa opção já está na lista.')};
  if(slots.length>=MAX_SLOTS)return{slots,error:`No máximo ${MAX_SLOTS} opções.`};
  return{slots:[...slots,iso].sort(),error:''};
 }

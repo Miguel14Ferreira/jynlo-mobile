@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {useAuth} from '../lib/auth';
 import {mediaRequestSource} from '../lib/protected-media-source';
 import {StyleSheet,Text,View} from 'react-native';
@@ -43,7 +44,7 @@ export default function FeedVideo({uri,story=false,paused=false,muted=false,onEn
  return <View style={story?styles.storyVideo:styles.postVideo}>
   <VideoView player={player} style={styles.videoFill}
    contentFit="contain" nativeControls={!story}/>
-  {videoFailed?<View style={styles.videoError}><Text style={styles.videoErrorText}>Não foi possível reproduzir este vídeo.</Text></View>:null}
+  {videoFailed?<View style={styles.videoError}><Text style={styles.videoErrorText}>{t('Não foi possível reproduzir este vídeo.')}</Text></View>:null}
  </View>;
 }
 const styles=StyleSheet.create({

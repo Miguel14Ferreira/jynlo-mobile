@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useTracks,useRoomContext} from '@livekit/react-native';
@@ -25,15 +26,15 @@ function LiveVideoStage({host,expanded}:{host:boolean;expanded:boolean}){
  return <View style={[styles.videoStage,{height:dimensions.stageHeight}]}>
   {dominant?<View style={styles.videoMain}>
     <VideoTrack trackRef={dominant} style={styles.video}/>
-    <Text style={styles.videoLabel}>{dominant.participant.isLocal?'A tua câmara':'Em direto'}</Text>
+    <Text style={styles.videoLabel}>{dominant.participant.isLocal?t('A tua câmara'):t('Em direto')}</Text>
    </View>:<View style={styles.videoPlaceholder}><Text style={styles.placeholderText}>
-    {host?'A transmitir. Ativa a câmara se ainda não apareceu imagem.':'À espera da imagem do apresentador…'}
+    {host?t('A transmitir. Ativa a câmara se ainda não apareceu imagem.'):t('À espera da imagem do apresentador…')}
    </Text></View>}
   {previews.map(track=><View key={track.participant.identity+'|'+track.source} style={[styles.videoPreview,{width:dimensions.previewWidth,height:dimensions.previewHeight}]}>
     <VideoTrack trackRef={track} style={styles.video}/>
-    <Text style={styles.videoPreviewLabel}>{track.participant.isLocal?'Tu':'Convidado'}</Text>
+    <Text style={styles.videoPreviewLabel}>{track.participant.isLocal?t('Tu'):t('Convidado')}</Text>
    </View>)}
-  {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>+{remaining} câmaras</Text></View>:null}
+  {remaining>0?<View style={styles.remainingCount}><Text style={styles.remainingCountText}>{t('+{a} câmaras',{a:remaining})}</Text></View>:null}
  </View>;
 }
 function BroadcastControls({publisher}:{publisher:boolean}){
@@ -52,17 +53,17 @@ function BroadcastControls({publisher}:{publisher:boolean}){
     await room.localParticipant.setCameraEnabled(!cameraOn);
     setCameraOn(value=>!value);
    }
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível mudar o dispositivo.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível mudar o dispositivo.'));}
   finally{setBusy(false);}
  };
  return <View style={styles.broadcastControls}>
-  <Pressable accessibilityRole="button" accessibilityLabel={micOn?'Desligar microfone':'Ligar microfone'}
+  <Pressable accessibilityRole="button" accessibilityLabel={micOn?t('Desligar microfone'):t('Ligar microfone')}
    disabled={busy} style={styles.control} onPress={()=>void toggle('mic')}>
-    <Text style={styles.controlLabel}>{micOn?'🎙️ Microfone ligado':'🔇 Microfone desligado'}</Text>
+    <Text style={styles.controlLabel}>{micOn?t('🎙️ Microfone ligado'):t('🔇 Microfone desligado')}</Text>
   </Pressable>
-  <Pressable accessibilityRole="button" accessibilityLabel={cameraOn?'Desligar câmara':'Ligar câmara'}
+  <Pressable accessibilityRole="button" accessibilityLabel={cameraOn?t('Desligar câmara'):t('Ligar câmara')}
    disabled={busy} style={styles.control} onPress={()=>void toggle('camera')}>
-    <Text style={styles.controlLabel}>{cameraOn?'📹 Câmara ligada':'📷 Câmara desligada'}</Text>
+    <Text style={styles.controlLabel}>{cameraOn?t('📹 Câmara ligada'):t('📷 Câmara desligada')}</Text>
   </Pressable>
   {error?<Text style={styles.note}>{error}</Text>:null}
  </View>;
@@ -85,7 +86,7 @@ export default function PersonalLiveRoom(){
  useFocusEffect(useCallback(()=>{
   active.current=true;endingRef.current=false;
   if(!auth.token||!Number.isSafeInteger(id)||id<=0){
-   setLoading(false);setError('Direto inválido ou sessão expirada.');
+   setLoading(false);setError(t('Direto inválido ou sessão expirada.'));
    return()=>{active.current=false;};
   }
   setLoading(true);setError('');setExpandedVideo(false);setShowChat(true);
@@ -95,7 +96,7 @@ export default function PersonalLiveRoom(){
    await AudioSession.startAudioSession();
    if(!active.current){void AudioSession.stopAudioSession();return;}
    connectionRole.current=value.role;setConnection(value);setReady(true);
-  }).catch(e=>{if(active.current)setError(e instanceof Error?e.message:'Não foi possível entrar no direto.');})
+  }).catch(e=>{if(active.current)setError(e instanceof Error?e.message:t('Não foi possível entrar no direto.'));})
    .finally(()=>{if(active.current)setLoading(false);});
   return()=>{
    active.current=false;connectionRole.current=null;setConnection(null);setReady(false);
@@ -116,7 +117,7 @@ export default function PersonalLiveRoom(){
     switchingRole.current=true;
     void joinPersonalLive(auth.token,id).then(next=>{
      if(active.current&&next.role==='VIEWER'){connectionRole.current='VIEWER';setConnection(next);}
-    }).catch(()=>{if(active.current)setChatError('Não foi possível atualizar as permissões do direto.');})
+    }).catch(()=>{if(active.current)setChatError(t('Não foi possível atualizar as permissões do direto.'));})
      .finally(()=>{switchingRole.current=false;});
    }
    if(state.value.isGuest&&connectionRole.current==='VIEWER'&&!switchingRole.current){
@@ -124,11 +125,11 @@ export default function PersonalLiveRoom(){
     void (async()=>{
      await ensureLiveCapturePermissions();
      const token=auth.token;
-     if(!token)throw new Error('Inicia sessão para entrar no direto.');
+     if(!token)throw new Error(t('Inicia sessão para entrar no direto.'));
      return joinPersonalLive(token,id);
     })().then(next=>{
      if(active.current&&next.role==='GUEST'){connectionRole.current='GUEST';setConnection(next);}
-    }).catch(()=>{if(active.current)setChatError('A aprovação foi recebida, mas o vídeo ainda não ligou.');})
+    }).catch(()=>{if(active.current)setChatError(t('A aprovação foi recebida, mas o vídeo ainda não ligou.'));})
       .finally(()=>{switchingRole.current=false;});
    }
   }
@@ -145,7 +146,7 @@ export default function PersonalLiveRoom(){
   // Host heartbeats are intentionally scoped to the active room. If the app
   // disappears, the server expires an abandoned broadcast after two minutes.
   const beat=()=>{if(AppState.currentState==='active'&&!endingRef.current)
-   void heartbeatPersonalLive(auth.token!,id).catch(()=>{if(active.current)setError('Não foi possível confirmar o direto no servidor.');});
+   void heartbeatPersonalLive(auth.token!,id).catch(()=>{if(active.current)setError(t('Não foi possível confirmar o direto no servidor.'));});
   };
   beat();
   const timer=setInterval(beat,30000);
@@ -154,13 +155,13 @@ export default function PersonalLiveRoom(){
  const leave=()=>{router.back();};
  const end=()=>{
   if(!host||!auth.token||endingRef.current)return;
-  Alert.alert('Terminar direto?','A transmissão será encerrada para todos os espectadores.',[
-   {text:'Continuar em direto',style:'cancel'},
-   {text:'Terminar',style:'destructive',onPress:()=>{
+  Alert.alert(t('Terminar direto?'),t('A transmissão será encerrada para todos os espectadores.'),[
+   {text:t('Continuar em direto'),style:'cancel'},
+   {text:t('Terminar'),style:'destructive',onPress:()=>{
     if(endingRef.current)return;
     endingRef.current=true;setEnding(true);setError('');
     void endPersonalLive(auth.token!,id).then(()=>{if(active.current)router.replace('/live');})
-     .catch(e=>{endingRef.current=false;if(active.current)setError(e instanceof Error?e.message:'Não foi possível encerrar o direto.');})
+     .catch(e=>{endingRef.current=false;if(active.current)setError(e instanceof Error?e.message:t('Não foi possível encerrar o direto.'));})
      .finally(()=>{if(active.current)setEnding(false);});
    }}
   ]);
@@ -175,7 +176,7 @@ export default function PersonalLiveRoom(){
     setMessages(current=>current.some(item=>item.id===sent.id)?current:[...current,sent].slice(-100));
     setDraft(current=>current.trim()===message?'':current);
    }
-  }catch(e){if(active.current)setChatError(e instanceof Error?e.message:'A mensagem não foi confirmada.');}
+  }catch(e){if(active.current)setChatError(e instanceof Error?e.message:t('A mensagem não foi confirmada.'));}
   finally{sendLock.current=false;if(active.current)setSending(false);}
  };
  const toggleChat=async()=>{
@@ -183,87 +184,87 @@ export default function PersonalLiveRoom(){
   setModerating(true);setChatError('');
   try{const value=await setPersonalLiveChatEnabled(auth.token,id,!controls.chatEnabled);
    if(active.current)setControls(value);
-  }catch(e){if(active.current)setChatError(e instanceof Error?e.message:'Não foi possível alterar o chat.');}
+  }catch(e){if(active.current)setChatError(e instanceof Error?e.message:t('Não foi possível alterar o chat.'));}
   finally{if(active.current)setModerating(false);}
  };
  const decide=async(requestId:number,approve:boolean)=>{
   if(!host||!auth.token||moderating)return;
   setModerating(true);setChatError('');
   try{await decidePersonalLiveGuest(auth.token,id,requestId,approve);if(active.current)await refresh();}
-  catch(e){if(active.current)setChatError(e instanceof Error?e.message:'Não foi possível decidir o pedido.');}
+  catch(e){if(active.current)setChatError(e instanceof Error?e.message:t('Não foi possível decidir o pedido.'));}
   finally{if(active.current)setModerating(false);}
  };
  const ask=async()=>{
   if(!auth.token||host||requesting)return;
   setRequesting(true);setChatError('');
   try{await requestPersonalLiveGuest(auth.token,id);if(active.current)void refresh();}
-  catch(e){if(active.current)setChatError(e instanceof Error?e.message:'Não foi possível enviar o pedido.');}
+  catch(e){if(active.current)setChatError(e instanceof Error?e.message:t('Não foi possível enviar o pedido.'));}
   finally{if(active.current)setRequesting(false);}
  };
  return <Page>
   <View style={styles.header}>
-   <Text style={styles.heading}>● LIVE</Text>
-   <Text style={styles.subtitle}>{host?'A tua transmissão':'A assistir ao direto'}</Text>
+   <Text style={styles.heading}>{t('● LIVE')}</Text>
+   <Text style={styles.subtitle}>{host?t('A tua transmissão'):t('A assistir ao direto')}</Text>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
   {loading?<Loader/>:null}
-  {!loading&&!connection?<Button title="Voltar aos diretos" secondary onPress={leave}/>:null}
+  {!loading&&!connection?<Button title={t('Voltar aos diretos')} secondary onPress={leave}/>:null}
   {connection&&ready?<LiveKitRoom key={id+'-'+role} serverUrl={connection.serverUrl}
    token={connection.token} connect audio={host||role==='GUEST'} video={host||role==='GUEST'}
-   onDisconnected={()=>{if(active.current&&!endingRef.current&&connectionRole.current===role)setError('A ligação ao vídeo terminou. Volta à lista para entrar novamente.');}}
-   onError={e=>{if(active.current)setError('Erro na transmissão: '+e.message);}}>
+   onDisconnected={()=>{if(active.current&&!endingRef.current&&connectionRole.current===role)setError(t('A ligação ao vídeo terminou. Volta à lista para entrar novamente.'));}}
+   onError={e=>{if(active.current)setError(t('Erro na transmissão: {v}',{v:e.message}));}}>
    <LiveVideoStage host={host} expanded={expandedVideo}/>
    <BroadcastControls publisher={host||role==='GUEST'}/>
   </LiveKitRoom>:null}
   {connection?<View style={styles.actions}>
-   <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?'Reduzir vídeo do direto':'Ampliar vídeo do direto'}
+   <Pressable accessibilityRole="button" accessibilityLabel={expandedVideo?t('Reduzir vídeo do direto'):t('Ampliar vídeo do direto')}
     accessibilityState={{selected:expandedVideo}} onPress={()=>setExpandedVideo(value=>!value)}
     style={[styles.stageAction,expandedVideo&&styles.stageActionSelected]}>
-    <Text style={styles.stageActionText}>{expandedVideo?'Reduzir vídeo':'Ampliar vídeo'}</Text>
+    <Text style={styles.stageActionText}>{expandedVideo?t('Reduzir vídeo'):t('Ampliar vídeo')}</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" accessibilityLabel={showChat?'Ocultar chat do direto':'Mostrar chat do direto'}
+   <Pressable accessibilityRole="button" accessibilityLabel={showChat?t('Ocultar chat do direto'):t('Mostrar chat do direto')}
     accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(value=>!value)} style={styles.stageAction}>
-    <Text style={styles.stageActionText}>{showChat?'Ocultar chat':'Mostrar chat'}</Text>
+    <Text style={styles.stageActionText}>{showChat?t('Ocultar chat'):t('Mostrar chat')}</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" accessibilityLabel={host?'Terminar direto para todos':'Sair do direto'}
+   <Pressable accessibilityRole="button" accessibilityLabel={host?t('Terminar direto para todos'):t('Sair do direto')}
     disabled={ending} onPress={host?end:leave} style={[styles.stageAction,styles.endAction]}>
-    <Text style={styles.stageActionText}>{host?(ending?'A terminar…':'Terminar direto'):'Sair do direto'}</Text>
+    <Text style={styles.stageActionText}>{host?(ending?t('A terminar…'):t('Terminar direto')):t('Sair do direto')}</Text>
    </Pressable>
   </View>:null}
   {connection&&!host&&!controls?.isGuest?<View style={styles.panel}>
     <Text style={styles.note}>{controls?.requestStatus==='PENDING'
-     ?'Pedido enviado. O apresentador pode aprovar a tua participação.'
-     :'Podes pedir para aparecer no direto com o apresentador.'}</Text>
+     ?t('Pedido enviado. O apresentador pode aprovar a tua participação.')
+     :t('Podes pedir para aparecer no direto com o apresentador.')}</Text>
     {controls?.requestStatus!=='PENDING'?
-     <Button secondary title={requesting?'A enviar…':'Pedir para entrar no direto'} disabled={requesting} onPress={()=>void ask()}/>:null}
+     <Button secondary title={requesting?t('A enviar…'):t('Pedir para entrar no direto')} disabled={requesting} onPress={()=>void ask()}/>:null}
    </View>:null}
   {connection&&host&&controls?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Moderação do direto</Text>
-   <Button secondary title={controls.chatEnabled?'Desativar chat':'Ativar chat'}
+   <Text style={styles.subtitle}>{t('Moderação do direto')}</Text>
+   <Button secondary title={controls.chatEnabled?t('Desativar chat'):t('Ativar chat')}
      disabled={moderating} onPress={()=>void toggleChat()}/>
    {controls.pendingRequests.filter(item=>item.status==='PENDING').map(item=>
     <View key={item.id} style={styles.requestRow}>
-     <Text style={styles.note}>@{item.username} quer entrar no direto</Text>
-     <Button title="Aceitar" disabled={moderating} onPress={()=>void decide(item.id,true)}/>
-     <Button secondary title="Recusar" disabled={moderating} onPress={()=>void decide(item.id,false)}/>
+     <Text style={styles.note}>{t('@{a} quer entrar no direto',{a:item.username})}</Text>
+     <Button title={t('Aceitar')} disabled={moderating} onPress={()=>void decide(item.id,true)}/>
+     <Button secondary title={t('Recusar')} disabled={moderating} onPress={()=>void decide(item.id,false)}/>
     </View>)}
   </View>:null}
   {connection&&showChat?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Chat do direto</Text>
+   <Text style={styles.subtitle}>{t('Chat do direto')}</Text>
    {messages.length?messages.map(message=><View key={message.id} style={styles.message}>
     <Text style={styles.author}>@{message.username}</Text><Text style={styles.messageText}>{message.message}</Text>
-   </View>):<Text style={styles.note}>As mensagens vão aparecer aqui.</Text>}
-   {controls?.chatEnabled===false&&!host?<Text style={styles.note}>O apresentador desativou o chat.</Text>:null}
-   {controls?.mutedByHost?<Text style={styles.note}>O apresentador silenciou as tuas mensagens.</Text>:null}
+   </View>):<Text style={styles.note}>{t('As mensagens vão aparecer aqui.')}</Text>}
+   {controls?.chatEnabled===false&&!host?<Text style={styles.note}>{t('O apresentador desativou o chat.')}</Text>:null}
+   {controls?.mutedByHost?<Text style={styles.note}>{t('O apresentador silenciou as tuas mensagens.')}</Text>:null}
    {chatError?<Message tone="error">{chatError}</Message>:null}
    <View style={styles.compose}>
     <TextInput value={draft} onChangeText={setDraft} style={styles.input} multiline maxLength={500}
-     placeholder="Escrever mensagem…" placeholderTextColor={C.muted}
-     accessibilityLabel="Mensagem no chat do direto"
+     placeholder={t('Escrever mensagem…')} placeholderTextColor={C.muted}
+     accessibilityLabel={t('Mensagem no chat do direto')}
      editable={!sending&&!controls?.mutedByHost&&(host||controls?.chatEnabled!==false)}/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Enviar mensagem" style={styles.send}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar mensagem')} style={styles.send}
       disabled={!draft.trim()||sending||controls?.mutedByHost===true||(!host&&controls?.chatEnabled===false)}
-      onPress={()=>void send()}><Text style={styles.sendText}>Enviar</Text></Pressable>
+      onPress={()=>void send()}><Text style={styles.sendText}>{t('Enviar')}</Text></Pressable>
    </View>
   </View>:null}
  </Page>;

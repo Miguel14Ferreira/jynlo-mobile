@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
@@ -30,7 +31,7 @@ export default function TournamentDetailScreen(){
    return;
   }
   if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(id)||id<=0){
-   if(version===generation.current){setError('Torneio inválido.');setLoading(false);}
+   if(version===generation.current){setError(t('Torneio inválido.'));setLoading(false);}
    return;
   }
   setLoading(true);
@@ -40,8 +41,8 @@ export default function TournamentDetailScreen(){
     communityDetails(communityId,auth.token,auth.username)
    ]);
    if(version!==generation.current||request!==requestVersion.current)return;
-   if(community.id!==communityId)throw Error('A comunidade devolvida não corresponde à selecionada.');
-   if(!('myRole' in community)||!community.myRole)throw Error('Já não pertences a esta comunidade.');
+   if(community.id!==communityId)throw Error(t('A comunidade devolvida não corresponde à selecionada.'));
+   if(!('myRole' in community)||!community.myRole)throw Error(t('Já não pertences a esta comunidade.'));
    setOrganizerRole(community.myRole);
    setTournament(result);
    try{
@@ -50,11 +51,11 @@ export default function TournamentDetailScreen(){
    }catch(e){
     if(version===generation.current&&request===requestVersion.current){
      setTable(null);
-     setTableError(e instanceof Error?e.message:'Não foi possível carregar a classificação.');
+     setTableError(e instanceof Error?e.message:t('Não foi possível carregar a classificação.'));
     }
    }
   }catch(e){
-   if(version===generation.current&&request===requestVersion.current)setError(e instanceof Error?e.message:'Não foi possível carregar o torneio.');
+   if(version===generation.current&&request===requestVersion.current)setError(e instanceof Error?e.message:t('Não foi possível carregar o torneio.'));
   }finally{if(version===generation.current&&request===requestVersion.current)setLoading(false);}
  },[communityId,id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -65,53 +66,53 @@ export default function TournamentDetailScreen(){
  },[load]));
  const kind=tournament?classificationKind(tournament):'UNSUPPORTED';
  const officialOutcome=officialTournamentOutcome(tournament);
- return <Page><DemoBanner/><Eyebrow>COMPETIÇÃO JYNLO</Eyebrow>
-   {!auth.token?<Button title="Entrar para ver torneio" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('COMPETIÇÃO JYNLO')}</Eyebrow>
+   {!auth.token?<Button title={t('Entrar para ver torneio')} onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
    {tournament?<><View style={styles.hero}>
-     <Text style={styles.heroEyebrow}>TORNEIO · JYNLO</Text>
+     <Text style={styles.heroEyebrow}>{t('TORNEIO · JYNLO')}</Text>
      <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament.name}</Text>
-     <View style={styles.line}><Badge text={tournament.sport||'Multidesporto'}/><Badge text={tournament.status==='IN_PROGRESS'?'A decorrer':tournament.status==='DRAFT'?'Em preparação':'Concluído'}/></View>
+     <View style={styles.line}><Badge text={tournament.sport||t('Multidesporto')}/><Badge text={tournament.status==='IN_PROGRESS'?t('A decorrer'):tournament.status==='DRAFT'?t('Em preparação'):t('Concluído')}/></View>
      <Text style={styles.heroKind}>{label(kind)}</Text>
     </View>
      {officialOutcome?<View style={styles.panel}>
       <Text style={styles.heading}>{officialOutcome.title}</Text>
       <Text style={styles.meta}>{officialOutcome.detail}</Text>
      </View>:null}
-     {tableError?<Message tone="error">A classificação não está disponível: {tableError}</Message>:null}
-     {tableError?<Button secondary title="Tentar carregar novamente" onPress={()=>{void load();}}/>:null}
+     {tableError?<Message tone="error">{t('A classificação não está disponível: {a}',{a:tableError})}</Message>:null}
+     {tableError?<Button secondary title={t('Tentar carregar novamente')} onPress={()=>{void load();}}/>:null}
      {table?<View style={styles.panel}>
-       <View style={styles.sectionHeading}><Text style={styles.heading}>Classificação</Text><Text style={styles.sectionCount}>{table.rows.length} {table.rows.length===1?'participante':'participantes'}</Text></View>
+       <View style={styles.sectionHeading}><Text style={styles.heading}>{t('Classificação')}</Text><Text style={styles.sectionCount}>{table.rows.length} {table.rows.length===1?'participante':'participantes'}</Text></View>
        <Text style={styles.columns}>{standingsColumns(kind).join('   ·   ')}</Text>
        {table.rows.map((row,i)=>{
         const r=row as unknown as Record<string,unknown>;
-        const name=String(r.teamName??r.fullName??r.displayName??r.username??'Participante');
+        const name=String(r.teamName??r.fullName??r.displayName??r.username??t('Participante'));
         const points=kind==='CHESS'?formatChessPoints(r.points):r.points;
         return <View key={i} style={styles.standing}>
           <View style={styles.positionBox}><Text maxFontSizeMultiplier={1.3} style={styles.position}>{String(r.position??i+1)}</Text></View>
           <View style={styles.standingIdentity}><Text numberOfLines={2} style={styles.name}>{name}</Text>
-            <Text style={styles.meta}>{`${r.played??'—'} ${kind==='CHESS'?'partidas':'jogos'} · ${r.won??'—'} vitórias · ${r.drawn??'—'} empates · ${r.lost??'—'} derrotas`}</Text></View>
+            <Text style={styles.meta}>{kind==='CHESS'?t('{a} partidas · {b} vitórias · {c} empates · {d} derrotas',{a:r.played??'—',b:r.won??'—',c:r.drawn??'—',d:r.lost??'—'}):t('{a} jogos · {b} vitórias · {c} empates · {d} derrotas',{a:r.played??'—',b:r.won??'—',c:r.drawn??'—',d:r.lost??'—'})}</Text></View>
           <View style={styles.pointsBox}><Text style={styles.points}>{points==null?'—':String(points)}</Text><Text style={styles.pointsLabel}>{kind==='CHESS'?'pontos':'pts'}</Text></View>
         </View>;
        })}
-       {table.rows.length===0?<Text style={styles.meta}>Ainda não existem resultados para apresentar.</Text>:null}
+       {table.rows.length===0?<Text style={styles.meta}>{t('Ainda não existem resultados para apresentar.')}</Text>:null}
        <Text style={styles.source}>{table.source}</Text>
      </View>:kind==='EVENT_RANKING'?<View style={styles.panel}>
-       <Text style={styles.heading}>🏅 Classificação por provas</Text>
-       <Text style={styles.meta}>Cada prova conta: os lugares dão pontos e a soma decide o campeão.</Text>
-       <Button title="Ver provas e classificação" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/provas',params:{communityId:String(communityId),id:String(id),name:tournament.name}})}/>
-     </View>:!tableError&&!isPerformanceKind(kind)?<Message>Esta modalidade tem regras próprias. Não aplicamos classificações de futebol sem confirmação das regras.</Message>:null}
+       <Text style={styles.heading}>{t('🏅 Classificação por provas')}</Text>
+       <Text style={styles.meta}>{t('Cada prova conta: os lugares dão pontos e a soma decide o campeão.')}</Text>
+       <Button title={t('Ver provas e classificação')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/provas',params:{communityId:String(communityId),id:String(id),name:tournament.name}})}/>
+     </View>:!tableError&&!isPerformanceKind(kind)?<Message>{t('Esta modalidade tem regras próprias. Não aplicamos classificações de futebol sem confirmação das regras.')}</Message>:null}
      {auth.token?<PublicShareCard target={{kind:'TOURNAMENT',communityId,tournamentId:id}} name={tournament.name}
       token={auth.token} canManage={organizerRole==='OWNER'||organizerRole==='ADMIN'}/>:null}
-     {isPerformanceKind(kind)?<Button title={kind==='RACE'?'Ver resultados de corridas':kind==='TIMED'?'Ver tempos da prova':kind==='MEASURED'?'Ver marcas da prova':'Ver resultados das estafetas'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {(organizerRole==='OWNER'||organizerRole==='ADMIN')&&['RACE','TIMED','MEASURED'].includes(kind)?<Button secondary title="Gerir jornadas da competição" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/events',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {kind==='RELAY'&&(organizerRole==='OWNER'||organizerRole==='ADMIN')?<Button secondary title="Gerir séries, final e júri" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/relays',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {kind==='INDIVIDUAL'||kind==='CHESS'?<Button secondary title="Calendário e jogos individuais" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/matches',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {tournament.entryType!=='TEAM'?<Button secondary title="Participantes e inscrições" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/participants',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {tournament.entryType==='TEAM'&&!isPerformanceKind(kind)?<Button title="Equipas e convites" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {tournament.entryType==='TEAM'&&kind==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?'Fase de grupos e eliminatórias':tournament.format==='KNOCKOUT'?'Ver eliminatórias':'Calendário de jogos'} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     {(organizerRole==='OWNER'||organizerRole==='ADMIN')&&kind!=='EVENT_RANKING'?<Button secondary title="Gerir competição" onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/manage",params:{communityId:String(communityId),id:String(id)}})}/>:null}
-     <Button secondary title="Voltar aos torneios" onPress={()=>router.back()}/>
+     {isPerformanceKind(kind)?<Button title={kind==='RACE'?t('Ver resultados de corridas'):kind==='TIMED'?t('Ver tempos da prova'):kind==='MEASURED'?t('Ver marcas da prova'):t('Ver resultados das estafetas')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {(organizerRole==='OWNER'||organizerRole==='ADMIN')&&['RACE','TIMED','MEASURED'].includes(kind)?<Button secondary title={t('Gerir jornadas da competição')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/events',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {kind==='RELAY'&&(organizerRole==='OWNER'||organizerRole==='ADMIN')?<Button secondary title={t('Gerir séries, final e júri')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/relays',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {kind==='INDIVIDUAL'||kind==='CHESS'?<Button secondary title={t('Calendário e jogos individuais')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/matches',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType!=='TEAM'?<Button secondary title={t('Participantes e inscrições')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/participants',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType==='TEAM'&&!isPerformanceKind(kind)?<Button title={t('Equipas e convites')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/teams',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {tournament.entryType==='TEAM'&&kind==='TEAM'?<Button secondary title={tournament.format==='GROUP_KNOCKOUT'?t('Fase de grupos e eliminatórias'):tournament.format==='KNOCKOUT'?t('Ver eliminatórias'):t('Calendário de jogos')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/fixtures',params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     {(organizerRole==='OWNER'||organizerRole==='ADMIN')&&kind!=='EVENT_RANKING'?<Button secondary title={t('Gerir competição')} onPress={()=>router.push({pathname:"/tournaments/[communityId]/[id]/manage",params:{communityId:String(communityId),id:String(id)}})}/>:null}
+     <Button secondary title={t('Voltar aos torneios')} onPress={()=>router.back()}/>
    </>:null}
  </Page>;
 }

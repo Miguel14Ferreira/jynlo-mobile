@@ -1,4 +1,5 @@
 import React,{useEffect,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import {C} from '../lib/theme';
 import {CHAT_REACTION_EMOJIS,changeChatReaction,chatReactionParticipants,listChatReactions} from '../lib/chat-reactions-api';
@@ -47,8 +48,8 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
    if(activeIdentity.current!==currentIdentity)return;
    const selected=participants.filter(member=>member.emoji===emoji);
    const shown=selected.slice(0,25).map(member=>member.displayName+(member.mine?' (tu)':'')).join('\n');
-   Alert.alert('Reações '+emoji,selected.length?shown+(selected.length>25?'\nE mais '+(selected.length-25)+' pessoas.':''):'Ainda não existem reações deste tipo.');
-  }catch{if(activeIdentity.current===currentIdentity)Alert.alert('Reações','Não foi possível consultar quem reagiu.');}
+   Alert.alert(t('Reações {v}',{v:emoji}),selected.length?shown+(selected.length>25?t('\nE mais {v}',{v:(selected.length-25)})+' pessoas.':''):t('Ainda não existem reações deste tipo.'));
+  }catch{if(activeIdentity.current===currentIdentity)Alert.alert(t('Reações'),t('Não foi possível consultar quem reagiu.'));}
  };
  const react=async(messageId:number,emoji:ChatReactionEmoji|null)=>{
   if(!token||!enabled||pending.current.has(identity+'|'+messageId))return;
@@ -62,7 +63,7 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
    // The server may have applied an update before the network failed.
    // Do not optimistically update the reaction or retry a mutation.
    if(activeIdentity.current===currentIdentity)
-    Alert.alert('Reação não confirmada','Confirma o estado da mensagem antes de voltares a tentar.');
+    Alert.alert(t('Reação não confirmada'),t('Confirma o estado da mensagem antes de voltares a tentar.'));
   }finally{
    pending.current.delete(currentIdentity+'|'+messageId);
    if(activeIdentity.current===currentIdentity)setBusyIds(previous=>{
@@ -89,13 +90,13 @@ export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,on
  return <View style={styles.container}>
    <View style={styles.row}>
     {counts.map(emoji=><Pressable key={emoji} accessibilityRole="button"
-     accessibilityLabel={emoji+' · '+summary!.counts[emoji]+' reações; manter pressionado para ver participantes'}
+     accessibilityLabel={emoji+' · '+summary!.counts[emoji]+' '+t('reações; manter pressionado para ver participantes')}
      accessibilityState={{selected:summary?.myEmoji===emoji,disabled:busy}}
      disabled={busy} onPress={()=>apply(emoji)} onLongPress={()=>{if(!busy)void onInspect(id,emoji);}}
      style={[styles.chip,summary?.myEmoji===emoji&&styles.selected]}>
      <Text style={styles.chipText}>{emoji} {summary!.counts[emoji]}</Text>
     </Pressable>)}
-    <Pressable accessibilityRole="button" accessibilityLabel={open?'Fechar reações':'Reagir à mensagem'}
+    <Pressable accessibilityRole="button" accessibilityLabel={open?t('Fechar reações'):t('Reagir à mensagem')}
       accessibilityState={{expanded:open,disabled:busy}} disabled={busy}
       onPress={()=>setOpen(previous=>!previous)} style={styles.add}>
       <Text style={styles.addLabel}>☺ +</Text>
@@ -103,7 +104,7 @@ export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,on
    </View>
    {open?<View style={styles.picker}>
     {CHAT_REACTION_EMOJIS.map(emoji=><Pressable key={emoji} accessibilityRole="button"
-      accessibilityLabel={'Reagir com '+emoji} disabled={busy}
+      accessibilityLabel={t('Reagir com {v}',{v:emoji})} disabled={busy}
       accessibilityState={{selected:summary?.myEmoji===emoji,disabled:busy}}
       onPress={()=>apply(emoji)} style={[styles.choice,summary?.myEmoji===emoji&&styles.selected]}>
       <Text style={styles.choiceText}>{emoji}</Text>

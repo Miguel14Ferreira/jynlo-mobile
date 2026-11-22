@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {C} from '../lib/theme';
 import {encodePoll,POLL_MAX_OPTION,POLL_MAX_OPTIONS,POLL_MAX_QUESTION} from '../lib/chat-poll.cjs';
@@ -14,25 +15,25 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
  }
  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
   <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.overlay}>
-   <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar"/>
+   <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('Fechar')}/>
    <View style={styles.sheet}>
-    <Text style={styles.title}>📊 Criar sondagem</Text>
+    <Text style={styles.title}>{t('📊 Criar sondagem')}</Text>
     <ScrollView style={{maxHeight:380}} contentContainerStyle={{gap:10}} keyboardShouldPersistTaps="handled">
-     <Text style={styles.label}>Pergunta</Text>
-     <TextInput value={question} maxLength={POLL_MAX_QUESTION} placeholder="Ex.: Que dia jogamos?" placeholderTextColor={C.muted}
-      onChangeText={value=>{setQuestion(value);setInvalid(false);}} style={styles.input} accessibilityLabel="Pergunta"/>
+     <Text style={styles.label}>{t('Pergunta')}</Text>
+     <TextInput value={question} maxLength={POLL_MAX_QUESTION} placeholder={t('Ex.: Que dia jogamos?')} placeholderTextColor={C.muted}
+      onChangeText={value=>{setQuestion(value);setInvalid(false);}} style={styles.input} accessibilityLabel={t('Pergunta')}/>
      {options.map((option,index)=><View key={index} style={styles.row}>
       <TextInput value={option} maxLength={POLL_MAX_OPTION} placeholder={'Opção '+(index+1)} placeholderTextColor={C.muted}
        onChangeText={value=>{setOptions(current=>current.map((o,i)=>i===index?value:o));setInvalid(false);}}
        style={[styles.input,{flex:1}]} accessibilityLabel={'Opção '+(index+1)}/>
-      {options.length>2?<Pressable accessibilityRole="button" accessibilityLabel={'Remover opção '+(index+1)} style={styles.remove}
+      {options.length>2?<Pressable accessibilityRole="button" accessibilityLabel={t('Remover opção {v}',{v:(index+1)})} style={styles.remove}
        onPress={()=>setOptions(current=>current.filter((_,i)=>i!==index))}><Text style={styles.removeText}>✕</Text></Pressable>:null}
      </View>)}
      {options.length<POLL_MAX_OPTIONS?<Pressable accessibilityRole="button" onPress={()=>setOptions(current=>[...current,''])} style={styles.add}>
-      <Text style={styles.addText}>+ Adicionar opção</Text></Pressable>:null}
+      <Text style={styles.addText}>{t('+ Adicionar opção')}</Text></Pressable>:null}
     </ScrollView>
-    {invalid?<Text style={styles.error}>Escreve a pergunta e pelo menos 2 opções diferentes.</Text>:null}
-    <Pressable accessibilityRole="button" onPress={submit} style={styles.send}><Text style={styles.sendText}>Enviar sondagem</Text></Pressable>
+    {invalid?<Text style={styles.error}>{t('Escreve a pergunta e pelo menos 2 opções diferentes.')}</Text>:null}
+    <Pressable accessibilityRole="button" onPress={submit} style={styles.send}><Text style={styles.sendText}>{t('Enviar sondagem')}</Text></Pressable>
    </View>
   </KeyboardAvoidingView>
  </Modal>;

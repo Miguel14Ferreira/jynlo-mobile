@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
@@ -21,7 +22,7 @@ export default function LivesScreen(){
   try{
    const list=await activePersonalLives(auth.token);
    if(version===generation.current)setItems(list.filter(item=>item.status==='LIVE'));
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível obter os diretos.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível obter os diretos.'));}
   finally{if(version===generation.current&&!silent)setLoading(false);}
  },[auth.token]);
  useFocusEffect(useCallback(()=>{
@@ -40,37 +41,37 @@ export default function LivesScreen(){
    await ensureLiveCapturePermissions();
    const created=await startPersonalLive(auth.token,title);
    router.push({pathname:'/live/[id]',params:{id:String(created.id)}});
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível iniciar o direto.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar o direto.'));}
   finally{starting.current=false;setBusy(false);}
  };
  return <Page>
-  <Text style={styles.kicker}>JYNLO · EM DIRETO</Text>
-  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>Lives</Text>
-  <Text style={styles.note}>Assiste aos diretos da comunidade Jynlo ou inicia uma transmissão tua.</Text>
-  {!auth.token?<Message>Inicia sessão para assistir e transmitir diretos.</Message>:<>
+  <Text style={styles.kicker}>{t('JYNLO · EM DIRETO')}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('Lives')}</Text>
+  <Text style={styles.note}>{t('Assiste aos diretos da comunidade Jynlo ou inicia uma transmissão tua.')}</Text>
+  {!auth.token?<Message>{t('Inicia sessão para assistir e transmitir diretos.')}</Message>:<>
    <View style={styles.panel}>
-    <Text style={styles.subtitle}>Iniciar um direto</Text>
+    <Text style={styles.subtitle}>{t('Iniciar um direto')}</Text>
     <TextInput value={title} onChangeText={setTitle} style={styles.input}
-      editable={!busy} maxLength={120} placeholder="Ex.: O nosso treino de futsal"
-      placeholderTextColor={C.muted} accessibilityLabel="Título do direto"/>
-    <Text style={styles.note}>A transmissão só começa quando tocares em «Iniciar direto». Precisas de câmara e microfone.</Text>
-    <Button title={busy?'A iniciar…':'Iniciar direto'} disabled={busy||!title.trim()} onPress={()=>void start()}/>
+      editable={!busy} maxLength={120} placeholder={t('Ex.: O nosso treino de futsal')}
+      placeholderTextColor={C.muted} accessibilityLabel={t('Título do direto')}/>
+    <Text style={styles.note}>{t('A transmissão só começa quando tocares em «Iniciar direto». Precisas de câmara e microfone.')}</Text>
+    <Button title={busy?t('A iniciar…'):t('Iniciar direto')} disabled={busy||!title.trim()} onPress={()=>void start()}/>
    </View>
    <View style={styles.panel}>
-    <Text style={styles.subtitle}>A decorrer agora</Text>
+    <Text style={styles.subtitle}>{t('A decorrer agora')}</Text>
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
-    {!loading&&items.length===0?<Text style={styles.note}>Não há diretos ativos neste momento.</Text>:null}
+    {!loading&&items.length===0?<Text style={styles.note}>{t('Não há diretos ativos neste momento.')}</Text>:null}
     {items.map(item=><Pressable key={item.id} accessibilityRole="button"
-      accessibilityLabel={'Assistir ao direto '+item.title+' de '+item.username}
+      accessibilityLabel={t('Assistir ao direto {v} de {user}',{v:item.title,user:item.username})}
       onPress={()=>router.push({pathname:'/live/[id]',params:{id:String(item.id)}})}
       style={styles.liveItem}>
-      <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>● LIVE</Text></View>
+      <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>{t('● LIVE')}</Text></View>
       <View style={{flex:1,gap:5}}><Text style={styles.liveTitle} numberOfLines={2}>{item.title}</Text>
-       <Text style={styles.note}>@{item.username}{item.canManage?' · O teu direto':''}</Text></View>
-      <Text style={styles.watchText}>Ver ›</Text>
+       <Text style={styles.note}>@{item.username}{item.canManage?' · '+t('O teu direto'):''}</Text></View>
+      <Text style={styles.watchText}>{t('Ver ›')}</Text>
      </Pressable>)}
-    <Button secondary title="Procurar novos diretos" onPress={()=>void refresh()} disabled={loading||busy}/>
+    <Button secondary title={t('Procurar novos diretos')} onPress={()=>void refresh()} disabled={loading||busy}/>
    </View>
   </>}
  </Page>;

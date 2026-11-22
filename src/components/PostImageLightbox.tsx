@@ -1,4 +1,5 @@
 import React,{useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -27,8 +28,8 @@ export default function PostImageLightbox({photos,onClose}:Props){
   presentationStyle="fullScreen" onRequestClose={onClose}>
   <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
    <View style={styles.header}>
-    <Text style={styles.counter}>{entries.length>1?index+1+' / '+entries.length:'Fotografia'}</Text>
-    <CloseIconButton onPress={onClose} label="Fechar fotografia ampliada"/>
+    <Text style={styles.counter}>{entries.length>1?index+1+' / '+entries.length:t('Fotografia')}</Text>
+    <CloseIconButton onPress={onClose} label={t('Fechar fotografia ampliada')}/>
    </View>
    <View style={styles.photoArea} onLayout={event=>{
     const width=Math.round(event.nativeEvent.layout.width);
@@ -43,7 +44,7 @@ export default function PostImageLightbox({photos,onClose}:Props){
        const next=Math.round(event.nativeEvent.contentOffset.x/viewport.width);
        setIndex(Math.max(0,Math.min(entries.length-1,next)));
       }}
-      accessibilityLabel={'Fotografias ampliadas, '+entries.length+' imagens'}>
+      accessibilityLabel={t('Fotografias ampliadas, {v}',{v:entries.length})+' imagens'}>
       {entries.map((uri,i)=><View key={uri+'-'+i} style={{width:viewport.width,height:viewport.height}}>
        <Image source={mediaRequestSource(uri,token)} resizeMode="contain" style={{width:viewport.width,height:viewport.height}}
         accessibilityLabel={'Fotografia '+(i+1)+' de '+entries.length}/>
@@ -51,16 +52,16 @@ export default function PostImageLightbox({photos,onClose}:Props){
     </ScrollView>:null}
    </View>
    {entries.length>1?<View style={styles.navigation}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fotografia anterior"
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Fotografia anterior')}
      disabled={index===0} onPress={()=>moveTo(index-1)} style={[styles.arrow,index===0&&styles.disabled]}>
      <JynloIcon name="back" size={23} color="#fff"/>
     </Pressable>
-    <Text style={styles.hint}>Desliza para ver outras fotografias</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Fotografia seguinte"
+    <Text style={styles.hint}>{t('Desliza para ver outras fotografias')}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Fotografia seguinte')}
      disabled={index===entries.length-1} onPress={()=>moveTo(index+1)} style={[styles.arrow,index===entries.length-1&&styles.disabled]}>
      <JynloIcon name="chevron-right" size={23} color="#fff"/>
     </Pressable>
-   </View>:<View style={styles.navigation}><Text style={styles.hint}>Fotografia completa, sem cortes</Text></View>}
+   </View>:<View style={styles.navigation}><Text style={styles.hint}>{t('Fotografia completa, sem cortes')}</Text></View>}
   </SafeAreaView>
  </Modal>;
 }

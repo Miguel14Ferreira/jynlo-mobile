@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {Alert,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -37,7 +38,7 @@ export default function TournamentEventsScreen(){
     setOverview(results);
     if(results.kind==='RACE')setPoints(results.data.pointsByPlace.join(', '));
    }
-  }catch(e){setError(e instanceof Error?e.message:'Não foi possível consultar as provas.');}
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível consultar as provas.'));}
   finally{setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();},[load]));
@@ -56,88 +57,88 @@ export default function TournamentEventsScreen(){
    if(results.kind==='RACE')setPoints(results.data.pointsByPlace.join(', '));
    setNotice(success);
   }catch(e){
-   const message=e instanceof Error?e.message:'Falha ao guardar.';
-   setError(message+' Confirma o estado atual antes de repetir a operação.');
+   const message=e instanceof Error?e.message:t('Falha ao guardar.');
+   setError(message+' '+t('Confirma o estado atual antes de repetir a operação.'));
   }finally{locked.current=false;setBusy(false);}
  }
  function confirmRound(round:PerformanceRound,action:'link'|'unlink'){
   if(!editable||busy||!tournament||!auth.token||!auth.username)return;
-  const name=round.name||'Jornada '+round.id;
+  const name=round.name||t('Jornada {n}',{n:round.id});
   const text=action==='link'
-   ?'A primeira prova associada inicia automaticamente o campeonato. Os resultados existentes serão usados pelo servidor.'
-   :'Retirar a última prova pode devolver o campeonato ao estado de preparação. Os resultados originais da jornada não são apagados.';
-  Alert.alert(ACTIONS[action]+' prova?',name+'. '+text,[
-   {text:'Cancelar',style:'cancel'},
-   {text:ACTIONS[action],style:action==='unlink'?'destructive':'default',
+   ?t('A primeira prova associada inicia automaticamente o campeonato. Os resultados existentes serão usados pelo servidor.')
+   :t('Retirar a última prova pode devolver o campeonato ao estado de preparação. Os resultados originais da jornada não são apagados.');
+  Alert.alert(action==='link'?t('Associar prova?'):t('Retirar prova?'),name+'. '+text,[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t(ACTIONS[action]),style:action==='unlink'?'destructive':'default',
     onPress:()=>{void mutate(
      ()=>changeTournamentRound(cid,tournament,round.id,action,auth.token!,auth.username!,role),
-     action==='link'?'Prova associada.':'Prova retirada.'
+     action==='link'?t('Prova associada.'):t('Prova retirada.')
     );}}
   ]);
  }
  function confirmPoints(){
   if(!editable||busy||!tournament||overview?.kind!=='RACE'||collections.linked.length)return;
   let normalized:string;
-  try{normalized=validateRacePointsCsv(points);}catch(e){setError(e instanceof Error?e.message:'Pontuação inválida.');return;}
-  Alert.alert('Guardar pontuação?',normalized.replace(/,/g,' · ')+' pontos por posição. Fica fixa ao associar a primeira corrida.',[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Guardar',onPress:()=>{void mutate(
+  try{normalized=validateRacePointsCsv(points);}catch(e){setError(e instanceof Error?e.message:t('Pontuação inválida.'));return;}
+  Alert.alert(t('Guardar pontuação?'),normalized.replace(/,/g,' · ')+' '+t('pontos por posição. Fica fixa ao associar a primeira corrida.'),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Guardar'),onPress:()=>{void mutate(
     ()=>updateTournamentRacePoints(cid,tournament,normalized,auth.token!,auth.username!,role),
-    'Pontuação atualizada.'
+    t('Pontuação atualizada.')
    );}}
   ]);
  }
  function roundCard(round:PerformanceRound,action:'link'|'unlink'){
   return <View key={round.id} style={styles.round}>
    <View style={styles.roundText}>
-    <Text style={styles.roundName}>{round.name||'Prova '+round.id}</Text>
-    <Text style={styles.note}>{[round.sport,round.eventDiscipline].filter(Boolean).join(' · ')||'Jornada da comunidade'}</Text>
+    <Text style={styles.roundName}>{round.name||t('Prova {n}',{n:round.id})}</Text>
+    <Text style={styles.note}>{[round.sport,round.eventDiscipline].filter(Boolean).join(' · ')||t('Jornada da comunidade')}</Text>
    </View>
    {editable?<Button secondary={action==='link'} danger={action==='unlink'}
-    title={busy?'A guardar…':ACTIONS[action]} disabled={busy}
+    title={busy?t('A guardar…'):t(ACTIONS[action])} disabled={busy}
     onPress={()=>confirmRound(round,action)}/>:null}
   </View>;
  }
  const kind=tournament?managedKind(tournament):null;
- return <Page><DemoBanner/><Eyebrow>TORNEIOS · ORGANIZAÇÃO DE PROVAS</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||'Gerir provas da competição'}</Text>
-  {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('TORNEIOS · ORGANIZAÇÃO DE PROVAS')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Gerir provas da competição')}</Text>
+  {!auth.token?<Button title={t('Entrar')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
-  {!loading&&tournament&&!kind?<Message>Esta competição não utiliza jornadas de corridas, tempos ou marcas associáveis. Consulta a gestão própria da modalidade.</Message>:null}
+  {!loading&&tournament&&!kind?<Message>{t('Esta competição não utiliza jornadas de corridas, tempos ou marcas associáveis. Consulta a gestão própria da modalidade.')}</Message>:null}
   {!loading&&tournament&&kind&&!canManageEvents(role,tournament)&&tournament.status!=='COMPLETED'
-   ?<Message>Esta página é exclusiva de proprietários e administradores da comunidade.</Message>:null}
+   ?<Message>{t('Esta página é exclusiva de proprietários e administradores da comunidade.')}</Message>:null}
   {!loading&&overview&&kind?<>
-   <View style={styles.badges}><Badge text={tournament?.sport||'Modalidade'}/>
-    <Badge text={tournament?.status==='DRAFT'?'Em preparação':tournament?.status==='IN_PROGRESS'?'A decorrer':'Concluído'}/></View>
-   <Message>A classificação é calculada com os resultados oficiais de cada jornada.</Message>
-   {DEMO_MODE?<Message>Esta é uma demonstração isolada: associar e retirar provas está desativado.</Message>:null}
-   {tournament?.status==='COMPLETED'?<Message>O campeonato está concluído. As provas e resultados estão apenas para consulta.</Message>:null}
+   <View style={styles.badges}><Badge text={tournament?.sport||t('Modalidade')}/>
+    <Badge text={tournament?.status==='DRAFT'?t('Em preparação'):tournament?.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}/></View>
+   <Message>{t('A classificação é calculada com os resultados oficiais de cada jornada.')}</Message>
+   {DEMO_MODE?<Message>{t('Esta é uma demonstração isolada: associar e retirar provas está desativado.')}</Message>:null}
+   {tournament?.status==='COMPLETED'?<Message>{t('O campeonato está concluído. As provas e resultados estão apenas para consulta.')}</Message>:null}
    {overview.kind==='RACE'&&tournament?.status==='DRAFT'&&collections.linked.length===0?<>
     <View style={styles.panel}>
-     <Text style={styles.heading}>Pontuação por posição</Text>
-     <Text style={styles.note}>Separa até 20 posições por vírgulas, em ordem decrescente. Valores de 0 a 1000.</Text>
+     <Text style={styles.heading}>{t('Pontuação por posição')}</Text>
+     <Text style={styles.note}>{t('Separa até 20 posições por vírgulas, em ordem decrescente. Valores de 0 a 1000.')}</Text>
      <TextInput style={styles.input} value={points} onChangeText={setPoints} maxLength={100}
-      accessibilityLabel="Pontos por posição" placeholder="25, 18, 15, 12, 10" placeholderTextColor={C.muted}
+      accessibilityLabel={t('Pontos por posição')} placeholder="25, 18, 15, 12, 10" placeholderTextColor={C.muted}
       editable={editable&&!busy}/>
-     <Button title="Guardar pontuação" disabled={!editable||busy} onPress={confirmPoints}/>
+     <Button title={t('Guardar pontuação')} disabled={!editable||busy} onPress={confirmPoints}/>
     </View>
    </>:null}
    <View style={styles.panel}>
-    <Text style={styles.heading}>Provas associadas · {collections.linked.length}</Text>
-    {collections.linked.length===0?<Text style={styles.note}>Ainda não há provas associadas a este campeonato.</Text>
+    <Text style={styles.heading}>{t('Provas associadas · {a}',{a:collections.linked.length})}</Text>
+    {collections.linked.length===0?<Text style={styles.note}>{t('Ainda não há provas associadas a este campeonato.')}</Text>
      :collections.linked.map(r=>roundCard(r,'unlink'))}
    </View>
    <View style={styles.panel}>
-    <Text style={styles.heading}>Provas disponíveis · {collections.available.length}</Text>
-    {collections.available.length===0?<Text style={styles.note}>Não existem mais jornadas elegíveis devolvidas pelo servidor.</Text>
+    <Text style={styles.heading}>{t('Provas disponíveis · {a}',{a:collections.available.length})}</Text>
+    {collections.available.length===0?<Text style={styles.note}>{t('Não existem mais jornadas elegíveis devolvidas pelo servidor.')}</Text>
      :collections.available.map(r=>roundCard(r,'link'))}
    </View>
-   <Button secondary title="Consultar resultados da competição"
+   <Button secondary title={t('Consultar resultados da competição')}
     onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',
      params:{communityId:String(cid),id:String(tid)}})}/>
   </>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

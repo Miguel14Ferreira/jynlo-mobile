@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import * as ImagePicker from 'expo-image-picker';
 import {Alert,AppState,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -55,7 +56,7 @@ export default function TeamDetail(){
    const result=await sportsTeamFollowState(teamId,auth.token);
    if(version===followVersion.current)setFollowerState(result);
   }catch{
-   if(version===followVersion.current){setFollowerState(null);setFollowError('Seguidores indisponíveis.');}
+   if(version===followVersion.current){setFollowerState(null);setFollowError(t('Seguidores indisponíveis.'));}
   }
  },[teamId,auth.token]);
  async function toggleFollow(){
@@ -67,7 +68,7 @@ export default function TeamDetail(){
    if(version===followVersion.current)setFollowerState(actual);
   }catch{
    if(version===followVersion.current){
-    setFollowerState(null);setFollowError('Não foi possível confirmar. Verifica o estado antes de tentares novamente.');
+    setFollowerState(null);setFollowError(t('Não foi possível confirmar. Verifica o estado antes de tentares novamente.'));
     setFollowBusy(false);
     void loadFollowers();
    }
@@ -101,7 +102,7 @@ export default function TeamDetail(){
   if(!silent){setLoading(true);setError('');}
   if(!Number.isSafeInteger(teamId)||teamId<=0){
    if(reading.current===version)reading.current=null;
-   setError('Equipa inválida.');setLoading(false);return;
+   setError(t('Equipa inválida.'));setLoading(false);return;
   }
   // The team identity is public. Render it as soon as the detail request
   // succeeds, rather than waiting for history, honours and memberships.
@@ -131,7 +132,7 @@ export default function TeamDetail(){
     setKitSecondary(safeTeamKitColor(details.value.kitSecondary,'#F0FAFB'));
     setKitPattern(details.value.kitPattern||'PLAIN');
    }
-  }else {setBrandingVerified(false);if(!silent)setTeam(null);failed.push('o perfil da equipa');}
+  }else {setBrandingVerified(false);if(!silent)setTeam(null);failed.push(t('o perfil da equipa'));}
   if(roster.status==='fulfilled'){
    setMembers(roster.value);setRosterVerified(true);
    const isOwnerNow=!!auth.token&&!!auth.username&&roster.value.some(m=>
@@ -144,11 +145,11 @@ export default function TeamDetail(){
      if(version===requestVersion.current){setPendingPlayers([]);setPendingVerified(false);}
     });
    }else{setPendingPlayers([]);setPendingVerified(false);}
-  }else{setMembers([]);setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push('o plantel');}
+  }else{setMembers([]);setRosterVerified(false);setPendingVerified(false);setPendingPlayers([]);failed.push(t('o plantel'));}
   if(linked.status==='fulfilled'){setCommunities(linked.value);setCommunitiesVerified(true);}
-  else{setCommunities([]);setCommunitiesVerified(false);failed.push('as comunidades');}
+  else{setCommunities([]);setCommunitiesVerified(false);failed.push(t('as comunidades'));}
   if(failed.length){
-   if(!silent)setError('Não foi possível atualizar '+failed.join(', ')+'. As restantes secções continuam disponíveis.');
+   if(!silent)setError(t('Não foi possível atualizar {v}',{v:failed.join(', ')})+t('. As restantes secções continuam disponíveis.'));
   }else if(!silent)setError('');
   if(!silent)setLoading(false);
  },[teamId,auth.token,auth.username]);
@@ -180,9 +181,9 @@ export default function TeamDetail(){
   ]);
   if(current!==trophiesVersion.current)return;
   if(pastEvents.status==='fulfilled'){setHistory(pastEvents.value);setHistoryError('');}
-  else{setHistory([]);setHistoryError('Não foi possível carregar o histórico oficial.');}
+  else{setHistory([]);setHistoryError(t('Não foi possível carregar o histórico oficial.'));}
   if(awards.status==='fulfilled'){setChampionshipHonours(awards.value);setHonoursError('');}
-  else{setChampionshipHonours([]);setHonoursError('Não foi possível carregar os troféus.');}
+  else{setChampionshipHonours([]);setHonoursError(t('Não foi possível carregar os troféus.'));}
   setTrophiesVerified(pastEvents.status==='fulfilled'&&awards.status==='fulfilled');
   setTrophiesLoading(false);
  },[teamId,auth.token]);
@@ -202,7 +203,7 @@ export default function TeamDetail(){
    const matches=await findSportsTeamPlayers(searchName.trim(),auth.token);
    if(version===searchVersion.current){setCandidates(matches);setSearchComplete(true);}
   }catch(e){
-   if(version===searchVersion.current)setError(e instanceof Error?e.message:'Não foi possível pesquisar jogadores.');
+   if(version===searchVersion.current)setError(e instanceof Error?e.message:t('Não foi possível pesquisar jogadores.'));
   }finally{if(version===searchVersion.current)setSearching(false);}
  };
  const invite=async(profileId:number)=>{
@@ -216,14 +217,14 @@ export default function TeamDetail(){
    await inviteSportsTeamMember(teamId,profileId,auth.token);
    if(version!==requestVersion.current)return;
    setCandidates([]);setSearchName('');setSearchComplete(false);searchVersion.current++;
-   setNotice('Convite enviado. O jogador entra no plantel depois de aceitar.');
+   setNotice(t('Convite enviado. O jogador entra no plantel depois de aceitar.'));
    setPendingVerified(false);
    releaseAction(action);void load(true,true);
   }catch(e){
    if(version===requestVersion.current){
     setPendingVerified(false);setCandidates([]);setSearchComplete(false);
-    setError((e instanceof Error?e.message:'Não foi possível confirmar o convite.')+
-     ' Verifica os convites pendentes antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível confirmar o convite.'))+
+     ' '+t('Verifica os convites pendentes antes de repetir.'));
    }
   }finally{releaseAction(action);}
  };
@@ -231,22 +232,22 @@ export default function TeamDetail(){
   if(!auth.token||!isOwner||!pendingVerified||saving||actionRef.current||
    !pendingPlayers.some(item=>item.profileId===invite.profileId))return;
   const version=requestVersion.current;
-  Alert.alert('Cancelar convite?',`Cancelar o convite para @${invite.username}?`,[
-   {text:'Manter',style:'cancel'},
-   {text:'Cancelar convite',style:'destructive',onPress:()=>{
+  Alert.alert(t('Cancelar convite?'),t('Cancelar o convite para @{a}?',{a:invite.username}),[
+   {text:t('Manter'),style:'cancel'},
+   {text:t('Cancelar convite'),style:'destructive',onPress:()=>{
     if(version!==requestVersion.current||actionRef.current)return;
     const action=++actionGeneration.current;
     actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
     void removeSportsTeamMember(teamId,invite.profileId,auth.token!).then(()=>{
      if(version!==requestVersion.current)return;
      setPendingVerified(false);
-     setNotice('Convite cancelado.');
+     setNotice(t('Convite cancelado.'));
      releaseAction(action);void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
       setPendingVerified(false);setPendingPlayers([]);
-      setError((e instanceof Error?e.message:'Não foi possível confirmar o cancelamento.')+
-       ' Verifica os convites antes de tentar novamente.');
+      setError((e instanceof Error?e.message:t('Não foi possível confirmar o cancelamento.'))+
+       ' '+t('Verifica os convites antes de tentar novamente.'));
      }
     }).finally(()=>releaseAction(action));
    }}
@@ -257,10 +258,10 @@ export default function TeamDetail(){
      savingRef.current||actionRef.current)return;
   const identity=teamId+'|'+auth.token;
   const version=requestVersion.current;
-  Alert.alert('Eliminar equipa?',
-   'Esta ação é definitiva. Só é possível eliminar uma equipa sem jogadores convidados, mensagens, competições ou histórico. O servidor protege todos esses dados.',[
-    {text:'Manter equipa',style:'cancel'},
-    {text:'Eliminar equipa',style:'destructive',onPress:()=>{
+  Alert.alert(t('Eliminar equipa?'),
+   t('Esta ação é definitiva. Só é possível eliminar uma equipa sem jogadores convidados, mensagens, competições ou histórico. O servidor protege todos esses dados.'),[
+    {text:t('Manter equipa'),style:'cancel'},
+    {text:t('Eliminar equipa'),style:'destructive',onPress:()=>{
       if(version!==requestVersion.current||identity!==teamId+'|'+auth.token||
          actionRef.current||savingRef.current)return;
       const action=++actionGeneration.current;
@@ -273,8 +274,8 @@ export default function TeamDetail(){
         if(version!==requestVersion.current||action!==actionGeneration.current)return;
         const message=error instanceof Error?error.message:'';
         setError(/409|histórico|ligações|conflict/i.test(message)
-         ?'Não é possível eliminar esta equipa: existem jogadores, convites, mensagens ou ligações históricas que devem ser preservadas.'
-         :'Não foi possível confirmar a eliminação. Consulta a equipa antes de repetir.');
+         ?t('Não é possível eliminar esta equipa: existem jogadores, convites, mensagens ou ligações históricas que devem ser preservadas.')
+         :t('Não foi possível confirmar a eliminação. Consulta a equipa antes de repetir.'));
       }).finally(()=>releaseAction(action));
     }}
    ]);
@@ -282,22 +283,22 @@ export default function TeamDetail(){
  const removePlayer=(member:SportsTeamMember)=>{
   if(!auth.token||saving||actionRef.current||!isOwner||!rosterVerified||member.role==='OWNER')return;
   const version=requestVersion.current;
-  Alert.alert('Remover jogador?',`Remover @${member.username} do plantel? Esta ação não elimina o perfil do jogador.`,[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Remover',style:'destructive',onPress:()=>{
+  Alert.alert(t('Remover jogador?'),t('Remover @{a} do plantel? Esta ação não elimina o perfil do jogador.',{a:member.username}),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Remover'),style:'destructive',onPress:()=>{
     if(version!==requestVersion.current||actionRef.current)return;
     const action=++actionGeneration.current;
     actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
     void removeSportsTeamMember(teamId,member.profileId,auth.token!).then(()=>{
      if(version!==requestVersion.current)return;
      setMembers(current=>current.filter(item=>item.profileId!==member.profileId));
-     setNotice('Jogador removido do plantel.');
+     setNotice(t('Jogador removido do plantel.'));
      releaseAction(action);
      void load(true,true);
     }).catch(e=>{
      if(version===requestVersion.current){
       setRosterVerified(false);
-      setError((e instanceof Error?e.message:'Não foi possível confirmar a remoção.')+' Atualiza o plantel antes de repetir.');
+      setError((e instanceof Error?e.message:t('Não foi possível confirmar a remoção.'))+' '+t('Atualiza o plantel antes de repetir.'));
      }
     }).finally(()=>releaseAction(action));
    }}
@@ -314,20 +315,20 @@ export default function TeamDetail(){
    const decided=await answerTeamCommunityMembership(id,accept,auth.token);
    if(version!==requestVersion.current)return;
    setCommunities(current=>current.map(item=>item.id===id?decided:item));
-   setMembershipNote(accept?'Convite aceite.':'Convite recusado.');
+   setMembershipNote(accept?t('Convite aceite.'):t('Convite recusado.'));
    try{
     const updated=await sportsTeamCommunities(teamId,auth.token);
     if(version===requestVersion.current)setCommunities(updated);
    }catch{
     if(version===requestVersion.current){
      setCommunitiesVerified(false);
-     setError('O convite foi tratado, mas não foi possível confirmar as associações. Consulta os dados antes de repetir.');
+     setError(t('O convite foi tratado, mas não foi possível confirmar as associações. Consulta os dados antes de repetir.'));
     }
    }
   }catch(e){
    if(version===requestVersion.current){
     setCommunitiesVerified(false);
-    setError((e instanceof Error?e.message:'Não foi possível confirmar a resposta.')+' Atualiza antes de tentar novamente.');
+    setError((e instanceof Error?e.message:t('Não foi possível confirmar a resposta.'))+' '+t('Atualiza antes de tentar novamente.'));
    }
   }finally{releaseAction(action);}
  };
@@ -342,29 +343,29 @@ export default function TeamDetail(){
    await removeTeamCommunityMembership(id,auth.token);
    if(version!==requestVersion.current)return;
    setCommunities(current=>current.filter(item=>item.id!==id));
-   setMembershipNote('Equipa removida da comunidade.');
+   setMembershipNote(t('Equipa removida da comunidade.'));
    try{
     const updated=await sportsTeamCommunities(teamId,auth.token);
     if(version===requestVersion.current)setCommunities(updated);
    }catch{
     if(version===requestVersion.current){
      setCommunitiesVerified(false);
-     setError('A saída foi enviada, mas não foi possível confirmar a lista atual. Atualiza antes de repetir.');
+     setError(t('A saída foi enviada, mas não foi possível confirmar a lista atual. Atualiza antes de repetir.'));
     }
    }
   }catch(e){
    if(version===requestVersion.current){
     setCommunitiesVerified(false);
-    setError((e instanceof Error?e.message:'Não foi possível confirmar a saída.')+' Consulta as comunidades antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível confirmar a saída.'))+' '+t('Consulta as comunidades antes de repetir.'));
    }
   }finally{releaseAction(action);}
  };
  const confirmLeaveCommunity=(membership:TeamCommunityMembership)=>{
   if(saving||!communitiesVerified)return;
   const version=requestVersion.current;
-  Alert.alert('Sair da comunidade?',`A equipa deixa de estar associada a ${membership.communityName}. Continuar?`,[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Sair da comunidade',style:'destructive',onPress:()=>{
+  Alert.alert(t('Sair da comunidade?'),t('A equipa deixa de estar associada a {a}. Continuar?',{a:membership.communityName}),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Sair da comunidade'),style:'destructive',onPress:()=>{
     if(version===requestVersion.current)void removeMembership(membership.id);
    }}
   ]);
@@ -375,9 +376,9 @@ export default function TeamDetail(){
    item.username.toLowerCase()===auth.username?.toLowerCase());
   if(!player)return;
   const current=requestVersion.current;
-  Alert.alert('Sair da equipa?','Deixarás de ter acesso ao chat e às publicações privadas.',[
-   {text:'Cancelar',style:'cancel'},
-   {text:'Sair da equipa',style:'destructive',onPress:()=>{
+  Alert.alert(t('Sair da equipa?'),t('Deixarás de ter acesso ao chat e às publicações privadas.'),[
+   {text:t('Cancelar'),style:'cancel'},
+   {text:t('Sair da equipa'),style:'destructive',onPress:()=>{
     if(current!==requestVersion.current||actionRef.current)return;
     const action=++actionGeneration.current;
     actionRef.current=true;savingRef.current=true;setSaving(true);setError('');setNotice('');
@@ -385,14 +386,14 @@ export default function TeamDetail(){
      if(current!==requestVersion.current)return;
      setMembers(rows=>rows.filter(item=>item.profileId!==player.profileId));
      setActiveTab('OVERVIEW');
-     setNotice('Saíste da equipa. O acesso às mensagens privadas foi retirado.');
+     setNotice(t('Saíste da equipa. O acesso às mensagens privadas foi retirado.'));
      setSaving(false);
      void load(true,true);
     }).catch(e=>{
      if(current===requestVersion.current){
       setRosterVerified(false);setActiveTab('OVERVIEW');
-      setError((e instanceof Error?e.message:'Saída não confirmada.')+
-       ' Verifica o plantel antes de repetir.');
+      setError((e instanceof Error?e.message:t('Saída não confirmada.'))+
+       ' '+t('Verifica o plantel antes de repetir.'));
      }
     }).finally(()=>releaseAction(action));
    }}
@@ -407,19 +408,19 @@ export default function TeamDetail(){
   try{
    const updated=await setSportsTeamFeatures(team.id,{[field]:!team[field]},auth.token);
    if(version===requestVersion.current&&updated.id===team.id){
-    setTeam(updated);setNotice('Configuração da equipa guardada.');
+    setTeam(updated);setNotice(t('Configuração da equipa guardada.'));
    }
   }catch(e){
    if(version===requestVersion.current){
-    setError((e instanceof Error?e.message:'Não foi possível confirmar a configuração.')+
-     ' Confirma o estado atual antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível confirmar a configuração.'))+
+     ' '+t('Confirma o estado atual antes de repetir.'));
     setBrandingVerified(false);
    }
   }finally{releaseAction(action);}
  };
  const kitPatterns:ReadonlyArray<{id:TeamKitPattern;label:string}>=[
-   {id:'PLAIN',label:'Lisa'},{id:'STRIPES',label:'Riscas verticais'},{id:'DIAGONAL',label:'Faixa diagonal'},
-    {id:'HOOPS',label:'Riscas horizontais'},{id:'HALVES',label:'Metades'},{id:'CHEVRON',label:'V frontal'}
+   {id:'PLAIN',label:t('Lisa')},{id:'STRIPES',label:t('Riscas verticais')},{id:'DIAGONAL',label:t('Faixa diagonal')},
+    {id:'HOOPS',label:t('Riscas horizontais')},{id:'HALVES',label:t('Metades')},{id:'CHEVRON',label:t('V frontal')}
   ];
  const kitOptions=['#19CBB6','#FFFFFF','#0E3A52','#2554D9','#E74855','#F6C94B','#101820','#EF7B2D'];
  const updateBranding=async(mode:'KIT'|'LOGO'|'REMOVE',
@@ -449,12 +450,12 @@ export default function TeamDetail(){
     setKitSecondary(safeTeamKitColor(result.kitSecondary,'#F0FAFB'));
     setKitPattern(result.kitPattern||'PLAIN');
    }
-   setNotice(mode==='KIT'?'Equipamento guardado.':mode==='REMOVE'?'Logótipo removido.':'Logótipo atualizado.');
+   setNotice(mode==='KIT'?t('Equipamento guardado.'):mode==='REMOVE'?t('Logótipo removido.'):t('Logótipo atualizado.'));
   }catch(e){
    if(version===requestVersion.current){
     setBrandingVerified(false);kitEditedRef.current=false;
-    setError((e instanceof Error?e.message:'Não foi possível confirmar a alteração.')+
-     ' Volta a carregar a equipa antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível confirmar a alteração.'))+
+     ' '+t('Volta a carregar a equipa antes de repetir.'));
    }
   }finally{releaseAction(action);}
  };
@@ -468,7 +469,7 @@ export default function TeamDetail(){
    if(result.canceled||version!==requestVersion.current)return;
    if(result.assets?.[0])void updateBranding('LOGO',result.assets[0]);
   }catch{
-   if(version===requestVersion.current)setError('Não foi possível abrir a galeria do dispositivo.');
+   if(version===requestVersion.current)setError(t('Não foi possível abrir a galeria do dispositivo.'));
   }
  };
  const isOwner=rosterVerified&&!!auth.username&&members.some(m=>m.role==='OWNER'&&m.username.toLowerCase()===auth.username!.toLowerCase());
@@ -485,7 +486,7 @@ export default function TeamDetail(){
   if(!auth.token||chatMuteBusy)return;
   setChatMuteBusy(true);
   try{await setConversationMuted('team',String(teamId),!chatMuted,auth.token);setChatMuted(!chatMuted);}
-  catch{Alert.alert('Chat da equipa','Não foi possível alterar o silêncio desta conversa.');}
+  catch{Alert.alert(t('Chat da equipa'),t('Não foi possível alterar o silêncio desta conversa.'));}
   finally{setChatMuteBusy(false);}
  }
  const inviteCandidates=candidates.filter(p=>!members.some(m=>m.profileId===p.profileId)&&
@@ -493,63 +494,63 @@ export default function TeamDetail(){
  const seasonTournamentIds=new Set(championshipHonours.filter(h=>h.tournamentId!==null).map(h=>h.tournamentId));
  const standaloneTrophies=history.filter(item=>item.champion&&!seasonTournamentIds.has(item.tournamentId));
  return <Page>
-  <View style={styles.backRow}><Pressable accessibilityRole="button" accessibilityLabel="Voltar às equipas" onPress={()=>router.push('/teams')} style={styles.backLink}><Text style={styles.backLabel}>‹  Equipas</Text></Pressable><Text style={styles.backContext}>PERFIL DA EQUIPA</Text></View>
+  <View style={styles.backRow}><Pressable accessibilityRole="button" accessibilityLabel={t('Voltar às equipas')} onPress={()=>router.push('/teams')} style={styles.backLink}><Text style={styles.backLabel}>{t('‹  Equipas')}</Text></Pressable><Text style={styles.backContext}>{t('PERFIL DA EQUIPA')}</Text></View>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {error&&!loading&&!saving?<Button secondary title="Tentar novamente" onPress={()=>void load(false,true)}/>:null}
+  {error&&!loading&&!saving?<Button secondary title={t('Tentar novamente')} onPress={()=>void load(false,true)}/>:null}
   {notice?<Message>{notice}</Message>:null}
-  {!loading&&!team?<Message>Não foi possível confirmar esta equipa. Volta à lista e tenta novamente.</Message>:null}
+  {!loading&&!team?<Message>{t('Não foi possível confirmar esta equipa. Volta à lista e tenta novamente.')}</Message>:null}
   {team?<><View style={styles.header}>
-    <Text style={styles.eyebrow}>JYNLO · EQUIPA DESPORTIVA</Text>
+    <Text style={styles.eyebrow}>{t('JYNLO · EQUIPA DESPORTIVA')}</Text>
     <View style={styles.heroIdentity}>
       <TeamBrandAvatar team={team} size={94}/>
       <View style={styles.heroCopy}>
         <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team.name}</Text>
-        <Text style={styles.heroSubtitle}>{team.sport||'Várias modalidades'} · {team.location||'Localização por definir'}</Text>
+        <Text style={styles.heroSubtitle}>{team.sport||t('Várias modalidades')} · {team.location||t('Localização por definir')}</Text>
       </View>
     </View>
     {team.description?<Text style={styles.description}>{team.description}</Text>:null}
     <View style={styles.kitPreview}>
       <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary} pattern={team.kitPattern} size={48}/>
-      <Text style={styles.heroSubtitle}>Equipamento · {kitPatterns.find(p=>p.id===(team.kitPattern||'PLAIN'))?.label||'Lisa'}</Text>
+      <Text style={styles.heroSubtitle}>{t('Equipamento · {a}',{a:kitPatterns.find(p=>p.id===(team.kitPattern||'PLAIN'))?.label||t('Lisa')})}</Text>
     </View>
     {auth.token?<View style={styles.followSection}>
       {followerState?<View style={styles.followRow}>
         <Text style={styles.followCount}>{followerState.count} {followerState.count===1?'seguidor':'seguidores'}</Text>
-        <Button secondary title={followBusy?'A atualizar…':followerState.following?'A seguir ✓':'Seguir equipa +'}
+        <Button secondary title={followBusy?t('A atualizar…'):followerState.following?t('A seguir ✓'):t('Seguir equipa +')}
           disabled={followBusy} onPress={()=>{void toggleFollow();}}/>
       </View>:null}
       {followError?<Message tone="error">{followError}</Message>:null}
-      {followError&&!followerState?<Button secondary title="Atualizar seguidores" onPress={()=>{setFollowError('');void loadFollowers();}}/>:null}
+      {followError&&!followerState?<Button secondary title={t('Atualizar seguidores')} onPress={()=>{setFollowError('');void loadFollowers();}}/>:null}
     </View>:null}
     <View style={styles.statsRow}>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>Jogadores</Text></View>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>Comunidades</Text></View>
-      <View style={styles.statCard}><Text style={styles.statNumber}>{trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'}</Text><Text style={styles.statLabel}>Troféus</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{rosterVerified?members.length:'—'}</Text><Text style={styles.statLabel}>{t('Jogadores')}</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{communitiesVerified?communities.filter(m=>m.status==='ACTIVE').length:'—'}</Text><Text style={styles.statLabel}>{t('Comunidades')}</Text></View>
+      <View style={styles.statCard}><Text style={styles.statNumber}>{trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'}</Text><Text style={styles.statLabel}>{t('Troféus')}</Text></View>
     </View>
     <View style={styles.heroActions}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Encontrar competições para esta equipa"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Encontrar competições para esta equipa')}
        style={[styles.heroAction,{flex:1}]}
        onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})}>
-       <Text style={styles.heroActionLabel}>Explorar competições →</Text>
+       <Text style={styles.heroActionLabel}>{t('Explorar competições →')}</Text>
      </Pressable>
-     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel="Publicar Story em nome da equipa"
+     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel={t('Publicar Story em nome da equipa')}
        onPress={()=>router.push({pathname:'/',params:{compose:'story',teamStory:String(teamId)}})}
        style={styles.heroSecondaryAction}>
-       <Text style={styles.heroSecondaryText}>Criar Story</Text>
+       <Text style={styles.heroSecondaryText}>{t('Criar Story')}</Text>
      </Pressable>:null}
-     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel="Personalizar emblema e equipamento"
+     {isOwner?<Pressable accessibilityRole="button" accessibilityLabel={t('Personalizar emblema e equipamento')}
        onPress={()=>setActiveTab('BRANDING')} style={styles.heroSecondaryAction}>
-       <Text style={styles.heroSecondaryText}>Personalizar</Text>
+       <Text style={styles.heroSecondaryText}>{t('Personalizar')}</Text>
      </Pressable>:null}
     </View>
    </View>
    <ScrollView ref={tabRail} horizontal showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.tabBar} accessibilityLabel="Secções da equipa">
-    {([...([{id:'OVERVIEW',label:'Plantel',icon:'community'},{id:'TROPHIES',label:'Troféus',icon:'tournament'},
-      {id:'FEED',label:'Publicações',icon:'post'},{id:'CHAT',label:'Chat',icon:'messages'},
-      {id:'CHALLENGES',label:'Desafios',icon:'championship'}] as const),
-      ...(isOwner?[{id:'BRANDING' as const,label:'Identidade',icon:'settings' as const}]:[])]).map(tab=>
+    contentContainerStyle={styles.tabBar} accessibilityLabel={t('Secções da equipa')}>
+    {([...([{id:'OVERVIEW',label:t('Plantel'),icon:'community'},{id:'TROPHIES',label:t('Troféus'),icon:'tournament'},
+      {id:'FEED',label:t('Publicações'),icon:'post'},{id:'CHAT',label:t('Chat'),icon:'messages'},
+      {id:'CHALLENGES',label:t('Desafios'),icon:'championship'}] as const),
+      ...(isOwner?[{id:'BRANDING' as const,label:t('Identidade'),icon:'settings' as const}]:[])]).map(tab=>
      <Pressable key={tab.id} accessibilityRole="tab" accessibilityLabel={tab.label}
       accessibilityState={{selected:activeTab===tab.id}}
       onLayout={event=>{tabPositions.current[tab.id]=event.nativeEvent.layout.x;}}
@@ -560,70 +561,70 @@ export default function TeamDetail(){
      </Pressable>)}
    </ScrollView>
    {isOwner&&activeTab==='BRANDING'?<View style={styles.panel}>
-    <Text style={styles.heading}>Identidade da equipa</Text>
-    <Text style={styles.note}>Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.</Text>
-    {!brandingVerified?<Text style={styles.note}>Identidade por confirmar. Recarrega os dados antes de editar.</Text>:null}
+    <Text style={styles.heading}>{t('Identidade da equipa')}</Text>
+    <Text style={styles.note}>{t('Personaliza o emblema e o equipamento. As alterações aparecem na Web e na app.')}</Text>
+    {!brandingVerified?<Text style={styles.note}>{t('Identidade por confirmar. Recarrega os dados antes de editar.')}</Text>:null}
     <TeamCrestStudio key={'crest-'+team.id} teamId={team.id} teamName={team.name}
       design={team.crestDesign} disabled={saving||!brandingVerified}
       onSave={(asset,design)=>void updateBranding('LOGO',asset,undefined,design)}/>
-    <Button title="Escolher logótipo da galeria" secondary disabled={saving||!brandingVerified} onPress={()=>void pickLogo()}/>
-    {team.logoUrl?<Button title="Remover logótipo" secondary disabled={saving||!brandingVerified}
-      onPress={()=>Alert.alert('Remover logótipo?','O emblema atual será removido da equipa.',[
-       {text:'Cancelar',style:'cancel'},
-       {text:'Remover',style:'destructive',onPress:()=>void updateBranding('REMOVE')}
+    <Button title={t('Escolher logótipo da galeria')} secondary disabled={saving||!brandingVerified} onPress={()=>void pickLogo()}/>
+    {team.logoUrl?<Button title={t('Remover logótipo')} secondary disabled={saving||!brandingVerified}
+      onPress={()=>Alert.alert(t('Remover logótipo?'),t('O emblema atual será removido da equipa.'),[
+       {text:t('Cancelar'),style:'cancel'},
+       {text:t('Remover'),style:'destructive',onPress:()=>void updateBranding('REMOVE')}
       ])}/>:null}
     <TeamKitStudio key={team.id} team={team} disabled={saving||!brandingVerified}
       onSave={(primary,variants)=>void updateBranding('KIT',undefined,{primary,variants})}/>
    </View>:null}
    {activeTab==='OVERVIEW'?<View style={styles.panel}>
-    <Text style={styles.heading}>O espaço da equipa</Text>
-    <Text style={styles.note}>Acompanha as novidades, conversa com o plantel e consulta as conquistas.</Text>
+    <Text style={styles.heading}>{t('O espaço da equipa')}</Text>
+    <Text style={styles.note}>{t('Acompanha as novidades, conversa com o plantel e consulta as conquistas.')}</Text>
     <View style={styles.quickLinks}>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir publicações da equipa" onPress={()=>setActiveTab('FEED')} style={styles.quickLink}>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir publicações da equipa')} onPress={()=>setActiveTab('FEED')} style={styles.quickLink}>
       <View style={styles.quickLinkIcon}><JynloIcon name="post" color={C.mint} size={23}/></View>
-      <Text style={styles.quickLinkText}>Publicações</Text>
-      <Text style={styles.quickLinkMeta}>{team.feedEnabled?'Novidades do plantel':'Feed desativado'}</Text>
+      <Text style={styles.quickLinkText}>{t('Publicações')}</Text>
+      <Text style={styles.quickLinkMeta}>{team.feedEnabled?t('Novidades do plantel'):t('Feed desativado')}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir chat da equipa" onPress={()=>setActiveTab('CHAT')} style={styles.quickLink}>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir chat da equipa')} onPress={()=>setActiveTab('CHAT')} style={styles.quickLink}>
       <View style={styles.quickLinkIcon}><JynloIcon name="messages" color={C.mint} size={23}/></View>
-      <Text style={styles.quickLinkText}>Chat</Text>
-      <Text style={styles.quickLinkMeta}>{team.chatEnabled?'Conversa da equipa':'Chat desativado'}</Text>
+      <Text style={styles.quickLinkText}>{t('Chat')}</Text>
+      <Text style={styles.quickLinkMeta}>{team.chatEnabled?t('Conversa da equipa'):t('Chat desativado')}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Abrir troféus e histórico da equipa" onPress={()=>setActiveTab('TROPHIES')} style={styles.quickLink}>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir troféus e histórico da equipa')} onPress={()=>setActiveTab('TROPHIES')} style={styles.quickLink}>
       <View style={styles.quickLinkIcon}><JynloIcon name="tournament" color={C.mint} size={23}/></View>
-      <Text style={styles.quickLinkText}>Troféus</Text>
-      <Text style={styles.quickLinkMeta}>Títulos e histórico</Text>
+      <Text style={styles.quickLinkText}>{t('Troféus')}</Text>
+      <Text style={styles.quickLinkMeta}>{t('Títulos e histórico')}</Text>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel="Explorar competições para esta equipa"
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Explorar competições para esta equipa')}
        onPress={()=>router.push({pathname:'/teams/competitions',params:{teamId:String(teamId)}})} style={styles.quickLink}>
       <View style={styles.quickLinkIcon}><JynloIcon name="championship" color={C.mint} size={23}/></View>
-      <Text style={styles.quickLinkText}>Competições</Text>
-      <Text style={styles.quickLinkMeta}>Procurar desafios</Text>
+      <Text style={styles.quickLinkText}>{t('Competições')}</Text>
+      <Text style={styles.quickLinkMeta}>{t('Procurar desafios')}</Text>
      </Pressable>
     </View>
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Plantel ({rosterVerified?members.length:'—'})</Text>
-    {!rosterVerified?<Text style={styles.note}>Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.</Text>:null}
-    {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>Ainda não há jogadores no plantel.</Text></View>:null}
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>{t('Plantel ({a})',{a:rosterVerified?members.length:'—'})}</Text>
+    {!rosterVerified?<Text style={styles.note}>{t('Plantel por confirmar. As opções de gestão estão temporariamente indisponíveis.')}</Text>:null}
+    {rosterVerified&&members.length===0?<View style={styles.empty}><Text style={styles.note}>{t('Ainda não há jogadores no plantel.')}</Text></View>:null}
     <View style={styles.roster}>
     {rosterVerified?members.map(m=><View key={m.profileId} style={styles.playerCard}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{a}',{a:m.username})}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})} style={styles.playerAvatar}>
        {teamPlayerAvatarUri(m.profilePicUrl)&&!brokenAvatars[m.profileId]
         ?<Image source={{uri:teamPlayerAvatarUri(m.profilePicUrl)!}} style={{width:'100%',height:'100%',borderRadius:27}}
           onError={()=>setBrokenAvatars(previous=>({...previous,[m.profileId]:true}))}/>
         :<Text style={styles.playerAvatarText}>{(m.username||'J').charAt(0).toUpperCase()}</Text>}
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Abrir perfil de @${m.username}`} style={styles.playerInfo}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{a}',{a:m.username})} style={styles.playerInfo}
        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
        <Text numberOfLines={1} style={styles.playerName}>{m.fullName||m.username}</Text>
        <Text numberOfLines={1} style={styles.playerHandle}>@{m.username}</Text>
        {m.bio?<Text numberOfLines={2} style={styles.playerBio}>{m.bio}</Text>:null}
       </Pressable>
       <View style={styles.playerTrailing}>
-       <Text style={[styles.playerRole,m.role==='OWNER'&&styles.playerOwner]}>{m.role==='OWNER'?'Responsável':'Jogador'}</Text>
+       <Text style={[styles.playerRole,m.role==='OWNER'&&styles.playerOwner]}>{m.role==='OWNER'?t('Responsável'):t('Jogador')}</Text>
        <View style={styles.playerActions}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Ver perfil de @${m.username}`}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Ver perfil de @{a}',{a:m.username})}
          onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}
          style={styles.playerProfileAction}><JynloIcon name="chevron-right" size={18} color={C.mint}/></Pressable>
         {isOwner&&m.role!=='OWNER'?<Pressable accessibilityRole="button" accessibilityLabel={`Remover @${m.username} da equipa`}
@@ -635,111 +636,111 @@ export default function TeamDetail(){
     </View>):null}
     </View>
     {rosterVerified&&isMember&&!isOwner?<Pressable accessibilityRole="button"
-     accessibilityLabel="Sair desta equipa" disabled={saving} style={styles.removeAction}
-     onPress={leaveTeam}><Text style={styles.removeText}>Sair da equipa</Text></Pressable>:null}
-    <Text style={styles.note}>Os convites só dão acesso após a aceitação do jogador.</Text>
-    {isOwner?<><Text style={styles.heading}>Convites pendentes ({pendingVerified?pendingPlayers.length:'—'})</Text>
-    {!pendingVerified?<Text style={styles.note}>Convites por confirmar. Novos envios bloqueados até à verificação.</Text>:null}
-    <Button title="Verificar convites" secondary disabled={saving} onPress={()=>void load(false,true)}/>
+     accessibilityLabel={t('Sair desta equipa')} disabled={saving} style={styles.removeAction}
+     onPress={leaveTeam}><Text style={styles.removeText}>{t('Sair da equipa')}</Text></Pressable>:null}
+    <Text style={styles.note}>{t('Os convites só dão acesso após a aceitação do jogador.')}</Text>
+    {isOwner?<><Text style={styles.heading}>{t('Convites pendentes ({a})',{a:pendingVerified?pendingPlayers.length:'—'})}</Text>
+    {!pendingVerified?<Text style={styles.note}>{t('Convites por confirmar. Novos envios bloqueados até à verificação.')}</Text>:null}
+    <Button title={t('Verificar convites')} secondary disabled={saving} onPress={()=>void load(false,true)}/>
     {pendingVerified?pendingPlayers.map(invite=><View key={invite.profileId} style={styles.candidate}>
-     <Text style={styles.playerName}>@{invite.username} · A aguardar resposta</Text>
-     <Button title="Cancelar convite" secondary disabled={saving}
+     <Text style={styles.playerName}>{t('@{a} · A aguardar resposta',{a:invite.username})}</Text>
+     <Button title={t('Cancelar convite')} secondary disabled={saving}
       onPress={()=>cancelPendingInvite(invite)}/>
     </View>):null}
     <TextInput style={styles.input} value={searchName} maxLength={80} onChangeText={value=>{setSearchName(value);setSearchComplete(false);setCandidates([]);searchVersion.current++;}}
-      placeholder="Procurar jogador pelo nome" placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
-    <Button title={searching?'A procurar…':'Pesquisar jogadores'} disabled={saving||searching||searchName.trim().length<2} onPress={()=>void search()}/>
-    {searchComplete&&inviteCandidates.length===0?<Text style={styles.note}>Não encontrámos novos jogadores com essa pesquisa.</Text>:null}
+      placeholder={t('Procurar jogador pelo nome')} placeholderTextColor={C.muted} returnKeyType="search" onSubmitEditing={()=>void search()}/>
+    <Button title={searching?t('A procurar…'):t('Pesquisar jogadores')} disabled={saving||searching||searchName.trim().length<2} onPress={()=>void search()}/>
+    {searchComplete&&inviteCandidates.length===0?<Text style={styles.note}>{t('Não encontrámos novos jogadores com essa pesquisa.')}</Text>:null}
     {inviteCandidates.map(p=><View key={p.profileId} style={styles.candidate}>
       <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/social/[username]',params:{username:p.username}})}>
        <Text style={styles.playerName}>{p.fullName||p.username}</Text>
-       <Text style={styles.note}>@{p.username} · Ver perfil →</Text>
+       <Text style={styles.note}>{t('@{a} · Ver perfil →',{a:p.username})}</Text>
       </Pressable>
-      <Button title="Convidar" disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
+      <Button title={t('Convidar')} disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
     </View>)}</>:null}
    </View>:null}
-   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>🏆 Troféus ({trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'})</Text>
-    {trophiesLoading?<Text style={styles.note}>A carregar conquistas oficiais…</Text>:null}
-    {!trophiesLoading&&(historyError||honoursError)?<Button secondary title="Tentar novamente" onPress={()=>void loadTrophies(true)}/>:null}
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>{t('🏆 Troféus ({a})',{a:trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'})}</Text>
+    {trophiesLoading?<Text style={styles.note}>{t('A carregar conquistas oficiais…')}</Text>:null}
+    {!trophiesLoading&&(historyError||honoursError)?<Button secondary title={t('Tentar novamente')} onPress={()=>void loadTrophies(true)}/>:null}
     {historyError?<Text style={styles.note}>{historyError}</Text>:null}
     {honoursError?<Text style={styles.note}>{honoursError}</Text>:null}
     {trophiesVerified&&!standaloneTrophies.length&&!championshipHonours.length?
-      <Text style={styles.note}>Ainda não existem troféus oficiais nesta equipa.</Text>:null}
+      <Text style={styles.note}>{t('Ainda não existem troféus oficiais nesta equipa.')}</Text>:null}
     {championshipHonours.map(item=><View key={'season:'+item.championshipId+':'+(item.ownedEventId?'event:'+item.ownedEventId:'tournament:'+item.tournamentId)} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.competitionName}</Text>
-      <Text style={styles.note}>{item.format==='LEAGUE'?'Liga':item.format==='KNOCKOUT'?'Taça':item.format==='CHAMPIONSHIP'?'Campeonato':item.format} · {item.championshipName} · {item.seasonLabel}</Text>
+      <Text style={styles.note}>{item.format==='LEAGUE'?t('Liga'):item.format==='KNOCKOUT'?t('Taça'):item.format==='CHAMPIONSHIP'?t('Campeonato'):item.format} · {item.championshipName} · {item.seasonLabel}</Text>
       <Text style={styles.note}>{item.communityName} · {item.sport}</Text>
       <Text style={styles.note}>{new Date(item.awardedAt).toLocaleDateString('pt-PT')}</Text>
     </View>)}
     {standaloneTrophies.map(item=><View key={item.tournamentId} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.tournamentName}</Text>
-      <Text style={styles.note}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
+      <Text style={styles.note}>{item.communityName} · {item.sport||t('Modalidade não indicada')}</Text>
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
     </View>)}
    </View>:null}
-   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>Histórico de torneios ({trophiesVerified?history.length:'—'})</Text>
-    {trophiesVerified&&!history.length?<Text style={styles.note}>Ainda não existem torneios associados a esta equipa.</Text>:null}
+   {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>{t('Histórico de torneios ({a})',{a:trophiesVerified?history.length:'—'})}</Text>
+    {trophiesVerified&&!history.length?<Text style={styles.note}>{t('Ainda não existem torneios associados a esta equipa.')}</Text>:null}
     {history.map(item=><Pressable key={item.tournamentId} accessibilityRole="button" style={styles.historyLink}
       onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:String(item.communityId),id:String(item.tournamentId)}})}>
       <Text style={styles.playerName}>{item.tournamentName}</Text>
-      <Text style={styles.note}>{item.communityName} · {item.champion?'🏆 Campeão':item.archived?'Concluído':'Em curso'} · Ver torneio →</Text>
+      <Text style={styles.note}>{t('{a} · {b} · Ver torneio →',{a:item.communityName,b:item.champion?t('🏆 Campeão'):item.archived?t('Concluído'):t('Em curso')})}</Text>
     </Pressable>)}
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Competições da equipa</Text>
-    <Text style={styles.note}>{trophiesVerified?`${history.length} torneios no histórico · ${standaloneTrophies.length+championshipHonours.length} troféus oficiais`:'Histórico e troféus disponíveis no separador próprio.'}</Text>
-    <Button secondary title="Ver histórico e troféus" onPress={()=>setActiveTab('TROPHIES')}/>
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>{t('Competições da equipa')}</Text>
+    <Text style={styles.note}>{trophiesVerified?t('{a} torneios no histórico · {b} troféus oficiais',{a:history.length,b:standaloneTrophies.length+championshipHonours.length}):t('Histórico e troféus disponíveis no separador próprio.')}</Text>
+    <Button secondary title={t('Ver histórico e troféus')} onPress={()=>setActiveTab('TROPHIES')}/>
    </View>:null}
-   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>Comunidades</Text>
-    {!communitiesVerified?<Text style={styles.note}>Associações por confirmar. Atualiza os dados para gerir comunidades.</Text>:null}
+   {activeTab==='OVERVIEW'?<View style={styles.panel}><Text style={styles.heading}>{t('Comunidades')}</Text>
+    {!communitiesVerified?<Text style={styles.note}>{t('Associações por confirmar. Atualiza os dados para gerir comunidades.')}</Text>:null}
     {communitiesVerified?communities.filter(m=>m.status==='ACTIVE').map(m=><View key={m.id} style={styles.candidate}>
       <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(m.communityId)}})}
        style={styles.communityLink}>
        <Text style={styles.playerName}>{m.communityName}</Text>
-       <Text style={styles.note}>Ver comunidade →</Text>
+       <Text style={styles.note}>{t('Ver comunidade →')}</Text>
       </Pressable>
-      {isOwner?<Button title="Sair da comunidade" secondary disabled={saving} onPress={()=>confirmLeaveCommunity(m)}/>:null}
+      {isOwner?<Button title={t('Sair da comunidade')} secondary disabled={saving} onPress={()=>confirmLeaveCommunity(m)}/>:null}
     </View>):null}
-    {communitiesVerified&&!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>Ainda não pertence a comunidades.</Text>:null}
+    {communitiesVerified&&!communities.some(m=>m.status==='ACTIVE')?<Text style={styles.note}>{t('Ainda não pertence a comunidades.')}</Text>:null}
     {isOwner&&communitiesVerified?communities.filter(m=>m.status==='PENDING_TEAM').map(m=><View key={m.id} style={styles.candidate}>
-      <Text style={styles.note}>Convite de {m.communityName}</Text>
-      <Button title="Aceitar convite" disabled={saving} onPress={()=>void decideMembership(m.id,true)}/>
-      <Button title="Recusar convite" secondary disabled={saving} onPress={()=>void decideMembership(m.id,false)}/>
+      <Text style={styles.note}>{t('Convite de {a}',{a:m.communityName})}</Text>
+      <Button title={t('Aceitar convite')} disabled={saving} onPress={()=>void decideMembership(m.id,true)}/>
+      <Button title={t('Recusar convite')} secondary disabled={saving} onPress={()=>void decideMembership(m.id,false)}/>
     </View>):null}
     {isOwner&&communitiesVerified?communities.filter(m=>m.status==='PENDING_COMMUNITY').map(m=>
-      <Text key={m.id} style={styles.note}>Pedido a {m.communityName} · Em análise</Text>):null}
+      <Text key={m.id} style={styles.note}>{t('Pedido a {a} · Em análise',{a:m.communityName})}</Text>):null}
     {membershipNote?<Message>{membershipNote}</Message>:null}
-    {isOwner?<Button title="Procurar comunidades" secondary onPress={()=>router.push('/communities')}/>:null}
+    {isOwner?<Button title={t('Procurar comunidades')} secondary onPress={()=>router.push('/communities')}/>:null}
    </View>:null}
    {activeTab==='OVERVIEW'&&isOwner?<View style={[styles.panel,{borderColor:'#A95D63',gap:10}]}>
-    <Text style={styles.heading}>Administração da equipa</Text>
-    <Text style={styles.note}>A eliminação é definitiva e apenas permitida a equipas sem jogadores convidados, mensagens, competições ou ligações históricas.</Text>
-    <Pressable accessibilityRole="button" accessibilityLabel="Eliminar definitivamente esta equipa"
+    <Text style={styles.heading}>{t('Administração da equipa')}</Text>
+    <Text style={styles.note}>{t('A eliminação é definitiva e apenas permitida a equipas sem jogadores convidados, mensagens, competições ou ligações históricas.')}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar definitivamente esta equipa')}
       accessibilityState={{disabled:saving||!rosterVerified||!brandingVerified}}
       disabled={saving||!rosterVerified||!brandingVerified} onPress={deleteTeam}
       style={[styles.removeAction,{alignSelf:'flex-start',minHeight:44,justifyContent:'center'}]}>
-      <Text style={styles.removeText}>{saving?'A processar…':'Eliminar equipa'}</Text>
+      <Text style={styles.removeText}>{saving?t('A processar…'):t('Eliminar equipa')}</Text>
     </Pressable>
    </View>:null}
-   {activeTab==='FEED'?<View style={styles.panel}><Text style={styles.heading}>Publicações da equipa</Text>
-    {!team.feedEnabled?<Text style={styles.note}>O feed da equipa está desativado.</Text>:null}
-    {isOwner?<Button title={team.feedEnabled?'Desativar feed':'Ativar feed'} disabled={saving} onPress={()=>void feature('feedEnabled')}/>:null}
+   {activeTab==='FEED'?<View style={styles.panel}><Text style={styles.heading}>{t('Publicações da equipa')}</Text>
+    {!team.feedEnabled?<Text style={styles.note}>{t('O feed da equipa está desativado.')}</Text>:null}
+    {isOwner?<Button title={team.feedEnabled?t('Desativar feed'):t('Ativar feed')} disabled={saving} onPress={()=>void feature('feedEnabled')}/>:null}
     {team.feedEnabled&&isMember&&auth.token&&auth.username?
      <SportsTeamContentPanel teamId={teamId} kind="feed" token={auth.token} username={auth.username}/>:null}
-    {team.feedEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
+    {team.feedEnabled&&!isMember?<Text style={styles.note}>{t('Disponível apenas para membros confirmados.')}</Text>:null}
    </View>:null}
    {activeTab==='CHALLENGES'&&team?<View style={styles.panel}>
     <SportsTeamChallengesPanel teamId={teamId} token={auth.token}
       isOwner={isOwner&&rosterVerified} sport={team.sport}/>
    </View>:null}
-   {activeTab==='CHAT'?<View style={styles.panel}><Text style={styles.heading}>Mensagens da equipa</Text>
+   {activeTab==='CHAT'?<View style={styles.panel}><Text style={styles.heading}>{t('Mensagens da equipa')}</Text>
     {team.chatEnabled&&isMember&&auth.token?<Pressable accessibilityRole="button" disabled={chatMuteBusy} onPress={()=>{void toggleChatMute();}}
-     accessibilityLabel={chatMuted?'Ativar avisos do chat da equipa':'Silenciar o chat da equipa'} style={styles.muteChip}>
-     <Text style={styles.muteText}>{chatMuted?'🔕 Ativar avisos':'🔔 Silenciar'}</Text></Pressable>:null}
-    {!team.chatEnabled?<Text style={styles.note}>O chat da equipa está desativado.</Text>:null}
-    {isOwner?<Button title={team.chatEnabled?'Desativar chat':'Ativar chat'} disabled={saving} onPress={()=>void feature('chatEnabled')}/>:null}
+     accessibilityLabel={chatMuted?t('Ativar avisos do chat da equipa'):t('Silenciar o chat da equipa')} style={styles.muteChip}>
+     <Text style={styles.muteText}>{chatMuted?t('🔕 Ativar avisos'):t('🔔 Silenciar')}</Text></Pressable>:null}
+    {!team.chatEnabled?<Text style={styles.note}>{t('O chat da equipa está desativado.')}</Text>:null}
+    {isOwner?<Button title={team.chatEnabled?t('Desativar chat'):t('Ativar chat')} disabled={saving} onPress={()=>void feature('chatEnabled')}/>:null}
     {team.chatEnabled&&isMember&&auth.token&&auth.username?
      <SportsTeamContentPanel teamId={teamId} kind="chat" token={auth.token} username={auth.username}/>:null}
-    {team.chatEnabled&&!isMember?<Text style={styles.note}>Disponível apenas para membros confirmados.</Text>:null}
+    {team.chatEnabled&&!isMember?<Text style={styles.note}>{t('Disponível apenas para membros confirmados.')}</Text>:null}
    </View>:null}
   </>:null}
  </Page>;

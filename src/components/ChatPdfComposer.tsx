@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import {File} from 'expo-file-system';
@@ -59,7 +60,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
    if(active.current)setSelected(asset);
   }catch(e){
    if(active.current&&generation.current===version)
-    setError(e instanceof Error?e.message:'Não foi possível selecionar o PDF.');
+    setError(e instanceof Error?e.message:t('Não foi possível selecionar o PDF.'));
   }finally{pickerRef.current=false;}
  }
  async function send(){
@@ -75,7 +76,7 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
    try{await onSent(sentReplyId);}
    catch{
     if(active.current&&generation.current===version)
-     setError('PDF enviado. O anexo aparece quando a conversa voltar a sincronizar automaticamente.');
+     setError(t('PDF enviado. O anexo aparece quando a conversa voltar a sincronizar automaticamente.'));
    }
   }catch(e){
    // The POST may have completed even if its result was lost. Never retry this file automatically.
@@ -83,8 +84,8 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
    blocked.current=true;
    if(e instanceof Error&&/chat da sessão está encerrado|chat da equipa está desativado|(?:sem|não tens) permissão para enviar|sessão expirada/i.test(e.message))
     onPermissionError?.(/chat da equipa está desativado/i.test(e.message)?'disabled':'forbidden');
-   setError((e instanceof Error?e.message:'Envio incerto.')+
-     ' Verifica o histórico antes de escolher novamente o documento.');
+   setError((e instanceof Error?e.message:t('Envio incerto.'))+
+     ' '+t('Verifica o histórico antes de escolher novamente o documento.'));
   }finally{
    // An upload still needs its temporary bytes if navigation changes mid-request.
    uploadingRef.current=null;
@@ -95,16 +96,16 @@ export default function ChatPdfComposer({target,token,enabled,replyId,onSent,onP
  }
  if(!enabled||!token)return null;
  return <View style={compact?(selected?styles.compactExpanded:styles.compactPanel):styles.panel}>
-  {busyRef.current&&!selected?<Text style={styles.note}>Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.</Text>:null}
-  {compact?<Pressable accessibilityRole="button" accessibilityLabel="Anexar documento PDF" disabled={busy||busyRef.current||pickerRef.current}
+  {busyRef.current&&!selected?<Text style={styles.note}>{t('Existe um PDF em envio noutra conversa. Aguarda a confirmação antes de selecionar outro ficheiro.')}</Text>:null}
+  {compact?<Pressable accessibilityRole="button" accessibilityLabel={t('Anexar documento PDF')} disabled={busy||busyRef.current||pickerRef.current}
    style={styles.iconAction} onPress={()=>{void choose();}}><JynloIcon name="document" size={23} color={C.mint}/></Pressable>:
-  <Button title="Selecionar PDF" secondary disabled={busy||busyRef.current||pickerRef.current} onPress={()=>{void choose();}}/>}
+  <Button title={t('Selecionar PDF')} secondary disabled={busy||busyRef.current||pickerRef.current} onPress={()=>{void choose();}}/>}
   {selected?<View style={styles.details}>
    <Text style={styles.name}>{selected.name}</Text>
-   <Text style={styles.note}>{Math.ceil((selected.size||0)/1024)} KB · O ficheiro só é enviado após confirmação.</Text>
-   <Button title={busy?'A enviar…':'Confirmar envio do PDF'}
+   <Text style={styles.note}>{t('{a} KB · O ficheiro só é enviado após confirmação.',{a:Math.ceil((selected.size||0)/1024)})}</Text>
+   <Button title={busy?t('A enviar…'):t('Confirmar envio do PDF')}
     disabled={busy||blocked.current} onPress={()=>{void send();}}/>
-   <Button title="Cancelar PDF" secondary disabled={busy} onPress={()=>{reset();blocked.current=false;setError('');}}/>
+   <Button title={t('Cancelar PDF')} secondary disabled={busy} onPress={()=>{reset();blocked.current=false;setError('');}}/>
   </View>:null}
   {!!error?<Text style={styles.error}>{error}</Text>:null}
  </View>;

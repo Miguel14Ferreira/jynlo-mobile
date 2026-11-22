@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../src/lib/i18n';
 import {Pressable,StyleSheet,Switch,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../src/components/UI';
@@ -23,7 +24,7 @@ export default function NearbyAlertsScreen(){
   try{
    const value=await myNearbyAlerts(auth.token);
    if(request===version.current){setSaved(value);setDraft(value);}
-  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:'Não foi possível carregar os avisos.');}
+  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:t('Não foi possível carregar os avisos.'));}
   finally{if(request===version.current)setLoading(false);}
  },[auth.token]);
  useFocusEffect(useCallback(()=>{void load();return()=>{version.current++;};},[load]));
@@ -33,8 +34,8 @@ export default function NearbyAlertsScreen(){
  async function useMyPosition(){
   if(locating)return;
   setLocating(true);setError('');
-  try{const point=await approximatePosition();set({...point,placeLabel:'Perto de mim'});}
-  catch(e){setError(e instanceof Error?e.message:'Não foi possível obter a localização.');}
+  try{const point=await approximatePosition();set({...point,placeLabel:t('Perto de mim')});}
+  catch(e){setError(e instanceof Error?e.message:t('Não foi possível obter a localização.'));}
   finally{setLocating(false);}
  }
  async function save(){
@@ -45,59 +46,59 @@ export default function NearbyAlertsScreen(){
    const next=await saveNearbyAlerts(draft,auth.token);
    if(request!==version.current)return;
    setSaved(next);setDraft(next);
-   setNotice(next.enabled?'Guardado. Avisamos-te no máximo 2 vezes por dia.':'Guardado. Não vais receber avisos de novos jogos.');
-  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:'Não foi possível guardar. Tenta novamente.');}
+   setNotice(next.enabled?t('Guardado. Avisamos-te no máximo 2 vezes por dia.'):t('Guardado. Não vais receber avisos de novos jogos.'));
+  }catch(e){if(request===version.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));}
   finally{saving.current=false;setBusy(false);}
  }
  const suggestions=draft?sportSuggestions(SPORTS,search,draft.sports):[];
- return <Page><DemoBanner/><Eyebrow>NOTIFICAÇÕES</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>Novos jogos perto de ti</Text>
-  <Text style={styles.sub}>Recebe um aviso quando alguém cria um jogo público perto do local que escolheres. No máximo 2 por dia.</Text>
-  {!auth.token?<Button title="Iniciar sessão" onPress={()=>router.push('/login')}/>:null}
+ return <Page><DemoBanner/><Eyebrow>{t('NOTIFICAÇÕES')}</Eyebrow>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Novos jogos perto de ti')}</Text>
+  <Text style={styles.sub}>{t('Recebe um aviso quando alguém cria um jogo público perto do local que escolheres. No máximo 2 por dia.')}</Text>
+  {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {error&&!draft&&auth.token?<Button secondary title="Tentar novamente" onPress={()=>{void load();}}/>:null}
+  {error&&!draft&&auth.token?<Button secondary title={t('Tentar novamente')} onPress={()=>{void load();}}/>:null}
   {draft?<>
    <View style={styles.panel}>
     <View style={styles.row}>
-     <Text style={styles.rowLabel}>Receber avisos</Text>
-     <Switch value={draft.enabled} disabled={busy} onValueChange={value=>set({enabled:value})} accessibilityLabel="Receber avisos de novos jogos perto de ti"/>
+     <Text style={styles.rowLabel}>{t('Receber avisos')}</Text>
+     <Switch value={draft.enabled} disabled={busy} onValueChange={value=>set({enabled:value})} accessibilityLabel={t('Receber avisos de novos jogos perto de ti')}/>
     </View>
    </View>
    <View style={styles.panel}>
-    <Text style={styles.heading}>Local</Text>
-    <Text style={styles.note}>{draft.latitude===null?'Ainda não escolheste um local.':'Escolhido: '+(draft.placeLabel||'local guardado')+'.'} Guardamos só um ponto aproximado (cerca de 1 km), nunca a tua localização em tempo real.</Text>
+    <Text style={styles.heading}>{t('Local')}</Text>
+    <Text style={styles.note}>{t('{a} Guardamos só um ponto aproximado (cerca de 1 km), nunca a tua localização em tempo real.',{a:draft.latitude===null?t('Ainda não escolheste um local.'):t('Escolhido: {v}',{v:(draft.placeLabel||t('local guardado'))})+'.'})}</Text>
     <View style={styles.chips}>
      {PLACES.map(place=>{const selected=draft.placeLabel===place.label&&draft.latitude===place.latitude;
       return <Chip key={place.label} label={place.label} selected={selected} disabled={busy}
        onPress={()=>set({latitude:place.latitude,longitude:place.longitude,placeLabel:place.label})}/>;})}
     </View>
-    <Button secondary title={locating?'A obter localização…':'Usar a minha localização aproximada'} disabled={busy||locating} onPress={()=>{void useMyPosition();}}/>
-    {draft.latitude!==null?<Button secondary title="Apagar o local guardado" disabled={busy}
+    <Button secondary title={locating?t('A obter localização…'):t('Usar a minha localização aproximada')} disabled={busy||locating} onPress={()=>{void useMyPosition();}}/>
+    {draft.latitude!==null?<Button secondary title={t('Apagar o local guardado')} disabled={busy}
      onPress={()=>set({enabled:false,latitude:null,longitude:null,placeLabel:null})}/>:null}
    </View>
    <View style={styles.panel}>
-    <Text style={styles.heading}>Distância máxima</Text>
+    <Text style={styles.heading}>{t('Distância máxima')}</Text>
     <View style={styles.chips}>
      {RADII_KM.map(km=><Chip key={km} label={km+' km'} selected={draft.radiusKm===km} disabled={busy} onPress={()=>set({radiusKm:km})}/>)}
     </View>
    </View>
    <View style={styles.panel}>
-    <Text style={styles.heading}>Modalidades</Text>
-    <Text style={styles.note}>{draft.sports.length?`Só estas (máximo ${MAX_SPORTS}). Toca para retirar.`:'Todas as modalidades. Escolhe algumas para receberes só essas.'}</Text>
+    <Text style={styles.heading}>{t('Modalidades')}</Text>
+    <Text style={styles.note}>{draft.sports.length?t('Só estas (máximo {a}). Toca para retirar.',{a:MAX_SPORTS}):t('Todas as modalidades. Escolhe algumas para receberes só essas.')}</Text>
     {draft.sports.length?<View style={styles.chips}>{draft.sports.map(sport=><Chip key={sport} label={sport+'  ×'} selected disabled={busy}
      onPress={()=>{setNotice('');setDraft(current=>current?toggleSport(current,sport):current);}}/>)}</View>:null}
-    <TextInput style={styles.search} placeholder="Procurar modalidade…" placeholderTextColor={C.muted} value={search}
-     onChangeText={setSearch} accessibilityLabel="Procurar modalidade" editable={!busy&&draft.sports.length<MAX_SPORTS}/>
+    <TextInput style={styles.search} placeholder={t('Procurar modalidade…')} placeholderTextColor={C.muted} value={search}
+     onChangeText={setSearch} accessibilityLabel={t('Procurar modalidade')} editable={!busy&&draft.sports.length<MAX_SPORTS}/>
     {suggestions.length?<View style={styles.chips}>{suggestions.map(sport=><Chip key={sport} label={sport} selected={false} disabled={busy}
      onPress={()=>{setNotice('');setSearch('');setDraft(current=>current?toggleSport(current,sport):current);}}/>)}</View>:null}
    </View>
    {issue?<Message tone="error">{issue}</Message>:null}
    {notice?<Message>{notice}</Message>:null}
-   <Button title={busy?'A guardar…':dirty?'Guardar':'Sem alterações'} disabled={busy||!dirty||!!issue} onPress={()=>{void save();}}/>
-   {dirty?<Button secondary title="Descartar alterações" disabled={busy} onPress={()=>{setDraft(saved);setNotice('');setError('');}}/>:null}
+   <Button title={busy?t('A guardar…'):dirty?t('Guardar'):t('Sem alterações')} disabled={busy||!dirty||!!issue} onPress={()=>{void save();}}/>
+   {dirty?<Button secondary title={t('Descartar alterações')} disabled={busy} onPress={()=>{setDraft(saved);setNotice('');setError('');}}/>:null}
   </>:null}
-  <Button secondary title="Voltar" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar')} onPress={()=>router.back()}/>
  </Page>;
 }
 function Chip({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){

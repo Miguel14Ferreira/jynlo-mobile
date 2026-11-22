@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
@@ -41,7 +42,7 @@ export default function TeamCompetitionDiscovery(){
   if(version!==requestVersion.current)return;
   const failed:string[]=[];
   if(competitions.status==='fulfilled')setRows(competitions.value);
-  else{setRows([]);failed.push('competições');}
+  else{setRows([]);failed.push(t('competições'));}
   if(owned.status==='fulfilled'&&auth.token){
     setOwnedVerified(true);setTeams(owned.value);
     const wanted=Number(teamId);
@@ -51,15 +52,15 @@ export default function TeamCompetitionDiscovery(){
     });
   }else{
     setOwnedVerified(false);setTeams([]);setChosen(null);
-    if(auth.token)failed.push('as tuas equipas');
+    if(auth.token)failed.push(t('as tuas equipas'));
   }
   if(requests.status==='fulfilled'&&auth.token){
     setApplications(requests.value);setApplicationsVerified(true);
   }else{
     setApplications([]);setApplicationsVerified(false);
-    if(auth.token)failed.push('candidaturas anteriores');
+    if(auth.token)failed.push(t('candidaturas anteriores'));
   }
-  if(failed.length)setError('Não foi possível atualizar '+failed.join(', ')+'. Podes continuar a consultar as restantes secções.');
+  if(failed.length)setError(t('Não foi possível atualizar {v}',{v:failed.join(', ')})+t('. Podes continuar a consultar as restantes secções.'));
   setLoading(false);
  },[filters,auth.token,teamId]);
  const search=()=>{const next={query:query.trim(),sport:sport.trim()};
@@ -80,8 +81,8 @@ export default function TeamCompetitionDiscovery(){
   applicationStatus(competition,teamId)!==null;
  const applicationLabel=(competition:OpenTeamCompetition,teamId:number|null)=>{
   const status=applicationStatus(competition,teamId);
-  return status==='APPROVED'?'Aprovada · inscrição por confirmar':
-   status==='DECLINED'?'Candidatura recusada':status==='PENDING'?'Pedido em análise':null;
+  return status==='APPROVED'?t('Aprovada · inscrição por confirmar'):
+   status==='DECLINED'?t('Candidatura recusada'):status==='PENDING'?t('Pedido em análise'):null;
  };
  const apply=async(competition:OpenTeamCompetition)=>{
   if(!auth.token||!chosen||busy||loading||applyingRef.current||!ownedVerified||!applicationsVerified
@@ -96,13 +97,13 @@ export default function TeamCompetitionDiscovery(){
      competition.id,selectedTeamId,auth.token);
    if(current!==requestVersion.current)return;
    setApplications(previous=>[next,...previous.filter(item=>item.id!==next.id)]);
-   setNotice('Candidatura enviada. O organizador poderá aceitar ou recusar.');
+   setNotice(t('Candidatura enviada. O organizador poderá aceitar ou recusar.'));
   }catch(e){
    if(current===requestVersion.current){
     // A timed-out POST may already have been committed. Confirm on GET before retrying.
     setApplicationsVerified(false);
-    setError((e instanceof Error?e.message:'Não foi possível enviar o pedido.')+
-     ' O pedido pode ter sido recebido. Verifica novamente as candidaturas antes de repetir.');
+    setError((e instanceof Error?e.message:t('Não foi possível enviar o pedido.'))+
+     ' '+t('O pedido pode ter sido recebido. Verifica novamente as candidaturas antes de repetir.'));
    }
   }finally{
    // An old account's pending POST must not unlock a new account's request.
@@ -114,34 +115,34 @@ export default function TeamCompetitionDiscovery(){
  };
  return <Page>
   <DemoBanner/>
-  <Pressable accessibilityRole="button" accessibilityLabel="Voltar às equipas" onPress={()=>router.push('/teams')} style={styles.backAction}>
-   <JynloIcon name="back" size={19} color={C.mint}/><Text style={styles.backActionText}>As tuas equipas</Text>
+  <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar às equipas')} onPress={()=>router.push('/teams')} style={styles.backAction}>
+   <JynloIcon name="back" size={19} color={C.mint}/><Text style={styles.backActionText}>{t('As tuas equipas')}</Text>
   </Pressable>
   <View style={styles.intro}>
-   <Text style={styles.introLabel}>COMPETIÇÕES · EQUIPAS</Text>
-   <Text maxFontSizeMultiplier={1.3} style={styles.title}>Encontrar competições</Text>
-   <Text style={styles.note}>Descobre torneios e campeonatos que aceitam candidaturas. Escolhe a tua equipa antes de participar.</Text>
+   <Text style={styles.introLabel}>{t('COMPETIÇÕES · EQUIPAS')}</Text>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Encontrar competições')}</Text>
+   <Text style={styles.note}>{t('Descobre torneios e campeonatos que aceitam candidaturas. Escolhe a tua equipa antes de participar.')}</Text>
   </View>
   <View style={styles.searchPanel}>
-  <TextInput style={styles.input} placeholder="Nome da competição ou comunidade" placeholderTextColor={C.muted}
+  <TextInput style={styles.input} placeholder={t('Nome da competição ou comunidade')} placeholderTextColor={C.muted}
     value={query} onChangeText={setQuery} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
-  <TextInput style={styles.input} placeholder="Modalidade" placeholderTextColor={C.muted}
+  <TextInput style={styles.input} placeholder={t('Modalidade')} placeholderTextColor={C.muted}
     value={sport} onChangeText={setSport} maxLength={80} returnKeyType="search" onSubmitEditing={search}/>
-  <Button title="Pesquisar competições" onPress={search} disabled={loading}/>
+  <Button title={t('Pesquisar competições')} onPress={search} disabled={loading}/>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
   {(!applicationsVerified||!ownedVerified)&&auth.token&&!loading?<Button secondary
-    title="Verificar novamente candidaturas e equipas" disabled={busy} onPress={()=>void load()}/>:null}
+    title={t('Verificar novamente candidaturas e equipas')} disabled={busy} onPress={()=>void load()}/>:null}
   {notice?<Message>{notice}</Message>:null}
   {loading?<Loader/>:null}
-  {!auth.token&&!loading?<Message>Inicia sessão para escolher uma equipa, consultar candidaturas e pedir participação.</Message>:null}
-  {!loading&&!!auth.token&&teams.length===0&&!error?<Message>Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.</Message>:null}
+  {!auth.token&&!loading?<Message>{t('Inicia sessão para escolher uma equipa, consultar candidaturas e pedir participação.')}</Message>:null}
+  {!loading&&!!auth.token&&teams.length===0&&!error?<Message>{t('Cria uma equipa ou torna-te responsável por uma para poderes pedir participação.')}</Message>:null}
   {teams.length>0?<View style={styles.panel}>
-   <View style={styles.selectionHeading}><Text style={styles.subtitle}>Escolher a minha equipa</Text>
+   <View style={styles.selectionHeading}><Text style={styles.subtitle}>{t('Escolher a minha equipa')}</Text>
     <Text style={styles.selectionCount}>{teams.length} {teams.length===1?'equipa':'equipas'}</Text></View>
-   <Text style={styles.note}>Seleciona o plantel que queres inscrever. Só as equipas que administras aparecem aqui.</Text>
+   <Text style={styles.note}>{t('Seleciona o plantel que queres inscrever. Só as equipas que administras aparecem aqui.')}</Text>
    {teams.map(team=><Pressable key={team.id} accessibilityRole="radio"
-     accessibilityLabel={'Candidatar a equipa '+team.name}
+     accessibilityLabel={t('Candidatar a equipa {v}',{v:team.name})}
      accessibilityState={{selected:chosen===team.id}} disabled={busy}
      onPress={()=>setChosen(team.id)}
      style={[styles.choice,chosen===team.id&&styles.chosen]}>
@@ -149,7 +150,7 @@ export default function TeamCompetitionDiscovery(){
      <TeamBrandAvatar team={team} size={52}/>
      <View style={styles.teamNameBlock}>
       <Text style={styles.name} numberOfLines={2}>{team.name}</Text>
-      <Text style={styles.note} numberOfLines={1}>{team.sport||'Várias modalidades'}</Text>
+      <Text style={styles.note} numberOfLines={1}>{team.sport||t('Várias modalidades')}</Text>
      </View>
      <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary}
        pattern={team.kitPattern} size={44}/>
@@ -160,29 +161,29 @@ export default function TeamCompetitionDiscovery(){
    </Pressable>)}
   </View>:null}
   {applications.length>0?<View style={styles.panel}>
-   <Text style={styles.subtitle}>Pedidos já enviados</Text>
+   <Text style={styles.subtitle}>{t('Pedidos já enviados')}</Text>
    {applications.map(a=><View key={a.id} style={styles.applicationRow}>
     <Text style={styles.applicationTeam} numberOfLines={2}>{a.teamName}</Text>
-    <Text style={styles.applicationStatus}>{a.competitionType==='TOURNAMENT'?'Torneio':'Campeonato'} · {a.status==='PENDING'?'Em análise':a.status==='APPROVED'?'Aprovado · inscrição por confirmar':'Recusado'}</Text>
+    <Text style={styles.applicationStatus}>{a.competitionType==='TOURNAMENT'?t('Torneio'):t('Campeonato')} · {a.status==='PENDING'?t('Em análise'):a.status==='APPROVED'?t('Aprovado · inscrição por confirmar'):t('Recusado')}</Text>
    </View>)}
   </View>:null}
-  {!loading&&rows.length===0&&!error?<Message>Não há competições a aceitar equipas com estes filtros.</Message>:null}
+  {!loading&&rows.length===0&&!error?<Message>{t('Não há competições a aceitar equipas com estes filtros.')}</Message>:null}
   {rows.length>0?<View style={styles.resultHeading}>
-    <Text style={styles.subtitle}>Competições disponíveis</Text><Text style={styles.selectionCount}>{rows.length}</Text>
+    <Text style={styles.subtitle}>{t('Competições disponíveis')}</Text><Text style={styles.selectionCount}>{rows.length}</Text>
    </View>:null}
   {rows.map(item=><View key={item.communityId+'-'+item.type+'-'+item.id} style={styles.competitionCard}>
     <View style={styles.competitionTop}>
      <Text style={styles.competitionType}>{item.type==='TOURNAMENT'?'TORNEIO':'CAMPEONATO'}</Text>
-     <Text style={[styles.competitionStatus,!item.applicationsOpen&&styles.competitionStatusClosed]}>{item.applicationsOpen?'Candidaturas abertas':'Encerradas'}</Text>
+     <Text style={[styles.competitionStatus,!item.applicationsOpen&&styles.competitionStatusClosed]}>{item.applicationsOpen?t('Candidaturas abertas'):t('Encerradas')}</Text>
     </View>
     <Text style={styles.competitionTitle}>{item.name}</Text>
-    <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {item.sport||'Modalidade não indicada'}</Text>
-    {!chosen&&auth.token?<Text style={styles.selectionHint}>Escolhe uma equipa acima para pedir participação.</Text>:null}
-    <Button title={applicationLabel(item,chosen)|| (busy?'A enviar…':'Pedir participação')}
+    <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {item.sport||t('Modalidade não indicada')}</Text>
+    {!chosen&&auth.token?<Text style={styles.selectionHint}>{t('Escolhe uma equipa acima para pedir participação.')}</Text>:null}
+    <Button title={applicationLabel(item,chosen)|| (busy?t('A enviar…'):t('Pedir participação'))}
       disabled={!auth.token||!chosen||busy||loading||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}
       onPress={()=>void apply(item)}/>
    </View>)}
-  <Text style={styles.note}>A aprovação não inscreve automaticamente o plantel; os jogadores são confirmados pelas regras da competição.</Text>
+  <Text style={styles.note}>{t('A aprovação não inscreve automaticamente o plantel; os jogadores são confirmados pelas regras da competição.')}</Text>
  </Page>;
 }
 const styles=StyleSheet.create({

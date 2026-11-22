@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Pressable,Text,View} from 'react-native';
 import AdaptivePostPhoto from './AdaptivePostPhoto';
 import {resolveJynloMedia} from '../lib/social-feed-api';
@@ -34,10 +35,10 @@ export default function ProtectedPostMedia({src,type,token,width,label,onExpand}
   };
  },[src,token,attempt]);
  if(!uri)return <View style={{height:type==='image'?220:300,backgroundColor:'#020A10',alignItems:'center',justifyContent:'center',gap:12,paddingHorizontal:15}}>
-   {error?<><Text style={{color:'#B9D8DA',textAlign:'center'}}>Não foi possível carregar este conteúdo. Verifica a ligação ou as permissões.</Text>
-     <Pressable accessibilityRole="button" accessibilityLabel="Tentar carregar multimédia novamente"
+   {error?<><Text style={{color:'#B9D8DA',textAlign:'center'}}>{t('Não foi possível carregar este conteúdo. Verifica a ligação ou as permissões.')}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Tentar carregar multimédia novamente')}
        onPress={()=>setAttempt(n=>n+1)} style={{paddingVertical:9,paddingHorizontal:15,borderRadius:10,backgroundColor:'#173A43'}}>
-       <Text style={{color:'#fff',fontWeight:'700'}}>Tentar novamente</Text>
+       <Text style={{color:'#fff',fontWeight:'700'}}>{t('Tentar novamente')}</Text>
      </Pressable></>:<ActivityIndicator color={MobileTheme.colors.accent}/>}
   </View>;
  return type==='video'

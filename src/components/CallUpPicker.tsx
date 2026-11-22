@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react';
+import {t} from '../lib/i18n';
 import {ActivityIndicator,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {mySessions} from '../lib/parity-api';
@@ -22,13 +23,13 @@ export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:bo
  },[visible,token,username]);
  return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
   <View style={styles.overlay}>
-   <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar"/>
+   <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('Fechar')}/>
    <View style={styles.sheet}>
-    <Text style={styles.title}>📣 Convocar para um jogo</Text>
-    <Text style={styles.help}>Escolhe uma das tuas próximas sessões. Quem estiver no chat pode responder "Vou" diretamente.</Text>
-    {failed?<Text style={styles.help}>Não foi possível carregar as tuas sessões.</Text>
+    <Text style={styles.title}>{t('📣 Convocar para um jogo')}</Text>
+    <Text style={styles.help}>{t('Escolhe uma das tuas próximas sessões. Quem estiver no chat pode responder "Vou" diretamente.')}</Text>
+    {failed?<Text style={styles.help}>{t('Não foi possível carregar as tuas sessões.')}</Text>
      :items===null?<ActivityIndicator color={C.mint}/>
-     :items.length===0?<Text style={styles.help}>Não tens sessões futuras organizadas por ti.</Text>
+     :items.length===0?<Text style={styles.help}>{t('Não tens sessões futuras organizadas por ti.')}</Text>
      :<ScrollView style={{maxHeight:320}} contentContainerStyle={{gap:8}}>
        {items.map(s=><Pressable key={s.id} accessibilityRole="button" onPress={()=>onPick(s.id)} style={styles.item}>
         <Text style={styles.itemTitle}>{s.sport} · {s.city}</Text>
@@ -36,7 +37,7 @@ export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:bo
        </Pressable>)}
       </ScrollView>}
     <Pressable accessibilityRole="button" onPress={()=>{onClose();router.push('/sessions/create');}} style={styles.create}>
-     <Text style={styles.createText}>Criar sessão</Text>
+     <Text style={styles.createText}>{t('Criar sessão')}</Text>
     </Pressable>
    </View>
   </View>

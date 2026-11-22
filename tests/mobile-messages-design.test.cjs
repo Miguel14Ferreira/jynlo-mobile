@@ -15,7 +15,7 @@ test('modern inbox keeps real conversation sources and refresh protections',()=>
  assert.match(inbox,/pendingDirectCall\(auth\.token\)/);
 });
 test('accessible unread tabs, search reset and visual hierarchy',()=>{
- assert.match(inbox,/accessibilityLabel=\{t\('Filtrar conversas: \{label\}',\{label:t\(label\)\}\)\}/);
+ assert.match(inbox,/accessibilityLabel=\{'Filtrar conversas: '\+t\(label\)\}/);
  assert.match(inbox,/\['all','Todas'\]/);
  assert.match(inbox,/accessibilityLabel="Mostrar apenas conversas não lidas"/);
  assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(current=>!current\)\}/);

@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../../../../src/lib/i18n';
 import {Alert,Pressable,StyleSheet,Switch,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/components/UI';
@@ -21,14 +22,14 @@ const INPUT_HINT:Record<EventRankingKind,string>={
 const PLACEHOLDER:Record<EventRankingKind,string>={TIME:'1:02,40',SCORE:'ex.: 87,5',POSITION:'lugar'};
 function failure(e:unknown):string{
  if(e instanceof ApiError&&(e.status===400||e.status===409))
-  return 'O servidor recusou a alteração. Confirma os valores (pontos por ordem decrescente, um resultado por atleta) e se o campeonato ainda está aberto.';
- return e instanceof Error?e.message:'Não foi possível guardar.';
+  return t('O servidor recusou a alteração. Confirma os valores (pontos por ordem decrescente, um resultado por atleta) e se o campeonato ainda está aberto.');
+ return e instanceof Error?e.message:t('Não foi possível guardar.');
 }
 
 /** "Classificação por provas": table and events for everyone; recording events for admins. */
 export default function EventRankingScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string;name?:string}>();
- const tournamentName=typeof params.name==='string'&&params.name.trim()?params.name.trim().slice(0,120):'Classificação por provas';
+ const tournamentName=typeof params.name==='string'&&params.name.trim()?params.name.trim().slice(0,120):t('Classificação por provas');
  const cid=Number(params.communityId),tid=Number(params.id),router=useRouter(),auth=useAuth();
  const [data,setData]=useState<EventRankingOverview|null>(null),[role,setRole]=useState<string|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
@@ -40,7 +41,7 @@ export default function EventRankingScreen(){
  const generation=useRef(0),locked=useRef(false);
  const load=useCallback(async(version=generation.current)=>{
   if(!auth.token||!auth.username){setData(null);setLoading(false);return;}
-  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){setError('Torneio inválido.');setLoading(false);return;}
+  if(!Number.isSafeInteger(cid)||cid<=0||!Number.isSafeInteger(tid)||tid<=0){setError(t('Torneio inválido.'));setLoading(false);return;}
   setLoading(true);setError('');
   try{
    const [overview,community]=await Promise.all([
@@ -48,7 +49,7 @@ export default function EventRankingScreen(){
    ]);
    if(version!==generation.current)return;
    setData(overview);setRole('myRole' in community?community.myRole||null:null);
-  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:'Não foi possível carregar as provas.');}
+  }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível carregar as provas.'));}
   finally{if(version===generation.current)setLoading(false);}
  },[cid,tid,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{
@@ -76,7 +77,7 @@ export default function EventRankingScreen(){
  }
  function openNew(){
   if(!data)return;
-  setEditingId(null);setEventName('Prova '+(data.events.length+1));setEventDate(today());
+  setEditingId(null);setEventName(t('Prova {n}',{n:data.events.length+1}));setEventDate(today());
   setRows(draftRows(data.participants,null,kind));setFormOpen(true);setNotice('');setError('');
  }
  function openEdit(event:EventRankingEvent){
@@ -87,105 +88,105 @@ export default function EventRankingScreen(){
  function saveEvent(){
   if(!auth.token||!auth.username)return;
   let results;
-  try{results=buildResults(rows,kind);}catch(e){setError(e instanceof Error?e.message:'Confirma os valores.');return;}
+  try{results=buildResults(rows,kind);}catch(e){setError(e instanceof Error?e.message:t('Confirma os valores.'));return;}
   const date=eventDate.trim();
-  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){setError('A data deve estar no formato AAAA-MM-DD.');return;}
+  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){setError(t('A data deve estar no formato AAAA-MM-DD.'));return;}
   const token=auth.token,username=auth.username;
   void run(()=>saveEventRankingEvent(cid,tid,editingId,{name:eventName.trim(),heldOn:date||null,results},token,username),
-   'Prova guardada e classificação atualizada.',()=>setFormOpen(false));
+   t('Prova guardada e classificação atualizada.'),()=>setFormOpen(false));
  }
  function confirmDelete(event:EventRankingEvent){
   if(!auth.token||!auth.username)return;
   const token=auth.token,username=auth.username;
-  Alert.alert('Apagar prova?','Os pontos de "'+event.name+'" deixam de contar.',[
-   {text:'Manter',style:'cancel'},
-   {text:'Apagar',style:'destructive',onPress:()=>{void run(()=>deleteEventRankingEvent(cid,tid,event.id,token,username),'Prova apagada.');}}
+  Alert.alert(t('Apagar prova?'),t('Os pontos de "')+event.name+t('" deixam de contar.'),[
+   {text:t('Manter'),style:'cancel'},
+   {text:t('Apagar'),style:'destructive',onPress:()=>{void run(()=>deleteEventRankingEvent(cid,tid,event.id,token,username),t('Prova apagada.'));}}
   ]);
  }
  function confirmComplete(){
   if(!auth.token||!auth.username)return;
   const token=auth.token,username=auth.username;
-  Alert.alert('Terminar campeonato?','Depois de terminado já não podes registar nem alterar provas.',[
-   {text:'Continuar aberto',style:'cancel'},
-   {text:'Terminar',style:'destructive',onPress:()=>{void run(()=>completeEventRanking(cid,tid,token,username),'Campeonato terminado. Parabéns ao campeão! 🏆');}}
+  Alert.alert(t('Terminar campeonato?'),t('Depois de terminado já não podes registar nem alterar provas.'),[
+   {text:t('Continuar aberto'),style:'cancel'},
+   {text:t('Terminar'),style:'destructive',onPress:()=>{void run(()=>completeEventRanking(cid,tid,token,username),t('Campeonato terminado. Parabéns ao campeão! 🏆'));}}
   ]);
  }
  const setRow=(index:number,patch:Partial<EventRankingDraftRow>)=>setRows(current=>current.map((r,i)=>i===index?{...r,...patch}:r));
 
- return <Page><DemoBanner/><Eyebrow>🏅 CLASSIFICAÇÃO POR PROVAS</Eyebrow>
+ return <Page><DemoBanner/><Eyebrow>{t('🏅 CLASSIFICAÇÃO POR PROVAS')}</Eyebrow>
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournamentName}</Text>
-  {!auth.token?<Button title="Entrar" onPress={()=>router.push('/login')}/>:null}
+  {!auth.token?<Button title={t('Entrar')} onPress={()=>router.push('/login')}/>:null}
   {loading&&!data?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
   {data?<>
    <View style={styles.panel}>
-    <View style={styles.row}><Badge text={completed?'Concluído':data.status==='IN_PROGRESS'?'A decorrer':'Em preparação'}/>
+    <View style={styles.row}><Badge text={completed?t('Concluído'):data.status==='IN_PROGRESS'?t('A decorrer'):t('Em preparação')}/>
      <Badge text={plural(data.events.length,'prova','provas')}/></View>
-    <Text style={styles.meta}>Cada prova ordena os atletas por {KIND_SHORT[kind]}. Os lugares dão pontos e a soma decide a classificação.</Text>
-    <Text style={styles.meta}>Pontos por lugar: <Text style={styles.strong}>{data.pointsByPlace.join(' · ')}</Text></Text>
-    {manager&&!completed&&!pointsOpen?<Button secondary disabled={busy} title="Alterar pontos por lugar" onPress={()=>{setPointsDraft(data.pointsByPlace.join(', '));setPointsOpen(true);}}/>:null}
+    <Text style={styles.meta}>{t('Cada prova ordena os atletas por {a}. Os lugares dão pontos e a soma decide a classificação.',{a:KIND_SHORT[kind]})}</Text>
+    <Text style={styles.meta}>{t('Pontos por lugar:')} <Text style={styles.strong}>{data.pointsByPlace.join(' · ')}</Text></Text>
+    {manager&&!completed&&!pointsOpen?<Button secondary disabled={busy} title={t('Alterar pontos por lugar')} onPress={()=>{setPointsDraft(data.pointsByPlace.join(', '));setPointsOpen(true);}}/>:null}
     {pointsOpen?<View style={styles.form}>
      <TextInput style={styles.input} value={pointsDraft} onChangeText={setPointsDraft} editable={!busy}
-      placeholder="25, 18, 15, 12, 10" placeholderTextColor={C.muted} accessibilityLabel="Pontos por lugar"/>
+      placeholder="25, 18, 15, 12, 10" placeholderTextColor={C.muted} accessibilityLabel={t('Pontos por lugar')}/>
      <View style={styles.row}>
-      <Button disabled={busy} title="Guardar pontos" onPress={()=>{if(!auth.token||!auth.username)return;const tk=auth.token,u=auth.username;
-       void run(()=>setEventRankingPoints(cid,tid,pointsDraft,tk,u),'Pontos atualizados.',()=>setPointsOpen(false));}}/>
-      <Button secondary title="Cancelar" onPress={()=>setPointsOpen(false)}/>
+      <Button disabled={busy} title={t('Guardar pontos')} onPress={()=>{if(!auth.token||!auth.username)return;const tk=auth.token,u=auth.username;
+       void run(()=>setEventRankingPoints(cid,tid,pointsDraft,tk,u),t('Pontos atualizados.'),()=>setPointsOpen(false));}}/>
+      <Button secondary title={t('Cancelar')} onPress={()=>setPointsOpen(false)}/>
      </View>
     </View>:null}
    </View>
 
    {manager&&!completed&&data.events.length===0?<View style={styles.panel}>
-    <Text style={styles.heading}>Como se decide cada prova?</Text>
+    <Text style={styles.heading}>{t('Como se decide cada prova?')}</Text>
     {KINDS.map(k=><Pressable key={k} accessibilityRole="radio" accessibilityState={{checked:kind===k,disabled:busy}} disabled={busy}
       style={[styles.choice,kind===k&&styles.choiceActive]}
       onPress={()=>{if(!auth.token||!auth.username||kind===k)return;const tk=auth.token,u=auth.username;
-       void run(()=>setEventRankingKind(cid,tid,k,tk,u),'Forma de classificar atualizada.');}}>
+       void run(()=>setEventRankingKind(cid,tid,k,tk,u),t('Forma de classificar atualizada.'));}}>
       <Text style={[styles.choiceText,kind===k&&styles.choiceTextActive]}>{KIND_LABELS[k]}</Text>
      </Pressable>)}
-    <Text style={styles.meta}>Podes mudar até registares a primeira prova.</Text>
+    <Text style={styles.meta}>{t('Podes mudar até registares a primeira prova.')}</Text>
    </View>:null}
 
    <View style={styles.panel}>
-    <View style={styles.between}><Text style={styles.heading}>Classificação</Text>
+    <View style={styles.between}><Text style={styles.heading}>{t('Classificação')}</Text>
      <Text style={styles.count}>{plural(data.participants.length,'atleta','atletas')}</Text></View>
-    {data.table.length===0?<Text style={styles.meta}>{data.participants.length?'Ainda não há provas registadas.':'Ainda não há atletas confirmados. Os atletas inscrevem-se em "Participantes e inscrições" e um administrador confirma.'}</Text>:null}
+    {data.table.length===0?<Text style={styles.meta}>{data.participants.length?t('Ainda não há provas registadas.'):t('Ainda não há atletas confirmados. Os atletas inscrevem-se em "Participantes e inscrições" e um administrador confirma.')}</Text>:null}
     {data.table.map(row=><View key={row.participantId} style={styles.standing}>
      <View style={[styles.positionBox,row.position===1&&styles.leaderBox]}><Text maxFontSizeMultiplier={1.3} style={styles.position}>{row.position}</Text></View>
      <View style={styles.identity}><Text numberOfLines={2} style={styles.name}>{row.name}</Text>
-      {kind!=='POSITION'&&row.best!=null?<Text style={styles.best}>{kind==='TIME'?'Melhor tempo':'Melhor marca'}: {value(row.best)}</Text>:null}
-      <Text style={styles.meta}>{plural(row.events,'prova','provas')} · {plural(row.wins,'vitória','vitórias')} · {plural(row.podiums,'pódio','pódios')}</Text></View>
-     <View style={styles.pointsBox}><Text style={styles.points}>{row.points}</Text><Text style={styles.pointsLabel}>pts</Text></View>
+      {kind!=='POSITION'&&row.best!=null?<Text style={styles.best}>{kind==='TIME'?t('Melhor tempo'):t('Melhor marca')}: {value(row.best)}</Text>:null}
+      <Text style={styles.meta}>{t('{a} provas · {b} vitórias · {c} pódios',{a:row.events,b:row.wins,c:row.podiums})}</Text></View>
+     <View style={styles.pointsBox}><Text style={styles.points}>{row.points}</Text><Text style={styles.pointsLabel}>{t('pts')}</Text></View>
     </View>)}
    </View>
 
-   {manager&&!completed&&!formOpen&&data.participants.length?<Button disabled={busy} title="+ Registar prova" onPress={openNew}/>:null}
+   {manager&&!completed&&!formOpen&&data.participants.length?<Button disabled={busy} title={t('+ Registar prova')} onPress={openNew}/>:null}
 
    {formOpen?<View style={styles.panel}>
-    <Text style={styles.heading}>{editingId?'Editar prova':'Nova prova'}</Text>
-    <Text style={styles.label}>NOME DA PROVA</Text>
-    <TextInput style={styles.input} value={eventName} onChangeText={setEventName} maxLength={80} editable={!busy} accessibilityLabel="Nome da prova"/>
+    <Text style={styles.heading}>{editingId?t('Editar prova'):t('Nova prova')}</Text>
+    <Text style={styles.label}>{t('NOME DA PROVA')}</Text>
+    <TextInput style={styles.input} value={eventName} onChangeText={setEventName} maxLength={80} editable={!busy} accessibilityLabel={t('Nome da prova')}/>
     <Text style={styles.label}>DATA (AAAA-MM-DD)</Text>
     <TextInput style={styles.input} value={eventDate} onChangeText={setEventDate} editable={!busy} placeholder={today()}
-     placeholderTextColor={C.muted} accessibilityLabel="Data da prova"/>
-    <Text style={styles.meta}>{INPUT_HINT[kind]}</Text>
+     placeholderTextColor={C.muted} accessibilityLabel={t('Data da prova')}/>
+    <Text style={styles.meta}>{t(INPUT_HINT[kind])}</Text>
     {rows.map((row,index)=><View key={row.participantId} style={styles.entry}>
      <Text numberOfLines={1} style={[styles.name,styles.entryName]}>{row.name}</Text>
      <TextInput style={[styles.input,styles.entryInput,row.dnf&&styles.disabledInput]} value={row.raw} editable={!busy&&!row.dnf}
       onChangeText={raw=>setRow(index,{raw})} keyboardType={kind==='TIME'?'numbers-and-punctuation':'decimal-pad'}
-      placeholder={PLACEHOLDER[kind]} placeholderTextColor={C.muted} accessibilityLabel={'Resultado de '+row.name}/>
+      placeholder={t(PLACEHOLDER[kind])} placeholderTextColor={C.muted} accessibilityLabel={t('Resultado de {v}',{v:row.name})}/>
      <View style={styles.dnf}><Switch value={row.dnf} disabled={busy} onValueChange={dnf=>setRow(index,{dnf})}
-      accessibilityLabel={'Desistência de '+row.name}/><Text style={styles.dnfText}>Desistiu</Text></View>
+      accessibilityLabel={t('Desistência de {v}',{v:row.name})}/><Text style={styles.dnfText}>{t('Desistiu')}</Text></View>
     </View>)}
     <View style={styles.row}>
-     <Button disabled={busy||!eventName.trim()} title={busy?'A guardar…':'Guardar prova'} onPress={saveEvent}/>
-     <Button secondary title="Cancelar" onPress={()=>setFormOpen(false)}/>
+     <Button disabled={busy||!eventName.trim()} title={busy?t('A guardar…'):t('Guardar prova')} onPress={saveEvent}/>
+     <Button secondary title={t('Cancelar')} onPress={()=>setFormOpen(false)}/>
     </View>
    </View>:null}
 
    {data.events.length?<View style={styles.panel}>
-    <Text style={styles.heading}>Provas</Text>
+    <Text style={styles.heading}>{t('Provas')}</Text>
     {data.events.map(event=><View key={event.id} style={styles.event}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:expanded===event.id}}
       onPress={()=>setExpanded(expanded===event.id?null:event.id)} style={styles.eventHead}>
@@ -197,22 +198,22 @@ export default function EventRankingScreen(){
       {event.results.map(r=><View key={r.participantId} style={styles.result}>
        <Text style={styles.resultPlace}>{r.didNotFinish?'—':r.place+'.º'}</Text>
        <Text numberOfLines={1} style={[styles.meta,{flex:1}]}>{r.name}</Text>
-       <Text style={styles.meta}>{r.didNotFinish?'Desistiu':kind==='POSITION'?'':value(r.value)}</Text>
-       <Text style={styles.resultPoints}>{r.points} pts</Text>
+       <Text style={styles.meta}>{r.didNotFinish?t('Desistiu'):kind==='POSITION'?'':value(r.value)}</Text>
+       <Text style={styles.resultPoints}>{t('{a} pts',{a:r.points})}</Text>
       </View>)}
       {manager&&!completed?<View style={styles.row}>
-       <Button secondary disabled={busy} title="Editar" onPress={()=>openEdit(event)}/>
-       <Button danger disabled={busy} title="Apagar" onPress={()=>confirmDelete(event)}/>
+       <Button secondary disabled={busy} title={t('Editar')} onPress={()=>openEdit(event)}/>
+       <Button danger disabled={busy} title={t('Apagar')} onPress={()=>confirmDelete(event)}/>
       </View>:null}
      </View>:null}
     </View>)}
    </View>:null}
 
-   {manager&&!completed&&data.events.length&&!formOpen?<Button secondary disabled={busy} title="Terminar campeonato" onPress={confirmComplete}/>:null}
-   <Button secondary title="Participantes e inscrições" onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/participants',params:{communityId:String(cid),id:String(tid)}})}/>
-   <Button secondary disabled={busy||loading} title="Atualizar" onPress={()=>{setNotice('');void load();}}/>
+   {manager&&!completed&&data.events.length&&!formOpen?<Button secondary disabled={busy} title={t('Terminar campeonato')} onPress={confirmComplete}/>:null}
+   <Button secondary title={t('Participantes e inscrições')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/participants',params:{communityId:String(cid),id:String(tid)}})}/>
+   <Button secondary disabled={busy||loading} title={t('Atualizar')} onPress={()=>{setNotice('');void load();}}/>
   </>:null}
-  <Button secondary title="Voltar ao torneio" onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao torneio')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

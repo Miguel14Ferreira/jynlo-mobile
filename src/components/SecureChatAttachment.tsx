@@ -1,4 +1,5 @@
 import React,{Suspense,lazy,useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {AppState,Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {File,Paths} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
@@ -22,16 +23,16 @@ const formats:Record<string,string>={
  'audio/mp4':'m4a','audio/x-m4a':'m4a','audio/aac':'aac'
 };
 function attachmentPath(scope:Scope,id:string|number,messageId:number,index=0,kind:'chat'|'feed'='chat'):string{
- if(!Number.isSafeInteger(index)||index<0||index>3)throw Error('Índice de anexo inválido.');
- if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error('Anexo inválido.');
+ if(!Number.isSafeInteger(index)||index<0||index>3)throw Error(t('Índice de anexo inválido.'));
+ if(!Number.isSafeInteger(messageId)||messageId<=0)throw Error(t('Anexo inválido.'));
  if(scope==='direct'){
   const peer=String(id);
-  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error('Conversa inválida.');
+  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(peer))throw Error(t('Conversa inválida.'));
   return '/api/chat/me/'+encodeURIComponent(peer)+'/attachments/'+messageId+(index?'/'+index:'');
  }
  const numeric=Number(id);
  if(!Number.isSafeInteger(numeric)||numeric<=0||String(numeric)!==String(id))
-  throw Error('Conversa inválida.');
+  throw Error(t('Conversa inválida.'));
  if(scope==='team')return '/api/teams/'+numeric+'/'+kind+'/attachments/'+messageId+'/'+index;
  if(scope==='private')return '/api/private-groups/'+numeric+'/messages/'+messageId+'/attachments/'+index;
  return '/api/'+(scope==='community'?'communities':'sessions')+'/'+numeric+
@@ -89,13 +90,13 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
       await player.seekTo(0);
      player.play();
     }
-   }catch{setError('Não foi possível reproduzir esta mensagem de voz.');}
+   }catch{setError(t('Não foi possível reproduzir esta mensagem de voz.'));}
    return;
   }
   if(pending.current||pdfPreview.current||!token||DEMO_MODE||!formats[mime||''])return;
   const maxBytes=maxAttachmentSize(mime);
   if(!Number.isFinite(size)||!size||size<=0||size>maxBytes){
-   setError('Tamanho do anexo inválido.');return;
+   setError(t('Tamanho do anexo inválido.'));return;
   }
   const version=generation.current;
   pending.current=true;setBusy(true);setError('');
@@ -114,14 +115,14 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
     if([401,403,409].includes(response.status)&&active.current
       &&generation.current===version&&!controller.signal.aborted)
      onAuthorizationError?.(response.status);
-    throw Error('Não foi possível abrir o anexo. Verifica as permissões.');
+    throw Error(t('Não foi possível abrir o anexo. Verifica as permissões.'));
    }
    const type=(response.headers.get('content-type')||'').split(';')[0]?.trim().toLowerCase()||'';
-   if(type!==mime)throw Error('O formato recebido não corresponde ao anexo.');
+   if(type!==mime)throw Error(t('O formato recebido não corresponde ao anexo.'));
    const declared=Number(response.headers.get('content-length'));
-   if(declared>maxBytes)throw Error('O anexo ultrapassa o limite permitido.');
+   if(declared>maxBytes)throw Error(t('O anexo ultrapassa o limite permitido.'));
    const bytes=await response.bytes();
-   if(!bytes.length||bytes.length>maxBytes)throw Error('O tamanho do anexo é inválido.');
+   if(!bytes.length||bytes.length>maxBytes)throw Error(t('O tamanho do anexo é inválido.'));
    if(!active.current||generation.current!==version||controller.signal.aborted)return;
    file=new File(Paths.cache,'jynlo-private-'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+formats[mime!]);
    await file.write(bytes);
@@ -131,13 +132,13 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
    cached.current=file;file=null;
    if(mime==='application/pdf'){
     if(!await File.canPreview(cached.current,{mimeType:'application/pdf'})){
-     throw Error('Não existe um visualizador de PDF disponível neste dispositivo.');
+     throw Error(t('Não existe um visualizador de PDF disponível neste dispositivo.'));
     }
     if(!active.current||generation.current!==version||controller.signal.aborted)return;
     wasBackgrounded.current=false;
     pdfPreview.current=true;
     // Expo hands the file to the native viewer. Its promise does not wait for closing.
-    await File.preview(cached.current,{mimeType:'application/pdf',title:'Documento privado'});
+    await File.preview(cached.current,{mimeType:'application/pdf',title:t('Documento privado')});
     if(active.current&&generation.current===version&&!wasBackgrounded.current&&cached.current){
      // iOS may display the viewer inside the app. Keep cache until user closes it.
      setUri(cached.current.uri);
@@ -154,7 +155,7 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
   }catch(e){
    if(generation.current===version){
     pdfPreview.current=false;cleanup();
-    if(active.current)setError(e instanceof Error?e.message:'Não foi possível abrir o anexo.');
+    if(active.current)setError(e instanceof Error?e.message:t('Não foi possível abrir o anexo.'));
    }
   }finally{
    if(file?.exists)try{file.delete();}catch{}
@@ -171,26 +172,26 @@ export default function SecureChatAttachment({scope,conversationId,messageId,tok
  function close(){
   setExpanded(false);setUri(null);pdfPreview.current=false;wasBackgrounded.current=false;cleanup();
  }
- if(!formats[mime||''])return <Text style={styles.note}>Anexo privado: {name} (formato ainda sem visualizador)</Text>;
+ if(!formats[mime||''])return <Text style={styles.note}>{t('Anexo privado: {a} (formato ainda sem visualizador)',{a:name})}</Text>;
  return <View style={styles.container}>
   {!(mime?.startsWith('image/')&&uri)?<Pressable accessibilityRole="button" disabled={busy||!token} onPress={()=>{void open();}} style={styles.button}>
-   <Text style={styles.action}>{busy?'A abrir anexo…':isVoice(mime)?
-     (uri?(playback.playing?'❚❚ Pausar voz':'▶ Reproduzir voz'):'▶ Ouvir mensagem de voz'):
-     mime==='application/pdf'?'Abrir PDF · '+name:isVideo(mime)?'Ver vídeo · '+name:'Ver fotografia · '+name}</Text>
+   <Text style={styles.action}>{busy?t('A abrir anexo…'):isVoice(mime)?
+     (uri?(playback.playing?t('❚❚ Pausar voz'):t('▶ Reproduzir voz')):t('▶ Ouvir mensagem de voz')):
+     mime==='application/pdf'?t('Abrir PDF · {v}',{v:name}):isVideo(mime)?t('Ver vídeo · {v}',{v:name}):'Ver fotografia · '+name}</Text>
   </Pressable>:null}
-  {mime?.startsWith('image/')&&uri?<Pressable accessibilityRole="button" accessibilityLabel="Ampliar fotografia recebida" onPress={()=>setExpanded(true)}><Image source={{uri}} resizeMode="cover" style={styles.inlineImage}/></Pressable>:null}
+  {mime?.startsWith('image/')&&uri?<Pressable accessibilityRole="button" accessibilityLabel={t('Ampliar fotografia recebida')} onPress={()=>setExpanded(true)}><Image source={{uri}} resizeMode="cover" style={styles.inlineImage}/></Pressable>:null}
   {isVideo(mime)&&uri&&expanded?<View style={{gap:8}}>
-   <Suspense fallback={<Text style={styles.note}>A preparar reprodução…</Text>}><ChatVideo uri={uri}/></Suspense>
-   <Pressable accessibilityRole="button" onPress={()=>setExpanded(false)} style={styles.button}><Text style={styles.action}>Fechar vídeo</Text></Pressable>
+   <Suspense fallback={<Text style={styles.note}>{t('A preparar reprodução…')}</Text>}><ChatVideo uri={uri}/></Suspense>
+   <Pressable accessibilityRole="button" onPress={()=>setExpanded(false)} style={styles.button}><Text style={styles.action}>{t('Fechar vídeo')}</Text></Pressable>
   </View>:null}
   {isVoice(mime)&&uri?<Text style={styles.note}>{Math.floor(playback.currentTime)}s / {Math.floor(playback.duration||0)}s</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
-  {mime==='application/pdf'&&uri?<Pressable accessibilityRole="button" onPress={close} style={styles.button}><Text style={styles.action}>Limpar PDF temporário</Text></Pressable>:null}
+  {mime==='application/pdf'&&uri?<Pressable accessibilityRole="button" onPress={close} style={styles.button}><Text style={styles.action}>{t('Limpar PDF temporário')}</Text></Pressable>:null}
   <Modal visible={expanded&&!!uri&&!isVoice(mime)&&!isVideo(mime)&&mime!=='application/pdf'} transparent animationType="fade" onRequestClose={close}>
    <View style={styles.overlay}>
     {uri?<Image source={{uri}} resizeMode="contain" style={styles.image}/>:null}
     <Pressable accessibilityRole="button" onPress={close} style={styles.close}>
-     <Text style={styles.action}>Fechar fotografia</Text>
+     <Text style={styles.action}>{t('Fechar fotografia')}</Text>
     </Pressable>
    </View>
   </Modal>
