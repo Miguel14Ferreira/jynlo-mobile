@@ -478,3 +478,33 @@ export async function publishCommunityPostWithMedia(communityId:number,content:s
   if(!files.length)throw Error('Não foi selecionado nenhum ficheiro.');
   return sendMedia('/api/communities/'+communityId+'/posts',content.trim()?{content:content.trim()}:{},files,token);
 }
+
+/** Where a new post goes: the author's own profile feed, or a community / team feed they belong to. */
+export type PostDestination={kind:'community'|'team';id:number;name:string};
+export const TEAM_FEED_MAX_FILES=4;
+
+/**
+ * Publishes a post in a community or team feed (members only; the server checks).
+ * Text-only posts use the JSON endpoints; photos and videos go as one album.
+ */
+export async function publishPostTo(destination:PostDestination,content:string,files:MobileMedia[],token:string|null,username:string|null):Promise<void>{
+  if(!token||!username)throw new Error('Inicia sessão para publicar.');
+  if(DEMO_MODE)throw new Error('O envio não está disponível na demonstração.');
+  if(!Number.isSafeInteger(destination.id)||destination.id<=0)throw new Error('Destino da publicação inválido.');
+  const caption=content.trim();
+  if(caption.length>1000)throw new Error('A publicação não pode exceder 1000 caracteres.');
+  if(!files.length&&!caption)throw new Error('Escreve uma mensagem ou escolhe uma fotografia.');
+  if(destination.kind==='community'){
+    const path='/api/communities/'+destination.id+'/posts';
+    if(!files.length){await request(path,{token,method:'POST',body:{body:caption}});return;}
+    await sendMedia(path,{content:caption},files,token,'POST',true);
+    return;
+  }
+  const path='/api/teams/'+destination.id+'/feed';
+  if(!files.length){await request(path,{token,method:'POST',body:{body:caption}});return;}
+  if(files.length>TEAM_FEED_MAX_FILES)throw new Error('No feed da equipa podes publicar até 4 fotografias ou vídeos de cada vez.');
+  const {sendChatPhotoAlbum}=await import('./chat-photo-album');
+  const assets=files.map(file=>({uri:file.uri,mimeType:file.mimeType,fileName:file.fileName,fileSize:file.fileSize,
+    type:file.type,width:0,height:0})) as unknown as import('expo-image-picker').ImagePickerAsset[];
+  await sendChatPhotoAlbum({scope:'team',id:destination.id,kind:'feed'},token,assets,null,caption);
+}

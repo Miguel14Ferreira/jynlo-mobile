@@ -12,7 +12,8 @@ import {DEMO_MODE,request,sessionDetail,cancelSession} from '../../src/lib/api';
 import {myNotifications} from '../../src/lib/notifications-api';
 import {myCommunityInvites} from '../../src/lib/community-api';
 import {socialFeed,profilePosts,storyFeed,myStories,likePost,postComments,addPostComment,editPostComment,togglePostCommentLike,publishPost,publishStory,toggleStoryLike,replyToStory,storyById,recordStoryView,storyAudience,deleteStory,deletePost,hideAttendanceActivity,resolveJynloMedia,hideFeedPost,restoreFeedPost} from '../../src/lib/social-feed-api';
-import type {StoryAudience} from '../../src/lib/social-feed-api';
+import type {StoryAudience,PostDestination} from '../../src/lib/social-feed-api';
+import {publishPostTo} from '../../src/lib/social-feed-api';
 import {feedEntryKey,hideEntry,showEntry} from '../../src/lib/feed-visibility.cjs';
 import {removedFeedKey,reconcileRemovedFeedKeys} from '../../src/lib/confirmed-feed-removals.cjs';
 import {rememberPostLike,reconcilePostLikes,rememberCommentFloor,reconcileCommentCounts,rememberPostEdit,reconcilePostEdits} from '../../src/lib/feed-interaction-reconciliation.cjs';
@@ -567,6 +568,26 @@ export default function JynloFeedHome(){
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
+  // "Publicar em": profile (null) or one community / team feed the user belongs to.
+  const [postDestination,setPostDestination]=useState<PostDestination|null>(null);
+  const [postDestinations,setPostDestinations]=useState<PostDestination[]>([]);
+  const [destinationNotice,setDestinationNotice]=useState<PostDestination|null>(null);
+  useEffect(()=>{
+    if(!composerOpen||!auth.token||!auth.username||DEMO_MODE){setPostDestinations([]);return;}
+    let active=true;
+    const token=auth.token,username=auth.username;
+    void Promise.allSettled([myCommunities(token,username),mySportsTeams(token)]).then(([groups,teams])=>{
+      if(!active)return;
+      const list:PostDestination[]=[];
+      if(groups.status==='fulfilled')for(const group of groups.value)
+        if(Number.isSafeInteger(group.id)&&group.id>0)list.push({kind:'community',id:group.id,name:group.name});
+      if(teams.status==='fulfilled')for(const team of teams.value)
+        if(team.feedEnabled!==false&&Number.isSafeInteger(team.id)&&team.id>0)list.push({kind:'team',id:team.id,name:team.name});
+      setPostDestinations(list);
+    });
+    return()=>{active=false;};
+  },[composerOpen,auth.token,auth.username]);
+  useEffect(()=>{if(!destinationNotice)return;const timer=setTimeout(()=>setDestinationNotice(null),5000);return()=>clearTimeout(timer);},[destinationNotice]);
   // The confirmation floats over the feed and goes away by itself.
   useEffect(()=>{if(!publishNotice)return;const timer=setTimeout(()=>setPublishNotice(null),5000);return()=>clearTimeout(timer);},[publishNotice]);
   const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
@@ -974,7 +995,7 @@ export default function JynloFeedHome(){
       Alert.alert(t('Descartar publicação?'),t('As fotografias, os vídeos e o texto deste rascunho serão perdidos.'),[
         {text:t('Continuar a editar'),style:'cancel'},
         {text:t('Descartar'),style:'destructive',onPress:()=>{
-          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);setComposerSessionId(null);
+          postComposerRevision.current++;composerOpenRef.current=false;changeComposerMedia(()=>[]);setComposerText('');setComposerLocation('');setComposerOpen(false);setComposerSessionId(null);setPostDestination(null);
         }}
       ]);
       return;
@@ -1058,7 +1079,27 @@ export default function JynloFeedHome(){
     const actor=auth.token,username=auth.username,body=composerText,place=composerLocation,media=[...composerMedia];
     const linkedSessionId=composerSessionId;
     const revision=postComposerRevision.current;
+    const destination=postDestination;
     postInFlight.current=true;setPublishing(true);setPostPublishError('');
+    if(destination){
+      try{
+        await publishPostTo(destination,body,media,actor,username);
+        if(feedIdentity.current===`${username}:${actor}`&&postComposerRevision.current===revision&&composerOpenRef.current){
+          postComposerRevision.current++;composerOpenRef.current=false;
+          setComposerText('');composerTextRef.current='';
+          setComposerLocation('');composerLocationRef.current='';
+          changeComposerMedia(()=>[]);setComposerOpen(false);setComposerSessionId(null);setPostDestination(null);
+          setDestinationNotice(destination);
+        }
+      }catch(e){
+        if(feedIdentity.current===`${username}:${actor}`){
+          const message=e instanceof Error?e.message:t('Não foi possível confirmar a publicação. Verifica o perfil antes de repetir.');
+          setPostPublishError(message);
+          setPostRetryAcknowledged(!uncertainPostOutcome(message));
+        }
+      }finally{if(feedIdentity.current===`${username}:${actor}`){postInFlight.current=false;setPublishing(false);}}
+      return;
+    }
     try{
       const created=await publishPost(body,media,actor,username,place,linkedSessionId??undefined);
       // Do not display a previous account's session association in a new account.
@@ -1417,6 +1458,15 @@ export default function JynloFeedHome(){
     <FlatList data={normalPosts} keyExtractor={(item,index)=>feedEntryKey(item)||`${item.type}-${item.authorUsername}-${item.createdAt}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&visiblePosts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
+    {identityMatches&&destinationNotice?<View style={styles.publishToast} accessibilityLiveRegion="polite">
+      <JynloIcon name="check" size={20} color={TEAL}/>
+      <Text style={styles.publishToastText} numberOfLines={2}>{destinationNotice.kind==='community'?t('Publicado na comunidade {v}.',{v:destinationNotice.name}):t('Publicado na equipa {v}.',{v:destinationNotice.name})}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir o feed onde publicaste')} onPress={()=>{const target=destinationNotice;setDestinationNotice(null);
+        if(target.kind==='community')router.push({pathname:'/communities/[id]',params:{id:String(target.id)}});else router.push({pathname:'/teams/[id]',params:{id:String(target.id)}});}} style={styles.publishToastAction}>
+        <Text style={styles.link}>{t('Ver')}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar confirmação de publicação')} onPress={()=>setDestinationNotice(null)} hitSlop={8} style={styles.publishToastAction}><JynloIcon name="close" size={18} color={MUTED}/></Pressable>
+    </View>:null}
     {identityMatches&&publishNotice?<View style={styles.publishToast} accessibilityLiveRegion="polite">
       <JynloIcon name="check" size={20} color={TEAL}/>
       <Text style={styles.publishToastText} numberOfLines={2}>{publishNotice==='post'?t('Publicação confirmada! Já aparece no teu feed.'):t('Story confirmada! Já aparece nas tuas Stories.')}</Text>
@@ -1551,6 +1601,20 @@ export default function JynloFeedHome(){
             <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.composerShareText}>{publishing?t('A enviar…'):postRetryAcknowledged?t('Partilhar'):t('Confirma primeiro')}</Text></View>
           </Pressable>
         </View>
+        {postDestinations.length&&!composerSessionId?<View style={{gap:6}}>
+          <Text style={styles.postAlbumHint}>{t('Publicar em')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:8}}>
+            {[null,...postDestinations].map(option=>{
+              const selected=option===null?postDestination===null:postDestination?.kind===option.kind&&postDestination.id===option.id;
+              return <Pressable key={option?option.kind+'-'+option.id:'profile'} accessibilityRole="radio" accessibilityState={{selected,disabled:publishing}}
+                accessibilityLabel={option===null?t('Publicar no meu perfil'):option.kind==='community'?t('Publicar na comunidade {v}',{v:option.name}):t('Publicar na equipa {v}',{v:option.name})}
+                disabled={publishing} onPress={()=>{setPostDestination(option);if(option){setComposerLocation('');composerLocationRef.current='';setVerifiedPostPlace('');setPostPlaceOptions([]);}}}
+                style={[styles.composerChip,selected&&styles.composerChipSelected]}>
+                <JynloIcon name={option===null?'profile':option.kind==='community'?'community':'tournament'} size={16} color={selected?INDIGO:TEAL}/>
+                <Text numberOfLines={1} style={[styles.removeMediaText,selected&&{color:INDIGO},{maxWidth:170}]}>{option===null?t('O meu perfil'):option.name}</Text>
+              </Pressable>;})}
+          </ScrollView>
+        </View>:null}
         <ScrollView ref={postComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
           {composerMedia.length?<View style={styles.postMediaPreview}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={composerMedia.length===1?undefined:Math.max(200,screenWidth-92)+10} decelerationRate="fast" contentContainerStyle={{gap:10}}>
@@ -1607,6 +1671,7 @@ export default function JynloFeedHome(){
             </View>:null}
           </View>:null}
 
+          {postDestination?<Text style={styles.storiesIntro}>{postDestination.kind==='community'?t('Vai aparecer no feed da comunidade {v}, só para os membros.',{v:postDestination.name}):t('Vai aparecer no feed da equipa {v}, só para os membros.',{v:postDestination.name})}</Text>:<>
           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);setVerifiedPostPlace('');setPostPlaceOptions([]);}} placeholder={t('Adicionar localização (opcional)')} accessibilityLabel={t('Localização da publicação')} placeholderTextColor={MUTED} maxLength={160}/>
           {postPlaceLoading?<Text style={styles.storiesIntro}>{t('A procurar localizações…')}</Text>:null}
           {postPlaceOptions.map(place=><Pressable key={place.id} accessibilityRole="button"
@@ -1620,6 +1685,7 @@ export default function JynloFeedHome(){
           </Pressable>)}
           {composerLocation.trim()&&!verifiedPostPlace&&!postPlaceLoading&&postPlaceOptions.length===0?
             <Text style={styles.storiesIntro}>{t('Seleciona uma localização real nas sugestões para publicar.')}</Text>:null}
+          </>}
 
         </ScrollView>
 
@@ -1880,6 +1946,7 @@ const styles=StyleSheet.create({
   composerMediaMove:{position:'absolute',right:10,bottom:10,flexDirection:'row',gap:8},
   composerMediaRound:{width:34,height:34,borderRadius:17,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(2,10,16,.72)'},
   composerMediaTools:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:10},
+  composerChipSelected:{backgroundColor:TEAL,borderColor:TEAL},
   composerChip:{flexDirection:'row',alignItems:'center',gap:6,minHeight:38,paddingHorizontal:12,borderRadius:19,borderWidth:1,borderColor:'#2C6A73',backgroundColor:PANEL},
   publishToast:{position:'absolute',top:8,left:12,right:12,flexDirection:'row',alignItems:'center',gap:10,paddingLeft:14,paddingRight:6,paddingVertical:6,borderRadius:16,backgroundColor:'#0C3442',borderWidth:1,borderColor:TEAL,shadowColor:'#000',shadowOpacity:.35,shadowRadius:12,shadowOffset:{width:0,height:6},elevation:10},
   publishToastText:{flex:1,color:WHITE,fontSize:13,fontWeight:'700'},publishToastAction:{minHeight:44,minWidth:40,alignItems:'center',justifyContent:'center',paddingHorizontal:6},
