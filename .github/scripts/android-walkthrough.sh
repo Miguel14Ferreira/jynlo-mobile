@@ -9,6 +9,11 @@ echo "Emulador pronto; a instalar a APK."
 adb install -r jynlo.apk || { echo '::error::Não foi possível instalar a APK no emulador.'; exit 1; }
 # Idioma por app (Android 13+), sem mexer no resto do emulador.
 adb shell cmd locale set-app-locales com.jynlo.app --locales "$locale" || true
+# Hermes/Intl follows the system locale: switch the whole emulator when possible.
+if adb root >/dev/null 2>&1; then sleep 3; adb wait-for-device
+  adb shell "setprop persist.sys.locale $locale; setprop ctl.restart zygote" || true
+  sleep 20; adb wait-for-device; until adb shell getprop sys.boot_completed | grep -q 1; do sleep 2; done
+fi
 adb logcat -c
 adb shell screenrecord --time-limit 180 /sdcard/parte1.mp4 & rec1=$!
 ( sleep 178; adb shell screenrecord --time-limit 180 /sdcard/parte2.mp4 ) & rec2=$!
