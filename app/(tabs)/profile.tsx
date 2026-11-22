@@ -2,6 +2,7 @@ import React,{useCallback,useState} from 'react';
 import {reliabilitySummary} from '../../src/lib/reliability-api';
 import {currentLocale,t} from '../../src/lib/i18n';
 import {LanguageSwitch} from '../../src/components/LanguageSwitch';
+import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {Alert,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
@@ -23,6 +24,7 @@ type ProfilePresentation={
   favoriteSports?:string|null;skillLevel?:string|null;
 };
 export default function ProfileScreen(){
+ const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const router=useRouter();const auth=useAuth();
   const [confirmUsername,setConfirmUsername]=useState('');
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
@@ -111,7 +113,7 @@ export default function ProfileScreen(){
   return <Page><Brand subtitle={t('A TUA JYNLO')}/><DemoBanner/><Eyebrow>{t('PERFIL')}</Eyebrow>
     <View style={styles.profile}>
       <View style={styles.profileTop}>
-        <View style={styles.avatar}>{profile?.profilePicUrl?<Image source={{uri:profile.profilePicUrl}} style={styles.avatarImage}/>:
+        <View style={styles.avatar}>{profile?.profilePicUrl?<><Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Ampliar fotografia')} onPress={()=>{if(profile?.profilePicUrl)setZoomPhoto({uris:[profile.profilePicUrl],index:0});}}><Image source={{uri:profile.profilePicUrl}} style={styles.avatarImage}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:
           <Text maxFontSizeMultiplier={1.3} style={styles.avatarLetter}>{auth.username?.charAt(0).toUpperCase()||'?'}</Text>}</View>
         <View style={styles.identity}>
           <Text style={styles.name} numberOfLines={2}>{displayName}</Text>
