@@ -1,5 +1,5 @@
 import React,{useCallback,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
@@ -186,6 +186,8 @@ export default function CompetitionSettingsScreen(){
    {card('IMPORT',t('Importar histórico'),t('Traz jogos antigos de um Excel ou CSV feito com o modelo Jynlo.'),<>
     {seasonId==null?<Text style={styles.hint}>{t('Cria primeiro uma época ativa em Resultados e classificações.')}</Text>:null}
     <Text style={styles.hint}>{t('Uma linha por jogador em cada jogo: Data, Jogador, Resultado (Vitória/Empate/Derrota), Golos, Assistências, MVP. Ficheiros com outras colunas importam-se no computador, em jynlosports.com.')}</Text>
+    <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL('https://jynlosports.com/assets/modelo-jynlo-historico.csv')}>
+     <Text style={styles.link}>{t('Descarregar modelo')}</Text></Pressable>
     <TextInput value={year} onChangeText={setYear} keyboardType="number-pad" maxLength={4} style={styles.input}
      placeholder={t('Ano (só se as datas não tiverem ano)')} placeholderTextColor={C.muted} accessibilityLabel={t('Ano')}/>
     {!plan?<Button secondary title={busy?t('A ler o ficheiro…'):t('Escolher ficheiro')} disabled={busy||seasonId==null} onPress={()=>void chooseFile()}/>:null}
@@ -216,5 +218,5 @@ const styles=StyleSheet.create({
  input:{minHeight:46,borderColor:C.border,borderWidth:1,borderRadius:12,paddingHorizontal:12,color:C.white,backgroundColor:C.surface2,fontSize:15},
  seasonRow:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  chip:{minHeight:38,paddingHorizontal:12,paddingVertical:7,borderRadius:999,borderWidth:1,borderColor:C.border,justifyContent:'center'},
- chipOn:{borderColor:C.mint,backgroundColor:C.surface2},chipText:{color:C.white,fontSize:12,fontWeight:'800'}
+ chipOn:{borderColor:C.mint,backgroundColor:C.surface2},link:{color:C.mint,fontWeight:'800',fontSize:13},chipText:{color:C.white,fontSize:12,fontWeight:'800'}
 });
