@@ -3,6 +3,7 @@ import {t} from '../../../src/lib/i18n';
 import {Alert,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../../src/components/UI';
+import PostImageLightbox,{type ExpandedPostPhotos} from '../../../src/components/PostImageLightbox';
 import {useAuth} from '../../../src/lib/auth';
 import {profileStories,resolveJynloMedia} from '../../../src/lib/social-feed-api';
 import type {SocialStory} from '../../../src/lib/types';
@@ -17,6 +18,7 @@ import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../../src/lib
 import {sportName} from '../../../src/lib/sport-names.cjs';
 const T=MobileTheme.colors;
 export default function PublicSocialProfile(){
+ const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
  const {username}=useLocalSearchParams<{username:string}>();
  const name=typeof username==='string'&&/^[a-zA-Z0-9_.@-]{1,128}$/.test(username)?username:'';
  const auth=useAuth(),router=useRouter();
@@ -117,12 +119,13 @@ export default function PublicSocialProfile(){
   {!auth.token?<Button title={t('Entrar para ver este perfil')} onPress={()=>router.push('/login')}/>:null}
   {profile?<View style={styles.hero}>
    <View style={styles.identity}>
-    <Pressable accessibilityRole="button" disabled={!stories.length}
-     accessibilityLabel={stories.length?t('Ver stories de {v}',{v:name}):t('Sem stories ativas')}
-     onPress={()=>{const first=stories[0];if(first)router.push({pathname:'/(tabs)',params:{storyId:String(first.id)}});}}
+    <Pressable accessibilityRole="button" disabled={!stories.length&&!image}
+     accessibilityLabel={stories.length?t('Ver stories de {v}',{v:name}):image?t('Ampliar fotografia'):t('Sem stories ativas')}
+     onPress={()=>{const first=stories[0];if(first)router.push({pathname:'/(tabs)',params:{storyId:String(first.id)}});else if(image)setZoomPhoto({uris:[image],index:0});}}
      style={[styles.storyRing,stories.length>0&&styles.storyRingActive]}>
      <View style={styles.avatar}>{image?<Image source={{uri:image}} style={styles.photo}/>:<Text maxFontSizeMultiplier={1.3} style={styles.letter}>{name.charAt(0).toUpperCase()}</Text>}</View>
     </Pressable>
+    <PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/>
     <View style={{flex:1,gap:5}}><Text style={styles.name}>{displayName}</Text><Text style={styles.handle}>@{name}</Text></View>
    </View>
    {profile.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}

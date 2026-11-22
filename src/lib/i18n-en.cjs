@@ -443,6 +443,7 @@ const EN={
   "Amarelo": "Yellow",
   "Ambiente": "Environment",
   "Amigos: {v}": "Friends: {v}",
+  "Ampliar fotografia": "Enlarge photo",
   "Ampliar fotografia recebida": "Enlarge received photo",
   "Ampliar fotografia {v}": "Enlarge photo {v}",
   "Ampliar fotografia {v} de {total}": "Enlarge photo {v} of {total}",

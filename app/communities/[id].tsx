@@ -1,4 +1,5 @@
 import CommunityChatPanel from '../../src/components/CommunityChatPanel';
+import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
 import React,{useCallback,useRef,useState} from 'react';
@@ -27,6 +28,7 @@ import {sportName} from '../../src/lib/sport-names.cjs';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
 export default function CommunityDetailScreen(){
+ const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const params=useLocalSearchParams<{id:string;created?:string;returnTo?:string}>();const id=Number(params.id);
   const returnTo=safeRedirect(params.returnTo);
   const teamDestination=Number.isSafeInteger(id)&&id>0&&returnTo.startsWith('/tournaments/'+id+'/')?returnTo:null;
@@ -208,7 +210,7 @@ export default function CommunityDetailScreen(){
         <Eyebrow>{t('COMUNIDADE JYNLO')}</Eyebrow>
         <View style={styles.identityHeading}>
           <View style={styles.identityMark}>{community.photoUrl&&resolveJynloMedia(community.photoUrl)
-            ?<Image source={{uri:resolveJynloMedia(community.photoUrl)!}} style={styles.identityPhoto} resizeMode="cover" accessibilityLabel={t('Fotografia da comunidade {v}',{v:community.name})}/>
+            ?<><Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[resolveJynloMedia(community.photoUrl)!],index:0})}><Image source={{uri:resolveJynloMedia(community.photoUrl)!}} style={styles.identityPhoto} resizeMode="cover" accessibilityLabel={t('Fotografia da comunidade {v}',{v:community.name})}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>
             :<Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text>}</View>
           <View style={styles.identityCopy}>
             <Text style={styles.heading}>{community.name}</Text>

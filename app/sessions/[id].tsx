@@ -3,6 +3,7 @@ import {t} from '../../src/lib/i18n';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
+import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,reportSessionProblem,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
@@ -40,6 +41,7 @@ function ParticipantAvatar({participant}:{participant:SessionParticipant}){
 
 const PROBLEM_LABELS:Record<'NOT_OCCURRED'|'VENUE_PROBLEM'|'OTHER',string>={NOT_OCCURRED:'O jogo não aconteceu',VENUE_PROBLEM:'Problema com o recinto',OTHER:'Outro problema'};
 export default function SessionScreen(){
+ const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const {id:rawId,guest:rawGuest}=useLocalSearchParams<{id:string;guest?:string}>();
   const id=Number(rawId), router=useRouter(), auth=useAuth();
   const guestToken=typeof rawGuest==='string'&&/^[A-Za-z0-9_-]{43}$/.test(rawGuest)?rawGuest:null;
@@ -537,7 +539,7 @@ export default function SessionScreen(){
     {guestToken&&!auth.token&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
-        {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/>:null}
+        {sessionPhoto?<><Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[sessionPhoto],index:0})}><Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:null}
         <View style={styles.top}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?t('{n} vagas',{n:spots}):t(sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true}))}/></View>
         <Text maxFontSizeMultiplier={1.3} style={styles.title}>{sportName(s.sport)||t('Sessão desportiva')}</Text>
