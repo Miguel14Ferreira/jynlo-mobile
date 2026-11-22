@@ -658,7 +658,7 @@ export default function SessionScreen(){
         <Button title={t('Jogar outra vez')} disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/create',params:{repeatFrom:String(id),...(detail.communityId?{communityId:String(detail.communityId)}:{})}})}/>
       </View>:null}
-      {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')?<View style={styles.panel}>
+      {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')&&Date.parse(detail.gameDate||'')>Date.now()?<View style={styles.panel}>
         <Eyebrow>{t('FERRAMENTAS DO ORGANIZADOR')}</Eyebrow>
         <Button title={t('Editar dados da sessão')} secondary disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/[id]/edit',params:{id:String(id)}})}/>
