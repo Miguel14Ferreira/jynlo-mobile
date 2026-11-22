@@ -12,7 +12,7 @@ function sessionCardStatus(session,at=Date.now()){
   if(session.joinedByViewer)return {label:tr('Já vais!'),tone:'joined'};
   if(session.waitlistedByViewer)return {label:tr('Lista de espera'),tone:'waiting'};
   if(session.status!=='OPEN')return {label:tr('Indisponível'),tone:'unavailable'};
-  if(session.privateGame)return {label:tr('Sessão privada'),tone:'unavailable'};
+  if(session.privateGame)return {label:tr('Só por convite'),tone:'unavailable'};
   if(session.audience==='COMMUNITY_ONLY')return {label:tr('Só comunidade'),tone:'unavailable'};
   // Missing or corrupt capacity is unknown, not proof of a full session.
   if(!Number.isSafeInteger(session.maxParticipants)||session.maxParticipants<=0||
