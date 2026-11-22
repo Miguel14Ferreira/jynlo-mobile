@@ -2308,6 +2308,7 @@ const EN={
   "Novo código enviado.": "New code sent.",
   "Novo nome do grupo": "New group name",
   "Novos jogos perto de ti": "New games near you",
+  "Novos jogos nas tuas comunidades": "New games in your communities",
   "Novos seguidores": "New followers",
   "NÍVEL DA SESSÃO": "GAME LEVEL",
   "NÚMERO DE GRUPOS": "NUMBER OF GROUPS",
