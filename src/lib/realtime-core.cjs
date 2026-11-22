@@ -23,7 +23,7 @@ function mergeMessages(oldList,newList){
 function safePositiveId(value){const n=Number(value);if(!Number.isSafeInteger(n)||n<=0)throw Error(tr('Identificador inválido'));return n;}
 function teamInviteUrl(origin,communityId,tournamentId,teamId){
  [communityId,tournamentId,teamId].forEach(safePositiveId);
- if(origin!=='https://d24sports.com')throw Error(tr('Origem não autorizada'));
+ if(origin!=='https://d24sports.com'&&origin!=='https://jynlosports.com')throw Error(tr('Origem não autorizada'));
  const u=new URL('/menu/communities/'+communityId,origin);
  u.searchParams.set('tab','tournaments');u.searchParams.set('tournament',String(tournamentId));u.searchParams.set('team',String(teamId));u.searchParams.set('teamPage',String(teamId));
  return u.toString();
