@@ -84,6 +84,15 @@ function SessionDateCalendar({value,onSelect,disabled=false}:CalendarProps){
  </View>;
 }
 
+/** The community's usual place fills an empty location; never overrides one already chosen. */
+function withHabitualLocation(form:CreateSessionForm,community:{habitualLatitude?:number|null;habitualLongitude?:number|null;habitualCity?:string|null;habitualAddress?:string|null}):CreateSessionForm{
+ if(form.locationConfirmed||form.venueId||form.city.trim()||form.address.trim())return form;
+ const lat=community.habitualLatitude,lng=community.habitualLongitude;
+ if(typeof lat!=='number'||typeof lng!=='number'||!Number.isFinite(lat)||!Number.isFinite(lng))return form;
+ return {...form,city:community.habitualCity?.trim()||form.city,address:community.habitualAddress?.trim()||form.address,
+  latitude:lat,longitude:lng,locationConfirmed:true};
+}
+
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string;repeatFrom?:string}>();
@@ -257,8 +266,8 @@ export default function CreateSessionScreen(){
      const chosenSport=typeof params.sport==='string'&&sports.includes(params.sport)&&SPORTS.includes(params.sport)?params.sport:
        sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
      setCommunityMode('SINGLE');
-     setForm(previous=>({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
-      sport:chosenSport||(sports.includes(previous.sport)?previous.sport:''),communityRankingsEnabled:chosen.rankingsEnabled}));
+     setForm(previous=>withHabitualLocation({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
+      sport:chosenSport||(sports.includes(previous.sport)?previous.sport:''),communityRankingsEnabled:chosen.rankingsEnabled},chosen));
     }else setCommunityError(t('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.'));
    }
   }
@@ -672,9 +681,9 @@ export default function CreateSessionScreen(){
         const sports=communitySports(c);
         const sport=sports.includes(prev.sport)?prev.sport:
          sports.length===1&&typeof sports[0]==='string'&&SPORTS.includes(sports[0])?sports[0]:'';
-        return {...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
+        return withHabitualLocation({...prev,communityId:c.id,communityShareIds:[],seasonGame:false,
          sport,venueId:null,
-         communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false};
+         communityRankingsEnabled:c.rankingsEnabled,confirmActivateRankings:false},c);
        });
        setVenueChosen(null);clearVenueSearch();
       }else toggleShared(c.id);
