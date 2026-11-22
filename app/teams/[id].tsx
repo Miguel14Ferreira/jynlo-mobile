@@ -661,7 +661,7 @@ export default function TeamDetail(){
       </Pressable>
       <Button title={t('Convidar')} disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
     </View>)}
-    {team?<TeamRosterImport teamId={team.id} token={auth.token} onImported={()=>void load(false,true)}/>:null}</>:null}
+    {team?<TeamRosterImport teamId={team.id} token={auth.token} members={members} onImported={()=>void load(false,true)}/>:null}</>:null}
    </View>:null}
    {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>{t('🏆 Troféus ({a})',{a:trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'})}</Text>
     {trophiesLoading?<Text style={styles.note}>{t('A carregar conquistas oficiais…')}</Text>:null}

@@ -5,12 +5,12 @@ import {t} from '../lib/i18n';
 import {C} from '../lib/theme';
 import {Button,Message} from './UI';
 import {importRoster,previewRosterImport,removeRosterEntry,teamRoster,checkRosterAsset,rosterClaimLink,linkRosterEntry,
- unlinkRosterEntry,updateRosterEntry,rosterSuggestions,
+ unlinkRosterEntry,updateRosterEntry,rosterSuggestions,setMemberLine,
  type RosterRowStatus,type TeamRosterEntry,type TeamRosterPreview,type TeamRosterSuggestion} from '../lib/team-roster-api';
-import {findSportsTeamPlayers,type SportsTeamPlayerCandidate} from '../lib/sports-teams-api';
+import {findSportsTeamPlayers,type SportsTeamMember,type SportsTeamPlayerCandidate} from '../lib/sports-teams-api';
 
 /** Owner-only: import the squad from Excel/CSV. Contacts in the file are never read. */
-export default function TeamRosterImport({teamId,token,onImported}:{teamId:number;token:string|null;onImported?:()=>void}){
+export default function TeamRosterImport({teamId,token,members=[],onImported}:{teamId:number;token:string|null;members?:SportsTeamMember[];onImported?:()=>void}){
  const [asset,setAsset]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [preview,setPreview]=useState<TeamRosterPreview|null>(null);
  const [entries,setEntries]=useState<TeamRosterEntry[]>([]);
@@ -19,6 +19,7 @@ export default function TeamRosterImport({teamId,token,onImported}:{teamId:numbe
  const [dismissed]=useState(()=>new Set<number>());
  const [editing,setEditing]=useState<number|null>(null);
  const [draft,setDraft]=useState({name:'',number:'',position:''});
+ const [memberDrafts,setMemberDrafts]=useState<Record<number,{number:string;position:string}>>({});
  const [linking,setLinking]=useState<number|null>(null),[query,setQuery]=useState(''),[candidates,setCandidates]=useState<SportsTeamPlayerCandidate[]>([]),[searched,setSearched]=useState(false);
  const load=useCallback(()=>{
   void teamRoster(teamId,token).then(setEntries).catch(()=>setEntries([]));
@@ -37,6 +38,15 @@ export default function TeamRosterImport({teamId,token,onImported}:{teamId:numbe
    await Share.share({message:t('{name}, és tu no plantel? Entra na equipa aqui: {url}',{name:entry.name,url})});
    setNotice(t('Convite criado para {name}. Um link novo anula o anterior.',{name:entry.name}));
   },load);
+ }
+ const linkedUsernames=new Set(entries.map(e=>e.username?.toLowerCase()).filter(Boolean) as string[]);
+ const unlinkedMembers=members.filter(m=>!linkedUsernames.has(m.username.toLowerCase()));
+ function memberDraft(m:SportsTeamMember){return memberDrafts[m.profileId]||{number:m.shirtNumber==null?'':String(m.shirtNumber),position:m.position||''};}
+ function saveMember(m:SportsTeamMember){
+  const d=memberDraft(m);const n=d.number.trim();
+  if(n&&!/^\d{1,3}$/.test(n)){setError(t('O número tem de estar entre 0 e 999.'));return;}
+  void run(()=>setMemberLine(teamId,token,m.profileId,{shirtNumber:n?Number(n):null,position:d.position.trim()||null}),
+   ()=>{setNotice(t('Guardado.'));load();onImported?.();});
  }
  function startEdit(entry:TeamRosterEntry){
   setLinking(null);setEditing(entry.id);
@@ -161,6 +171,19 @@ export default function TeamRosterImport({teamId,token,onImported}:{teamId:numbe
      {searched&&!candidates.length?<Text style={styles.note}>{t('Não encontrámos ninguém com essa pesquisa.')}</Text>:null}
     </View>:null}
    </View>)}
+  </View>:null}
+  {unlinkedMembers.length?<View style={styles.preview}>
+   <Text style={styles.strong}>{t('Número e posição de quem já está na equipa')}</Text>
+   {unlinkedMembers.map(m=>{const d=memberDraft(m);return <View key={m.profileId} style={styles.entryBox}>
+    <Text style={styles.row}>{m.fullName||m.username}</Text>
+    <View style={styles.actions}>
+     <TextInput value={d.number} onChangeText={v=>setMemberDrafts(all=>({...all,[m.profileId]:{...d,number:v}}))} keyboardType="number-pad" maxLength={3}
+      style={[styles.input,{width:80}]} placeholder={t('Número')} placeholderTextColor={C.muted} accessibilityLabel={t('Número')}/>
+     <TextInput value={d.position} onChangeText={v=>setMemberDrafts(all=>({...all,[m.profileId]:{...d,position:v}}))} maxLength={40}
+      style={[styles.input,{flex:1}]} placeholder={t('Posição')} placeholderTextColor={C.muted} accessibilityLabel={t('Posição')}/>
+     <Pressable accessibilityRole="button" disabled={busy} onPress={()=>saveMember(m)} style={styles.chip}><Text style={styles.chipText}>{t('Guardar')}</Text></Pressable>
+    </View>
+   </View>;})}
   </View>:null}
  </View>;
 }
