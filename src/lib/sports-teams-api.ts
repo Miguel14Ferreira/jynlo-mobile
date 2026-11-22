@@ -31,6 +31,8 @@ export interface SportsTeam {
   description: string | null;
   ownerProfileId: number;
   feedEnabled: boolean;
+  /** The owner decides whether every member may post in the feed and Stories. */
+  membersCanPost?: boolean;
   chatEnabled: boolean;
   logoUrl?: string | null;
   kitPrimary?: string | null;
@@ -122,7 +124,7 @@ export async function createSportsTeam(input: CreateSportsTeam, token: string): 
 }
 export async function setSportsTeamFeatures(
   id: number,
-  features: {feedEnabled?: boolean; chatEnabled?: boolean},
+  features: {feedEnabled?: boolean; chatEnabled?: boolean; membersCanPost?: boolean},
   token: string
 ): Promise<SportsTeam> {
   if (!token || DEMO_MODE) throw Error('Inicia sessão para configurar a equipa.');

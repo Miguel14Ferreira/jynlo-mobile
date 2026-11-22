@@ -18,6 +18,11 @@ export async function searchCommunities(name='',sport='',page=0):Promise<Communi
   if(DEMO_MODE)return demo.search(name,sport,page) as CommunitySearchResponse;
   return request<CommunitySearchResponse>(`${root}/search?name=${q(name)}&sport=${q(sport)}&page=${Math.max(0,Math.floor(page))}`);
 }
+/** Organizers choose whether every member, or only organizers, publish posts and Stories. */
+export async function setCommunityPostingPolicy(id:number,membersCanPost:boolean,token:string):Promise<CommunityGroup>{
+  if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
+  return request<CommunityGroup>(`${root}/${uid(id)}/posting-policy`,{token,method:'PUT',body:{membersCanPost}});
+}
 export async function myCommunities(token:string,username:string):Promise<CommunityGroup[]>{
   if(DEMO_MODE)return demo.mine(auth(token,username)) as CommunityGroup[];
   return request<CommunityGroup[]>(`${root}/mine`,{token});

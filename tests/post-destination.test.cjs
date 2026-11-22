@@ -15,3 +15,12 @@ test('publicações podem ir para o feed de uma comunidade ou equipa',()=>{
  assert.match(home,/postDestinations\.length&&!composerSessionId/);
  assert.match(home,/\{postDestination\?<Text style=\{styles\.storiesIntro\}>/);
 });
+test('organizadores decidem quem publica: comunidade e equipa',()=>{
+ const api=read('src/lib/community-api.ts');
+ assert.match(api,/\/posting-policy`,\{token,method:'PUT',body:\{membersCanPost\}\}/);
+ const home=read('app/(tabs)/index.tsx');
+ assert.match(home,/group\.membersCanPost!==false\|\|group\.myRole==='OWNER'\|\|group\.myRole==='ADMIN'/);
+ assert.match(home,/group\.myRole==='ADMIN'\|\|group\.membersCanPost===true/);
+ const team=read('app/teams/[id].tsx');
+ assert.match(team,/field==='membersCanPost'\?team\.membersCanPost===false/);
+});

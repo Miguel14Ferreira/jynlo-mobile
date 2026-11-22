@@ -500,8 +500,9 @@ export default function JynloFeedHome(){
       .catch(()=>{if(active)setStoryManagedTeams([]);});
     void myCommunities(auth.token,auth.username).then(groups=>{
       if(!active)return;
+      // Organizers always; plain members when the organizers let members post.
       setStoryManagedCommunities(groups.filter(group=>group.visibility==='PUBLIC'&&
-        (group.myRole==='OWNER'||group.myRole==='ADMIN')));
+        (group.myRole==='OWNER'||group.myRole==='ADMIN'||group.membersCanPost===true)));
     }).catch(()=>{
       if(active){setStoryManagedCommunities([]);setStoryManagedCommunitiesError(t('Não foi possível carregar as comunidades disponíveis.'));}
     }).finally(()=>{if(active)setStoryManagedCommunitiesLoading(false);});
@@ -580,7 +581,8 @@ export default function JynloFeedHome(){
       if(!active)return;
       const list:PostDestination[]=[];
       if(groups.status==='fulfilled')for(const group of groups.value)
-        if(Number.isSafeInteger(group.id)&&group.id>0)list.push({kind:'community',id:group.id,name:group.name});
+        if((group.membersCanPost!==false||group.myRole==='OWNER'||group.myRole==='ADMIN')&&Number.isSafeInteger(group.id)&&group.id>0)
+          list.push({kind:'community',id:group.id,name:group.name});
       if(teams.status==='fulfilled')for(const team of teams.value)
         if(team.feedEnabled!==false&&Number.isSafeInteger(team.id)&&team.id>0)list.push({kind:'team',id:team.id,name:team.name});
       setPostDestinations(list);
