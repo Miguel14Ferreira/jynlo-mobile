@@ -6,7 +6,7 @@ out=walkthrough
 mkdir -p "$out/screens"
 exec > >(tee -a "$out/resumo.txt") 2>&1
 echo "Emulador pronto; a instalar a APK."
-adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb install -r jynlo.apk || { echo '::error::Não foi possível instalar a APK no emulador.'; exit 1; }
 # Idioma por app (Android 13+), sem mexer no resto do emulador.
 adb shell cmd locale set-app-locales com.jynlo.app --locales "$locale" || true
 adb logcat -c
