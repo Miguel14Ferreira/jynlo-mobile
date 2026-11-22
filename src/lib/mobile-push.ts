@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 // Load expo-notifications only when the user enables push or logs out.
 // expo-crypto is only needed if push opt-in creates a new installation ID.
+import {currentLanguage} from './i18n-core.cjs';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import {DEMO_MODE} from './api';
@@ -91,7 +92,8 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  ensureActive();
  await registerPushDevice(token,{
   deviceId,expoPushToken,
-  platform:Platform.OS as 'android'|'ios'
+  platform:Platform.OS as 'android'|'ios',
+  language:currentLanguage()==='en'?'en':'pt'
  });
  // Logout might happen while the server is processing the authenticated PUT.
  if(operation!==pushOperationEpoch){
@@ -122,6 +124,28 @@ export async function enableMobilePush(username:string,token:string):Promise<voi
  }
 }
 /** Server revocation is attempted before logout; local state remains if it fails. */
+/**
+ * After the app language changes, tell the server so lock-screen notifications
+ * follow it. Only for a device already registered for this account; never asks
+ * for permission and never registers a new device.
+ */
+export async function refreshPushLanguage(username:string,token:string):Promise<void>{
+ if(DEMO_MODE||!username||!token||(Platform.OS!=='android'&&Platform.OS!=='ios'))return;
+ if(!androidPushConfigured()||pushOptInPending)return;
+ try{
+  if((await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY))!==username.toLowerCase())return;
+  const Notifications=await import('expo-notifications');
+  if(!(await Notifications.getPermissionsAsync()).granted)return;
+  const expoPushToken=(await Notifications.getExpoPushTokenAsync({projectId:projectId()})).data;
+  const deviceId=await installId();
+  if((await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY))!==username.toLowerCase())return;
+  await registerPushDevice(token,{deviceId,expoPushToken,platform:Platform.OS as 'android'|'ios',
+   language:currentLanguage()==='en'?'en':'pt'});
+ }catch{
+  // Best effort: the next manual activation sends the language again.
+ }
+}
+
 export async function disableMobilePush(username:string,token:string):Promise<void>{
  // Invalidate an opt-in still waiting for native permission, Firebase or HTTP.
  invalidatePendingPushRegistration();
