@@ -10,5 +10,6 @@ test('Google and password login share a synchronous in-flight guard',()=>{
  assert.match(source,/const loginInFlight=useRef\(false\)/);
  assert.match(source,/async function doGoogleLogin\(\)\{\s*if\(loginInFlight\.current\|\|auth\.username\)return;\s*loginInFlight\.current=true/);
  assert.match(source,/async function doLogin\(\)\{\s*if\(loginInFlight\.current\|\|auth\.username\)return;\s*loginInFlight\.current=true/);
- assert.equal((source.match(/finally\{loginInFlight\.current=false;setBusy\(false\);\}/g)||[]).length,2);
+ assert.match(source,/async function doAppleLogin\(\)\{\s*if\(loginInFlight\.current\|\|auth\.username\)return;\s*loginInFlight\.current=true/);
+ assert.equal((source.match(/finally\{loginInFlight\.current=false;setBusy\(false\);\}/g)||[]).length,3);
 });

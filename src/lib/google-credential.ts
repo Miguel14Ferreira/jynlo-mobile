@@ -1,4 +1,5 @@
 import {Platform} from 'react-native';
+import Constants from 'expo-constants';
 // Native Google Sign-In is loaded only after the user requests login and server OAuth config is valid.
 import {DEMO_MODE,request} from './api';
 
@@ -9,9 +10,17 @@ const GOOGLE_WEB_CLIENT_ID=/^[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/;
  * The server then verifies signature + audience. Never persist Google's ID token.
  * The native Android OAuth client also needs com.jynlo.app + the signing SHA-1.
  */
+/** iPhone needs its own Google OAuth client (set at build time); Android always has Google. */
+function iosClientId():string{
+ const id=Constants.expoConfig?.extra?.googleIosClientId;
+ return typeof id==='string'&&GOOGLE_WEB_CLIENT_ID.test(id.trim())?id.trim():'';
+}
+export function googleSignInAvailable():boolean{
+ return Platform.OS==='android'||(Platform.OS==='ios'&&Boolean(iosClientId()));
+}
 export async function chooseGoogleIdentity():Promise<string|null>{
  if(DEMO_MODE)throw Error('O login Google não está disponível na demonstração.');
- if(Platform.OS!=='android')throw Error('O login Google está preparado para a versão Android.');
+ if(!googleSignInAvailable())throw Error('O login Google ainda não está disponível nesta versão.');
  const config=await request<{clientId:string}>('/api/auth/google/config');
  const webClientId=typeof config?.clientId==='string'?config.clientId.trim():'';
  if(!GOOGLE_WEB_CLIENT_ID.test(webClientId))
@@ -19,8 +28,8 @@ export async function chooseGoogleIdentity():Promise<string|null>{
  let result;
  try{
   const {GoogleSignin}=await import('@react-native-google-signin/google-signin');
-  GoogleSignin.configure({webClientId,offlineAccess:false});
-  await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog:true});
+  GoogleSignin.configure({webClientId,offlineAccess:false,...(Platform.OS==='ios'?{iosClientId:iosClientId()}:{})});
+  if(Platform.OS==='android')await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog:true});
   result=await GoogleSignin.signIn();
  }catch(error){
   const code=typeof error==='object'&&error!==null&&'code' in error?String(error.code):'';
