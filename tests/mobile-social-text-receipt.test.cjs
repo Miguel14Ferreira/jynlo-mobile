@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {confirmedTextPostReceipt:confirmed}=require('../src/lib/social-text-post-receipt.cjs');
@@ -27,7 +28,7 @@ test('optional location is normalized without requiring location on simple posts
 });
 test('mobile checks text-only receipt before reporting successful publication',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  const creation=api.slice(api.indexOf('export async function createTextPost('),api.indexOf('async function sendMedia('));
  assert.match(creation,/confirmedTextPostReceipt\(result,username!,body,location\)/);
  assert.match(creation,/não confirmou a publicação de texto/);
@@ -47,7 +48,7 @@ test('Story upload must confirm author and caption, including blank captions',()
 });
 test('multipart posts and stories verify author/content after confirming uploaded media',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  assert.match(api,/const confirmed=await sendMedia\('\/api\/feed\/posts'/);
  assert.match(api,/confirmedTextPostReceipt\(confirmed,username!,caption,place\)/);
  assert.match(api,/const confirmed=await sendMedia\('\/api\/stories'/);
@@ -65,6 +66,6 @@ test('Story publishing confirms the exact personal or community destination',()=
  for(const invalid of [undefined,0,-1,1.5,'42'])assert.equal(target({communityId:invalid},42),false);
  assert.equal(target({communityId:42},NaN),false);
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  assert.match(api,/confirmedStoryDestinationReceipt\(confirmed,communityId\?\?null\)/);
 });

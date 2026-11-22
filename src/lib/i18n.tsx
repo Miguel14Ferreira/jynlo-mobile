@@ -1,6 +1,6 @@
 import React,{createContext,useCallback,useContext,useMemo,useState} from 'react';
 import {File,Paths} from 'expo-file-system';
-import {pickLanguage,translate,localeTag,type AppLanguage} from './i18n-core.cjs';
+import {pickLanguage,translate,localeTag,setCurrentLanguage,type AppLanguage} from './i18n-core.cjs';
 import {EN} from './i18n-en.cjs';
 
 type T=(text:string,params?:Record<string,string|number>)=>string;
@@ -28,9 +28,9 @@ const Ctx=createContext<LanguageState|null>(null);
 
 /** Wrap the navigation: a language change re-creates the screens so every t() call is fresh. */
 export function LanguageProvider({children}:{children:React.ReactNode}){
- const [language,setState]=useState<AppLanguage>(()=>{current=pickLanguage(savedLanguage(),deviceLocale());return current;});
+ const [language,setState]=useState<AppLanguage>(()=>{current=pickLanguage(savedLanguage(),deviceLocale());setCurrentLanguage(current);return current;});
  const setLanguage=useCallback((next:AppLanguage)=>{
-  current=next;setState(next);
+  current=next;setCurrentLanguage(next);setState(next);
   try{void Promise.resolve(languageFile()?.write(next)).catch(()=>{});}catch{/* the choice still applies until the app closes */}
  },[]);
  const value=useMemo(()=>({language,setLanguage,locale:localeTag(language)}),[language,setLanguage]);

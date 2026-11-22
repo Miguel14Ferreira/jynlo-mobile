@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
+const read=name=>untranslate(fs.readFileSync(path.join(__dirname,'..',name),'utf8'));
 
 test('feed startup does not eagerly initialize the Expo native video player',()=>{
  const feed=read('app/(tabs)/index.tsx');

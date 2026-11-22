@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
 
 test('two rapid session actions cannot issue duplicate mutations',()=>{
  const perform=screen.slice(screen.indexOf('const perform=async('),screen.indexOf('const s=detail||preview'));
@@ -62,7 +63,7 @@ test('sent session invite keeps newer draft and cannot cross account changes',()
 
 test('session invites require a real server ID rather than treating HTTP success as creation',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
  const invite=api.slice(api.indexOf('export async function inviteToSession('),api.indexOf('export async function answerSessionInvite('));
  assert.match(invite,/const invitee=username\.trim\(\)/);
  assert.match(invite,/if\(!Number\.isSafeInteger\(id\)\|\|id<=0\|\|!invitee\|\|!token\)/);

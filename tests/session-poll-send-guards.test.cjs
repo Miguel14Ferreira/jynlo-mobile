@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 // Source-level regression guards only; not a substitute for integration/device tests.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname, '../src/components/SessionChatPanel.tsx'), 'utf8');
+const source = untranslate(fs.readFileSync(path.join(__dirname, '../src/components/SessionChatPanel.tsx'), 'utf8'));
 const poll = source.split('async function sendPoll(text:string)')[1]?.split('async function choosePhoto(')[0];
 assert.ok(poll, 'session poll sender must exist');
 test('session poll requires authenticated identity and an open chat', () => {

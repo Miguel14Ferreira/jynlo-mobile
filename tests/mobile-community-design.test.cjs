@@ -1,11 +1,12 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const screen=fs.readFileSync(path.join(__dirname,'../app/communities/index.tsx'),'utf8');
-const card=fs.readFileSync(path.join(__dirname,'../src/components/CommunityUI.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/index.tsx'),'utf8'));
+const card=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/CommunityUI.tsx'),'utf8'));
 
 test('community cards display server-backed media and membership without inventing metrics',()=>{
  assert.match(card,/community\.photoUrl\?resolveJynloMedia\(community\.photoUrl\)/);

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -5,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
 const configFactory=require('../app.config.js');
-const source=file=>fs.readFileSync(path.join(root,file),'utf8');
+const source=file=>untranslate(fs.readFileSync(path.join(root,file),'utf8'));
 const base={name:'Jynlo',plugins:['expo-router'],extra:{example:true},android:{package:'com.jynlo.app'}};
 const envName='JYNLO_GOOGLE_MAPS_ANDROID_API_KEY';
 const previous=process.env[envName];

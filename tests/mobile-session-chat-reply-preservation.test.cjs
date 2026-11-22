@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8'));
 
 test('session photo uses reply selected when upload started and preserves later selection',()=>{
  const upload=code.slice(code.indexOf('async function uploadPhoto()'),code.indexOf('const recentPhotoIds='));
@@ -28,7 +29,7 @@ test('sending text also preserves reply selected while its POST is in flight',()
 });
 
 test('PDF composer forwards the reply captured before its upload begins',()=>{
- const composer=fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8');
+ const composer=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/ChatPdfComposer.tsx'),'utf8'));
  const send=composer.slice(composer.indexOf('async function send()'),composer.indexOf('if(!enabled||!token)return null'));
  assert.match(composer,/onSent:\(sentReplyId:number\|null\)=>Promise<void>/);
  assert.match(send,/const sentReplyId=replyId\?\?null/);

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
 const dialogs=screen.slice(screen.indexOf('const leave=()=>{'),screen.indexOf('function confirmRemoveParticipant('));
 const leave=dialogs.slice(dialogs.indexOf('const leave=()=>{'),dialogs.indexOf('const cancel=()=>{'));
 const cancel=dialogs.slice(dialogs.indexOf('const cancel=()=>{'));

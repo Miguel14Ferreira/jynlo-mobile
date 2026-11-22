@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
-const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
 test('after a completed game, players can join the organising communities (server-verified)',()=>{
  const api=read('src/lib/post-game-communities-api.ts');
  assert.match(api,/\/api\/sessions\/\$\{vid\(sessionId\)\}\/post-game-communities`/);

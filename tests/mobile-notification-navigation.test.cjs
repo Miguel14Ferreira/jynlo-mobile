@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {notificationDestination}=require('../src/lib/notification-route.cjs');
-const screen=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8'));
 test('notification routes only navigate valid authenticated targets',()=>{
  assert.deepEqual(notificationDestination({type:'COMMUNITY_INVITE'}),{kind:'invites'});
  assert.deepEqual(notificationDestination({type:'COMMUNITY_JOIN_ACCEPTED',communityId:11}),{kind:'community',id:'11'});
@@ -70,7 +71,7 @@ test('switching accounts releases old pending actions but ignores their eventual
 });
 
 test('notification navigation is immediate and read receipts settle asynchronously',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8'));
  const handler=screen.slice(screen.indexOf('function open(item:JynloNotification)'),screen.indexOf('useEffect(()=>{\n  if(!isFocused'));
  assert.match(handler,/function open\(item:JynloNotification\):boolean/);
  assert.ok(handler.indexOf('router.push(')<handler.indexOf('void markNotificationRead('));

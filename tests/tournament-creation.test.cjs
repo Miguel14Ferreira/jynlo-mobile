@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
@@ -67,16 +68,16 @@ test('nome, tamanhos e pontos inválidos são bloqueados antes do POST',()=>{
  }
 });
 test('nunca envia escrita na inicialização e desativa criação real na demo',()=>{
- const source=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-create-api.ts'),'utf8');
+ const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-create-api.ts'),'utf8'));
  assert.match(source,/DEMO_MODE/);assert.match(source,/method:'POST'/);
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8'));
  assert.match(screen,/Alert\.alert/);assert.match(screen,/createTournament/);
  assert.doesNotMatch(screen,/setInterval\(|retry\(/);
 });
 
 test('a criação restringe-se às modalidades selecionadas pela comunidade, incluindo secundárias',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-create-api.ts'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8'));
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-create-api.ts'),'utf8'));
  assert.match(screen,/selectedSports=useMemo/);
  assert.match(screen,/communityAllowsTournamentSport\(selected,sport\)/);
  assert.match(screen,/canCreateTournamentForSport\(selected,sport\)/);

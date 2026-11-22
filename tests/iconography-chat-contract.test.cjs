@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 
 test('direct, session and community chats render vector attachments and remove actions',()=>{
  for(const screen of ['app/messages/[peer].tsx','src/components/SessionChatPanel.tsx','src/components/CommunityChatPanel.tsx']){

@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const read=path=>fs.readFileSync(path,'utf8');
+const read=path=>untranslate(fs.readFileSync(path,'utf8'));
 
 test('mobile Story editor exposes same color background and fonts as web',()=>{
  const editor=read('app/(tabs)/index.tsx');

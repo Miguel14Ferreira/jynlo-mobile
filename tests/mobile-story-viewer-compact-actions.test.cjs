@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const home=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const home=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const viewer=home.slice(home.indexOf('function StoryViewer('),home.indexOf('export default function JynloFeedHome()'));
 
 test('Story viewer keeps private reactions collapsed until requested',()=>{

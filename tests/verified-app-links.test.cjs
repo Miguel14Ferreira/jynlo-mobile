@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
@@ -19,7 +20,7 @@ test('never reroute untrusted hosts or invalid tokens',()=>{
  assert.equal(route('/(tabs)/explore'),'/(tabs)/explore');
 });
 test('asset link config is scoped to Jynlo package and verified HTTPS paths',()=>{
- const cfg=JSON.parse(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8'));
+ const cfg=JSON.parse(untranslate(fs.readFileSync(path.join(__dirname,'../app.json'),'utf8')));
  const filters=cfg.expo.android.intentFilters;
  assert.ok(filters.some(f=>f.autoVerify===true&&f.data.some(d=>d.host==='d24sports.com'&&d.scheme==='https')));
  assert.equal(cfg.expo.android.package,'com.jynlo.app');

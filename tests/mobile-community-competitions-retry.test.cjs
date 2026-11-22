@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id]/competitions.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/[id]/competitions.tsx'),'utf8'));
 test('failed community competition requests show retry instead of empty tournaments',()=>{
  assert.match(source,/error\?<Message tone="error">\{error\}<\/Message>/);
  assert.match(source,/error&&auth\.token\?<Button secondary title="Tentar carregar competições novamente"/);

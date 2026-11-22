@@ -37,7 +37,7 @@ def run(path):
         def lit(m):
             pre=line[:m.start()]
             v=m.group(1)
-            if pre.rstrip().endswith(('t(','==','===','!==','!=','case')) : return m.group(0)
+            if re.search(r'(^|[^\w.])t\($',pre.rstrip()) or pre.rstrip().endswith(('==','===','!==','!=','case')) : return m.group(0)
             if re.search(r"(pathname|href|name|key|icon|tone|kind|testID|nativeID|style|router\.(push|replace))\s*[:=(]\s*$",pre): return m.group(0)
             if not is_ui(v): return m.group(0)
             if "\\'" in v: return m.group(0)

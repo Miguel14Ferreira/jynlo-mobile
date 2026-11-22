@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8'));
 
 test('chat inbox refreshes on foreground push and on app resume',()=>{
  assert.match(source,/Notifications\.addNotificationReceivedListener\(notification=>/);

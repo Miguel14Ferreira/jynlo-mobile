@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');const path=require('node:path');
 const {formatSeconds,formatMetres,formatPoints,formatChessPoints,displayPerson,validatedRank,sourceRounds,stageLabel}=require('../src/lib/performance-core.cjs');
 const {classificationKind,isPerformanceKind}=require('../src/lib/competition-core.cjs');
-function read(file){return fs.readFileSync(path.join(__dirname,'..',file),'utf8');}
+function read(file){return untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf8'));}
 test('tempos são apresentados em segundos e minutos sem pontuações de futebol',()=>{
  assert.equal(formatSeconds(65.238),'1:05,238 s');
  assert.equal(formatSeconds(59.9999),'1:00 s');

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const root=path.resolve(__dirname,'..'),read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 test('session chat mutation API aligns with server methods and validates IDs',()=>{
  const api=read('src/lib/session-chat-api.ts');
  assert.match(api,/export async function editSessionChatMessage\(/);

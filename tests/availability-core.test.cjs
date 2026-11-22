@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -45,7 +46,7 @@ test('create params carry local day and time for the session form',()=>{
 });
 
 test('the panel is shown to members of groups and communities and prefills the session form',()=>{
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  assert.match(read('app/groups/[id].tsx'),/<AvailabilityPanel kind="private" targetId=\{groupId\}/);
  assert.match(read('app/communities/[id].tsx'),/<AvailabilityPanel kind="community" targetId=\{id\}/);
  const create=read('app/sessions/create.tsx');
@@ -63,7 +64,7 @@ test('availability alerts open the group or the community',()=>{
 test('team chat alerts open the team chat and team chats are in Messages',()=>{
  const {notificationDestination}=require('../src/lib/notification-route.cjs');
  assert.deepEqual(notificationDestination({type:'CHAT_MESSAGE',sportsTeamId:8,relatedUsername:'ana'}),{kind:'team-chat',id:'8'});
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  assert.match(read('app/notifications.tsx'),/case 'team-chat':router\.push\(\{pathname:'\/teams\/\[id\]',params:\{id:destination\.id!,tab:'CHAT'\}\}\)/);
  const messages=read('app/(tabs)/messages.tsx');
  assert.match(messages,/teamChatInbox\(auth\.token\)/);
@@ -85,14 +86,14 @@ test('private groups: edit rule, reply quote and same chat tools as the other ch
  assert.deepEqual(core.replyQuote(list,list[1]),{sender:'ana',text:'Olá'});
  assert.deepEqual(core.replyQuote(list,list[2]),{sender:'',text:'Mensagem anterior'});
  assert.equal(core.replyQuote(list,list[0]),null);
- const screen=fs.readFileSync(path.join(__dirname,'..','app/groups/[id].tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app/groups/[id].tsx'),'utf8'));
  for(const piece of ["useChatReactions('private'",'<ChatSearchPanel kind="private"',"scope=\"private\"","scope:'private'",'ChatReplyPreview','prepareLocation','editGroupMessage','deleteGroupMessage'])
   assert.ok(screen.includes(piece),piece);
- assert.match(fs.readFileSync(path.join(__dirname,'..','src/components/SecureChatAttachment.tsx'),'utf8'),/\/api\/private-groups\/'\+numeric\+'\/messages\/'\+messageId\+'\/attachments\/'\+index/);
+ assert.match(untranslate(fs.readFileSync(path.join(__dirname,'..','src/components/SecureChatAttachment.tsx'),'utf8')),/\/api\/private-groups\/'\+numeric\+'\/messages\/'\+messageId\+'\/attachments\/'\+index/);
 });
 
 test('communities have a feed in the app, like on the web',()=>{
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  const screen=read('app/communities/[id].tsx');
  assert.match(screen,/\{id:'FEED',label:'Feed'\}/);
  assert.match(screen,/<CommunityFeedPanel communityId=\{id\} token=\{auth\.token\} username=\{auth\.username\} canManage=\{owner\}\/>/);
@@ -105,7 +106,7 @@ test('communities have a feed in the app, like on the web',()=>{
 });
 
 test('polls in group and team chats, and @mentions in session chat',()=>{
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  assert.match(read('src/lib/chat-poll-api.ts'),/ChatPollKind='session'\|'community'\|'private'\|'team'/);
  assert.match(read('app/groups/[id].tsx'),/<PollCard poll=\{readPoll\(m\.text\)!\} kind="private"/);
  assert.match(read('src/components/SportsTeamContentPanel.tsx'),/<PollCard poll=\{readPoll\(item\.body\)!\} kind="team"/);

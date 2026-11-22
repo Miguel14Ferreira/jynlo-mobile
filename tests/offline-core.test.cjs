@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -38,7 +39,7 @@ test('saved label in Portuguese',()=>{
 });
 
 test('Explorar and As minhas sessões fall back to saved data; logout clears it; banner in the root',()=>{
- const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
+ const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  assert.match(read('src/lib/api.ts'),/withOfflineSnapshot\('explore'/);
  assert.match(read('src/lib/parity-api.ts'),/withOfflineSnapshot\('my-sessions'/);
  assert.match(read('src/lib/auth.tsx'),/clearOfflineSnapshots\(\)/);

@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
-const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 test('Codemagic uses a manual develop-only Mac M2 Android standalone build',()=>{
  const yaml=read('codemagic.yaml');
  assert.match(yaml,/instance_type: mac_mini_m2/);

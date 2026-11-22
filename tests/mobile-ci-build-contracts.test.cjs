@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const base=path.join(__dirname,'..');
-const read=p=>fs.readFileSync(path.join(base,p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(base,p),'utf8'));
 const ci=read('.github/workflows/mobile-develop-integration.yml');
 const workflow=read('codemagic.yaml');
 const packageJson=JSON.parse(read('package.json'));

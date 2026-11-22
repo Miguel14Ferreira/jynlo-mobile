@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const component=fs.readFileSync(path.join(__dirname,'../src/components/SecureChatAttachment.tsx'),'utf8');
+const component=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/SecureChatAttachment.tsx'),'utf8'));
 const pkg=require('../package.json');
 
 test('voice messages have an SDK-compatible native player',()=>{

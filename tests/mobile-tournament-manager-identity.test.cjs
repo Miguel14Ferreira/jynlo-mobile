@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'..','app','tournaments','[communityId]','[id]','manage.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'..','app','tournaments','[communityId]','[id]','manage.tsx'),'utf8'));
 
 test('tournament organizer discards responses from an earlier competition',()=>{
  assert.match(source,/const generation=useRef\(0\),readVersion=useRef\(0\)/);

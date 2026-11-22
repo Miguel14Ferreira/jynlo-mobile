@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {buildSessionCompetitionResult,editableCompetitionRoster,confirmedPlayerStatistics}=require('../src/lib/session-competition-result.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const members=[
  {id:1,username:'Ana',teamCode:'A'},
  {id:2,username:'Bruno',teamCode:'B'},

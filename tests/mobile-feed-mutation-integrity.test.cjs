@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 const {removedFeedKey,reconcileRemovedFeedKeys}=require('../src/lib/confirmed-feed-removals.cjs');
 
 test('the feed ignores deleted posts even if an older GET finishes later',()=>{
@@ -43,7 +44,7 @@ test('comment form admits one in-flight submission and checks its server receipt
 });
 
 test('comment limits agree with the server for creation and editing',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
  const create=api.slice(api.indexOf('export async function addPostComment('),api.indexOf('export async function editPostComment('));
  const edit=api.slice(api.indexOf('export async function editPostComment('),api.indexOf('export async function togglePostCommentLike('));
  assert.match(create,/message\.length>500/);

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('Account deletion is explicitly confirmed and never auto-retried',()=>{
  const profile=read('app/(tabs)/profile.tsx');
  assert.match(profile,/await request<void>\('\/api\/profile\/me',\{token:auth\.token,method:'DELETE'\}\)/);

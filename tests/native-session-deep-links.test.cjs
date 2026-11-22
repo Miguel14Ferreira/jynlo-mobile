@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -38,8 +39,8 @@ test('Android manifest and Expo native intent handle shared session links',()=>{
  assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/sessions/')));
  assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/menu/events/')));
  assert.ok(httpsFilters.some(filter=>filter.data.some(data=>data.scheme==='https'&&data.host==='d24sports.com'&&data.pathPrefix==='/posts/')));
- const native=fs.readFileSync(path.join(__dirname,'..','app','+native-intent.tsx'),'utf8');
+ const native=untranslate(fs.readFileSync(path.join(__dirname,'..','app','+native-intent.tsx'),'utf8'));
  assert.match(native,/nativeRouteForWebLink\(path\)/);
- const screen=fs.readFileSync(path.join(__dirname,'..','app','posts','[postId]','index.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app','posts','[postId]','index.tsx'),'utf8'));
  assert.match(screen,/socialPostById\(id,auth.token\)/);
 });

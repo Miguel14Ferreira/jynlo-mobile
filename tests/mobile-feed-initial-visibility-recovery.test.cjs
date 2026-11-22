@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
 
 test('a canceled first feed load must retry stored hidden-post preferences',()=>{
  assert.match(screen,/const hiddenReadyRef=useRef\(false\)/);

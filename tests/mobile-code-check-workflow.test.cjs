@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../.github/workflows/mobile-code-checks.yml'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../.github/workflows/mobile-code-checks.yml'),'utf8'));
 
 test('develop checks run code validation without generating a paid Android build',()=>{
  assert.match(source,/name: Jynlo Mobile - Code Checks/);
@@ -33,7 +34,7 @@ test('Android bundle validates imports with the real Jynlo backend, without Grad
 });
 
 test('local validation replaces automatic GitHub code checks while quota is exhausted',()=>{
- const local=fs.readFileSync(path.join(__dirname,'../scripts/validate-local.ps1'),'utf8');
+ const local=untranslate(fs.readFileSync(path.join(__dirname,'../scripts/validate-local.ps1'),'utf8'));
  assert.doesNotMatch(source,/^  push:/m);
  assert.match(source,/workflow_dispatch:/);
  assert.match(local,/Invoke-Checked 'Verificar TypeScript'/);

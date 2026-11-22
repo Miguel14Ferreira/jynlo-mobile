@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/chat-api.ts'),'utf8'));
 const {filterAuthorizedSummaries}=require('../src/lib/authorized-inbox-summaries.cjs');
 
 test('community inbox only uses authenticated membership for visibility and titles',()=>{

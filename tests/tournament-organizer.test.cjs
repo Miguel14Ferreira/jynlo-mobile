@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
 const {organizerFixtureType,canGenerateSchedule,canRecordTournamentResult,canCompleteTournament,validateTournamentScore,validateTournamentMatchScore,organizerMatchWriteGuard}=require('../src/lib/tournament-organizer-core.cjs');
@@ -29,7 +30,7 @@ test('resultados apenas inteiros positivos ou zero até 999',()=>{
  for(const invalid of ['-1','1.5','1e2','','1000','  ','abc'])assert.throws(()=>validateTournamentScore(invalid,'2'));
 });
 test('mutações exigem ação explícita, endpoint e verbo correspondem ao backend',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-organizer-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-organizer-api.ts'),'utf8'));
  for(const route of ['/teams/schedule','/schedule','/teams/complete','/complete','/teams/matches/${validTournamentId(matchId)}/result','/matches/${validTournamentId(matchId)}/result'])assert.ok(api.includes(route),route);
  assert.match(api,/method:type==='TEAM'\?'POST':'PUT'/);
  assert.doesNotMatch(api,/retry\(|setTimeout\(|setInterval\(/);

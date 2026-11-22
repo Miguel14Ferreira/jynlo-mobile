@@ -27,4 +27,15 @@ function placeholders(text){return [...String(text).matchAll(/\{(\w+)\}/g)].map(
 /** BCP-47 tag for dates and numbers. */
 function localeTag(language){return language==='en'?'en-GB':'pt-PT';}
 
-module.exports={LANGUAGES,pickLanguage,translate,placeholders,localeTag};
+// Current language for shared helpers (.cjs) that build labels outside React.
+// The app sets it through src/lib/i18n.tsx; tests and the server-free helpers stay in Portuguese.
+let current='pt';
+function setCurrentLanguage(language){current=LANGUAGES.includes(language)?language:'pt';}
+function currentLanguage(){return current;}
+/** Translate with the current language (English dictionary loaded on first use). */
+function tr(text,params){
+ const dictionary=current==='en'?require('./i18n-en.cjs').EN:null;
+ return translate(dictionary,current,text,params);
+}
+
+module.exports={LANGUAGES,pickLanguage,translate,placeholders,localeTag,setCurrentLanguage,currentLanguage,tr};

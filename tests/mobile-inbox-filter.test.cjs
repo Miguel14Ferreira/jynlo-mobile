@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge}=require('../src/lib/inbox-filter.cjs');
 const fs=require('node:fs'),path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8'));
 
 const inbox=[
  {kind:'direct',id:'Joao_12',latestText:'Vamos jogar amanhã?',latestSender:'João',unreadCount:3},

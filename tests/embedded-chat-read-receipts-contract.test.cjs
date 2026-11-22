@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -9,7 +10,7 @@ const panels = [
 ];
 
 for (const {name,file,receipt,list,denied} of panels) {
-  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8'));
   const scrollStart = source.indexOf('onScroll={event=>');
   const layoutStart = source.indexOf('onLayout={event=>',scrollStart);
   const contentStart = source.indexOf('onContentSizeChange={',layoutStart);
@@ -50,7 +51,7 @@ for (const {name,file,receipt,list,denied} of panels) {
 }
 
 for (const {name,file} of panels) {
-  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8'));
   const start = source.indexOf('onScroll={event=>');
   const end = source.indexOf('contentContainerStyle=',start);
   const viewport = source.slice(start,end);
@@ -65,7 +66,7 @@ for (const {name,file} of panels) {
 }
 
 for (const {name,file} of panels) {
-  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8'));
   const scrollStart = source.indexOf('onScroll={event=>');
   const layoutStart = source.indexOf('onLayout={event=>',scrollStart);
   const scroll = source.slice(scrollStart,layoutStart);
@@ -77,7 +78,7 @@ for (const {name,file} of panels) {
 }
 
 for (const {name,file} of panels) {
-  const source = fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8');
+  const source = untranslate(fs.readFileSync(path.join(__dirname,'../src/components',file),'utf8'));
   test(name+' jump-to-latest waits for viewport confirmation before clearing unread',()=>{
     const jump = source.match(/onPress=\{\(\)=>\{[^}]*inlineHistoryRef\.current\?\.scrollToEnd\(\{animated:true\}\);\}\}/g) || [];
     assert.ok(jump.length>=1,'expected jump-to-latest action');

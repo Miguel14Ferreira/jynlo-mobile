@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const read=(file)=>untranslate(fs.readFileSync(path.join(root,file),'utf8'));
 
 test('Android resizes the screen rather than panning behind the keyboard',()=>{
  const expo=require('../app.json').expo;

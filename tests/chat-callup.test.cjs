@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {encodeCallUp,readCallUp,isCallUpText}=require('../src/lib/chat-callup.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 
 test('convocatória envelope matches the server and web format',()=>{
  assert.equal(encodeCallUp(42),'[JYNLO:SESSION:1]42');

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=filename=>fs.readFileSync(path.join(__dirname,'..',filename),'utf8');
+const read=filename=>untranslate(fs.readFileSync(path.join(__dirname,'..',filename),'utf8'));
 
 test('team discovery prioritizes identity and CTA over a long creation form',()=>{
  const screen=read('app/teams/index.tsx');

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -29,7 +30,7 @@ test('localhost HTTP requires explicit development opt-in',()=>{
  assert.throws(()=>validateApiOrigin('http://127.0.0.1:8080',{allowLocalhost:true}));
 });
 test('authenticated API requests consume the validated origin',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
  assert.match(api,/API_BASE: string = rawApiUrl \? validateApiOrigin\(rawApiUrl,/);
  assert.match(api,/fetch\(\x60\$\{API_BASE\}\$\{path\}\x60/);
  assert.match(api,/Authorization.*Bearer/);

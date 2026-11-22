@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8'));
 
 test('direct read receipts require visible last message, active app and known access',()=>{
  assert.match(source,/const acknowledgeVisibleHistory=useCallback/);

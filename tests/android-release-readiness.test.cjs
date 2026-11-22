@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 
 const test = require('node:test');
@@ -8,9 +9,9 @@ const { spawnSync } = require('node:child_process');
 const os = require('node:os');
 
 const root = path.resolve(__dirname, '..');
-const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8')).expo;
-const eas = JSON.parse(fs.readFileSync(path.join(root, 'eas.json'), 'utf8'));
-const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const app = JSON.parse(untranslate(fs.readFileSync(path.join(root, 'app.json'), 'utf8'))).expo;
+const eas = JSON.parse(untranslate(fs.readFileSync(path.join(root, 'eas.json'), 'utf8')));
+const packageJson = JSON.parse(untranslate(fs.readFileSync(path.join(root, 'package.json'), 'utf8')));
 const releaseGuard = path.join(root, 'scripts', 'verify-release.cjs');
 // This is a syntactically valid HTTPS example, not a claim that production is deployed.
 const productionApi = 'https://api.d24sports.com';
@@ -103,7 +104,7 @@ test('signed APK launch diagnostic enforces provenance before installation', () 
 });
 
 test('local validation never triggers an APK build without an explicit opt-in', () => {
-  const script = fs.readFileSync(path.join(root, 'scripts', 'validate-local.ps1'), 'utf8');
+  const script = untranslate(fs.readFileSync(path.join(root, 'scripts', 'validate-local.ps1'), 'utf8'));
   assert.match(script, /\[switch\]\$BuildApk/);
   assert.match(script, /if \(\$BuildApk\)/);
   assert.match(script, /CONSTRUIR_APK/);

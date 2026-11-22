@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -44,11 +45,11 @@ test('send gate drops repeats within a minute and caps a run',()=>{
 });
 
 test('the app never sends the login token with error reports',()=>{
- const code=fs.readFileSync(path.join(__dirname,'..','src/lib/client-error.ts'),'utf8');
+ const code=untranslate(fs.readFileSync(path.join(__dirname,'..','src/lib/client-error.ts'),'utf8'));
  assert.doesNotMatch(code,/Authorization/);
  assert.match(code,/credentials:'omit'/);
  assert.match(code,/\/api\/client-errors/);
- const layout=fs.readFileSync(path.join(__dirname,'..','app/_layout.tsx'),'utf8');
+ const layout=untranslate(fs.readFileSync(path.join(__dirname,'..','app/_layout.tsx'),'utf8'));
  assert.match(layout,/installGlobalErrorReporting\(\);/);
  assert.match(layout,/<ErrorRouteTracker\/>/);
 });

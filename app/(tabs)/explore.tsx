@@ -173,7 +173,7 @@ export default function DiscoverScreen(){
    {(city.trim()||sport||!availableOnly||mapArea||skillLevel)?<Pressable accessibilityRole="button" accessibilityLabel={t('Limpar filtros de pesquisa')} style={styles.resetFilters} onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setSkillLevel('');setMapArea(null);setDisplay('list');}}>
      <Text style={styles.resetFiltersText}>{t('Limpar filtros')}</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
-   <View style={styles.section}><Text style={styles.sectionTitle}>{t('Encontrar jogos')}</Text><Text style={styles.total}>{loading?t('A pesquisar…'):`${sessions.length} encontradas`}</Text></View>
+   <View style={styles.section}><Text style={styles.sectionTitle}>{t('Encontrar jogos')}</Text><Text style={styles.total}>{loading?t('A pesquisar…'):t('{n} encontradas',{n:sessions.length})}</Text></View>
    <View style={styles.switcher}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessões no mapa')} accessibilityState={{selected:display==='map'}}
        style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>

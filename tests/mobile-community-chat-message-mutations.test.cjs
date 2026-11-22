@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const root=path.resolve(__dirname,'..'),read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 test('community API uses real edit and delete-for-everyone routes, never deleting without authorization',()=>{
  const api=read('src/lib/chat-api.ts');
  assert.match(api,/export async function editCommunityChatMessage\(/);

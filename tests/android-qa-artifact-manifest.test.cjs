@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -6,7 +7,7 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const os=require('node:os');
 const {artifactMetadata,writeManifest,qaTestInstructions}=require('../scripts/android-qa-artifact-manifest.cjs');
-const app=JSON.parse(fs.readFileSync(path.join(__dirname,'..','app.json'),'utf8')).expo;
+const app=JSON.parse(untranslate(fs.readFileSync(path.join(__dirname,'..','app.json'),'utf8'))).expo;
 const input={
  CM_BRANCH:'develop',
  CM_COMMIT:'a'.repeat(40),
@@ -70,12 +71,12 @@ test('APK sidecar is generated from the real output folder without secrets',()=>
   fs.mkdirSync(metadataDir,{recursive:true});
   fs.writeFileSync(path.join(metadataDir,'jynlo-android-binary-verification.json'),JSON.stringify(report));
   const output=writeManifest({...input,CM_BUILD_DIR:root,GOOGLE_SERVICES_JSON:'/private/firebase.json'});
-  const sidecar=JSON.parse(fs.readFileSync(path.join(root,'build-metadata/jynlo-android-qa.json'),'utf8'));
+  const sidecar=JSON.parse(untranslate(fs.readFileSync(path.join(root,'build-metadata/jynlo-android-qa.json'),'utf8')));
   assert.equal(sidecar.sha256,output.sha256);
   assert.equal(sidecar.pushConfigured,true);
   assert.equal(sidecar.binaryVerified,true);
   assert.equal(sidecar.signerCertificateSha256,report.signerCertificateSha256);
-  const guide=fs.readFileSync(path.join(root,'build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt'),'utf8');
+  const guide=untranslate(fs.readFileSync(path.join(root,'build-metadata/LEIA-ME-JYNLO-ANDROID-QA.txt'),'utf8'));
   assert.match(guide,/JYNLO — PLANO DE TESTES DA APK ANDROID/);
   assert.match(guide,/SHA-256:/);
   assert.match(guide,/confirmar receção real de uma notificação/);
@@ -116,7 +117,7 @@ test('QA instructions identify build identity and required tester journey',()=>{
 });
 
 test('Codemagic generates the manifest after release Gradle, for both workflows',()=>{
- const yaml=fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8');
+ const yaml=untranslate(fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8'));
  assert.equal((yaml.match(/node scripts\/android-qa-artifact-manifest\.cjs/g)||[]).length,2);
  assert.equal((yaml.match(/build-metadata\/jynlo-android-qa\.json/g)||[]).length,2);
  assert.equal((yaml.match(/build-metadata\/LEIA-ME-JYNLO-ANDROID-QA\.txt/g)||[]).length,2);

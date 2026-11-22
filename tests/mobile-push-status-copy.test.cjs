@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const inbox=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+const inbox=untranslate(fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8'));
 
 test('push guidance reflects native configuration and user opt-in',()=>{
  assert.match(inbox,/androidPushConfigured\(\)\?pushEnabled\?/);

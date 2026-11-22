@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.join(__dirname,'..');
-const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 
 test('existing teams can be discovered, created and viewed without creating tournament-specific identities',()=>{
  const api=read('src/lib/sports-teams-api.ts');

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const screen=fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8');
+const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/notifications.tsx'),'utf8'));
 const decision=screen.slice(screen.indexOf('async function decide('),screen.indexOf('async function open('));
 
 test('rapid taps cannot answer the same invitation twice before React updates',()=>{
@@ -39,7 +40,7 @@ test('acceptance must have a verified participant or waitlist receipt before dis
 });
 test('invite response API validates IDs and requires backend-confirmed accept states',()=>{
  const fs=require('node:fs'),path=require('node:path');
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
  const method=api.slice(api.indexOf('export async function answerSessionInvite('),api.indexOf('export async function logoutServer('));
  assert.match(method,/Number\.isSafeInteger\(sessionId\)/);
  assert.match(method,/Number\.isSafeInteger\(inviteId\)/);

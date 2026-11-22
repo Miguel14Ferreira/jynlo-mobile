@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -55,19 +56,19 @@ test('every reference place is a valid rounded point and radii match the server'
 });
 
 test('location is read only on an explicit tap, in the foreground, and rounded',()=>{
- const api=fs.readFileSync(path.join(__dirname,'..','src/lib/nearby-alerts-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'..','src/lib/nearby-alerts-api.ts'),'utf8'));
  assert.match(api,/requestForegroundPermissionsAsync/);
  assert.doesNotMatch(api,/Background|watchPosition/);
  assert.match(api,/approximate\(/);
- const screen=fs.readFileSync(path.join(__dirname,'..','app/nearby-alerts.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app/nearby-alerts.tsx'),'utf8'));
  assert.match(screen,/onPress=\{\(\)=>\{void useMyPosition\(\);\}\}/);
- assert.match(fs.readFileSync(path.join(__dirname,'..','app/notification-settings.tsx'),'utf8'),/router\.push\('\/nearby-alerts'\)/);
+ assert.match(untranslate(fs.readFileSync(path.join(__dirname,'..','app/notification-settings.tsx'),'utf8')),/router\.push\('\/nearby-alerts'\)/);
 });
 
 test('the screen can forget the saved place and the privacy text explains it',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'..','app/nearby-alerts.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app/nearby-alerts.tsx'),'utf8'));
  assert.match(screen,/Apagar o local guardado/);
  assert.match(screen,/set\(\{enabled:false,latitude:null,longitude:null,placeLabel:null\}\)/);
- const legal=fs.readFileSync(path.join(__dirname,'..','src/lib/legal-content.ts'),'utf8');
+ const legal=untranslate(fs.readFileSync(path.join(__dirname,'..','src/lib/legal-content.ts'),'utf8'));
  assert.match(legal,/avisos de novos jogos perto de ti/);
 });

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/sessions/create.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/create.tsx'),'utf8'));
 
 test('community preselection is specific to the account and source community',()=>{
  assert.match(source,/const communityLoadVersion=useRef\(0\),communityLoadIdentity=useRef\(''\)/);

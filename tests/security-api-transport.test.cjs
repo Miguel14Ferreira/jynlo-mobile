@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -32,7 +33,7 @@ test('local development requires explicit opt-in and port',()=>{
  assert.throws(()=>validateApiOrigin('http://localhost',{allowLocalhost:true}));
 });
 test('authenticated API never follows redirects or caches responses',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
  assert.match(api,/redirect:\s*'error'/);
  assert.match(api,/cache:\s*'no-store'/);
  assert.match(api,/credentials:\s*'omit'/);

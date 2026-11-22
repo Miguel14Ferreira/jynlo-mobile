@@ -1,6 +1,7 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('championship API uses the authenticated backend contract',()=>{
  const api=read('src/lib/championship-api.ts');
  for(const item of ['/api/communities/','/championships','/standings','{token}','Number.isSafeInteger'])

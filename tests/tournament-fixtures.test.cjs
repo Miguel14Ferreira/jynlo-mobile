@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {validPage,teamMatchStage,splitTeamMatches,matchScore,matchRound,isTeamInMatch,canListMatches}=require('../src/lib/tournament-fixtures-core.cjs');
@@ -44,7 +45,7 @@ test('apenas equipas com regras validadas mostram resultados de jogos genéricos
  assert.equal(canListMatches({entryType:'TEAM',sport:'Futebol',scoringMode:'RACE_POINTS'}),false);
 });
 test('contratos de grupos, jogos e histórico individual correspondem ao backend',()=>{
- const f=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-fixtures-api.ts'),'utf8');
+ const f=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-fixtures-api.ts'),'utf8'));
  assert.ok(f.includes('/groups'));
  assert.ok(f.includes('/matches?page='));
  assert.ok(f.includes('/'+String.fromCharCode(36)+'{id}/matches?page='));
@@ -52,9 +53,9 @@ test('contratos de grupos, jogos e histórico individual correspondem ao backend
 });
 test('ecrãs existem e equipas navegam para a página própria',()=>{
  const root=path.join(__dirname,'../app/tournaments/[communityId]/[id]');
- const list=fs.readFileSync(path.join(root,'teams.tsx'),'utf8');
- const detail=fs.readFileSync(path.join(root,'teams/[teamId].tsx'),'utf8');
- const fixturesScreen=fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8');
+ const list=untranslate(fs.readFileSync(path.join(root,'teams.tsx'),'utf8'));
+ const detail=untranslate(fs.readFileSync(path.join(root,'teams/[teamId].tsx'),'utf8'));
+ const fixturesScreen=untranslate(fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8'));
  assert.match(list,/Ver plantel e jogos|Abrir página da equipa|Ver equipa/);
  assert.match(detail,/teamProfileMatches/);
  assert.match(detail,/Partilhar convite da equipa/);
@@ -64,14 +65,14 @@ test('ecrãs existem e equipas navegam para a página própria',()=>{
 
 
 test('changing account clears private fixtures before reading new competition data',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8'));
  assert.match(screen,/if\(!auth\.token\|\|!auth\.username\)/);
  assert.match(screen,/setTournament\(null\);setGroups\(null\);setMatches\(\[\]\);setHasMore\(false\)/);
  assert.match(screen,/version!==generation\.current/);
  assert.match(screen,/setActive\('GROUP'\)/);
 });
 test('group standings show real server points and accessible team links',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/fixtures.tsx'),'utf8'));
  assert.match(screen,/groups\.groups\.map\(g=>/);
  assert.match(screen,/accessibilityLabel=\{'Ver equipa '\+row\.teamName\}/);
  assert.match(screen,/\{row\.points\} pts/);
@@ -81,14 +82,14 @@ test('group standings show real server points and accessible team links',()=>{
 
 
 test('individual match screen preserves confirmed server scores and clears stale pages',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8'));
  assert.match(screen,/matchScore\(m\)/);
  assert.match(screen,/m\.status==='COMPLETED'&&styles\.scoreBoxFinal/);
  assert.match(screen,/setTournament\(null\);setMatches\(\[\]\);setMore\(false\);setPage\(0\)/);
  assert.match(screen,/if\(version===generation\.current\)\{paging\.current=false;setBusy\(false\);\}/);
 });
 test('performance results render validated rankings without inferring winners',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8'));
  assert.match(screen,/validatedRank\(rank\)/);
  assert.match(screen,/style=\{styles\.positionBox\}/);
  assert.match(screen,/style=\{styles\.performance\} numberOfLines=\{2\}/);
@@ -99,12 +100,12 @@ test('performance results render validated rankings without inferring winners',(
 
 
 test('individual tournament cards use supported React Native font weights',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/matches.tsx'),'utf8'));
  assert.doesNotMatch(screen,/fontWeight:\s*['"]850['"]/);
  assert.match(screen,/fontWeight:'800'/);
 });
 test('performance results reject invalid route IDs before requesting official data',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/results.tsx'),'utf8'));
  assert.match(screen,/!Number\.isSafeInteger\(cid\)\|\|cid<=0\|\|!Number\.isSafeInteger\(tid\)\|\|tid<=0/);
  assert.match(screen,/setError\('Competição inválida\.'\)/);
  assert.match(screen,/performanceOverview\(cid,details,auth\.token,auth\.username\)/);
@@ -113,8 +114,8 @@ test('performance results reject invalid route IDs before requesting official da
 
 test('both participant and team calendars reject broken pagination from the server',()=>{
  const root=path.join(__dirname,'../app/tournaments/[communityId]/[id]');
- const team=fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8');
- const individual=fs.readFileSync(path.join(root,'matches.tsx'),'utf8');
+ const team=untranslate(fs.readFileSync(path.join(root,'fixtures.tsx'),'utf8'));
+ const individual=untranslate(fs.readFileSync(path.join(root,'matches.tsx'),'utf8'));
  for(const screen of [team,individual]){
   assert.match(screen,/import \{(validateFirstFixturePage,)?validateNextFixturePage\} from/);
   assert.match(screen,/version!==generation\.current\)return/);

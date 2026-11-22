@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const read=(p)=>untranslate(fs.readFileSync(path.join(root,p),'utf8'));
 
 test('Story editor opens the native device camera and retains media safety limits',()=>{
  const camera=read('src/components/StoryCameraCapture.tsx');

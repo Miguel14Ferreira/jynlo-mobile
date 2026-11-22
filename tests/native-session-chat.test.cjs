@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('session chat API is authenticated and correctly scoped',()=>{
  const api=read('src/lib/session-chat-api.ts');
  assert.match(api,/\/api\/sessions\/\$\{validSessionId\(id\)\}\/messages/);

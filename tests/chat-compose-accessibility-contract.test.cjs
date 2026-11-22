@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const read=relative=>untranslate(fs.readFileSync(path.join(__dirname,'..',relative),'utf8'));
 
 test('every chat composer exposes a meaningful action for screen readers',()=>{
  const direct=read('app/messages/[peer].tsx');

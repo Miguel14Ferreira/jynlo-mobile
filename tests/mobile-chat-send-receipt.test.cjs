@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {confirmedDirectChatSend:direct,confirmedCommunityChatSend:community}=require('../src/lib/chat-send-receipt.cjs');
@@ -24,8 +25,8 @@ test('community receipt belongs to exact community, text, author and reply',()=>
 test('UI protects drafts from unverified HTTP responses',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const root=path.join(__dirname,'..');
- const directSource=fs.readFileSync(path.join(root,'app/messages/[peer].tsx'),'utf8');
- const communitySource=fs.readFileSync(path.join(root,'src/components/CommunityChatPanel.tsx'),'utf8');
+ const directSource=untranslate(fs.readFileSync(path.join(root,'app/messages/[peer].tsx'),'utf8'));
+ const communitySource=untranslate(fs.readFileSync(path.join(root,'src/components/CommunityChatPanel.tsx'),'utf8'));
  assert.match(directSource,/confirmedDirectChatSend\(confirmed,auth\.username\|\|'',peer,submittedText,originalReply\?\.id\)/);
  assert.match(communitySource,/confirmedCommunityChatSend\(confirmed,id,username,message,originalReplyId\)/);
  for(const screen of [directSource,communitySource])assert.match(screen,/O servidor respondeu, mas não confirmou/);

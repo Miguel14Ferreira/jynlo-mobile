@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/communities/[id].tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/[id].tsx'),'utf8'));
 
 // The reset statements grew (follow state, sections); check each reset exists, in any order.
 function resetsInclude(source,calls){
@@ -65,7 +66,7 @@ test('community details use compact banner and readable member information',()=>
 });
 
 test('community creation clearly labels privacy controls and keeps sports selections touchable',()=>{
- const create=fs.readFileSync(path.join(__dirname,'../app/communities/create.tsx'),'utf8');
+ const create=untranslate(fs.readFileSync(path.join(__dirname,'../app/communities/create.tsx'),'utf8'));
  assert.match(create,/accessibilityRole="radio"/);
  assert.match(create,/accessibilityState=\{\{checked:visibility===value\}\}/);
  assert.match(create,/accessibilityLabel="Nome da comunidade"/);

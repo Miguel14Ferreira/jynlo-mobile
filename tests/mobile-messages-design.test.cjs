@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const inbox=fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8');
+const inbox=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/messages.tsx'),'utf8'));
 
 test('modern inbox keeps real conversation sources and refresh protections',()=>{
  assert.match(inbox,/communityInbox\(auth\.token,auth\.username\)/);

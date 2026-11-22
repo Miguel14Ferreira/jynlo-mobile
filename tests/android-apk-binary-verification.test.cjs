@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -98,7 +99,7 @@ test('unconfigured Android SDK and suspiciously small APK fail closed',()=>{
 test('both Codemagic Android workflows verify real binary BEFORE generating manifest',()=>{
  const fs=require('node:fs');
  const path=require('node:path');
- const yaml=fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8');
+ const yaml=untranslate(fs.readFileSync(path.join(__dirname,'../codemagic.yaml'),'utf8'));
  const pieces=yaml.split(/^  jynlo-android-(?:push-)?qa:/m).slice(1,3);
  assert.equal(pieces.length,2);
  for(const piece of pieces){

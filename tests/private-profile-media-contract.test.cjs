@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const source=fs.readFileSync('src/lib/private-profile-media.ts','utf8');
+const source=untranslate(fs.readFileSync('src/lib/private-profile-media.ts','utf8'));
 test('protected mobile downloads are restricted to authenticated Jynlo endpoints',()=>{
  assert.match(source,/API_BASE\+path/);
  assert.match(source,/Authorization:/);

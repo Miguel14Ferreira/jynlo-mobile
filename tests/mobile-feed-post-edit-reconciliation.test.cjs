@@ -1,11 +1,12 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {rememberPostEdit,reconcilePostEdits,RECEIPT_TTL_MS}=require('../src/lib/feed-interaction-reconciliation.cjs');
-const feed=fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8');
-const api=fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8');
+const feed=untranslate(fs.readFileSync(path.join(__dirname,'../app/(tabs)/index.tsx'),'utf8'));
+const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/social-feed-api.ts'),'utf8'));
 const post=(content,location=null)=>({type:'POST',postId:20,content,location,likeCount:1,commentCount:4});
 
 test('pre-edit GET cannot overwrite a confirmed text and location change',()=>{

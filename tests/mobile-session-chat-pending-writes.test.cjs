@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/SessionChatPanel.tsx'),'utf8'));
 const focused=source.slice(source.indexOf('useFocusEffect(useCallback('),source.indexOf('async function send()'));
 const send=source.slice(source.indexOf('async function send()'),source.indexOf('async function choosePhoto()'));
 const photo=source.slice(source.indexOf('async function uploadPhoto()'),source.indexOf('return <Page>'));

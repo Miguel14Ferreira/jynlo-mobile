@@ -1,6 +1,7 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 
 test('venue photo upload client keeps authentication and format safeguards',()=>{
  const upload=read('src/lib/venue-photo-upload.ts');

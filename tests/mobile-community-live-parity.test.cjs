@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const source=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 
 test('community Lives use authenticated endpoints and validate IDs, title and date',()=>{
  const api=source('src/lib/community-live-api.ts');

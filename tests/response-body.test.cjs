@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -26,7 +27,7 @@ test('respostas inválidas avisam para não repetir mutações',async()=>{
 test('resposta HTTP bem-sucedida mas inválida mantém erro próprio até à camada de API',async()=>{
   const {InvalidSuccessfulResponseError}=require('../src/lib/response-body.cjs');
   const fs=require('node:fs'),path=require('node:path');
-  const api=fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8');
+  const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/api.ts'),'utf8'));
   await assert.rejects(
     ()=>readSuccessfulResponse({status:200,text:async()=>'<html>invalid</html>'}),
     error=>error instanceof InvalidSuccessfulResponseError && /confirma o resultado/.test(error.message)

@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('Explorar usa catalogo completo em vez de chips exclusivos de tres desportos',()=>{
  const file=read('app/(tabs)/explore.tsx'),catalog=read('src/lib/sports.ts');
  assert.match(file,/import \{SPORTS\} from/);

@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {canSeeIndividualRoster,canManageConfirmation,ownEnrollment,registrationAction,participantStatus,canConfirmParticipant}=require('../src/lib/tournament-registration-core.cjs');
@@ -38,7 +39,7 @@ test('estado pedido não é anunciado como confirmação efetiva',()=>{
  assert.equal(participantStatus('X'),'Estado desconhecido');
 });
 test('API de inscrição usa endpoints e verbos exatos do backend, sem auto-retry',()=>{
- const api=fs.readFileSync(path.join(__dirname,'../src/lib/tournament-registration-api.ts'),'utf8');
+ const api=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/tournament-registration-api.ts'),'utf8'));
  for(const endpoint of ['/participants?page=${p}','/participants/me','/participants/${id}/confirm'])assert.ok(api.includes(endpoint),endpoint);
  assert.match(api,/method:'PUT'/);
  assert.match(api,/method:'DELETE'/);
@@ -46,7 +47,7 @@ test('API de inscrição usa endpoints e verbos exatos do backend, sem auto-retr
  assert.match(api,/await demoMember\(cid,username\)/);
 });
 test('ecrã tem ação de inscrição explícita, cancelamento confirmado e não diz que PENDING está confirmado',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/participants.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/participants.tsx'),'utf8'));
  assert.match(screen,/Alert\.alert\('Cancelar inscrição\?'/);
  assert.match(screen,/Pedir inscrição no torneio/);
  assert.match(screen,/Carregar mais participantes/);

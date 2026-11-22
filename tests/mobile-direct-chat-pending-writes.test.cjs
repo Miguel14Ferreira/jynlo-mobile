@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const code=fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8');
+const code=untranslate(fs.readFileSync(path.join(__dirname,'../app/messages/[peer].tsx'),'utf8'));
 const focus=code.slice(code.indexOf('useFocusEffect(useCallback('),code.indexOf('async function updateBlock()'));
 const send=code.slice(code.indexOf('async function send()'),code.indexOf('async function choosePhoto()'));
 const photo=code.slice(code.indexOf('async function uploadPhoto()'),code.indexOf('return <SafeAreaView'));

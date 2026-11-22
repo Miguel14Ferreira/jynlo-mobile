@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 // Regression contracts for community structured sends. These are source-level
 // guards, not device or backend integration tests.
@@ -5,7 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const source = fs.readFileSync(path.join(__dirname, '../src/components/CommunityChatPanel.tsx'), 'utf8');
+const source = untranslate(fs.readFileSync(path.join(__dirname, '../src/components/CommunityChatPanel.tsx'), 'utf8'));
 const structured = source.split('async function sendStructured(')[1]?.split('\n async function send(')[0];
 assert.ok(structured, 'sendStructured implementation must exist');
 test('structured sends are locked against simultaneous mutations and uploads', () => {

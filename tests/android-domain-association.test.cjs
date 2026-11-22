@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -20,7 +21,7 @@ test('requires handle_all_urls and valid SHA256 certificate fingerprint',()=>{
 test('the Android release exposes an explicit domain verification command',()=>{
  const pkg=require('../package.json');
  assert.equal(pkg.scripts['check:app-links'],'node scripts/check-android-app-links.cjs');
- const src=fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8');
+ const src=untranslate(fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8'));
  assert.ok(src.includes("const domain='d24sports.com'"));
  assert.ok(src.includes("const uri='https://'"+'+domain'));
  assert.match(src,/\.well-known\/assetlinks\.json/);
@@ -36,7 +37,7 @@ test('verified Android links must match the exact installed APK signature',()=>{
  assert.match(validateAssociation([valid],'BAD'),/não é SHA-256/);
 });
 test('the live domain check requires the installed APK signing certificate',()=>{
- const source=fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8');
+ const source=untranslate(fs.readFileSync(path.join(__dirname,'..','scripts','check-android-app-links.cjs'),'utf8'));
  assert.match(source,/process\.env\.JYNLO_ANDROID_SIGNING_SHA256/);
  assert.match(source,/validateAssociation\(data,expected\)/);
 });

@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const read=name=>fs.readFileSync(path.join(__dirname,'../.eas/workflows',name),'utf8');
+const read=name=>untranslate(fs.readFileSync(path.join(__dirname,'../.eas/workflows',name),'utf8'));
 
 test('Expo independent preflight is manual, private and verifies real API usage',()=>{
  const workflow=read('mobile-preflight.yml');

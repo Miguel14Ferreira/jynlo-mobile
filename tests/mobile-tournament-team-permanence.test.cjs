@@ -1,8 +1,9 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const screen=read('app/tournaments/[communityId]/[id]/teams/[teamId].tsx');
 const api=read('src/lib/team-api.ts');
 test('captain decides explicitly whether tournament team becomes permanent',()=>{

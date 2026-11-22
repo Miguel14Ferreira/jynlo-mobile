@@ -1,3 +1,4 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
@@ -22,15 +23,15 @@ test('does not infer image media when only an untyped opaque provider URI is ava
  assert.equal(pickerMediaMime({type:'image',uri:'content://gallery/opaque',fileName:'file.jpg',mimeType:'video/mp4'}),null);
 });
 test('feed and native Story capture both use the same validated parser',()=>{
- const feed=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
- const camera=fs.readFileSync(path.join(__dirname,'..','src','components','StoryCameraCapture.tsx'),'utf8');
+ const feed=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
+ const camera=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','StoryCameraCapture.tsx'),'utf8'));
  assert.match(feed,/pickerMediaMime\(asset\)/);
  assert.match(camera,/pickerMediaMime\(asset\)/);
 });
 
 test('camera permission denial offers settings without blocking the gallery',()=>{
- const feed=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
- const story=fs.readFileSync(path.join(__dirname,'..','src','components','StoryCameraCapture.tsx'),'utf8');
+ const feed=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
+ const story=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','StoryCameraCapture.tsx'),'utf8'));
  assert.match(feed,/if\(!permission\.granted\)/);
  assert.match(feed,/Linking\.openSettings\(\)/);
  assert.match(story,/setPermissionDenied\(true\)/);
@@ -41,7 +42,7 @@ test('camera permission denial offers settings without blocking the gallery',()=
  assert.match(feed,/launchImageLibraryAsync/);
 });
 test('media selection prevents duplicate pickers and stale cross-account uploads',()=>{
- const screen=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+ const screen=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
  assert.match(screen,/mediaPickerInFlight\.current\)return/);
  assert.match(screen,/mediaPickerInFlight\.current=true/);
  assert.match(screen,/finally\{if\(activeStoryAccount\.current===actorToken\)mediaPickerInFlight\.current=false;\}/);

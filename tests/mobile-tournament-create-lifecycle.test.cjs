@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/create.tsx'),'utf8'));
 
 test('tournament creator resets private draft when account or source community changes',()=>{
  assert.match(source,/const generation=useRef\(0\),identityRef=useRef\(''\)/);

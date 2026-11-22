@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/teams.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../app/tournaments/[communityId]/[id]/teams.tsx'),'utf8'));
 
 test('opening a different tournament clears the previous teams and draft',()=>{
  assert.match(source,/const generation=useRef\(0\),creatingRef=useRef\(false\)/);

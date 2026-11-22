@@ -1,6 +1,7 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/lib/auth.tsx'),'utf8'));
 test('every async authentication flow invalidates stale responses before writing session state',()=>{
  for(const name of ['apiSignIn(name,password)','googleLoginWithIdToken(credential)','googleRegisterWithIdToken(googlePending.credential,input)','confirmMfa(challengeId,code)','apiResendMfa(challengeId)']){
   const offset=source.indexOf('await '+name);

@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const {MAX_FILES,validateChatAlbum,measuredPhotoSize,chatAttachmentList}=require('../src/lib/chat-attachments-core.cjs');
 const photo=(uri,size=1200,mimeType='image/jpeg')=>({type:'image',uri,fileSize:size,mimeType});
 test('private album respects backend maximum and rejects unsafe media',()=>{

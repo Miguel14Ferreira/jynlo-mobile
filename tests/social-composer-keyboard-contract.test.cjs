@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const source=fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8');
+const source=untranslate(fs.readFileSync(path.join(__dirname,'..','app','(tabs)','index.tsx'),'utf8'));
 
 test('separate post and Story editors scroll their focused fields above keyboard',()=>{
  assert.match(source,/const postComposerScrollRef=useRef<ScrollViewInstance\|null>\(null\)/);
@@ -33,7 +34,7 @@ test('post media album uses shared icons for reordering without losing file-leve
 });
 
 test('editing a published post retains focused description and location above keyboard',()=>{
- const edit=fs.readFileSync(path.join(__dirname,'..','src','components','PostEditSheet.tsx'),'utf8');
+ const edit=untranslate(fs.readFileSync(path.join(__dirname,'..','src','components','PostEditSheet.tsx'),'utf8'));
  assert.match(edit,/Keyboard\.addListener\(showEvent/);
  assert.match(edit,/return\(\)=>subscription\.remove\(\)/);
  assert.match(edit,/<ScrollView ref=\{editorScrollRef\}/);

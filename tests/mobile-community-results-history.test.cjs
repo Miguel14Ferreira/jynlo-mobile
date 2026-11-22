@@ -1,7 +1,8 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {communityResults,officialRoundScore,roundPlayerContributions}=require('../src/lib/community-results-core.cjs');
-const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
+const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 const round=(id,date,score=null,entries=[],eventType='FOOTBALL_FINAL')=>({id,name:'Jornada '+id,playedAt:date,sport:'Futebol',eventType,teamScore:score,entries});
 test('history sorts by playedAt descending without mutating or inventing older rounds',()=>{
  const input={rounds:[round(1,'2026-10-01T15:00:00Z'),round(2,'2026-11-02T15:00:00Z'),round(3,'2026-11-02T15:00:00Z')],standings:[],seasons:[]};

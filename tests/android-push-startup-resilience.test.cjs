@@ -1,9 +1,10 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const layout=fs.readFileSync(path.join(__dirname,'../app/_layout.tsx'),'utf8');
+const layout=untranslate(fs.readFileSync(path.join(__dirname,'../app/_layout.tsx'),'utf8'));
 
 test('Android native notification listener errors cannot interrupt root navigation',()=>{
  assert.match(layout,/let listener:ReturnType<typeof Notifications\.addNotificationResponseReceivedListener>\|null=null/);

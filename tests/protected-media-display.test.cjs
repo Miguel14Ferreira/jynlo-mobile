@@ -1,10 +1,11 @@
+const untranslate=require('./untranslate.cjs');
 'use strict';
 const fs=require('node:fs');
 const path=require('node:path');
 const assert=require('node:assert/strict');
 const {test}=require('node:test');
 const root=path.join(__dirname,'..');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const read=file=>untranslate(fs.readFileSync(path.join(root,file),'utf8'));
 
 test('protected media credentials are limited to Jynlo API routes',()=>{
  const helper=read('src/lib/protected-media-source.ts');
