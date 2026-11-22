@@ -42,6 +42,8 @@ export interface SessionDetail extends SessionSummary {
   creatorUsername: string | null;
   address: string | null;
   canSeeExactAddress: boolean;
+  /** How the organiser is paid, never the number: shown before joining. */
+  paymentMethod?: 'MBWAY' | 'IN_PERSON' | null;
   joined: boolean;
   /** Public sharing permission comes from the server; never infer from absence of a password. */
   canSharePublicly?: boolean;

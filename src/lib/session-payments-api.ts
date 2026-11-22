@@ -6,6 +6,8 @@ export interface SessionPayments{
  priceAmount:number|null;organiser:boolean;method:PaymentMethod|null;mbwayPhone:string|null;
  me:{claimedAt:string|null;confirmedAt:string|null}|null;confirmedCount:number;playerCount:number;
  players:SessionPaymentPlayer[];lastReminderAt:string|null;
+ /** The organiser who receives the money (older servers omit it). */
+ payee?:{username:string|null;fullName:string|null;profilePicUrl:string|null}|null;
 }
 
 function base(sessionId:number):string{

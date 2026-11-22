@@ -551,7 +551,9 @@ export default function SessionScreen(){
       </View>
       <View style={styles.infoGrid}>
         <View style={styles.info}><Text style={styles.label}>{t('DATA E HORA')}</Text><Text style={styles.value}>{formatDate(s.gameDate)}</Text></View>
-        <View style={styles.info}><Text style={styles.label}>{t('VALOR')}</Text><Text style={styles.value}>{money(s.priceAmount)}</Text></View>
+        <View style={styles.info}><Text style={styles.label}>{t('VALOR')}</Text><Text style={styles.value}>{money(s.priceAmount)}</Text>
+         {Number(s.priceAmount)>0&&detail?.paymentMethod==='MBWAY'?<Text style={styles.hint}>{t('📱 MB WAY ao organizador')}</Text>
+          :Number(s.priceAmount)>0&&detail?.paymentMethod==='IN_PERSON'?<Text style={styles.hint}>{t('🤝 Em mão, no dia')}</Text>:null}</View>
         <View style={styles.info}><Text style={styles.label}>{t('PARTICIPANTES')}</Text><Text style={styles.value}>{s.participantCount??'—'}/{s.maxParticipants??'—'}</Text></View>
         <View style={styles.info}><Text style={styles.label}>{t('ESTADO')}</Text><Text style={styles.value}>{sessionParticipationLabel({status:s.status||'UNKNOWN',gameDate:s.gameDate,joined:false,waitlisted:false})}</Text></View>
       </View>
