@@ -115,6 +115,13 @@ export interface CommunityGroup extends CommunitySummary {
   teamTournamentsEnabled?:boolean; ownerUsername:string;
   /** Organizers decide whether every member may post in the feed and Stories. */
   membersCanPost?:boolean;
+  /** false: only owners/admins create sessions for this community. */
+  membersCanCreateSessions?:boolean;
+  /** Where the community usually plays (set on the web); prefills new games. */
+  habitualLatitude?:number|null;
+  habitualLongitude?:number|null;
+  habitualCity?:string|null;
+  habitualAddress?:string|null;
   myRole:CommunityRole|null; memberCount:number; createdAt:string; members:CommunityMember[];
 }
 export interface CommunitySearchResponse { communities:CommunitySummary[]; page:number; hasMore:boolean; }

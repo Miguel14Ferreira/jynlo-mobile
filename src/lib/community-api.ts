@@ -23,6 +23,10 @@ export async function setCommunityPostingPolicy(id:number,membersCanPost:boolean
   if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
   return request<CommunityGroup>(`${root}/${uid(id)}/posting-policy`,{token,method:'PUT',body:{membersCanPost}});
 }
+export async function setCommunitySessionPolicy(id:number,membersCanCreateSessions:boolean,token:string):Promise<CommunityGroup>{
+  if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
+  return request<CommunityGroup>(`${root}/${uid(id)}/session-creation-policy`,{token,method:'PUT',body:{membersCanCreateSessions}});
+}
 export async function myCommunities(token:string,username:string):Promise<CommunityGroup[]>{
   if(DEMO_MODE)return demo.mine(auth(token,username)) as CommunityGroup[];
   return request<CommunityGroup[]>(`${root}/mine`,{token});

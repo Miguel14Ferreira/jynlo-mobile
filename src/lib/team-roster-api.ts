@@ -78,3 +78,5 @@ export function acceptRosterClaim(claim:string,token:string|null):Promise<TeamRo
  if(!CLAIM.test(claim))return Promise.reject(Error('Link inválido ou já usado.'));
  return request<TeamRosterClaim>('/api/teams/roster-claims/'+claim+'/accept',{token:needToken(token),method:'POST'});
 }
+export const setMemberLine=(teamId:number,token:string|null,profileId:number,line:{shirtNumber:number|null;position:string|null})=>
+ request<TeamRosterEntry>(base(teamId)+'/members/'+profileId,{token:needToken(token),method:'PUT',body:line});
