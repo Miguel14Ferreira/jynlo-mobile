@@ -392,7 +392,7 @@ export default function SessionScreen(){
       message:`🏟️ ${t('{sport} na Jynlo',{sport:sportName(s?.sport)||t('Sessão desportiva')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta a sessão e confirma a presença: {url}',{url})}`,
       url
     }).catch(()=>setFeedback(t('Não foi possível abrir a partilha. Tenta novamente.')));
-    const publicUrl=`https://d24sports.com/sessions/${id}`;
+    const publicUrl=`https://jynlosports.com/sessions/${id}`;
     if(!owner||!auth.token||!detail){void send(publicUrl);return;}
     Alert.alert(t('Partilhar sessão'),
       t('A ligação normal não altera convites existentes. Um convite sem conta permite confirmar presença como convidado, mas criar um novo invalida os convites anteriores.'),
@@ -523,11 +523,11 @@ export default function SessionScreen(){
        <Text style={styles.panelHeading}>{t('Convite de participação recebido')}</Text>
        <Text style={styles.hint}>{t('O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.')}</Text>
        <Button secondary title={t('Continuar no browser')} onPress={()=>{
-         const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
+         const url=`https://jynlosports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
          void import('expo-web-browser').then(browser=>browser.openBrowserAsync(url)).catch(()=>Alert.alert(t('Convite'),t('Não foi possível abrir a ligação no browser.')));
        }}/>
        <Button secondary title={t('Partilhar ligação de confirmação')} onPress={()=>{
-         const url=`https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
+         const url=`https://jynlosports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
          void Share.share({message:url,url}).catch(()=>Alert.alert(t('Convite'),t('Não foi possível partilhar a ligação.')));
        }}/>
      </View>:null}

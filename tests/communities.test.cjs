@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {makeStore,communityUrl,safeId,normalizeCommunityInput,communitySports,describeCommunitySports}=require('../src/lib/community-core.cjs');
 const fields={name:'Futeboladas à Balda',sport:'Futebol',description:'Um jogo, muitas amizades',visibility:'PRIVATE'};
 test('URL corresponde à rota web real e rejeita IDs inválidos',()=>{
-  assert.equal(communityUrl(11),'https://d24sports.com/menu/communities/11');
+  assert.equal(communityUrl(11),'https://jynlosports.com/menu/communities/11');
   for(const id of [0,-1,'abc',Infinity,1.4])assert.throws(()=>safeId(id));
 });
 test('validação de criação é estrita',()=>{

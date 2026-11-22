@@ -2,7 +2,7 @@
 const {tr}=require('./i18n-core.cjs');
 const {sportName}=require('./sport-names.cjs');
 /** Pure validation and demo-state rules; also tested with Node without installing Expo. */
-const CANONICAL_WEB_ORIGIN = 'https://d24sports.com';
+const CANONICAL_WEB_ORIGIN = 'https://jynlosports.com';
 function safeId(id) {
   const n = Number(id);
   if (!Number.isSafeInteger(n) || n <= 0) throw new Error(tr('Identificador de comunidade inválido.'));

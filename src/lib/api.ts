@@ -241,7 +241,7 @@ export async function issueSessionGuestLink(id:number,token:string):Promise<stri
   const reply=await request<{token:string}>(`/api/sessions/${id}/guest-link`,{token,method:'POST'});
   if(!reply||typeof reply.token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(reply.token))
     throw Error('O servidor não confirmou uma ligação de convite válida.');
-  return `https://d24sports.com/sessions/${id}?guest=${encodeURIComponent(reply.token)}`;
+  return `https://jynlosports.com/sessions/${id}?guest=${encodeURIComponent(reply.token)}`;
 }
 
 /** "Jogar outra vez": invite the players of one of my previous sessions into a new one. */

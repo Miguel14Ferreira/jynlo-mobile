@@ -26,7 +26,7 @@ function googleCalendarUrl(session,exactAddress,now){
   text:'Jynlo — '+sport,
   dates:w.dates,
   details:tr('Sessão de {sport} na Jynlo.',{sport})+(session.creatorUsername?' '+tr('Criada por {user}.',{user:session.creatorUsername}):'')+
-   (Number.isSafeInteger(session.id)?'\nhttps://d24sports.com/sessions/'+session.id:''),
+   (Number.isSafeInteger(session.id)?'\nhttps://jynlosports.com/sessions/'+session.id:''),
   location:calendarLocation(session,exactAddress)
  });
  return 'https://calendar.google.com/calendar/render?'+q.toString();

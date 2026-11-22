@@ -1,5 +1,5 @@
 'use strict';
-const DOMAIN='https://d24sports.com';
+const DOMAIN='https://jynlosports.com';
 function sharedPostLink(post){
  if(!post||typeof post!=='object')return DOMAIN;
  const id=post.type==='POST'?post.postId:post.sessionId;

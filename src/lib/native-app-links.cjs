@@ -7,7 +7,7 @@ const JYNLO_HOSTS=['d24sports.com','jynlosports.com'];
 function nativeRouteForWebLink(path){
  if(typeof path!=='string'||!path.trim())return path;
  try{
-  const url=new URL(path,'https://d24sports.com');
+  const url=new URL(path,'https://jynlosports.com');
   if(url.protocol!=='https:'||!JYNLO_HOSTS.includes(url.hostname)||
      url.port||url.username||url.password)return path;
   // Browsers sometimes normalize shared links with a trailing slash.

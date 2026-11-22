@@ -17,7 +17,7 @@ function publicSessionResultMessage(game, result, sessionId) {
   const title = sport ? sport + ' · ' : '';
   return tr('🏆 Resultado oficial Jynlo\n') + title +
     tr('Equipa A {a} — {b} Equipa B',{a:result.scoreA,b:result.scoreB}) + '\n' +
-    'https://d24sports.com/sessions/' + sessionId;
+    'https://jynlosports.com/sessions/' + sessionId;
 }
 
 module.exports = { publicSessionResultMessage };

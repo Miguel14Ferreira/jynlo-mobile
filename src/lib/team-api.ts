@@ -14,7 +14,7 @@ const key=(communityId:number,tournamentId:number)=>`${safePositiveId(communityI
 const base=(communityId:number,tournamentId:number)=>`/api/communities/${safePositiveId(communityId)}/tournaments/${safePositiveId(tournamentId)}/teams`;
 export function shareableTeamInvite(communityId:number,tournamentId:number,teamId:number):string{
  // Web origin matches the already-published Angular deep-link contract.
- return teamInviteUrl('https://d24sports.com',communityId,tournamentId,teamId);
+ return teamInviteUrl('https://jynlosports.com',communityId,tournamentId,teamId);
 }
 export async function tournamentTeams(communityId:number,tournamentId:number,token:string,username:string):Promise<JynloTournamentTeam[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
