@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import TeamRosterImport from '../../src/components/TeamRosterImport';
 import {t} from '../../src/lib/i18n';
 import * as ImagePicker from 'expo-image-picker';
 import {Alert,AppState,Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -659,7 +660,8 @@ export default function TeamDetail(){
        <Text style={styles.note}>{t('@{a} · Ver perfil →',{a:p.username})}</Text>
       </Pressable>
       <Button title={t('Convidar')} disabled={saving||!pendingVerified} onPress={()=>void invite(p.profileId)}/>
-    </View>)}</>:null}
+    </View>)}
+    {team?<TeamRosterImport teamId={team.id} token={auth.token} onImported={()=>void load(false,true)}/>:null}</>:null}
    </View>:null}
    {activeTab==='TROPHIES'?<View style={styles.panel}><Text style={styles.heading}>{t('🏆 Troféus ({a})',{a:trophiesVerified?standaloneTrophies.length+championshipHonours.length:'—'})}</Text>
     {trophiesLoading?<Text style={styles.note}>{t('A carregar conquistas oficiais…')}</Text>:null}

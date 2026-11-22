@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {currentLocale,t} from '../lib/i18n';
-import {ActivityIndicator,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {HostInstance,ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {DEMO_MODE} from '../lib/api';
@@ -107,8 +107,18 @@ export function DemoBanner(){return DEMO_MODE?<View style={styles.demoBanner}>
 export function Eyebrow({children}:{children:React.ReactNode}){
   return <Text style={styles.eyebrow}>{children}</Text>;
 }
+/** When the person last pressed a button: an error right after it is shown as a pop-up. */
+let lastActionAt=0;
+export const ACTION_ERROR_WINDOW_MS=10000;
+export function markUserAction(){lastActionAt=Date.now();}
+function messageText(node:React.ReactNode):string{
+  if(node==null||typeof node==='boolean')return '';
+  if(typeof node==='string'||typeof node==='number')return String(node);
+  if(Array.isArray(node))return node.map(messageText).join('');
+  return '';
+}
 export function Button({title,onPress,disabled=false,secondary=false,danger=false}:{title:string;onPress:()=>void;disabled?:boolean;secondary?:boolean;danger?:boolean}){
-  return <Pressable accessibilityRole="button" accessibilityState={{disabled}} onPress={onPress} disabled={disabled} style={({pressed})=>[
+  return <Pressable accessibilityRole="button" accessibilityState={{disabled}} onPress={()=>{markUserAction();onPress();}} disabled={disabled} style={({pressed})=>[
     styles.button,secondary&&styles.buttonSecondary,danger&&styles.buttonDanger,
     (pressed||disabled)&&{opacity:0.65}] }>
     <Text style={[styles.buttonText,secondary&&styles.buttonTextSecondary,danger&&styles.buttonTextDanger]}>{title}</Text>
@@ -118,6 +128,12 @@ export function Badge({text}:{text:string}){
   return <View style={styles.badge}><Text style={styles.badgeText}>{text}</Text></View>;
 }
 export function Message({children,tone='normal'}:{children:React.ReactNode;tone?:'normal'|'error'}){
+  const text=tone==='error'?messageText(children).trim():'';
+  // Errors that follow a button press (save, create, send…) also open in the
+  // middle of the screen; the inline message stays for reference.
+  React.useEffect(()=>{
+    if(text&&Date.now()-lastActionAt<ACTION_ERROR_WINDOW_MS)Alert.alert(t('Algo correu mal'),text);
+  },[text]);
   return <View style={[styles.message,tone==='error'&&{borderColor:C.danger}]}>
     <Text style={[styles.messageText,tone==='error'&&{color:C.danger}]}>{children}</Text>
   </View>;
