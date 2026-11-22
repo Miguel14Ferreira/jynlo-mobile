@@ -146,6 +146,34 @@ export async function refreshPushLanguage(username:string,token:string):Promise<
  }
 }
 
+const AUTO_ASKED_KEY='jynlo.mobile.push.autoAsked.';
+
+/**
+ * Notifications are on by default: the first time an account opens the app on
+ * this device, ask for the system permission once and register the device.
+ * Never asks again (the person can still turn them on in Notificações), never
+ * takes over a device registered to another account, and never throws.
+ */
+export async function autoEnablePushOnce(username:string,token:string):Promise<void>{
+ if(DEMO_MODE||!username||!token||(Platform.OS!=='android'&&Platform.OS!=='ios'))return;
+ if(!androidPushConfigured()||pushOptInPending)return;
+ const key=AUTO_ASKED_KEY+username.toLowerCase().replace(/[^a-z0-9._-]/g,'_');
+ try{
+  if(await SecureStore.getItemAsync(key))return;
+  const other=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
+  if(other&&other!==username.toLowerCase())return;
+  if(other===username.toLowerCase()){await SecureStore.setItemAsync(key,'1');return;}
+  const Notifications=await import('expo-notifications');
+  const current=await Notifications.getPermissionsAsync();
+  // A person who already refused in the system settings is not asked again.
+  if(!current.granted&&current.canAskAgain===false){await SecureStore.setItemAsync(key,'1');return;}
+  await SecureStore.setItemAsync(key,'1');
+  await enableMobilePush(username,token);
+ }catch{
+  // Refused or unavailable: the Notificações screen still offers it.
+ }
+}
+
 export async function disableMobilePush(username:string,token:string):Promise<void>{
  // Invalidate an opt-in still waiting for native permission, Firebase or HTTP.
  invalidatePendingPushRegistration();

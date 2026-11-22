@@ -1,6 +1,7 @@
 import React,{useEffect,useRef} from 'react';
 import {LanguageProvider,t,useLanguage} from '../src/lib/i18n';
-import {refreshPushLanguage} from '../src/lib/mobile-push';
+import {autoEnablePushOnce,refreshPushLanguage} from '../src/lib/mobile-push';
+import {pushDeliveryReady} from '../src/lib/push-device-api';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
@@ -94,8 +95,30 @@ function PushLanguageSync(){
   },[auth.ready,auth.token,auth.username,language]);
   return null;
 }
+/** Phone notifications on by default: ask once, after first steps, on a main screen. */
+function PushAutoOptIn(){
+  const auth=useAuth(),pathname=usePathname();
+  const attempted=useRef<string|null>(null);
+  useEffect(()=>{
+    if(!auth.ready||!auth.token||!auth.username)return;
+    // Not on top of sign-in, sign-up or the first-steps questions.
+    if(/^\/(login|register|first-steps|welcome|confirm-email|mfa|reset-password|google-onboarding)/.test(pathname||''))return;
+    const account=auth.username.toLowerCase();
+    if(attempted.current===account)return;
+    attempted.current=account;
+    const username=auth.username,token=auth.token;
+    let fired=false;
+    const timer=setTimeout(()=>{
+      fired=true;
+      void pushDeliveryReady(token).then(ready=>{if(ready)void autoEnablePushOnce(username,token);}).catch(()=>{});
+    },2500);
+    // Leaving the screen early re-arms the check; once it ran, it stays done for this account.
+    return()=>{clearTimeout(timer);if(!fired&&attempted.current===account)attempted.current=null;};
+  },[auth.ready,auth.token,auth.username,pathname]);
+  return null;
+}
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
-function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><ErrorRouteTracker/><OfflineBanner/>
+function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><PushAutoOptIn/><ErrorRouteTracker/><OfflineBanner/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
