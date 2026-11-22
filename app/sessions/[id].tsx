@@ -28,6 +28,7 @@ import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,s
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
 import {AddToCalendarButton} from '../../src/components/AddToCalendarButton';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
   const photo=resolveJynloMedia(participant.profilePicUrl);
@@ -388,7 +389,7 @@ export default function SessionScreen(){
   const share=()=>{
     if(DEMO_MODE){setFeedback(t('Não é possível partilhar uma sessão fictícia da demonstração.'));return;}
     const send=(url:string)=>Share.share({
-      message:`🏟️ ${t('{sport} na Jynlo',{sport:s?.sport||t('Sessão desportiva')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta a sessão e confirma a presença: {url}',{url})}`,
+      message:`🏟️ ${t('{sport} na Jynlo',{sport:sportName(s?.sport)||t('Sessão desportiva')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta a sessão e confirma a presença: {url}',{url})}`,
       url
     }).catch(()=>setFeedback(t('Não foi possível abrir a partilha. Tenta novamente.')));
     const publicUrl=`https://d24sports.com/sessions/${id}`;
@@ -537,7 +538,7 @@ export default function SessionScreen(){
         {sessionPhoto?<Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/>:null}
         <View style={styles.top}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?t('{n} vagas',{n:spots}):t(sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true}))}/></View>
-        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{s.sport||t('Sessão desportiva')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{sportName(s.sport)||t('Sessão desportiva')}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||t('Local a confirmar')}</Text></View>
         {detail?<Text style={styles.levelLine}>🎯 {levelLabel(detail.skillLevel)}</Text>:null}
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?

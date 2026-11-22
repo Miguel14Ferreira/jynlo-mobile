@@ -12,6 +12,7 @@ import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/p
 import {MobileTheme} from '../../../src/lib/theme';
 import {ReportSheet} from '../../../src/components/ReportSheet';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../../src/lib/user-safety-api';
+import {sportName} from '../../../src/lib/sport-names.cjs';
 const T=MobileTheme.colors;
 const achievementLabels:Record<string,string>={
  FIRST_ACTIVITY:'🏅 Primeira atividade',
@@ -119,7 +120,7 @@ export default function PublicSocialProfile(){
    </View>
    {profile.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}
    {[profile.location,profile.country].filter(Boolean).length?<Text style={styles.sub}>⌖  {[profile.location,profile.country].filter(Boolean).join(' · ')}</Text>:null}
-   {sports.length?<View style={styles.tags}>{sports.map(s=><View key={s} style={styles.tag}><Text style={styles.tagLabel}>{s}</Text></View>)}</View>:null}
+   {sports.length?<View style={styles.tags}>{sports.map(s=><View key={s} style={styles.tag}><Text style={styles.tagLabel}>{sportName(s)}</Text></View>)}</View>:null}
    {status?<View style={styles.metrics}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver seguidores')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'followers'}})} style={styles.metric}>
      <Text style={styles.metricNum}>{status.followers}</Text><Text style={styles.sub}>{t('Seguidores')}</Text>
@@ -159,7 +160,7 @@ export default function PublicSocialProfile(){
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(entry.communityId)}})}>
      <View style={styles.competitionBody}>
       <Text style={styles.titleName}>{entry.tournamentName}</Text>
-      <Text style={styles.discoveryHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
+      <Text style={styles.discoveryHint}>{entry.communityName}{entry.sport?' · '+sportName(entry.sport):''}</Text>
      </View>
      <View style={styles.competitionResult}>
       <Text style={styles.competitionStatus}>{entry.individualChampion?t('🏆 Campeão individual'):t('Participação confirmada')}</Text>
@@ -177,7 +178,7 @@ export default function PublicSocialProfile(){
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(title.communityId)}})}>
      <Text style={styles.titleIcon}>🏆</Text>
      <Text style={styles.titleName}>{title.tournamentName}</Text>
-     <Text style={styles.discoveryHint}>{title.communityName}{title.sport?' · '+title.sport:''}</Text>
+     <Text style={styles.discoveryHint}>{title.communityName}{title.sport?' · '+sportName(title.sport):''}</Text>
      <Text style={styles.discoveryHint}>{title.completedAt.slice(0,7)}</Text>
    </Pressable>)}
   </View>:null}
@@ -221,13 +222,13 @@ export default function PublicSocialProfile(){
      accessibilityRole="button" accessibilityLabel={t('Abrir equipa {v}',{v:team.name})}
      style={styles.discoveryLink} onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
      <Text style={styles.discoveryLinkText}>{team.name}</Text>
-     <Text style={styles.discoveryHint}>{team.sport||t('Equipa desportiva')}</Text>
+     <Text style={styles.discoveryHint}>{sportName(team.sport)||t('Equipa desportiva')}</Text>
     </Pressable>)}
     {affiliations.communities.map(group=><Pressable key={'community-'+group.id}
      accessibilityRole="button" accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})}
      style={styles.discoveryLink} onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})}>
      <Text style={styles.discoveryLinkText}>{group.name}</Text>
-     <Text style={styles.discoveryHint}>{group.sport||t('Comunidade desportiva')}</Text>
+     <Text style={styles.discoveryHint}>{sportName(group.sport)||t('Comunidade desportiva')}</Text>
     </Pressable>)}
    </View>:null}
   {profile?<View style={styles.discovery}>

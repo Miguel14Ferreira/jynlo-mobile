@@ -2,6 +2,7 @@ import React from 'react';
 import {t} from '../lib/i18n';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {SessionSummary} from '../lib/types';
+import {sportName} from '../lib/sport-names.cjs';
 
 type Props={sessions:SessionSummary[];selectedId:number|null;onSelect:(id:number)=>void};
 const boundaries={north:42.2,south:36.8,west:-9.6,east:-6.0};
@@ -20,7 +21,7 @@ export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
     <Text style={styles.north}>N ↑</Text>
     <View pointerEvents="none" style={styles.continent}/>
     {mainland.map(s=><Pressable key={s.id} accessibilityRole="button"
-      accessibilityLabel={t('Ver sessão de {v}',{v:s.sport})+(s.city?' em '+s.city:'')}
+      accessibilityLabel={(s.city?t('Ver sessão de {sport} em {city}',{sport:sportName(s.sport),city:s.city}):t('Ver sessão de {v}',{v:sportName(s.sport)}))}
       onPress={()=>onSelect(s.id)} style={[styles.pin,{
        left:(clamp(100*((s.longitude!-boundaries.west)/(boundaries.east-boundaries.west))))+'%' as `${number}%`,
        top:(clamp(100*((boundaries.north-s.latitude!)/(boundaries.north-boundaries.south))))+'%' as `${number}%`,

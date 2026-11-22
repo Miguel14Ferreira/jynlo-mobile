@@ -9,6 +9,7 @@ import {C} from '../../src/lib/theme';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import {myTeamCompetitionInvitations,answerTeamCompetitionInvitation,type TeamCompetitionInvitation} from '../../src/lib/team-competition-invitations-api';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 export default function TeamsScreen(){
  const auth=useAuth(),router=useRouter();
@@ -208,7 +209,7 @@ export default function TeamsScreen(){
        onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
        <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
-       <Text style={styles.note} numberOfLines={1}>{team.sport||t('Várias modalidades')} · {team.location||t('Localização por definir')}</Text></View>
+       <Text style={styles.note} numberOfLines={1}>{sportName(team.sport)||t('Várias modalidades')} · {team.location||t('Localização por definir')}</Text></View>
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
   </View>:null}
@@ -220,7 +221,7 @@ export default function TeamsScreen(){
       onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
       <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
        <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
-        <Text style={styles.note} numberOfLines={1}>{t('{a} · Jogador confirmado',{a:team.sport||t('Várias modalidades')})}</Text></View>
+        <Text style={styles.note} numberOfLines={1}>{t('{a} · Jogador confirmado',{a:sportName(team.sport)||t('Várias modalidades')})}</Text></View>
        <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
     </Pressable>)}
   </View>:null}
@@ -236,7 +237,7 @@ export default function TeamsScreen(){
         onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}>
         <View style={styles.teamRow}><TeamBrandAvatar team={team} size={56}/>
         <View style={styles.teamCopy}><Text style={styles.heading} numberOfLines={2}>{team.name}</Text>
-        <Text style={styles.note} numberOfLines={1}>{team.sport||t('Várias modalidades')} · {team.location||t('Localização não indicada')}</Text></View>
+        <Text style={styles.note} numberOfLines={1}>{sportName(team.sport)||t('Várias modalidades')} · {team.location||t('Localização não indicada')}</Text></View>
         <JynloIcon name="chevron-right" color={C.mint} size={22}/></View>
       </Pressable>)}
   </View>

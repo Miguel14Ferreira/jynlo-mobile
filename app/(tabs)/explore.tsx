@@ -15,6 +15,7 @@ import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
 import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {filterChoices} from '../../src/lib/session-level-core.cjs';
+import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -76,7 +77,7 @@ export default function DiscoverScreen(){
  const sportSuggestions=useMemo(()=>{
    const query=normalize(sportQuery);
    const all=[...SPORTS,...discoveredCustomSports];
-   return (query?all.filter(name=>normalize(name).includes(query)):all).slice(0,12);
+   return (query?all.filter(name=>sportMatches(name,query)):all).slice(0,12);
  },[sportQuery,discoveredCustomSports]);
  const typedCustomSport=sportQuery.trim().replace(/\s+/g,' ');
  const canSearchCustomSport=typedCustomSport.length>=2&&typedCustomSport.length<=60
@@ -136,7 +137,7 @@ export default function DiscoverScreen(){
      </Pressable>
      {['',...POPULAR_SPORTS,...(sport&&!(POPULAR_SPORTS as readonly string[]).includes(sport)?[sport]:[])].map(item=><Pressable key={item||'Todas'} accessibilityRole="button"
        accessibilityState={{selected:sport===item}} onPress={()=>{setSportPickerVisible(false);chooseSport(item);}} style={[styles.chip,sport===item&&styles.selected]}>
-       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item||t('Todas')}</Text>
+       <Text style={[styles.chipText,sport===item&&{color:C.background}]}>{item?sportName(item):t('Todas')}</Text>
      </Pressable>)}
    </ScrollView>
    {sportPickerVisible?<View style={styles.sportResults}>
@@ -147,7 +148,7 @@ export default function DiscoverScreen(){
        <Text style={styles.sportResultText}>{t('Todas as modalidades')}</Text>
      </Pressable>
      {sportSuggestions.map(name=><Pressable key={name} accessibilityRole="button" onPress={()=>chooseSport(name)} style={styles.sportResult}>
-       <Text style={styles.sportResultText}>{name}</Text>
+       <Text style={styles.sportResultText}>{sportName(name)}</Text>
      </Pressable>)}
      {canSearchCustomSport?<Pressable accessibilityRole="button"
        accessibilityLabel={t('Pesquisar sessões de {sport}',{sport:typedCustomSport})}

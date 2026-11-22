@@ -8,6 +8,7 @@ import {communityDetails} from '../../../../src/lib/community-api';
 import {createCommunityChampionship} from '../../../../src/lib/championship-api';
 import {C} from '../../../../src/lib/theme';
 import type {CommunityGroup,CommunitySummary} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 export default function CreateChampionship(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -58,7 +59,7 @@ export default function CreateChampionship(){
    <Text style={styles.label}>{t('Modalidade da comunidade')}</Text>
    {sports.length===0?<Message tone="error">{t('Esta comunidade não tem modalidades disponíveis para criar campeonatos.')}</Message>:null}
    {sports.map(item=><Pressable key={item} accessibilityRole="radio" accessibilityState={{selected:sport===item}} onPress={()=>setSport(item)} disabled={saving} style={[styles.choice,sport===item&&styles.selected]}>
-    <Text style={styles.choiceText}>{sport===item?'● ':'○ '}{item}</Text>
+    <Text style={styles.choiceText}>{sport===item?'● ':'○ '}{sportName(item)}</Text>
    </Pressable>)}
    <Button title={saving?t('A criar…'):t('Criar campeonato')} disabled={saving||!name.trim()||!seasonLabel.trim()||!sport} onPress={()=>{void submit();}}/>
   </View>:null}

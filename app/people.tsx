@@ -7,6 +7,7 @@ import {discoverPeople,resolveJynloMedia} from '../src/lib/social-feed-api';
 import {useAuth} from '../src/lib/auth';
 import {C} from '../src/lib/theme';
 import type {FeedUserSuggestion} from '../src/lib/types';
+import {sportName} from '../src/lib/sport-names.cjs';
 export default function DiscoverPeople(){
   const auth=useAuth();const [people,setPeople]=useState<FeedUserSuggestion[]>([]);
   const [query,setQuery]=useState(''),[loading,setLoading]=useState(false),[error,setError]=useState('');
@@ -38,7 +39,7 @@ export default function DiscoverPeople(){
     {!loading&&!error&&!filtered.length?<Message>{t('Não encontrámos pessoas para estes filtros.')}</Message>:null}
     {filtered.map(person=><View key={person.username} style={styles.person}>
       {resolveJynloMedia(person.photoUrl)?<Image source={{uri:resolveJynloMedia(person.photoUrl)!}} style={styles.avatar}/>:<View style={styles.avatar}><Text style={styles.initial}>{person.displayName.charAt(0).toUpperCase()}</Text></View>}
-      <View style={{flex:1}}><Text style={styles.name}>{person.displayName}</Text><Text style={styles.handle}>@{person.username}</Text><Text style={styles.handle}>{[person.sport,person.city].filter(Boolean).join(' · ')}</Text></View>
+      <View style={{flex:1}}><Text style={styles.name}>{person.displayName}</Text><Text style={styles.handle}>@{person.username}</Text><Text style={styles.handle}>{[sportName(person.sport),person.city].filter(Boolean).join(' · ')}</Text></View>
     </View>)}
   </Page>;
 }

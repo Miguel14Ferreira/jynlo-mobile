@@ -12,6 +12,7 @@ import {label} from '../../../src/lib/competition-core.cjs';
 import {sportIcon} from '../../../src/lib/tournament-discovery-core.cjs';
 import {C} from '../../../src/lib/theme';
 import type {CommunityGroup,CommunitySummary,JynloTournament} from '../../../src/lib/types';
+import {sportName} from '../../../src/lib/sport-names.cjs';
 
 export default function CommunityCompetitions(){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
@@ -67,7 +68,7 @@ export default function CommunityCompetitions(){
    {championships.map(championship=><Pressable key={championship.id} accessibilityRole="button" accessibilityLabel={t('Abrir campeonato {v}',{v:championship.name})} style={styles.tournament}
     onPress={()=>router.push({pathname:'/communities/[id]/championships/[championshipId]',params:{id:String(id),championshipId:String(championship.id)}})}>
     <View style={{flex:1,gap:5}}><Text style={styles.tournamentTitle}>{championship.name}</Text>
-     <Text style={styles.classification}>{championship.sport} · {championship.seasonLabel}</Text>
+     <Text style={styles.classification}>{sportName(championship.sport)} · {championship.seasonLabel}</Text>
      <Text style={styles.small}>{t('{a} · {b} {c} associados',{a:championship.closedAt?t('Encerrado'):t('Em curso'),b:championship.competitions.length,c:championship.competitions.length===1?'torneio':'torneios'})}</Text>
      {championship.closedAt&&championship.championDisplayName?<Text style={styles.small}>{t('Campeão: {a}',{a:championship.championDisplayName})}</Text>:null}</View>
     <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
@@ -78,7 +79,7 @@ export default function CommunityCompetitions(){
    <View style={styles.header}>
     <Text maxFontSizeMultiplier={1.3} style={styles.icon}>{sportIcon(section.sport)}</Text>
     <View style={{flex:1,gap:4}}>
-     <Text style={styles.sectionTitle}>{section.sport}</Text>
+     <Text style={styles.sectionTitle}>{sportName(section.sport)}</Text>
      <Text style={styles.small}>{section.tournaments.length} {section.tournaments.length===1?'torneio':'torneios'}</Text>
     </View>
     {!section.selected?<Badge text="Histórico"/>:null}
@@ -97,7 +98,7 @@ export default function CommunityCompetitions(){
      <Text maxFontSizeMultiplier={1.3} style={styles.chevron}>›</Text>
    </Pressable>)}
    {organizer&&section.selected&&community&&canCreateTournamentForSport(community,section.sport)?
-     <Button secondary title={t('Criar torneio de {v}',{v:section.sport})} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id),sport:section.sport}})}/>:null}
+     <Button secondary title={t('Criar torneio de {v}',{v:sportName(section.sport)})} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id),sport:section.sport}})}/>:null}
    {organizer&&section.selected&&community&&!canCreateTournamentForSport(community,section.sport)?
      <Text style={styles.small}>{t('A criação nativa para esta modalidade ainda precisa de um formato de resultados validado. Os torneios existentes continuam acessíveis.')}</Text>:null}
   </View>):null}

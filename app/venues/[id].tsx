@@ -10,6 +10,7 @@ import {DEMO_MODE} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {uploadVenuePhoto} from '../../src/lib/venue-photo-upload';
 import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} from '../../src/lib/types';
+import {sportName,sportNames,surfaceName,venueTypeName} from '../../src/lib/sport-names.cjs';
 
 const info=(label:string,value:unknown)=>{
  if(typeof value!=='string'||!value.trim())return null;
@@ -115,13 +116,13 @@ export default function VenueDetailScreen(){
   {venue?<View style={styles.card}>
    <Text style={styles.name}>{venue.name}</Text>
    <Text style={styles.meta}>{[venue.city,venue.district].filter(Boolean).join(' · ')}</Text>
-   {info('Modalidades',venue.sports)}
-   {info(t('Tipo de recinto'),venue.venueType)}
+   {info('Modalidades',sportNames(venue.sports))}
+   {info(t('Tipo de recinto'),venueTypeName(venue.venueType))}
    {info('Morada',venue.address)}
    {mapUrl?<Button title={t('Abrir localização no mapa')} secondary
       onPress={()=>{void openExternal(mapUrl);}}/>:null}
    <Eyebrow>{t('INSTALAÇÕES E SERVIÇOS')}</Eyebrow>
-   {info('Superfície',venue.surfaceType)}
+   {info('Superfície',surfaceName(venue.surfaceType))}
    {info('Ambiente',venue.environmentType)}
    {info('Horário',venue.openingHours)}
    {info('Preços',venue.priceInfo)}
@@ -154,7 +155,7 @@ export default function VenueDetailScreen(){
    <Message>{t('O envio de novas fotografias está temporariamente suspenso até existir um processo de aprovação das contribuições.')}</Message>
    <Eyebrow>{t('CONDIÇÕES POR MODALIDADE')}</Eyebrow>
    {conditions.length?conditions.map(condition=><View key={condition.id} style={styles.condition}>
-    <Text style={styles.conditionTitle}>{condition.sport}</Text>
+    <Text style={styles.conditionTitle}>{sportName(condition.sport)}</Text>
     <Text style={styles.meta}>{condition.conditions}</Text>
     {info('Fonte',condition.informationSource)}
    </View>):<Text style={styles.meta}>{t('Sem informações adicionais por modalidade.')}</Text>}

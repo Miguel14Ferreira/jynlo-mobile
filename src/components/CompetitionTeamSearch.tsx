@@ -8,6 +8,7 @@ import {teamCompetitionInvitations,inviteTeamToCompetition,
 import {C} from '../lib/theme';
 import {GlobalTeamEnrollment} from './GlobalTeamEnrollment';
 import {communityTeamMemberships,type TeamCommunityMembership} from '../lib/team-community-memberships-api';
+import {sportName} from '../lib/sport-names.cjs';
 
 interface Props{communityId:number;competitionId:number;type:TeamCompetitionType;token:string;onEnrolled?:()=>void;}
 export function CompetitionTeamSearch({communityId,competitionId,type,token,onEnrolled}:Props){
@@ -98,7 +99,7 @@ export function CompetitionTeamSearch({communityId,competitionId,type,token,onEn
      const invitation=existing.find(x=>x.teamId===team.id);
      return <View key={team.id} style={styles.result}>
       <Text style={styles.name}>{team.name}</Text>
-      <Text style={styles.hint}>{team.sport||t('Várias modalidades')} · {team.location||t('Localização não indicada')}</Text>
+      <Text style={styles.hint}>{sportName(team.sport)||t('Várias modalidades')} · {team.location||t('Localização não indicada')}</Text>
       {invitation?<><Text style={styles.hint}>{t('Convite: {a}',{a:invitation.status==='PENDING'?'pendente':invitation.status==='ACCEPTED'?'aceite':'recusado'})}</Text>
        {invitation.status==='ACCEPTED'?<GlobalTeamEnrollment communityId={communityId}
          competitionId={competitionId} type={type} globalTeamId={team.id} token={token} onEnrolled={onEnrolled}/>:null}</>:

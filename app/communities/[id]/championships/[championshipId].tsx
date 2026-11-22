@@ -9,6 +9,7 @@ import {C} from '../../../../src/lib/theme';
 import {communityDetails} from '../../../../src/lib/community-api';
 import {tournamentsForCommunity} from '../../../../src/lib/competition-api';
 import type {JynloTournament} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 export default function ChampionshipDetail(){
  const {id,championshipId}=useLocalSearchParams<{id:string;championshipId:string}>();
@@ -65,7 +66,7 @@ export default function ChampionshipDetail(){
   {error?<Button secondary title={t('Tentar novamente')} onPress={()=>setRetry(value=>value+1)}/>:null}
   {championship?<View style={styles.card}>
    <Text style={styles.heading}>{championship.name}</Text>
-   <Text style={styles.sub}>{t('{a} · Época {b}',{a:championship.sport,b:championship.seasonLabel})}</Text>
+   <Text style={styles.sub}>{t('{a} · Época {b}',{a:sportName(championship.sport),b:championship.seasonLabel})}</Text>
    {championship.closedAt?<Message>Campeonato encerrado · Classificação e resultados arquivados{championship.championDisplayName?` · Campeão: ${championship.championDisplayName}`:''}</Message>:null}
    <Button secondary title={t('Equipas do campeonato')} onPress={()=>router.push({pathname:'/communities/[id]/championships/teams',params:{id:String(communityId),championshipId:String(competitionId)}})}/>
    <Button title={t('Ligas, Taças e resultados')} onPress={()=>router.push({pathname:'/communities/[id]/championships/events',params:{id:String(communityId),championshipId:String(competitionId)}})}/>

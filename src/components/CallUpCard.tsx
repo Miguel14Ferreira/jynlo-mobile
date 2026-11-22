@@ -6,6 +6,7 @@ import {joinSession,sessionDetail} from '../lib/api';
 import {formatDate} from '../lib/format.cjs';
 import {C} from '../lib/theme';
 import type {SessionDetail} from '../lib/types';
+import {sportName} from '../lib/sport-names.cjs';
 
 /**
  * Convocatória card in a chat. Everything shown comes from the session API
@@ -39,7 +40,7 @@ export function CallUpCard({sessionId,token,username}:{sessionId:number;token:st
  return <View style={styles.card} accessibilityLabel={t('Convocatória')}>
   <Text style={styles.kind}>{t('📣 CONVOCATÓRIA')}</Text>
   {session?<>
-   <Text style={styles.title}>{session.sport} · {session.city}</Text>
+   <Text style={styles.title}>{sportName(session.sport)} · {session.city}</Text>
    <Text style={styles.meta}>{formatDate(session.gameDate)}</Text>
    <View style={styles.bar}><View style={[styles.fill,{width:`${progress}%`}]}/></View>
    <Text style={styles.meta}>{t('{a}/{b} vão',{a:session.participantCount,b:session.maxParticipants})}</Text>

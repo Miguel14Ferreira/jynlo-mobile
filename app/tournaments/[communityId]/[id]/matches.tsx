@@ -11,6 +11,7 @@ import {validateFirstFixturePage,validateNextFixturePage} from '../../../../src/
 import {useAuth} from '../../../../src/lib/auth';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentIndividualMatch} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 export default function IndividualMatchesScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string}>(),cid=Number(params.communityId),tid=Number(params.id);
  const router=useRouter(),auth=useAuth();
@@ -58,7 +59,7 @@ export default function IndividualMatchesScreen(){
  }
  return <Page><DemoBanner/><Eyebrow>{t('TORNEIO · INDIVIDUAL')}</Eyebrow>
   <View style={styles.hero}><Text style={styles.heroLabel}>{t('CALENDÁRIO · INDIVIDUAL')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Calendário individual')}</Text>
-   {tournament?<Text style={styles.heroSubtitle}>{t('{a} · Jogos e resultados confirmados',{a:tournament.sport||t('Multidesporto')})}</Text>:null}
+   {tournament?<Text style={styles.heroSubtitle}>{t('{a} · Jogos e resultados confirmados',{a:sportName(tournament.sport)||t('Multidesporto')})}</Text>:null}
   </View>
   {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

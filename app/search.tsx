@@ -9,6 +9,7 @@ import {globalSearch,type GlobalSearchResults} from '../src/lib/global-search-ap
 import {cleanQuery,sections} from '../src/lib/global-search-core.cjs';
 import {resolveJynloMedia} from '../src/lib/social-feed-api';
 import {C,MobileTheme} from '../src/lib/theme';
+import {sportName} from '../src/lib/sport-names.cjs';
 
 const when=(iso:string)=>{const d=new Date(iso);return Number.isNaN(d.getTime())?'':
  d.toLocaleDateString(currentLocale(),{weekday:'short',day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString(currentLocale(),{hour:'2-digit',minute:'2-digit'});};
@@ -45,13 +46,13 @@ export default function SearchScreen(){
    <Section title={t('Pessoas')} icon="profile" items={view.sections.people} render={p=><Row key={p.username} title={p.nickname||p.fullName||p.username}
     subtitle={'@'+p.username+(p.location?' · '+p.location:'')} image={p.profilePicUrl?resolveJynloMedia(p.profilePicUrl):null}
     onPress={()=>router.push({pathname:'/social/[username]',params:{username:p.username}})}/>}/>
-   <Section title={t('Jogos')} icon="session" items={view.sections.sessions} render={s=><Row key={s.id} title={s.sport+' · '+s.city}
+   <Section title={t('Jogos')} icon="session" items={view.sections.sessions} render={s=><Row key={s.id} title={sportName(s.sport)+' · '+s.city}
     subtitle={when(s.gameDate)+' · '+s.participantCount+'/'+s.maxParticipants} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>}/>
    <Section title={t('Comunidades')} icon="community" items={view.sections.communities} render={c=><Row key={c.id} title={c.name}
-    subtitle={c.sport||c.description||''} image={c.photoUrl?resolveJynloMedia(c.photoUrl):null}
+    subtitle={sportName(c.sport)||c.description||''} image={c.photoUrl?resolveJynloMedia(c.photoUrl):null}
     onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(c.id)}})}/>}/>
    <Section title={t('Equipas')} icon="championship" items={view.sections.teams} render={t=><Row key={t.id} title={t.name}
-    subtitle={[t.sport,t.location].filter(Boolean).join(' · ')} onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(t.id)}})}/>}/>
+    subtitle={[sportName(t.sport),t.location].filter(Boolean).join(' · ')} onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(t.id)}})}/>}/>
    <Section title={t('Recintos')} icon="venue" items={view.sections.venues} render={v=><Row key={v.id} title={v.name}
     subtitle={v.city} onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(v.id)}})}/>}/>
   </>:null}

@@ -18,6 +18,7 @@ import {JynloIcon} from '../../src/components/JynloIcon';
 import SportsTeamChallengesPanel from '../../src/components/SportsTeamChallengesPanel';
 import type {TeamKitPattern} from '../../src/lib/sports-teams-api';
 import {sportsTeamCommunities,answerTeamCommunityMembership,removeTeamCommunityMembership,type TeamCommunityMembership} from '../../src/lib/team-community-memberships-api';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 export default function TeamDetail(){
  const {id,tab}=useLocalSearchParams<{id:string;tab?:string}>(),router=useRouter(),auth=useAuth();
@@ -506,7 +507,7 @@ export default function TeamDetail(){
       <TeamBrandAvatar team={team} size={94}/>
       <View style={styles.heroCopy}>
         <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team.name}</Text>
-        <Text style={styles.heroSubtitle}>{team.sport||t('Várias modalidades')} · {team.location||t('Localização por definir')}</Text>
+        <Text style={styles.heroSubtitle}>{sportName(team.sport)||t('Várias modalidades')} · {team.location||t('Localização por definir')}</Text>
       </View>
     </View>
     {team.description?<Text style={styles.description}>{team.description}</Text>:null}
@@ -669,12 +670,12 @@ export default function TeamDetail(){
     {championshipHonours.map(item=><View key={'season:'+item.championshipId+':'+(item.ownedEventId?'event:'+item.ownedEventId:'tournament:'+item.tournamentId)} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.competitionName}</Text>
       <Text style={styles.note}>{item.format==='LEAGUE'?t('Liga'):item.format==='KNOCKOUT'?t('Taça'):item.format==='CHAMPIONSHIP'?t('Campeonato'):item.format} · {item.championshipName} · {item.seasonLabel}</Text>
-      <Text style={styles.note}>{item.communityName} · {item.sport}</Text>
+      <Text style={styles.note}>{item.communityName} · {sportName(item.sport)}</Text>
       <Text style={styles.note}>{new Date(item.awardedAt).toLocaleDateString('pt-PT')}</Text>
     </View>)}
     {standaloneTrophies.map(item=><View key={item.tournamentId} style={styles.candidate}>
       <Text style={styles.heading}>🏆 {item.tournamentName}</Text>
-      <Text style={styles.note}>{item.communityName} · {item.sport||t('Modalidade não indicada')}</Text>
+      <Text style={styles.note}>{item.communityName} · {sportName(item.sport)||t('Modalidade não indicada')}</Text>
       {item.completedAt?<Text style={styles.note}>{new Date(item.completedAt).toLocaleDateString('pt-PT')}</Text>:null}
     </View>)}
    </View>:null}

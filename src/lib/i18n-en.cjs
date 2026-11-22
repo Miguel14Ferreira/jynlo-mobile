@@ -2,6 +2,7 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "{sport} em {city}, {date}": "{sport} in {city}, {date}",
   "(obrigatória)": "(required)",
   "(opcional)": "(optional)",
   "({n} já estavam inscritos ou não podiam ser convidados)": "({n} were already signed up or couldn't be invited)",

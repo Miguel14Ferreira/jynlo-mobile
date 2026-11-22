@@ -7,6 +7,7 @@ import {communityResultsOverview,type CommunityResultsOverview} from '../../../s
 import {communityResults,officialRoundScore,roundPlayerContributions} from '../../../src/lib/community-results-core.cjs';
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
+import {sportName} from '../../../src/lib/sport-names.cjs';
 
 export default function CommunityResultsScreen(){
  const {id:rawId}=useLocalSearchParams<{id:string}>();
@@ -55,7 +56,7 @@ export default function CommunityResultsScreen(){
     {results.seasons.map(season=><Pressable key={season.id} accessibilityRole="button"
       accessibilityState={{selected:seasonId===season.id}} onPress={()=>{setSeasonId(season.id);setShowAll(false);}}
       style={[styles.season,seasonId===season.id&&styles.active]}>
-      <Text style={styles.seasonLabel}>{season.label||season.name||t('Época {n}',{n:season.id})}{season.sport?' · '+season.sport:''}</Text>
+      <Text style={styles.seasonLabel}>{season.label||season.name||t('Época {n}',{n:season.id})}{season.sport?' · '+sportName(season.sport):''}</Text>
      </Pressable>)}
    </View>
    {seasonId===null?<Text style={styles.hint}>{t('Seleciona uma época para consultar a classificação específica. O histórico completo reúne as jornadas disponíveis.')}</Text>:null}
@@ -78,7 +79,7 @@ export default function CommunityResultsScreen(){
     const contributors=roundPlayerContributions(round);
     return <View key={round.id} style={styles.round}>
      <Text style={styles.roundTitle}>{round.name||t('Jornada {n}',{n:round.id})}</Text>
-     <Text style={styles.hint}>{round.sport||t('Modalidade não indicada')} · {new Date(round.playedAt).toLocaleDateString('pt-PT')}</Text>
+     <Text style={styles.hint}>{sportName(round.sport)||t('Modalidade não indicada')} · {new Date(round.playedAt).toLocaleDateString('pt-PT')}</Text>
      {score?<View style={styles.scoreRow}><Text style={styles.scoreSide}>{t('Equipa A')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.score}>{score.label}</Text><Text style={styles.scoreSide}>{t('Equipa B')}</Text></View>:
       <Text style={styles.hint}>{t('Sem marcador oficial registado. Consulta os resultados individuais da jornada.')}</Text>}
      {contributors.length>0?<View style={styles.contributions}>{contributors.map((p,i)=><Text key={p.name+i} style={styles.hint}>

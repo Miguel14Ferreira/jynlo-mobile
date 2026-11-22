@@ -10,6 +10,7 @@ import {formatDate} from '../lib/format.cjs';
 import {MobileTheme} from '../lib/theme';
 import {JynloIcon} from '../components/JynloIcon';
 import type {CommunityGroup,SessionSummary} from '../lib/types';
+import {sportName} from '../lib/sport-names.cjs';
 
 const colors=MobileTheme.colors;
 const MAX_GAMES=2;
@@ -52,11 +53,11 @@ export function HomeUpNext(){
    </Pressable>
   </View>
   {next.length?next.map(game=><Pressable key={game.id} accessibilityRole="button"
-    accessibilityLabel={`${game.sport} em ${game.city}, ${formatDate(game.gameDate)}`}
+    accessibilityLabel={t('{sport} em {city}, {date}',{sport:sportName(game.sport),city:game.city,date:formatDate(game.gameDate)})}
     onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(game.id)}})} style={styles.game}>
     <View style={styles.gameIcon}><JynloIcon name="session" size={22} color={colors.accent}/></View>
     <View style={{flex:1,gap:2}}>
-     <Text style={styles.gameTitle} numberOfLines={1}>{game.sport} · {game.city}</Text>
+     <Text style={styles.gameTitle} numberOfLines={1}>{sportName(game.sport)} · {game.city}</Text>
      <Text style={styles.gameMeta} numberOfLines={1}>{t('{a} · {b}/{c} jogadores',{a:formatDate(game.gameDate),b:game.participantCount,c:game.maxParticipants})}</Text>
     </View>
     <JynloIcon name="chevron-right" size={22} color={colors.accent}/>

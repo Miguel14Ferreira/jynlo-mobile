@@ -9,6 +9,7 @@ import {classificationKind,label} from '../../src/lib/competition-core.cjs';
 import {STATUSES,availableSports,filterTournaments,sportIcon} from '../../src/lib/tournament-discovery-core.cjs';
 import {C} from '../../src/lib/theme';
 import type {JynloTournament} from '../../src/lib/types';
+import {sportName} from '../../src/lib/sport-names.cjs';
 type Entry={communityId:number;communityName:string;tournament:JynloTournament};
 export default function TournamentsScreen(){
  const auth=useAuth(),router=useRouter();const [items,setItems]=useState<Entry[]>([]);
@@ -88,7 +89,7 @@ export default function TournamentsScreen(){
       <Text style={styles.classification}>{label(classificationKind(x.tournament))}</Text>
       <Text style={[styles.status,x.tournament.status==='IN_PROGRESS'&&styles.statusActive]}>{x.tournament.status==='DRAFT'?t('Em preparação'):x.tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}</Text>
     </View>
-    <Text style={styles.sportDetail}>{x.tournament.sport}</Text>
+    <Text style={styles.sportDetail}>{sportName(x.tournament.sport)}</Text>
   </Pressable>):null}
   {auth.token&&items.length>0?<Message>{t('As classificações respeitam as regras disponíveis para cada modalidade. Algumas provas podem ter funcionalidades limitadas no mobile.')}</Message>:null}
  </Page>;

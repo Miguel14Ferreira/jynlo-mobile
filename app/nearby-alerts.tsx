@@ -8,6 +8,7 @@ import {approximatePosition,myNearbyAlerts,saveNearbyAlerts} from '../src/lib/ne
 import {PLACES,RADII_KM,MAX_SPORTS,problem,samePreference,sportSuggestions,toggleSport,type NearbyAlertPreference} from '../src/lib/nearby-alerts-core.cjs';
 import {SPORTS} from '../src/lib/sports';
 import {C,MobileTheme} from '../src/lib/theme';
+import {sportName} from '../src/lib/sport-names.cjs';
 
 /** "Novos jogos perto de ti": opt-in alerts for new public games near a chosen place. */
 export default function NearbyAlertsScreen(){
@@ -86,11 +87,11 @@ export default function NearbyAlertsScreen(){
    <View style={styles.panel}>
     <Text style={styles.heading}>{t('Modalidades')}</Text>
     <Text style={styles.note}>{draft.sports.length?t('Só estas (máximo {a}). Toca para retirar.',{a:MAX_SPORTS}):t('Todas as modalidades. Escolhe algumas para receberes só essas.')}</Text>
-    {draft.sports.length?<View style={styles.chips}>{draft.sports.map(sport=><Chip key={sport} label={sport+'  ×'} selected disabled={busy}
+    {draft.sports.length?<View style={styles.chips}>{draft.sports.map(sport=><Chip key={sport} label={sportName(sport)+'  ×'} selected disabled={busy}
      onPress={()=>{setNotice('');setDraft(current=>current?toggleSport(current,sport):current);}}/>)}</View>:null}
     <TextInput style={styles.search} placeholder={t('Procurar modalidade…')} placeholderTextColor={C.muted} value={search}
      onChangeText={setSearch} accessibilityLabel={t('Procurar modalidade')} editable={!busy&&draft.sports.length<MAX_SPORTS}/>
-    {suggestions.length?<View style={styles.chips}>{suggestions.map(sport=><Chip key={sport} label={sport} selected={false} disabled={busy}
+    {suggestions.length?<View style={styles.chips}>{suggestions.map(sport=><Chip key={sport} label={sportName(sport)} selected={false} disabled={busy}
      onPress={()=>{setNotice('');setSearch('');setDraft(current=>current?toggleSport(current,sport):current);}}/>)}</View>:null}
    </View>
    {issue?<Message tone="error">{issue}</Message>:null}

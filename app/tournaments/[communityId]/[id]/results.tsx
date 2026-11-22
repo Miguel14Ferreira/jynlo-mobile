@@ -10,6 +10,7 @@ import {isPerformanceKind,label,classificationKind} from '../../../../src/lib/co
 import {displayPerson,formatMetres,formatPoints,formatSeconds,sourceRounds,stageLabel,validatedRank} from '../../../../src/lib/performance-core.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentPerformanceOverview,PerformanceRound} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 function RankingRow({rank,name,main,sub}:{rank:number;name:string;main:string;sub:string}){
  return <View style={styles.ranking}>
@@ -23,7 +24,7 @@ function EventRounds({rounds,title}:{rounds:PerformanceRound[];title:string}){
  return <View style={styles.panel}><Text style={styles.heading}>{title}</Text>
   {valid.length===0?<Text style={styles.note}>{t('Ainda não existem provas associadas.')}</Text>:valid.map(round=><View key={round.id} style={styles.round}>
    <Text style={styles.name}>{round.name||t('Prova sem designação')}</Text>
-   <Text style={styles.note}>{round.sport||t('Modalidade não indicada')}{round.eventDiscipline?` · ${round.eventDiscipline}`:''}</Text>
+   <Text style={styles.note}>{sportName(round.sport)||t('Modalidade não indicada')}{round.eventDiscipline?` · ${round.eventDiscipline}`:''}</Text>
   </View>)}
  </View>;
 }
@@ -61,7 +62,7 @@ export default function TournamentResultsScreen(){
  return <Page><DemoBanner/><Eyebrow>{t('RESULTADOS DA COMPETIÇÃO')}</Eyebrow>
   <View style={styles.hero}><Text style={styles.heroLabel}>{t('RESULTADOS · JYNLO')}</Text>
    <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Resultados desportivos')}</Text>
-   {tournament?<View style={styles.badges}><Badge text={tournament.sport||t('Multidesporto')}/><Badge text={label(kind)}/></View>:null}
+   {tournament?<View style={styles.badges}><Badge text={sportName(tournament.sport)||t('Multidesporto')}/><Badge text={label(kind)}/></View>:null}
   </View>
   {!auth.token?<Button title={t('Entrar para ver resultados')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

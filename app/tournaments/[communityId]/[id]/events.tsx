@@ -12,6 +12,7 @@ import {canManageEvents,managedKind,roundCollections,validateRacePointsCsv} from
 import {changeTournamentRound,updateTournamentRacePoints} from '../../../../src/lib/tournament-events-api';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentPerformanceOverview,PerformanceRound} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 const ACTIONS={link:'Associar',unlink:'Retirar'} as const;
 export default function TournamentEventsScreen(){
@@ -92,7 +93,7 @@ export default function TournamentEventsScreen(){
   return <View key={round.id} style={styles.round}>
    <View style={styles.roundText}>
     <Text style={styles.roundName}>{round.name||t('Prova {n}',{n:round.id})}</Text>
-    <Text style={styles.note}>{[round.sport,round.eventDiscipline].filter(Boolean).join(' · ')||t('Jornada da comunidade')}</Text>
+    <Text style={styles.note}>{[sportName(round.sport),round.eventDiscipline].filter(Boolean).join(' · ')||t('Jornada da comunidade')}</Text>
    </View>
    {editable?<Button secondary={action==='link'} danger={action==='unlink'}
     title={busy?t('A guardar…'):t(ACTIONS[action])} disabled={busy}
@@ -109,7 +110,7 @@ export default function TournamentEventsScreen(){
   {!loading&&tournament&&kind&&!canManageEvents(role,tournament)&&tournament.status!=='COMPLETED'
    ?<Message>{t('Esta página é exclusiva de proprietários e administradores da comunidade.')}</Message>:null}
   {!loading&&overview&&kind?<>
-   <View style={styles.badges}><Badge text={tournament?.sport||t('Modalidade')}/>
+   <View style={styles.badges}><Badge text={sportName(tournament?.sport)||t('Modalidade')}/>
     <Badge text={tournament?.status==='DRAFT'?t('Em preparação'):tournament?.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}/></View>
    <Message>{t('A classificação é calculada com os resultados oficiais de cada jornada.')}</Message>
    {DEMO_MODE?<Message>{t('Esta é uma demonstração isolada: associar e retirar provas está desativado.')}</Message>:null}

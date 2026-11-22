@@ -11,6 +11,7 @@ import {canListMatches,splitTeamMatches} from '../../../../src/lib/tournament-fi
 import {validateFirstFixturePage,validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamGroups,TournamentTeamMatch} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 export default function TeamFixturesScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string}>(),cid=Number(params.communityId),tid=Number(params.id);
  const router=useRouter(),auth=useAuth();
@@ -68,7 +69,7 @@ export default function TeamFixturesScreen(){
  const renderMatches=(entries:TournamentTeamMatch[])=>entries.map(m=><TournamentMatchCard key={m.id} match={m} onTeamPress={teamPage}/>);
  return <Page><DemoBanner/><Eyebrow>{t('TORNEIO · JOGOS')}</Eyebrow>
    <View style={styles.hero}><Text style={styles.heroLabel}>{t('CALENDÁRIO · JYNLO')}</Text><Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||t('Grupos e eliminatórias')}</Text>
-    {tournament?<Text style={styles.heroInfo}>{tournament.sport||t('Multidesporto')} · {tournament.format==='GROUP_KNOCKOUT'?t('Grupos e eliminatórias'):tournament.format==='KNOCKOUT'?t('Eliminatórias'):t('Liga')}</Text>:null}
+    {tournament?<Text style={styles.heroInfo}>{sportName(tournament.sport)||t('Multidesporto')} · {tournament.format==='GROUP_KNOCKOUT'?t('Grupos e eliminatórias'):tournament.format==='KNOCKOUT'?t('Eliminatórias'):t('Liga')}</Text>:null}
    </View>
    {!auth.token?<Button title={t('Entrar para consultar os jogos')} onPress={()=>router.push('/login')}/>:null}
    {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

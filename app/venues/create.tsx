@@ -9,6 +9,7 @@ import {C} from '../../src/lib/theme';
 import {normalizeCatalog,filterSports} from '../../src/lib/favorite-sports.cjs';
 import {buildVenueRequest,DISTRICTS} from '../../src/lib/venue-create.cjs';
 import type {NewVenueFields} from '../../src/lib/venue-create.cjs';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 const INITIAL:NewVenueFields={
  name:'',city:'',district:'',address:'',venueType:'',surfaceType:'',
@@ -137,7 +138,7 @@ export default function CreateVenueScreen(){
       accessibilityRole="checkbox" accessibilityState={{checked:sports.includes(s)}}
       style={[styles.choice,sports.includes(s)&&styles.selected]} onPress={()=>pickSport(s)}
       disabled={busy}>
-      <Text style={styles.choiceText}>{sports.includes(s)?'☑':'☐'} {s}</Text>
+      <Text style={styles.choiceText}>{sports.includes(s)?'☑':'☐'} {sportName(s)}</Text>
     </Pressable>)}
     {filterSports(catalog,search).length>30?<Text style={styles.hint}>{t('Pesquisa para encontrares mais modalidades.')}</Text>:null}
    </View>:null}

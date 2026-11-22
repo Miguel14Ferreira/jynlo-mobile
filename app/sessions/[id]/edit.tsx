@@ -13,6 +13,7 @@ import {isOrganizer} from '../../../src/lib/session-state.cjs';
 import {useAuth} from '../../../src/lib/auth';
 import {C} from '../../../src/lib/theme';
 import type {SessionDetail} from '../../../src/lib/types';
+import {sportMatches,sportName} from '../../../src/lib/sport-names.cjs';
 
 type Draft={sport:string;date:string;hour:string;city:string;address:string;
  maxParticipants:string;minParticipants:string;priceAmount:string;meetingPointInstructions:string;description:string};
@@ -51,7 +52,7 @@ export default function EditSession(){
  },[id,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{generation.current++;};},[load]));
  const set=(key:keyof Draft,value:string)=>setDraft(prev=>prev?{...prev,[key]:value}:prev);
- const matches=SPORTS.filter(name=>name.toLocaleLowerCase('pt-PT').includes(sportQuery.toLocaleLowerCase('pt-PT'))).slice(0,15);
+ const matches=SPORTS.filter(name=>sportMatches(name,sportQuery)).slice(0,15);
  function confirm(){
   if(!draft||!session||!auth.token||busy||saving.current||DEMO_MODE)return;
   let payload:SessionDetailsUpdate;
@@ -89,14 +90,14 @@ export default function EditSession(){
    <Text style={styles.help}>{t('As alterações aplicam-se a esta sessão. Algumas não são possíveis depois de a sessão começar.')}</Text>
    <Text style={styles.label}>{t('Modalidade')}</Text>
    <Pressable style={styles.picker} disabled={busy} onPress={()=>setSportPicker(!sportPicker)}>
-    <Text style={styles.pickerText}>{draft.sport}  ▾</Text>
+    <Text style={styles.pickerText}>{sportName(draft.sport)}  ▾</Text>
    </Pressable>
    {sportPicker?<View style={styles.field}>
     <TextInput style={styles.input} placeholder={t('Pesquisar modalidade')} placeholderTextColor={C.muted}
       value={sportQuery} onChangeText={setSportQuery}/>
     <ScrollView nestedScrollEnabled style={{maxHeight:230}} keyboardShouldPersistTaps="handled">
      {matches.map(name=><Pressable key={name} style={styles.option} onPress={()=>{set('sport',name);setSportPicker(false);setSportQuery('');}}>
-      <Text style={styles.pickerText}>{name}</Text>
+      <Text style={styles.pickerText}>{sportName(name)}</Text>
      </Pressable>)}
     </ScrollView>
    </View>:null}

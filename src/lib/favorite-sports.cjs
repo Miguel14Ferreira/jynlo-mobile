@@ -1,4 +1,5 @@
 'use strict';
+const {sportMatches}=require('./sport-names.cjs');
 const {tr}=require('./i18n-core.cjs');
 
 /** Names come from SportsCatalog.ALLOWED on the backend; never invent local labels. */
@@ -26,7 +27,6 @@ function validateFavoriteSports(current,catalog){
  return null;
 }
 function filterSports(catalog,search){
- const q=(search||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT');
- return catalog.filter(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT').includes(q));
+ return catalog.filter(s=>sportMatches(s,search));
 }
 module.exports={parseFavoriteSports,normalizeCatalog,toggleFavoriteSport,validateFavoriteSports,filterSports};
