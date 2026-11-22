@@ -1,5 +1,6 @@
 import React,{useEffect,useRef} from 'react';
-import {LanguageProvider,t} from '../src/lib/i18n';
+import {LanguageProvider,t,useLanguage} from '../src/lib/i18n';
+import {refreshPushLanguage} from '../src/lib/mobile-push';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
@@ -78,8 +79,23 @@ function PushNavigation(){
 }
 installGlobalErrorReporting();
 startNetworkMonitoring();
+/** Keeps the server's copy of the app language in step for lock-screen notifications. */
+function PushLanguageSync(){
+  const auth=useAuth(),{language}=useLanguage();
+  const synced=useRef<string|null>(null);
+  useEffect(()=>{
+    if(!auth.ready||!auth.token||!auth.username)return;
+    const key=auth.username.toLowerCase()+'|'+language;
+    // Portuguese is the server default; an English app tells it once per start.
+    if(synced.current===null&&language!=='en'){synced.current=key;return;}
+    if(synced.current===key)return;
+    synced.current=key;
+    void refreshPushLanguage(auth.username,auth.token);
+  },[auth.ready,auth.token,auth.username,language]);
+  return null;
+}
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
-function Navigation(){const auth=useAuth();return <><PushNavigation/><ErrorRouteTracker/><OfflineBanner/>
+function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><ErrorRouteTracker/><OfflineBanner/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>

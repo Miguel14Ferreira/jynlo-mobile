@@ -2,7 +2,9 @@ import {DEMO_MODE,request} from './api';
 
 /** Device registration is opt-in and requires a real OS-issued Expo push token. */
 export type MobileDeviceRegistration={
- deviceId:string;expoPushToken:string;platform:'android'|'ios'
+ deviceId:string;expoPushToken:string;platform:'android'|'ios';
+ /** App language, so lock-screen notifications use it. */
+ language?:'pt'|'en'
 };
 export async function registerPushDevice(token:string,device:MobileDeviceRegistration):Promise<void>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para ativar notificações.');
