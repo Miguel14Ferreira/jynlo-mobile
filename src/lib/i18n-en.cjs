@@ -3687,7 +3687,7 @@ const EN={
   "Só para membros confirmados · {a}": "Confirmed members only · {a}",
   "Só podes configurar as primeiras 20 posições.": "You can only set up the first 20 positions.",
   "Só quem administra esta comunidade pode criar torneios nela.": "Only people who manage this community can create tournaments in it.",
-  "Só seguidores aprovados poderão ver as tuas publicações e stories. Os seguidores atuais mantêm acesso.": "Only approved followers will be able to see your posts and stories. Current followers keep access.",
+  "Só seguidores aprovados poderão ver as tuas publicações e stories. Os seguidores atuais mantêm acesso. As tuas fotografias e vídeos passam para um armazenamento protegido; pode demorar um pouco.": "Only approved followers will see your posts and stories. Current followers keep access. Your photos and videos move to protected storage; this may take a moment.",
   "Só tu podes alterar esta preferência.": "Only you can change this preference.",
   "TIPO DE COMPETIÇÃO": "COMPETITION TYPE",
   "TIPO DE PROVA": "EVENT TYPE",
