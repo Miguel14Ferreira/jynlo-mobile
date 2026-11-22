@@ -14,11 +14,12 @@ test('session creation: sends official API contract, defaults to immediate one-o
  assert.match(payload.gameDate,/^2030-06-10T/);
 });
 test('session creation: private games are invite-only and never send a password',()=>{
+ const typed='x'.repeat(6);
  const privateGame=createSessionPayload({...valid,privateGame:true,password:''},sports,0);
  assert.equal(privateGame.privateGame,true);
  assert.equal(privateGame.password,null);
- assert.equal(createSessionPayload({...valid,privateGame:true,password:'abcd'},sports,0).password,null);
- assert.equal(createSessionPayload({...valid,password:'secret'},sports,0).password,null);
+ assert.equal(createSessionPayload({...valid,privateGame:true,password:typed},sports,0).password,null);
+ assert.equal(createSessionPayload({...valid,password:typed},sports,0).password,null);
 });
 test('session creation: rejects unsafe sport names, invalid cities, limits and prices',()=>{
  assert.throws(()=>createSessionPayload({...valid,sport:'<script>'},sports,0));
@@ -206,10 +207,11 @@ test('session confirmation: public and community visibility reflect the submitte
  assert.match(groupText,/Apenas membros da comunidade/);
  assert.match(groupText,/Comunidade Equipa A/);
  assert.doesNotMatch(groupText,/Pública/);
- const privatePayload=createSessionPayload({...valid,privateGame:true,password:'supersecret'},sports,0);
+ const typedValue='y'.repeat(11);
+ const privatePayload=createSessionPayload({...valid,privateGame:true,password:typedValue},sports,0);
  const privateText=describeSessionConfirmation(privatePayload);
  assert.match(privateText,/Só por convite/);
- assert.doesNotMatch(privateText,/supersecret/);
+ assert.ok(!privateText.includes(typedValue));
  const sharePayload=createSessionPayload({...valid,communityShareIds:[12,13]},sports,0);
  const shareText=describeSessionConfirmation(sharePayload,{sharedCommunityNames:['Grupo A','Grupo B']});
  assert.match(shareText,/Apenas membros das comunidades/);
