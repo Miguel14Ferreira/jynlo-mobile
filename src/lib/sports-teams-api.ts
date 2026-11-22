@@ -234,6 +234,9 @@ export interface SportsTeamMember {
   profilePicUrl?: string | null;
   fullName?: string | null;
   bio?: string | null;
+  /** From the squad line the owner linked to this player. */
+  shirtNumber?: number | null;
+  position?: string | null;
 }
 export interface SportsTeamInvitation {
   teamId: number;
