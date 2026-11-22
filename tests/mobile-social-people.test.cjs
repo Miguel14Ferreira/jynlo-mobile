@@ -36,7 +36,8 @@ test('profile and Feed offer accessible, distinct actions',()=>{
  assert.match(feed,/Gostos privados/);
  assert.match(feed,/pathname:'\/posts\/\[postId\]\/likers'/);
  assert.match(feed,/toggleLike\(item\)/);
- assert.match(feed,/item\.likeCount\} gostos/);
+ assert.match(feed,/item\.likeCount/);
+ assert.match(feed,/ gostos/);
 });
 test('route parameters are validated before reading lists',()=>{
  assert.match(follows,/kind!=='followers'&&kind!=='following'/);

@@ -25,7 +25,7 @@ test('image-led posts show caption after engagement controls; session activities
  assert.ok(post,'post card must exist');
  const image=post.indexOf('<PostAlbumCarousel items={album}');
  const actions=post.indexOf('style={styles.postActions}');
- const caption=post.indexOf("item.content?<Text style={styles.postBody}>",actions);
+ const caption=post.indexOf("<Text style={styles.postBody} numberOfLines={4}>",actions);
  assert.ok(image>=0&&actions>image&&caption>actions,'post image, actions, then caption');
  assert.match(post,/item\.type!=='POST'&&item\.content/);
  assert.match(post,/accessibilityLabel="Partilhar publicação"/);
@@ -78,10 +78,10 @@ test('Stories open the device camera and still offer a gallery without a tall bl
  assert.match(camera,/ImagePicker\.launchCameraAsync/);
  assert.doesNotMatch(camera,/<CameraView/);
 });
-test('feed engagement actions use three equal touch targets and separate counts',()=>{
+test('feed engagement actions are compact icons with their counts beside them',()=>{
  assert.match(feed,/postActions:\{flexDirection:'row',alignItems:'center'/);
- assert.match(feed,/postPrimaryAction:\{flex:1,minWidth:0,minHeight:46/);
- assert.match(feed,/postEngagementSummary:\{flexDirection:'row',alignItems:'center',flexWrap:'wrap'/);
+ assert.match(feed,/postPrimaryAction:\{minWidth:40,minHeight:44/);
+ assert.match(feed,/postSummaryAction:\{minHeight:44/);
 });
 
 test('post creation supports camera, multiple gallery assets and one-item removal',()=>{
@@ -96,7 +96,7 @@ test('post creation supports camera, multiple gallery assets and one-item remova
  assert.match(composer,/changeComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
  assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);
- assert.match(feed,/postMediaPreviewImage:\{width:'100%',height:255,backgroundColor:/);
+ assert.match(feed,/postMediaPreviewImage:\{width:'100%',aspectRatio:4\/5,maxHeight:460,backgroundColor:/);
 });
 
 test('feed comments use a dismissible bottom sheet instead of expanding under the post',()=>{
@@ -149,7 +149,7 @@ test('feed and story text remains legible with accessible 44pt post actions',()=
  assert.match(feed,/postMeta:\{color:MUTED,fontSize:12,lineHeight:18/);
  assert.match(feed,/commentBody:\{fontSize:14,color:WHITE,lineHeight:20/);
  assert.match(feed,/storyReplyHint:\{fontSize:13,color:MUTED/);
- assert.match(feed,/postPrimaryAction:\{flex:1,minWidth:0,minHeight:46/);
+ assert.match(feed,/postPrimaryAction:\{minWidth:40,minHeight:44/);
  assert.match(feed,/publishPost\(body,media,actor,username/);
  assert.match(feed,/publishStory\(body,media,actor,username/);
 });

@@ -567,6 +567,8 @@ export default function JynloFeedHome(){
   // already in flight. Clear a tombstone only when the backend omits the item.
   const confirmedRemovedFeedKeys=useRef<Set<string>>(new Set());
   const [publishNotice,setPublishNotice]=useState<'post'|'story'|null>(null);
+  // The confirmation floats over the feed and goes away by itself.
+  useEffect(()=>{if(!publishNotice)return;const timer=setTimeout(()=>setPublishNotice(null),5000);return()=>clearTimeout(timer);},[publishNotice]);
   const [confirmedPostId,setConfirmedPostId]=useState<number|null>(null);
   const [postPublishError,setPostPublishError]=useState(''),[storyPublishError,setStoryPublishError]=useState('');
   const [postRetryAcknowledged,setPostRetryAcknowledged]=useState(true);
@@ -1338,37 +1340,35 @@ export default function JynloFeedHome(){
         renderVideo={uri=><MediaVideo uri={uri}/>}/>:null}
       {item.type==='POST'?<>
         <View style={styles.postActions}>
-          <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postPrimaryAction}
+          <Pressable onPress={()=>{void toggleLike(item);}} disabled={likeBusy} style={styles.postPrimaryAction} hitSlop={6}
             accessibilityRole="button" accessibilityState={{selected:Boolean(item.likedByMe),disabled:likeBusy}}
             accessibilityLabel={item.likedByMe?t('Retirar gosto'):t('Gostar')}>
-            <JynloIcon name="like" color={item.likedByMe?'#FF7797':TEAL} size={23} active={item.likedByMe}/>
-            <Text style={[styles.postPrimaryLabel,item.likedByMe&&styles.postLikedLabel]}>{t('Gostar')}</Text>
+            <JynloIcon name="like" color={item.likedByMe?'#FF7797':WHITE} size={25} active={item.likedByMe}/>
           </Pressable>
-          <Pressable onPress={()=>{void openComments(item);}} style={styles.postPrimaryAction} accessibilityRole="button" accessibilityLabel={t('Abrir comentários')}>
-            <JynloIcon name="comment" color={TEAL} size={23}/>
-            <Text style={styles.postPrimaryLabel}>{t('Comentar')}</Text>
-          </Pressable>
-          <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel={t('Partilhar publicação')} style={styles.postPrimaryAction}>
-            <JynloIcon name="share" color={TEAL} size={23}/>
-            <Text style={styles.postPrimaryLabel}>{t('Partilhar')}</Text>
-          </Pressable>
-        </View>
-        <View style={styles.postEngagementSummary}>
-          <Pressable accessibilityRole="button" accessibilityLabel={item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Lista de gostos privada":"Ver quem gostou desta publicação"}
+          <Pressable accessibilityRole="button" accessibilityLabel={Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())?t('Gostos privados'):t('{a} gostos',{a:item.likeCount})} accessibilityHint={t('Ver quem gostou desta publicação')}
             disabled={Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())||!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0}
             onPress={()=>router.push({pathname:'/posts/[postId]/likers',params:{postId:String(item.postId)}})} style={styles.postSummaryAction}>
-            <Text style={styles.actionCount}>{item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase()?"Gostos privados":`${item.likeCount} gostos`}</Text>
+            <Text style={[styles.actionCount,item.likedByMe&&styles.postLikedLabel]}>{Boolean(item.hideLikers&&item.authorUsername.toLowerCase()!==auth.username?.toLowerCase())?'—':String(item.likeCount)}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir comentários desta publicação')} style={styles.postSummaryAction}
+          <Pressable onPress={()=>{void openComments(item);}} style={styles.postPrimaryAction} hitSlop={6} accessibilityRole="button" accessibilityLabel={t('Abrir comentários')}>
+            <JynloIcon name="comment" color={WHITE} size={24}/>
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('{a} comentários',{a:item.commentCount})} accessibilityHint={t('Abrir comentários desta publicação')} style={styles.postSummaryAction}
             onPress={()=>{void openComments(item);}}>
-            <Text style={styles.actionCount}>{t('{a} comentários',{a:item.commentCount})}</Text>
+            <Text style={styles.actionCount}>{String(item.commentCount)}</Text>
           </Pressable>
-          {Number.isSafeInteger(item.postId)&&item.postId!>0?<Pressable accessibilityRole="button"
-            accessibilityLabel={t('Abrir detalhe completo da publicação')}
-            onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}
-            style={styles.postDetailAction}><Text style={styles.postDetailLabel}>{t('Ver publicação ›')}</Text></Pressable>:null}
+          <Pressable onPress={()=>{void sharePost(item);}} accessibilityRole="button" accessibilityLabel={t('Partilhar publicação')} style={styles.postPrimaryAction} hitSlop={6}>
+            <JynloIcon name="share" color={WHITE} size={23}/>
+          </Pressable>
         </View>
-        {item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
+        {item.content?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir detalhe completo da publicação')}
+          disabled={!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0}
+          onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(item.postId)}})}>
+          <Text style={styles.postBody} numberOfLines={4}><Text style={styles.postCaptionAuthor}>{item.authorDisplayName||item.authorUsername} </Text>{item.content}</Text>
+        </Pressable>:null}
+        {item.commentCount>0?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir comentários desta publicação')} onPress={()=>{void openComments(item);}}>
+          <Text style={styles.postMeta}>{item.commentCount===1?t('Ver o comentário'):t('Ver os {a} comentários',{a:item.commentCount})}</Text>
+        </Pressable>:null}
       </>:null}
       <SessionPostAttachment item={item}/>
     </View>;
@@ -1407,14 +1407,6 @@ export default function JynloFeedHome(){
       {recentlyHidden?.startsWith('post:')?<Pressable accessibilityRole="button" accessibilityLabel={t('Gerir publicações ocultas')} onPress={()=>router.push('/feed-hidden')} style={styles.hiddenUndo}><Text style={styles.link}>{t('Gerir')}</Text></Pressable>:null}
       <Pressable accessibilityRole="button" accessibilityLabel={t('Desfazer ocultação')} onPress={undoHide} style={styles.hiddenUndo}><Text style={styles.link}>{t('Desfazer')}</Text></Pressable>
     </View>:null}
-    {identityMatches&&publishNotice?<View style={styles.hiddenNotice}>
-      <Text style={styles.hiddenNoticeText}>{publishNotice==='post'?t('Publicação confirmada! Já aparece no teu feed.'):t('Story confirmada! Já aparece nas tuas Stories.')}</Text>
-      {publishNotice==='post'&&confirmedPostId!==null?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver publicação confirmada')}
-        onPress={()=>router.push({pathname:'/posts/[postId]',params:{postId:String(confirmedPostId)}})} style={styles.hiddenUndo}>
-        <Text style={styles.link}>{t('Ver publicação')}</Text>
-      </Pressable>:null}
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar confirmação de publicação')} onPress={()=>{setPublishNotice(null);setConfirmedPostId(null);}} style={styles.hiddenUndo}><Text style={styles.link}>{t('Fechar')}</Text></Pressable>
-    </View>:null}
     {error?<View style={styles.errorBox}><Text style={{color:'#FFB8B8'}}>{error}</Text><Pressable onPress={()=>void load()}><Text style={styles.link}>{t('Tentar novamente')}</Text></Pressable></View>:null}
     {(loading||!identityMatches)&&visiblePosts.length===0?<ActivityIndicator color={TEAL} style={{margin:20}}/>:null}
     {!loading&&!error&&identityMatches&&auth.token&&normalPosts.length===0&&attendanceGroups.length===0?<Text style={styles.mutedText}>{t('Ainda não há publicações. Partilha o teu primeiro momento!')}</Text>:null}
@@ -1425,6 +1417,15 @@ export default function JynloFeedHome(){
     <FlatList data={normalPosts} keyExtractor={(item,index)=>feedEntryKey(item)||`${item.type}-${item.authorUsername}-${item.createdAt}-${index}`} renderItem={({item})=><View style={styles.feedCardWrap}>{PostCard({item})}</View>} ListHeaderComponent={Header()}
       refreshControl={<RefreshControl refreshing={loading&&visiblePosts.length>0} onRefresh={()=>void load()} tintColor={TEAL}/>}
       showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"/>
+    {identityMatches&&publishNotice?<View style={styles.publishToast} accessibilityLiveRegion="polite">
+      <JynloIcon name="check" size={20} color={TEAL}/>
+      <Text style={styles.publishToastText} numberOfLines={2}>{publishNotice==='post'?t('Publicação confirmada! Já aparece no teu feed.'):t('Story confirmada! Já aparece nas tuas Stories.')}</Text>
+      {publishNotice==='post'&&confirmedPostId!==null?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver publicação confirmada')}
+        onPress={()=>{setPublishNotice(null);router.push({pathname:'/posts/[postId]',params:{postId:String(confirmedPostId)}});}} style={styles.publishToastAction}>
+        <Text style={styles.link}>{t('Ver')}</Text>
+      </Pressable>:null}
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar confirmação de publicação')} onPress={()=>{setPublishNotice(null);setConfirmedPostId(null);}} hitSlop={8} style={styles.publishToastAction}><JynloIcon name="close" size={18} color={MUTED}/></Pressable>
+    </View>:null}
     <StoryViewer group={visibleStoryViewer} groups={visibleStoryGroups} token={auth.token} username={auth.username} onClose={()=>setStoryViewer(null)} onDeleted={()=>void load()} onUpdated={updated=>{setStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setOwnStories(previous=>previous.map(story=>story.id===updated.id?updated:story));setStoryViewer(previous=>previous&&previous.stories.some(story=>story.id===updated.id)?{...previous,stories:previous.stories.map(story=>story.id===updated.id?updated:story)}:previous);}}/>
     <PostImageLightbox key={expandedPostImage?.uris[expandedPostImage.index]||'closed'}
       photos={identityMatches?expandedPostImage:null} onClose={()=>setExpandedPostImage(null)}/>
@@ -1543,14 +1544,42 @@ export default function JynloFeedHome(){
     <Modal visible={identityMatches&&composerOpen} animationType="slide" onRequestClose={closePostComposer}>
       <SafeAreaView style={[styles.storyComposerOverlay,screenHeight<700&&styles.storyComposerCompact]} edges={['top','bottom']}>
         <KeyboardAvoidingView style={{flex:1,gap:17}} behavior={Platform.OS==='ios'?'padding':'height'}>
-        <View style={styles.storyComposerHead}><View style={{flex:1}}><Text style={styles.storyComposerTitle}>{t('Nova publicação')}</Text><Text style={styles.storiesIntro}>{composerSessionId?t('Recordação do jogo · sessão {v}',{v:composerSessionId}):t('Partilha texto, fotografias ou vídeos com a comunidade.')}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Fechar nova publicação')} disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable></View>
+        <View style={styles.composerTopBar}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar nova publicação')} disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable>
+          <View style={{flex:1,alignItems:'center'}}><Text style={styles.composerTopTitle}>{t('Nova publicação')}</Text>{composerSessionId?<Text style={styles.storiesIntro}>{t('Recordação do jogo · sessão {v}',{v:composerSessionId})}</Text>:null}</View>
+          <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?t('Partilhar publicação'):t('Verificar o envio antes de repetir')} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.composerShare,((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
+            <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.composerShareText}>{publishing?t('A enviar…'):postRetryAcknowledged?t('Partilhar'):t('Confirma primeiro')}</Text></View>
+          </Pressable>
+        </View>
         <ScrollView ref={postComposerScrollRef} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.mediaComposeBody}>
-          <View style={styles.mediaChooseRow}>
+          {composerMedia.length?<View style={styles.postMediaPreview}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={composerMedia.length===1?undefined:Math.max(200,screenWidth-92)+10} decelerationRate="fast" contentContainerStyle={{gap:10}}>
+              {composerMedia.map((media,i)=><View key={media.uri} style={[styles.composerMediaItem,{width:composerMedia.length===1?screenWidth-36:Math.max(200,screenWidth-92)}]}>
+                {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
+                <View style={styles.composerMediaBadge}><Text style={styles.postMediaPosition}>{composerMedia.length>1?t('{n} de {total}',{n:i+1,total:composerMedia.length})+(i===0?' · '+t('Capa'):''):(media.type==='video'?t('Vídeo'):t('Fotografia'))}</Text></View>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {n}',{n:i+1})} disabled={publishing} onPress={()=>changeComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.composerMediaRemove} hitSlop={6}><JynloIcon name="close" color={WHITE} size={18}/></Pressable>
+                {composerMedia.length>1?<View style={styles.composerMediaMove}>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para trás',{n:i+1})} disabled={publishing||i===0} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.composerMediaRound,(publishing||i===0)&&{opacity:.35}]}><JynloIcon name="back" color={WHITE} size={17}/></Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para a frente',{n:i+1})} disabled={publishing||i===composerMedia.length-1} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.composerMediaRound,(publishing||i===composerMedia.length-1)&&{opacity:.35}]}><JynloIcon name="chevron-right" color={WHITE} size={17}/></Pressable>
+                </View>:null}
+              </View>)}
+            </ScrollView>
+            <View style={styles.composerMediaTools}>
+              {composerMedia.length<MAX_ALBUM_ITEMS?<>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('Tirar fotografia ou gravar vídeo')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.composerChip}><JynloIcon name="camera" size={17} color={TEAL}/><Text style={styles.removeMediaText}>{t('Câmara')}</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('Escolher fotografia ou vídeo da galeria')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.composerChip}><JynloIcon name="gallery" size={17} color={TEAL}/><Text style={styles.removeMediaText}>{t('Adicionar')}</Text></Pressable>
+              </>:null}
+              <Text style={[styles.postAlbumHint,{flex:1,textAlign:'right'}]}>{t('{n}/{max}',{n:composerMedia.length,max:MAX_ALBUM_ITEMS})}</Text>
+              {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={t('Remover todos os ficheiros da publicação')} disabled={publishing} onPress={()=>Alert.alert(t('Limpar álbum?'),t('Remover todas as fotografias e vídeos deste rascunho?'),[
+                {text:t('Cancelar'),style:'cancel'},
+                {text:t('Limpar álbum'),style:'destructive',onPress:()=>changeComposerMedia(()=>[])}
+              ])} style={styles.composerChip}><Text style={styles.removeMediaText}>{t('Limpar álbum')}</Text></Pressable>:null}
+            </View>
+          </View>:<View style={styles.mediaChooseRow}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('Tirar fotografia ou gravar vídeo')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'camera',true)} style={styles.mediaChooseButton}><JynloIcon name="camera" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>{t('Câmara')}</Text></Pressable>
             <Pressable accessibilityRole="button" accessibilityLabel={t('Escolher fotografia ou vídeo da galeria')} disabled={publishing} onPress={()=>void pickMedia(()=>{},'gallery',true)} style={styles.mediaChooseButton}><JynloIcon name="gallery" size={26} color={TEAL}/><Text style={styles.mediaChooseText}>{t('Galeria')}</Text></Pressable>
-          </View>
+          </View>}
           <View style={styles.postCaptionBlock}>
-           <Text style={styles.postCaptionLabel}>{t('A tua legenda')} <Text style={styles.postCaptionOptional}>{t('· opcional com fotografias')}</Text></Text>
            <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.composerInput} value={composerText} onChangeText={value=>{composerTextRef.current=value;setComposerText(value);}} placeholder={t('Conta o que aconteceu neste momento…')} placeholderTextColor={MUTED} multiline maxLength={maxPostLength}/>
            <Text style={styles.postCaptionCount}>{composerText.length}/{maxPostLength}</Text>
           </View>
@@ -1577,25 +1606,6 @@ export default function JynloFeedHome(){
               <Text style={styles.postInlineErrorHelp}>{t('Esta lista serve apenas para verificares o perfil. A app não repetiu o envio.')}</Text>
             </View>:null}
           </View>:null}
-          {composerMedia.length?<View style={styles.postMediaPreview}>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('Remover todos os ficheiros da publicação')} disabled={publishing} onPress={()=>Alert.alert(t('Limpar álbum?'),t('Remover todas as fotografias e vídeos deste rascunho?'),[
-              {text:t('Cancelar'),style:'cancel'},
-              {text:t('Limpar álbum'),style:'destructive',onPress:()=>changeComposerMedia(()=>[])}
-            ])} style={[styles.removeMediaButton,{alignSelf:'flex-end'}]}><Text style={styles.removeMediaText}>{t('Limpar álbum')}</Text></Pressable>
-            <Text style={styles.postAlbumHint}>{composerMedia.length===1?t('1 fotografia ou vídeo selecionado · Capa da publicação'):t('{n} de 6 ficheiros · Desliza para organizar o álbum',{n:composerMedia.length})}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{gap:10,paddingVertical:8}}>
-              {composerMedia.map((media,i)=><View key={media.uri} style={{width:composerMedia.length===1?Math.max(200,screenWidth-68):Math.max(200,screenWidth-92),gap:7}}>
-                {media.type==='image'?<Image source={{uri:media.uri}} resizeMode="contain" style={styles.postMediaPreviewImage}/>:<MediaVideo key={media.uri} uri={media.uri}/>}
-                <View style={styles.postMediaPreviewFooter}><Text style={styles.postMediaPosition}>{t('{kind} {n} de {total}',{kind:media.type==='video'?t('Vídeo'):t('Fotografia'),n:i+1,total:composerMedia.length})}{i===0?' · '+t('Capa'):''}</Text>
-                  <View style={{flexDirection:'row',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para trás',{n:i+1})} disabled={publishing||i===0} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)-1))} style={[styles.removeMediaButton,(publishing||i===0)&&{opacity:.4}]}><JynloIcon name="back" color={TEAL} size={19}/></Pressable>:null}
-                    {composerMedia.length>1?<Pressable accessibilityRole="button" accessibilityLabel={t('Mover ficheiro {n} para a frente',{n:i+1})} disabled={publishing||i===composerMedia.length-1} onPress={()=>changeComposerMedia(prev=>moveAlbumItem(prev,prev.findIndex(x=>x.uri===media.uri),prev.findIndex(x=>x.uri===media.uri)+1))} style={[styles.removeMediaButton,(publishing||i===composerMedia.length-1)&&{opacity:.4}]}><JynloIcon name="chevron-right" color={TEAL} size={19}/></Pressable>:null}
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {n}',{n:i+1})} disabled={publishing} onPress={()=>changeComposerMedia(prev=>prev.filter(x=>x.uri!==media.uri))} style={styles.removeMediaButton}><Text style={styles.removeMediaText}>{t('Remover')}</Text></Pressable>
-                  </View>
-                </View>
-              </View>)}
-            </ScrollView>
-          </View>:<View style={styles.mediaEmptyState}><Text style={styles.mediaEmptyTitle}>{t('O teu próximo momento desportivo')}</Text><Text style={styles.storiesIntro}>{t('Escreve uma mensagem ou acrescenta até 6 fotografias ou vídeos.')}</Text></View>}
 
           <TextInput onFocus={event=>scrollComposerInput('post',event.target)} style={styles.storyCaptionInput} value={composerLocation} onChangeText={value=>{composerLocationRef.current=value;setComposerLocation(value);setVerifiedPostPlace('');setPostPlaceOptions([]);}} placeholder={t('Adicionar localização (opcional)')} accessibilityLabel={t('Localização da publicação')} placeholderTextColor={MUTED} maxLength={160}/>
           {postPlaceLoading?<Text style={styles.storiesIntro}>{t('A procurar localizações…')}</Text>:null}
@@ -1613,9 +1623,6 @@ export default function JynloFeedHome(){
 
         </ScrollView>
 
-        <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?t('Partilhar publicação'):t('Verificar o envio antes de repetir')} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.primaryButton,{minHeight:52,marginLeft:0},((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
-          <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.primaryButtonText}>{publishing?t('A enviar publicação…'):postRetryAcknowledged?t('Partilhar publicação'):t('Confirma primeiro o envio')}</Text></View>
-        </Pressable>
         {publishing?<Text accessibilityLiveRegion="polite" style={styles.publishProgressHint}>{t('A enviar para a Jynlo. Mantém este ecrã aberto; a publicação só será confirmada quando o servidor responder.')}</Text>:null}
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -1865,6 +1872,18 @@ const styles=StyleSheet.create({
   postMenuText:{fontSize:14,fontWeight:'800',color:WHITE},
   albumCounter:{position:'absolute',right:10,top:10,paddingHorizontal:9,paddingVertical:4,borderRadius:12,backgroundColor:'rgba(0,0,0,.72)'},
   albumCounterText:{color:'#fff',fontWeight:'800',fontSize:12},
+  composerTopBar:{flexDirection:'row',alignItems:'center',gap:8},composerTopTitle:{color:WHITE,fontSize:17,fontWeight:'900'},
+  composerShare:{minHeight:40,paddingHorizontal:16,borderRadius:20,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},composerShareText:{color:'#03242A',fontSize:14,fontWeight:'900'},
+  composerMediaItem:{borderRadius:16,overflow:'hidden',backgroundColor:'#020A10'},
+  composerMediaBadge:{position:'absolute',left:10,bottom:10,paddingHorizontal:10,paddingVertical:5,borderRadius:12,backgroundColor:'rgba(2,10,16,.72)'},
+  composerMediaRemove:{position:'absolute',top:10,right:10,width:34,height:34,borderRadius:17,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(2,10,16,.72)'},
+  composerMediaMove:{position:'absolute',right:10,bottom:10,flexDirection:'row',gap:8},
+  composerMediaRound:{width:34,height:34,borderRadius:17,alignItems:'center',justifyContent:'center',backgroundColor:'rgba(2,10,16,.72)'},
+  composerMediaTools:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:10},
+  composerChip:{flexDirection:'row',alignItems:'center',gap:6,minHeight:38,paddingHorizontal:12,borderRadius:19,borderWidth:1,borderColor:'#2C6A73',backgroundColor:PANEL},
+  publishToast:{position:'absolute',top:8,left:12,right:12,flexDirection:'row',alignItems:'center',gap:10,paddingLeft:14,paddingRight:6,paddingVertical:6,borderRadius:16,backgroundColor:'#0C3442',borderWidth:1,borderColor:TEAL,shadowColor:'#000',shadowOpacity:.35,shadowRadius:12,shadowOffset:{width:0,height:6},elevation:10},
+  publishToastText:{flex:1,color:WHITE,fontSize:13,fontWeight:'700'},publishToastAction:{minHeight:44,minWidth:40,alignItems:'center',justifyContent:'center',paddingHorizontal:6},
+  postCaptionAuthor:{fontWeight:'900'},
   hiddenNotice:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER},
   hiddenNoticeText:{flex:1,color:WHITE,fontSize:12},hiddenUndo:{minHeight:44,justifyContent:'center',paddingHorizontal:10},
   screenPad:{paddingHorizontal:12,gap:9},navHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:11,paddingBottom:3},brand:{flexDirection:'row',alignItems:'center',gap:9},brandLogo:{width:32,height:32,borderRadius:9},brandName:{color:WHITE,fontSize:19,fontWeight:'900',letterSpacing:2.2},headerRight:{flexDirection:'row',alignItems:'center',gap:9},headerCircle:{borderRadius:22,width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:BORDER,backgroundColor:PANEL},headerIcon:{color:WHITE,fontSize:24},pulse:{position:'absolute',width:6,height:6,right:7,top:5,borderRadius:3,backgroundColor:TEAL},headerUser:{flexDirection:'row',alignItems:'center',gap:6,borderRadius:22,paddingRight:10,paddingLeft:3,paddingVertical:3,borderWidth:1,borderColor:'#14616D',backgroundColor:'#072B35',maxWidth:128},headerName:{color:WHITE,fontSize:12,fontWeight:'800',maxWidth:65},
@@ -1885,7 +1904,7 @@ const styles=StyleSheet.create({
   visitorSecondaryText:{color:TEAL,fontSize:12,fontWeight:'800'},
   postPhotoBackdrop:{flex:1,backgroundColor:'#020A10',justifyContent:'center',padding:12},postPhotoFull:{width:'100%',height:'86%'},postPhotoClose:{alignSelf:'center',minHeight:48,paddingHorizontal:24,justifyContent:'center',borderWidth:1,borderColor:BORDER,borderRadius:16,backgroundColor:PANEL},postPhotoCloseText:{color:WHITE,fontWeight:'900'},
    publishButtonContent:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9},
-   postCaptionBlock:{gap:7,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,borderRadius:15,padding:12},
+   postCaptionBlock:{gap:4},
    postCaptionLabel:{fontSize:13,fontWeight:'900',color:WHITE},postCaptionOptional:{fontSize:11,fontWeight:'500',color:MUTED},
    postCaptionCount:{fontSize:11,color:MUTED,textAlign:'right'},
    postAlbumHint:{fontSize:12,lineHeight:18,color:MUTED},
@@ -1902,8 +1921,8 @@ const styles=StyleSheet.create({
    postVerifyItem:{backgroundColor:PANEL,padding:10,borderRadius:10,gap:3},
    postVerifyItemTitle:{fontSize:13,fontWeight:'800',color:WHITE},
    publishProgressHint:{color:MUTED,fontSize:13,lineHeight:20,textAlign:'center',paddingHorizontal:8},
-   composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:85,backgroundColor:'#06333C',borderWidth:1,borderColor:'#128070',borderRadius:12,padding:12,color:WHITE,fontSize:14,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:13},countText:{color:MUTED,fontSize:12},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{borderWidth:1,borderColor:BORDER,borderRadius:14,overflow:'hidden',backgroundColor:'#020A10'},postMediaPreviewImage:{width:'100%',height:255,backgroundColor:'#020A10'},postMediaPreviewFooter:{gap:8,paddingHorizontal:10,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:13,flex:1},
-  latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:14},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:'#225763',borderRadius:21,padding:16,gap:14},postCardCompact:{paddingHorizontal:10,paddingVertical:13,gap:11},postTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:2},postName:{color:WHITE,fontSize:15,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:23},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',alignItems:'center',borderTopColor:'#225763',borderTopWidth:1,paddingTop:8,gap:6},postPrimaryAction:{flex:1,minWidth:0,minHeight:46,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:4,borderRadius:12,backgroundColor:'#103846'},postPrimaryLabel:{color:'#D2E5E6',fontSize:12,fontWeight:'800',flexShrink:1},postLikedLabel:{color:'#FF90AA'},postEngagementSummary:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:11},postSummaryAction:{minHeight:40,justifyContent:'center'},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:12,color:MUTED,fontWeight:'700'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentReport:{color:'#FF9C9C',fontSize:12,fontWeight:'800'},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
+   composerCard:{backgroundColor:'#082D3D',borderColor:BORDER,borderWidth:1,borderRadius:14,padding:10,gap:10},composerHeading:{fontSize:14,color:WHITE,fontWeight:'900'},composerInput:{minHeight:96,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,borderRadius:14,padding:14,color:WHITE,fontSize:15,textAlignVertical:'top'},composerBottom:{flexDirection:'row',alignItems:'center',gap:9},attachButton:{flexDirection:'row',gap:6,alignItems:'center',paddingVertical:6},attachIcon:{fontSize:19,color:TEAL},attachText:{color:WHITE,fontWeight:'800',fontSize:13},countText:{color:MUTED,fontSize:12},primaryButton:{marginLeft:'auto',paddingVertical:10,paddingHorizontal:15,borderRadius:10,backgroundColor:TEAL,alignItems:'center',justifyContent:'center'},primaryButtonText:{color:'#03242A',fontSize:12,fontWeight:'900'},postMediaPreview:{gap:0},postMediaPreviewImage:{width:'100%',aspectRatio:4/5,maxHeight:460,backgroundColor:'#020A10'},postMediaPreviewFooter:{gap:8,paddingHorizontal:10,paddingVertical:9,backgroundColor:PANEL},removeMediaButton:{paddingVertical:7,paddingHorizontal:10,borderRadius:9,borderWidth:1,borderColor:'#3F7D88'},removeMediaText:{color:TEAL,fontSize:12,fontWeight:'800'},attachedText:{color:MUTED,fontSize:13,flex:1},
+  latestTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:4,paddingBottom:1},link:{color:TEAL,fontWeight:'800',fontSize:13},feedCardWrap:{paddingHorizontal:12,marginBottom:14},postCard:{backgroundColor:'#092938',borderWidth:1,borderColor:'#1C4A55',borderRadius:20,padding:14,gap:10},postCardCompact:{paddingHorizontal:10,paddingVertical:13,gap:11},postTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:2},postName:{color:WHITE,fontSize:15,fontWeight:'900'},postMeta:{color:MUTED,fontSize:12,lineHeight:18},postBody:{color:WHITE,fontSize:14,lineHeight:21},postImage:{width:'100%',height:350,borderRadius:12,backgroundColor:'#020A10'},postVideo:{width:'100%',height:300,borderRadius:12},postActions:{flexDirection:'row',alignItems:'center',gap:2,marginTop:-4},postPrimaryAction:{minWidth:40,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:4},postPrimaryLabel:{color:'#D2E5E6',fontSize:12,fontWeight:'800',flexShrink:1},postLikedLabel:{color:'#FF90AA'},postEngagementSummary:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:11},postSummaryAction:{minHeight:44,minWidth:22,justifyContent:'center',paddingRight:10},postDetailAction:{minHeight:44,justifyContent:'center',marginLeft:'auto',paddingHorizontal:7},postDetailLabel:{color:TEAL,fontWeight:'900',fontSize:12},postSessionCard:{flexDirection:'row',alignItems:'center',gap:12,backgroundColor:'#06333F',borderWidth:1,borderColor:'#127681',borderRadius:14,padding:12},postSessionIcon:{width:42,height:42,borderRadius:12,backgroundColor:'#0D5060',alignItems:'center',justifyContent:'center'},postSessionIconText:{fontSize:24,color:TEAL,fontWeight:'900'},postSessionTitle:{fontSize:14,fontWeight:'900',color:WHITE},postSessionMeta:{fontSize:13,color:MUTED},postSessionLink:{fontSize:12,fontWeight:'800',color:TEAL},postAction:{flexDirection:'row',gap:5,alignItems:'center',minHeight:44},actionIcon:{fontSize:21,color:TEAL},actionCount:{fontSize:14,color:WHITE,fontWeight:'800'},activityBox:{flexDirection:'row',padding:12,borderRadius:12,backgroundColor:'#062C3A',borderWidth:1,borderColor:BORDER,alignItems:'center',gap:10},activityTitle:{color:WHITE,fontSize:13,fontWeight:'800'},activityMeta:{color:MUTED,fontSize:12,marginTop:2},viewSession:{color:TEAL,fontSize:12,fontWeight:'800'},commentsModal:{flex:1,justifyContent:'flex-end'},commentsBackdrop:{...StyleSheet.absoluteFill,backgroundColor:'rgba(0,0,0,0.7)'},commentsSheet:{height:'74%',backgroundColor:INDIGO,borderTopLeftRadius:24,borderTopRightRadius:24,borderWidth:1,borderColor:BORDER,paddingHorizontal:16,paddingTop:9},commentsHandle:{alignSelf:'center',width:42,height:4,borderRadius:2,backgroundColor:'#587A85',marginBottom:15},commentsHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottomWidth:1,borderBottomColor:BORDER},commentsTitle:{color:WHITE,fontSize:17,fontWeight:'900'},commentsClose:{color:WHITE,fontSize:20,paddingHorizontal:8},commentsList:{flex:1},commentsListContent:{paddingVertical:13,gap:10,flexGrow:1},commentsEmpty:{color:MUTED,fontSize:13,textAlign:'center',marginTop:26},comment:{flexDirection:'row',gap:10,padding:11,backgroundColor:'#06232F',borderRadius:11},commentReport:{color:'#FF9C9C',fontSize:12,fontWeight:'800'},commentAuthor:{color:TEAL,fontSize:13,fontWeight:'800'},commentBody:{fontSize:14,color:WHITE,lineHeight:20},commentCompose:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:12,borderTopWidth:1,borderTopColor:BORDER},commentInput:{flex:1,minHeight:44,color:WHITE,backgroundColor:'#06232F',borderColor:BORDER,borderWidth:1,paddingHorizontal:12,borderRadius:10},sendComment:{backgroundColor:TEAL,width:44,height:44,borderRadius:11,alignItems:'center',justifyContent:'center'},sendText:{color:INDIGO,fontSize:20},errorBox:{borderColor:'#C87575',borderWidth:1,padding:12,borderRadius:10,gap:6},mutedText:{fontSize:13,color:MUTED,lineHeight:19},discoveryCard:{borderColor:BORDER,borderWidth:1,borderRadius:16,backgroundColor:PANEL,padding:15,gap:12},personRow:{flexDirection:'row',gap:9,alignItems:'center'},personName:{fontWeight:'900',fontSize:12,color:WHITE},
   storyMediaStatus:{...StyleSheet.absoluteFill,justifyContent:'center',alignItems:'center',gap:12,backgroundColor:'#03131DBB'},
   storyMediaStatusText:{color:MUTED,textAlign:'center',fontSize:13,lineHeight:19},
   storyMediaFailure:{...StyleSheet.absoluteFill,justifyContent:'center',alignItems:'center',gap:13,padding:24,backgroundColor:'#061620'},
@@ -1930,7 +1949,7 @@ const styles=StyleSheet.create({
   storyViewerName:{color:WHITE,fontSize:14,fontWeight:'800'},
   storyViewerTime:{color:MUTED,fontSize:12},
   storyOverlay:{flex:1,backgroundColor:'#020A10',paddingHorizontal:12,paddingTop:5},storyEngagement:{flexDirection:'row',flexWrap:'wrap',gap:9,alignItems:'center',paddingVertical:7},storyEngagementAction:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderColor:BORDER,borderWidth:1,borderRadius:18},storyEngagementText:{color:WHITE,fontSize:15,fontWeight:'800'},storyReplyRow:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6},storyReplyInput:{flex:1,color:WHITE,borderColor:BORDER,borderWidth:1,borderRadius:23,minHeight:46,paddingHorizontal:15,backgroundColor:PANEL},storyReplySend:{minHeight:46,paddingHorizontal:13,backgroundColor:TEAL,borderRadius:23,justifyContent:'center'},storyReplySendText:{color:INDIGO,fontWeight:'800'},storyReplyHint:{fontSize:13,color:MUTED,paddingBottom:8},storyDeleteAction:{minHeight:44,alignSelf:'center',justifyContent:'center',paddingHorizontal:15},storyProgress:{flexDirection:'row',gap:4,height:4},progressPart:{flex:1,backgroundColor:'#557781',borderRadius:3,overflow:'hidden'},storyProgressFill:{height:'100%',width:'100%',backgroundColor:WHITE},storyTop:{flexDirection:'row',alignItems:'center',gap:9,marginTop:12},storyUser:{flex:1,color:WHITE,fontWeight:'900'},closeStory:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center',padding:9},closeStoryText:{color:WHITE,fontSize:20},storyMedia:{flex:1,justifyContent:'center',alignItems:'center',paddingVertical:12},storyTapZones:{...StyleSheet.absoluteFill,flexDirection:'row'},storyTapZone:{flex:1},storyImage:{width:'100%',height:'100%'},storyVideo:{width:'100%',height:'100%'},storyCaption:{color:WHITE,textAlign:'center',fontSize:16,fontWeight:'800',paddingVertical:10},storyCaptionLayer:{position:'absolute',bottom:24,left:15,right:15,alignItems:'center',justifyContent:'center'},storyCaptionOverlay:{color:WHITE,fontSize:20,fontWeight:'900',textAlign:'center',backgroundColor:'rgba(0,0,0,0.64)',paddingHorizontal:14,paddingVertical:9,borderRadius:13,overflow:'hidden'},storyBottom:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:14},storyNav:{padding:11},storyNavText:{color:TEAL,fontWeight:'800'},storyCount:{color:MUTED,fontSize:12},storyOwnHint:{color:MUTED,fontSize:12,textAlign:'center',paddingBottom:5},
-  modalClose:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},modalCloseText:{fontSize:22,color:WHITE,fontWeight:'800'},mediaComposeBody:{gap:14,paddingBottom:24},mediaChooseRow:{flexDirection:'row',gap:12},mediaChooseButton:{flex:1,minHeight:76,borderRadius:15,borderWidth:1,borderColor:'#146875',backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:7,padding:12},mediaChooseIcon:{fontSize:25,color:TEAL},mediaChooseText:{fontSize:14,fontWeight:'800',color:WHITE},mediaEmptyState:{minHeight:155,borderRadius:16,borderWidth:1,borderColor:BORDER,backgroundColor:'#072B39',justifyContent:'center',alignItems:'center',gap:9,padding:20},mediaEmptyTitle:{fontSize:15,fontWeight:'800',color:WHITE,textAlign:'center'},storyComposerOverlay:{flex:1,backgroundColor:INDIGO,padding:18,gap:17},storyComposerCompact:{padding:12,gap:10},storyComposerHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},storyComposerTitle:{color:WHITE,fontSize:22,fontWeight:'900'},mediaPicker:{minHeight:115,borderRadius:15,borderWidth:1,borderColor:TEAL,backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:9,padding:12},storyFriendOption:{flexDirection:'row',alignItems:'center',gap:12,padding:10,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,minHeight:56},
+  modalClose:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},modalCloseText:{fontSize:22,color:WHITE,fontWeight:'800'},mediaComposeBody:{gap:14,paddingBottom:24},mediaChooseRow:{flexDirection:'row',gap:12},mediaChooseButton:{flex:1,minHeight:120,borderRadius:18,borderWidth:1,borderStyle:'dashed',borderColor:'#2C6A73',backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:8,padding:12},mediaChooseIcon:{fontSize:25,color:TEAL},mediaChooseText:{fontSize:14,fontWeight:'800',color:WHITE},mediaEmptyState:{minHeight:155,borderRadius:16,borderWidth:1,borderColor:BORDER,backgroundColor:'#072B39',justifyContent:'center',alignItems:'center',gap:9,padding:20},mediaEmptyTitle:{fontSize:15,fontWeight:'800',color:WHITE,textAlign:'center'},storyComposerOverlay:{flex:1,backgroundColor:INDIGO,padding:18,gap:17},storyComposerCompact:{padding:12,gap:10},storyComposerHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},storyComposerTitle:{color:WHITE,fontSize:22,fontWeight:'900'},mediaPicker:{minHeight:115,borderRadius:15,borderWidth:1,borderColor:TEAL,backgroundColor:PANEL,alignItems:'center',justifyContent:'center',gap:9,padding:12},storyFriendOption:{flexDirection:'row',alignItems:'center',gap:12,padding:10,borderRadius:12,backgroundColor:PANEL,borderWidth:1,borderColor:BORDER,minHeight:56},
  storyFriendAvatar:{width:38,height:38,borderRadius:19},
  storyFriendAvatarPlaceholder:{width:38,height:38,borderRadius:19,backgroundColor:'#24545D',alignItems:'center',justifyContent:'center'},
  storyFriendName:{color:WHITE,fontWeight:'800',fontSize:13},

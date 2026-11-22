@@ -41,9 +41,9 @@ test('multi-media posts show accessible current position and pagination dots',()
 
 test('album editor adapts preview width and allows long filenames to wrap without hiding controls',()=>{
  const feed=read('app/(tabs)/index.tsx');
- assert.match(feed,/width:composerMedia\.length===1\?Math\.max\(200,screenWidth-68\):Math\.max\(200,screenWidth-92\)/);
+ assert.match(feed,/width:composerMedia\.length===1\?screenWidth-36:Math\.max\(200,screenWidth-92\)/);
  assert.match(feed,/i===0\?' · Capa':''/);
- assert.match(feed,/postMediaPreviewFooter:\{gap:8/);
+ assert.match(feed,/composerMediaBadge:\{position:'absolute'/);
  assert.match(feed,/accessibilityLabel=\{'Mover ficheiro '\+\(i\+1\)\+' para trás'\}/);
  assert.match(feed,/accessibilityLabel=\{'Remover ficheiro '\+\(i\+1\)\}/);
 });

@@ -39,8 +39,7 @@ test('feed links server-backed posts to the same full post details used by profi
  const feed=read('app/(tabs)/index.tsx');
  const details=read('app/posts/[postId]/index.tsx');
  assert.match(feed,/accessibilityLabel="Abrir detalhe completo da publicação"/);
- assert.match(feed,/Number.isSafeInteger\(item.postId\)&&item.postId!>0/);
+ assert.match(feed,/disabled=\{!Number.isSafeInteger\(item.postId\)\|\|!item.postId\|\|item.postId<=0\}/);
  assert.match(feed,/router.push\(\{pathname:'\/posts\/\[postId\]',params:\{postId:String\(item.postId\)\}\}\)/);
- assert.match(feed,/Ver publicação ›/);
- assert.match(details,/socialPostById\(id,auth.token\)/);
+  assert.match(details,/socialPostById\(id,auth.token\)/);
 });

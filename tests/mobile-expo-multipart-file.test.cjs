@@ -124,14 +124,16 @@ test('mobile post composer keeps caption visible, full-width media, compact cont
  const home=read('app/(tabs)/index.tsx');
  const composer=home.slice(home.indexOf('<Modal visible={identityMatches&&composerOpen}'),home.indexOf('<Modal visible={identityMatches&&storyComposer}'));
  assert.ok(composer.length>2000);
- assert.ok(composer.indexOf('style={styles.postCaptionBlock}')<composer.indexOf('style={styles.postMediaPreview}'));
+ // Media first (what is being shared), then the caption, then the location.
+ assert.ok(composer.indexOf('style={styles.postMediaPreview}')<composer.indexOf('style={styles.postCaptionBlock}'));
+ assert.ok(composer.indexOf('style={styles.composerTopBar}')<composer.indexOf('<ScrollView'));
  assert.match(composer,/styles\.postMediaPosition/);
- assert.match(composer,/composerMedia\.length===1\?Math\.max\(200,screenWidth-68\)/);
+ assert.match(composer,/composerMedia\.length===1\?screenWidth-36:Math\.max\(200,screenWidth-92\)/);
  assert.match(composer,/composerMedia\.length>1\?<Pressable/);
  assert.match(composer,/postPublishError\?<View style=\{styles\.postInlineError\}/);
  assert.doesNotMatch(composer,/media\.fileName/);
  assert.doesNotMatch(composer,/style=\{styles\.errorBox\}/);
- assert.match(home,/mediaChooseButton:\{flex:1,minHeight:76/);
+ assert.match(home,/mediaChooseButton:\{flex:1,minHeight:120/);
 });
 test('post media uploads give slow mobile connections time and never retry an uncertain POST',()=>{
  const api=read('src/lib/social-feed-api.ts');
