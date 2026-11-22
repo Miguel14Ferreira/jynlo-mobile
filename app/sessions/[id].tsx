@@ -62,6 +62,8 @@ export default function SessionScreen(){
   const [exclusionFor,setExclusionFor]=useState<SessionParticipant|null>(null);
   const [attendanceParticipantId,setAttendanceParticipantId]=useState<number|null>(null);
   const [password,setPassword]=useState(''),[inviteUsername,setInviteUsername]=useState('');
+  // Older private games still have a password; new ones are invite-only.
+  const [legacyPasswordOpen,setLegacyPasswordOpen]=useState(false);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
   const [error,setError]=useState(''),[feedback,setFeedback]=useState('');
   const [editMeetingPoint,setEditMeetingPoint]=useState(false),[meetingDraft,setMeetingDraft]=useState('');
@@ -609,11 +611,12 @@ export default function SessionScreen(){
       {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>{t('Esta sessão terminou ou foi cancelada. Podes continuar a explorar outras sessões públicas.')}</Message>:null}
       {auth.token&&detail&&['JOIN','WAITLIST','PASSWORD'].includes(action.kind)?<View style={styles.panel}>
         {detail.privateGame?<>
-          <Text style={styles.hint}>{t('Esta sessão exige palavra-passe. Não confundas sessão privada com sessão apenas para membros.')}</Text>
-          <TextInput value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none"
+          <Text style={styles.hint}>{t('Este jogo é só por convite. Pede o link de convite ao organizador.')}</Text>
+          {legacyPasswordOpen?<TextInput value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none"
             style={styles.input} placeholder={t('Palavra-passe da sessão')} placeholderTextColor={C.muted}/>
+          :<Pressable accessibilityRole="button" onPress={()=>setLegacyPasswordOpen(true)}><Text style={styles.hint}>{t('Recebeste uma palavra-passe? Usa-a aqui.')}</Text></Pressable>}
         </>:null}
-        <Button title={busy?t('A processar…'):action.label} disabled={busy||loading||(detail.privateGame&&!password.trim())} onPress={join}/>
+        {!detail.privateGame||legacyPasswordOpen?<Button title={busy?t('A processar…'):action.label} disabled={busy||loading||(detail.privateGame&&!password.trim())} onPress={join}/>:null}
         {action.kind==='WAITLIST'?<Text style={styles.hint}>{t('Não há vagas neste momento. O servidor confirma se é possível entrar em espera.')}</Text>:null}
         {detail.registrationOpeningMode==='MANUAL'?<Text style={styles.hint}>{t('A abertura manual das inscrições é controlada pelo organizador.')}</Text>:null}
       </View>:null}

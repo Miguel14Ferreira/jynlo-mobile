@@ -79,7 +79,7 @@ function formatSessionLocalDateTime(iso){
 function describeSessionConfirmation(payload,context={}){
  const visibility=payload.communityShareIds.length?'Apenas membros das comunidades':
   payload.communityId!=null?tr('Apenas membros da comunidade'):
-  payload.privateGame?tr('Privada com palavra-passe'):tr('Pública');
+  payload.privateGame?tr('Só por convite'):tr('Pública');
  const communityNames=Array.isArray(context.sharedCommunityNames)?context.sharedCommunityNames:[];
  const parts=[
   payload.sport,
@@ -193,13 +193,13 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   throw Error(tr('Confirma a ativação das classificações para criar o jogo de época.'));
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
- if(privateGame&&shareIds.length)throw Error(tr('Sessões partilhadas não podem ter palavra-passe.'));
- if(privateGame&&password.length<4)throw Error(tr('Uma sessão privada deve ter palavra-passe com pelo menos quatro caracteres.'));
+ if(privateGame&&shareIds.length)throw Error(tr('Sessões partilhadas não podem ser só por convite.'));
+ // Private games are invite-only (link or direct invite); no password any more.
  const meetingPointInstructions=String(input.meetingPointInstructions||'').trim();
  if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error(tr('O ponto de encontro deve ter uma única linha até 240 caracteres.'));
  return {
   sport,gameDate,city,address,maxParticipants,
-  priceAmount,privateGame,password:privateGame?password:null,latitude:locationLatitude,longitude:locationLongitude,
+  priceAmount,privateGame,password:null,latitude:locationLatitude,longitude:locationLongitude,
   communityId,venueId,recurrence,recurrenceOccurrences,
   externalConfirmedParticipants,registrationOpeningMode,registrationOpensAt,
   additionalWeeklyGameDates,recurrenceTimeZone,playFormat:null,communityShareIds:shareIds.slice(),
