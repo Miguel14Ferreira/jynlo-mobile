@@ -109,3 +109,24 @@ export async function setCommunitySessionAudience(communityId:number,sessionId:n
  if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
  return request<SessionSummary>(`/api/communities/${communityId}/sessions/${sessionId}/${toPublic?'open-public':'restrict-members'}`,{token,method:'POST'});
 }
+const DEMO_MEMBERS='Na demonstração não é possível gerir membros.';
+export async function rejectCommunityRequest(id:number,requestId:number,token:string,username:string):Promise<void>{
+  auth(token,username);if(DEMO_MODE)throw new Error(DEMO_MEMBERS);
+  await request<void>(`${root}/${uid(id)}/join-requests/${uid(requestId)}/reject`,{token,method:'POST',body:null});
+}
+export async function leaveCommunity(id:number,token:string,username:string):Promise<void>{
+  auth(token,username);if(DEMO_MODE)throw new Error(DEMO_MEMBERS);
+  await request<void>(`${root}/${uid(id)}/leave`,{token,method:'POST',body:null});
+}
+export async function removeCommunityMember(id:number,member:string,token:string,username:string):Promise<void>{
+  auth(token,username);if(DEMO_MODE)throw new Error(DEMO_MEMBERS);
+  await request<void>(`${root}/${uid(id)}/members/${q(member)}`,{token,method:'DELETE'});
+}
+export async function setCommunityMemberRole(id:number,member:string,role:'ADMIN'|'MEMBER',token:string,username:string):Promise<CommunityGroup>{
+  auth(token,username);if(DEMO_MODE)throw new Error(DEMO_MEMBERS);
+  return request<CommunityGroup>(`${root}/${uid(id)}/members/${q(member)}/role`,{token,method:'PUT',body:{role}});
+}
+export async function transferCommunityOwnership(id:number,newOwner:string,token:string,username:string):Promise<CommunityGroup>{
+  auth(token,username);if(DEMO_MODE)throw new Error(DEMO_MEMBERS);
+  return request<CommunityGroup>(`${root}/${uid(id)}/owner`,{token,method:'PUT',body:{username:newOwner.trim()}});
+}

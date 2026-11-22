@@ -194,6 +194,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="confirm-email" options={{title:t('Confirmar email')}}/>
     <Stack.Screen name="reset-password" options={{title:t('Recuperar palavra-passe')}}/>
     <Stack.Screen name="legal" options={{title:t('Informação legal')}}/>
+    <Stack.Screen name="feedback" options={{title:t('Enviar opinião')}}/>
     <Stack.Screen name="google-onboarding" options={{title:t('Registo com Google')}}/>
     <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
