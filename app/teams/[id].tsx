@@ -400,14 +400,15 @@ export default function TeamDetail(){
    }}
   ]);
  };
- const feature=async(field:'chatEnabled'|'feedEnabled')=>{
+ const feature=async(field:'chatEnabled'|'feedEnabled'|'membersCanPost')=>{
   if(!team||!auth.token||!isOwner||!brandingVerified||savingRef.current||actionRef.current)return;
   const version=requestVersion.current;
   const action=++actionGeneration.current;
   actionRef.current=true;savingRef.current=true;
   setSaving(true);setError('');setNotice('');
   try{
-   const updated=await setSportsTeamFeatures(team.id,{[field]:!team[field]},auth.token);
+   const next=field==='membersCanPost'?team.membersCanPost===false:!team[field];
+   const updated=await setSportsTeamFeatures(team.id,{[field]:next},auth.token);
    if(version===requestVersion.current&&updated.id===team.id){
     setTeam(updated);setNotice(t('Configuração da equipa guardada.'));
    }
@@ -725,6 +726,8 @@ export default function TeamDetail(){
    {activeTab==='FEED'?<View style={styles.panel}><Text style={styles.heading}>{t('Publicações da equipa')}</Text>
     {!team.feedEnabled?<Text style={styles.note}>{t('O feed da equipa está desativado.')}</Text>:null}
     {isOwner?<Button title={team.feedEnabled?t('Desativar feed'):t('Ativar feed')} disabled={saving} onPress={()=>void feature('feedEnabled')}/>:null}
+    {isOwner&&team.feedEnabled?<Button secondary title={team.membersCanPost===false?t('Deixar todos os membros publicar'):t('Só eu publico no feed e Stories')} disabled={saving} onPress={()=>void feature('membersCanPost')}/>:null}
+    {team.feedEnabled&&team.membersCanPost===false?<Text style={{color:C.muted,fontSize:13}}>{t('Só o responsável publica no feed e em Stories desta equipa.')}</Text>:null}
     {team.feedEnabled&&isMember&&auth.token&&auth.username?
      <SportsTeamContentPanel teamId={teamId} kind="feed" token={auth.token} username={auth.username}/>:null}
     {team.feedEnabled&&!isMember?<Text style={styles.note}>{t('Disponível apenas para membros confirmados.')}</Text>:null}

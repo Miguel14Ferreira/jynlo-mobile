@@ -111,6 +111,8 @@ export interface CommunitySummary {
 export interface CommunityGroup extends CommunitySummary {
   rankingsEnabled:boolean; individualTournamentsEnabled?:boolean;
   teamTournamentsEnabled?:boolean; ownerUsername:string;
+  /** Organizers decide whether every member may post in the feed and Stories. */
+  membersCanPost?:boolean;
   myRole:CommunityRole|null; memberCount:number; createdAt:string; members:CommunityMember[];
 }
 export interface CommunitySearchResponse { communities:CommunitySummary[]; page:number; hasMore:boolean; }

@@ -12,7 +12,7 @@ import {
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
-import {setCommunitySessionAudience} from '../../src/lib/community-api';
+import {setCommunitySessionAudience,setCommunityPostingPolicy} from '../../src/lib/community-api';
 import {canOpenToPublic,canRestrictToMembers} from '../../src/lib/community-session-audience.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
@@ -99,6 +99,20 @@ export default function CommunityDetailScreen(){
   },[reload]));
   const role=community&&isMember(community)?community.myRole:null;
   const owner=role==='OWNER'||role==='ADMIN';
+  const [postingPolicyBusy,setPostingPolicyBusy]=useState(false);
+  async function togglePostingPolicy(){
+    if(!auth.token||!community||!owner||postingPolicyBusy)return;
+    const version=generation.current;
+    const next=(community as CommunityGroup).membersCanPost===false;
+    setPostingPolicyBusy(true);setError('');setNotice('');
+    try{
+      const updated=await setCommunityPostingPolicy(id,next,auth.token);
+      if(version!==generation.current)return;
+      setCommunity(updated);setNotice(t('Configuração guardada.'));
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));
+    }finally{if(version===generation.current)setPostingPolicyBusy(false);}
+  }
   async function toggleFollow(){
     if(!auth.token||!auth.username||!community||community.visibility!=='PUBLIC'||!followState||followBusy)return;
     const previous=followState,version=generation.current;
@@ -281,6 +295,11 @@ export default function CommunityDetailScreen(){
       </View>:null}
       {role&&activeSection==='FEED'&&auth.token&&auth.username?<View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('Feed da comunidade')}</Text>
+        {owner?<View style={{gap:6}}>
+          <Text style={styles.muted}>{t('Quem pode publicar no feed e em Stories: {v}',{v:(community as CommunityGroup|null)?.membersCanPost===false?t('só os organizadores'):t('todos os membros')})}</Text>
+          <Button secondary disabled={postingPolicyBusy} title={postingPolicyBusy?t('A guardar…'):(community as CommunityGroup|null)?.membersCanPost===false?t('Deixar todos os membros publicar'):t('Só os organizadores publicam')}
+            onPress={()=>{void togglePostingPolicy();}}/>
+        </View>:community&&'membersCanPost' in community&&(community as CommunityGroup).membersCanPost===false?<Text style={styles.muted}>{t('Só os organizadores publicam no feed desta comunidade.')}</Text>:null}
         <CommunityFeedPanel communityId={id} token={auth.token} username={auth.username} canManage={owner}/>
       </View>:null}
       {role&&activeSection==='CHAT'?<View style={styles.section}>
