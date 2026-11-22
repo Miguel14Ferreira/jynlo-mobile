@@ -5,9 +5,9 @@ const read=file=>untranslate(fs.readFileSync(path.join(__dirname,'..',file),'utf
 
 test('Google sign-in is native and uses server-provided OAuth web client ID',()=>{
  const google=read('src/lib/google-credential.ts');
- assert.ok(google.includes("Platform.OS!=='android'"));
+ assert.ok(google.includes("Platform.OS==='android'||(Platform.OS==='ios'&&Boolean(iosClientId()))"));
  assert.ok(google.includes("'/api/auth/google/config'"));
- assert.ok(google.includes('GoogleSignin.configure({webClientId,offlineAccess:false})'));
+ assert.ok(google.includes("GoogleSignin.configure({webClientId,offlineAccess:false,...(Platform.OS==='ios'?{iosClientId:iosClientId()}:{})})"));
  assert.ok(google.includes('GoogleSignin.hasPlayServices'));
  assert.ok(google.includes('GoogleSignin.signIn()'));
  assert.ok(google.includes("result.type==='cancelled'"));
@@ -88,4 +88,13 @@ test('Google and email registration use a touch-friendly birth date selector',()
  assert.match(picker,/minHeight:48/);
  assert.match(google,/Cria o teu perfil Jynlo/);
  assert.doesNotMatch(google,/Conta Google confirmada: \{auth\.googleOnboardingEmail\}/);
+});
+test('iPhone offers Sign in with Apple, verified by the Jynlo server',()=>{
+ const apple=read('src/lib/apple-auth.ts'),login=read('app/login.tsx'),app=read('app.json'),cfg=read('app.config.js');
+ assert.match(apple,/'\/api\/auth\/apple\/login'/);assert.match(apple,/'\/api\/auth\/apple\/register'/);
+ assert.match(apple,/Platform\.OS!=='ios'/);
+ assert.match(login,/AppleAuthenticationButton/);
+ assert.match(app,/"usesAppleSignIn": true/);assert.match(app,/applinks:jynlosports\.com/);
+ assert.match(app,/NSLocationWhenInUseUsageDescription/);
+ assert.match(cfg,/androidStoreBuild && !mapsKey/);
 });

@@ -1,11 +1,13 @@
-import React,{useRef,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {t} from '../src/lib/i18n';
 import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useLocalSearchParams,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../src/components/UI';
 import {DEMO_MODE} from '../src/lib/api';
 import {useAuth} from '../src/lib/auth';
-import {chooseGoogleIdentity} from '../src/lib/google-credential';
+import {chooseGoogleIdentity,googleSignInAvailable} from '../src/lib/google-credential';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import {appleSignInAvailable,chooseAppleIdentity} from '../src/lib/apple-auth';
 import {safeRedirect} from '../src/lib/routes.cjs';
 import {C} from '../src/lib/theme';
 export default function LoginScreen(){
@@ -25,6 +27,21 @@ export default function LoginScreen(){
      else if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
      else router.replace(redirect as any);
    }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão com a Google.'));}
+   finally{loginInFlight.current=false;setBusy(false);}
+ }
+ const [appleReady,setAppleReady]=useState(false);
+ useEffect(()=>{let on=true;void appleSignInAvailable().then(v=>{if(on)setAppleReady(v);});return()=>{on=false;};},[]);
+ async function doAppleLogin(){
+   if(loginInFlight.current||auth.username)return;
+   loginInFlight.current=true;setError('');setBusy(true);
+   try{
+     const identity=await chooseAppleIdentity();
+     if(!identity)return; // user closed the Apple sheet
+     const outcome=await auth.loginApple(identity.credential,identity.fullName);
+     if(outcome==='ONBOARDING_REQUIRED')router.replace({pathname:'/google-onboarding',params:{redirect}});
+     else if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
+     else router.replace(redirect as any);
+   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão com a Apple.'));}
    finally{loginInFlight.current=false;setBusy(false);}
  }
  async function doLogin(){
@@ -52,13 +69,18 @@ export default function LoginScreen(){
      <Button title={t('Continuar como Tiago')} onPress={()=>demoAs('Tiago')}/>
      <Button title={t('Continuar como André')} secondary onPress={()=>demoAs('André')}/>
    </View>:<View style={{gap:15}}>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Continuar com Google')}
+     {appleReady?<AppleAuthentication.AppleAuthenticationButton
+       buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+       buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+       cornerRadius={14} style={styles.appleButton}
+       onPress={()=>{if(!busy)void doAppleLogin();}}/>:null}
+     {googleSignInAvailable()?<Pressable accessibilityRole="button" accessibilityLabel={t('Continuar com Google')}
        disabled={busy} onPress={()=>{void doGoogleLogin();}}
        style={({pressed})=>[styles.googleButton,(busy||pressed)&&{opacity:0.65}]}>
        <Image source={{uri:'https://developers.google.com/static/identity/images/g-logo.png'}}
          style={styles.googleLogo} accessibilityLabel={t('Símbolo da Google')}/>
        <Text style={styles.googleLabel}>{busy?t('A autenticar…'):t('Continuar com Google')}</Text>
-     </Pressable>
+     </Pressable>:null}
      <Text style={styles.separator}>{t('ou entra com utilizador e palavra-passe')}</Text>
      <TextInput style={styles.input} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted}
        value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username"/>
@@ -74,6 +96,7 @@ export default function LoginScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ appleButton:{width:'100%',height:52},
  headline:{color:C.white,fontSize:31,fontWeight:'900',lineHeight:38},
  googleButton:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12,minHeight:54,borderRadius:15,backgroundColor:'#FFFFFF',paddingHorizontal:16},
  googleLogo:{height:24,width:24},googleLabel:{fontSize:15,fontWeight:'800',color:'#202124'},

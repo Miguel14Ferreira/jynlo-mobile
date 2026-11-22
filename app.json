@@ -13,8 +13,17 @@
       "buildNumber": "2",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "A Jynlo utiliza o microfone quando gravas vídeos com som ou participas numa chamada de voz ou vídeo.",
-        "NSCameraUsageDescription": "A Jynlo utiliza a câmara quando tiras fotografias, gravas Stories ou participas numa chamada de vídeo."
-      }
+        "NSCameraUsageDescription": "A Jynlo utiliza a câmara quando tiras fotografias, gravas Stories ou participas numa chamada de vídeo.",
+        "NSLocationWhenInUseUsageDescription": "A Jynlo usa a tua localização para mostrar jogos e recintos perto de ti e para marcar o local de um jogo que crias.",
+        "NSPhotoLibraryUsageDescription": "A Jynlo precisa de acesso às fotos que escolheres para partilhares Stories, publicações e a foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "A Jynlo guarda na tua galeria as fotos que decidires descarregar.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:jynlosports.com",
+        "applinks:d24sports.com"
+      ]
     },
     "android": {
       "package": "com.jynlo.app",
@@ -219,7 +228,14 @@
           }
         }
       ],
-      "@config-plugins/react-native-webrtc"
+      "@config-plugins/react-native-webrtc",
+      "expo-apple-authentication",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "A Jynlo usa a tua localização para mostrar jogos e recintos perto de ti e para marcar o local de um jogo que crias."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

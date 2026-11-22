@@ -8,6 +8,15 @@ module.exports = ({config}) => {
   }
   const diagnostic = process.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8 === '1';
   const storeBuild = ['production', 'play-internal'].includes(process.env.EAS_BUILD_PROFILE);
+  // Android-only requirements (Google Maps key, Firebase) must not block iPhone builds.
+  const platform = (process.env.EAS_BUILD_PLATFORM || '').trim();
+  const androidStoreBuild = storeBuild && platform !== 'ios';
+  // Google Sign-In on iPhone needs its own OAuth client (not secret). Without it the
+  // iPhone app offers "Continuar com a Apple" and username/password only.
+  const googleIosClientId = (process.env.JYNLO_GOOGLE_IOS_CLIENT_ID || '').trim();
+  if (googleIosClientId && !/^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(googleIosClientId))
+    throw new Error('JYNLO_GOOGLE_IOS_CLIENT_ID não tem o formato de um ID de cliente OAuth iOS.');
+  const googleIosUrlScheme = googleIosClientId ? 'com.googleusercontent.apps.' + googleIosClientId.replace('.apps.googleusercontent.com', '') : '';
   if (diagnostic && storeBuild) {
     throw new Error('BUILD BLOQUEADO: não desatives R8/minificação numa build destinada à Google Play.');
   }
@@ -16,7 +25,7 @@ module.exports = ({config}) => {
   // A signed Android binary cannot initialize react-native-maps without a
   // configured Google Maps SDK key. Inject it at build time, never hardcode it.
   const mapsKey = (process.env.JYNLO_GOOGLE_MAPS_ANDROID_API_KEY || '').trim();
-  if(storeBuild && !mapsKey)
+  if(androidStoreBuild && !mapsKey)
     throw new Error('BUILD BLOQUEADO: falta JYNLO_GOOGLE_MAPS_ANDROID_API_KEY para ativar o mapa nativo na versão de loja.');
   if(mapsKey && !/^AIza[0-9A-Za-z_-]{35}$/.test(mapsKey))
     throw new Error('A chave da Google Maps Android não tem o formato esperado.');
@@ -28,10 +37,11 @@ module.exports = ({config}) => {
     throw new Error('BUILD BLOQUEADO: a APK push-test exige GOOGLE_SERVICES_JSON no ambiente EAS preview.');
   // A Play testing release without Firebase cannot receive native FCM pushes.
   // Fail at build configuration time rather than silently shipping a broken opt-in.
-  if (storeBuild && !firebaseConfigFile)
+  if (androidStoreBuild && !firebaseConfigFile)
     throw new Error('BUILD BLOQUEADO: falta GOOGLE_SERVICES_JSON para notificações Android na Google Play. Configura o ficheiro Firebase no EAS.');
   const plugins = [
-    ...(config.plugins || []),
+    ...(config.plugins || []).map(plugin => plugin === '@react-native-google-signin/google-signin' && googleIosUrlScheme
+      ? ['@react-native-google-signin/google-signin', {iosUrlScheme: googleIosUrlScheme}] : plugin),
     ...(mapsKey ? [['react-native-maps', {androidGoogleMapsApiKey: mapsKey}]] : []),
     // LiveKit WebRTC references an optional generated JNI bridge that is absent
     // from the bundled Android artifact. R8 treats that optional reference as a
@@ -76,6 +86,7 @@ module.exports = ({config}) => {
     // The native map UI must never mount in binaries without a configured SDK.
     ...(projectId
       ? {extra: {...(config.extra || {}), nativeGoogleMapsConfigured: Boolean(mapsKey), nativePushConfigured: Boolean(firebaseConfigFile),
+          ...(googleIosClientId ? {googleIosClientId} : {}),
           eas: {...(config.extra?.eas || {}), projectId}}}
       : {}),
   };
