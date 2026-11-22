@@ -12,7 +12,7 @@ test('Google Calendar gets a start AND an end (90 min by default)',()=>{
  assert.equal(url.searchParams.get('dates'),'20261204T210000Z/20261204T223000Z');
  assert.equal(url.searchParams.get('text'),'Jynlo — Futsal');
  assert.equal(url.searchParams.get('location'),'Pavilhão Municipal, Odivelas');
- assert.match(url.searchParams.get('details'),/https:\/\/d24sports\.com\/sessions\/7/);
+ assert.match(url.searchParams.get('details'),/https:\/\/jynlosports\.com\/sessions\/7/);
 });
 test('without permission to see the address only the city goes in the event',()=>{
  const url=new URL(cal.googleCalendarUrl(session,null,Date.parse('2026-11-21T00:00:00Z')));

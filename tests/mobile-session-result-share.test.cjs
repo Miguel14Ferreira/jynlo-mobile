@@ -14,7 +14,7 @@ const verified={sessionId:7,roundId:55,scoreA:3,scoreB:2,contributions:[
 test('verified final public score can be shared without player names or restricted game details',()=>{
  const result=publicSessionResultMessage({...publicGame,address:'Local privado',meetingPointInstructions:'Porta B'},verified,7);
  assert.ok(result?.includes('Equipa A 3 — 2 Equipa B'));
- assert.ok(result?.includes('https://d24sports.com/sessions/7'));
+ assert.ok(result?.includes('https://jynlosports.com/sessions/7'));
  assert.doesNotMatch(result,/sensitive|Local privado|Porta B/);
 });
 test('private, unfinished, mismatched and incomplete results cannot be shared',()=>{

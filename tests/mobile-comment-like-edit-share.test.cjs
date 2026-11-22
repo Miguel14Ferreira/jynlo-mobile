@@ -4,9 +4,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const {sharedPostLink}=require('../src/lib/shared-post-link.cjs');
 const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
 test('post links target a post, while session activity links to its session',()=>{
- assert.equal(sharedPostLink({type:'POST',postId:44,sessionId:null}),'https://d24sports.com/posts/44');
- assert.equal(sharedPostLink({type:'SESSION_ATTENDED',postId:null,sessionId:18}),'https://d24sports.com/sessions/18');
- assert.equal(sharedPostLink({type:'POST',postId:-1}),'https://d24sports.com');
+ assert.equal(sharedPostLink({type:'POST',postId:44,sessionId:null}),'https://jynlosports.com/posts/44');
+ assert.equal(sharedPostLink({type:'SESSION_ATTENDED',postId:null,sessionId:18}),'https://jynlosports.com/sessions/18');
+ assert.equal(sharedPostLink({type:'POST',postId:-1}),'https://jynlosports.com');
 });
 test('feed and detail share the canonical post URL, not the Jynlo homepage',()=>{
  const feed=read('app/(tabs)/index.tsx'),detail=read('app/posts/[postId]/index.tsx');

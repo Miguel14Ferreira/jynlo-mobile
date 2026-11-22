@@ -1,6 +1,6 @@
 'use strict';
 const {tr}=require('./i18n-core.cjs');
-const ORIGIN='https://d24sports.com';
+const ORIGIN='https://jynlosports.com';
 /** Only the two public routes are ever shared; anything else from the server is refused. */
 function publicShareUrl(path){
  const p=String(path||'');
