@@ -92,7 +92,7 @@ test('post creation supports camera, multiple gallery assets and one-item remova
  assert.match(composer,/composerMedia\.map\(\(media,i\)=>/);
  assert.match(composer,/Image source=\{\{uri:media.uri\}\} resizeMode="contain"/);
  assert.match(composer,/MediaVideo key=\{media.uri\} uri=\{media.uri\}/);
- assert.match(composer,/accessibilityLabel=\{`Remover ficheiro \$\{i\+1\}`\}/);
+ assert.match(composer,/accessibilityLabel=\{t\('Remover ficheiro \{n\}',\{n:i\+1\}\)\}/);
  assert.match(composer,/changeComposerMedia\(prev=>prev.filter\(x=>x.uri!==media.uri\)\)/);
  assert.match(composer,/disabled=\{publishing\}/);
  assert.match(composer,/\(!composerMedia.length&&!composerText.trim\(\)\)\|\|publishing/);

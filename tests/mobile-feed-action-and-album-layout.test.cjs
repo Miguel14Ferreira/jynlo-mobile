@@ -18,7 +18,7 @@ test('feed keeps like, comment and share buttons visible and separate from count
  assert.match(card,/openComments\(item\)/);
  assert.match(card,/sharePost\(item\)/);
  assert.match(card,/item\.hideLikers/);
- assert.match(card,/item\.commentCount\} comentários/);
+ assert.match(card,/t\('\{a\} comentários',\{a:item\.commentCount\}\)/);
  assert.match(card,/pathname:'\/posts\/\[postId\]\/likers'/);
  assert.match(card,/pathname:'\/posts\/\[postId\]'/);
 });

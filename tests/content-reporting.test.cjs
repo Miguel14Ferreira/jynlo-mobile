@@ -21,8 +21,8 @@ test('posts, comments and profiles can be reported where they are seen (store re
  assert.match(api,/\/comments\/\$\{validId\(commentId\)\}\/report`/);
  const feed=read('app/(tabs)/index.tsx');
  assert.match(feed,/accessibilityLabel="Denunciar publicação"/);
- assert.match(feed,/accessibilityLabel=\{'Bloquear @'\+postMenuItem\.authorUsername\}/);
- assert.match(feed,/accessibilityLabel=\{'Denunciar comentário de @'\+c\.authorUsername\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Bloquear @\{v\}',\{v:postMenuItem\.authorUsername\}\)\}/);
+ assert.match(feed,/accessibilityLabel=\{t\('Denunciar comentário de @\{v\}',\{v:c\.authorUsername\}\)\}/);
  assert.match(feed,/<ReportSheet inline visible=\{reportTarget\?\.kind==='comment'\}/);
  // Own content is never offered for reporting.
  assert.match(feed,/postMenuItem\.authorUsername\.toLowerCase\(\)!==auth\.username\.toLowerCase\(\)&&postMenuItem\.type==='POST'/);

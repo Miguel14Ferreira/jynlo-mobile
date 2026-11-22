@@ -17,7 +17,12 @@ function fill(text,params){
 
 function translate(dictionary,language,text,params){
  const source=String(text??'');
- const out=language==='en'&&dictionary&&Object.prototype.hasOwnProperty.call(dictionary,source)?dictionary[source]:source;
+ // "contexto::Texto" picks a different English for the same Portuguese
+ // (e.g. "A seguir" = "Up next" for games, "Following" for people).
+ const sep=source.indexOf('::');
+ const shown=sep>=0?source.slice(sep+2):source;
+ const has=k=>language==='en'&&dictionary&&Object.prototype.hasOwnProperty.call(dictionary,k);
+ const out=has(source)?dictionary[source]:has(shown)?dictionary[shown]:shown;
  return fill(out,params);
 }
 

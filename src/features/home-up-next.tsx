@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {useAuth} from '../lib/auth';
@@ -45,9 +46,9 @@ export function HomeUpNext(){
  const next=games.slice(0,MAX_GAMES);
  return <View style={styles.card}>
   <View style={styles.head}>
-   <Text style={styles.title}>A seguir</Text>
+   <Text style={styles.title}>{t('jogos::A seguir')}</Text>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/my-sessions')} style={styles.link}>
-    <Text style={styles.linkText}>{games.length>MAX_GAMES?`Ver todos (${games.length})`:'As minhas sessões'}</Text>
+    <Text style={styles.linkText}>{games.length>MAX_GAMES?t('Ver todos ({n})',{n:games.length}):t('As minhas sessões')}</Text>
    </Pressable>
   </View>
   {next.length?next.map(game=><Pressable key={game.id} accessibilityRole="button"
@@ -56,27 +57,27 @@ export function HomeUpNext(){
     <View style={styles.gameIcon}><JynloIcon name="session" size={22} color={colors.accent}/></View>
     <View style={{flex:1,gap:2}}>
      <Text style={styles.gameTitle} numberOfLines={1}>{game.sport} · {game.city}</Text>
-     <Text style={styles.gameMeta} numberOfLines={1}>{formatDate(game.gameDate)} · {game.participantCount}/{game.maxParticipants} jogadores</Text>
+     <Text style={styles.gameMeta} numberOfLines={1}>{t('{a} · {b}/{c} jogadores',{a:formatDate(game.gameDate),b:game.participantCount,c:game.maxParticipants})}</Text>
     </View>
     <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
    </Pressable>)
    :<View style={styles.empty}>
-    <Text style={styles.gameMeta}>Ainda não tens jogos marcados.</Text>
+    <Text style={styles.gameMeta}>{t('Ainda não tens jogos marcados.')}</Text>
     <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/explore')} style={styles.primary}>
-     <Text style={styles.primaryText}>Encontrar um jogo</Text>
+     <Text style={styles.primaryText}>{t('Encontrar um jogo')}</Text>
     </Pressable>
    </View>}
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
    {communities.slice(0,6).map(group=><Pressable key={group.id} accessibilityRole="button"
-     accessibilityLabel={'Abrir comunidade '+group.name}
+     accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})}
      onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})} style={styles.chip}>
      <JynloIcon name="community" size={17} color={colors.accent}/><Text style={styles.chipText} numberOfLines={1}>{group.name}</Text>
     </Pressable>)}
    <Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.chip}>
-    <Text style={styles.chipText}>{communities.length?'Comunidades':'Encontrar comunidades'}</Text>
+    <Text style={styles.chipText}>{communities.length?t('Comunidades'):t('Encontrar comunidades')}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/tournaments')} style={styles.chip}>
-    <JynloIcon name="championship" size={17} color={colors.accent}/><Text style={styles.chipText}>Torneios</Text>
+    <JynloIcon name="championship" size={17} color={colors.accent}/><Text style={styles.chipText}>{t('Torneios')}</Text>
    </Pressable>
   </ScrollView>
  </View>;

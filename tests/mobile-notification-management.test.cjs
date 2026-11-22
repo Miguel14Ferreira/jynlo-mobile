@@ -65,8 +65,8 @@ test('notification inbox also shows real pending community invites from API',()=
  assert.match(screen,/myCommunityInvites\(auth\.token,auth\.username\)/);
  assert.match(screen,/communityInvitations\.status==='fulfilled'/);
  assert.match(screen,/setCommunityInvites\(communityInvitations\.value\)/);
- assert.match(screen,/Convites para comunidades · \{visibleCommunityInvites\.length\}/);
- assert.match(screen,/Convidado por @\{invite\.invitedByUsername\}/);
+ assert.match(screen,/Convites para comunidades · \{a\}',\{a:visibleCommunityInvites\.length\}/);
+ assert.match(screen,/Convidado por @\{a\}',\{a:invite\.invitedByUsername\}/);
  assert.match(screen,/router\.push\('\/communities\/invites'\)/);
  assert.ok(screen.indexOf('Convites para comunidades · {visibleCommunityInvites.length}')<
    screen.indexOf('<View style={styles.pushPanel}>'),'Pending invitations must appear before optional push settings');
