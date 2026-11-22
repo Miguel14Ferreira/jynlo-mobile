@@ -1,0 +1,23 @@
+# Sem conta de teste: percorre a app como visitante.
+appId: com.jynlo.app
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Explorar como visitante"
+    timeout: 90000
+- takeScreenshot: 01_boas_vindas
+- tapOn: "Explorar como visitante"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 02_explorar
+- scroll
+- takeScreenshot: 03_explorar_scroll
+- tapOn:
+    text: "Início"
+    optional: true
+- takeScreenshot: 04_inicio
+- tapOn:
+    text: "Perfil"
+    optional: true
+- takeScreenshot: 05_perfil
