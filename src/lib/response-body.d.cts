@@ -6,3 +6,6 @@ export function readSuccessfulResponse(response: {
 export class InvalidSuccessfulResponseError extends Error {
   constructor();
 }
+
+export declare function userFacingMessage(value:unknown):string|null;
+export declare function readErrorMessage(response:{text():Promise<string>}):Promise<string|null>;

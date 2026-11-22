@@ -1,6 +1,6 @@
 import {confirmedSessionJoin} from './session-join-receipt.cjs';
 import { demoCancel, demoDetail, demoInvitePlayer, demoInvites, demoJoin, demoLeave, demoParticipants, demoPreview, demoRespondInvite, demoSessions } from './demo';
-import {readSuccessfulResponse,InvalidSuccessfulResponseError} from './response-body.cjs';
+import {readSuccessfulResponse,InvalidSuccessfulResponseError,readErrorMessage} from './response-body.cjs';
 import {validateApiOrigin} from './api-origin.cjs';
 import type { JoinSessionResponse, LoginResponse, PublicSessionPreview, SessionDetail, SessionFilters, SessionParticipant, SessionSummary, PendingSessionInvite, SessionTeamSuggestion } from './types';
 
@@ -35,7 +35,9 @@ export async function request<T>(path:string, {token,method='GET',body,timeoutMs
         response.status===409?'Esta sessão já não aceita essa ação.':
         response.status===429?'Demasiados pedidos. Tenta mais tarde.':
         'Não foi possível concluir o pedido.';
-      throw new ApiError(response.status,fallback);
+      // Show the reason the server gave (e.g. "Já existe uma época ativa…") when it is meant for people.
+      const reason=[400,403,404,409,422].includes(response.status)?await readErrorMessage(response):null;
+      throw new ApiError(response.status,reason||fallback);
     }
     // Some successful DELETE/POST endpoints return 200 with an empty body.
     // Never misreport a completed mutation as a network failure just because JSON is absent.

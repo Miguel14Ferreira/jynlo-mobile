@@ -48,7 +48,7 @@ export function CallUpCard({sessionId,token,username}:{sessionId:number;token:st
     :organiser?<Text style={styles.state}>{t('És o organizador desta sessão')}</Text>
     :session.joined?<Text style={[styles.state,{color:C.mint}]}>{t('✓ Vais a este jogo')}</Text>
     :session.waitlisted?<Text style={styles.state}>{t('Estás na lista de espera')}</Text>
-    :session.privateGame?<Text style={styles.state}>{t('Sessão privada: abre a sessão para entrar')}</Text>
+    :session.privateGame?<Text style={styles.state}>{t('Jogo só por convite: abre o link do organizador para entrar')}</Text>
     :<Pressable accessibilityRole="button" disabled={joining} onPress={()=>void join()} style={[styles.join,joining&&{opacity:.6}]}>
       {joining?<ActivityIndicator color={C.background}/>:<Text style={styles.joinText}>{session.status==='FULL'?t('Vou (lista de espera)'):t('Vou')}</Text>}
      </Pressable>}

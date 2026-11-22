@@ -19,4 +19,24 @@ async function readSuccessfulResponse(response) {
     throw new InvalidSuccessfulResponseError();
   }
 }
-module.exports={readSuccessfulResponse,InvalidSuccessfulResponseError};
+/**
+ * A reason the server wrote for people ("Já existe uma época ativa para esta
+ * modalidade"). Technical text is never shown: the caller keeps its fallback.
+ */
+function userFacingMessage(value){
+  if(typeof value!=='string')return null;
+  const text=value.trim();
+  if(text.length<4||text.length>240||!text.includes(' '))return null;
+  if(/Exception|\.java|\bnull\b|could not|SQL|JDBC|org\.|java\.|com\.|[\[{<]/i.test(text))return null;
+  if(/^(BAD REQUEST|FORBIDDEN|NOT FOUND|CONFLICT|INTERNAL SERVER ERROR)$/i.test(text))return null;
+  return text;
+}
+async function readErrorMessage(response){
+  try{
+    const text=await response.text();
+    if(!text)return null;
+    const body=JSON.parse(text);
+    return userFacingMessage(body&&typeof body==='object'?body.message:null);
+  }catch{return null;}
+}
+module.exports={readSuccessfulResponse,InvalidSuccessfulResponseError,userFacingMessage,readErrorMessage};
