@@ -5,7 +5,7 @@ export type CommunitySeason={id:number;name?:string|null;label?:string|null;spor
 export type CommunityStanding={position:number;username:string|null;fullName:string|null;games:number;wins:number;draws:number;losses:number;points:number;goals:number;assists:number};
 export type CommunityCompetitionSettings={rankingsEnabled:boolean;winPoints:number;drawPoints:number;lossPoints:number;overallStandingsEnabled?:boolean};
 export type CommunityResultsOverview={rounds:CommunityResultRound[];standings:CommunityStanding[];seasons:CommunitySeason[];activeSeasonId:number|null;selectedSeasonId:number|null;
- settings?:CommunityCompetitionSettings;sportStandings?:unknown[];racketStandings?:unknown[];overallStandings?:unknown[]};
+ settings?:CommunityCompetitionSettings;sportStandings?:unknown[];racketStandings?:unknown[];raceStandings?:unknown[];overallStandings?:unknown[]};
 export async function communityResultsOverview(communityId:number,token:string|null,seasonId?:number|null):Promise<CommunityResultsOverview>{
  if(!Number.isSafeInteger(communityId)||communityId<=0)throw Error('Comunidade inválida.');
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar as classificações.');
