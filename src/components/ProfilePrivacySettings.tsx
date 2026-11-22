@@ -32,7 +32,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
  const setPrivate=(value:boolean)=>{
    if(!privacy?.privateModeAvailable||busy)return;
    Alert.alert(value?t('Tornar perfil privado?'):t('Tornar perfil público?'),
-    value?t('Só seguidores aprovados poderão ver as tuas publicações e stories. Os seguidores atuais mantêm acesso.'):
+    value?t('Só seguidores aprovados poderão ver as tuas publicações e stories. Os seguidores atuais mantêm acesso. As tuas fotografias e vídeos passam para um armazenamento protegido; pode demorar um pouco.'):
      t('Todas as pessoas na Jynlo poderão ver as tuas publicações e stories.'),[
       {text:t('Cancelar'),style:'cancel'},
       {text:t('Confirmar'),onPress:()=>{void (async()=>{
@@ -65,7 +65,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
       </View>
       {privacy.privateModeAvailable?<Pressable accessibilityRole="button" accessibilityLabel={privacy.privateProfile?t('Tornar o perfil público'):t('Tornar o perfil privado')} disabled={busy}
        onPress={()=>setPrivate(!privacy.privateProfile)} style={[styles.action,busy&&styles.disabled]}>
-       <Text style={styles.actionText}>{busy?t('A guardar…'):privacy.privateProfile?t('Tornar público'):t('Tornar privado')}</Text>
+       <Text style={styles.actionText}>{busy?t('A preparar…'):privacy.privateProfile?t('Tornar público'):t('Tornar privado')}</Text>
       </Pressable>:null}
     </View>
     {!privacy.privateModeAvailable?<View style={styles.readiness}>

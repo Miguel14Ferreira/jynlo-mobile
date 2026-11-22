@@ -13,10 +13,10 @@ export const API_BASE: string = rawApiUrl ? validateApiOrigin(rawApiUrl,{allowLo
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name='ApiError'; }
 }
-export async function request<T>(path:string, {token,method='GET',body}:{token?:string|null;method?:'GET'|'POST'|'PUT'|'PATCH'|'DELETE';body?:unknown}={}):Promise<T>{
+export async function request<T>(path:string, {token,method='GET',body,timeoutMs=12000}:{token?:string|null;method?:'GET'|'POST'|'PUT'|'PATCH'|'DELETE';body?:unknown;timeoutMs?:number}={}):Promise<T>{
   if (DEMO_MODE) throw new Error('Os pedidos HTTP estão desativados na demonstração.');
   const controller = new AbortController();
-  const timeout = setTimeout(()=>controller.abort(),12000);
+  const timeout = setTimeout(()=>controller.abort(),timeoutMs);
   try {
     const response = await fetch(`${API_BASE}${path}`,{
       // Android authenticates exclusively with bearer tokens; never persist browser refresh cookies.

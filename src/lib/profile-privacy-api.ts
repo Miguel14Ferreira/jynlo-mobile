@@ -19,7 +19,8 @@ export async function myProfilePrivacy(token:string):Promise<ProfilePrivacyStatu
 }
 export async function updateProfilePrivacy(token:string,privateProfile:boolean):Promise<ProfilePrivacyStatus>{
  if(!token||DEMO_MODE)throw new Error('Inicia sessão para alterar a privacidade.');
- return request<ProfilePrivacyStatus>('/api/profile/privacy/me',{token,method:'PUT',body:{privateProfile}});
+ // Existing photos and videos are moved to/from protected storage first: allow time.
+ return request<ProfilePrivacyStatus>('/api/profile/privacy/me',{token,method:'PUT',body:{privateProfile},timeoutMs:120000});
 }
 export async function pendingFollowRequests(token:string):Promise<PendingFollowRequest[]>{
  if(!token||DEMO_MODE)return [];
