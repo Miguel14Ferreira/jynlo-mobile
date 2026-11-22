@@ -1,5 +1,5 @@
 import React from 'react';
-import {t} from '../src/lib/i18n';
+import {t,useLanguage} from '../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useLocalSearchParams} from 'expo-router';
 import {Eyebrow,Page} from '../src/components/UI';
@@ -11,10 +11,11 @@ export default function LegalScreen(){
  const params=useLocalSearchParams<{document?:string}>();
  const kind:LegalKind=params.document==='terms'||params.document==='delete-account'||params.document==='delete'
   ?(params.document==='terms'?'terms':'delete'):'privacy';
- const document=legalDocument(kind);
+ const {language}=useLanguage();
+ const document=legalDocument(kind,language==='en'?'en':'pt');
  return <Page>
   
-  <Eyebrow>{t('JYNLO · PILOTO')}</Eyebrow>
+  <Eyebrow>{t('INFORMAÇÃO LEGAL')}</Eyebrow>
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{document.title}</Text>
   <Text style={styles.intro}>{document.intro}</Text>
   <Text style={styles.note}>{document.updated}</Text>
