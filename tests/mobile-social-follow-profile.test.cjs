@@ -96,7 +96,9 @@ test('sports history waits for verified profile privacy and never invents achiev
  assert.match(screen,/if\(value\.canViewContent\)void publicSportsActivity\(name,auth\.token\)/);
  assert.match(screen,/profile&&privacy\?\.canViewContent&&activity/);
  assert.match(screen,/request===version\.current\)setActivity\(activityValue\)/);
- assert.match(screen,/Object\.prototype\.hasOwnProperty\.call\(achievementLabels,code\)/);
+ // Generic badges were replaced by attendance; only verified numbers are shown.
+ assert.doesNotMatch(screen,/achievementLabels/);
+ assert.match(screen,/attendance\.games>=3/);
  assert.match(screen,/activity\.participantsMobilized/);
  assert.match(screen,/activity\.communitiesJoined/);
  assert.match(screen,/setActivity\(null\)/);
@@ -110,18 +112,16 @@ test('own mobile profile loads real sporting history without blocking identity',
  assert.match(own,/auth\.token&&auth\.username&&!DEMO_MODE&&activity/);
  assert.match(own,/activity\.participantsMobilized/);
  assert.match(own,/activity\.communitiesJoined/);
- assert.match(own,/Object\.prototype\.hasOwnProperty\.call\(achievementLabels,code\)/);
+ assert.doesNotMatch(own,/achievementLabels/);
 });
 
-test('earned badge showcase shows three by default and expands only verified extra badges',()=>{
+test('profiles show attendance instead of generic badges',()=>{
  const own=read('app/(tabs)/profile.tsx');
- assert.match(own,/earnedAchievements\.slice\(0,3\)/);
- assert.match(own,/earnedAchievements\.length>3/);
- assert.match(own,/accessibilityState=\{\{expanded:showAllAchievements\}\}/);
- assert.match(own,/setShowAllAchievements\(false\)/);
- assert.match(screen,/earnedAchievements\.slice\(0,3\)/);
- assert.match(screen,/earnedAchievements\.length>3/);
- assert.match(screen,/setShowAllAchievements\(false\)/);
+ for(const source of [own,screen]){
+  assert.doesNotMatch(source,/earnedAchievements/);
+  assert.match(source,/reliabilitySummary\(/);
+  assert.match(source,/Presença nos jogos/);
+ }
 });
 
 test('competitive profile titles use bounded verified public champion snapshots',()=>{

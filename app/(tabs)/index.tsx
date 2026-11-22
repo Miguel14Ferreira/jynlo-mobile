@@ -281,7 +281,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
       <View style={styles.storyProgress}>{activeGroup.stories.map((entry,i)=><Pressable key={entry.id} accessibilityRole="button" accessibilityLabel={`Ir para Story ${i+1}`} onPress={()=>{if(submittingStory.current||replyFocused||!appActive)return;resetProgress();setIndex(i);}} style={styles.progressPart}>
         {i<index?<View style={styles.storyProgressFill}/>:i===index?<Animated.View style={[styles.storyProgressFill,{width:story.video?'100%':progress.interpolate({inputRange:[0,1],outputRange:['0%','100%']})}]}/>:null}
       </Pressable>)}</View>
-      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text><Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel={t('Fechar Story')}><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
+      <View style={styles.storyTop}><CircleAvatar name={story.displayName} image={activeGroup.avatar} size={34}/><Text style={styles.storyUser}>{activeGroup.name}</Text>{story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar a minha Story')} disabled={storyBusy} onPress={confirmDeleteStory} style={styles.closeStory} hitSlop={6}><JynloIcon name="more" color={WHITE} size={22}/></Pressable>:null}<Pressable onPress={safeClose} style={styles.closeStory} accessibilityRole="button" accessibilityLabel={t('Fechar Story')}><Text style={styles.closeStoryText}>✕</Text></Pressable></View>
       <View style={styles.storyMedia}>{uri?(story.video?
         <MediaVideo key={story.id+'-'+mediaRetry} uri={uri} story muted={storyMuted}
           paused={paused||replyFocused||reactionsOpen||storyBusy||audienceOpen||!appActive||mediaState==='error'}
@@ -326,12 +326,11 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           }
          }}/>
       </View>
-      <View style={styles.storyBottom}><Text style={styles.storyCount}>{index+1} / {activeGroup.stories.length}</Text>{viewerHeight>=720?<Text style={styles.storyCount}>{t('Toca para avançar · mantém premido para pausar')}</Text>:null}</View>
       <View style={styles.storyEngagement}>
         {ownStory?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver quem viu esta Story')}
           disabled={audienceBusy} onPress={()=>void loadAudience()} style={[styles.storyEngagementAction,styles.storyViewsAction]}>
           <JynloIcon name="views" size={19} color={WHITE}/>
-          <Text style={styles.storyEngagementText}>{audience?t('{n} visualizações',{n:audience.viewCount}):t('Ver visualizações')}</Text>
+          <Text style={styles.storyEngagementText}>{audience?String(audience.viewCount):t('Visualizações')}</Text>
         </Pressable>:null}
         {story.video?<Pressable accessibilityRole="button" accessibilityLabel={storyMuted?t('Ativar som do vídeo'):t('Silenciar vídeo')} onPress={()=>setStoryMuted(v=>!v)} style={styles.storyEngagementAction}>
           <JynloIcon name={storyMuted?'volume-off':'volume'} color={WHITE} size={21}/>
@@ -339,7 +338,7 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
         <Pressable accessibilityRole="button" accessibilityLabel={story.likedByMe?t('Retirar gosto da Story'):t('Gostar da Story')} disabled={storyBusy} onPress={()=>void toggleLike()} style={styles.storyEngagementAction}>
           <JynloIcon name="like" size={20} color={story.likedByMe?'#FF778C':WHITE} active={story.likedByMe}/><Text style={styles.storyEngagementText}>{story.likeCount||0}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar Story')} disabled={storyBusy} onPress={()=>void shareStory()} style={[styles.storyEngagementAction,styles.storyActionWithIcon]}><JynloIcon name="share" color={WHITE} size={19}/><Text style={styles.storyEngagementText}>{t('Partilhar')}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar Story')} disabled={storyBusy} onPress={()=>void shareStory()} style={[styles.storyEngagementAction,styles.storyActionWithIcon]}><JynloIcon name="share" color={WHITE} size={21}/></Pressable>
       </View>
       {!ownStory?<View style={styles.storyReplyRow}>
         <TextInput value={replyText} onChangeText={setReplyText} onFocus={()=>{progress.stopAnimation(value=>{remaining.current=Math.max(0,1-value);});setReplyFocused(true);}} onBlur={()=>setReplyFocused(false)}
@@ -389,7 +388,6 @@ function StoryViewer({group,groups,onClose,onDeleted,onUpdated,token,username}:{
           {t('A apresentar as 100 visualizações mais recentes disponíveis.')}
         </Text>:null}
       </View>:null}
-      {story.canDelete?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar a minha Story')} disabled={storyBusy} onPress={confirmDeleteStory} style={styles.storyDeleteAction}><Text style={styles.storyOwnHint}>{t('Eliminar Story')}</Text></Pressable>:null}
     </SafeAreaView>
     </KeyboardFrame>
   </Modal>;
@@ -1999,7 +1997,7 @@ const styles=StyleSheet.create({
   storyMediaFailureTitle:{color:WHITE,fontSize:17,fontWeight:'900',textAlign:'center'},
   storyMediaRetry:{paddingHorizontal:22,paddingVertical:12,borderRadius:14,backgroundColor:TEAL,minHeight:44,justifyContent:'center'},
   storyMediaRetryText:{color:INDIGO,fontWeight:'900'},
-  storyViewsAction:{flexGrow:1,flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#123641'},
+  storyViewsAction:{flexDirection:'row',alignItems:'center',gap:7,backgroundColor:'#123641',marginRight:'auto'},
   storyReactions:{gap:8,paddingVertical:4},
   storyReactionDisclosure:{flexDirection:'row',alignItems:'center',gap:8,alignSelf:'flex-start',minHeight:44,paddingHorizontal:12,borderWidth:1,borderColor:BORDER,borderRadius:17},
   storyActionWithIcon:{flexDirection:'row',alignItems:'center',gap:7},

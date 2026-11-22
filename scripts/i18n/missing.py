@@ -5,7 +5,7 @@ for f in glob.glob('app/**/*.tsx',recursive=True)+glob.glob('src/**/*.tsx',recur
     if f.endswith('i18n-en.cjs'): continue
     s=open(f).read()
     for m in re.finditer(r"(?<![\w.$])tr?\('((?:[^'\\]|\\.)*)'",s): keys.add(m.group(1).replace("\\'","'"))
-consts={'app/edit-profile.tsx':['fields'],'app/social/[username]/index.tsx':['achievementLabels'],'app/tournaments/[communityId]/[id]/provas.tsx':['INPUT_HINT','PLACEHOLDER'],'app/tournaments/create.tsx':['FORMAT_LABELS','EVENT_LABELS','MODEL_HINTS'],'app/venues/[id]/suggest-edit.tsx':['FIELDS'],'app/venues/create.tsx':['TEXT_FIELDS'],'src/components/SportsTeamChallengesPanel.tsx':['label'],'src/components/TeamCrestStudio.tsx':['SYMBOLS','PATTERNS'],'src/components/TeamKitStudio.tsx':['PATTERNS','GARMENTS'],'app/tournaments/[communityId]/[id]/events.tsx':['ACTIONS']}
+consts={'app/edit-profile.tsx':['fields'],'app/tournaments/[communityId]/[id]/provas.tsx':['INPUT_HINT','PLACEHOLDER'],'app/tournaments/create.tsx':['FORMAT_LABELS','EVENT_LABELS','MODEL_HINTS'],'app/venues/[id]/suggest-edit.tsx':['FIELDS'],'app/venues/create.tsx':['TEXT_FIELDS'],'src/components/SportsTeamChallengesPanel.tsx':['label'],'src/components/TeamCrestStudio.tsx':['SYMBOLS','PATTERNS'],'src/components/TeamKitStudio.tsx':['PATTERNS','GARMENTS'],'app/tournaments/[communityId]/[id]/events.tsx':['ACTIONS']}
 for f,names in consts.items():
     s=open(f).read()
     for n in names:

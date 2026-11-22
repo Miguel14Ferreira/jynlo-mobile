@@ -1,4 +1,5 @@
 import React,{useCallback,useState} from 'react';
+import {reliabilitySummary} from '../../src/lib/reliability-api';
 import {currentLocale,t} from '../../src/lib/i18n';
 import {LanguageSwitch} from '../../src/components/LanguageSwitch';
 import {Alert,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -16,11 +17,6 @@ import {joinedSportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api'
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {sportName} from '../../src/lib/sport-names.cjs';
-const achievementLabels:Record<string,string>={
- FIRST_ACTIVITY:'🏅 Primeira atividade',TEN_ACTIVITIES:'🔥 10 atividades',
- EXPLORER:'🌍 Explorador',ORGANIZER:'👥 Organizador',
- COMMUNITY_BUILDER:'🤝 Criador de comunidades',REGULAR:'📅 Regular'
-};
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -33,16 +29,16 @@ export default function ProfileScreen(){
   const [profileLoading,setProfileLoading]=useState(false);
   const [profileError,setProfileError]=useState(false);
   const [socialCounts,setSocialCounts]=useState<FollowStatus|null>(null);
+  const [attendance,setAttendance]=useState<{rate:number;games:number}|null>(null);
   const [activity,setActivity]=useState<PublicSportsActivity|null>(null);
   const [completedParticipations,setCompletedParticipations]=useState<PublicCompletedParticipation[]>([]);
-  const [showAllAchievements,setShowAllAchievements]=useState(false);
   const [verifiedTeams,setVerifiedTeams]=useState<SportsTeam[]>([]);
   const [verifiedCommunities,setVerifiedCommunities]=useState<CommunityGroup[]>([]);
   const [membershipsLoading,setMembershipsLoading]=useState(false);
   const [membershipsError,setMembershipsError]=useState(false);
   useFocusEffect(useCallback(()=>{
     // Clear private profile details on account change and screen transitions.
-    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);setCompletedParticipations([]);setShowAllAchievements(false);
+    setProfile(null);setProfileError(false);setSocialCounts(null);setActivity(null);setAttendance(null);setCompletedParticipations([]);
     setVerifiedTeams([]);setVerifiedCommunities([]);setMembershipsError(false);setMembershipsLoading(false);
     if(!auth.token||DEMO_MODE){setProfileLoading(false);return;}
     let active=true;setProfileLoading(true);
@@ -52,6 +48,9 @@ export default function ProfileScreen(){
         .then(result=>{if(active&&Array.isArray(result))setCompletedParticipations(result.filter(item=>
           Number.isSafeInteger(item.tournamentId)&&item.tournamentId>0&&
           Number.isSafeInteger(item.communityId)&&item.communityId>0));}).catch(()=>{});
+      void reliabilitySummary(auth.username,auth.token).then(summary=>{
+        if(active&&summary&&Number.isFinite(summary.attendanceRate))setAttendance({rate:summary.attendanceRate,games:summary.completedSessions});
+      }).catch(()=>{if(active)setAttendance(null);});
       void publicSportsActivity(auth.username,auth.token).then(stats=>{if(active)setActivity(stats);})
         .catch(()=>{/* Never display guessed stats or achievements. */});
     }
@@ -72,7 +71,6 @@ export default function ProfileScreen(){
     return()=>{active=false;};
   },[auth.token,auth.username]));
   const favoriteSports=parseFavoriteSports(profile?.favoriteSports).slice(0,8);
-  const earnedAchievements=(activity?.achievements||[]).filter(code=>Object.prototype.hasOwnProperty.call(achievementLabels,code));
   const displayName=profile?.nickname?.trim()||profile?.fullName?.trim()||auth.username||t('Visitante');
   const location=[profile?.location?.trim(),profile?.country?.trim()].filter(Boolean).join(' · ');
   const [showDelete,setShowDelete]=useState(false);
@@ -154,9 +152,10 @@ export default function ProfileScreen(){
       </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE&&activity?<View style={styles.history}>
       <Text style={styles.historyTitle}>{t('O meu histórico desportivo')}</Text>
-      <Text style={styles.historyHint}>{t('Resultados e conquistas registados na Jynlo.')}</Text>
+      <Text style={styles.historyHint}>{t('Estatísticas calculadas pela Jynlo.')}</Text>
       <View style={styles.historyGrid}>
        {([
+        ...(attendance&&attendance.games>=3?[[Math.round(attendance.rate)+'%',t('Presença nos jogos')] as const]:[]),
         [activity.activitiesCompleted,t('Atividades realizadas')],
         [activity.peoplePlayedWith,t('Pessoas com quem joguei')],
         [activity.sportsPractised,t('Modalidades')],
@@ -164,23 +163,10 @@ export default function ProfileScreen(){
         [activity.participantsMobilized,t('Participantes mobilizados')],
         [activity.communitiesJoined,t('Comunidades')]
        ] as const).map(([value,label])=><View style={styles.historyStat} key={label}>
-        <Text style={styles.historyValue}>{Math.max(0,Number(value)||0)}</Text>
+        <Text style={styles.historyValue}>{typeof value==='string'?value:Math.max(0,Number(value)||0)}</Text>
         <Text style={styles.historyHint}>{label}</Text>
        </View>)}
       </View>
-      {earnedAchievements.length>0?<View style={styles.historyTrophies}>
-       <Text style={styles.historyTitle}>{t('Conquistas')}</Text>
-       <View style={styles.historyBadges}>
-        {(showAllAchievements?earnedAchievements:earnedAchievements.slice(0,3)).map(code=>
-         <Text key={code} style={styles.historyBadge}>{achievementLabels[code]?t(achievementLabels[code]):code}</Text>)}
-       </View>
-       {earnedAchievements.length>3?<Pressable accessibilityRole="button"
-         accessibilityLabel={showAllAchievements?t('Mostrar menos conquistas'):t('Ver todas as conquistas')}
-         accessibilityState={{expanded:showAllAchievements}}
-         style={styles.showAchievements} onPress={()=>setShowAllAchievements(value=>!value)}>
-         <Text style={styles.showAchievementsText}>{showAllAchievements?t('Mostrar menos'):t('Ver todas as conquistas')} ({earnedAchievements.length})</Text>
-       </Pressable>:null}
-      </View>:null}
     </View>:null}
     {auth.token&&auth.username&&!DEMO_MODE?<View style={styles.memberships}>
       <Text style={styles.membershipsTitle}>{t('As minhas equipas e comunidades')}</Text>

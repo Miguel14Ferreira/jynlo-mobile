@@ -65,6 +65,12 @@ export async function storyFeed(token:string|null,username:string|null=null):Pro
   if(DEMO_MODE)return demoStories.filter(story=>Date.parse(story.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:Boolean(username&&demoStoryLikes.get(story.id)?.has(username))}));
   return requireSocialCollection(await request<unknown>('/api/stories',{token}),'story');
 }
+/** Active personal Stories of one person (server checks privacy and blocks). */
+export async function profileStories(username:string,token:string|null):Promise<SocialStory[]>{
+  if(DEMO_MODE||!token)return [];
+  if(!/^[a-zA-Z0-9_.@-]{1,128}$/.test(username))return [];
+  return requireSocialCollection(await request<unknown>('/api/stories/profile/'+encodeURIComponent(username),{token}),'story');
+}
 export async function myStories(token:string|null,username:string|null):Promise<SocialStory[]>{
   requireViewer(token,username);
   if(DEMO_MODE)return demoStories.filter(x=>x.authorUsername===username&&Date.parse(x.expiresAt)>Date.now()).map(story=>({...story,likeCount:demoStoryLikes.get(story.id)?.size||0,likedByMe:demoStoryLikes.get(story.id)?.has(username!)||false}));

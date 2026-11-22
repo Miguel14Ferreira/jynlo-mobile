@@ -45,7 +45,7 @@ test('the author alone sees the real unique view count and user list',()=>{
  assert.match(api,/Number\.isSafeInteger\(result\?\.viewCount\)/);
  assert.match(viewer,/ownStory\?<Pressable accessibilityRole="button" accessibilityLabel="Ver quem viu esta Story"/);
  assert.match(viewer,/await storyAudience\(id,actor\)/);
- assert.match(viewer,/audience\?audience\.viewCount\+' visualizações':'Ver visualizações'/);
+ assert.match(viewer,/audience\?String\(audience\.viewCount\):'Visualizações'/);
  assert.match(viewer,/storyAudiencePanel/);
  assert.match(viewer,/audience\?\.viewers\.map\(viewer=>/);
  assert.match(viewer,/router\.push\(\{pathname:'\/social\/\[username\]'/);
