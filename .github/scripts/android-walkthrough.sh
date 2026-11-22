@@ -4,6 +4,8 @@ set -uo pipefail
 locale="${1:-pt-PT}"
 out=walkthrough
 mkdir -p "$out/screens"
+exec > >(tee -a "$out/resumo.txt") 2>&1
+echo "Emulador pronto; a instalar a APK."
 adb install -r android/app/build/outputs/apk/release/app-release.apk
 # Idioma por app (Android 13+), sem mexer no resto do emulador.
 adb shell cmd locale set-app-locales com.jynlo.app --locales "$locale" || true
