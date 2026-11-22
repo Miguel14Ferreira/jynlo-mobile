@@ -50,7 +50,7 @@ test('slow media uploads show active progress feedback for posts and Stories',()
  assert.match(feed,/accessibilityState=\{\{disabled:!storyMedia\|\|storyPublishing\|\|!storyRetryAcknowledged,busy:storyPublishing\}\}/);
  assert.match(feed,/publishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
  assert.match(feed,/storyPublishing\?<ActivityIndicator color=\{INDIGO\} size="small"\/>:null/);
- assert.match(feed,/A enviar publicação…/);
+ assert.match(feed,/publishing\?'A enviar…'/);
  assert.match(feed,/A enviar Story…/);
  assert.match(feed,/Mantém este ecrã aberto/);
  assert.match(feed,/Não feches este ecrã até receberes a confirmação/);

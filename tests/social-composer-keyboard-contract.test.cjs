@@ -27,8 +27,8 @@ test('lower post and Story text fields explicitly scroll into view on focus',()=
 test('post media album uses shared icons for reordering without losing file-level controls',()=>{
  assert.match(source,/accessibilityLabel=\{'Mover ficheiro '\+\(i\+1\)\+' para trás'\}/);
  assert.match(source,/accessibilityLabel=\{'Mover ficheiro '\+\(i\+1\)\+' para a frente'\}/);
- assert.match(source,/<JynloIcon name="back" color=\{TEAL\}/);
- assert.match(source,/<JynloIcon name="chevron-right" color=\{TEAL\}/);
+ assert.match(source,/<JynloIcon name="back" color=\{WHITE\}/);
+ assert.match(source,/<JynloIcon name="chevron-right" color=\{WHITE\}/);
  assert.doesNotMatch(source,/<Text style=\{styles\.removeMediaText\}>[←→]<\/Text>/);
  assert.match(source,/changeComposerMedia\(prev=>moveAlbumItem/);
 });
