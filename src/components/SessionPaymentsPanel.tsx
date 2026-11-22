@@ -74,6 +74,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
     {data.method==='IN_PERSON'?<Text style={styles.text}>{t('Paga {a} ao organizador no dia do jogo.',{a:amount})}</Text>
      :data.mbwayPhone?<>
       <Text style={styles.text}>{t('Paga {a} por MB WAY ao organizador:',{a:amount})}</Text>
+      {data.payee?.fullName||data.payee?.username?<Text style={styles.muted}>{t('Número de')} <Text style={styles.text}>{data.payee?.fullName||data.payee?.username}</Text>{data.payee?.fullName&&data.payee?.username?' · @'+data.payee.username:''}</Text>:null}
       <View style={styles.row}>
        <Text selectable style={styles.phone}>{phoneLabel(data.mbwayPhone)}</Text>
        <Pressable accessibilityRole="button" style={styles.small} onPress={()=>void Share.share({message:data.mbwayPhone!})}>
