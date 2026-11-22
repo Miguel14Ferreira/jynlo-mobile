@@ -61,6 +61,10 @@ module.exports = ({config}) => {
         enableMinifyInReleaseBuilds: false,
         enableShrinkResourcesInReleaseBuilds: false,
       } : {}),
+      // Test APKs install on real phones only: ship the two ARM ABIs instead of
+      // four (no x86 emulators). WebRTC alone adds tens of MB per ABI.
+      // Play bundles are already split per device by Google Play.
+      ...(storeBuild ? {} : {buildArchs: ['arm64-v8a', 'armeabi-v7a']}),
     }}],
   ];
   return {
