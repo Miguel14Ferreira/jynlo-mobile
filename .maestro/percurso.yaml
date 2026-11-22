@@ -5,23 +5,30 @@ appId: com.jynlo.app
 ---
 - launchApp:
     clearState: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: 00_arranque
+# Android 13+ pede autorização para notificações no primeiro arranque.
+- tapOn:
+    text: "(Allow|Permitir|PERMITIR|ALLOW)"
+    optional: true
 - extendedWaitUntil:
-    visible: "Entrar na Jynlo.*"
+    visible: "(Entrar na Jynlo.*|Sign in to Jynlo.*|Explorar como visitante|Explore as a guest)"
     timeout: 90000
 - takeScreenshot: 01_boas_vindas
-- tapOn: "Entrar na Jynlo.*"
+- tapOn: "(Entrar na Jynlo.*|Sign in to Jynlo.*)"
 - extendedWaitUntil:
-    visible: "Nome de utilizador"
+    visible: "(Nome de utilizador|Username)"
     timeout: 20000
 - takeScreenshot: 02_login
-- tapOn: "Nome de utilizador"
+- tapOn: "(Nome de utilizador|Username)"
 - inputText: ${JYNLO_USER}
-- tapOn: "Palavra-passe"
+- tapOn: "(Palavra-passe|Password)"
 - inputText: ${JYNLO_PASS}
 - hideKeyboard
-- tapOn: "^Entrar$"
+- tapOn: "^(Entrar|Sign in)$"
 - extendedWaitUntil:
-    visible: "Início"
+    visible: "(Início|Home)"
     timeout: 90000
 - waitForAnimationToEnd:
     timeout: 8000
