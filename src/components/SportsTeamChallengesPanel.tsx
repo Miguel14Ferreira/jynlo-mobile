@@ -10,6 +10,7 @@ import {
 import {C} from '../lib/theme';
 import {request} from '../lib/api';
 import type {MySessions,SessionSummary} from '../lib/types';
+import {sportName} from '../lib/sport-names.cjs';
 
 type Props={teamId:number;token:string|null;sport:string|null;isOwner:boolean};
 const label={PENDING:'A aguardar',ACCEPTED:'Aceite',DECLINED:'Recusado',CANCELLED:'Cancelado'} as const;
@@ -144,7 +145,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
       accessibilityState={{selected:sessionInputs[item.id]===String(game.id)}}
       style={[styles.button,sessionInputs[item.id]===String(game.id)&&styles.selected]}
       onPress={()=>setSessionInputs(prev=>({...prev,[item.id]:String(game.id)}))}>
-      <Text style={styles.action}>{game.sport} · {game.city} · {game.gameDate.slice(0,10)}</Text>
+      <Text style={styles.action}>{sportName(game.sport)} · {game.city} · {game.gameDate.slice(0,10)}</Text>
      </Pressable>)}
      {ownSessionsError?<Text style={styles.error}>{ownSessionsError}</Text>:null}
      {!ownSessions.length?<Text style={styles.hint}>{t('Ainda não tens uma sessão pública elegível.')}</Text>:null}
@@ -169,7 +170,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
     accessibilityRole="button" accessibilityState={{selected:selectedId===team.id}}
     onPress={()=>setSelectedId(team.id)}
     style={[styles.button,selectedId===team.id&&styles.selected]}>
-    <Text style={styles.action}>{team.name} · {team.sport||'Multidesporto'}</Text></Pressable>)}
+    <Text style={styles.action}>{team.name} · {sportName(team.sport)||t('Multidesporto')}</Text></Pressable>)}
    <TextInput value={message} onChangeText={setMessage} maxLength={280} multiline
     placeholder={t('Mensagem opcional')} placeholderTextColor={C.muted}
     style={[styles.input,styles.message]}/>

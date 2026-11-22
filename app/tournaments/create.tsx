@@ -14,6 +14,7 @@ import type {TournamentCreateFormat,TournamentEntryChoice,CreateTournamentInput}
 import {SPORTS} from '../../src/lib/sports';
 import {C} from '../../src/lib/theme';
 import type {CommunityGroup} from '../../src/lib/types';
+import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
 
 const FORMAT_LABELS:Record<TournamentCreateFormat,string>={
  LEAGUE:'Liga',KNOCKOUT:'Eliminatórias',GROUP_KNOCKOUT:'Grupos + eliminatórias'
@@ -110,7 +111,7 @@ export default function CreateTournamentScreen(){
  const effectiveDiscipline=disciplines.includes(discipline)?discipline:'';
  const suggestions=useMemo(()=>{
   const term=normalized(search.trim());
-  return selectedSports.filter(s=>!term||normalized(s).includes(term)).slice(0,12);
+  return selectedSports.filter(s=>!term||sportMatches(s,term)).slice(0,12);
  },[search,selectionKey]);
  const data:CreateTournamentInput={
   name,sport,entryType,format:effectiveFormat,athleticsMode,
@@ -175,7 +176,7 @@ export default function CreateTournamentScreen(){
    <Text style={styles.heading}>{t('2. Modalidade')}</Text>
    <TextInput value={search} onChangeText={setSearch} placeholder={t('Pesquisar modalidades desta comunidade')}
     placeholderTextColor={C.muted} accessibilityLabel={t('Pesquisar modalidade')} style={styles.input}/>
-   {sport?<Badge text={sport}/>:null}
+   {sport?<Badge text={sportName(sport)}/>:null}
    <View style={styles.chips}>{suggestions.map(value=><Choice key={value} title={value} active={sport===value} onPress={()=>pickSport(value)}/>)}</View>
    {selectedSports.length===0?<Message>{t('Esta comunidade ainda não tem modalidades do catálogo atual. Configura-as primeiro na Jynlo Web.')}</Message>:null}
    {!sport&&selectedSports.length>0?<Text style={styles.helper}>{t('Escolhe uma das {a} modalidades associadas. Podes pesquisar quando a lista é extensa.',{a:selectedSports.length})}</Text>:null}

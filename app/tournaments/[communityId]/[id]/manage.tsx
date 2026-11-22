@@ -16,6 +16,7 @@ import {officialTournamentOutcome} from '../../../../src/lib/tournament-outcome-
 import {reconcileVisibleFixtures,validateNextFixturePage} from '../../../../src/lib/tournament-organizer-pages.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament,TournamentTeamMatch,TournamentIndividualMatch,TournamentTable,TournamentTeamGroups} from '../../../../src/lib/types';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 type OrganizerMatch={id:number;roundNumber:number;home:string;away:string;status:'COMPLETED'|'SCHEDULED';homeScore:number|null;awayScore:number|null;groupNumber:number|null};
 function mapTeam(m:TournamentTeamMatch):OrganizerMatch{return {id:m.id,roundNumber:m.roundNumber,home:m.homeTeamName,away:m.awayTeamName,status:m.status,homeScore:m.homeScore,awayScore:m.awayScore,groupNumber:m.groupNumber??null};}
@@ -194,7 +195,7 @@ export default function TournamentManagerScreen(){
       params:{communityId:String(cid),id:String(tid)}})}/>:null}
    </>:null}
   {!loading&&tournament&&isOrganizer(role)&&type?<>
-   <View style={styles.row}><Badge text={tournament.sport||t('Modalidade')}/><Badge text={tournament.status==='DRAFT'?t('Em preparação'):tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}/></View>
+   <View style={styles.row}><Badge text={sportName(tournament.sport)||t('Modalidade')}/><Badge text={tournament.status==='DRAFT'?t('Em preparação'):tournament.status==='IN_PROGRESS'?t('A decorrer'):t('Concluído')}/></View>
    {DEMO_MODE?<Message>{t('Estás a utilizar dados de demonstração. As operações de organização estão bloqueadas para não simular alterações ao servidor real.')}</Message>:null}
    {standingsError?<Message tone="error">{standingsError}</Message>:null}
    {!loading&&!syncing&&!fixturesVerified&&tournament.status==='IN_PROGRESS'?<Message tone="error">{t('Os jogos apresentados não estão confirmados pelo servidor. Para proteger a competição, o registo de resultados e o encerramento ficam bloqueados até uma nova sincronização.')}</Message>:null}

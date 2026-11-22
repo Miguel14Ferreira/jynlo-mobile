@@ -42,6 +42,7 @@ import {searchSocialPlaces,socialPlaceLabel,type SocialPlace} from '../../src/li
 import type {FeedItem,SocialStory,SocialComment,MobileMedia,StoryTextGeometry,StoryDetails,StoryTextAppearance} from '../../src/lib/types';
 import {ReportSheet} from '../../src/components/ReportSheet';
 import {blockUser,reportComment,reportPost} from '../../src/lib/user-safety-api';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 type StoriesGroup={key:string;name:string;avatar:string|null;stories:SocialStory[]};
 const {background:INDIGO,surface:PANEL,border:BORDER,accent:TEAL,muted:MUTED,text:WHITE}=MobileTheme.colors;
@@ -890,7 +891,7 @@ export default function JynloFeedHome(){
         return;
       }
       Alert.alert(t('Cancelar sessão'),
-        t('Vais cancelar a sessão de {sport} para todos os participantes. Esta ação não pode ser anulada. Confirmas?',{sport:detail.sport||item.sport||t('desporto')}),[
+        t('Vais cancelar a sessão de {sport} para todos os participantes. Esta ação não pode ser anulada. Confirmas?',{sport:sportName(detail.sport)||sportName(item.sport)||t('desporto')}),[
         {text:t('Manter sessão'),style:'cancel'},
         {text:t('Sim, cancelar sessão'),style:'destructive',onPress:()=>{
           if(feedIdentity.current!==identity||sessionCancelInFlight.current)return;
@@ -1304,7 +1305,7 @@ export default function JynloFeedHome(){
       <Pressable accessibilityRole="button" accessibilityLabel={t('Consultar sessão associada à publicação')} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
         <View style={styles.postSessionIcon}><JynloIcon name="session" size={26} color={TEAL}/></View>
         <View style={{flex:1,gap:4}}>
-          <Text style={styles.postSessionTitle}>{item.sport?.trim()||t('Sessão desportiva')}</Text>
+          <Text style={styles.postSessionTitle}>{sportName(item.sport?.trim())||t('Sessão desportiva')}</Text>
           {(item.city?.trim()||when)?<Text style={styles.postSessionMeta}>{[item.city?.trim(),when].filter(Boolean).join(' · ')}</Text>:null}
           <Text style={styles.postSessionLink}>{t('Ver detalhes da sessão')}</Text>
         </View>

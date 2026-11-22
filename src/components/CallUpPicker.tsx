@@ -6,6 +6,7 @@ import {mySessions} from '../lib/parity-api';
 import {formatDate} from '../lib/format.cjs';
 import {C} from '../lib/theme';
 import type {SessionSummary} from '../lib/types';
+import {sportName} from '../lib/sport-names.cjs';
 
 /** Pick one of my upcoming sessions to post as a convocatória. */
 export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:boolean;token:string|null;username:string|null;onClose:()=>void;onPick:(id:number)=>void}){
@@ -32,7 +33,7 @@ export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:bo
      :items.length===0?<Text style={styles.help}>{t('Não tens sessões futuras organizadas por ti.')}</Text>
      :<ScrollView style={{maxHeight:320}} contentContainerStyle={{gap:8}}>
        {items.map(s=><Pressable key={s.id} accessibilityRole="button" onPress={()=>onPick(s.id)} style={styles.item}>
-        <Text style={styles.itemTitle}>{s.sport} · {s.city}</Text>
+        <Text style={styles.itemTitle}>{sportName(s.sport)} · {s.city}</Text>
         <Text style={styles.help}>{formatDate(s.gameDate)} · {s.participantCount}/{s.maxParticipants}</Text>
        </Pressable>)}
       </ScrollView>}

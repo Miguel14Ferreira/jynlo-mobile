@@ -15,6 +15,7 @@ import {followStatus,publicSportsActivity,publicCompletedParticipations,type Pub
 import {joinedSportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api';
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
+import {sportName} from '../../src/lib/sport-names.cjs';
 const achievementLabels:Record<string,string>={
  FIRST_ACTIVITY:'🏅 Primeira atividade',TEN_ACTIVITIES:'🔥 10 atividades',
  EXPLORER:'🌍 Explorador',ORGANIZER:'👥 Organizador',
@@ -126,7 +127,7 @@ export default function ProfileScreen(){
       {location?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={16} color={C.muted}/><Text style={styles.location}>{location}</Text></View>:null}
       {favoriteSports.length>0?<View style={styles.favoriteSection}>
         <Text style={styles.favoriteHeading}>{t('MODALIDADES FAVORITAS')}</Text>
-        <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sport}</Text></View>)}</View>
+        <View style={styles.sportTags}>{favoriteSports.map(sport=><View key={sport} style={styles.sportTag}><Text style={styles.sportTagText}>{sportName(sport)}</Text></View>)}</View>
       </View>:null}
       {auth.username?<View style={styles.socialNav}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('Ver os meus seguidores')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:auth.username!,kind:'followers'}})} style={styles.socialAction}><Text style={styles.socialActionTitle}>{socialCounts?socialCounts.followers.toLocaleString(currentLocale()):'—'}</Text><Text style={styles.socialActionHint}>{t('Seguidores')}</Text></Pressable>
@@ -145,7 +146,7 @@ export default function ProfileScreen(){
          style={styles.competitionCard}
          onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(entry.communityId)}})}>
          <Text style={styles.membershipName}>{entry.tournamentName}</Text>
-         <Text style={styles.historyHint}>{entry.communityName}{entry.sport?' · '+entry.sport:''}</Text>
+         <Text style={styles.historyHint}>{entry.communityName}{entry.sport?' · '+sportName(entry.sport):''}</Text>
          <Text style={styles.competitionResult}>{entry.individualChampion?t('🏆 Campeão individual'):t('Participação confirmada')}</Text>
          {entry.wins!=null&&entry.draws!=null&&entry.losses!=null?<Text style={styles.competitionResult}>{entry.wins}V · {entry.draws}E · {entry.losses}D</Text>:null}
          <Text style={styles.historyHint}>{entry.completedAt?.slice(0,7)||''}</Text>
@@ -192,7 +193,7 @@ export default function ProfileScreen(){
             onPress={()=>router.push({pathname:'/teams/[id]',params:{id:String(team.id)}})}
             style={styles.membershipCard}>
             <Text style={styles.membershipName}>{team.name}</Text>
-            <Text style={styles.membershipsHint}>{team.sport||t('Equipa desportiva')}</Text>
+            <Text style={styles.membershipsHint}>{sportName(team.sport)||t('Equipa desportiva')}</Text>
           </Pressable>)}
         </View>:null}
         {verifiedCommunities.length>0?<View style={styles.membershipList}>
@@ -202,7 +203,7 @@ export default function ProfileScreen(){
             onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})}
             style={styles.membershipCard}>
             <Text style={styles.membershipName}>{group.name}</Text>
-            <Text style={styles.membershipsHint}>{group.sport||t('Comunidade desportiva')}</Text>
+            <Text style={styles.membershipsHint}>{sportName(group.sport)||t('Comunidade desportiva')}</Text>
           </Pressable>)}
         </View>:null}
         {!verifiedTeams.length&&!verifiedCommunities.length&&!membershipsError?

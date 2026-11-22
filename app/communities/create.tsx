@@ -9,6 +9,7 @@ import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {SPORTS} from '../../src/lib/sports';
 import type {CommunityCreationQuota,CommunityVisibility} from '../../src/lib/types';
+import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
 export default function CommunityCreateScreen(){
   const router=useRouter();const auth=useAuth();
   const params=useLocalSearchParams<{next?:string}>();
@@ -25,7 +26,7 @@ export default function CommunityCreateScreen(){
     finally{if(alive)setQuotaLoading(false);}
   })();return()=>{alive=false;};},[auth.token,auth.username]);
   const normalized=sportQuery.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const suggestions=normalized?SPORTS.filter(s=>!selectedSports.includes(s)&&s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(normalized)).slice(0,10):[];
+  const suggestions=normalized?SPORTS.filter(s=>!selectedSports.includes(s)&&sportMatches(s,normalized)).slice(0,10):[];
   const selectSport=(s:string)=>{setSelectedSports(current=>current.includes(s)?current:[...current,s]);setSportQuery('');};
   const removeSport=(s:string)=>setSelectedSports(current=>current.filter(value=>value!==s));
   async function submit(){
@@ -63,8 +64,8 @@ export default function CommunityCreateScreen(){
         placeholder={t('Pesquisar modalidades…')} placeholderTextColor={C.muted} autoCorrect={false}
         accessibilityLabel={t('Pesquisar modalidades da comunidade')}/>
       {suggestions.map(s=><Pressable key={s} onPress={()=>selectSport(s)}
-        accessibilityRole="button" accessibilityLabel={t('Adicionar {v}',{v:s})} style={styles.suggestion}>
-        <Text style={{color:C.white,fontWeight:'700'}}>{s}</Text><Text style={{color:C.mint}}>+</Text>
+        accessibilityRole="button" accessibilityLabel={t('Adicionar {v}',{v:sportName(s)})} style={styles.suggestion}>
+        <Text style={{color:C.white,fontWeight:'700'}}>{sportName(s)}</Text><Text style={{color:C.mint}}>+</Text>
       </Pressable>)}
       {sportQuery.trim()&&!suggestions.length?<Text style={styles.help}>{t('Nenhuma outra modalidade corresponde à pesquisa.')}</Text>:null}
       <Text style={styles.label}>{t('Visibilidade')}</Text>

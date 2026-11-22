@@ -15,6 +15,7 @@ import type {JynloNotification,PendingSessionInvite,CommunityInvite} from '../sr
 import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
+import {sportName} from '../src/lib/sport-names.cjs';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter(),isFocused=useIsFocused();
@@ -355,7 +356,7 @@ export default function NotificationsScreen(){
     onPress={()=>router.push('/communities/invites')}/>:null}
    <Text style={styles.heading}>{t('Convites para sessões · {a}',{a:visibleInvites.length})}</Text>
    {visibleInvites.length===0?<Text style={styles.note}>{t('Não tens convites pendentes para sessões.')}</Text>:visibleInvites.map(invite=><View key={invite.id} style={styles.invite}>
-    <Text style={styles.subject}>{invite.sport||t('Sessão desportiva')} · {invite.city||t('Local a confirmar')}</Text>
+    <Text style={styles.subject}>{sportName(invite.sport)||t('Sessão desportiva')} · {invite.city||t('Local a confirmar')}</Text>
     <Text style={styles.body}>{t('Convidado por @{a}',{a:invite.inviterUsername})}</Text>
     {invite.gameDate?<Text style={styles.note}>{new Date(invite.gameDate).toLocaleString(currentLocale())}</Text>:null}
     <Button secondary title={t('Ver detalhes da sessão')} disabled={busyInvite!==null}

@@ -1,5 +1,6 @@
 'use strict';
 const {tr}=require('./i18n-core.cjs');
+const {sportMatches}=require('./sport-names.cjs');
 // "Novos jogos perto de ti": choices and checks for the settings screen.
 // The server validates again; these keep the screen honest and testable.
 
@@ -60,7 +61,7 @@ function sportSuggestions(catalog,search,chosen,limit=8){
  const q=key(search.trim());
  if(!q)return[];
  const taken=new Set(chosen.map(key));
- return catalog.filter(s=>key(s).includes(q)&&!taken.has(key(s))).slice(0,limit);
+ return catalog.filter(s=>sportMatches(s,q)&&!taken.has(key(s))).slice(0,limit);
 }
 
 /** Error message for the screen, or '' when the draft can be saved. */

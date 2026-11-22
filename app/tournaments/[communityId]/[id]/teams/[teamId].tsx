@@ -12,6 +12,7 @@ import {canListMatches} from '../../../../../src/lib/tournament-fixtures-core.cj
 import {acceptTeamPlace,shareableTeamInvite,tournamentTeams,tournamentTeamPromotionStatus,promoteTournamentTeam,type TeamPromotionStatus} from '../../../../../src/lib/team-api';
 import {C} from '../../../../../src/lib/theme';
 import type {JynloTournament,JynloTournamentTeam,TournamentTeamMatch} from '../../../../../src/lib/types';
+import {sportName} from '../../../../../src/lib/sport-names.cjs';
 export default function TournamentTeamProfileScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string;teamId:string}>();
  const cid=Number(params.communityId),tid=Number(params.id),teamId=Number(params.teamId),router=useRouter(),auth=useAuth();
@@ -111,7 +112,7 @@ export default function TournamentTeamProfileScreen(){
  const accepting=!!tournament&&tournament.status==='DRAFT';
  return <Page><DemoBanner/><Eyebrow>{tr('TORNEIO · EQUIPA')}</Eyebrow>
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{team?.name||tr('Perfil da equipa')}</Text>
-  {tournament?<Text style={styles.subtitle}>{tournament.name} · {tournament.sport||tr('Multidesporto')}</Text>:null}
+  {tournament?<Text style={styles.subtitle}>{tournament.name} · {sportName(tournament.sport)||tr('Multidesporto')}</Text>:null}
   {!auth.token?<><Message>{tr('Inicia sessão para abrir o convite e pedir lugar nesta equipa. Depois de entrares, regressas diretamente aqui.')}</Message>
    <Button title={tr('Iniciar sessão para participar')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/tournaments/'+cid+'/'+tid+'/teams/'+teamId}})}/></>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

@@ -9,6 +9,7 @@ import {DEMO_MODE,request} from '../src/lib/api';
 import {C} from '../src/lib/theme';
 import {uploadMyProfilePhoto} from '../src/lib/profile-photo';
 import {parseFavoriteSports,normalizeCatalog,toggleFavoriteSport,validateFavoriteSports,filterSports} from '../src/lib/favorite-sports.cjs';
+import {sportName} from '../src/lib/sport-names.cjs';
 
 type Profile={
  username:string;fullName?:string|null;nickname?:string|null;
@@ -162,7 +163,7 @@ export default function EditProfileScreen(){
      style={[styles.option,styles.selected]} disabled={busy||!catalogReady}
      onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));}
       catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar a seleção.'));}}}>
-     <Text style={styles.selected}>✓ {sport} ×</Text>
+     <Text style={styles.selected}>✓ {sportName(sport)} ×</Text>
     </Pressable>)}</View>
    <Button title={showSports?t('Fechar modalidades'):t('Adicionar modalidades')} secondary
      disabled={!catalogReady||busy} onPress={()=>setShowSports(v=>!v)}/>
@@ -176,7 +177,7 @@ export default function EditProfileScreen(){
        disabled={busy||photoBusy}
        onPress={()=>{try{set('favoriteSports',toggleFavoriteSport(normalize(values.favoriteSports),sport,catalog));setError('');}
         catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar a seleção.'));}}}>
-      <Text style={styles.sportText}>{checked?'☑':'☐'} {sport}</Text>
+      <Text style={styles.sportText}>{checked?'☑':'☐'} {sportName(sport)}</Text>
      </Pressable>;
     })}
     {filterSports(catalog,sportsSearch).length>30?<Text style={styles.identity}>{t('Mostradas 30 modalidades. Pesquisa para veres mais.')}</Text>:null}

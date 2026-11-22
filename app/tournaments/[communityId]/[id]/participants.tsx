@@ -12,6 +12,7 @@ import {validPage} from '../../../../src/lib/tournament-fixtures-core.cjs';
 import {C} from '../../../../src/lib/theme';
 import type {JynloTournament} from '../../../../src/lib/types';
 import type {Participant} from '../../../../src/lib/tournament-registration-core.cjs';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 export default function TournamentParticipantsScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string}>(),cid=Number(params.communityId),tid=Number(params.id);
@@ -117,7 +118,7 @@ export default function TournamentParticipantsScreen(){
  }
  return <Page><DemoBanner/><Eyebrow>{tr('TORNEIOS · INSCRIÇÕES')}</Eyebrow>
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament?.name||tr('Participantes individuais')}</Text>
-  {tournament?<View style={styles.row}><Badge text={tournament.sport||tr('Desporto')}/>
+  {tournament?<View style={styles.row}><Badge text={sportName(tournament.sport)||tr('Desporto')}/>
    <Badge text={tournament.status==='DRAFT'?tr('Inscrições em preparação'):tournament.status==='IN_PROGRESS'?tr('Em curso'):tr('Concluído')}/></View>:null}
   {!auth.token?<Button title={tr('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {loading?<Loader/>:null}{error?<Message tone="error">{error}</Message>:null}

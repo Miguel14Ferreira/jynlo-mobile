@@ -21,6 +21,7 @@ import {PublicShareCard} from '../../src/components/PublicShareCard';
 import {AvailabilityPanel} from '../../src/components/AvailabilityPanel';
 import {CommunityFeedPanel} from '../../src/components/CommunityFeedPanel';
 import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary} from '../../src/lib/types';
+import {sportName} from '../../src/lib/sport-names.cjs';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
 export default function CommunityDetailScreen(){
@@ -185,7 +186,7 @@ export default function CommunityDetailScreen(){
           <Text style={styles.identitySports}>{describeCommunitySports(community,3)}</Text>
           <Badge text={community.visibility==='PRIVATE'?t('Privada'):t('Pública')}/>
         </View>
-        {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{s}</Text></View>)}</View>:null}
+        {communitySports(community).length>1?<View style={styles.sportList}>{communitySports(community).map(s=><View key={s} style={styles.sportPill}><Text style={styles.sportText}>{sportName(s)}</Text></View>)}</View>:null}
       </View>
       {community.visibility==='PUBLIC'&&auth.token&&followState?<View style={styles.section}>
         <Text style={styles.subtitle}>{followState.count} {followState.count===1?'seguidor':'seguidores'}</Text>

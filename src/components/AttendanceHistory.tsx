@@ -6,6 +6,7 @@ import {Message} from './UI';
 import {myAttendanceHistory,reliabilitySummary,disputeNoShow} from '../lib/reliability-api';
 import {attendanceLabel,disputeLabel,externalHistory,formatRate,markDisputed,validateDisputeReason,MAX_REASON,
  type AttendanceHistoryItem,type ReliabilitySummary} from '../lib/reliability-core.cjs';
+import {sportName} from '../lib/sport-names.cjs';
 
 const fmtDate=(iso:string)=>{const d=new Date(iso);return Number.isNaN(d.getTime())?'':
  d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});};
@@ -47,7 +48,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
    return <View key={item.participantId} style={styles.card}>
     <View style={styles.row}>
      <View style={{flex:1,gap:2}}>
-      <Text style={styles.sport} numberOfLines={1}>{item.sport}{item.city?' · '+item.city:''}</Text>
+      <Text style={styles.sport} numberOfLines={1}>{sportName(item.sport)}{item.city?' · '+item.city:''}</Text>
       <Text style={styles.date}>{fmtDate(item.gameDate)}</Text>
      </View>
      <Text style={[styles.badge,item.attendanceStatus==='ATTENDED'&&styles.ok,item.attendanceStatus==='NO_SHOW'&&styles.bad,
@@ -56,7 +57,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
     {dispute?<Text style={[styles.dispute,item.disputeStatus==='ACCEPTED'&&{color:C.mint},item.disputeStatus==='REJECTED'&&{color:C.danger}]}>{t('Contestação: {a}',{a:dispute})}</Text>:null}
     <View style={styles.actions}>
      <Pressable accessibilityRole="button" onPress={()=>onOpenSession(item.sessionId)} style={styles.link}><Text style={styles.linkText}>{t('Ver sessão')}</Text></Pressable>
-     {item.canDispute?<Pressable accessibilityRole="button" accessibilityLabel={t('Contestar falta em {v}',{v:item.sport})}
+     {item.canDispute?<Pressable accessibilityRole="button" accessibilityLabel={t('Contestar falta em {v}',{v:sportName(item.sport)})}
       onPress={()=>{setNotice('');setPending(item);}} style={styles.outline}><Text style={styles.outlineText}>{t('Contestar falta')}</Text></Pressable>:null}
     </View>
    </View>;}):null}
@@ -87,7 +88,7 @@ function DisputeSheet({item,token,onClose,onSent}:{item:AttendanceHistoryItem|nu
    <View style={styles.sheet} accessibilityViewIsModal>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{gap:12}}>
      <Text style={styles.kicker}>{t('CONTESTAÇÃO DE PRESENÇA')}</Text>
-     <Text style={styles.sheetTitle}>{t('Contestar falta em {a}',{a:current.sport})}</Text>
+     <Text style={styles.sheetTitle}>{t('Contestar falta em {a}',{a:sportName(current.sport)})}</Text>
      <Text style={styles.text}>{t('{a}. Explica de forma objetiva por que motivo consideras que o registo de falta está incorreto. A equipa Jynlo analisa e decide.',{a:fmtDate(current.gameDate)})}</Text>
      <TextInput value={reason} onChangeText={t=>{setReason(t);setError('');}} editable={!busy} multiline maxLength={MAX_REASON}
       placeholder={t('Ex.: Estive presente na sessão e fui registado por engano como falta.')} placeholderTextColor={C.muted}

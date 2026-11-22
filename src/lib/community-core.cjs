@@ -1,5 +1,6 @@
 'use strict';
 const {tr}=require('./i18n-core.cjs');
+const {sportName}=require('./sport-names.cjs');
 /** Pure validation and demo-state rules; also tested with Node without installing Expo. */
 const CANONICAL_WEB_ORIGIN = 'https://d24sports.com';
 function safeId(id) {
@@ -42,7 +43,7 @@ function describeCommunitySports(c,limit=2){
   const values=communitySports(c);
   if(!values.length)return tr('Multidesporto');
   const count=Number.isSafeInteger(limit)?Math.max(1,Math.min(limit,5)):2;
-  return values.slice(0,count).join(' · ')+(values.length>count?' · +'+(values.length-count):'');
+  return values.slice(0,count).map(v=>sportName(v)).join(' · ')+(values.length>count?' · +'+(values.length-count):'');
 }
 function makeStore(){
   let nextCommunity=931000, nextInvite=980000, nextRequest=990000;

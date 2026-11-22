@@ -120,7 +120,7 @@ test('social feed links only to a real session id and uses backend-provided meta
  assert.ok(attachment&&post,'session attachment and post card exist');
  assert.match(attachment,/Number\.isSafeInteger\(id\)/);
  assert.match(attachment,/id<=0\)return null/);
- assert.match(attachment,/item\.sport\?\.trim\(\)/);
+ assert.match(attachment,/sportName\(item\.sport\?\.trim\(\)\)/);
  assert.match(attachment,/item\.city\?\.trim\(\)/);
  assert.match(attachment,/Number\.isFinite\(scheduled\)/);
  assert.match(attachment,/pathname:'\/sessions\/\[id\]'/);

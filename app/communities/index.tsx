@@ -10,6 +10,7 @@ import {useAuth} from '../../src/lib/auth';
 import {C,MobileTheme} from '../../src/lib/theme';
 import {SPORTS} from '../../src/lib/sports';
 import type {CommunityGroup,CommunitySummary} from '../../src/lib/types';
+import {sportMatches} from '../../src/lib/sport-names.cjs';
 
 type Mode='mine'|'explore';
 export default function CommunitiesScreen(){
@@ -21,7 +22,7 @@ export default function CommunitiesScreen(){
   const [mine,setMine]=useState<CommunityGroup[]>([]);const [results,setResults]=useState<CommunitySummary[]>([]);
   const [loading,setLoading]=useState(false);const [error,setError]=useState('');
   const sportQuery=sportSearch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-  const suggestions=sportQuery?SPORTS.filter(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(sportQuery)).slice(0,8):[];
+  const suggestions=sportQuery?SPORTS.filter(s=>sportMatches(s,sportQuery)).slice(0,8):[];
   useEffect(()=>{const timer=setTimeout(()=>setDebouncedTerm(term.trim()),350);return()=>clearTimeout(timer);},[term]);
   const load=useCallback(async()=>{
     const request=++requestVersion.current;

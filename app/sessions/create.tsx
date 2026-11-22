@@ -22,6 +22,7 @@ import type {SessionCoordinates} from '../../src/lib/session-location-api';
 import type {CommunityGroup,VenueSummary} from '../../src/lib/types';
 import type {CreateSessionForm} from '../../src/lib/session-create-core.cjs';
 import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
+import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
 
 function emptySessionForm():CreateSessionForm{
  return {sport:'',day:'',time:'',city:'',address:'',latitude:null,longitude:null,locationConfirmed:false,
@@ -419,12 +420,11 @@ export default function CreateSessionScreen(){
  const availableSports=availableSessionSports(communityMode==='SINGLE'?(selectedCommunity?[selectedCommunity]:[]):
   communityMode==='SHARED'?sharedCommunities:[],SPORTS);
  const suggestions=sportSearch.trim()
-  ?availableSports.filter(s=>s.toLocaleLowerCase('pt-PT').includes(sportSearch.trim().toLocaleLowerCase('pt-PT'))).slice(0,12)
+  ?availableSports.filter(s=>sportMatches(s,sportSearch)).slice(0,12)
   :[];
  const customSportValid=customSportMode&&isValidCustomSport(form.sport.trim().replace(/\s+/g,' '),SPORTS);
  const customMatches=customSportMode&&form.sport.trim().length>1
-  ?SPORTS.filter(s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT')
-    .includes(form.sport.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT'))).slice(0,5)
+  ?SPORTS.filter(s=>sportMatches(s,form.sport)).slice(0,5)
   :[];
  const visibleCommunities=communities.filter(c=>!communitySearch.trim()||
   (c.name+' '+(c.sport||'')).toLocaleLowerCase('pt-PT').includes(communitySearch.trim().toLocaleLowerCase('pt-PT')));
@@ -593,7 +593,7 @@ export default function CreateSessionScreen(){
     title={presetConfirmDelete?t('Confirmar eliminação do perfil'):t('Eliminar este perfil')} onPress={()=>{void removePreset();}}/>:null}
   </View>:null}
   <View style={styles.panel}><Text style={styles.heading}>{t('Modalidade')}</Text>
-   {form.sport?<Badge text={form.sport}/>:null}
+   {sportName(form.sport)?<Badge text={sportName(form.sport)}/>:null}
    {!customSportMode?<TextInput style={styles.input} value={sportSearch}
     onChangeText={v=>{setSportSearch(v);setShowSportResults(true);}}
     onFocus={()=>setShowSportResults(true)}
@@ -601,14 +601,14 @@ export default function CreateSessionScreen(){
     autoCorrect={false} accessibilityLabel={t('Pesquisar modalidade')}/>:null}
    {!customSportMode&&showSportResults&&sportSearch.trim()?<>
     {suggestions.map(s=><Pressable key={s} accessibilityRole="button"
-     accessibilityLabel={t('Escolher {sport}',{sport:s})} onPress={()=>{
+     accessibilityLabel={t('Escolher {sport}',{sport:sportName(s)})} onPress={()=>{
       // A late membership request must not overwrite a sport chosen by the user.
       preselectionOverridden.current=true;
       setForm(prev=>({...prev,sport:s,venueId:prev.sport===s?prev.venueId:null}));
       if(form.sport!==s){setVenueChosen(null);clearVenueSearch();}
       setSportSearch('');setShowSportResults(false);setCustomSportMode(false);
      }} style={[styles.option,form.sport===s&&styles.chosen]}>
-     <Text style={styles.optionText}>{s}{form.sport===s?' ✓':''}</Text>
+     <Text style={styles.optionText}>{sportName(s)}{form.sport===s?' ✓':''}</Text>
     </Pressable>)}
     {!suggestions.length?<Text style={styles.note}>{t('Nenhuma modalidade corresponde à pesquisa.')}</Text>:null}
    </>:null}
@@ -635,7 +635,7 @@ export default function CreateSessionScreen(){
     {customMatches.length?<Text style={styles.note}>{t('Modalidades semelhantes:')}</Text>:null}
     {customMatches.map(s=><Pressable key={'similar-'+s} style={styles.option} onPress={()=>{
       setCustomSportMode(false);setForm(prev=>({...prev,sport:s,venueId:null}));
-    }}><Text style={styles.optionText}>{s}</Text></Pressable>)}
+    }}><Text style={styles.optionText}>{sportName(s)}</Text></Pressable>)}
    </>:null}
    {!form.sport?<Text style={styles.note}>{t('Escolhe uma modalidade ou sugere outra.')}</Text>:null}
    {communityMode!=='INDEPENDENT'&&hasCommunity?<Text style={styles.note}>
@@ -680,7 +680,7 @@ export default function CreateSessionScreen(){
       }else toggleShared(c.id);
      }} style={[styles.option,(form.communityId===c.id||sharedIds.includes(c.id))&&styles.chosen]}>
       <Text style={styles.optionText}>{(form.communityId===c.id||sharedIds.includes(c.id))?'✓  ':''}{c.name}</Text>
-      <Text style={styles.note}>{c.sport||t('Modalidade não indicada')}</Text>
+      <Text style={styles.note}>{sportName(c.sport)||t('Modalidade não indicada')}</Text>
     </Pressable>)}
     {communityMode==='SHARED'?<Text style={styles.note}>{t('Selecionadas: {count}/5. O servidor confirma as permissões em cada comunidade.',{count:sharedIds.length})}</Text>:null}
    </>:null}
@@ -887,7 +887,7 @@ export default function CreateSessionScreen(){
    <Text style={styles.heading}>{t('Rever antes de publicar')}</Text>
    <Text style={styles.note}>{t('Confirma todos os detalhes. A aplicação não publica nada até autorizares a criação.')}</Text>
    <Text style={styles.summaryTitle}>{t('Modalidade e comunidade')}</Text>
-   <Text style={styles.summaryValue}>{form.sport}</Text>
+   <Text style={styles.summaryValue}>{sportName(form.sport)}</Text>
    <Text style={styles.summaryValue}>{selectedCommunity?t('Comunidade: {name}',{name:selectedCommunity.name}):
     sharedCommunities.length?t('Partilhada com: {names}',{names:sharedCommunities.map(c=>c.name).join(', ')}):
     t('Sessão independente')}</Text>

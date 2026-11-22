@@ -11,6 +11,7 @@ import {formatDate,money} from '../lib/format.cjs';
 import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
 import {sportIcon} from '../lib/tournament-discovery-core.cjs';
 import {isLevel,levelLabel} from '../lib/session-level-core.cjs';
+import {sportName} from '../lib/sport-names.cjs';
 
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollViewInstance|null>(null);
@@ -96,12 +97,12 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   const hasCapacity=Number.isFinite(session.maxParticipants)&&session.maxParticipants>0;
   const count=Number.isFinite(session.participantCount)?Math.max(0,session.participantCount):0;
   const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString(currentLocale())} km`:null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessão de {sport} em {city}',{sport:session.sport,city:session.city||t('local a confirmar')})}
+  return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessão de {sport} em {city}',{sport:sportName(session.sport),city:session.city||t('local a confirmar')})}
     onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
     <View style={styles.cardTop}>
       <View style={styles.sportBox}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
       <View style={styles.cardIdentity}>
-        <Text style={styles.cardTitle} numberOfLines={1}>{session.sport}</Text>
+        <Text style={styles.cardTitle} numberOfLines={1}>{sportName(session.sport)}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||t('Local a confirmar')}</Text></View>
         {isLevel(session.skillLevel)?<Text style={styles.cardLevel}>🎯 {levelLabel(session.skillLevel)}</Text>:null}
       </View>

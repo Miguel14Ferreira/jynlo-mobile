@@ -6,6 +6,7 @@ import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../../src/com
 import {useAuth} from '../../../../src/lib/auth';
 import {championshipHonours,type ChampionshipHonours} from '../../../../src/lib/championship-api';
 import {C} from '../../../../src/lib/theme';
+import {sportName} from '../../../../src/lib/sport-names.cjs';
 
 export default function ChampionshipHonoursScreen(){
  const {id}=useLocalSearchParams<{id:string}>();
@@ -37,7 +38,7 @@ export default function ChampionshipHonoursScreen(){
    {honours.titles.map(title=><Pressable key={title.championshipId} accessibilityRole="button" style={styles.entry}
     onPress={()=>router.push({pathname:'/communities/[id]/championships/[championshipId]',params:{id:String(communityId),championshipId:String(title.championshipId)}})}>
     <Text style={styles.name}>{title.championName}</Text>
-    <Text style={styles.hint}>{title.championshipName} · {title.seasonLabel} · {title.sport}</Text>
+    <Text style={styles.hint}>{title.championshipName} · {title.seasonLabel} · {sportName(title.sport)}</Text>
     <Text style={styles.hint}>{title.entryType==='TEAM'?t('Equipa campeã'):t('Campeão individual')}</Text>
    </Pressable>)}
   </View>:null}

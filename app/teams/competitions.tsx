@@ -11,6 +11,7 @@ import {C} from '../../src/lib/theme';
 import TeamBrandAvatar from '../../src/components/TeamBrandAvatar';
 import TeamKitPreview from '../../src/components/TeamKitPreview';
 import {JynloIcon} from '../../src/components/JynloIcon';
+import {sportName} from '../../src/lib/sport-names.cjs';
 
 export default function TeamCompetitionDiscovery(){
  const auth=useAuth(),router=useRouter(),{teamId}=useLocalSearchParams<{teamId?:string}>();
@@ -150,7 +151,7 @@ export default function TeamCompetitionDiscovery(){
      <TeamBrandAvatar team={team} size={52}/>
      <View style={styles.teamNameBlock}>
       <Text style={styles.name} numberOfLines={2}>{team.name}</Text>
-      <Text style={styles.note} numberOfLines={1}>{team.sport||t('Várias modalidades')}</Text>
+      <Text style={styles.note} numberOfLines={1}>{sportName(team.sport)||t('Várias modalidades')}</Text>
      </View>
      <TeamKitPreview primary={team.kitPrimary} secondary={team.kitSecondary}
        pattern={team.kitPattern} size={44}/>
@@ -177,7 +178,7 @@ export default function TeamCompetitionDiscovery(){
      <Text style={[styles.competitionStatus,!item.applicationsOpen&&styles.competitionStatusClosed]}>{item.applicationsOpen?t('Candidaturas abertas'):t('Encerradas')}</Text>
     </View>
     <Text style={styles.competitionTitle}>{item.name}</Text>
-    <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {item.sport||t('Modalidade não indicada')}</Text>
+    <Text style={styles.competitionCommunity} numberOfLines={2}>{item.communityName} · {sportName(item.sport)||t('Modalidade não indicada')}</Text>
     {!chosen&&auth.token?<Text style={styles.selectionHint}>{t('Escolhe uma equipa acima para pedir participação.')}</Text>:null}
     <Button title={applicationLabel(item,chosen)|| (busy?t('A enviar…'):t('Pedir participação'))}
       disabled={!auth.token||!chosen||busy||loading||!ownedVerified||!applicationsVerified||!item.applicationsOpen||applied(item,chosen)}

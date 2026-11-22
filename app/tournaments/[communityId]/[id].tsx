@@ -12,6 +12,7 @@ import {officialTournamentOutcome} from '../../../src/lib/tournament-outcome-cor
 import {C} from '../../../src/lib/theme';
 import {PublicShareCard} from '../../../src/components/PublicShareCard';
 import type {JynloTournament,TournamentTable} from '../../../src/lib/types';
+import {sportName} from '../../../src/lib/sport-names.cjs';
 export default function TournamentDetailScreen(){
  const params=useLocalSearchParams<{communityId:string;id:string}>();
  const communityId=Number(params.communityId),id=Number(params.id);
@@ -72,7 +73,7 @@ export default function TournamentDetailScreen(){
    {tournament?<><View style={styles.hero}>
      <Text style={styles.heroEyebrow}>{t('TORNEIO · JYNLO')}</Text>
      <Text maxFontSizeMultiplier={1.3} style={styles.title}>{tournament.name}</Text>
-     <View style={styles.line}><Badge text={tournament.sport||t('Multidesporto')}/><Badge text={tournament.status==='IN_PROGRESS'?t('A decorrer'):tournament.status==='DRAFT'?t('Em preparação'):t('Concluído')}/></View>
+     <View style={styles.line}><Badge text={sportName(tournament.sport)||t('Multidesporto')}/><Badge text={tournament.status==='IN_PROGRESS'?t('A decorrer'):tournament.status==='DRAFT'?t('Em preparação'):t('Concluído')}/></View>
      <Text style={styles.heroKind}>{label(kind)}</Text>
     </View>
      {officialOutcome?<View style={styles.panel}>

@@ -7,6 +7,7 @@ import {useAuth} from '../src/lib/auth';
 import {getFirstSteps,saveFirstSteps,skipFirstSteps,sportsCatalog} from '../src/lib/first-steps-api';
 import {MAX_SPORTS,sportChoices,toggleSport} from '../src/lib/first-steps-core.cjs';
 import {C,MobileTheme} from '../src/lib/theme';
+import {sportName} from '../src/lib/sport-names.cjs';
 
 /** Right after signing up: which sports and which city, so Explorar shows the right games. */
 export default function FirstStepsScreen(){
@@ -48,8 +49,8 @@ export default function FirstStepsScreen(){
    style={styles.input} accessibilityLabel={t('Procurar modalidade')} maxLength={40}/>
   <View style={styles.chips}>
    {choices.map(sport=>{const on=selected.includes(sport);return <Pressable key={sport} onPress={()=>setSelected(toggleSport(selected,sport))}
-    accessibilityRole="checkbox" accessibilityState={{checked:on}} accessibilityLabel={sport} style={[styles.chip,on&&styles.chipOn]}>
-    <Text style={[styles.chipText,on&&styles.chipTextOn]}>{on?'✓ ':''}{sport}</Text></Pressable>;})}
+    accessibilityRole="checkbox" accessibilityState={{checked:on}} accessibilityLabel={sportName(sport)} style={[styles.chip,on&&styles.chipOn]}>
+    <Text style={[styles.chipText,on&&styles.chipTextOn]}>{on?'✓ ':''}{sportName(sport)}</Text></Pressable>;})}
    {!choices.length?<Text style={styles.text}>{t('Nenhuma modalidade encontrada.')}</Text>:null}
   </View>
   <Text style={styles.count}>{t('{count}/{max} escolhidas',{count:selected.length,max:MAX_SPORTS})}</Text>
