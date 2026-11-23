@@ -4568,5 +4568,9 @@ const EN={
   "🚴 Ciclismo": "🚴 Cycling",
   "🤝 Em mão, no dia": "🤝 In person, on the day",
   "🥊 Combate": "🥊 Combat",
+  "Palavra-passe alterada": "Password changed",
+  "A tua palavra-passe foi alterada. Se não foste tu, redefine-a imediatamente.": "Your password was changed. If this wasn't you, reset it right away.",
+  "Alteração de email": "Email changed",
+  "O endereço de email associado à tua conta foi alterado. Se não foste tu, redefine imediatamente a tua palavra-passe.": "The email address on your account was changed. If this wasn't you, reset your password right away.",
 };
 module.exports={EN};

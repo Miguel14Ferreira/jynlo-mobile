@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {isServerNotificationText} from '../src/lib/server-notification-texts.cjs';
 import {currentLocale,t} from '../src/lib/i18n';
 import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
@@ -378,7 +379,7 @@ export default function NotificationsScreen(){
    </View>:null}
    {filteredItems.length===0?<Text style={styles.note}>{unreadOnly?t('Não tens notificações por ler.'):t('Sem outras notificações.')}</Text>:filteredItems.map(n=><View key={n.id} style={[styles.tile,!n.read&&styles.new]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir notificação: {v}',{v:(n.subject||'Jynlo')})} disabled={notificationBusy} onPress={()=>{void open(n);}} style={{flex:1,gap:6}}>
-     <Text style={styles.subject}>{n.subject||'Jynlo'}</Text><Text style={styles.body}>{n.message}</Text>
+     <Text style={styles.subject}>{isServerNotificationText(n.subject)?t(n.subject):(n.subject||'Jynlo')}</Text><Text style={styles.body}>{isServerNotificationText(n.message)?t(n.message):n.message}</Text>
      <Text style={styles.note}>{Number.isFinite(Date.parse(n.createdAt))?new Date(n.createdAt).toLocaleString(currentLocale()):''}</Text>
     </Pressable>
     <View style={{alignItems:'center',justifyContent:'space-between'}}>
