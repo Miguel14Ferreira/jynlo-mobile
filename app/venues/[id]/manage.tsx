@@ -42,7 +42,7 @@ export default function VenueManageScreen(){
   let alive=true;
   const token=auth.token;
   if(!token||!venueId){setLoading(false);return()=>{alive=false;};}
-  setLoading(true);setError('');
+  setLoading(true);setError('');setOffer(null);
   void (async()=>{
    const [o,r,m]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token)]);
    if(!alive)return;
@@ -97,10 +97,11 @@ export default function VenueManageScreen(){
   <Text style={styles.h1}>{name||t('Recinto')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
-  {offer?<Text style={[styles.state,offer.acceptsBookings&&styles.stateOn]}>{offer.acceptsBookings
+  {offer&&!error?<Text style={[styles.state,offer.acceptsBookings&&styles.stateOn]}>{offer.acceptsBookings
    ?'✓ '+t('Aceita reservas na Jynlo. Os jogadores já veem os teus horários livres.')
    :t('Ainda não aceita reservas: adiciona pelo menos um campo e o horário de funcionamento.')}</Text>:null}
 
+  {offer&&!error?<>
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Pedidos de reserva')}</Text>
    {!requests.length?<Text style={styles.muted}>{t('Ainda não há pedidos.')}</Text>:null}
@@ -170,6 +171,7 @@ export default function VenueManageScreen(){
    {hoursMsg?<Text style={styles.ok}>{hoursMsg}</Text>:null}
    {hoursError?<Text style={styles.error}>{hoursError}</Text>:null}
   </View>
+  </>:null}
  </Page>;
 }
 
