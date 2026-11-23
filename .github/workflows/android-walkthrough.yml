@@ -97,19 +97,12 @@ jobs:
           path: walkthrough/
           if-no-files-found: warn
           retention-days: 14
-      - name: Publicar resultados num ramo próprio (qa-walkthrough/run-ID)
+      # Results stay in the run (log + artifact): never create branches (only develop/master exist).
+      - name: Resumo no registo
         if: always()
         run: |
-          [ -d walkthrough ] || exit 0
-          rm -f walkthrough/*.mp4.tmp
-          find walkthrough -name '*.mp4' -size +40M -delete
-          branch="qa-walkthrough/run-${{ github.run_id }}"
-          cd walkthrough
-          git init -q -b "$branch"
-          git config user.name "jynlo-qa-bot"; git config user.email "qa-bot@users.noreply.github.com"
-          git add -A && git commit -qm "Percurso Android ${{ github.run_id }}" || exit 0
-          git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$branch"
-          echo "::notice::Resultados no ramo $branch"
+          [ -f walkthrough/resumo.txt ] || exit 0
+          grep -E "FAILED|COMPLETED|Assert" walkthrough/resumo.txt | tail -60 | sed 's/^/QA-PASSO /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Resultado do percurso
         if: always()
         run: |
