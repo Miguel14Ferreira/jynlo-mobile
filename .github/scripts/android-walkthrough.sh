@@ -14,6 +14,8 @@ if adb root >/dev/null 2>&1; then sleep 3; adb wait-for-device
   adb shell "setprop persist.sys.locale $locale; setprop ctl.restart zygote" || true
   sleep 20; adb wait-for-device; until adb shell getprop sys.boot_completed | grep -q 1; do sleep 2; done
 fi
+# Never flash typed password characters on screen (the run is video-recorded).
+adb shell settings put system show_password 0 || true
 adb logcat -c
 adb shell screenrecord --time-limit 180 /sdcard/parte1.mp4 & rec1=$!
 ( sleep 178; adb shell screenrecord --time-limit 180 /sdcard/parte2.mp4 ) & rec2=$!
@@ -32,5 +34,13 @@ rm -rf "$out/maestro"
 find . -maxdepth 1 -name '*.png' -exec mv {} "$out/screens/" \; 2>/dev/null || true
 adb logcat -d -v threadtime > "$out/logcat.txt"
 grep -E "ReactNativeJS|FATAL EXCEPTION|AndroidRuntime" "$out/logcat.txt" > "$out/erros.txt" || true
+# Belt and braces: scrub the QA password from every text file that will be published.
+if [ -n "${JYNLO_PASS:-}" ]; then
+  export JYNLO_PASS
+  find "$out" -type f -name '*.txt' -exec perl -pi -e 's/\Q$ENV{JYNLO_PASS}\E/[removida]/g' {} +
+  if grep -rlF -- "$JYNLO_PASS" "$out" >/dev/null 2>&1; then
+    echo '::error::A palavra-passe QA aparece nos resultados; nada será publicado.'; rm -rf "$out"; exit 1
+  fi
+fi
 echo "Maestro terminou com código $status"
 exit $status
