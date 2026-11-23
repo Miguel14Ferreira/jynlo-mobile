@@ -58,7 +58,7 @@ export interface SessionDetail extends SessionSummary {
   googleMapsUrl?: string | null;
   pinLatitude?: number | null;
   pinLongitude?: number | null;
-  venue?: {latitude?:number|null;longitude?:number|null;name?:string|null} | null;
+  venue?: {id?:number|null;latitude?:number|null;longitude?:number|null;name?:string|null} | null;
   minParticipants?: number;
   externalConfirmedParticipants?: number;
   teamBalanceSupported?: boolean;

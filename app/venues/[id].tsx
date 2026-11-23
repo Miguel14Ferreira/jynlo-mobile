@@ -12,6 +12,7 @@ import {uploadVenuePhoto} from '../../src/lib/venue-photo-upload';
 import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} from '../../src/lib/types';
 import {sportName,sportNames,surfaceName,venueTypeName} from '../../src/lib/sport-names.cjs';
 import {venueBookingAction} from '../../src/lib/venue-booking.cjs';
+import VenueJynloBooking from '../../src/components/VenueJynloBooking';
 
 const info=(label:string,value:unknown)=>{
  if(typeof value!=='string'||!value.trim())return null;
@@ -41,7 +42,8 @@ async function openExternal(url:string){
 export default function VenueDetailScreen(){
  const auth=useAuth();
  const router=useRouter();
- const params=useLocalSearchParams<{id:string}>();
+ const params=useLocalSearchParams<{id:string;session?:string}>();
+ const bookingSession=typeof params.session==='string'&&/^[1-9]\d*$/.test(params.session)?Number(params.session):null;
  const id=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
  const [venue,setVenue]=useState<VenueSummary|null>(null);
  const [photos,setPhotos]=useState<VenuePhoto[]>([]);
@@ -127,6 +129,7 @@ export default function VenueDetailScreen(){
    {booking?.kind==='search'?<Button title={'🔎 '+t('Procurar como reservar')} secondary onPress={()=>{void openExternal(booking.url);}}/>:null}
    {booking&&booking.kind!=='link'&&booking.kind!=='free'&&auth.token?<Button title={t('Sugerir link de reserva')} secondary
     onPress={()=>router.push({pathname:'/venues/[id]/suggest-edit',params:{id:String(id),field:'bookingUrl'}})}/>:null}
+   {!DEMO_MODE?<VenueJynloBooking venueId={id} token={auth.token} sessionId={bookingSession}/>:null}
    {info('Modalidades',sportNames(venue.sports))}
    {info(t('Tipo de recinto'),venueTypeName(venue.venueType))}
    {info('Morada',venue.address)}

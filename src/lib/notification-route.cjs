@@ -35,6 +35,8 @@ function notificationDestination(item){
  // A ringing call is answered from Messages (it shows the incoming call); a missed call opens the chat with the caller.
  if(type==='CALL_INCOMING')return {kind:'messages'};
  if(type==='CALL_MISSED')return validPeer(item.relatedUsername)?{kind:'direct-chat',peer:item.relatedUsername}:null;
+ // Court booking news (new request, confirmed, declined, cancelled, venue management decisions).
+ if(type==='VENUE_BOOKING')return {kind:'venue-bookings'};
  if(type==='COMMUNITY_INVITE')return {kind:'invites'};
  if(type==='COMMUNITY_JOIN_REQUEST'||type==='COMMUNITY_JOIN_ACCEPTED'||type==='COMMUNITY_JOIN_REJECTED'){
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;

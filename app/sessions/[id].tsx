@@ -584,7 +584,7 @@ export default function SessionScreen(){
          {showSessionChat?<SessionChatPanel embedded/>:null}
         </View>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'?
-        <SessionCourtBooking sessionId={id} token={auth.token}/>:null}
+        <SessionCourtBooking sessionId={id} token={auth.token} venueId={detail.venue?.id??null}/>:null}
       {detail?<SessionLocationPanel session={detail} token={auth.token}
          canEdit={owner} onSaved={updated=>{setDetail(updated);setFeedback(t('Localização Google Maps atualizada.'));}}/>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&

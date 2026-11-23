@@ -1,4 +1,6 @@
 import React,{useEffect,useState} from 'react';
+import {useRouter} from 'expo-router';
+import {acceptingVenues} from '../lib/venue-jynlo-api';
 import {Linking,StyleSheet,Text,TextInput,View} from 'react-native';
 import {t} from '../lib/i18n';
 import {request,ApiError} from '../lib/api';
@@ -10,7 +12,14 @@ type CourtBooking={organiser:boolean;bookingUrl:string|null;suggestedUrl:string|
  booked:boolean;bookedAt:string|null;editable:boolean};
 
 /** Organiser books on the club's site and marks it here; players only see whether the court is booked. */
-export default function SessionCourtBooking({sessionId,token}:{sessionId:number;token:string|null}){
+export default function SessionCourtBooking({sessionId,token,venueId}:{sessionId:number;token:string|null;venueId?:number|null}){
+ const router=useRouter();
+ const [jynloBookable,setJynloBookable]=useState(false);
+ useEffect(()=>{
+  let alive=true;setJynloBookable(false);
+  if(venueId)void acceptingVenues().then(ids=>{if(alive)setJynloBookable(ids.includes(venueId));});
+  return()=>{alive=false;};
+ },[venueId]);
  const [data,setData]=useState<CourtBooking|null>(null);
  const [draft,setDraft]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const path=`/api/sessions/${sessionId}/court-booking`;
@@ -40,6 +49,8 @@ export default function SessionCourtBooking({sessionId,token}:{sessionId:number;
    <TextInput value={draft} onChangeText={setDraft} editable={!busy} autoCapitalize="none" autoCorrect={false}
     keyboardType="url" maxLength={500} placeholder={t('Link de reserva do clube')} placeholderTextColor={C.muted}
     accessibilityLabel={t('Link de reserva do clube')} style={styles.input}/>
+   {jynloBookable&&venueId&&!data.booked?<Button title={'✓ '+t('Reservar na Jynlo')}
+    onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(venueId),session:String(sessionId)}})}/>:null}
    {open?<Button title={t('Reservar campo')+' ↗'} onPress={()=>{void Linking.openURL(open).catch(()=>{});}}/>:null}
    <Button secondary disabled={busy} title={t(data.booked?'Desmarcar reserva':'Já reservei o campo')} onPress={()=>{void save(!data.booked);}}/>
    {draft.trim()!==(data.bookingUrl||'')?<Button secondary disabled={busy} title={t('Guardar link')} onPress={()=>{void save(data.booked);}}/>:null}
