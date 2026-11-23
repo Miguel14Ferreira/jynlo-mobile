@@ -32,6 +32,9 @@ function notificationDestination(item){
   if(validId(item.privateGroupId))return {kind:'group-chat',id:String(item.privateGroupId)};
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;
  }
+ // A ringing call is answered from Messages (it shows the incoming call); a missed call opens the chat with the caller.
+ if(type==='CALL_INCOMING')return {kind:'messages'};
+ if(type==='CALL_MISSED')return validPeer(item.relatedUsername)?{kind:'direct-chat',peer:item.relatedUsername}:null;
  if(type==='COMMUNITY_INVITE')return {kind:'invites'};
  if(type==='COMMUNITY_JOIN_REQUEST'||type==='COMMUNITY_JOIN_ACCEPTED'||type==='COMMUNITY_JOIN_REJECTED'){
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;

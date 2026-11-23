@@ -285,6 +285,7 @@ export default function NotificationsScreen(){
    // from a verified notification in this authenticated account's inbox.
    switch(destination.kind){
     case 'invites':router.push('/communities/invites');break;
+    case 'messages':router.push('/(tabs)/messages');break;
     case 'community':router.push({pathname:'/communities/[id]',params:{id:destination.id!}});break;
     case 'tournament':router.push({pathname:'/tournaments/[communityId]/[id]',params:{communityId:destination.communityId!,id:destination.id!}});break;
     case 'session':router.push({pathname:'/sessions/[id]',params:{id:destination.id!}});break;

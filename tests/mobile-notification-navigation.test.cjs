@@ -15,6 +15,9 @@ test('notification routes only navigate valid authenticated targets',()=>{
  assert.equal(notificationDestination({type:'COMMUNITY_CHAT_MESSAGE',communityId:-1}),null);
  assert.equal(notificationDestination({type:'SESSION_CHAT_MESSAGE',sessionId:'2'}),null);
  assert.equal(notificationDestination({type:'UNKNOWN',relatedUsername:'player_2'}),null);
+ assert.deepEqual(notificationDestination({type:'CALL_INCOMING',relatedUsername:'ana'}),{kind:'messages'});
+ assert.deepEqual(notificationDestination({type:'CALL_MISSED',relatedUsername:'ana'}),{kind:'direct-chat',peer:'ana'});
+ assert.equal(notificationDestination({type:'CALL_MISSED',relatedUsername:'../x'}),null);
 });
 test('notifications refresh safely while focused without clearing on partial errors',()=>{
  assert.match(screen,/setInterval\(\(\)=>\{void load\(true,version\);\},20000\)/);
