@@ -33,6 +33,10 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 10000
 - takeScreenshot: 06b_explorar_mapa
+- scroll
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 06c_explorar_mapa_scroll
 - tapOn: "(Início|Home)"
 - tapOn:
     text: "(As minhas sessões|My games|My sessions)"
