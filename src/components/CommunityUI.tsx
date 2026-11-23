@@ -21,7 +21,7 @@ export function CommunityCard({community,onPress,memberCount,role}:{community:Co
   const sports=communitySports(community);
   const image=community.photoUrl?resolveJynloMedia(community.photoUrl):null;
   const memberLabel=typeof memberCount==='number'&&Number.isFinite(memberCount)
-    ?`${memberCount} ${memberCount===1?'membro':'membros'}`:null;
+    ?(memberCount===1?t('1 membro'):t('{n} membros',{n:memberCount})):null;
   const isPrivate=community.visibility==='PRIVATE';
   const roleLabel=role==='OWNER'?'Organizador':role==='ADMIN'?'Administrador':role?'Membro':null;
   return <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={t('Abrir comunidade {a}',{a:community.name})}

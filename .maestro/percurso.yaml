@@ -40,7 +40,7 @@ appId: com.jynlo.app
 - waitForAnimationToEnd
 - takeScreenshot: 07_minhas_sessoes
 - tapOn:
-    text: "(Ver detalhes da sessão|View session details|See session details)"
+    text: "(Ver detalhes da sessão|See game details|View session details|See session details)"
     optional: true
 - waitForAnimationToEnd:
     timeout: 8000

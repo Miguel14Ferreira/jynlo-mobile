@@ -49,7 +49,7 @@ export default function FeedbackScreen(){
   <Text style={styles.label}>{t('Email para resposta')}</Text>
   <TextInput style={styles.input} value={email} onChangeText={setEmail} maxLength={255} editable={!busy}
    autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress"
-   accessibilityLabel={t('Email para resposta')} placeholder="nome@email.com" placeholderTextColor={C.muted}/>
+   accessibilityLabel={t('Email para resposta')} placeholder={t('nome@email.com')} placeholderTextColor={C.muted}/>
   <Text style={styles.label}>{t('Mensagem')}</Text>
   <TextInput style={[styles.input,styles.area]} value={message} onChangeText={setMessage} maxLength={4000} editable={!busy}
    multiline textAlignVertical="top" accessibilityLabel={t('Mensagem')}

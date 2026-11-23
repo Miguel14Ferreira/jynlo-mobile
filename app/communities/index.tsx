@@ -80,7 +80,7 @@ export default function CommunitiesScreen(){
       </Pressable>)}
     </View>:null}
     {mode==='mine'&&!auth.token?<Message>{t('Inicia sessão para veres as comunidades de que fazes parte. Podes explorar comunidades públicas mesmo sem conta.')}</Message>:null}
-    {!loading&&!error?<View style={styles.resultHeader}><Text style={styles.resultTitle}>{mode==='mine'?t('As tuas comunidades'):t('Descobrir comunidades')}</Text><Text style={styles.resultCount}>{list.length} {list.length===1?'comunidade':'comunidades'}</Text></View>:null}
+    {!loading&&!error?<View style={styles.resultHeader}><Text style={styles.resultTitle}>{mode==='mine'?t('As tuas comunidades'):t('Descobrir comunidades')}</Text><Text style={styles.resultCount}>{list.length===1?t('1 comunidade'):t('{n} comunidades',{n:list.length})}</Text></View>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
     {!loading&&!error&&list.length===0?<View style={styles.empty}>

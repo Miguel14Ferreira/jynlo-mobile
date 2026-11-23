@@ -60,7 +60,7 @@ export default function ProfilePrivacySettings({token}:{token:string}){
    {privacy?<>
     <View style={styles.statusRow}>
       <View style={styles.statusCopy}>
-       <Text style={styles.state}>{t('Perfil {a}',{a:privacy.privateProfile?'privado':'público'})}</Text>
+       <Text style={styles.state}>{privacy.privateProfile?t('Perfil privado'):t('Perfil público')}</Text>
        <Text style={styles.muted}>{privacy.privateProfile?t('Apenas seguidores aprovados veem as tuas publicações e stories.'):t('Controla quem pode seguir-te e ver os teus conteúdos.')}</Text>
       </View>
       {privacy.privateModeAvailable?<Pressable accessibilityRole="button" accessibilityLabel={privacy.privateProfile?t('Tornar o perfil público'):t('Tornar o perfil privado')} disabled={busy}
