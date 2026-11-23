@@ -1,5 +1,5 @@
 import React,{useCallback,useMemo,useState} from 'react';
-import {Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
@@ -12,8 +12,11 @@ import {communityDetails} from '../../../src/lib/community-api';
 import {communitySports} from '../../../src/lib/community-core.cjs';
 import {communityResultsOverview,type CommunityResultsOverview} from '../../../src/lib/community-results-api';
 import {racePoints,racketRule,sportFamily,teamPoints} from '../../../src/lib/competition-settings-core.cjs';
-import {autoImportConfirm,autoImportPlan,updateDefaultPoints,updateHabitualLocation,updateRaceRule,updateRacketRule,
- updateSportPoints,type AutoImportPlan} from '../../../src/lib/competition-settings-api';
+import {autoImportConfirm,autoImportPlan,importColumns,mappingOf,updateDefaultPoints,updateHabitualLocation,updateRaceRule,updateRacketRule,
+ updateSportPoints,type AutoImportPlan,type ImportColumns,type ImportField} from '../../../src/lib/competition-settings-api';
+
+const FIELD_LABELS:[ImportField,string][]=[['PLAYER','Jogador'],['DATE','Data'],['RESULT','Resultado (V/E/D)'],['WIN','Vitórias'],
+ ['DRAW','Empates'],['LOSS','Derrotas'],['GOALS','Golos'],['ASSISTS','Assistências'],['POINTS','Pontos'],['MVP','MVP'],['IGNORE','Ignorar']];
 import type {CommunityGroup} from '../../../src/lib/types';
 
 type Section='POINTS'|'RACKET'|'RACE'|'PLACE'|'IMPORT'|null;
@@ -35,6 +38,7 @@ export default function CompetitionSettingsScreen(){
  const [place,setPlace]=useState({city:'',address:'',latitude:null as number|null,longitude:null as number|null});
  const [file,setFile]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [plan,setPlan]=useState<AutoImportPlan|null>(null);
+ const [columns,setColumns]=useState<ImportColumns|null>(null);
  const [year,setYear]=useState('');
 
  const load=useCallback(async(nextSeason:number|null)=>{
@@ -98,11 +102,25 @@ export default function CompetitionSettingsScreen(){
  }
  async function chooseFile(){
   if(busy)return;
-  setError('');setNotice('');setPlan(null);
+  setError('');setNotice('');setPlan(null);setColumns(null);
   const picked=await DocumentPicker.getDocumentAsync({type:['*/*'],copyToCacheDirectory:true,multiple:false});
   if(picked.canceled||!picked.assets?.[0])return;
   const asset=picked.assets[0];setFile(asset);
-  await run(async()=>setPlan(await autoImportPlan(id,auth.token,asset,needSeason(),/^\d{4}$/.test(year)?Number(year):null)),t('Ficheiro lido. Confirma antes de importar.'),false);
+  await run(async()=>setColumns(await importColumns(id,auth.token,asset)),t('Ficheiro lido. Confirma o que é cada coluna.'),false);
+ }
+ function setField(columnIndex:number,field:ImportField){
+  // A field belongs to one column only: choosing it elsewhere clears the previous column.
+  setColumns(c=>c&&{...c,columns:c.columns.map(x=>x.columnIndex===columnIndex?{...x,field}
+   :field!=='IGNORE'&&x.field===field?{...x,field:'IGNORE' as ImportField}:x)});
+  setPlan(null);
+ }
+ async function reviewColumns(){
+  if(!columns||!file)return;
+  const fields=new Set(columns.columns.map(c=>c.field));
+  if(!fields.has('PLAYER')||!fields.has('DATE')){setError(t('Indica qual é a coluna do jogador e a da data.'));return;}
+  setError('');
+  await run(async()=>setPlan(await autoImportPlan(id,auth.token,file,needSeason(),/^\d{4}$/.test(year)?Number(year):null,mappingOf(columns))),
+   t('Confirma antes de importar.'),false);
  }
 
  const card=(key:Exclude<Section,null>,title:string,hint:string,children:React.ReactNode)=><View style={styles.card}>
@@ -183,23 +201,38 @@ export default function CompetitionSettingsScreen(){
     <Button title={t('Guardar local habitual')} disabled={busy||place.latitude==null||!place.city.trim()} onPress={()=>void run(()=>updateHabitualLocation(id,auth.token,
      {latitude:place.latitude!,longitude:place.longitude!,city:place.city.trim(),address:place.address.trim()}),t('Local habitual guardado.'))}/>
    </>)}
-   {card('IMPORT',t('Importar histórico'),t('Traz jogos antigos de um Excel ou CSV feito com o modelo Jynlo.'),<>
+   {card('IMPORT',t('Importar histórico'),t('Traz jogos antigos do Excel ou CSV que o teu grupo já usa.'),<>
     {seasonId==null?<Text style={styles.hint}>{t('Cria primeiro uma época ativa em Resultados e classificações.')}</Text>:null}
-    <Text style={styles.hint}>{t('Uma linha por jogador em cada jogo: Data, Jogador, Resultado (Vitória/Empate/Derrota), Golos, Assistências, MVP. Ficheiros com outras colunas importam-se no computador, em jynlosports.com.')}</Text>
+    <Text style={styles.hint}>{t('Uma linha por jogador em cada jogo. Depois de escolheres o ficheiro, dizes o que é cada coluna (jogador, data, resultado, golos…). Nada é importado sem confirmares.')}</Text>
     <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL('https://jynlosports.com/assets/modelo-jynlo-historico.csv')}>
-     <Text style={styles.link}>{t('Descarregar modelo')}</Text></Pressable>
+     <Text style={styles.link}>{t('Ainda não tens ficheiro? Descarregar modelo')}</Text></Pressable>
     <TextInput value={year} onChangeText={setYear} keyboardType="number-pad" maxLength={4} style={styles.input}
      placeholder={t('Ano (só se as datas não tiverem ano)')} placeholderTextColor={C.muted} accessibilityLabel={t('Ano')}/>
-    {!plan?<Button secondary title={busy?t('A ler o ficheiro…'):t('Escolher ficheiro')} disabled={busy||seasonId==null} onPress={()=>void chooseFile()}/>:null}
+    {!plan&&!columns?<Button secondary title={busy?t('A ler o ficheiro…'):t('Escolher ficheiro')} disabled={busy||seasonId==null} onPress={()=>void chooseFile()}/>:null}
+    {columns&&!plan?<View style={styles.rule}>
+     <Text style={styles.ruleTitle}>{t('O que é cada coluna?')}</Text>
+     {columns.columns.map(c=><View key={c.columnIndex} style={styles.colRow}>
+      <Text style={styles.colHead} numberOfLines={1}>{c.header||t('Coluna {n}',{n:c.columnIndex+1})}{c.sample?<Text style={styles.hint}>{'  · '+c.sample}</Text>:null}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+       {FIELD_LABELS.map(([f,label])=><Pressable key={f} accessibilityRole="radio" accessibilityState={{selected:c.field===f}}
+        accessibilityLabel={(c.header||String(c.columnIndex+1))+': '+t(label)}
+        onPress={()=>setField(c.columnIndex,f)} style={[styles.colChip,c.field===f&&styles.colChipOn]}>
+        <Text style={[styles.colChipText,c.field===f&&styles.colChipTextOn]}>{t(label)}</Text></Pressable>)}
+      </ScrollView>
+     </View>)}
+     <Button title={busy?t('A analisar…'):t('Ver o que vai ser importado')} disabled={busy} onPress={()=>void reviewColumns()}/>
+     <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>{setFile(null);setColumns(null);}}/>
+    </View>:null}
     {plan?<View style={styles.rule}>
      <Text style={styles.ruleTitle}>{t('Vamos criar {a} jornadas com {b} resultados de jogadores.',{a:plan.plan.distinctRounds-plan.plan.duplicateRounds,b:plan.plan.rounds.filter(r=>!r.duplicate).reduce((s,r)=>s+r.players,0)})}</Text>
      {plan.plan.duplicateRounds?<Text style={styles.hint}>{t('{n} jornadas já existiam e ficam como estão.',{n:plan.plan.duplicateRounds})}</Text>:null}
-     <Text style={styles.hint}>{t('Colunas reconhecidas: {c}',{c:plan.columns.join(', ')})}</Text>
+     {plan.columns.length?<Text style={styles.hint}>{t('Colunas reconhecidas: {c}',{c:plan.columns.join(', ')})}</Text>:null}
      {plan.plan.roundsNeedingYear||plan.plan.invalidDates?<Message tone="error">{t('Há datas sem ano ou inválidas. Indica o ano acima e escolhe o ficheiro outra vez.')}</Message>:null}
      <Button title={busy?t('A importar…'):t('Importar jogos')} disabled={busy||!!plan.plan.roundsNeedingYear||!!plan.plan.invalidDates}
-      onPress={()=>void run(async()=>{const r=await autoImportConfirm(id,auth.token,file!,needSeason(),/^\d{4}$/.test(year)?Number(year):null);
-       setPlan(null);setFile(null);setNotice(t('Importado: {a} jornadas e {b} resultados.',{a:r.createdRounds,b:r.createdEntries}));},t('Importação concluída.'))}/>
-     <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>{setPlan(null);setFile(null);}}/>
+      onPress={()=>void run(async()=>{const r=await autoImportConfirm(id,auth.token,file!,needSeason(),/^\d{4}$/.test(year)?Number(year):null,columns?mappingOf(columns):null);
+       setPlan(null);setFile(null);setColumns(null);setNotice(t('Importado: {a} jornadas e {b} resultados.',{a:r.createdRounds,b:r.createdEntries}));},t('Importação concluída.'))}/>
+     <Button secondary title={t('Mudar colunas')} disabled={busy} onPress={()=>setPlan(null)}/>
+     <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>{setPlan(null);setFile(null);setColumns(null);}}/>
     </View>:null}
    </>)}
    <Text style={styles.hint}>{t('A classificação pública partilha-se na página da comunidade, em Classificação pública.')}</Text>
@@ -212,6 +245,9 @@ const styles=StyleSheet.create({
  card:{borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface,overflow:'hidden'},
  cardHead:{flexDirection:'row',alignItems:'center',gap:10,padding:15,minHeight:56},cardTitle:{color:C.white,fontSize:16,fontWeight:'900'},
  chev:{color:C.mint,fontSize:24,fontWeight:'900',width:24,textAlign:'center'},cardBody:{padding:15,paddingTop:0,gap:12},
+ colRow:{gap:6,paddingVertical:6,borderBottomWidth:1,borderBottomColor:C.border},colHead:{color:C.white,fontSize:14,fontWeight:'800'},
+ chips:{gap:6,paddingRight:8},colChip:{minHeight:36,paddingHorizontal:12,justifyContent:'center',borderRadius:999,borderWidth:1,borderColor:C.border},
+ colChipOn:{backgroundColor:C.mint,borderColor:C.mint},colChipText:{color:C.muted,fontSize:13,fontWeight:'700'},colChipTextOn:{color:'#04212a'},
  rule:{gap:8,paddingTop:12,borderTopWidth:1,borderTopColor:C.border},ruleTitle:{color:C.white,fontSize:14,fontWeight:'800'},
  row:{flexDirection:'row',flexWrap:'wrap',gap:8},numBox:{gap:4,minWidth:84},numLabel:{color:C.muted,fontSize:11,fontWeight:'700'},
  num:{minHeight:44,width:84,borderColor:C.border,borderWidth:1,borderRadius:12,paddingHorizontal:12,color:C.white,backgroundColor:C.surface2,fontSize:16,fontWeight:'800'},
