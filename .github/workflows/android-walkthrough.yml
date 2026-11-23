@@ -113,6 +113,14 @@ jobs:
         run: |
           [ -f walkthrough/resumo.txt ] || exit 0
           grep -E "FAILED|COMPLETED|Assert" walkthrough/resumo.txt | tail -60 | sed 's/^/QA-PASSO /' | tee -a "$GITHUB_STEP_SUMMARY"
+          # JS errors and small copies of the screenshots in the log, so the run can be reviewed
+          # without downloading the artifact (the login is never captured).
+          [ -f walkthrough/erros.txt ] && sed 's/^/QA-ERRO-JS /' walkthrough/erros.txt | head -40 || true
+          for f in walkthrough/screens/*.png; do
+            [ -f "$f" ] || continue
+            convert "$f" -resize 360x -quality 55 /tmp/mini.jpg
+            echo "QA-IMG $(basename "$f" .png) $(base64 -w0 /tmp/mini.jpg)"
+          done
       - name: Resultado do percurso
         if: always()
         run: |

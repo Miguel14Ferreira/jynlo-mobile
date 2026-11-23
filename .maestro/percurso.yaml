@@ -39,34 +39,16 @@ appId: com.jynlo.app
 - takeScreenshot: 09_detalhe_jogo_scroll
 - back
 - back
-- tapOn:
-    text: "(Torneios|Tournaments)"
-    optional: true
+# Ecrãs fora das abas: ligação direta da app (não depende de scroll nem de textos).
+- openLink: "jynlo://tournaments"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 10_torneios
-- back
-- tapOn:
-    id: "tab-messages"
-    optional: true
+- openLink: "jynlo://messages"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 11_mensagens
-# Profile tab: by id when exposed, otherwise by its position (last tab, bottom right).
-- runFlow:
-    when:
-      visible:
-        id: "tab-profile"
-    commands:
-      - tapOn:
-          id: "tab-profile"
-- runFlow:
-    when:
-      notVisible:
-        id: "tab-profile"
-    commands:
-      - tapOn:
-          point: "90%,95%"
+- openLink: "jynlo://profile"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 12_perfil
@@ -78,41 +60,14 @@ appId: com.jynlo.app
     text: "(Mais opções|More options)"
     optional: true
 - takeScreenshot: 13_mais_opcoes
-- tapOn:
-    text: "(As minhas equipas|My teams)"
-    optional: true
+- openLink: "jynlo://teams"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 14_equipas
-- back
-- scrollUntilVisible:
-    element: "(Enviar opinião|Send feedback).*"
-    timeout: 20000
-    optional: true
-- tapOn:
-    text: "(Enviar opinião|Send feedback).*"
-    optional: true
+- openLink: "jynlo://feedback"
 - waitForAnimationToEnd
 - takeScreenshot: 15_opiniao
-- back
-# Home tab: by id when exposed, otherwise by its position (first tab, bottom left).
-- runFlow:
-    when:
-      visible:
-        id: "tab-home"
-    commands:
-      - tapOn:
-          id: "tab-home"
-- runFlow:
-    when:
-      notVisible:
-        id: "tab-home"
-    commands:
-      - tapOn:
-          point: "10%,95%"
-- tapOn:
-    text: "(Encontrar comunidades|Find communities)"
-    optional: true
+- openLink: "jynlo://communities"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 16_comunidades
