@@ -3,6 +3,8 @@ export type SessionStatus = 'OPEN' | 'FULL' | 'CANCELLED' | 'COMPLETED' | string
 export type JoinState = 'PARTICIPANT' | 'WAITLISTED';
 
 export interface SessionSummary {
+  /** Organiser marked the court as booked. */
+  courtBooked?:boolean|null;
   id: number;
   sport: string;
   city: string;
@@ -220,7 +222,7 @@ export interface FeedItem {
 export interface VenueSummary {
   id:number;name:string;city:string;district?:string|null;address:string;
   sports:string|null;venueType:string|null;latitude:number|null;longitude:number|null;
-  contact?:string|null;website?:string|null;lighting:boolean;parking:boolean;
+  contact?:string|null;website?:string|null;bookingUrl?:string|null;freeAccess?:boolean|null;lighting:boolean;parking:boolean;
   openingHours?:string|null;priceInfo?:string|null;
   transport?:string|null;services?:string|null;surfaceType?:string|null;
   environmentType?:string|null;ownershipType?:string|null;

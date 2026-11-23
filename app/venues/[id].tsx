@@ -11,6 +11,7 @@ import {useAuth} from '../../src/lib/auth';
 import {uploadVenuePhoto} from '../../src/lib/venue-photo-upload';
 import type {VenuePhoto,VenueRatingSummary,VenueSportCondition,VenueSummary} from '../../src/lib/types';
 import {sportName,sportNames,surfaceName,venueTypeName} from '../../src/lib/sport-names.cjs';
+import {venueBookingAction} from '../../src/lib/venue-booking.cjs';
 
 const info=(label:string,value:unknown)=>{
  if(typeof value!=='string'||!value.trim())return null;
@@ -108,6 +109,7 @@ export default function VenueDetailScreen(){
   'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(
     String(venue.latitude)+','+String(venue.longitude)):null;
  const site=safeHttps(venue?.website);
+ const booking=venueBookingAction(venue);
  return <Page>
   <DemoBanner/><Eyebrow>{t('DETALHE DO RECINTO')}</Eyebrow>
   {loading?<Loader/>:null}
@@ -116,6 +118,15 @@ export default function VenueDetailScreen(){
   {venue?<View style={styles.card}>
    <Text style={styles.name}>{venue.name}</Text>
    <Text style={styles.meta}>{[venue.city,venue.district].filter(Boolean).join(' · ')}</Text>
+   {booking?.kind==='free'?<Text style={styles.free}>✓ {t('Acesso livre · não precisa de reserva')}</Text>:null}
+   {booking?.kind==='link'?<Button title={t('Reservar campo')+' ↗'} onPress={()=>{void openExternal(booking.url);}}/>:null}
+   {booking?.kind==='phone'?<View style={styles.bookRow}>
+    <Button title={'📞 '+t('Ligar para reservar')} onPress={()=>{void openExternal(booking.url);}}/>
+    {booking.whatsapp?<Button title={t('WhatsApp')} secondary onPress={()=>{void openExternal(booking.whatsapp!);}}/>:null}
+   </View>:null}
+   {booking?.kind==='search'?<Button title={'🔎 '+t('Procurar como reservar')} secondary onPress={()=>{void openExternal(booking.url);}}/>:null}
+   {booking&&booking.kind!=='link'&&booking.kind!=='free'&&auth.token?<Button title={t('Sugerir link de reserva')} secondary
+    onPress={()=>router.push({pathname:'/venues/[id]/suggest-edit',params:{id:String(id),field:'bookingUrl'}})}/>:null}
    {info('Modalidades',sportNames(venue.sports))}
    {info(t('Tipo de recinto'),venueTypeName(venue.venueType))}
    {info('Morada',venue.address)}
@@ -172,5 +183,7 @@ const styles=StyleSheet.create({
  photo:{width:'100%',height:190,borderRadius:12,backgroundColor:C.background},
  condition:{gap:5,padding:12,borderRadius:12,backgroundColor:C.background},
  conditionTitle:{color:C.white,fontSize:15,fontWeight:'800'},
- photoControls:{gap:10}
+ photoControls:{gap:10},
+ bookRow:{gap:8},
+ free:{alignSelf:'flex-start',paddingVertical:6,paddingHorizontal:12,borderRadius:999,backgroundColor:'rgba(94,230,200,0.14)',color:'#7ae5c5',fontWeight:'800',fontSize:14,overflow:'hidden'}
 });
