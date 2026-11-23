@@ -95,7 +95,21 @@ appId: com.jynlo.app
 - waitForAnimationToEnd
 - takeScreenshot: 15_opiniao
 - back
-- tapOn: "(Início|Home)"
+# Home tab: by id when exposed, otherwise by its position (first tab, bottom left).
+- runFlow:
+    when:
+      visible:
+        id: "tab-home"
+    commands:
+      - tapOn:
+          id: "tab-home"
+- runFlow:
+    when:
+      notVisible:
+        id: "tab-home"
+    commands:
+      - tapOn:
+          point: "10%,95%"
 - tapOn:
     text: "(Encontrar comunidades|Find communities)"
     optional: true
