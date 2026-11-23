@@ -116,11 +116,15 @@ jobs:
           # JS errors and small copies of the screenshots in the log, so the run can be reviewed
           # without downloading the artifact (the login is never captured).
           [ -f walkthrough/erros.txt ] && sed 's/^/QA-ERRO-JS /' walkthrough/erros.txt | head -40 || true
-          for f in walkthrough/screens/*.png; do
-            [ -f "$f" ] || continue
-            convert "$f" -resize 360x -quality 55 /tmp/mini.jpg
-            echo "QA-IMG $(basename "$f" .png) $(base64 -w0 /tmp/mini.jpg)"
-          done
+          pip install --quiet pillow >/dev/null 2>&1 || true
+          python3 - <<'PY' || true
+          import base64, glob, io, os
+          from PIL import Image
+          for f in sorted(glob.glob('walkthrough/screens/*.png')):
+              im = Image.open(f).convert('RGB'); im.thumbnail((360, 800))
+              b = io.BytesIO(); im.save(b, 'JPEG', quality=55)
+              print('QA-IMG', os.path.splitext(os.path.basename(f))[0], base64.b64encode(b.getvalue()).decode())
+          PY
       - name: Resultado do percurso
         if: always()
         run: |
