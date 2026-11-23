@@ -226,6 +226,8 @@ export default function ProfileScreen(){
     {auth.username&&!DEMO_MODE?<><Eyebrow>{t('GESTÃO DA CONTA')}</Eyebrow>
 
     <Button title={t('Alterar palavra-passe')} secondary onPress={()=>router.push('/change-password')}/>
+    <Button title={t('Mudar email')} secondary onPress={()=>router.push('/change-email')}/>
+    <Button title={t('Pessoas bloqueadas')} secondary onPress={()=>router.push('/blocked-people')}/>
     <Button title={t('Verificação em dois passos')} secondary onPress={()=>router.push('/security-mfa')}/>
     <Button title={t('Sessões iniciadas no site')} secondary onPress={()=>router.push('/device-sessions')}/>
     <Button title={showDelete?t('Ocultar eliminação de conta'):t('Eliminar a minha conta')} secondary onPress={()=>{setShowDelete(v=>!v);setConfirmUsername('');}}/>

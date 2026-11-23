@@ -153,7 +153,8 @@ export default function EditProfileScreen(){
      onChangeText={v=>set(key,v)} maxLength={limit}
      multiline={key==='bio'} autoCapitalize={key==='email'?'none':'sentences'}
      keyboardType={key==='email'?'email-address':key==='phone'||key==='indicativePhone'?'phone-pad':'default'}
-     editable={!busy} placeholderTextColor={C.muted}/>
+     editable={!busy&&key!=='email'} placeholderTextColor={C.muted}/>
+    {key==='email'?<Pressable accessibilityRole="button" onPress={()=>router.push('/change-email')}><Text style={styles.emailHint}>{t('Para mudar o email, toca aqui: confirmamos a palavra-passe e o novo endereço.')}</Text></Pressable>:null}
    </View>)}
    <Eyebrow>{t('MODALIDADES FAVORITAS')}</Eyebrow>
    <Text style={styles.label}>{t('Escolhe as modalidades que praticas')}</Text>
@@ -198,6 +199,7 @@ export default function EditProfileScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ emailHint:{color:C.mint,fontSize:12,fontWeight:'700',paddingTop:4},
  form:{gap:14},field:{gap:6},label:{color:C.white,fontSize:13,fontWeight:'700'},
  input:{minHeight:50,color:C.white,borderColor:C.border,borderWidth:1,borderRadius:13,
   backgroundColor:C.surface,paddingHorizontal:14,fontSize:15},
