@@ -3,6 +3,10 @@ appId: com.jynlo.app
 ---
 - launchApp:
     clearState: true
+# The emulator itself sometimes shows "System UI isn't responding": keep waiting.
+- tapOn:
+    text: "(Aguardar|Wait)"
+    optional: true
 - extendedWaitUntil:
     visible: "Explorar como visitante"
     timeout: 90000

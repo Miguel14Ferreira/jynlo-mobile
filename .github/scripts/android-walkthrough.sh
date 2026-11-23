@@ -16,6 +16,9 @@ if adb root >/dev/null 2>&1; then sleep 3; adb wait-for-device
 fi
 # Never flash typed password characters on screen (the run is video-recorded).
 adb shell settings put system show_password 0 || true
+# Let System UI settle after the locale restart (avoids the emulator ANR dialog).
+sleep 30
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb logcat -c
 adb shell screenrecord --time-limit 180 /sdcard/parte1.mp4 & rec1=$!
 ( sleep 178; adb shell screenrecord --time-limit 180 /sdcard/parte2.mp4 ) & rec2=$!

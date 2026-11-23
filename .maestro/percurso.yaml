@@ -12,6 +12,10 @@ appId: com.jynlo.app
 - tapOn:
     text: "(Allow|Permitir|PERMITIR|ALLOW)"
     optional: true
+# The emulator itself sometimes shows "System UI isn't responding": keep waiting.
+- tapOn:
+    text: "(Aguardar|Wait)"
+    optional: true
 - extendedWaitUntil:
     visible: "(Entrar na Jynlo.*|Sign in to Jynlo.*|Explorar como visitante|Explore as a guest)"
     timeout: 90000
