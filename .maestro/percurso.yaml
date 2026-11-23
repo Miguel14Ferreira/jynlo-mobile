@@ -47,12 +47,20 @@ appId: com.jynlo.app
 - takeScreenshot: 10_torneios
 - back
 - tapOn:
-    text: "(Mensagens|Messages).*"
+    id: "tab-messages"
     optional: true
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 11_mensagens
-- tapOn: "(Perfil|Profile)"
+# Back to the tab bar only if a screen without tabs is open.
+- runFlow:
+    when:
+      notVisible:
+        id: "tab-profile"
+    commands:
+      - back
+- tapOn:
+    id: "tab-profile"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 12_perfil

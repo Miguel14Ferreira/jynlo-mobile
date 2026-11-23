@@ -79,15 +79,15 @@ export default function TabsLayout(){
    tabBarShowLabel:false,
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
-   <Tabs.Screen name="index" options={{title:t('Início'),tabBarAccessibilityLabel:t('Início'),tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:t('Explorar'),tabBarAccessibilityLabel:t('Explorar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="index" options={{tabBarButtonTestID:'tab-home',title:t('Início'),tabBarAccessibilityLabel:t('Início'),tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{tabBarButtonTestID:'tab-explore',title:t('Explorar'),tabBarAccessibilityLabel:t('Explorar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:t('Criar'),tabBarButton:()=>(
     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir menu de criação')} onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:t('Mensagens'),tabBarAccessibilityLabel:badge?t('Mensagens, {count} por ler',{count:badge}):t('Mensagens'),
+   <Tabs.Screen name="messages" options={{tabBarButtonTestID:'tab-messages',title:t('Mensagens'),tabBarAccessibilityLabel:badge?t('Mensagens, {count} por ler',{count:badge}):t('Mensagens'),
     tabBarBadge:badge||undefined,tabBarBadgeStyle:{backgroundColor:'#FF5A5F',color:'#FFFFFF',fontSize:10,fontWeight:'800'},tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="profile" options={{title:t('Perfil'),tabBarAccessibilityLabel:t('Perfil'),tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="profile" options={{tabBarButtonTestID:'tab-profile',title:t('Perfil'),tabBarAccessibilityLabel:t('Perfil'),tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
   </Tabs>
   <Modal visible={open} transparent animationType="slide" onRequestClose={close}>
    <View style={styles.overlay}>
