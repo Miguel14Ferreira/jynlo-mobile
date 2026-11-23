@@ -22,10 +22,18 @@ adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 
 # 1) Login on its own, BEFORE any recording. Its output (logs, screenshots,
 #    hierarchies) goes to a private folder that is deleted and never published.
 if [ -n "${JYNLO_USER:-}" ] && [ -n "${JYNLO_PASS:-}" ]; then
+  # Safe diagnosis: only the HTTP status of an API login with the same account (no body, no password).
+  api="${EXPO_PUBLIC_JYNLO_API_URL:-https://desporto24-preview-api.onrender.com}"
+  code=$(python3 -c 'import json,os;print(json.dumps({"username":os.environ["JYNLO_USER"],"password":os.environ["JYNLO_PASS"]}))' \
+    | curl -s -o /dev/null -w '%{http_code}' --max-time 90 -H 'Content-Type: application/json' --data-binary @- "$api/api/auth/login" || echo erro)
+  echo "Login na API ($api): HTTP $code"
   private="$(mktemp -d)"
   maestro test -e "JYNLO_USER=$JYNLO_USER" -e "JYNLO_PASS=$JYNLO_PASS" \
-    --test-output-dir "$private" .maestro/entrar.yaml >/dev/null 2>&1
+    --test-output-dir "$private" .maestro/entrar.yaml > "$private/consola.txt" 2>&1
   login=$?
+  # Keep only step names and outcomes; drop every line that could carry typed text.
+  grep -E "COMPLETED|FAILED|WARNED|SKIPPED" "$private/consola.txt" | grep -viE "input|text \"" \
+    | JYNLO_PASS="$JYNLO_PASS" perl -pe 's/\Q$ENV{JYNLO_PASS}\E/[removida]/g' | sed 's/^/LOGIN-PASSO /' || true
   rm -rf "$private"
   if [ "$login" -ne 0 ]; then
     echo '::error::Não foi possível iniciar sessão com a conta de teste (sem capturas do login, por segurança).'
