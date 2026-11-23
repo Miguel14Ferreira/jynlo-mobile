@@ -567,7 +567,6 @@ export default function SessionScreen(){
         </View>
         <View style={styles.minimumTrack}><View style={[styles.minimumFill,{width:`${minimum.percent}%` as `${number}%`}]}/></View>
         <Text style={styles.hint}>{minimum.missing===0?t('Mínimo de jogadores atingido.'):(minimum.missing===1?t('Falta 1 inscrição para atingir o mínimo.'):t('Faltam {n} inscrições para atingir o mínimo.',{n:minimum.missing}))}</Text>
-        <Text style={styles.subtleHint}>{t('O estado efetivo da sessão continua a ser determinado pelo servidor.')}</Text>
       </View>:null}
       {auth.token&&detail&&(owner||detail.joined)&&
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
