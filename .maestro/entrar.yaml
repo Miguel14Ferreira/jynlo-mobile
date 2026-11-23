@@ -1,0 +1,37 @@
+# Só inicia sessão com a conta de teste. Corre ANTES de a gravação começar e
+# tudo o que gera é apagado: nunca há capturas nem vídeo do login.
+appId: com.jynlo.app
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 15000
+# Android 13+ pede autorização para notificações no primeiro arranque.
+- tapOn:
+    text: "(Allow|Permitir|PERMITIR|ALLOW)"
+    optional: true
+# The emulator itself sometimes shows "System UI isn't responding": keep waiting.
+- tapOn:
+    text: "(Aguardar|Wait)"
+    optional: true
+- extendedWaitUntil:
+    visible: "(Entrar na Jynlo.*|Sign in to Jynlo.*|Explorar como visitante|Explore as a guest)"
+    timeout: 90000
+- tapOn: "(Entrar na Jynlo.*|Sign in to Jynlo.*)"
+- extendedWaitUntil:
+    visible: "(Nome de utilizador|Username)"
+    timeout: 20000
+- tapOn:
+    id: "login-username"
+- inputText: ${JYNLO_USER}
+- hideKeyboard
+- tapOn:
+    id: "login-password"
+- waitForAnimationToEnd:
+    timeout: 2000
+- inputText: ${JYNLO_PASS}
+- hideKeyboard
+- tapOn: "^(Entrar|Sign in)$"
+- extendedWaitUntil:
+    visible: "(Início|Home)"
+    timeout: 90000

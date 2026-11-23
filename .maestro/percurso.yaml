@@ -1,37 +1,14 @@
-# Percurso de utilização no emulador Android: entra com a conta de teste e
+# Percurso de utilização no emulador Android (já com sessão iniciada):
 # fotografa os ecrãs principais. Passos marcados "optional" não falham o teste
 # quando a conta não tem esse conteúdo (por exemplo, nenhuma conversa).
 appId: com.jynlo.app
 ---
+# A sessão já foi iniciada por .maestro/entrar.yaml (sem gravação nem capturas).
 - launchApp:
-    clearState: true
-- waitForAnimationToEnd:
-    timeout: 15000
-- takeScreenshot: 00_arranque
-# Android 13+ pede autorização para notificações no primeiro arranque.
-- tapOn:
-    text: "(Allow|Permitir|PERMITIR|ALLOW)"
-    optional: true
-# The emulator itself sometimes shows "System UI isn't responding": keep waiting.
+    clearState: false
 - tapOn:
     text: "(Aguardar|Wait)"
     optional: true
-- extendedWaitUntil:
-    visible: "(Entrar na Jynlo.*|Sign in to Jynlo.*|Explorar como visitante|Explore as a guest)"
-    timeout: 90000
-- takeScreenshot: 01_boas_vindas
-- tapOn: "(Entrar na Jynlo.*|Sign in to Jynlo.*)"
-- extendedWaitUntil:
-    visible: "(Nome de utilizador|Username)"
-    timeout: 20000
-- tapOn:
-    id: "login-username"
-- inputText: ${JYNLO_USER}
-- tapOn:
-    id: "login-password"
-- inputText: ${JYNLO_PASS}
-- hideKeyboard
-- tapOn: "^(Entrar|Sign in)$"
 - extendedWaitUntil:
     visible: "(Início|Home)"
     timeout: 90000

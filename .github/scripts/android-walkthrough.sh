@@ -19,13 +19,25 @@ adb shell settings put system show_password 0 || true
 # Let System UI settle after the locale restart (avoids the emulator ANR dialog).
 sleep 30
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
+# 1) Login on its own, BEFORE any recording. Its output (logs, screenshots,
+#    hierarchies) goes to a private folder that is deleted and never published.
+if [ -n "${JYNLO_USER:-}" ] && [ -n "${JYNLO_PASS:-}" ]; then
+  private="$(mktemp -d)"
+  maestro test -e "JYNLO_USER=$JYNLO_USER" -e "JYNLO_PASS=$JYNLO_PASS" \
+    --test-output-dir "$private" .maestro/entrar.yaml >/dev/null 2>&1
+  login=$?
+  rm -rf "$private"
+  if [ "$login" -ne 0 ]; then
+    echo '::error::Não foi possível iniciar sessão com a conta de teste (sem capturas do login, por segurança).'
+    exit 1
+  fi
+  echo "Sessão iniciada (passo não gravado)."
+fi
+# 2) Only now record the screen and run the walkthrough, already signed in.
 adb logcat -c
 adb shell screenrecord --time-limit 180 /sdcard/parte1.mp4 & rec1=$!
 ( sleep 178; adb shell screenrecord --time-limit 180 /sdcard/parte2.mp4 ) & rec2=$!
-args=()
-[ -n "${JYNLO_USER:-}" ] && args+=(-e "JYNLO_USER=$JYNLO_USER")
-[ -n "${JYNLO_PASS:-}" ] && args+=(-e "JYNLO_PASS=$JYNLO_PASS")
-maestro test "${args[@]}" --test-output-dir "$out/maestro" "$FLOW"
+maestro test --test-output-dir "$out/maestro" "$FLOW"
 status=$?
 kill "$rec1" "$rec2" 2>/dev/null; sleep 3
 adb pull /sdcard/parte1.mp4 "$out/" 2>/dev/null || true
