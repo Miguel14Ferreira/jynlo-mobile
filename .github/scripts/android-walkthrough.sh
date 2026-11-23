@@ -27,6 +27,10 @@ if [ -n "${JYNLO_USER:-}" ] && [ -n "${JYNLO_PASS:-}" ]; then
   code=$(python3 -c 'import json,os;print(json.dumps({"username":os.environ["JYNLO_USER"],"password":os.environ["JYNLO_PASS"]}))' \
     | curl -s -o /dev/null -w '%{http_code}' --max-time 90 -H 'Content-Type: application/json' --data-binary @- "$api/api/auth/login" || echo erro)
   echo "Login na API ($api): HTTP $code"
+  if [ "$code" = "400" ] || [ "$code" = "401" ]; then
+    echo '::error::A API recusou as credenciais da conta de teste (secret desatualizado?). Não tento pelo ecrã para não bloquear a conta.'
+    exit 1
+  fi
   private="$(mktemp -d)"
   maestro test -e "JYNLO_USER=$JYNLO_USER" -e "JYNLO_PASS=$JYNLO_PASS" \
     --test-output-dir "$private" .maestro/entrar.yaml > "$private/consola.txt" 2>&1
