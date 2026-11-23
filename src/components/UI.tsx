@@ -153,6 +153,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
         <Text style={styles.cardTitle} numberOfLines={1}>{sportName(session.sport)}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||t('Local a confirmar')}</Text></View>
         {isLevel(session.skillLevel)?<Text style={styles.cardLevel}>🎯 {levelLabel(session.skillLevel)}</Text>:null}
+        {session.courtBooked===true?<Text style={styles.cardLevel}>{t('✓ Campo reservado')}</Text>:null}
       </View>
       <JynloIcon name="chevron-right" size={25} color={MobileTheme.colors.accent}/>
     </View>

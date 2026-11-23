@@ -25,6 +25,7 @@ import SessionLocationPanel from '../../src/components/SessionLocationPanel';
 import SessionPaymentsPanel from '../../src/components/SessionPaymentsPanel';
 import PreviousUnpaidWarning from '../../src/components/PreviousUnpaidWarning';
 import {confirmedSessionTeams,sessionParticipationLabel} from '../../src/lib/session-teams-presentation.cjs';
+import SessionCourtBooking from '../../src/components/SessionCourtBooking';
 import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,safeMeetingPoint} from '../../src/lib/session-state.cjs';
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
@@ -583,6 +584,8 @@ export default function SessionScreen(){
          </Pressable>
          {showSessionChat?<SessionChatPanel embedded/>:null}
         </View>:null}
+      {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'?
+        <SessionCourtBooking sessionId={id} token={auth.token}/>:null}
       {detail?<SessionLocationPanel session={detail} token={auth.token}
          canEdit={owner} onSaved={updated=>{setDetail(updated);setFeedback(t('Localização Google Maps atualizada.'));}}/>:null}
       {detail&&auth.token&&(owner||detail.joined)&&s.status!=='CANCELLED'&&

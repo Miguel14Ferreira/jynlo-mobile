@@ -9,7 +9,7 @@ import {venueDetails} from '../../../src/lib/parity-api';
 import type {VenueSummary} from '../../../src/lib/types';
 import {C} from '../../../src/lib/theme';
 
-type EditField='name'|'city'|'district'|'address'|'openingHours'|'website'|'contact'|'coordinates';
+type EditField='name'|'city'|'district'|'address'|'openingHours'|'website'|'contact'|'bookingUrl'|'freeAccess'|'coordinates';
 type FieldItem={key:EditField;label:string;limit:number};
 const FIELDS:FieldItem[]=[
  {key:'name',label:'Nome do recinto',limit:140},
@@ -19,6 +19,8 @@ const FIELDS:FieldItem[]=[
  {key:'openingHours',label:'Horário de funcionamento',limit:1000},
  {key:'website',label:'Website HTTPS',limit:255},
  {key:'contact',label:'Contacto público',limit:255},
+ {key:'bookingUrl',label:'Link de reserva (Playtomic, site do clube…)',limit:500},
+ {key:'freeAccess',label:'Acesso livre? (sim/não)',limit:3},
  {key:'coordinates',label:'Localização GPS',limit:30},
 ];
 type VenueEditSuggestion={id:number;status:string;submittedAt:string;reason:string;proposed:Record<string,string>};
@@ -26,6 +28,7 @@ function valueOf(venue:VenueSummary,field:EditField):string{
  if(field==='coordinates'){
   return venue.latitude!=null&&venue.longitude!=null?venue.latitude+','+venue.longitude:'';
  }
+ if(field==='freeAccess')return venue.freeAccess==null?'':venue.freeAccess?t('sim'):t('não');
  const v=venue[field];
  return typeof v==='string'?v:'';
 }
@@ -47,15 +50,22 @@ function coordinates(value:string):{latitude:string;longitude:string}|null{
 function buildChanges(field:EditField,value:string):Record<string,string>|null{
  if(field==='coordinates')return coordinates(value);
  const trimmed=value.trim();
- if(!['openingHours','website','contact'].includes(field)&&!trimmed)return null;
+ if(field==='freeAccess'){
+  const answer=trimmed.toLowerCase();
+  if(['sim','s','yes','y'].includes(answer))return {freeAccess:'true'};
+  if(['não','nao','n','no'].includes(answer))return {freeAccess:'false'};
+  return null;
+ }
+ if(!['openingHours','website','contact','bookingUrl'].includes(field)&&!trimmed)return null;
  return {[field]:trimmed};
 }
 export default function SuggestVenueEditScreen(){
- const router=useRouter(),auth=useAuth(),params=useLocalSearchParams<{id:string}>();
+ const router=useRouter(),auth=useAuth(),params=useLocalSearchParams<{id:string;field?:string}>();
+ const initialField:EditField=params.field==='bookingUrl'?'bookingUrl':'name';
  const id=typeof params.id==='string'&&/^[1-9]\d*$/.test(params.id)?Number(params.id):NaN;
  const [venue,setVenue]=useState<VenueSummary|null>(null);
  const [mine,setMine]=useState<VenueEditSuggestion|null>(null);
- const [field,setField]=useState<EditField>('name'),[value,setValue]=useState('');
+ const [field,setField]=useState<EditField>(initialField),[value,setValue]=useState('');
  const [reason,setReason]=useState(''),[sourceUrl,setSourceUrl]=useState('');
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [error,setError]=useState(''),[completed,setCompleted]=useState(false);
@@ -72,7 +82,7 @@ export default function SuggestVenueEditScreen(){
     .catch(e=>{if(e instanceof ApiError&&e.status===404)return null;throw e;})
   ]).then(([detail,previous])=>{
    if(!active)return;
-   setVenue(detail);setMine(previous);setValue(valueOf(detail,'name'));
+   setVenue(detail);setMine(previous);setValue(valueOf(detail,initialField));
   }).catch(()=>{if(active)setError(t('Não foi possível carregar o recinto ou verificar sugestões anteriores.'));})
    .finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
@@ -82,14 +92,14 @@ export default function SuggestVenueEditScreen(){
  async function submit(){
   if(!auth.token||DEMO_MODE||busy||!venue||hasPending||completed)return;
   const changes=buildChanges(field,value);
-  if(!changes){setError(t('Introduz uma alteração válida. Para GPS utiliza latitude,longitude.'));return;}
+  if(!changes){setError(t(field==='freeAccess'?'Responde sim ou não.':'Introduz uma alteração válida. Para GPS utiliza latitude,longitude.'));return;}
   const fieldLimit=FIELDS.find(x=>x.key===field)?.limit??255;
   if(value.trim().length>fieldLimit){setError(t('O valor excede o limite permitido.'));return;}
   if(field==='district'&&!['Aveiro','Beja','Braga','Bragança',t('Castelo Branco'),'Coimbra','Évora','Faro','Guarda','Leiria','Lisboa','Portalegre','Porto','Santarém','Setúbal',t('Viana do Castelo'),t('Vila Real'),'Viseu'].includes(value.trim())){
    setError(t('Escolhe um distrito português válido.'));return;
   }
-  if(field==='website'&&value.trim()&&!sourceValid(value.trim())){
-   setError(t('O website deve utilizar HTTPS.'));return;
+  if((field==='website'||field==='bookingUrl')&&value.trim()&&!sourceValid(value.trim())){
+   setError(t(field==='website'?'O website deve utilizar HTTPS.':'O link de reserva deve utilizar HTTPS.'));return;
   }
   if(reason.trim().length<10||reason.trim().length>1000){
    setError(t('Explica a alteração em 10 a 1000 caracteres.'));return;
@@ -137,7 +147,7 @@ export default function SuggestVenueEditScreen(){
    <Text style={styles.label}>{t('Valor proposto {a}',{a:field==='coordinates'?'(latitude,longitude)':''})}</Text>
    <TextInput style={styles.input} value={value} maxLength={FIELDS.find(x=>x.key===field)?.limit||255}
     editable={!busy&&!hasPending&&!completed} onChangeText={setValue}
-    autoCapitalize={field==='website'||field==='coordinates'?'none':'sentences'}
+    autoCapitalize={field==='website'||field==='bookingUrl'||field==='coordinates'?'none':'sentences'}
     placeholderTextColor={C.muted} placeholder={field==='coordinates'?'38.72,-9.14':t('Nova informação')}/>
    <Text style={styles.label}>{t('Motivo (10–1000 caracteres)')}</Text>
    <TextInput multiline value={reason} maxLength={1000} onChangeText={setReason}
