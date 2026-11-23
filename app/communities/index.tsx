@@ -50,6 +50,7 @@ export default function CommunitiesScreen(){
       <Eyebrow>{t('JUNTOS É OUTRO JOGO')}</Eyebrow>
       <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('A tua malta.')}{"\n"}<Text style={{color:C.mint}}>{t('A tua comunidade.')}</Text></Text>
       <Text style={styles.sub}>{t('De uma sessão podem nascer amizades, equipas e grandes desafios.')}</Text>
+      <Text style={styles.sub}>{t('Jogos, ligas e torneios individuais ou por equipas. Tens o histórico num Excel? Importa-o.')}</Text>
     </View>
     <View style={styles.actions}>
       <View style={{flex:1}}><Button title={t('+ Criar comunidade')} onPress={()=>auth.token?router.push('/communities/create'):router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/></View>

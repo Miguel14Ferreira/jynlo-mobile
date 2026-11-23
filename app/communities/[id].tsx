@@ -328,6 +328,11 @@ export default function CommunityDetailScreen(){
         {isMember(community)&&community.rankingsEnabled?<Button secondary title={t('Resultados e classificações')} onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
         {isMember(community)&&community.rankingsEnabled&&auth.token?<PublicShareCard target={{kind:'RANKING',communityId:id}}
           name={community.name} token={auth.token} canManage={owner}/>:null}
+        {owner?<View style={styles.startCard}>
+          <Text style={styles.startTitle}>📊 {t('Já tens o histórico num Excel?')}</Text>
+          <Text style={styles.muted}>{t('Importa o ficheiro (Excel, CSV ou TSV). Revês tudo antes de confirmar e cada jogador fica com a sua classificação e estatísticas.')}</Text>
+          <Button title={t('Importar histórico')} onPress={()=>router.push({pathname:'/communities/[id]/competition-settings',params:{id:String(id)}})}/>
+        </View>:null}
         {owner?<Button secondary title={t('Criar torneio nesta comunidade')} onPress={()=>router.push({pathname:'/tournaments/create',params:{communityId:String(id)}})}/>:null}
       </View>:null}
       {role&&activeSection==='MEMBERS'?<View style={styles.section}>
@@ -453,7 +458,9 @@ const styles=StyleSheet.create({
   section:{padding:16,borderRadius:18,backgroundColor:'#092D3B',borderWidth:1,borderColor:'#3BC8B344',gap:13},
   sectionNav:{flexGrow:0,borderRadius:15,backgroundColor:'#061F2C',borderWidth:1,borderColor:C.border},sectionNavContent:{flexDirection:'row',gap:7,padding:6},
   manageButton:{width:44,height:44,borderRadius:22,borderWidth:1,borderColor:'#4AE4C47F',alignItems:'center',justifyContent:'center',alignSelf:'flex-start'},manageButtonOn:{backgroundColor:C.mint,borderColor:C.mint},
-  manageTitle:{color:C.white,fontSize:18,fontWeight:'900'},identityPhoto:{width:'100%',height:'100%'},
+  startCard:{gap:8,padding:14,borderRadius:16,borderWidth:1,borderColor:'rgba(94,230,200,0.3)',backgroundColor:'rgba(20,70,76,0.45)'},
+ startTitle:{color:'#fff',fontSize:16,fontWeight:'800'},
+ manageTitle:{color:C.white,fontSize:18,fontWeight:'900'},identityPhoto:{width:'100%',height:'100%'},
   sectionTab:{minHeight:44,paddingHorizontal:12,justifyContent:'center',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:'#235460',backgroundColor:'#092F3D'},
   sectionTabSelected:{backgroundColor:C.mint,borderColor:C.mint},
   sectionTabText:{fontSize:12,fontWeight:'800',color:'#C4E1DF'},sectionTabTextSelected:{color:'#052C30'},
