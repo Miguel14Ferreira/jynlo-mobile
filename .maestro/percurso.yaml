@@ -23,6 +23,16 @@ appId: com.jynlo.app
 - takeScreenshot: 05_explorar
 - scroll
 - takeScreenshot: 06_explorar_jogos
+- scrollUntilVisible:
+    element: "(Mapa|Map)"
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: "(Mapa|Map)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 06b_explorar_mapa
 - tapOn: "(Início|Home)"
 - tapOn:
     text: "(As minhas sessões|My games|My sessions)"
