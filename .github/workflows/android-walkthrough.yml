@@ -27,6 +27,16 @@ jobs:
       CI: "true"
       EXPO_PUBLIC_JYNLO_API_URL: "https://desporto24-preview-api.onrender.com"
     steps:
+      - name: Verificar a conta de testes antes de compilar (uma tentativa)
+        env:
+          JYNLO_USER: ${{ secrets.JYNLO_QA1_USERNAME }}
+          JYNLO_PASS: ${{ secrets.JYNLO_QA1_PASSWORD }}
+        run: |
+          if [ -z "$JYNLO_USER" ] || [ -z "$JYNLO_PASS" ]; then echo '::error::Faltam os secrets JYNLO_QA1_USERNAME/JYNLO_QA1_PASSWORD.'; exit 1; fi
+          code=$(python3 -c 'import json,os;print(json.dumps({"username":os.environ["JYNLO_USER"],"password":os.environ["JYNLO_PASS"]}))' \
+            | curl -s -o /dev/null -w '%{http_code}' --max-time 120 -H 'Content-Type: application/json' --data-binary @- "$EXPO_PUBLIC_JYNLO_API_URL/api/auth/login" || echo erro)
+          echo "Login na API: HTTP $code"
+          if [ "$code" != "200" ]; then echo "::error::A API não aceitou a conta de testes (HTTP $code). Paro já, antes dos ~25 min de compilação."; exit 1; fi
       - name: Libertar espaço em disco (a compilação e o emulador precisam de ~20 GB)
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules/@angular "$AGENT_TOOLSDIRECTORY/CodeQL" /usr/local/.ghcup || true
