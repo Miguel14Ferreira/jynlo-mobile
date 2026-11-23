@@ -52,15 +52,21 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 11_mensagens
-# Back to the tab bar only if a screen without tabs is open.
+# Profile tab: by id when exposed, otherwise by its position (last tab, bottom right).
+- runFlow:
+    when:
+      visible:
+        id: "tab-profile"
+    commands:
+      - tapOn:
+          id: "tab-profile"
 - runFlow:
     when:
       notVisible:
         id: "tab-profile"
     commands:
-      - back
-- tapOn:
-    id: "tab-profile"
+      - tapOn:
+          point: "90%,95%"
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 12_perfil
