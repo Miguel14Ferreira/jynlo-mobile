@@ -6,7 +6,9 @@ import {useAuth} from '../src/lib/auth';
 import {Button,Eyebrow,Loader,Message,Page} from '../src/components/UI';
 import {C} from '../src/lib/theme';
 import {bookingError,bookingStatusLabel} from '../src/components/VenueJynloBooking';
-import {cancelBooking,managedVenues,myBookings,type ManagedVenue,type VenueBooking} from '../src/lib/venue-jynlo-api';
+import {cancelBooking,managedVenues,markBookingPaid,myBookings,type ManagedVenue,type VenueBooking} from '../src/lib/venue-jynlo-api';
+import {phoneLabel} from '../src/lib/session-payments-api';
+import {Share} from 'react-native';
 import {canCancel,formatPrice,lisbonDateTime,lisbonTime} from '../src/lib/venue-jynlo-booking.cjs';
 
 /** "As minhas reservas": court requests the person made and the venues they manage. */
@@ -33,6 +35,13 @@ export default function VenueBookingsScreen(){
   return()=>{alive=false;};
  },[auth.token]));
 
+ async function paid(b:VenueBooking,value:boolean){
+  if(!auth.token||busy)return;
+  setBusy(true);setError('');
+  try{const updated=await markBookingPaid(b.id,auth.token,value);setBookings(list=>list.map(x=>x.id===updated.id?updated:x));}
+  catch(e){setError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
+  finally{setBusy(false);}
+ }
  async function cancel(b:VenueBooking){
   if(!auth.token||busy)return;
   setBusy(true);setError('');
@@ -70,6 +79,19 @@ export default function VenueBookingsScreen(){
     <Text style={[styles.status,b.status==='CONFIRMED'&&styles.statusOk,(b.status==='DECLINED'||b.status==='CANCELLED')&&styles.statusOff]}>
      {bookingStatusLabel(b.status,false)}</Text>
     {b.ownerNote?<Text style={styles.note}>{t('Recinto')}: “{b.ownerNote}”</Text>:null}
+    {b.status==='CONFIRMED'?(b.paidConfirmedAt?<Text style={styles.statusOk}>{t('✅ O recinto confirmou o teu pagamento.')}</Text>:<>
+     {b.paymentMethod==='MBWAY'&&b.mbwayPhone?<>
+      <Text style={styles.muted}>{t('Paga por MB WAY ao recinto:')}</Text>
+      <View style={{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+       <Text selectable style={styles.phone}>{phoneLabel(b.mbwayPhone)}</Text>
+       <Button secondary title={t('Partilhar número')} onPress={()=>void Share.share({message:b.mbwayPhone!})}/>
+      </View>
+     </>:<Text style={styles.muted}>{t('Pagas no recinto.')}</Text>}
+     {b.paidClaimedAt?<>
+      <Text style={styles.muted}>{t('Disseste que já pagaste. Falta o recinto confirmar.')}</Text>
+      <Button secondary title={t('Afinal ainda não paguei')} disabled={busy} onPress={()=>{void paid(b,false);}}/>
+     </>:<Button title={t('Já paguei')} disabled={busy} onPress={()=>{void paid(b,true);}}/>}
+    </>):null}
     {canCancel(b)?<Button secondary title={t('Cancelar pedido')} disabled={busy} onPress={()=>{void cancel(b);}}/>:null}
    </View>)}
   </View>
@@ -86,5 +108,6 @@ const styles=StyleSheet.create({
  muted:{color:C.muted,fontSize:14,lineHeight:20},
  note:{color:C.white,fontStyle:'italic'},
  chip:{color:'#7ae5c5',fontWeight:'800',fontSize:12},chipAlert:{color:'#fcd34d'},
- status:{color:'#fcd34d',fontWeight:'800'},statusOk:{color:'#7ae5c5'},statusOff:{color:'#ffb4b4'}
+ status:{color:'#fcd34d',fontWeight:'800'},
+ phone:{color:C.white,fontSize:20,fontWeight:'900',letterSpacing:1},statusOk:{color:'#7ae5c5'},statusOff:{color:'#ffb4b4'}
 });

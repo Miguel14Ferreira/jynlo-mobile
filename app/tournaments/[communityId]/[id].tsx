@@ -3,6 +3,8 @@ import {t} from '../../../src/lib/i18n';
 import {StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
+import TournamentPaymentsPanel from '../../../src/components/TournamentPaymentsPanel';
+import {DEMO_MODE} from '../../../src/lib/api';
 import {useAuth} from '../../../src/lib/auth';
 import {tournamentDetails,tournamentTable} from '../../../src/lib/competition-api';
 import {communityDetails} from '../../../src/lib/community-api';
@@ -103,6 +105,7 @@ export default function TournamentDetailScreen(){
        <Text style={styles.meta}>{t('Cada prova conta: os lugares dão pontos e a soma decide o campeão.')}</Text>
        <Button title={t('Ver provas e classificação')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/provas',params:{communityId:String(communityId),id:String(id),name:tournament.name}})}/>
      </View>:!tableError&&!isPerformanceKind(kind)?<Message>{t('Esta modalidade tem regras próprias. Não aplicamos classificações de futebol sem confirmação das regras.')}</Message>:null}
+     {auth.token&&!DEMO_MODE?<TournamentPaymentsPanel communityId={communityId} tournamentId={id} token={auth.token}/>:null}
      {auth.token?<PublicShareCard target={{kind:'TOURNAMENT',communityId,tournamentId:id}} name={tournament.name}
       token={auth.token} canManage={organizerRole==='OWNER'||organizerRole==='ADMIN'}/>:null}
      {isPerformanceKind(kind)?<Button title={kind==='RACE'?t('Ver resultados de corridas'):kind==='TIMED'?t('Ver tempos da prova'):kind==='MEASURED'?t('Ver marcas da prova'):t('Ver resultados das estafetas')} onPress={()=>router.push({pathname:'/tournaments/[communityId]/[id]/results',params:{communityId:String(communityId),id:String(id)}})}/>:null}

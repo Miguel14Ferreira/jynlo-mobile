@@ -6,8 +6,9 @@ import {useAuth} from '../../../src/lib/auth';
 import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {C} from '../../../src/lib/theme';
 import {bookingError,bookingStatusLabel} from '../../../src/components/VenueJynloBooking';
-import {answerBooking,managedVenues,managerOffer,saveCourts,saveHours,venueRequests,
+import {answerBooking,confirmBookingPaid,managedVenues,managerOffer,saveCourts,saveHours,saveVenuePayment,venueRequests,
  type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
+import {phoneLabel} from '../../../src/lib/session-payments-api';
 import {formatPrice,lisbonDateTime,lisbonTime,parsePrice,priceField,validateHours} from '../../../src/lib/venue-jynlo-booking.cjs';
 
 type CourtRow={id:number|null;name:string;sport:string;price:string;slotMinutes:number;active:boolean};
@@ -31,10 +32,13 @@ export default function VenueManageScreen(){
  const [busy,setBusy]=useState(false),[requestError,setRequestError]=useState('');
  const [courtsMsg,setCourtsMsg]=useState(''),[courtsError,setCourtsError]=useState('');
  const [hoursMsg,setHoursMsg]=useState(''),[hoursError,setHoursError]=useState('');
+ const [payMethod,setPayMethod]=useState<'MBWAY'|'IN_PERSON'|null>(null),[payPhone,setPayPhone]=useState('');
+ const [payMsg,setPayMsg]=useState(''),[payError,setPayError]=useState('');
 
  function applyOffer(o:BookingOffer,withHours:boolean){
   setOffer(o);
   setCourts(o.courts.map(c=>({id:c.id,name:c.name,sport:c.sport??'',price:priceField(c.priceCents),slotMinutes:c.slotMinutes,active:c.active})));
+  if(withHours){setPayMethod(o.paymentMethod??null);if(o.mbwayPhone)setPayPhone(phoneLabel(o.mbwayPhone));}
   if(withHours)setWeek([1,2,3,4,5,6,7].map(d=>o.hours.filter(h=>h.dayOfWeek===d).map(h=>({open:h.openTime,close:h.closeTime}))));
  }
 
@@ -61,6 +65,21 @@ export default function VenueManageScreen(){
    const updated=await answerBooking(r.id,auth.token,confirm,(notes[r.id]??'').trim()||null);
    setRequests(list=>list.map(x=>x.id===updated.id?updated:x));
   }catch(e){setRequestError(bookingError(e,t('Não foi possível responder ao pedido.')));}
+  finally{setBusy(false);}
+ }
+ async function storePayment(){
+  if(!auth.token||busy)return;
+  setBusy(true);setPayError('');setPayMsg('');
+  try{const o=await saveVenuePayment(venueId,auth.token,payMethod,payMethod==='MBWAY'?payPhone.trim():null);
+   setPayMethod(o.paymentMethod??null);setPayMsg(t('Pagamento guardado.'));}
+  catch(e){setPayError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
+  finally{setBusy(false);}
+ }
+ async function paidReceived(r:VenueBooking,paid:boolean){
+  if(!auth.token||busy)return;
+  setBusy(true);setRequestError('');
+  try{const updated=await confirmBookingPaid(r.id,auth.token,paid);setRequests(list=>list.map(x=>x.id===updated.id?updated:x));}
+  catch(e){setRequestError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
   finally{setBusy(false);}
  }
  async function storeCourts(){
@@ -109,6 +128,12 @@ export default function VenueManageScreen(){
     <Text style={styles.strong}>{lisbonDateTime(r.startAt)}–{lisbonTime(r.endAt)} · {r.courtName}</Text>
     <Text style={styles.muted}>@{r.requesterUsername}{formatPrice(r.priceCents,language)?' · '+formatPrice(r.priceCents,language):''} · {bookingStatusLabel(r.status,true)}</Text>
     {r.playerNote?<Text style={styles.note}>“{r.playerNote}”</Text>:null}
+    {r.status==='CONFIRMED'?<View style={styles.payRow}>
+     <Text style={[styles.muted,r.paidConfirmedAt?{color:'#7ae5c5',fontWeight:'800'}:r.paidClaimedAt?{color:'#fcd34d'}:null]}>
+      {r.paidConfirmedAt?t('✅ Pago'):r.paidClaimedAt?t('⏳ Diz que pagou'):t('Por pagar')}</Text>
+     <Button secondary={!!r.paidConfirmedAt} title={r.paidConfirmedAt?t('Anular'):t('Pagamento recebido')} disabled={busy}
+      onPress={()=>{void paidReceived(r,!r.paidConfirmedAt);}}/>
+    </View>:null}
     {r.status==='PENDING'?<>
      <TextInput value={notes[r.id]??''} onChangeText={v=>setNotes(n=>({...n,[r.id]:v}))} maxLength={300}
       placeholder={t('Mensagem (opcional)')} placeholderTextColor={C.muted} accessibilityLabel={t('Mensagem para o jogador')} style={styles.input}/>
@@ -147,6 +172,24 @@ export default function VenueManageScreen(){
    {courtsError?<Text style={styles.error}>{courtsError}</Text>:null}
   </View>
 
+  <View style={styles.card}>
+   <Text style={styles.h2}>{t('Pagamento das reservas')}</Text>
+   <Text style={styles.muted}>{t('Recebe por MB WAY no teu número ou no local. A Jynlo não recebe nem guarda dinheiro.')}</Text>
+   <View style={styles.chips}>
+    {(['MBWAY','IN_PERSON'] as const).map(m=><Pressable key={m} accessibilityRole="radio" accessibilityState={{checked:payMethod===m}}
+      onPress={()=>setPayMethod(m)} style={[styles.chip,payMethod===m&&styles.chipOn]}>
+     <Text style={[styles.chipText,payMethod===m&&styles.chipTextOn]}>{m==='MBWAY'?'📱 '+t('MB WAY'):'🤝 '+t('No local')}</Text>
+    </Pressable>)}
+   </View>
+   {payMethod==='MBWAY'?<>
+    <TextInput value={payPhone} onChangeText={setPayPhone} maxLength={20} keyboardType="phone-pad" placeholder="912 345 678"
+     placeholderTextColor={C.muted} accessibilityLabel={t('Número MB WAY do recinto')} style={styles.input}/>
+    <Text style={styles.muted}>{t('Só quem tem uma reserva confirmada vê este número.')}</Text>
+   </>:null}
+   <Button title={t('Guardar pagamento')} disabled={busy||!payMethod} onPress={()=>{void storePayment();}}/>
+   {payMsg?<Text style={styles.ok}>{payMsg}</Text>:null}
+   {payError?<Text style={styles.error}>{payError}</Text>:null}
+  </View>
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Horário de funcionamento')}</Text>
    <Text style={styles.muted}>{t('Os horários livres são criados a partir deste horário e da duração de cada campo.')}</Text>
@@ -197,5 +240,6 @@ const styles=StyleSheet.create({
  addRange:{minHeight:44,justifyContent:'center'},
  linkText:{color:'#7ae5c5',fontWeight:'800',fontSize:15},
  ok:{color:'#7ae5c5',fontWeight:'800'},
+ payRow:{gap:8},
  error:{color:'#ffb4b4',fontSize:14}
 });
