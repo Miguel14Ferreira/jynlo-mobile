@@ -18,7 +18,7 @@ import {joinedSportsTeams,type SportsTeam} from '../../src/lib/sports-teams-api'
 import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {sportName} from '../../src/lib/sport-names.cjs';
-import {useBookingsOpen} from '../../src/lib/use-bookings-open';
+import {managedVenues,type ManagedVenue} from '../../src/lib/venue-jynlo-api';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -27,7 +27,8 @@ type ProfilePresentation={
 export default function ProfileScreen(){
  const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const router=useRouter();const auth=useAuth();
-  const bookingsOpen=useBookingsOpen();
+  const [myVenues,setMyVenues]=React.useState<ManagedVenue[]>([]);
+  React.useEffect(()=>{if(!auth.token)return;let alive=true;managedVenues(auth.token).then(l=>{if(alive)setMyVenues(l||[]);}).catch(()=>{});return()=>{alive=false;};},[auth.token]);
   const [confirmUsername,setConfirmUsername]=useState('');
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
   const [profileLoading,setProfileLoading]=useState(false);
@@ -215,7 +216,7 @@ export default function ProfileScreen(){
     <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
     <Button title={t('As minhas sessões')} secondary onPress={()=>router.push('/my-sessions')}/>
     <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
-    {bookingsOpen?<Button title={t('Reservar campo')} secondary onPress={()=>router.push('/book-court' as never)}/>:null}
+    {myVenues.length?<Button title={t('Os meus recintos')} secondary onPress={()=>myVenues.length===1?router.push({pathname:'/venues/[id]/manage',params:{id:String(myVenues[0]!.venueId)}} as never):router.push('/venue-bookings')}/>:null}
     <Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>
     <Button title={t('Enviar opinião ou reportar problema')} secondary onPress={()=>router.push('/feedback')}/>
     {!auth.username?<><Button title={DEMO_MODE?t('Experimentar conta de demonstração'):t('Iniciar sessão')} onPress={()=>router.push('/login')}/><Button title={t('Voltar às boas-vindas')} secondary onPress={()=>router.push('/welcome')}/></>:

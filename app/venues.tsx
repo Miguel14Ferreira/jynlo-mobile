@@ -21,6 +21,10 @@ export default function VenuesScreen(){
  useFocusEffect(useCallback(()=>{void search();},[search]));
  return <Page><DemoBanner/><Eyebrow>{t('RECINTOS DESPORTIVOS')}</Eyebrow>
  <Text maxFontSizeMultiplier={1.3} style={styles.heading}>{t('Encontra o teu')} <Text style={{color:C.mint}}>{t('próximo campo.')}</Text></Text>
+ {accepting.length?<Pressable accessibilityRole="button" onPress={()=>router.push('/book-court' as never)} style={styles.bookBanner}>
+  <Text style={styles.bookBannerText}>📅 {t('Há recintos que aceitam reservas na Jynlo. Vê os horários livres por dia, hora e zona.')}</Text>
+  <Text style={styles.bookBannerLink}>{t('Ver horários livres')} ›</Text>
+ </Pressable>:null}
  <TextInput value={term} onChangeText={setTerm} placeholder={t('Nome do recinto')} placeholderTextColor={C.muted} style={styles.input}/>
  <TextInput value={city} onChangeText={setCity} placeholder={t('Cidade')} placeholderTextColor={C.muted} style={styles.input}/>
  <Button title={t('Pesquisar recintos')} onPress={()=>{void search();}}/>
@@ -36,4 +40,7 @@ export default function VenuesScreen(){
  <Message>{t('Os novos recintos e as correções são analisados por moderadores antes de serem publicados.')}</Message>
  </Page>
 }
-const styles=StyleSheet.create({heading:{color:C.white,fontWeight:'900',fontSize:27},input:{height:52,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,paddingHorizontal:15,color:C.white},card:{backgroundColor:C.surface,padding:18,borderRadius:18,borderWidth:1,borderColor:C.border,gap:8},name:{color:C.white,fontSize:16,fontWeight:'900'},meta:{color:C.muted,fontSize:13},link:{color:C.mint,fontWeight:'800',marginTop:5},badge:{alignSelf:'flex-start',color:'#063a35',backgroundColor:'#62e6c4',borderRadius:999,paddingHorizontal:10,paddingVertical:3,fontSize:12,fontWeight:'800',overflow:'hidden'}});
+const styles=StyleSheet.create({
+ bookBanner:{gap:4,padding:12,marginVertical:8,borderRadius:14,borderWidth:1,borderColor:'rgba(98,230,196,0.45)',backgroundColor:'rgba(98,230,196,0.06)'},
+ bookBannerText:{color:C.white,fontSize:14,lineHeight:20},
+ bookBannerLink:{color:C.mint,fontWeight:'800'},heading:{color:C.white,fontWeight:'900',fontSize:27},input:{height:52,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,paddingHorizontal:15,color:C.white},card:{backgroundColor:C.surface,padding:18,borderRadius:18,borderWidth:1,borderColor:C.border,gap:8},name:{color:C.white,fontSize:16,fontWeight:'900'},meta:{color:C.muted,fontSize:13},link:{color:C.mint,fontWeight:'800',marginTop:5},badge:{alignSelf:'flex-start',color:'#063a35',backgroundColor:'#62e6c4',borderRadius:999,paddingHorizontal:10,paddingVertical:3,fontSize:12,fontWeight:'800',overflow:'hidden'}});

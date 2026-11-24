@@ -22,6 +22,7 @@ import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {HomeUpNext} from '../../src/features/home-up-next';
+import {HomeShortcuts} from '../../src/components/HomeShortcuts';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {uncertainPostOutcome} from '../../src/lib/post-publish-uncertainty.cjs';
 import {sharedPostLink} from '../../src/lib/shared-post-link.cjs';
@@ -1430,6 +1431,7 @@ export default function JynloFeedHome(){
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?t('Perfil e conta ativa'):t('Iniciar sessão')}><CircleAvatar name={auth.username||t('Visitante')} image={myProfilePhoto} size={32}/><Text maxFontSizeMultiplier={1.2} style={styles.headerName} numberOfLines={1}>{auth.username||t('Entrar')}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>{t('◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO')}</Text></View>:null}
     <HomeUpNext/>
+    <HomeShortcuts/>
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow={t('MOMENTOS DESPORTIVOS')} title={t('Stories')}/>
       {visibleStoryGroups.length?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>{auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Criar a minha story')} onPress={openStoryComposer} style={styles.storyItem}><View style={styles.storyCreateRing}><CircleAvatar name={auth.username||'Jynlo'} image={myProfilePhoto} size={57}/><View style={styles.storyCreateBadge}><Text style={styles.storyCreatePlus}>＋</Text></View></View><Text style={styles.storyItemName} numberOfLines={1}>{t('A tua story')}</Text></Pressable>:null}{visibleStoryGroups.map(group=><Pressable key={group.key} onPress={()=>setStoryViewer(group)} style={styles.storyItem} accessibilityLabel={t('Ver Stories de {name}',{name:group.name})}>
