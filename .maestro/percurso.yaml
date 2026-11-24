@@ -148,7 +148,7 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - tapOn:
-    text: "(Procurar entre|Search among).*"
+    text: "(Procurar entre|Search [0-9]+ sports).*"
     optional: true
 - inputText: "Pad"
 - waitForAnimationToEnd:
