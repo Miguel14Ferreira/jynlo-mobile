@@ -52,6 +52,8 @@ export default function DirectConversation(){
  const storyRepliesIdentity=useRef('');
  const conversationScroll=useRef<ScrollViewInstance|null>(null);
  const nearBottom=useRef(false);
+ /** Opening a chat shows the latest message (like Instagram); the person scrolls up for older ones. */
+ const openAtLatestUntil=useRef(0);
  const historyViewportMeasured=useRef(false);
  const historyViewportHeight=useRef(0);
  const historyContentHeight=useRef(0);
@@ -175,6 +177,7 @@ export default function DirectConversation(){
    conversation.current=identity;
    lastAcknowledgedMessageId.current=0;
    nearBottom.current=false;
+   openAtLatestUntil.current=Date.now()+4000;
    historyViewportMeasured.current=false;
    historyViewportHeight.current=0;
    historyContentHeight.current=0;
@@ -408,6 +411,9 @@ export default function DirectConversation(){
    if(version!==generation.current||conversation.current!==identity)return;
    if(uncertainSendRef.current?.identity===identity&&uncertainSendRef.current.body===submittedText&&uncertainSendRef.current.replyId===(originalReply?.id??null)){uncertainSendRef.current=null;setUncertainSend(null);}
    // The server confirmed the write: render it now, independent of a later GET.
+   // My own message: always jump to it, wherever I was reading.
+   nearBottom.current=true;openAtLatestUntil.current=Date.now()+1500;
+   setTimeout(()=>conversationScroll.current?.scrollToEnd({animated:true}),60);
    setMessages(current=>current.some(message=>message.id===confirmed.id)?current:
     [...current,confirmed].sort((left,right)=>left.id-right.id));
    setDraft(current=>current===originalDraft?'':current);
@@ -579,6 +585,7 @@ export default function DirectConversation(){
        return;
       }
       nearBottom.current=contentOffset.y+layoutMeasurement.height>=historyContentHeight.current-90;
+      if(!nearBottom.current&&event.nativeEvent.contentOffset.y>0&&Date.now()<openAtLatestUntil.current&&historyContentHeight.current-contentOffset.y-layoutMeasurement.height>300)openAtLatestUntil.current=0;
       // A 90px proximity tolerance is for auto-scroll only, not read receipts.
       latestVisibleAtBottom.current=
        contentOffset.y+layoutMeasurement.height>=historyContentHeight.current-2;
@@ -591,7 +598,8 @@ export default function DirectConversation(){
       if(historyViewportHeight.current>0&&height>0&&height<=historyViewportHeight.current){
        nearBottom.current=true;latestVisibleAtBottom.current=true;
        acknowledgeVisibleHistory(true);
-      }else if(nearBottom.current&&historyViewportMeasured.current){
+      }else if(Date.now()<openAtLatestUntil.current||(nearBottom.current&&historyViewportMeasured.current)){
+       nearBottom.current=true;
        conversationScroll.current?.scrollToEnd({animated:false});
       }
     }}>

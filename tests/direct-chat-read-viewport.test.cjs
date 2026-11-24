@@ -34,7 +34,9 @@ test('private chat read receipts require active app and visible scroll viewport'
 
 test('private chat does not automatically scroll a reader browsing older messages', () => {
  assert.match(source,/onContentSizeChange=\{\(_,height\)=>\{/);
- assert.match(source,/else if\(nearBottom\.current&&historyViewportMeasured\.current\)/);
+ assert.match(source,/else if\(Date\.now\(\)<openAtLatestUntil\.current\|\|\(nearBottom\.current&&historyViewportMeasured\.current\)\)/);
+ // Opening the chat lands on the latest message; scrolling up cancels that pull.
+ assert.match(source,/openAtLatestUntil\.current=Date\.now\(\)\+4000/);
  assert.match(source,/conversationScroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
  assert.match(source,/nearBottom\.current=contentOffset\.y\+layoutMeasurement\.height>=historyContentHeight\.current-90/);
  assert.match(source,/latestVisibleAtBottom\.current=/);

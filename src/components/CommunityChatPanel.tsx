@@ -335,6 +335,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    // The verified server receipt is already an authorized chat entry. Show it
    // immediately rather than waiting for an eventually consistent history GET.
    setMessages(current=>mergeMessages(current,[confirmed]));
+   // My own message: always jump to it.
+   inlineNearBottom.current=true;setTimeout(()=>inlineHistoryRef.current?.scrollToEnd({animated:true}),80);
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
    // A confirmed POST is complete even if a subsequent history refresh fails.

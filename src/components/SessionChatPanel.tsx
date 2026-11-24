@@ -269,6 +269,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
    // optimistic message. Deduplicate if the socket already delivered it.
    setEntries(current=>current.some(entry=>entry.id===confirmed.id)?current:
     [...current,confirmed].sort((a,b)=>a.id-b.id));
+   inlineNearBottom.current=true;setTimeout(()=>inlineHistoryRef.current?.scrollToEnd({animated:true}),80);
    setDraft(current=>current===originalDraft?'':current);
    setReply(current=>current?.id===originalReplyId?null:current);
    // The server already confirmed the write; history is a separate read.
