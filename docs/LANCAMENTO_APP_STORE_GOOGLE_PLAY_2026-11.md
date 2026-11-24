@@ -3,6 +3,7 @@ Data da auditoria: 2026-11-15. Documento de preparação; **não é aprovação 
 Branch de desenvolvimento: `develop`. Não modificar `master`.
 
 ## Estado comprovado
+- Google Play (confirmado pelo Miguel a 24-11-2026): teste fechado a decorrer com 12 testers inscritos; 24-11 foi o 5.º dia. Os 14 dias completam-se por volta de 3-12-2026; o pedido de acesso a produção pode ser feito a partir de 4-12-2026, se os 12 se mantiverem inscritos.
 - iOS: a build `0.16.6 (1)` foi enviada ao App Store Connect, com TestFlight externo submetido para Beta App Review (estado reportado: Waiting for Review). A publicação pública é um processo distinto.
 - Android: `app.json` declara `com.jynlo.app` e `versionCode: 13`; `eas.json` possui perfil `production` com Android `app-bundle`, separado da APK `preview`.
 - Os workflows de Google Play existentes dependem do GitHub Actions, cuja quota foi atingida. Não executar builds ou tentar publicar automaticamente sem validação e assinatura.
