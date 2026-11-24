@@ -7,6 +7,7 @@ import {googleLoginWithIdToken,googleRegisterWithIdToken} from './google-auth-ap
 import {appleLoginWithIdToken,appleRegisterWithIdToken} from './apple-auth';
 import type {GoogleSignupInput} from './google-auth-api';
 import {accessTokenExpiresAt,isAccessTokenUsable} from './token-expiry.cjs';
+import {clearNativeRefreshToken,refreshNativeSession} from './native-session';
 import {disableMobilePush,clearNativePushPresentation,invalidatePendingPushRegistration} from './mobile-push';
 
 type AuthOutcome = 'AUTHENTICATED'|'MFA_REQUIRED';
@@ -40,6 +41,17 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   // Auth responses and secure-store writes must never revive a logged-out account.
   const authEpoch=useRef(0);
   const credentialQueue=useRef<Promise<void>>(Promise.resolve());
+  // Exchanges the device's refresh token for a fresh access token without asking for the password.
+  const restoreFromRefresh=useCallback(async(epoch:number):Promise<boolean>=>{
+    const outcome=await refreshNativeSession();
+    if(typeof outcome!=='object'||epoch!==authEpoch.current||!isAccessTokenUsable(outcome.token))return false;
+    const write=async()=>{await Promise.all([SecureStore.setItemAsync(TOKEN_KEY,outcome.token),SecureStore.setItemAsync(USER_KEY,outcome.username)]);};
+    credentialQueue.current=credentialQueue.current.then(write,write).catch(()=>{});
+    await credentialQueue.current;
+    if(epoch!==authEpoch.current)return false;
+    setUsername(outcome.username);setToken(outcome.token);
+    return true;
+  },[setToken,setUsername]);
   useEffect(()=>{let active=true;const restoreEpoch=authEpoch.current;(async()=>{
     try{
       if(!DEMO_MODE){const [savedToken,savedName]=await Promise.all([
@@ -48,6 +60,8 @@ export function AuthProvider({children}:{children:React.ReactNode}){
         if(active&&restoreEpoch===authEpoch.current){
           if(savedToken&&savedName&&isAccessTokenUsable(savedToken)){
             setToken(savedToken);setUsername(savedName);
+          }else if(savedName&&await restoreFromRefresh(restoreEpoch)){
+            // Signed back in with the stored refresh token, like Instagram.
           }else{
             setToken(null);setUsername(null);
             if(savedToken||savedName){
@@ -69,7 +83,13 @@ export function AuthProvider({children}:{children:React.ReactNode}){
   useEffect(()=>{
     if(DEMO_MODE||!token)return;
     const tokenEpoch=authEpoch.current;
+    let refreshing=false;
     const expire=()=>{
+      if(tokenEpoch!==authEpoch.current||isAccessTokenUsable(token)||refreshing)return;
+      refreshing=true;
+      void restoreFromRefresh(tokenEpoch).then(ok=>{refreshing=false;if(!ok)endSession();},()=>{refreshing=false;endSession();});
+    };
+    const endSession=()=>{
       if(tokenEpoch!==authEpoch.current||isAccessTokenUsable(token))return;
       authEpoch.current++;
       invalidatePendingPushRegistration();
@@ -99,6 +119,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     schedule();
     const sub=AppState.addEventListener('change',state=>{if(state==='active'){if(timer)clearTimeout(timer);schedule();}});
     return()=>{active=false;if(timer)clearTimeout(timer);sub.remove();};
+  // restoreFromRefresh is stable (no dependencies).
   },[token]);
   const save=useCallback(async(name:string,accessToken:string,epoch:number)=>{
     if(!isAccessTokenUsable(accessToken))throw new Error('O servidor devolveu uma sessão inválida ou expirada. Tenta novamente.');
@@ -236,7 +257,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
       // Wait for any credential write that started before logout, then delete it.
       const clear=async()=>{
         const removals=await Promise.allSettled([
-          SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY)]);
+          SecureStore.deleteItemAsync(TOKEN_KEY),SecureStore.deleteItemAsync(USER_KEY),clearNativeRefreshToken()]);
         localRemovalFailed=removals.some(result=>result.status==='rejected');
       };
       const cleanup=credentialQueue.current.then(clear,clear);

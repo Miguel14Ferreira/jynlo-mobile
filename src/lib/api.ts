@@ -13,6 +13,10 @@ export const API_BASE: string = rawApiUrl ? validateApiOrigin(rawApiUrl,{allowLo
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) { super(message); this.name='ApiError'; }
 }
+/** Sign-in responses for the native app carry a long-lived refresh token in this header. */
+export const NATIVE_REFRESH_HEADER='X-Jynlo-Refresh';
+let refreshTokenListener:((token:string)=>void)|null=null;
+export function onNativeRefreshToken(listener:((token:string)=>void)|null){refreshTokenListener=listener;}
 export async function request<T>(path:string, {token,method='GET',body,timeoutMs=12000}:{token?:string|null;method?:'GET'|'POST'|'PUT'|'PATCH'|'DELETE';body?:unknown;timeoutMs?:number}={}):Promise<T>{
   if (DEMO_MODE) throw new Error('Os pedidos HTTP estão desativados na demonstração.');
   const controller = new AbortController();
@@ -24,7 +28,7 @@ export async function request<T>(path:string, {token,method='GET',body,timeoutMs
       // Never follow an unexpected redirect while a bearer token is attached.
       // Authenticated API responses must not be persisted by HTTP caches.
       redirect:'error', cache:'no-store',
-      headers:{'Accept':'application/json',
+      headers:{'Accept':'application/json','X-Jynlo-Client':'mobile',
         ...(body === undefined?{}:{'Content-Type':'application/json'}),
         ...(token?{'Authorization':`Bearer ${token}`}:{})},
       ...(body === undefined ? {} : {body:JSON.stringify(body)}),
@@ -39,6 +43,8 @@ export async function request<T>(path:string, {token,method='GET',body,timeoutMs
       const reason=[400,403,404,409,422].includes(response.status)?await readErrorMessage(response):null;
       throw new ApiError(response.status,reason||fallback);
     }
+    const issuedRefresh=path.startsWith('/api/auth/')?response.headers.get(NATIVE_REFRESH_HEADER):null;
+    if(issuedRefresh&&refreshTokenListener)refreshTokenListener(issuedRefresh);
     // Some successful DELETE/POST endpoints return 200 with an empty body.
     // Never misreport a completed mutation as a network failure just because JSON is absent.
     return (await readSuccessfulResponse(response)) as T;
