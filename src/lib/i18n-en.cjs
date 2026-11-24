@@ -4099,6 +4099,7 @@ const EN={
   "Tirar fotografia ou gravar vídeo": "Take a photo or record a video",
   "Tirar nova fotografia ou vídeo para a Story": "Take a new photo or video for the Story",
   "Titular": "Starter",
+  "Toca duas vezes para gostar": "Double tap to like",
   "Toca num elemento para o selecionar e arrastar.": "Tap an element to select and drag it.",
   "Toca num pino para consultar a sessão correspondente.": "Tap a pin to see that game.",
   "Toda a comunidade": "Whole community",

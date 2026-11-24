@@ -6,14 +6,14 @@ import AdaptivePostPhoto from './AdaptivePostPhoto';
 import {resolveJynloMedia} from '../lib/social-feed-api';
 
 type AlbumEntry={url:string;type:'image'|'video'};
-type Props={items:AlbumEntry[];onExpand:(photos:{uris:string[];index:number})=>void;renderVideo:(uri:string)=>React.ReactNode};
+type Props={items:AlbumEntry[];onExpand:(photos:{uris:string[];index:number})=>void;renderVideo:(uri:string)=>React.ReactNode;onDoubleTap?:()=>void};
 const uriFor=(url:string)=>(url.startsWith('file:')||url.startsWith('content:'))?url:resolveJynloMedia(url);
 
 /**
  * Measured carousels page by the card's own width, never the device width.
  * Mixed portrait images and videos keep their full aspect ratio inside the card.
  */
-export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
+export default function PostAlbumCarousel({items,onExpand,renderVideo,onDoubleTap}:Props){
  const [width,setWidth]=useState(0),[active,setActive]=useState(0);
  // Reset paging when a post's gallery is replaced, but not on ordinary feed refreshes.
  const albumIdentity=items.map(entry=>entry.type+':'+entry.url).join('|');
@@ -36,7 +36,7 @@ export default function PostAlbumCarousel({items,onExpand,renderVideo}:Props){
     const uri=uriFor(entry.url);
     return <View key={entry.url+'-'+index} style={{width}}>
       {uri?(entry.type==='video'?(index===active?renderVideo(uri):<View style={[styles.videoInactive,{height:Math.max(190,Math.round(width*.75))}]}><JynloIcon name="video" size={26} color="#B9D8DA"/><Text style={styles.videoInactiveText}>{t('Vídeo {a} de {b}',{a:index+1,b:items.length})}</Text></View>):
-        <AdaptivePostPhoto uri={uri} width={width}
+        <AdaptivePostPhoto uri={uri} width={width} onDoubleTap={onDoubleTap}
           label={t('Ampliar fotografia {v}',{v:(index+1)})+' de '+items.length}
           onExpand={()=>{const images=items.filter(item=>item.type==='image').map(item=>uriFor(item.url)).filter((value):value is string=>Boolean(value));onExpand({uris:images,index:images.indexOf(uri)});}}/>):null}
     </View>;

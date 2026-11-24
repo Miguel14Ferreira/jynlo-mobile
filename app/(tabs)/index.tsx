@@ -1379,6 +1379,7 @@ export default function JynloFeedHome(){
       {item.type!=='POST'&&item.content?<Text style={styles.postBody}>{item.content}</Text>:null}
       {item.type==='POST'&&item.location?.trim()?<View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={MUTED} size={15}/><Text style={styles.postMeta}>{item.location.trim()}</Text></View>:null}
       {album.length?<PostAlbumCarousel items={album} onExpand={setExpandedPostImage}
+        onDoubleTap={item.type==='POST'&&auth.token?()=>{if(!item.likedByMe)void toggleLike(item);}:undefined}
         renderVideo={uri=><MediaVideo uri={uri}/>}/>:null}
       {item.type==='POST'&&!album.length&&item.content?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir detalhe completo da publicação')}
         disabled={!Number.isSafeInteger(item.postId)||!item.postId||item.postId<=0}
