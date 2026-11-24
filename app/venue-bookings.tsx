@@ -9,7 +9,7 @@ import {bookingError,bookingStatusLabel} from '../src/components/VenueJynloBooki
 import {cancelBooking,managedVenues,markBookingPaid,myBookings,type ManagedVenue,type VenueBooking} from '../src/lib/venue-jynlo-api';
 import {phoneLabel} from '../src/lib/session-payments-api';
 import {Share} from 'react-native';
-import {canCancel,formatPrice,lisbonDateTime,lisbonTime} from '../src/lib/venue-jynlo-booking.cjs';
+import {canCancel,createGameParams,formatPrice,lisbonDateTime,lisbonTime} from '../src/lib/venue-jynlo-booking.cjs';
 
 /** "As minhas reservas": court requests the person made and the venues they manage. */
 export default function VenueBookingsScreen(){
@@ -69,8 +69,8 @@ export default function VenueBookingsScreen(){
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Os meus pedidos')}</Text>
    {!loading&&!bookings.length?<>
-    <Text style={styles.muted}>{t('Ainda não pediste nenhuma reserva. Procura um recinto com o selo “Aceita reservas na Jynlo”.')}</Text>
-    <Button title={t('Ver recintos')} onPress={()=>router.push('/venues')}/>
+    <Text style={styles.muted}>{t('Ainda não pediste nenhuma reserva. Vê os horários livres em “Reservar campo”.')}</Text>
+    <Button title={t('Reservar campo')} onPress={()=>router.push('/book-court' as never)}/>
    </>:null}
    {bookings.map(b=><View key={b.id} style={styles.row}>
     <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(b.venueId)}})}>
@@ -92,6 +92,8 @@ export default function VenueBookingsScreen(){
       <Button secondary title={t('Afinal ainda não paguei')} disabled={busy} onPress={()=>{void paid(b,false);}}/>
      </>:<Button title={t('Já paguei')} disabled={busy} onPress={()=>{void paid(b,true);}}/>}
     </>):null}
+    {canCancel(b)&&!b.sessionId?<Button title={t('Criar jogo neste campo')} onPress={()=>router.push({pathname:'/sessions/create',params:createGameParams(b,null)})}/>:null}
+    {b.sessionId?<Button secondary title={t('Ver o jogo')} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(b.sessionId)}})}/>:null}
     {canCancel(b)?<Button secondary title={t('Cancelar pedido')} disabled={busy} onPress={()=>{void cancel(b);}}/>:null}
    </View>)}
   </View>

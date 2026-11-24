@@ -38,3 +38,8 @@ test('booking alerts open "As minhas reservas"',()=>{
  const {notificationDestination}=require('../src/lib/notification-route.cjs');
  assert.deepEqual(notificationDestination({type:'VENUE_BOOKING',venueId:5}),{kind:'venue-bookings'});
 });
+test('"Criar jogo neste campo" opens creation at the booked venue and Lisbon time',()=>{
+ assert.deepEqual(b.createGameParams({id:77,venueId:5,startAt:'2030-06-01T17:00:00Z'},'Padel'),
+  {venueId:'5',bookingId:'77',day:'2030-06-01',time:'18:00',sport:'Padel'});
+ assert.equal(b.createGameParams({id:1,venueId:2,startAt:'2030-01-10T19:30:00Z'},null).sport,undefined);
+});

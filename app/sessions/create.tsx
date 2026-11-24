@@ -15,6 +15,7 @@ import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
 import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
 import {venues,venueDetails} from '../../src/lib/parity-api';
+import {linkBookingToSession} from '../../src/lib/venue-jynlo-api';
 import {myPresets,createPreset,updatePreset,deletePreset} from '../../src/lib/session-preset-api';
 import {presetFromForm,formFromPreset,presetNotesText,validatePresetName,MAX_PRESETS,type SessionPreset} from '../../src/lib/session-preset-core.cjs';
 import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview,validCoordinates} from '../../src/lib/session-location-api';
@@ -95,7 +96,7 @@ function withHabitualLocation(form:CreateSessionForm,community:{habitualLatitude
 
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
- const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string;repeatFrom?:string}>();
+ const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string;repeatFrom?:string;venueId?:string;bookingId?:string}>();
  // "Jogar outra vez": copy a previous session of mine and invite its players after creating.
  const repeatFrom=typeof params.repeatFrom==='string'&&/^[1-9][0-9]*$/.test(params.repeatFrom)?Number(params.repeatFrom):null;
  const [repeatNote,setRepeatNote]=useState('');
@@ -109,6 +110,9 @@ export default function CreateSessionScreen(){
  const [createdId,setCreatedId]=useState<number|null>(null);
  const [form,setForm]=useState<CreateSessionForm>(emptySessionForm);
  // "Quem pode?" opens this screen with the chosen day and time already filled in.
+ // "Criar jogo neste campo": open at the booked venue, then link the game to that booking.
+ const bookedVenueId=typeof params.venueId==='string'&&/^[1-9][0-9]*$/.test(params.venueId)?Number(params.venueId):null;
+ const bookingId=typeof params.bookingId==='string'&&/^[1-9][0-9]*$/.test(params.bookingId)?Number(params.bookingId):null;
  const presetDay=typeof params.day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.day)?params.day:'';
  const presetTime=typeof params.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(params.time)?params.time:'';
  const withPresetWhen=(value:CreateSessionForm):CreateSessionForm=>presetDay&&presetTime?{...value,day:presetDay,time:presetTime}:value;
@@ -278,7 +282,7 @@ export default function CreateSessionScreen(){
   }
  },[auth.token,auth.username,requestedCommunityId,params.sport]);
  useFocusEffect(useCallback(()=>{
-  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'')+'|'+presetDay+'|'+presetTime+'|'+String(repeatFrom||'');
+  const identity=String(auth.username||'')+'|'+String(auth.token||'')+'|'+String(requestedCommunityId||'')+'|'+String(params.sport||'')+'|'+presetDay+'|'+presetTime+'|'+String(repeatFrom||'')+'|'+String(bookedVenueId||'')+'|'+String(bookingId||'');
   if(communityLoadIdentity.current!==identity){
    communityLoadIdentity.current=identity;
    confirmedCreation.current=null;setCreatedId(null);
@@ -304,6 +308,11 @@ export default function CreateSessionScreen(){
    setVenueQuery('');setVenueCityQuery('');
    setVenueChosen(null);clearVenueSearch();
    locationRequest.current++;setLocationMode('saved');setMapsLink('');setLocationAccuracy(null);setLocationMessage('');setLocationLoading(false);
+   if(bookedVenueId){
+    void venueDetails(bookedVenueId,auth.token).then(v=>{
+     if(communityLoadIdentity.current===identity)useVenue(v);
+    }).catch(()=>{/* The organiser can still choose the venue by hand. */});
+   }
    createOperation.current++;setBusy(locked.current);setError('');
   }
   setBusy(locked.current);
@@ -523,6 +532,10 @@ export default function CreateSessionScreen(){
      if(repeatFrom&&actorToken){
       try{const summary=await inviteFromPreviousSession(result.id,repeatFrom,actorToken);Alert.alert(t('Jogar outra vez'),repeatInviteMessage(summary));}
       catch{Alert.alert(t('Jogar outra vez'),t('A sessão foi criada, mas não foi possível convidar os jogadores da última vez. Podes convidá-los na sessão.'));}
+     }
+     if(bookingId&&actorToken){
+      // A failed link never blocks opening the new game.
+      try{await linkBookingToSession(bookingId,result.id,actorToken);}catch{/* still open the game */}
      }
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){

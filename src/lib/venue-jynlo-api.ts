@@ -14,6 +14,7 @@ export interface VenueBooking {
  sessionId:number|null;createdAt:string;decidedAt:string|null;
  paymentMethod?:'MBWAY'|'IN_PERSON'|null;mbwayPhone?:string|null;paidClaimedAt?:string|null;paidConfirmedAt?:string|null;
 }
+export interface VenueAvailability {venueId:number;name:string;city:string|null;district:string|null;latitude:number|null;longitude:number|null;paymentMethod:'MBWAY'|'IN_PERSON'|null;courts:CourtSlots[]}
 export interface ManagedVenue {venueId:number;name:string;city:string;pendingRequests:number;acceptsBookings:boolean}
 export interface CourtInput {id?:number|null;name:string;sport?:string|null;priceCents?:number|null;slotMinutes:number;active:boolean}
 
@@ -24,6 +25,16 @@ export const claimVenue=(venueId:number,token:string,roleDescription:string,cont
  request<unknown>(`/api/venues/${venueId}/claims`,{token,method:'POST',body:{roleDescription,contactPhone}});
 export const requestBooking=(venueId:number,token:string,courtId:number,startAt:string,note:string|null,sessionId:number|null)=>
  request<VenueBooking>(`/api/venues/${venueId}/booking-requests`,{token,method:'POST',body:{courtId,startAt,note,sessionId}});
+/** Free slots across every venue that takes Jynlo bookings, for one day. */
+export function searchCourts(date:string,sport:string,place:string,from:string):Promise<VenueAvailability[]>{
+ const q=['date='+encodeURIComponent(date)];
+ if(sport.trim())q.push('sport='+encodeURIComponent(sport.trim()));
+ if(place.trim())q.push('place='+encodeURIComponent(place.trim()));
+ if(from)q.push('from='+encodeURIComponent(from));
+ return request<VenueAvailability[]>('/api/venue-bookings/search?'+q.join('&'));
+}
+export const linkBookingToSession=(bookingId:number,sessionId:number,token:string)=>
+ request<VenueBooking>(`/api/venue-bookings/${bookingId}/session`,{token,method:'POST',body:{sessionId}});
 export const managerOffer=(venueId:number,token:string)=>request<BookingOffer>(`/api/venues/${venueId}/management/offer`,{token});
 export const saveCourts=(venueId:number,token:string,courts:CourtInput[])=>
  request<BookingOffer>(`/api/venues/${venueId}/management/courts`,{token,method:'PUT',body:courts});

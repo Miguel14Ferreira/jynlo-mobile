@@ -169,6 +169,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="venues/[id]/suggest-edit" options={{title:t("Sugerir correção")}}/>
     <Stack.Screen name="venues/[id]/manage" options={{title:t('Gestão do recinto')}}/>
     <Stack.Screen name="venue-bookings" options={{title:t('As minhas reservas')}}/>
+    <Stack.Screen name="book-court" options={{title:t('Reservar campo')}}/>
     <Stack.Screen name="sessions/create" options={{title:t('Criar sessão')}}/>
     <Stack.Screen name="social/[username]/index" options={{title:t('Perfil')}}/>
     <Stack.Screen name="social/[username]/[kind]" options={{title:t('Seguidores e seguindo')}}/>

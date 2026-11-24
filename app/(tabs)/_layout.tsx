@@ -58,8 +58,10 @@ export default function TabsLayout(){
   close();
   router.push({pathname:'/communities/[id]/championships/create',params:{id:String(id)}});
  };
- const action=(destination:'session'|'post'|'community'|'team'|'tournament'|'venue')=>{
+ const action=(destination:'session'|'post'|'community'|'team'|'tournament'|'venue'|'book')=>{
   close();
+  // Anyone can look at free slots; signing in is asked only to send the request.
+  if(destination==='book'){router.push('/book-court' as never);return;}
   if(!auth.token||!auth.username){
    router.push({pathname:'/login',params:{redirect:'/'}});
    return;
@@ -111,6 +113,9 @@ export default function TabsLayout(){
        </Pressable>
        <Pressable accessibilityRole="button" style={styles.actionCard} onPress={()=>action('community')}>
         <JynloIcon name="community" size={27} color={colors.accent}/><Text style={styles.actionTitle}>{t('Comunidade')}</Text><Text style={styles.actionHint}>{t('Junta a tua malta')}</Text>
+       </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Reservar campo')} accessibilityHint={t('Vê os horários livres e reserva')} style={[styles.actionCard,styles.teamCard]} onPress={()=>action('book')}>
+        <View style={styles.teamIcon}><JynloIcon name="calendar" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>{t('Reservar campo')}</Text><Text style={styles.actionHint}>{t('Vê os horários livres e reserva')}</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>
        </Pressable>
        <Pressable accessibilityRole="button" accessibilityLabel={t('Criar torneio')} accessibilityHint={t('Organiza um torneio ou liga numa comunidade tua')} style={[styles.actionCard,styles.teamCard]} onPress={()=>action('tournament')}>
         <View style={styles.teamIcon}><JynloIcon name="championship" size={27} color={colors.accent}/></View><View style={styles.teamCopy}><Text style={styles.actionTitle}>{t('Torneio')}</Text><Text style={styles.actionHint}>{t('Liga, eliminatórias ou grupos, com classificação automática')}</Text></View><JynloIcon name="chevron-right" size={23} color={colors.accent}/>

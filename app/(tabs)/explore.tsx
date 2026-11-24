@@ -32,6 +32,7 @@ const DISCOVER:{label:string;caption:string;icon:JynloIconName;href:string}[]=[
  {label:'Comunidades',caption:'Clubes e grupos',icon:'community',href:'/communities'},
  {label:'Torneios',caption:'Ligas e competições',icon:'tournament',href:'/tournaments'},
  {label:'Recintos',caption:'Campos e pavilhões',icon:'venue',href:'/venues'},
+ {label:'Reservar campo',caption:'Horários livres',icon:'calendar',href:'/book-court'},
  {label:'Equipas',caption:'A tua e convites',icon:'championship',href:'/teams'},
  {label:'Pessoas',caption:'Quem joga perto',icon:'profile',href:'/people'},
  {label:'Diretos',caption:'Jogos em direto',icon:'video',href:'/live'},

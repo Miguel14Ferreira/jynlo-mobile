@@ -63,4 +63,12 @@ function canCancel(booking,now){
  return !!booking&&(booking.status==='PENDING'||booking.status==='CONFIRMED')&&Date.parse(booking.startAt)>t;
 }
 
-module.exports={parsePrice,formatPrice,priceField,lisbonTime,lisbonDateTime,nextLisbonDays,validateHours,canCancel};
+/** Params that open game creation at the booked venue, day and time, linked to the booking. */
+function createGameParams(booking,sport){
+ const p=lisbonParts(new Date(booking.startAt));
+ const params={venueId:String(booking.venueId),bookingId:String(booking.id),day:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};
+ if(sport&&String(sport).trim())params.sport=String(sport).trim();
+ return params;
+}
+
+module.exports={parsePrice,formatPrice,priceField,lisbonTime,lisbonDateTime,nextLisbonDays,validateHours,canCancel,createGameParams};
