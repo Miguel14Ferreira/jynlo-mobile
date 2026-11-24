@@ -18,3 +18,11 @@ test('As minhas reservas only once venues take bookings',()=>{
  assert.ok(n.availableNavTabs(false,true).some(tab=>tab.id==='my-bookings'));
  assert.deepEqual(n.resolveNavTabs(['my-bookings'],false),['explore','messages']);
 });
+
+test('a venue manager starts with the venue panel where Explorar would be',()=>{
+ const {resolveNavTabs}=require('../src/lib/nav-tabs.cjs');
+ const assert=require('node:assert/strict');
+ assert.deepEqual(resolveNavTabs(null,true),['my-venues','messages']);
+ assert.deepEqual(resolveNavTabs(null,false),['explore','messages']);
+ assert.deepEqual(resolveNavTabs(['explore','messages'],true),['explore','messages']);
+});

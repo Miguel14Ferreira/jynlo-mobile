@@ -13,10 +13,12 @@ const NAV_TAB_CATALOG=[
  {id:'venues',label:'Recintos',icon:'venue',href:'/venues'},
  {id:'notifications',label:'Notificações',icon:'notifications',href:'/notifications'},
  {id:'my-bookings',label:'As minhas reservas',icon:'calendar',href:'/venue-bookings',bookingsOnly:true},
- {id:'my-venues',label:'Os meus recintos',icon:'venue',href:'/venue-bookings',managerOnly:true},
+ {id:'my-venues',label:'O meu recinto',icon:'venue',href:'/venue-bookings',managerOnly:true},
 ];
 const NAV_SLOTS=2;
 const DEFAULT_NAV_TABS=['explore','messages'];
+/** Someone who runs a venue starts with the venue panel where Explorar would be (they can change it). */
+const MANAGER_DEFAULT_NAV_TABS=['my-venues','messages'];
 
 /** "As minhas reservas" only appears once some venue takes bookings on Jynlo. */
 function availableNavTabs(manager,bookingsOpen=false){return NAV_TAB_CATALOG.filter(tab=>(!tab.managerOnly||manager)&&(!tab.bookingsOnly||bookingsOpen));}
@@ -27,7 +29,7 @@ function resolveNavTabs(saved,manager,bookingsOpen=false){
  const picked=[];
  const take=id=>{if(typeof id==='string'&&allowed.has(id)&&!picked.includes(id)&&picked.length<NAV_SLOTS)picked.push(id);};
  if(Array.isArray(saved))saved.forEach(take);
- DEFAULT_NAV_TABS.forEach(take);
+ (manager?MANAGER_DEFAULT_NAV_TABS:DEFAULT_NAV_TABS).forEach(take);
  availableNavTabs(manager,bookingsOpen).forEach(tab=>take(tab.id));
  return picked;
 }
@@ -42,4 +44,4 @@ function setNavSlot(ids,slot,id){
  return next;
 }
 
-module.exports={NAV_TAB_CATALOG,NAV_SLOTS,DEFAULT_NAV_TABS,availableNavTabs,resolveNavTabs,setNavSlot};
+module.exports={NAV_TAB_CATALOG,NAV_SLOTS,DEFAULT_NAV_TABS,MANAGER_DEFAULT_NAV_TABS,availableNavTabs,resolveNavTabs,setNavSlot};

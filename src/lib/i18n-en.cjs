@@ -3146,6 +3146,7 @@ const EN={
   "Os membros deixam de poder responder.": "Members can no longer reply.",
   "Os meus jogos": "My games",
   "Os meus pedidos": "My requests",
+  "O meu recinto": "My venue",
   "Os meus recintos": "My venues",
   "Os novos recintos e as correções são analisados por moderadores antes de serem publicados.": "New venues and corrections are reviewed by moderators before being published.",
   "Os novos seguidores precisam da tua aprovação. Os seguidores existentes mantêm acesso.": "New followers need your approval. Existing followers keep access.",
