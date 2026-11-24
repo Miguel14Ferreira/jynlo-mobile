@@ -123,3 +123,50 @@ appId: com.jynlo.app
     timeout: 5000
 - takeScreenshot: 19_chat_comunidade_teclado
 - hideKeyboard
+- inputText: "Isto é um teste do teclado"
+- takeScreenshot: 20_chat_comunidade_a_escrever
+- eraseText: 40
+- hideKeyboard
+# Teclado em formulários: o campo e o texto escrito têm de ficar à vista.
+- openLink: "jynlo://feedback"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "(Mensagem|Message)"
+    timeout: 10000
+    optional: true
+- tapOn:
+    text: "(Mensagem|Message)"
+    index: 0
+    optional: true
+- inputText: "Teste do teclado no formulário de opinião"
+- takeScreenshot: 21_opiniao_teclado
+- hideKeyboard
+- openLink: "jynlo://sessions/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "(Hora adicional|Extra time).*"
+    timeout: 20000
+    optional: true
+- tapOn:
+    text: "(Hora adicional|Extra time).*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 22_criar_jogo_teclado
+- hideKeyboard
+- openLink: "jynlo://edit-profile"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "(Pesquisar modalidades|Search sports)"
+    timeout: 15000
+    optional: true
+- tapOn:
+    text: "(Pesquisar modalidades|Search sports)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 23_editar_perfil_teclado
+- hideKeyboard

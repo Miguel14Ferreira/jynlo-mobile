@@ -1,4 +1,5 @@
 import {KeyboardFrame} from '../../src/components/KeyboardFrame';
+import {ChatMentionText} from '../../src/components/ChatMentions';
 import {useChatViewing} from '../../src/lib/chat-viewing';
 import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
 import {t} from '../../src/lib/i18n';
@@ -679,7 +680,7 @@ export default function DirectConversation(){
     giphyImageUrl(m.text)?<Image source={{uri:giphyImageUrl(m.text)!}} resizeMode="contain" style={styles.gif}
       accessibilityLabel={t('GIF enviado na conversa')}/>:
     m.attachmentName&&(!m.text||m.text.trim()===m.attachmentName.trim())?null:
-    <Text style={styles.body}>{m.text||t('Mensagem sem texto')}</Text>}
+    (m.text?<ChatMentionText body={m.text} style={styles.body}/>:<Text style={styles.body}>{t('Mensagem sem texto')}</Text>)}
    {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="direct" conversationId={peer} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}
      onAuthorizationError={()=>{setMessages([]);void refresh(false,generation.current);}}/>):null}
    {!m.deletedAt&&chatLocationUrl(m.text)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}

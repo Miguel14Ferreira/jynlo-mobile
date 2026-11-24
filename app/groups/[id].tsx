@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {ChatMentionText} from '../../src/components/ChatMentions';
 import {useChatViewing} from '../../src/lib/chat-viewing';
 import {t} from '../../src/lib/i18n';
 import {ActivityIndicator,Alert,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -307,7 +308,7 @@ export default function GroupChatScreen(){
     {m.deleted?<Text style={[styles.text,styles.deleted]}>{t('Mensagem apagada')}</Text>:
      gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel={t('GIF enviado no grupo')}/>:
      readPoll(m.text)?<PollCard poll={readPoll(m.text)!} kind="private" conversationId={groupId} messageId={m.id} token={auth.token}/>:
-     onlyFileName?null:<Text style={[styles.text]} selectable>{m.text}</Text>}
+     onlyFileName?null:<ChatMentionText body={m.text} style={styles.text}/>}
     {files.map(file=><SecureChatAttachment key={file.index} index={file.index} scope="private" conversationId={groupId} messageId={m.id}
      token={auth.token} name={file.name} mime={file.mime} size={file.size} onAuthorizationError={()=>{void refresh(true);}}/>)}
     {location?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
