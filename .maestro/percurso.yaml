@@ -85,3 +85,41 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - takeScreenshot: 16_comunidades
+# Teclado: o campo tem de ficar visível ao escrever (criação de equipa).
+- openLink: "jynlo://teams?create=1"
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn:
+    text: "(\\+ Criar nova equipa|\\+ Create a new team|Create new team)"
+    optional: true
+- scrollUntilVisible:
+    element: "(Localização|Location)"
+    timeout: 10000
+    optional: true
+- tapOn:
+    text: "(Localização|Location)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 17_equipa_teclado
+- hideKeyboard
+# Chat da comunidade em ecrã inteiro (primeira comunidade da conta, se houver).
+- openLink: "jynlo://communities"
+- waitForAnimationToEnd:
+    timeout: 8000
+- tapOn:
+    id: "community-card-0"
+    optional: true
+- tapOn:
+    text: "Chat"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 18_chat_comunidade
+- tapOn:
+    text: "(Escreve uma mensagem…|Write a message…)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 19_chat_comunidade_teclado
+- hideKeyboard

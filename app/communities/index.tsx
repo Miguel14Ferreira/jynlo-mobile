@@ -89,9 +89,9 @@ export default function CommunitiesScreen(){
       <Text style={styles.sub}>{mode==='mine'?t('Cria a tua primeira comunidade ou explora as existentes.'):t('Experimenta outro nome ou pesquisa novamente.')}</Text>
       {mode==='mine'?<Button title={t('Explorar comunidades')} secondary onPress={()=>setMode('explore')}/>:<Button title={t('Limpar pesquisa')} secondary onPress={()=>{setTerm('');setDebouncedTerm('');setSportFilter('');setSportSearch('');}}/>}
     </View>:null}
-    {list.map(item=><CommunityCard key={item.id} community={item}
+    {list.map((item,index)=><View key={item.id} testID={index===0?'community-card-0':undefined} collapsable={false}><CommunityCard community={item}
       memberCount={'memberCount' in item?(item as CommunityGroup).memberCount:undefined}
-      role={'myRole' in item?(item as CommunityGroup).myRole:null} onPress={()=>open(item.id)}/>)}
+      role={'myRole' in item?(item as CommunityGroup).myRole:null} onPress={()=>open(item.id)}/></View>)}
     {DEMO_MODE?<Text style={styles.note}>{t('Demonstração: cria uma comunidade, termina sessão e entra como André para aceitares o convite.')}</Text>:null}
   </Page>;
 }
