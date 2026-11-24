@@ -1,5 +1,5 @@
 import {fetch as expoFetch} from 'expo/fetch';
-import {File} from 'expo-file-system';
+import {File,Paths} from 'expo-file-system';
 import type {DocumentPickerAsset} from 'expo-document-picker';
 import {API_BASE,DEMO_MODE,request} from './api';
 
@@ -10,14 +10,14 @@ export type TeamRosterEntry={id:number;name:string;shirtNumber:number|null;posit
 export type TeamRosterSuggestion={entryId:number;entryName:string;shirtNumber:number|null;profileId:number;username:string;fullName:string|null};
 export type TeamRosterClaim={teamId:number;teamName:string;teamSlug:string;name:string;shirtNumber:number|null;position:string|null;alreadyLinked:boolean};
 export const ROSTER_MAX_BYTES=2*1024*1024;
-const ACCEPTED=/\.(xlsx|xls|csv|tsv)$/i;
+const ACCEPTED=/\.(xlsx|xls|ods|csv|tsv|txt)$/i;
 
 function base(teamId:number){
  if(!Number.isSafeInteger(teamId)||teamId<=0)throw Error('Equipa inválida.');
  return '/api/teams/'+teamId+'/roster';
 }
 export function checkRosterAsset(asset:Pick<DocumentPickerAsset,'name'|'size'>){
- if(!ACCEPTED.test(asset.name||''))throw Error('Escolhe um ficheiro .xlsx, .xls, .csv ou .tsv.');
+ if(!ACCEPTED.test(asset.name||''))throw Error('Escolhe um ficheiro Excel (.xlsx, .xls), LibreOffice (.ods), CSV ou TSV.');
  if(typeof asset.size==='number'&&asset.size>ROSTER_MAX_BYTES)throw Error('O ficheiro não pode ultrapassar 2 MB.');
 }
 async function upload<T>(teamId:number,token:string|null,asset:DocumentPickerAsset,confirm:boolean):Promise<T>{
@@ -42,6 +42,14 @@ async function upload<T>(teamId:number,token:string|null,asset:DocumentPickerAss
   }
   return await response.json() as T;
  }finally{clearTimeout(timeout);}
+}
+/** A pasted list (one player per line) is sent as a small text file through the same preview/import flow. */
+export async function pastedRosterAsset(text:string):Promise<DocumentPickerAsset>{
+ const clean=text.trim().slice(0,20000);
+ if(!clean)throw Error('Cola pelo menos um jogador.');
+ const file=new File(Paths.cache,'jynlo-lista-'+Date.now()+'.txt');
+ await file.write(clean);
+ return {uri:file.uri,name:'lista.txt',size:file.size??clean.length,mimeType:'text/plain',lastModified:Date.now()} as DocumentPickerAsset;
 }
 export const previewRosterImport=(teamId:number,token:string|null,asset:DocumentPickerAsset)=>upload<TeamRosterPreview>(teamId,token,asset,false);
 export const importRoster=(teamId:number,token:string|null,asset:DocumentPickerAsset)=>upload<{invited:number;added:number;skipped:number}>(teamId,token,asset,true);

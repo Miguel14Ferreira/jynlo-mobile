@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import {t} from '../lib/i18n';
 import {C} from '../lib/theme';
 import {Button,Message} from './UI';
-import {importRoster,previewRosterImport,removeRosterEntry,teamRoster,checkRosterAsset,rosterClaimLink,linkRosterEntry,
+import {importRoster,pastedRosterAsset,previewRosterImport,removeRosterEntry,teamRoster,checkRosterAsset,rosterClaimLink,linkRosterEntry,
  unlinkRosterEntry,updateRosterEntry,rosterSuggestions,setMemberLine,
  type RosterRowStatus,type TeamRosterEntry,type TeamRosterPreview,type TeamRosterSuggestion} from '../lib/team-roster-api';
 import {findSportsTeamPlayers,type SportsTeamMember,type SportsTeamPlayerCandidate} from '../lib/sports-teams-api';
@@ -13,6 +13,7 @@ import {findSportsTeamPlayers,type SportsTeamMember,type SportsTeamPlayerCandida
 export default function TeamRosterImport({teamId,token,members=[],onImported}:{teamId:number;token:string|null;members?:SportsTeamMember[];onImported?:()=>void}){
  const [asset,setAsset]=useState<DocumentPicker.DocumentPickerAsset|null>(null);
  const [preview,setPreview]=useState<TeamRosterPreview|null>(null);
+ const [pasteOpen,setPasteOpen]=useState(false),[pasteText,setPasteText]=useState('');
  const [entries,setEntries]=useState<TeamRosterEntry[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [suggestions,setSuggestions]=useState<TeamRosterSuggestion[]>([]);
@@ -73,6 +74,16 @@ export default function TeamRosterImport({teamId,token,members=[],onImported}:{t
   },()=>{setLinking(null);load();onImported?.();});
  }
  useEffect(()=>{load();},[load]);
+ async function usePasted(){
+  if(busy)return;
+  setError('');setNotice('');setPreview(null);
+  try{
+   const next=await pastedRosterAsset(pasteText);
+   setAsset(next);setBusy(true);
+   setPreview(await previewRosterImport(teamId,token,next));
+  }catch(e){setError(e instanceof Error?e.message:t('Não foi possível ler o ficheiro.'));}
+  finally{setBusy(false);}
+ }
  async function choose(){
   if(busy)return;
   setError('');setNotice('');setPreview(null);
@@ -109,13 +120,21 @@ export default function TeamRosterImport({teamId,token,members=[],onImported}:{t
   :status==='ALREADY_IN_TEAM'?t('Já está na equipa'):status==='DUPLICATE'?t('Repetido')
   :status==='UNKNOWN_USERNAME'?t('Utilizador não encontrado · fica sem conta'):t('Sem conta Jynlo');
  return <View style={styles.box}>
-  <Text style={styles.heading}>{t('Tens o plantel num Excel?')}</Text>
+  <Text style={styles.heading}>{t('Já tens o plantel noutro sítio?')}</Text>
   <Text style={styles.note}>{t('Importa nome, número e posição. Quem tiver o utilizador Jynlo na folha recebe convite; os restantes ficam no plantel e só tu os vês. Emails e telefones do ficheiro não são lidos.')}</Text>
   <Pressable accessibilityRole="link" onPress={()=>void Linking.openURL('https://jynlosports.com/assets/modelo-jynlo-plantel.csv')}>
    <Text style={styles.link}>{t('Descarregar modelo')}</Text></Pressable>
   {error?<Message tone="error">{error}</Message>:null}
   {notice?<Message>{notice}</Message>:null}
   {!preview?<Button secondary title={busy?t('A ler o ficheiro…'):t('Escolher ficheiro')} disabled={busy} onPress={()=>void choose()}/>:null}
+  {!preview?<Button secondary title={pasteOpen?t('Fechar lista'):t('Colar lista')} disabled={busy} onPress={()=>setPasteOpen(v=>!v)}/>:null}
+  {!preview?<Text style={styles.note}>{t('Aceitamos Excel (.xlsx, .xls), LibreOffice (.ods), CSV e TSV. No Google Sheets ou no Numbers: Ficheiro → Transferir/Exportar → Excel ou CSV.')}</Text>:null}
+  {pasteOpen&&!preview?<View style={{gap:8}}>
+   <Text style={styles.note}>{t('Um jogador por linha, por exemplo «10 João Silva» ou «João Silva; 10; Defesa». Também podes colar células copiadas de uma folha de cálculo.')}</Text>
+   <TextInput multiline value={pasteText} onChangeText={setPasteText} maxLength={20000} editable={!busy} placeholder={'10 João Silva\n7 Rui Costa; Médio'}
+    placeholderTextColor={C.muted} accessibilityLabel={t('Colar lista')} style={styles.pasteInput}/>
+   <Button title={t('Ver plantel')} disabled={busy||!pasteText.trim()} onPress={()=>void usePasted()}/>
+  </View>:null}
   {preview?<View style={styles.preview}>
    <Text style={styles.strong}>{t('Vamos enviar {a} convites e adicionar {b} jogadores sem conta.',{a:preview.invites,b:preview.newPlayers})}</Text>
    {preview.skipped?<Text style={styles.note}>{t('{n} linhas ignoradas (repetidas ou já na equipa).',{n:preview.skipped})}</Text>:null}
@@ -188,6 +207,7 @@ export default function TeamRosterImport({teamId,token,members=[],onImported}:{t
  </View>;
 }
 const styles=StyleSheet.create({
+ pasteInput:{minHeight:120,maxHeight:220,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#061F2E'},
  box:{marginTop:14,padding:14,gap:10,borderRadius:14,borderWidth:1,borderStyle:'dashed',borderColor:C.border},
  heading:{color:C.white,fontSize:16,fontWeight:'900'},note:{color:C.muted,fontSize:12,lineHeight:18},
  link:{color:C.mint,fontWeight:'800',fontSize:13},preview:{gap:6},strong:{color:C.white,fontWeight:'800',fontSize:13},

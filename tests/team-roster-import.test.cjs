@@ -5,7 +5,7 @@ const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8');
 test('team roster: owner imports a squad file with preview, never sending contacts',()=>{
  const api=read('src/lib/team-roster-api.ts'),ui=read('src/components/TeamRosterImport.tsx'),screen=read('app/teams/[id].tsx');
  assert.match(api,/\/roster'/);assert.match(api,/'\/import'.*'\/import\/preview'/);
- assert.match(api,/xlsx\|xls\|csv\|tsv/);assert.match(api,/2\*1024\*1024/);
+ assert.match(api,/xlsx\|xls\|ods\|csv\|tsv\|txt/);assert.match(api,/2\*1024\*1024/);
  assert.match(ui,/previewRosterImport\(/);assert.match(ui,/importRoster\(/);
  assert.match(ui,/Emails e telefones do ficheiro não são lidos/);
  assert.match(screen,/<TeamRosterImport teamId=\{team\.id\}/);
