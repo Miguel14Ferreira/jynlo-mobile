@@ -147,13 +147,10 @@ appId: com.jynlo.app
 - openLink: "jynlo://sessions/create"
 - waitForAnimationToEnd:
     timeout: 8000
-- scrollUntilVisible:
-    element: "(Hora adicional|Extra time).*"
-    timeout: 20000
-    optional: true
 - tapOn:
-    text: "(Hora adicional|Extra time).*"
+    text: "(Procurar entre|Search among).*"
     optional: true
+- inputText: "Pad"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 22_criar_jogo_teclado
@@ -162,12 +159,18 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "(Pesquisar modalidades|Search sports)"
-    timeout: 15000
+    element: "(Adicionar modalidades|Add sports)"
+    timeout: 20000
     optional: true
+- tapOn:
+    text: "(Adicionar modalidades|Add sports)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
 - tapOn:
     text: "(Pesquisar modalidades|Search sports)"
     optional: true
+- inputText: "Ten"
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 23_editar_perfil_teclado
