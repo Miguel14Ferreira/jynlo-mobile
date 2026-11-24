@@ -56,6 +56,8 @@ export default function NotificationSettingsScreen(){
    <View style={styles.panel}>
     <Row label={t('Avisos na aplicação e no telemóvel')} value={draft.inAppEnabled} disabled={busy}
      onChange={value=>set({inAppEnabled:value})}/>
+    <Row label={t('Mostrar quem escreveu e a mensagem nos avisos do telemóvel')} value={draft.inAppEnabled&&!draft.disabledInAppTypes.includes('CHAT_PREVIEW')} disabled={busy||!draft.inAppEnabled}
+     onChange={value=>setDraft(current=>current?toggleType(current,'inApp','CHAT_PREVIEW',value):current)}/>
     <Row label={t('Emails opcionais')} value={draft.emailEnabled} disabled={busy} onChange={value=>set({emailEnabled:value})}/>
     <Text style={styles.note}>{t('Os emails de segurança, recuperação de conta e confirmação de endereço continuam sempre ativos.')}</Text>
    </View>

@@ -2395,6 +2395,7 @@ const EN={
   "Mostrar outras ferramentas de criação": "Show other create tools",
   "Mostrar participantes da sessão": "Show game players",
   "Mostrar pessoas que gostaram": "Show people who liked",
+  "Mostrar quem escreveu e a mensagem nos avisos do telemóvel": "Show who wrote and the message in phone alerts",
   "Mostrar quem gostou": "Show who liked",
   "Mostrar reações à Story": "Show Story reactions",
   "Mostrar todas as notificações": "Show all notifications",
