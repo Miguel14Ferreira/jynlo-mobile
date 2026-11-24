@@ -435,6 +435,7 @@ const EN={
   "Ainda não há tempos válidos associados ao torneio.": "There are no valid times linked to the tournament yet.",
   "Ainda não há torneios associados.": "There are no linked tournaments yet.",
   "Ainda não há visualizações registadas.": "No views recorded yet.",
+  "Ainda não pediste nenhuma reserva. Procura um recinto com o selo “Aceita reservas na Jynlo”.": "You haven't requested any booking yet. Look for a venue with the “Takes bookings on Jynlo” badge.",
   "Ainda não pediste nenhuma reserva. Vê os horários livres em “Reservar campo”.": "You haven't requested any booking yet. See the free slots in “Book a court”.",
   "Ainda não pertence a comunidades.": "Not in any community yet.",
   "Ainda não recebeste respostas privadas às tuas Stories.": "You haven't received private replies to your Stories yet.",

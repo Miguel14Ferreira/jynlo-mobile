@@ -16,6 +16,7 @@ import OfflineSessionMap from '../../src/components/OfflineSessionMap';
 import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {filterChoices} from '../../src/lib/session-level-core.cjs';
 import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
+import {useBookingsOpen} from '../../src/lib/use-bookings-open';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -40,6 +41,7 @@ const DISCOVER:{label:string;caption:string;icon:JynloIconName;href:string}[]=[
 
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
+ const bookingsOpen=useBookingsOpen();
  const [sessions,setSessions]=useState<SessionSummary[]>([]);
  const [discoveredCustomSports,setDiscoveredCustomSports]=useState<string[]>([]);
  const [display,setDisplay]=useState<'map'|'list'>('list');
@@ -121,7 +123,7 @@ export default function DiscoverScreen(){
    </Pressable>
    {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
    <View style={styles.discover} accessibilityLabel={t('Descobrir mais na Jynlo')}>
-     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={t(item.label)+': '+t(item.caption)}
+     {DISCOVER.filter(item=>item.href!=='/book-court'||bookingsOpen).map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={t(item.label)+': '+t(item.caption)}
        onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
        <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
         <Text style={styles.discoverLabel} numberOfLines={2}>{t(item.label)}</Text></View>

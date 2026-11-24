@@ -10,12 +10,14 @@ import {cancelBooking,managedVenues,markBookingPaid,myBookings,type ManagedVenue
 import {phoneLabel} from '../src/lib/session-payments-api';
 import {Share} from 'react-native';
 import {canCancel,createGameParams,formatPrice,lisbonDateTime,lisbonTime} from '../src/lib/venue-jynlo-booking.cjs';
+import {useBookingsOpen} from '../src/lib/use-bookings-open';
 
 /** "As minhas reservas": court requests the person made and the venues they manage. */
 export default function VenueBookingsScreen(){
  const auth=useAuth();
  const router=useRouter();
  const {language}=useLanguage();
+ const bookingsOpen=useBookingsOpen();
  const [bookings,setBookings]=useState<VenueBooking[]>([]);
  const [managed,setManaged]=useState<ManagedVenue[]>([]);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -69,8 +71,13 @@ export default function VenueBookingsScreen(){
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Os meus pedidos')}</Text>
    {!loading&&!bookings.length?<>
-    <Text style={styles.muted}>{t('Ainda não pediste nenhuma reserva. Vê os horários livres em “Reservar campo”.')}</Text>
-    <Button title={t('Reservar campo')} onPress={()=>router.push('/book-court' as never)}/>
+    {bookingsOpen?<>
+     <Text style={styles.muted}>{t('Ainda não pediste nenhuma reserva. Vê os horários livres em “Reservar campo”.')}</Text>
+     <Button title={t('Reservar campo')} onPress={()=>router.push('/book-court' as never)}/>
+    </>:<>
+     <Text style={styles.muted}>{t('Ainda não pediste nenhuma reserva. Procura um recinto com o selo “Aceita reservas na Jynlo”.')}</Text>
+     <Button title={t('Ver recintos')} onPress={()=>router.push('/venues')}/>
+    </>}
    </>:null}
    {bookings.map(b=><View key={b.id} style={styles.row}>
     <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(b.venueId)}})}>
