@@ -20,6 +20,7 @@ import type {CommunityGroup} from '../../src/lib/types';
 import {sportName} from '../../src/lib/sport-names.cjs';
 import {managedVenues,type ManagedVenue} from '../../src/lib/venue-jynlo-api';
 import {NavTabsEditor} from '../../src/components/NavTabsEditor';
+import {useBookingsOpen} from '../../src/lib/use-bookings-open';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -30,6 +31,7 @@ export default function ProfileScreen(){
   const router=useRouter();const auth=useAuth();
   const [myVenues,setMyVenues]=React.useState<ManagedVenue[]>([]);
   const [navEditorOpen,setNavEditorOpen]=React.useState(false);
+  const bookingsOpen=useBookingsOpen();
   React.useEffect(()=>{if(!auth.token)return;let alive=true;managedVenues(auth.token).then(l=>{if(alive)setMyVenues(l||[]);}).catch(()=>{});return()=>{alive=false;};},[auth.token]);
   const [confirmUsername,setConfirmUsername]=useState('');
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
@@ -220,7 +222,7 @@ export default function ProfileScreen(){
     <Button title={t('As minhas sessões')} secondary onPress={()=>router.push('/my-sessions')}/>
     <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
     {myVenues.length?<Button title={t('Os meus recintos')} secondary onPress={()=>myVenues.length===1?router.push({pathname:'/venues/[id]/manage',params:{id:String(myVenues[0]!.venueId)}} as never):router.push('/venue-bookings')}/>:null}
-    <Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>
+    {bookingsOpen?<Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>:null}
     <Button title={t('Enviar opinião ou reportar problema')} secondary onPress={()=>router.push('/feedback')}/>
     {!auth.username?<><Button title={DEMO_MODE?t('Experimentar conta de demonstração'):t('Iniciar sessão')} onPress={()=>router.push('/login')}/><Button title={t('Voltar às boas-vindas')} secondary onPress={()=>router.push('/welcome')}/></>:
       <Button title={t('Terminar sessão')} secondary onPress={()=>{void auth.logout().then(

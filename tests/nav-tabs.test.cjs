@@ -13,3 +13,8 @@ test('picking a section already in the other slot swaps them',()=>{
  assert.deepEqual(n.setNavSlot(['explore','messages'],0,'messages'),['messages','explore']);
  assert.deepEqual(n.setNavSlot(['explore','messages'],1,'teams'),['explore','teams']);
 });
+test('As minhas reservas only once venues take bookings',()=>{
+ assert.ok(!n.availableNavTabs(false).some(tab=>tab.id==='my-bookings'));
+ assert.ok(n.availableNavTabs(false,true).some(tab=>tab.id==='my-bookings'));
+ assert.deepEqual(n.resolveNavTabs(['my-bookings'],false),['explore','messages']);
+});

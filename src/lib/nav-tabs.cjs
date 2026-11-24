@@ -12,22 +12,23 @@ const NAV_TAB_CATALOG=[
  {id:'tournaments',label:'Torneios',icon:'tournament',href:'/tournaments'},
  {id:'venues',label:'Recintos',icon:'venue',href:'/venues'},
  {id:'notifications',label:'Notificações',icon:'notifications',href:'/notifications'},
- {id:'my-bookings',label:'As minhas reservas',icon:'calendar',href:'/venue-bookings'},
+ {id:'my-bookings',label:'As minhas reservas',icon:'calendar',href:'/venue-bookings',bookingsOnly:true},
  {id:'my-venues',label:'Os meus recintos',icon:'venue',href:'/venue-bookings',managerOnly:true},
 ];
 const NAV_SLOTS=2;
 const DEFAULT_NAV_TABS=['explore','messages'];
 
-function availableNavTabs(manager){return NAV_TAB_CATALOG.filter(tab=>!tab.managerOnly||manager);}
+/** "As minhas reservas" only appears once some venue takes bookings on Jynlo. */
+function availableNavTabs(manager,bookingsOpen=false){return NAV_TAB_CATALOG.filter(tab=>(!tab.managerOnly||manager)&&(!tab.bookingsOnly||bookingsOpen));}
 
 /** Exactly NAV_SLOTS ids, no repeats: the saved choice where valid, gaps filled from the defaults. */
-function resolveNavTabs(saved,manager){
- const allowed=new Set(availableNavTabs(manager).map(tab=>tab.id));
+function resolveNavTabs(saved,manager,bookingsOpen=false){
+ const allowed=new Set(availableNavTabs(manager,bookingsOpen).map(tab=>tab.id));
  const picked=[];
  const take=id=>{if(typeof id==='string'&&allowed.has(id)&&!picked.includes(id)&&picked.length<NAV_SLOTS)picked.push(id);};
  if(Array.isArray(saved))saved.forEach(take);
  DEFAULT_NAV_TABS.forEach(take);
- NAV_TAB_CATALOG.forEach(tab=>take(tab.id));
+ availableNavTabs(manager,bookingsOpen).forEach(tab=>take(tab.id));
  return picked;
 }
 

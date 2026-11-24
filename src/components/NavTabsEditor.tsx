@@ -11,7 +11,7 @@ export function NavTabsEditor({visible,onClose}:{visible:boolean;onClose:()=>voi
  const bar=useNavTabs();
  const [draft,setDraft]=useState<string[]|null>(null);
  const ids=draft??bar.ids;
- const choices=availableNavTabs(bar.manager);
+ const choices=availableNavTabs(bar.manager,bar.bookingsOpen);
  const close=()=>{setDraft(null);onClose();};
  const save=(next:string[]|null)=>{if(bar.username)void saveNavTabs(bar.username,next);close();};
  return <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>

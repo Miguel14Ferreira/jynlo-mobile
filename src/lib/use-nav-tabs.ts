@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import {useAuth} from './auth';
 import {managedVenues} from './venue-jynlo-api';
 import {resolveNavTabs} from './nav-tabs.cjs';
+import {useBookingsOpen} from './use-bookings-open';
 
 /** Saved per account on this device; the bar and the editor stay in sync. */
 const listeners=new Set<(user:string,ids:string[]|null)=>void>();
@@ -21,6 +22,7 @@ export function useNavTabs(){
  const user=auth.username?.toLowerCase()||'';
  const [saved,setSaved]=useState<unknown>(null);
  const [manager,setManager]=useState(false);
+ const bookingsOpen=useBookingsOpen();
  useEffect(()=>{
   let alive=true;setSaved(null);
   if(user)void readSaved(user).then(value=>{if(alive)setSaved(value);});
@@ -33,5 +35,5 @@ export function useNavTabs(){
   managedVenues(auth.token).then(list=>setManager((list||[]).length>0)).catch(()=>{/* not a manager, or offline */});
  },[auth.token]);
  useEffect(()=>{refreshManager();},[refreshManager]);
- return {ids:resolveNavTabs(saved,manager),manager,username:user};
+ return {ids:resolveNavTabs(saved,manager,bookingsOpen),manager,bookingsOpen,username:user};
 }
