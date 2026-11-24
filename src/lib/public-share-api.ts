@@ -10,7 +10,7 @@ function endpoint(target:PublicShareTarget):string{
 }
 export async function publicShareSetting(target:PublicShareTarget,token:string):Promise<PublicShareSetting>{
  if(!token)throw Error('Inicia sessão para continuar.');
- if(DEMO_MODE)return {enabled:false,path:target.kind==='TOURNAMENT'?'/torneio/'+target.tournamentId:'/classificacao/'+target.communityId};
+ if(DEMO_MODE)return {enabled:false,path:target.kind==='TOURNAMENT'?'/tournaments/'+target.tournamentId:'/rankings/'+target.communityId};
  return request<PublicShareSetting>(endpoint(target),{token});
 }
 /** Owner/Admin only; the server checks the role. Never retried automatically. */

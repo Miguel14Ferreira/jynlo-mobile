@@ -69,11 +69,12 @@ test('mobile sport list matches the web list',()=>{
 
 test('public share links only point to the two public pages',()=>{
  const {publicShareUrl,shareMessage}=require('../src/lib/public-share-core.cjs');
- assert.equal(publicShareUrl('/torneio/12'),'https://jynlosports.com/torneio/12');
- assert.equal(publicShareUrl('/classificacao/3'),'https://jynlosports.com/classificacao/3');
+ assert.equal(publicShareUrl('/tournaments/12'),'https://jynlosports.com/tournaments/12');
+ assert.equal(publicShareUrl('/torneio/12'),'https://jynlosports.com/tournaments/12');
+ assert.equal(publicShareUrl('/rankings/3'),'https://jynlosports.com/rankings/3');
  for(const bad of ['https://evil.example/x','/torneio/0','/torneio/1?x=1','//evil.com/torneio/1',''])
   assert.throws(()=>publicShareUrl(bad),bad);
- assert.match(shareMessage('TOURNAMENT','Taça',publicShareUrl('/torneio/12')),/Taça[\s\S]*jynlosports\.com\/torneio\/12/);
+ assert.match(shareMessage('TOURNAMENT','Taça',publicShareUrl('/tournaments/12')),/Taça[\s\S]*jynlosports\.com\/tournaments\/12/);
  const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/PublicShareCard.tsx'),'utf8'));
  assert.match(source,/\(!setting\.enabled&&!canManage\)\)return null/);
 });
