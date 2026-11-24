@@ -7,11 +7,14 @@ import {chatAttachmentList,recentPreviewMessageIds,appendChatMediaSelection} fro
 import {confirmedCommunityChatSend} from '../lib/chat-send-receipt.cjs';
 import {uncertainChatSend} from '../lib/chat-send-uncertainty.cjs';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,AppState,Image,Keyboard,KeyboardAvoidingView,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {KeyboardFrame} from './KeyboardFrame';
+import {CHAT_REACTION_EMOJIS} from '../lib/chat-reactions-api';
 import type {ScrollViewInstance} from 'react-native';
 import type * as ImagePicker from 'expo-image-picker';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from './UI';
+import {Button,DemoBanner,Loader,Message} from './UI';
 import {useAuth} from '../lib/auth';
 import {ApiError} from '../lib/api';
 import {communityMessages,sendCommunityMessage,editCommunityChatMessage,deleteCommunityChatMessageForEveryone} from '../lib/chat-api';
@@ -97,6 +100,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const focusedIdentity=useRef('');
  const [canSendPhoto,setCanSendPhoto]=useState(false),[uploading,setUploading]=useState(false);
  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
+ const [searchOpen,setSearchOpen]=useState(false);
  const [refreshWarning,setRefreshWarning]=useState('');
  const [muted,setMuted]=useState(false),[muteKnown,setMuteKnown]=useState(false),[muteBusy,setMuteBusy]=useState(false);
  const [muteError,setMuteError]=useState(''),[locationBusy,setLocationBusy]=useState(false);
@@ -465,23 +469,49 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
   }
  }
  const recentPhotoIds=new Set(recentPreviewMessageIds(messages));
- const reactions=useChatReactions('community',String(id),auth.token,(embedded?messages.slice(-historyLimit):messages).map(m=>m.id),!accessRevoked);
- const renderedMessages=(embedded?messages.slice(-historyLimit):messages).map(m=><View key={m.id} style={[styles.message,m.username===auth.username&&styles.mine]}>
-     <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10}}>
-       <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{v}',{v:m.username})}
-        onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
-        <Text style={styles.sender}>{m.username}</Text>
-       </Pressable>
-       {!m.deletedAt&&!accessRevoked?
-        <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar ações da mensagem de @{v}',{v:m.username})}
-         accessibilityState={{expanded:expandedMessageActions===m.id}}
-         onPress={()=>setExpandedMessageActions(current=>current===m.id?null:m.id)}
-         style={styles.replyAction}>
-          <JynloIcon name="more" size={21} color={C.mint}/>
-        </Pressable>:null}
+ const visibleMessages=embedded?messages.slice(-historyLimit):messages;
+ const reactions=useChatReactions('community',String(id),auth.token,visibleMessages.map(m=>m.id),!accessRevoked);
+ const sendBlocked=sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null));
+ const timeOf=(m:CommunityChatEntry)=>m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'';
+ // Messaging-app layout: compact bubbles; reply, reactions and options appear on a long press.
+ const renderedMessages=visibleMessages.map((m,index)=>{
+  const mine=m.username===auth.username;
+  const previous=visibleMessages[index-1];
+  const showSender=!mine&&(!previous||previous.username!==m.username);
+  const actionsOpen=expandedMessageActions===m.id&&!m.deletedAt&&!accessRevoked;
+  return <Pressable key={m.id} accessibilityRole="button"
+    accessibilityLabel={t('Mensagem de @{v}. Mantém pressionado para responder ou reagir.',{v:m.username})}
+    accessibilityState={{expanded:actionsOpen}}
+    onLongPress={()=>{if(!m.deletedAt&&!accessRevoked)setExpandedMessageActions(current=>current===m.id?null:m.id);}}
+    delayLongPress={280}
+    style={[styles.message,mine&&styles.mine]}>
+     {showSender?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{v}',{v:m.username})} hitSlop={6}
+       onPress={()=>router.push({pathname:'/social/[username]',params:{username:m.username}})}>
+       <Text style={styles.sender}>{m.username}</Text>
+      </Pressable>:null}
+     {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||t('Mensagem anterior')}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||t('Mensagem citada')}</Text></View>:null}
+     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
+     {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="community" conversationId={id} messageId={m.id} token={auth.token}/>:
+     !m.deletedAt&&readCallUp(m.body)?<CallUpCard sessionId={readCallUp(m.body)!} token={auth.token} username={auth.username}/>:
+     <ChatMentionText body={m.deletedAt?t('Mensagem removida'):giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={[styles.body,m.deletedAt&&styles.deleted]}/>}
+     {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no mapa')} onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))}>
+      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>{t('Abrir localização no mapa')}</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
+     </Pressable>:null}
+     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}
+      onAuthorizationError={()=>{setMessages([]);void refresh(generation.current,false);}}/>):null}
+     <View style={styles.metaRow}>
+      {!m.deletedAt?<View style={styles.metaReactions}><ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={accessRevoked||!auth.token} onReact={reactions.react} onInspect={reactions.inspect} hideAdd/></View>:<View style={styles.metaReactions}/>}
+      <Text style={styles.time}>{timeOf(m)}{m.editedAt?' · '+t('editada'):''}</Text>
      </View>
-     {expandedMessageActions===m.id&&!m.deletedAt&&!accessRevoked?
-      <View style={styles.contextActions}>
+     {actionsOpen?<View style={styles.contextActions}>
+       <View style={styles.quickReactions}>
+        {CHAT_REACTION_EMOJIS.map(emoji=><Pressable key={emoji} accessibilityRole="button" accessibilityLabel={t('Reagir com {v}',{v:emoji})}
+          disabled={reactions.busyIds.has(m.id)}
+          onPress={()=>{setExpandedMessageActions(null);void reactions.react(m.id,reactions.summaries[m.id]?.myEmoji===emoji?null:emoji);}}
+          style={[styles.quickReaction,reactions.summaries[m.id]?.myEmoji===emoji&&styles.quickReactionOn]}>
+          <Text style={styles.quickReactionText}>{emoji}</Text></Pressable>)}
+       </View>
+       <View style={styles.contextRow}>
         <Pressable accessibilityRole="button" accessibilityLabel={t('Responder a {v}',{v:m.username})}
           onPress={()=>{setReply(m);setExpandedMessageActions(null);}} style={styles.replyAction}>
           <JynloIcon name="reply" size={18} color={C.mint}/>
@@ -493,37 +523,12 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
           <JynloIcon name="more" size={20} color={C.mint}/>
           <Text style={styles.quoteTitle}>{t('Mais opções')}</Text>
         </Pressable>:null}
+       </View>
       </View>:null}
-     {m.replyToMessageId?<View style={styles.quote}><Text style={styles.quoteTitle}>↩ {m.replyToSender||t('Mensagem anterior')}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText||t('Mensagem citada')}</Text></View>:null}
-     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
-     {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="community" conversationId={id} messageId={m.id} token={auth.token}/>:
-     !m.deletedAt&&readCallUp(m.body)?<CallUpCard sessionId={readCallUp(m.body)!} token={auth.token} username={auth.username}/>:
-     <ChatMentionText body={m.deletedAt?t('Mensagem removida'):giphyImageUrl(m.body)?'GIF':m.body||m.attachmentName||'Anexo'} style={styles.body}/>}
-     {!m.deletedAt&&chatLocationUrl(m.body)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no mapa')} onPress={()=>void Linking.openURL(chatLocationUrl(m.body)!).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))}>
-      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={16} color={C.mint}/><Text style={styles.mapLink}>{t('Abrir localização no mapa')}</Text><JynloIcon name="chevron-right" size={15} color={C.mint}/></View>
-     </Pressable>:null}
-     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="community" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}
-      onAuthorizationError={()=>{setMessages([]);void refresh(generation.current,false);}}/>):null}
-     {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={accessRevoked||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-     <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · '+t('editada'):''}</Text>
-   </View>);
- const content=<>
-   {!embedded?<DemoBanner/>:null}<Eyebrow>{t('CHAT DA COMUNIDADE')}</Eyebrow>{!embedded?<Text maxFontSizeMultiplier={1.3} style={styles.title}>{name}</Text>:null}
-   <ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/>
-   <Text style={styles.note}>{t('Apenas os membros podem ler e enviar mensagens. · {a}',{a:connection==='online'?t('● Ligado'):connection==='connecting'?t('○ A ligar'):t('○ A sincronizar sem ligação em tempo real')})}</Text>
-   {!auth.token?<Button title={t('Entrar para conversar')} onPress={()=>router.push('/login')}/>:null}
-   {muteError&&!accessRevoked?<Message tone="error">{muteError}</Message>:null}
-   {!embedded&&auth.token&&muteKnown&&!accessRevoked?<View style={styles.muteRow}>
-    <Text style={styles.note}>{muted?t('Avisos deste chat silenciados'):t('Avisos deste chat ativos')}</Text>
-    <Button title={muteBusy?t('A guardar…'):muted?t('Ativar avisos'):t('Silenciar avisos')} secondary disabled={muteBusy} onPress={toggleMute}/>
-   </View>:null}
-   {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
-  {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>{t('Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.')}</Text>:null}
-  {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title={t('Já confirmei no histórico · Permitir novo envio')}
-   onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
-   {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
-   {!loading&&!error&&messages.length===0?<Message>{t('Começa a conversa. A primeira mensagem pode ser tua!')}</Message>:null}
-   {<ScrollView ref={inlineHistoryRef} style={[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
+   </Pressable>;
+ });
+ const status=connection==='online'?t('● Ligado'):connection==='connecting'?t('○ A ligar'):t('○ A sincronizar sem ligação em tempo real');
+ const history=<ScrollView ref={inlineHistoryRef} style={embedded?[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard]:styles.historyScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled" scrollEventThrottle={100}
    onScrollBeginDrag={()=>{initialAutoScrollPending.current=false;}}
     onScroll={event=>{const {contentOffset,layoutMeasurement,contentSize}=event.nativeEvent;
     // Initial positioning is programmatic: it must never count as a user-visible read.
@@ -581,59 +586,45 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
     }
     if(inlineNearBottom.current&&composerFocused.current&&!unseenBelow)inlineHistoryRef.current?.scrollToEnd({animated:true});
    }}
-   contentContainerStyle={{gap:8,padding:8}}>
-   {messages.length>historyLimit?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
+   contentContainerStyle={styles.history}>
+   {messages.length>historyLimit&&embedded?<Pressable accessibilityRole="button" onPress={()=>{inlineNearBottom.current=false;setHistoryLimit(count=>count+40);}} style={styles.olderMessages}>
     <Text style={styles.quoteTitle}>{t('Ver mensagens anteriores')}</Text>
-   </Pressable>:null}{renderedMessages}
-  </ScrollView>}
-  {unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver mensagens novas')}
-    onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
-    style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
-    <Text style={styles.newMessagesText}>{t('Mensagens novas')}</Text></Pressable>:null}
-   {auth.token&&!accessRevoked?<View style={styles.quickActions}>
-    {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ativar avisos deste chat'):t('Silenciar avisos deste chat')}
-      style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
-      <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
-    </Pressable>:null}
+   </Pressable>:null}
+   {!loading&&!error&&messages.length===0?<Text style={styles.empty}>{t('Começa a conversa. A primeira mensagem pode ser tua!')}</Text>:null}
+   {renderedMessages}
+  </ScrollView>;
+ const attachMenu=auth.token&&!accessRevoked&&attachmentsOpen?<View style={styles.attachmentOptions}>
     {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel={t('Selecionar fotografias ou vídeos')} disabled={sending||uploading}
-     style={styles.iconAction} onPress={()=>{void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/></Pressable>:null}
+     style={styles.attachItem} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}><JynloIcon name="gallery" size={22} color={C.mint}/><Text style={styles.attachLabel}>{t('Galeria')}</Text></Pressable>:null}
     {canSendPhoto?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara')} disabled={sending||uploading}
-     style={styles.iconAction} onPress={()=>{void choosePhoto('camera');}}><JynloIcon name="camera" size={22} color={C.mint}/></Pressable>:null}
-    <ChatPdfComposer compact target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)}
-      replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
+     style={styles.attachItem} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}><JynloIcon name="camera" size={22} color={C.mint}/><Text style={styles.attachLabel}>{t('Câmara')}</Text></Pressable>:null}
+    <View style={styles.attachItem}><ChatPdfComposer compact target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)}
+      replyId={reply?.id} onSent={async(sentReplyId)=>{setAttachmentsOpen(false);setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/><Text style={styles.attachLabel}>PDF</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar localização atual')} disabled={locationBusy||sending||uploading}
-     style={styles.iconAction} onPress={prepareLocation}><JynloIcon name="location" size={22} color={C.mint}/></Pressable>
+     style={styles.attachItem} onPress={()=>{setAttachmentsOpen(false);prepareLocation();}}><JynloIcon name="location" size={22} color={C.mint}/><Text style={styles.attachLabel}>{t('Localização')}</Text></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Convocatória: convocar para um dos teus jogos')}
-     style={styles.iconAction} disabled={sending} onPress={()=>setCallUpOpen(true)}><JynloIcon name="session" size={22} color={C.mint}/></Pressable>
-    <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
+     style={styles.attachItem} disabled={sending} onPress={()=>{setAttachmentsOpen(false);setCallUpOpen(true);}}><JynloIcon name="session" size={22} color={C.mint}/><Text style={styles.attachLabel}>{t('Convocatória')}</Text></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')}
-     style={styles.iconAction} disabled={sending} onPress={()=>setPollOpen(true)}><Text style={{fontSize:20}}>📊</Text></Pressable>
-    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
-   </View>:null}
-   {false&&auth.token&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
-     onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.attachmentToggle}>
-     <View style={{flexDirection:'row',alignItems:'center',gap:7}}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={19} color={C.mint}/><Text style={styles.attachmentToggleText}>{attachmentsOpen?t('Fechar anexos'):t('Anexar ficheiro')}</Text></View>
-    </Pressable>:null}
-    {false&&attachmentsOpen&&!accessRevoked?<View style={styles.attachmentOptions}>
-    {auth.token&&!accessRevoked?<Button title={locationBusy?t('A obter localização…'):t('Partilhar localização atual')} secondary disabled={locationBusy||sending||uploading} onPress={prepareLocation}/>:null}
-   <ChatPdfComposer target={{scope:'community',id}} token={auth.token} enabled={!accessRevoked&&!sending&&!uploading&&!pendingWrites.current.has(id+'|'+auth.token)} replyId={reply?.id} onSent={async(sentReplyId)=>{setReply(current=>current?.id===(sentReplyId??undefined)?null:current);await refresh();}}/>
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={photo?"Adicionar mais ficheiros":"Escolher fotografias ou vídeos"} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||Boolean(photo&&1+extraPhotos.length>=4)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto();}}/>:null}
-   {auth.token&&!accessRevoked&&canSendPhoto?<Button secondary title={t('Abrir câmara')} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{setAttachmentsOpen(false);void choosePhoto('camera');}}/>:null}
-   </View>:null}
+     style={styles.attachItem} disabled={sending} onPress={()=>{setAttachmentsOpen(false);setPollOpen(true);}}><Text style={{fontSize:20}}>📊</Text><Text style={styles.attachLabel}>{t('Sondagem')}</Text></Pressable>
+   </View>:null;
+ const footer=<View style={styles.footer}>
+   {uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Text accessibilityRole="alert" style={{color:C.muted,fontSize:12}}>{t('Envio sem confirmação. Confirma no histórico antes de repetir esta mensagem.')}</Text>:null}
+   {!accessRevoked&&uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null)?<Button secondary title={t('Já confirmei no histórico · Permitir novo envio')}
+    onPress={()=>{uncertainSendRef.current=null;setUncertainSend(null);}}/>:null}
    {photo&&!accessRevoked?<View style={styles.photoPanel}>
      <View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
      {[photo,...extraPhotos].map((file,index)=><Pressable key={index} accessibilityRole="button" accessibilityLabel={t('Remover ficheiro {v}',{v:(index+1)})} disabled={uploading} onPress={()=>{
       const remaining=[photo,...extraPhotos].filter((_,i)=>i!==index);
       setPhoto(remaining[0]||null);setExtraPhotos(remaining.slice(1));
      }} style={{gap:4}}>
-      {file.type==='video'?<View style={{width:90,height:90,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:12}}>{t('Vídeo')}</Text></View></View>:<Image source={{uri:file.uri}} style={{width:90,height:90,borderRadius:10}}/>}
-      <View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="remove" size={16} color={C.mint}/><Text style={styles.note}>{t('Remover')}</Text></View>
+      {file.type==='video'?<View style={{width:72,height:72,borderRadius:10,backgroundColor:'#173039',justifyContent:'center',alignItems:'center'}}><JynloIcon name="video" size={20} color={C.white}/><Text style={{color:C.white,fontSize:11}}>{t('Vídeo')}</Text></View>:<Image source={{uri:file.uri}} style={{width:72,height:72,borderRadius:10}}/>}
+      <View style={{flexDirection:"row",alignItems:"center",gap:4}}><JynloIcon name="remove" size={14} color={C.mint}/><Text style={styles.note}>{t('Remover')}</Text></View>
      </Pressable>)}
     </View>
      <Text style={styles.note}>{t('{a}/4 ficheiros · fotografias até 5 MB, vídeos até 20 MB. Confirma antes de enviar.',{a:1+extraPhotos.length})}</Text>
-   <TextInput accessibilityLabel={t('Legenda dos anexos')} multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder={t('Legenda para as fotografias ou vídeos (opcional)')} placeholderTextColor={C.muted} style={{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48}}/>
-     <Button title={uploading?t('A enviar…'):t('Enviar ficheiros')} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
-     <Button secondary title={t('Cancelar anexos')} disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
+   <TextInput accessibilityLabel={t('Legenda dos anexos')} multiline maxLength={2000} value={attachmentCaption} onChangeText={setAttachmentCaption} editable={!uploading} placeholder={t('Legenda para as fotografias ou vídeos (opcional)')} placeholderTextColor={C.muted} style={styles.editInput}/>
+     <View style={{flexDirection:'row',gap:10}}><Button title={uploading?t('A enviar…'):t('Enviar ficheiros')} disabled={uploading||sending||pendingWrites.current.has(id+'|'+auth.token)} onPress={()=>{void uploadPhoto();}}/>
+     <Button secondary title={t('Cancelar anexos')} disabled={uploading} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/></View>
    </View>:null}
    {editing&&!accessRevoked?<View style={styles.editPanel}>
      <Text style={styles.quoteTitle}>{t('Editar a minha mensagem · até 15 minutos após o envio')}</Text>
@@ -641,37 +632,104 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
      <View style={{flexDirection:'row',gap:12}}><Button title={mutationBusy?t('A guardar…'):t('Guardar edição')} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title={t('Cancelar')} disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
    </View>:null}
    {reply&&!accessRevoked?<ChatReplyPreview sender={reply.username} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
-   {auth.token&&!accessRevoked?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.composer}>
+   {attachMenu}
+   <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
+   <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
+   <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
+   {auth.token&&!accessRevoked?<View style={styles.composer}>
+     <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
+       accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
+       onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.plus}>
+       <JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/>
+     </Pressable>
      <TextInput multiline style={styles.input} placeholder={t('Escreve uma mensagem…')} placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
        maxLength={2000} accessibilityLabel={t('Mensagem para a comunidade')}
-       onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onFocus={()=>{composerFocused.current=true;setAttachmentsOpen(false);if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
        onBlur={()=>{composerFocused.current=false;}}/>
-     <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
-     <Pressable style={[styles.send,sending&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem para a comunidade')}>
+     <Pressable style={[styles.send,(sending||sendBlocked)&&{opacity:.5}]} onPress={()=>{void send();}} disabled={sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))} accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem para a comunidade')}>
        {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
      </Pressable>
-   </KeyboardAvoidingView>:null}
+   </View>:null}
+   {!auth.token?<Button title={t('Entrar para conversar')} onPress={()=>router.push('/login')}/>:null}
    {refreshWarning&&!accessRevoked?<Button secondary title={t('Tentar novamente')} disabled={loading||sending||uploading} onPress={()=>{void refresh();}} />:null}
+  </View>;
+ const alerts=<>
+   {muteError&&!accessRevoked?<Message tone="error">{muteError}</Message>:null}
+   {loading?<Loader/>:null}{!!error?<Message tone="error">{error}</Message>:null}
+   {refreshWarning?<Message tone="error">{refreshWarning}</Message>:null}
   </>;
- return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
+ const newMessagesPill=unseenBelow?<Pressable accessibilityRole="button" accessibilityLabel={t('Ver mensagens novas')}
+    onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+    style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
+    <Text style={styles.newMessagesText}>{t('Mensagens novas')}</Text></Pressable>:null;
+ if(embedded)return <View style={styles.inline}>
+   <ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/>
+   {alerts}{history}{newMessagesPill}{footer}
+  </View>;
+ return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
+  <KeyboardFrame style={styles.keyboardFrame}>
+   <DemoBanner/>
+   <View style={styles.header}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar')} onPress={()=>router.back()} style={styles.headerIcon}><JynloIcon name="back" size={23} color={C.white}/></Pressable>
+    <View style={styles.headerAvatar}><JynloIcon name="community" size={22} color={C.mint}/></View>
+    <View style={{flex:1,minWidth:0}}>
+     <Text maxFontSizeMultiplier={1.2} style={styles.headerTitle} numberOfLines={1}>{name}</Text>
+     <Text maxFontSizeMultiplier={1.2} style={styles.headerStatus} numberOfLines={1}>{status}</Text>
+    </View>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:searchOpen}} accessibilityLabel={searchOpen?t('Fechar pesquisa'):t('Pesquisar no chat')}
+      onPress={()=>setSearchOpen(value=>!value)} style={styles.headerIcon}><JynloIcon name={searchOpen?'close':'search'} size={22} color={C.mint}/></Pressable>
+    {auth.token&&muteKnown&&!accessRevoked?<Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ativar avisos deste chat'):t('Silenciar avisos deste chat')}
+      disabled={muteBusy} onPress={toggleMute} style={styles.headerIcon}>
+      <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/></Pressable>:null}
+   </View>
+   {searchOpen?<View style={styles.searchWrap}><ChatSearchPanel kind="community" conversationId={String(id)} token={auth.token} enabled={!accessRevoked}/></View>:null}
+   {alerts}
+   {history}
+   {newMessagesPill}
+   {footer}
+  </KeyboardFrame>
+ </SafeAreaView>;
 }
-const styles=StyleSheet.create({inline:{gap:12,padding:14,borderWidth:1,borderColor:'#3FC6B04D',borderRadius:18,backgroundColor:'#082B39'},
- inlineHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
+const styles=StyleSheet.create({
+ screen:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},
+ header:{minHeight:58,paddingHorizontal:6,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.border,backgroundColor:C.background},
+ headerIcon:{width:44,height:44,alignItems:'center',justifyContent:'center'},
+ headerAvatar:{width:36,height:36,borderRadius:18,backgroundColor:C.surface,alignItems:'center',justifyContent:'center'},
+ headerTitle:{fontSize:17,fontWeight:'900',color:C.white},headerStatus:{fontSize:11,color:C.muted},
+ searchWrap:{paddingHorizontal:12,paddingTop:8},
+ inline:{gap:10,padding:10,borderWidth:1,borderColor:'#3FC6B04D',borderRadius:18,backgroundColor:'#082B39'},
+ inlineHistory:{height:470,maxHeight:470,minHeight:240,borderRadius:14,backgroundColor:'#041D29'},
  inlineHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
+ historyScroll:{flex:1},
+ history:{paddingHorizontal:10,paddingTop:10,paddingBottom:12,gap:6,flexGrow:1},
+ empty:{color:C.muted,fontSize:13,textAlign:'center',marginTop:24},
  olderMessages:{padding:10,alignItems:'center'},
- newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:9,borderRadius:20,backgroundColor:C.mint},
- newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
- iconAction:{height:44,width:44,borderRadius:12,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,alignItems:'center',justifyContent:'center'},editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},editInput:{borderWidth:1,borderColor:C.border,borderRadius:10,padding:12,color:C.white,minHeight:52,maxHeight:150},contextActions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:7,
-  paddingVertical:4,paddingHorizontal:6,borderWidth:1,borderColor:C.border,borderRadius:10,
-  backgroundColor:C.surface,alignSelf:'flex-end',flexWrap:'wrap'},
- replyAction:{minHeight:38,flexDirection:'row',alignItems:'center',gap:5,justifyContent:'center',paddingHorizontal:8},quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:4},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},quoteComposer:{flexDirection:'row',alignItems:'center',gap:12,padding:12,borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},quoteCancel:{color:C.white,fontWeight:'900',fontSize:20,padding:8},title:{fontSize:26,fontWeight:'900',color:C.white},note:{color:C.muted,fontSize:12},
- message:{padding:12,borderRadius:17,backgroundColor:'#0D3945',borderWidth:1,borderColor:'#3BB2AE52',gap:6,maxWidth:'88%',alignSelf:'flex-start',borderBottomLeftRadius:5},
- mine:{backgroundColor:'#12554D',borderColor:'#3CBB9B80',alignSelf:'flex-end',borderBottomLeftRadius:17,borderBottomRightRadius:5},sender:{fontSize:11,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},time:{fontSize:10,color:C.muted,textAlign:'right'},
- photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
- muteRow:{gap:8,padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},
- attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
- attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},attachmentOptions:{gap:8},
- gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
- mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},
- composer:{flexDirection:'row',alignItems:'flex-end',gap:9,paddingTop:10,borderTopWidth:1,borderTopColor:'#42BDAE40'},input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:'#061F2E',borderColor:'#3BB6AA66',borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:14},
- send:{backgroundColor:MobileTheme.colors.accent,borderRadius:13,paddingHorizontal:16,minWidth:52,minHeight:MobileTheme.touchTarget,justifyContent:'center',alignItems:'center'},sendText:{color:C.background,fontWeight:'900'}});
+ newMessages:{alignSelf:'center',flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:14,paddingVertical:8,borderRadius:20,backgroundColor:C.mint,marginBottom:6},
+ newMessagesText:{fontSize:12,fontWeight:'800',color:C.background},
+ footer:{flexShrink:0,paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:7,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background},
+ attachmentOptions:{flexDirection:'row',flexWrap:'wrap',gap:10,justifyContent:'flex-start',paddingVertical:4},
+ attachItem:{width:72,alignItems:'center',gap:4},
+ attachLabel:{fontSize:11,color:C.muted,textAlign:'center'},
+ plus:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
+ editPanel:{gap:9,padding:12,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
+ editInput:{borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,color:C.white,minHeight:48,maxHeight:150},
+ contextActions:{gap:6,marginTop:4,paddingTop:6,borderTopWidth:1,borderTopColor:'#3BB2AE40'},
+ quickReactions:{flexDirection:'row',flexWrap:'wrap',gap:4},
+ quickReaction:{width:38,height:38,borderRadius:19,alignItems:'center',justifyContent:'center',backgroundColor:'#0A2A35'},
+ quickReactionOn:{borderWidth:1,borderColor:C.mint},
+ quickReactionText:{fontSize:19},
+ contextRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ replyAction:{minHeight:36,flexDirection:'row',alignItems:'center',gap:5,justifyContent:'center',paddingHorizontal:8},
+ quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8,gap:2,marginBottom:2},quoteTitle:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,color:C.muted},
+ note:{color:C.muted,fontSize:12},
+ message:{paddingHorizontal:11,paddingTop:7,paddingBottom:5,borderRadius:16,backgroundColor:'#0D3945',gap:3,maxWidth:'84%',alignSelf:'flex-start',borderBottomLeftRadius:5},
+ mine:{backgroundColor:'#12554D',alignSelf:'flex-end',borderBottomLeftRadius:16,borderBottomRightRadius:5},
+ sender:{fontSize:12,color:C.mint,fontWeight:'800'},body:{fontSize:15,color:C.white,lineHeight:21},deleted:{fontStyle:'italic',color:C.muted},
+ metaRow:{flexDirection:'row',alignItems:'flex-end',gap:6},metaReactions:{flexShrink:1},
+ time:{fontSize:10,color:C.muted,marginLeft:'auto'},
+ photoPanel:{gap:8,padding:10,backgroundColor:C.surface,borderRadius:14},
+ gif:{width:220,height:180,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
+ mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:6},
+ composer:{flexDirection:'row',alignItems:'flex-end',gap:8},
+ input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:'#061F2E',borderColor:'#3BB6AA66',borderWidth:1,color:MobileTheme.colors.text,paddingHorizontal:14,paddingVertical:11,borderRadius:22},
+ send:{backgroundColor:MobileTheme.colors.accent,borderRadius:22,width:46,minHeight:MobileTheme.touchTarget,justifyContent:'center',alignItems:'center'}});

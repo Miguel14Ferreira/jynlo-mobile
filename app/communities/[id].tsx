@@ -1,4 +1,3 @@
-import CommunityChatPanel from '../../src/components/CommunityChatPanel';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
@@ -38,6 +37,8 @@ export default function CommunityDetailScreen(){
   const [followState,setFollowState]=useState<CommunityFollowState|null>(null);
   const [followBusy,setFollowBusy]=useState(false);
   const [followError,setFollowError]=useState('');
+  // The chat opens full screen, like a messaging app.
+  const openChat=()=>router.push({pathname:'/communities/[id]/chat',params:{id:String(id)}});
   const [activeSection,setActiveSection]=useState<'OVERVIEW'|'FEED'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
@@ -298,7 +299,7 @@ export default function CommunityDetailScreen(){
       {teamDestination&&!role&&auth.token&&!loading?<Button secondary title={t('Verificar aprovação da comunidade')} disabled={busy} onPress={()=>{void reload();}}/>:null}
       {role?<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionNav} contentContainerStyle={styles.sectionNavContent} accessibilityLabel={t('Secções da comunidade')}>
         {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Sessões')},{id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
-         accessibilityState={{selected:activeSection===tab.id}} onPress={()=>setActiveSection(tab.id)}
+         accessibilityState={{selected:activeSection===tab.id}} onPress={()=>{if(tab.id==='CHAT')openChat();else setActiveSection(tab.id);}}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
          <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
         </Pressable>)}
@@ -312,7 +313,7 @@ export default function CommunityDetailScreen(){
            <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>{t('Sessões')}</Text>
            <Text style={styles.quickLinkDescription}>{sessionsError?t('Por confirmar'):t('{n} agendadas',{n:sessions.length})}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir chat da comunidade')} onPress={()=>setActiveSection('CHAT')} style={styles.quickLink}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir chat da comunidade')} onPress={openChat} style={styles.quickLink}>
            <Text style={styles.quickLinkIcon}>◉</Text><Text style={styles.quickLinkTitle}>{t('Chat')}</Text>
            <Text style={styles.quickLinkDescription}>{t('Conversar em tempo real')}</Text>
           </Pressable>
@@ -400,11 +401,6 @@ export default function CommunityDetailScreen(){
             onPress={()=>{void togglePostingPolicy();}}/>
         </View>:community&&'membersCanPost' in community&&(community as CommunityGroup).membersCanPost===false?<Text style={styles.muted}>{t('Só os organizadores publicam no feed desta comunidade.')}</Text>:null}
         <CommunityFeedPanel communityId={id} token={auth.token} username={auth.username} canManage={owner}/>
-      </View>:null}
-      {role&&activeSection==='CHAT'?<View style={styles.section}>
-        <Eyebrow>{t('A CONVERSA CONTINUA')}</Eyebrow>
-        <Text style={styles.sectionTitle}>{t('Juntos, mesmo fora do campo')}</Text>
-        <CommunityChatPanel embedded/>
       </View>:null}
       {role&&activeSection==='SESSIONS'?<View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('Próximas sessões')}</Text>

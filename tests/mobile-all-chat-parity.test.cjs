@@ -61,7 +61,7 @@ test('group chat has compact icon controls and standalone route keeps legacy tra
   assert.match(source,/<ChatPdfComposer compact/);
   assert.match(source,/accessibilityLabel="Abrir câmara"/);
   assert.match(source,/accessibilityLabel="Selecionar fotografias ou vídeos"/);
-  assert.match(source,/auth\.token&&!(?:closed|accessRevoked)\?<View style=\{styles\.quickActions\}>/);
+  assert.match(source,kind==='community'?/auth\.token&&!accessRevoked&&attachmentsOpen\?<View style=\{styles\.attachmentOptions\}>/:/auth\.token&&!(?:closed|accessRevoked)\?<View style=\{styles\.quickActions\}>/);
   assert.match(source,/<ChatPdfComposer compact/);
  }
  assert.match(screens.direct,/accessibilityLabel=\{attachmentsOpen\?'Fechar anexos':'Abrir anexos'\}/);

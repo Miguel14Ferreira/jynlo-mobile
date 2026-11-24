@@ -74,14 +74,17 @@ export function useChatReactions(kind:ChatReactionKind,conversationId:string,tok
  return {summaries,busyIds,react,inspect};
 }
 
-export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,onInspect}:{
+export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,onInspect,hideAdd=false}:{
  id:number;summary?:ChatReactionSummary;disabled?:boolean;busy?:boolean;
+ /** The chat offers reactions on a long press instead, so only existing reactions show. */
+ hideAdd?:boolean;
  onReact:(id:number,emoji:ChatReactionEmoji|null)=>Promise<void>;
  onInspect:(id:number,emoji:ChatReactionEmoji)=>Promise<void>;
 }){
  const [open,setOpen]=useState(false);
  if(disabled)return null;
  const counts=CHAT_REACTION_EMOJIS.filter(emoji=>(summary?.counts[emoji]||0)>0);
+ if(hideAdd&&!counts.length)return null;
  const apply=(emoji:ChatReactionEmoji)=>{
   if(busy)return;
   setOpen(false);
@@ -96,11 +99,11 @@ export function ChatReactionRow({id,summary,disabled=false,busy=false,onReact,on
      style={[styles.chip,summary?.myEmoji===emoji&&styles.selected]}>
      <Text style={styles.chipText}>{emoji} {summary!.counts[emoji]}</Text>
     </Pressable>)}
-    <Pressable accessibilityRole="button" accessibilityLabel={open?t('Fechar reações'):t('Reagir à mensagem')}
+    {hideAdd?null:<Pressable accessibilityRole="button" accessibilityLabel={open?t('Fechar reações'):t('Reagir à mensagem')}
       accessibilityState={{expanded:open,disabled:busy}} disabled={busy}
       onPress={()=>setOpen(previous=>!previous)} style={styles.add}>
       <Text style={styles.addLabel}>☺ +</Text>
-    </Pressable>
+    </Pressable>}
    </View>
    {open?<View style={styles.picker}>
     {CHAT_REACTION_EMOJIS.map(emoji=><Pressable key={emoji} accessibilityRole="button"

@@ -9,7 +9,7 @@ const source=untranslate(fs.readFileSync(path.join(__dirname,'../src/components/
 test('confirmed access revocation hides community history and composer',()=>{
  assert.match(source,/e instanceof ApiError&&\[401,403,404,410\]\.includes\(e\.status\)/);
  assert.match(source,/revokedRef\.current=true;setAccessRevoked\(true\);setMessages\(\[\]\);setDraft\(''\);[\s\S]*setPhoto\(null\);[\s\S]*setCanSendPhoto\(false\);setAttachmentsOpen\(false\)/);
- assert.match(source,/auth\.token&&!accessRevoked\?<KeyboardAvoidingView/);
+ assert.match(source,/auth\.token&&!accessRevoked\?<View style=\{styles\.composer\}>/);
  assert.match(source,/enabled=\{!accessRevoked&&!sending&&!uploading/);
  assert.match(source,/if\(!active\|\|version!==generation\.current\|\|revokedRef\.current\)return/);
 });

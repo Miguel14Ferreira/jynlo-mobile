@@ -132,7 +132,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="communities/create" options={{title:t("Criar comunidade")}}/>
     <Stack.Screen name="communities/[id]" options={{title:t("Comunidade")}}/>
     <Stack.Screen name="communities/invites" options={{title:t("Convites")}}/>
-    <Stack.Screen name="communities/[id]/chat" options={{title:t("Chat da comunidade")}}/>
+    <Stack.Screen name="communities/[id]/chat" options={{headerShown:false,title:t("Chat da comunidade")}}/>
     <Stack.Screen name="communities/[id]/live/index" options={{title:t("Diretos da comunidade")}}/>
     <Stack.Screen name="communities/[id]/live/[eventId]" options={{title:t("Em direto")}}/>
     <Stack.Screen name="messages/[peer]" options={{headerShown:false,title:t("Chat privado")}}/>

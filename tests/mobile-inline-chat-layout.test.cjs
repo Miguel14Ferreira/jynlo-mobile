@@ -3,13 +3,12 @@ const untranslate=require('./untranslate.cjs');
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const read=p=>untranslate(fs.readFileSync(path.join(__dirname,'..',p),'utf8'));
-test('session and community details contain the real chat without opening another route',()=>{
+test('session details contain the real chat; the community chat opens full screen',()=>{
  const session=read('app/sessions/[id].tsx'),community=read('app/communities/[id].tsx');
  assert.match(session,/import SessionChatPanel from/);
  assert.match(session,/<SessionChatPanel embedded\/>/);
  assert.doesNotMatch(session,/title="Abrir chat da sessão"/);
- assert.match(community,/import CommunityChatPanel from/);
- assert.match(community,/<CommunityChatPanel embedded\/>/);
+ assert.match(community,/router\.push\(\{pathname:'\/communities\/\[id\]\/chat'/);
  assert.doesNotMatch(community,/title="Abrir chat da comunidade"/);
 });
 test('old deep links still render exactly the same chat component',()=>{
@@ -17,7 +16,8 @@ test('old deep links still render exactly the same chat component',()=>{
  assert.match(read('app/communities/[id]/chat.tsx'),/<CommunityChatPanel\/>/);
 });
 test('inline chats have independently scrollable history and show earlier messages on demand',()=>{
- for(const name of ['Session','Community']){
+ assert.match(read('src/components/CommunityChatPanel.tsx'),/<ScrollView ref=\{inlineHistoryRef\} style=\{embedded\?\[styles\.inlineHistory,keyboardVisible&&styles\.inlineHistoryKeyboard\]:styles\.historyScroll\}/);
+ for(const name of ['Session']){
   const src=read('src/components/'+name+'ChatPanel.tsx');
   assert.match(src,/\{<ScrollView ref=\{inlineHistoryRef\} style=\{\[styles.inlineHistory,keyboardVisible&&styles.inlineHistoryKeyboard\]\} nestedScrollEnabled/);
   assert.match(src,/setHistoryLimit\(count=>count\+40\)/);

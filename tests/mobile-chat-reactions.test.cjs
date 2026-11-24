@@ -17,7 +17,7 @@ test('each chat renders the same message reaction controls and bulk-loads per co
   assert.match(src,/busy=\{reactions.busyIds.has\(m.id\)\}/);
   assert.match(src,/onReact=\{reactions.react\}/);
   assert.match(src,/onInspect=\{reactions.inspect\}/);
-  assert.match(src,/!m.deletedAt\?<ChatReactionRow/);
+  assert.match(src,/!m.deletedAt\?(?:<View style=\{styles\.metaReactions\}>)?<ChatReactionRow/);
  }
 });
 test('reaction API uses authorized server endpoints with strict fixed emoji set',()=>{

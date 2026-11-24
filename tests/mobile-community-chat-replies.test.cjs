@@ -16,7 +16,8 @@ test('community replies preserve backend contract for text and attachment messag
 test('community chat UI supports quoted reply selection, rendering and cancellation',()=>{
  const screen=read('src/components/CommunityChatPanel.tsx');
  assert.match(screen,/\[reply,setReply\]=useState<CommunityChatEntry\|null>\(null\)/);
- assert.match(screen,/const renderedMessages=.*\.map\(m=><View/);
+ assert.match(screen,/const renderedMessages=visibleMessages\.map\(\(m,index\)=>\{/);
+ assert.match(screen,/onLongPress=\{\(\)=>\{if\(!m\.deletedAt&&!accessRevoked\)setExpandedMessageActions/);
  assert.match(screen,/accessibilityLabel=\{'Responder a '\+m.username\}/);
  assert.match(screen,/onPress=\{\(\)=>\{setReply\(m\);setExpandedMessageActions\(null\);\}\}/);
  assert.match(screen,/m\.replyToSender/);

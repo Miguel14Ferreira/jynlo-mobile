@@ -28,11 +28,13 @@ test('community private data stays protected and main content keeps its existing
  assert.match(src,/owner&&activeSection==='MANAGE'\?<View style=\{styles\.section\}>/);
  assert.match(src,/owner&&activeSection==='MANAGE'&&requestsError/);
  assert.match(src,/owner&&activeSection==='MANAGE'&&requests\.length>0/);
- assert.match(src,/role&&activeSection==='CHAT'\?<View style=\{styles\.section\}>/);
+ // The community chat opens full screen, like a messaging app.
+ assert.match(src,/if\(tab\.id==='CHAT'\)openChat\(\)/);
+ assert.match(src,/pathname:'\/communities\/\[id\]\/chat'/);
  assert.match(src,/role&&activeSection==='SESSIONS'\?<View style=\{styles\.section\}>/);
  assert.match(src,/auth\.token && \(role \? activeSection==='OVERVIEW' : community\.visibility==='PUBLIC'\)/);
  assert.match(src,/<CommunityTeamsPanel communityId=\{id\} isOrganizer=\{owner\} token=\{auth\.token\}/);
- assert.match(src,/<CommunityChatPanel embedded\/>/);
+ assert.doesNotMatch(src,/<CommunityChatPanel embedded\/>/);
  assert.match(src,/pendingCommunityRequests\(id,auth\.token,auth\.username\)/);
  assert.match(src,/communitySessions\(id,auth\.token,auth\.username\)/);
  assert.match(src,/Criar sessão nesta comunidade/);

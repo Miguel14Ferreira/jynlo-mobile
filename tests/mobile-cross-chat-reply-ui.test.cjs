@@ -37,7 +37,8 @@ test('session messages show structured quotes and use readable history dimension
  assert.match(session,/\{m\.replyToText\?<View style=\{styles\.quote\}>/);
  assert.match(session,/quoteAuthor:\{fontSize:12,color:C\.mint/);
  assert.match(session,/quoteBody:\{fontSize:12,lineHeight:18/);
- for(const view of [session,community]){
+ assert.match(community,/historyScroll:\{flex:1\}/);
+ for(const view of [session]){
   assert.match(view,/inlineHistory:\{height:470,maxHeight:470,minHeight:240/);
   assert.match(view,/inlineHistoryKeyboard:\{height:230,maxHeight:230,minHeight:120/);
  }

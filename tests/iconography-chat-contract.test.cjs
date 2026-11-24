@@ -11,7 +11,7 @@ test('direct, session and community chats render vector attachments and remove a
  for(const screen of ['app/messages/[peer].tsx','src/components/SessionChatPanel.tsx','src/components/CommunityChatPanel.tsx']){
   const source=read(screen);
   assert.match(source,/import \{JynloIcon\}/,screen);
-  assert.match(source,/name=\{attachmentsOpen\?'close':'attachment'\}/,screen);
+  assert.match(source,/name=\{attachmentsOpen\?'close':'(?:attachment|plus)'\}/,screen);
   assert.match(source,/name="remove"/,screen);
   assert.doesNotMatch(source,/＋ Anexar ficheiro|✕ Remover/,screen);
  }
