@@ -1,4 +1,5 @@
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
+import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -43,6 +44,7 @@ import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
 export default function CommunityChatPanel({embedded=false}:{embedded?:boolean}){
  const {id:raw}=useLocalSearchParams<{id:string}>(),id=Number(raw);const auth=useAuth(),router=useRouter();
+ useChatViewing('community',Number.isSafeInteger(id)&&id>0?id:null,auth.token);
  const [messages,setMessages]=useState<CommunityChatEntry[]>([]);
  const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
  const uncertainSendRef=useRef<{identity:string;body:string;replyId:number|null}|null>(null);

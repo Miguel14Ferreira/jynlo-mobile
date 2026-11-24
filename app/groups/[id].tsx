@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {useChatViewing} from '../../src/lib/chat-viewing';
 import {t} from '../../src/lib/i18n';
 import {ActivityIndicator,Alert,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {ScrollViewInstance} from 'react-native';
@@ -43,6 +44,7 @@ export default function GroupChatScreen(){
  const params=useLocalSearchParams<{id:string;title?:string}>();
  const groupId=Number(params.id);
  const auth=useAuth(),router=useRouter();
+ useChatViewing('private',Number.isSafeInteger(groupId)&&groupId>0?groupId:null,auth.token);
  const me=auth.username||'';
  const [infoOpen,setInfoOpen]=useState(false),[attachOpen,setAttachOpen]=useState(false);
  const historyRef=useRef<ScrollViewInstance|null>(null);

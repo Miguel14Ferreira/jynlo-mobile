@@ -1,4 +1,5 @@
 import {KeyboardFrame} from '../../src/components/KeyboardFrame';
+import {useChatViewing} from '../../src/lib/chat-viewing';
 import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
 import {t} from '../../src/lib/i18n';
 import {ensureChatCameraPermission} from '../../src/lib/chat-camera-permission';
@@ -43,6 +44,7 @@ export default function DirectConversation(){
  const params=useLocalSearchParams<{peer:string}>();
  const peer=typeof params.peer==='string'?params.peer:'';
  const auth=useAuth(),router=useRouter();
+ useChatViewing('direct',peer?peer.toLowerCase():null,auth.token);
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
  const uncertainSendRef=useRef<{identity:string;body:string;replyId:number|null}|null>(null);

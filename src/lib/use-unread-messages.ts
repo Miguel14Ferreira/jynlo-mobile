@@ -4,8 +4,10 @@ import {communityInbox,directInbox,sessionInbox,privateGroupInbox} from './chat-
 import {listConversationMutes} from './conversation-mutes-api';
 import {badgeTotal} from './unread-badge-core.cjs';
 import {ApiError,DEMO_MODE,request} from './api';
+import {onUnreadChanged} from './unread-events';
+import {getNativeNotifications} from './optional-notifications.cjs';
 
-const POLL_MS=60_000;
+const POLL_MS=30_000;
 /** One request: the server sums every accessible conversation and skips muted ones. */
 async function serverTotal(token:string):Promise<number|null>{
  try{
@@ -48,7 +50,15 @@ export function useUnreadMessages(token:string|null,username:string|null){
   void refresh(true);
   const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},POLL_MS);
   const sub=AppState.addEventListener('change',state=>{if(state==='active')void refresh(true);});
-  return()=>{clearInterval(timer);sub.remove();};
+  // Live: a chat was read here, or a message alert arrived while the app is open.
+  let soon:ReturnType<typeof setTimeout>|null=null;
+  const offRead=onUnreadChanged(()=>{if(soon)clearTimeout(soon);soon=setTimeout(()=>void refresh(true),700);});
+  let received:{remove:()=>void}|null=null;
+  try{
+   const Notifications=getNativeNotifications() as {addNotificationReceivedListener?:(cb:()=>void)=>{remove:()=>void}}|null;
+   if(Notifications?.addNotificationReceivedListener)received=Notifications.addNotificationReceivedListener(()=>void refresh(true));
+  }catch{/* optional native module */}
+  return()=>{clearInterval(timer);sub.remove();offRead();if(soon)clearTimeout(soon);try{received?.remove();}catch{/* ignore */}};
  // identity covers account switches
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[identity]);

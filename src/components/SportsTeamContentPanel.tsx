@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
@@ -87,6 +88,7 @@ function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,search
 }
 
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
+ useChatViewing('team',teamId,token,kind==='chat');
  const lastMarked=useRef(0);
  const router=useRouter();
  const [toolsOpen,setToolsOpen]=useState(false);

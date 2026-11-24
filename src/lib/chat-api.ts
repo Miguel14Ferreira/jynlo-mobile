@@ -1,3 +1,4 @@
+import {notifyUnreadChanged} from './unread-events';
 import {DEMO_MODE,request} from './api';
 import {notifyDemoCommunityMessage} from './community-realtime';
 import {communityDetails,myCommunities} from './community-api';
@@ -139,6 +140,7 @@ export async function markCommunityRead(id:number,lastSeenMessageId:number,token
  if(!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  if(DEMO_MODE){const k=username+':'+id;demoRead.set(k,Math.max(demoRead.get(k)||0,lastSeenMessageId));return;}
  await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'community',id:String(id),lastSeenMessageId}});
+ notifyUnreadChanged();
 }
 const demoRead=new Map<string,number>();
 
@@ -237,6 +239,7 @@ export async function markDirectRead(peer:string,lastSeenMessageId:number,token:
  await request('/api/messages/inbox/read',{
   token,method:'PUT',body:{kind:'direct',id:peer.toLowerCase(),lastSeenMessageId}
  });
+ notifyUnreadChanged();
 }
 
 /** Private group chats: only groups listed for this account (GET /api/private-groups) are shown;
@@ -272,6 +275,7 @@ export async function markPrivateGroupRead(groupId:number,lastSeenMessageId:numb
  if(!token||DEMO_MODE)return;
  if(!Number.isSafeInteger(groupId)||groupId<=0||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'private',id:String(groupId),lastSeenMessageId}});
+ notifyUnreadChanged();
 }
 
 /** Team chats the account can open (owner or active member, chat on); the server decides access. */
@@ -301,4 +305,5 @@ export async function markTeamChatRead(teamId:number,lastSeenMessageId:number,to
  if(!token||DEMO_MODE)return;
  if(!Number.isSafeInteger(teamId)||teamId<=0||!Number.isSafeInteger(lastSeenMessageId)||lastSeenMessageId<=0)return;
  await request('/api/messages/inbox/read',{token,method:'PUT',body:{kind:'team',id:String(teamId),lastSeenMessageId}});
+ notifyUnreadChanged();
 }

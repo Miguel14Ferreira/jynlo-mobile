@@ -1,4 +1,5 @@
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
+import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {JynloIcon} from './JynloIcon';
 import ChatPdfComposer from './ChatPdfComposer';
@@ -36,6 +37,7 @@ import {PollComposer} from './PollComposer';
 export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  const params=useLocalSearchParams<{id:string}>(),id=Number(params.id);
  const auth=useAuth(),router=useRouter();
+ useChatViewing('session',Number.isSafeInteger(id)&&id>0?id:null,auth.token);
  const [entries,setEntries]=useState<SessionChatEntry[]>([]);
  const [uncertainSend,setUncertainSend]=useState<{identity:string;body:string;replyId:number|null}|null>(null);
  const uncertainSendRef=useRef<{identity:string;body:string;replyId:number|null}|null>(null);

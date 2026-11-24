@@ -12,12 +12,12 @@ test('badge sums unread messages and ignores muted conversations',()=>{
  assert.equal(badgeTotal([direct,community,session],[{kind:'community',id:'7'},{kind:'direct',id:'ana'}]),1);
  assert.equal(badgeTotal([null,undefined],null),0);
 });
-test('Messages tab shows the badge and refreshes on focus, foreground and every minute',()=>{
+test('Messages tab shows the badge and refreshes on focus, foreground, live events and every 30 seconds',()=>{
  const tabs=read('app/(tabs)/_layout.tsx');
  assert.match(tabs,/tabBarBadge:badge\|\|undefined/);
  assert.match(tabs,/screenListeners=\{\{focus:\(\)=>\{void unread\.refresh\(\);\}\}\}/);
  const hook=read('src/lib/use-unread-messages.ts');
- assert.match(hook,/POLL_MS=60_000/);
+ assert.match(hook,/POLL_MS=30_000/);
  // One request to the server total; the old per-source sum only if the endpoint does not exist.
  assert.match(hook,/'\/api\/messages\/inbox\/unread-count'/);
  assert.match(hook,/e\.status===404\|\|e\.status===405\)\)return null;/);
