@@ -43,3 +43,7 @@ test('"Criar jogo neste campo" opens creation at the booked venue and Lisbon tim
   {venueId:'5',bookingId:'77',day:'2030-06-01',time:'18:00',sport:'Padel'});
  assert.equal(b.createGameParams({id:1,venueId:2,startAt:'2030-01-10T19:30:00Z'},null).sport,undefined);
 });
+test('a court slot fills the game form day and time in Lisbon',()=>{
+ assert.deepEqual(b.slotFormParts('2030-06-01T17:00:00Z'),{day:'2030-06-01',time:'18:00'});
+ assert.deepEqual(b.slotFormParts('2030-01-10T19:30:00Z'),{day:'2030-01-10',time:'19:30'});
+});

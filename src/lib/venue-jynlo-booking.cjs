@@ -71,4 +71,10 @@ function createGameParams(booking,sport){
  return params;
 }
 
-module.exports={parsePrice,formatPrice,priceField,lisbonTime,lisbonDateTime,nextLisbonDays,validateHours,canCancel,createGameParams};
+/** A slot as the game form's day (YYYY-MM-DD) and time (HH:MM), in Lisbon. */
+function slotFormParts(iso){
+ const p=lisbonParts(new Date(iso));
+ return {day:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};
+}
+
+module.exports={slotFormParts,parsePrice,formatPrice,priceField,lisbonTime,lisbonDateTime,nextLisbonDays,validateHours,canCancel,createGameParams};

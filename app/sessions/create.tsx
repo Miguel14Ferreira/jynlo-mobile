@@ -15,7 +15,8 @@ import {myCommunities} from '../../src/lib/community-api';
 import {communitySports} from '../../src/lib/community-core.cjs';
 import {availableSessionSports} from '../../src/lib/session-community-sports.cjs';
 import {venues,venueDetails} from '../../src/lib/parity-api';
-import {linkBookingToSession} from '../../src/lib/venue-jynlo-api';
+import {linkBookingToSession,requestBooking} from '../../src/lib/venue-jynlo-api';
+import {VenueSlotPicker,type PickedVenueSlot} from '../../src/components/VenueSlotPicker';
 import {myPresets,createPreset,updatePreset,deletePreset} from '../../src/lib/session-preset-api';
 import {presetFromForm,formFromPreset,presetNotesText,validatePresetName,MAX_PRESETS,type SessionPreset} from '../../src/lib/session-preset-core.cjs';
 import {getCurrentSessionCoordinates,resolveSessionMapLink,describeSessionCoordinates,googleMapsPreview,validCoordinates} from '../../src/lib/session-location-api';
@@ -113,6 +114,8 @@ export default function CreateSessionScreen(){
  // "Criar jogo neste campo": open at the booked venue, then link the game to that booking.
  const bookedVenueId=typeof params.venueId==='string'&&/^[1-9][0-9]*$/.test(params.venueId)?Number(params.venueId):null;
  const bookingId=typeof params.bookingId==='string'&&/^[1-9][0-9]*$/.test(params.bookingId)?Number(params.bookingId):null;
+ // A free court time picked at a venue that takes Jynlo bookings; requested once the game exists.
+ const [pickedSlot,setPickedSlot]=useState<PickedVenueSlot|null>(null);
  const presetDay=typeof params.day==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(params.day)?params.day:'';
  const presetTime=typeof params.time==='string'&&/^([01]\d|2[0-3]):[0-5]\d$/.test(params.time)?params.time:'';
  const withPresetWhen=(value:CreateSessionForm):CreateSessionForm=>presetDay&&presetTime?{...value,day:presetDay,time:presetTime}:value;
@@ -406,6 +409,10 @@ export default function CreateSessionScreen(){
   catch(e){setPresetError(e instanceof Error?e.message:t('Não foi possível eliminar o perfil.'));}
   finally{setPresetBusy(false);}
  }
+ React.useEffect(()=>{
+  // Another venue, day or time than the picked court slot drops the booking request.
+  if(pickedSlot&&(form.venueId!==pickedSlot.venueId||form.day!==pickedSlot.day||form.time!==pickedSlot.time))setPickedSlot(null);
+ },[form.venueId,form.day,form.time,pickedSlot]);
  const patch=(key:keyof CreateSessionForm,value:string|boolean|number|null)=>{
   if(key==='city'||key==='address'){
     clearVenueSearch();
@@ -536,6 +543,9 @@ export default function CreateSessionScreen(){
      if(bookingId&&actorToken){
       // A failed link never blocks opening the new game.
       try{await linkBookingToSession(bookingId,result.id,actorToken);}catch{/* still open the game */}
+     }else if(pickedSlot&&actorToken&&pickedSlot.venueId===form.venueId){
+      // Ask the venue for the picked court, linked to the new game; a refusal never blocks opening it.
+      try{await requestBooking(pickedSlot.venueId,actorToken,pickedSlot.courtId,pickedSlot.start,null,result.id);}catch{/* still open the game */}
      }
      router.replace({pathname:'/sessions/[id]',params:{id:String(result.id)}});
     }catch(e){
@@ -807,6 +817,8 @@ export default function CreateSessionScreen(){
    {venueHasMore?<Button secondary title={venueLoading?t('A carregar…'):t('Mostrar mais recintos')}
     disabled={busy||venueLoading} onPress={()=>{void findVenues(venuePage+1);}}/>:null}
    </>:null}
+   {form.venueId?<VenueSlotPicker venueId={form.venueId} disabled={busy} selected={pickedSlot}
+    onPick={slot=>{setPickedSlot(slot);if(slot)setForm(prev=>({...prev,day:slot.day,time:slot.time}));}}/>:null}
    {locationMode==='saved'&&venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
     <Text style={styles.note}>{t('A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.')}</Text>:<>
     {venueChosen?<Message>{t('Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.')}</Message>:null}

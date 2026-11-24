@@ -8,3 +8,4 @@ export function validateHours(rows: {dayOfWeek: number; openTime: string; closeT
 export function canCancel(booking: {status: string; startAt: string} | null | undefined, now?: Date): boolean;
 export function createGameParams(booking: {id: number; venueId: number; startAt: string}, sport?: string | null):
  {venueId: string; bookingId: string; day: string; time: string; sport?: string};
+export function slotFormParts(iso: string): {day: string; time: string};
