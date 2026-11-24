@@ -1,7 +1,7 @@
 import React,{useCallback,useState} from 'react';
 import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {useFocusEffect,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
 import {ApiError,DEMO_MODE,request} from '../../src/lib/api';
@@ -35,6 +35,10 @@ const TEXT_FIELDS:{key:TextField;label:string;limit:number;placeholder?:string}[
 type Suggestion={id:number;status:string;submittedAt:string};
 export default function CreateVenueScreen(){
  const auth=useAuth(),router=useRouter();
+ const params=useLocalSearchParams<{owner?:string}>();
+ // The person creating the venue runs it: approving the venue also makes them its manager.
+ const [runsVenue,setRunsVenue]=useState(params.owner==='1');
+ const [managerRole,setManagerRole]=useState(''),[managerPhone,setManagerPhone]=useState('');
  const [data,setData]=useState<NewVenueFields>({...INITIAL});
  const [sports,setSports]=useState<string[]>([]);
  const [catalog,setCatalog]=useState<string[]>([]);
@@ -64,10 +68,14 @@ export default function CreateVenueScreen(){
   let payload:Record<string,unknown>;
   try{payload=buildVenueRequest(data,sports,catalog);}
   catch(e){setError(e instanceof Error?e.message:t('Verifica os campos do recinto.'));return;}
+  if(runsVenue&&managerRole.trim().length<2){setError(t('Diz-nos qual é a tua função no recinto.'));return;}
   setBusy(true);setError('');
   try{
    // POST is only sent after explicit confirmation and is never retried automatically.
-   const created=await request<Suggestion>('/api/venues',{token:auth.token,method:'POST',body:payload});
+   const created=runsVenue
+    ?await request<Suggestion>('/api/venues/mine',{token:auth.token,method:'POST',
+      body:{venue:payload,roleDescription:managerRole.trim(),contactPhone:managerPhone.trim()||null}})
+    :await request<Suggestion>('/api/venues',{token:auth.token,method:'POST',body:payload});
    if(!Number.isSafeInteger(created.id)||!created.status)throw new Error(t('resposta inesperada'));
    setSubmitted(created);
   }catch(e){
@@ -87,6 +95,7 @@ export default function CreateVenueScreen(){
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {submitted?<Message>{t('Sugestão #{a} recebida. Estado: {b}.',{a:submitted.id,b:submitted.status==='PENDING'?t('Em análise'):submitted.status})}</Message>:null}
+  {submitted&&runsVenue?<Message>{t('Recebemos também o teu pedido para gerir o recinto. Quando for aprovado, avisamos-te e podes configurar os campos, os preços e o horário.')}</Message>:null}
   {!submitted&&!!auth.token&&!DEMO_MODE?<View style={styles.form}>
    {TEXT_FIELDS.map(f=>({...f,label:t(f.label),placeholder:f.placeholder?t(f.placeholder):undefined})).map(({key,label,limit,placeholder})=><View key={key} style={styles.field}>
     <Text style={styles.label}>{label}</Text>
@@ -151,6 +160,24 @@ export default function CreateVenueScreen(){
      onPress={()=>toggle(key)} disabled={busy}>
      <Text style={styles.choiceText}>{data[key]?'☑':'☐'} {label}</Text>
    </Pressable>)}</View>
+   <View style={styles.ownerBox}>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:runsVenue}} disabled={busy}
+     onPress={()=>setRunsVenue(v=>!v)} style={styles.ownerRow}>
+     <Text style={styles.ownerTick}>{runsVenue?'☑':'☐'}</Text>
+     <View style={{flex:1,gap:3}}>
+      <Text style={styles.label}>{t('Sou o responsável por este recinto')}</Text>
+      <Text style={styles.hint}>{t('Quero geri-lo na Jynlo e receber reservas, sem custos. Analisamos o recinto e o pedido ao mesmo tempo.')}</Text>
+     </View>
+    </Pressable>
+    {runsVenue?<>
+     <Text style={styles.label}>{t('A tua função no recinto')} *</Text>
+     <TextInput style={styles.input} value={managerRole} onChangeText={setManagerRole} maxLength={120} editable={!busy}
+      placeholder={t('Ex.: dono, gerente, direção do clube')} placeholderTextColor={C.muted}/>
+     <Text style={styles.label}>{t('Telefone para confirmarmos (opcional)')}</Text>
+     <TextInput style={styles.input} value={managerPhone} onChangeText={setManagerPhone} maxLength={20} editable={!busy}
+      keyboardType="phone-pad" placeholder={"912 345 678"} placeholderTextColor={C.muted}/>
+    </>:null}
+   </View>
    <Message>{t('Indica a morada ou as duas coordenadas GPS. Confirma o nome e a cidade antes de enviar, para evitar recintos duplicados.')}</Message>
    <Button title={busy?t('A enviar…'):t('Enviar recinto para aprovação')}
     disabled={busy||loading||!catalog.length} onPress={()=>{void submit();}}/>
@@ -167,5 +194,7 @@ const styles=StyleSheet.create({
  choices:{flexDirection:'row',flexWrap:'wrap',gap:8},
  choice:{padding:10,borderRadius:10,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
  selected:{borderColor:C.mint},choiceText:{fontSize:12,color:C.white},
- sportPicker:{padding:12,gap:8,backgroundColor:C.surface,borderRadius:12}
+ sportPicker:{padding:12,gap:8,backgroundColor:C.surface,borderRadius:12},
+ ownerBox:{gap:8,padding:12,borderRadius:14,borderWidth:1,borderColor:C.mint,backgroundColor:C.surface},
+ ownerRow:{flexDirection:'row',gap:10,alignItems:'flex-start'},ownerTick:{fontSize:18,color:C.mint}
 });
