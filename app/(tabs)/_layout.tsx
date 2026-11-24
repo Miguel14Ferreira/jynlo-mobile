@@ -11,6 +11,8 @@ import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {useUnreadMessages} from '../../src/lib/use-unread-messages';
 import {formatUnreadBadge} from '../../src/lib/inbox-filter.cjs';
 import {firstStepsDue} from '../../src/lib/first-steps-api';
+import {useNavTabs} from '../../src/lib/use-nav-tabs';
+import {NAV_TAB_CATALOG} from '../../src/lib/nav-tabs.cjs';
 
 const colors=MobileTheme.colors;
 function TabSymbol({name,color,focused}:{name:JynloIconName;color:string;focused:boolean}){
@@ -23,6 +25,20 @@ export default function TabsLayout(){
  const [open,setOpen]=useState(false);
  const unread=useUnreadMessages(auth.token,auth.username);
  const badge=formatUnreadBadge(unread.count);
+ const bar=useNavTabs();
+ /** A slot showing something other than its own screen gets a button that opens the chosen section. */
+ const slotButton=(slotId:string,own:string)=>{
+  if(slotId===own)return undefined;
+  const tab=NAV_TAB_CATALOG.find(item=>item.id===slotId);
+  if(!tab)return undefined;
+  const label=t(tab.label);
+  const showBadge=tab.id==='messages'&&!!badge;
+  return ()=>(<Pressable accessibilityRole="button" testID={'tab-'+tab.id} accessibilityLabel={showBadge?t('Mensagens, {count} por ler',{count:badge}):label}
+    onPress={()=>router.push(tab.href as never)} style={styles.customTab}>
+    <TabSymbol name={tab.icon as JynloIconName} color={String(colors.tabInactive)} focused={false}/>
+    {showBadge?<View style={styles.customBadge}><Text style={styles.customBadgeText}>{badge}</Text></View>:null}
+   </Pressable>);
+ };
  const [eligible,setEligible]=useState<CommunityGroup[]>([]);
  const [checking,setChecking]=useState(false);
  const [checkError,setCheckError]=useState(false);
@@ -80,12 +96,12 @@ export default function TabsLayout(){
    tabBarItemStyle:{minHeight:MobileTheme.touchTarget},
   }}>
    <Tabs.Screen name="index" options={{title:t('Início'),tabBarButtonTestID:'tab-home',tabBarAccessibilityLabel:t('Início'),tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
-   <Tabs.Screen name="explore" options={{title:t('Explorar'),tabBarButtonTestID:'tab-explore',tabBarAccessibilityLabel:t('Explorar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
+   <Tabs.Screen name="explore" options={{title:t('Explorar'),tabBarButton:slotButton(bar.ids[0]??'explore','explore'),tabBarButtonTestID:'tab-explore',tabBarAccessibilityLabel:t('Explorar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:t('Criar'),tabBarButton:()=>(
     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir menu de criação')} onPress={()=>setOpen(true)} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
     </Pressable>)}}/>
-   <Tabs.Screen name="messages" options={{title:t('Mensagens'),tabBarButtonTestID:'tab-messages',tabBarAccessibilityLabel:badge?t('Mensagens, {count} por ler',{count:badge}):t('Mensagens'),
+   <Tabs.Screen name="messages" options={{title:t('Mensagens'),tabBarButton:slotButton(bar.ids[1]??'messages','messages'),tabBarButtonTestID:'tab-messages',tabBarAccessibilityLabel:badge?t('Mensagens, {count} por ler',{count:badge}):t('Mensagens'),
     tabBarBadge:badge||undefined,tabBarBadgeStyle:{backgroundColor:'#FF5A5F',color:'#FFFFFF',fontSize:10,fontWeight:'800'},tabBarIcon:({color,focused})=><TabSymbol name="messages" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="profile" options={{title:t('Perfil'),tabBarButtonTestID:'tab-profile',tabBarAccessibilityLabel:t('Perfil'),tabBarIcon:({color,focused})=><TabSymbol name="profile" color={String(color)} focused={focused}/>}}/>
   </Tabs>
@@ -188,4 +204,7 @@ const styles=StyleSheet.create({
  communityChoiceText:{flex:1,fontSize:13,fontWeight:'800',color:colors.text},
  chevron:{fontSize:26,color:colors.accent},checking:{flexDirection:'row',alignItems:'center',gap:10,padding:10},
  info:{color:colors.muted,fontSize:11,lineHeight:17,paddingHorizontal:5},
+ customTab:{flex:1,alignItems:'center',justifyContent:'center',minHeight:MobileTheme.touchTarget},
+ customBadge:{position:'absolute',top:2,left:'55%',minWidth:18,height:18,paddingHorizontal:4,borderRadius:9,backgroundColor:'#FF5A5F',alignItems:'center',justifyContent:'center'},
+ customBadgeText:{color:'#FFFFFF',fontSize:10,fontWeight:'800'},
 });

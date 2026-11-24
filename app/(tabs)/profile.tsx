@@ -19,6 +19,7 @@ import {myCommunities} from '../../src/lib/community-api';
 import type {CommunityGroup} from '../../src/lib/types';
 import {sportName} from '../../src/lib/sport-names.cjs';
 import {managedVenues,type ManagedVenue} from '../../src/lib/venue-jynlo-api';
+import {NavTabsEditor} from '../../src/components/NavTabsEditor';
 type ProfilePresentation={
   profilePicUrl?:string|null;fullName?:string|null;nickname?:string|null;
   bio?:string|null;location?:string|null;country?:string|null;
@@ -28,6 +29,7 @@ export default function ProfileScreen(){
  const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const router=useRouter();const auth=useAuth();
   const [myVenues,setMyVenues]=React.useState<ManagedVenue[]>([]);
+  const [navEditorOpen,setNavEditorOpen]=React.useState(false);
   React.useEffect(()=>{if(!auth.token)return;let alive=true;managedVenues(auth.token).then(l=>{if(alive)setMyVenues(l||[]);}).catch(()=>{});return()=>{alive=false;};},[auth.token]);
   const [confirmUsername,setConfirmUsername]=useState('');
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
@@ -211,6 +213,7 @@ export default function ProfileScreen(){
       <JynloIcon name={moreOptionsOpen?'chevron-up':'chevron-down'} size={21} color={C.mint}/>
     </Pressable>
     {moreOptionsOpen?<>
+    {auth.token?<Button title={t('Personalizar a barra')} secondary onPress={()=>setNavEditorOpen(true)}/>:null}
     <Eyebrow>{t('EXPLORAR A JYNLO')}</Eyebrow>
     <Button title={t('Feed')} secondary onPress={()=>router.push('/feed')}/>
     <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
@@ -250,6 +253,7 @@ export default function ProfileScreen(){
     {!auth.username?<Message>{t('Inicia sessão para participares nas atividades desportivas.')}</Message>:null}
     {DEMO_MODE?<Message>{t('Modo de demonstração: as contas Tiago e André são fictícias. Não há ligação à produção.')}</Message>:null}
     </>:null}
+  <NavTabsEditor visible={navEditorOpen} onClose={()=>setNavEditorOpen(false)}/>
   </Page>;
 }
 const styles=StyleSheet.create({
