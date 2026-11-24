@@ -9,6 +9,7 @@ export const chatLook={
  time:{fontSize:10,color:C.muted},
  footer:{flexShrink:0,paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:7,borderTopWidth:1,borderTopColor:C.border,backgroundColor:C.background},
  composer:{flexDirection:'row',alignItems:'flex-end',gap:8},
+ typing:{color:'#74DFCA',fontSize:12,fontWeight:'700',fontStyle:'italic',paddingHorizontal:6},
  plus:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center',backgroundColor:C.surface},
  input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:'#061F2E',borderColor:'#3BB6AA66',borderWidth:1,color:MobileTheme.colors.text,paddingHorizontal:14,paddingVertical:11,borderRadius:22},
  send:{backgroundColor:MobileTheme.colors.accent,borderRadius:22,width:46,minHeight:MobileTheme.touchTarget,justifyContent:'center',alignItems:'center'},

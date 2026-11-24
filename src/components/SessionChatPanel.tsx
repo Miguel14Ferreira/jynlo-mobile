@@ -1,4 +1,5 @@
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
+import {useChatTyping} from '../lib/chat-typing';
 import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {JynloIcon} from './JynloIcon';
@@ -76,6 +77,8 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  },[entries]);
  const [historyLimit,setHistoryLimit]=useState(40);
  const [draft,setDraft]=useState(''),[reply,setReply]=useState<SessionChatEntry|null>(null);
+ const typing=useChatTyping('session',Number.isSafeInteger(id)&&id>0?id:null,auth.token,auth.username);
+ useEffect(()=>{typing.onInput(draft);},[draft]);
  const [editing,setEditing]=useState<SessionChatEntry|null>(null),[editText,setEditText]=useState('');
  const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
  const [loading,setLoading]=useState(true),[sending,setSending]=useState(false);
@@ -591,6 +594,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<ChatReplyPreview sender={reply.senderUsername} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
+    {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
     <View style={styles.composer}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
       onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.plus}><JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>

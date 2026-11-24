@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useChatTyping} from '../lib/chat-typing';
 import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -122,6 +123,8 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
   return()=>{open.remove();close.remove();};
  },[kind]);
  const [draft,setDraft]=useState('');
+ const typing=useChatTyping('team',kind==='chat'?teamId:null,token,username);
+ useEffect(()=>{typing.onInput(draft);},[draft]);
  const [loading,setLoading]=useState(true);
  const [sending,setSending]=useState(false);
  const [error,setError]=useState('');
@@ -784,6 +787,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>)}
    </View>
   </View>:null}
+  {kind==='chat'&&typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
   <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityState={{expanded:toolsOpen}} accessibilityLabel={toolsOpen?t('Fechar anexos'):t('Abrir anexos')}
     onPress={()=>setToolsOpen(v=>!v)} style={chatLook.plus}><JynloIcon name={toolsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>:null}

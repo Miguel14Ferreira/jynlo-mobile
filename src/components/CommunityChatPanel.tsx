@@ -1,4 +1,6 @@
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
+import {chatLook} from '../lib/chat-look';
+import {useChatTyping} from '../lib/chat-typing';
 import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {JynloIcon} from './JynloIcon';
@@ -86,6 +88,8 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  // Keep in-flight writes locked across navigation; leaving the screen does not cancel the server request.
  const pendingWrites=useRef(new Map<string,'text'|'photo'>()),activeChat=useRef('');
  const [name,setName]=useState('Comunidade'),[draft,setDraft]=useState('');
+ const typing=useChatTyping('community',Number.isSafeInteger(id)&&id>0?id:null,auth.token,auth.username);
+ useEffect(()=>{typing.onInput(draft);},[draft]);
  const [reply,setReply]=useState<CommunityChatEntry|null>(null);
  const [expandedMessageActions,setExpandedMessageActions]=useState<number|null>(null);
  const [editing,setEditing]=useState<CommunityChatEntry|null>(null),[editText,setEditText]=useState('');
@@ -640,6 +644,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
    <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
+   {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
    {auth.token&&!accessRevoked?<View style={styles.composer}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
        accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
