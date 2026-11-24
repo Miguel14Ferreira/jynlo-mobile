@@ -2992,7 +2992,7 @@ const EN={
   "O ponto exato está no link Google Maps do organizador. Não mostramos um marcador aproximado diferente.": "The exact point is in the organiser's Google Maps link. We don't show a different approximate marker.",
   "O ponto no mapa deve ter latitude e longitude.": "The map point must have a latitude and longitude.",
   "O preço indicado não é válido.": "The price entered isn't valid.",
-  "O preço é por reserva e pago no recinto. Deixa em branco se preferires combinar no local.": "The price is per booking and paid at the venue. Leave it blank to agree on it there.",
+  "O preço é por reserva. Recebes por MB WAY ou no local, como escolheres em baixo. Deixa em branco se preferires combinar no local.": "The price is per booking. You get paid by MB WAY or at the venue, as you choose below. Leave it blank to agree on it at the venue.",
   "O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.": "The first slot is the date above. Each game has its own sign-ups, up to 52 games.",
   "O que aconteceu e em que ecrã?": "What happened, and on which screen?",
   "O que gostas de jogar?": "What do you like to play?",

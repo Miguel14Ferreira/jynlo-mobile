@@ -146,7 +146,7 @@ export default function VenueManageScreen(){
 
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Campos')}</Text>
-   <Text style={styles.muted}>{t('O preço é por reserva e pago no recinto. Deixa em branco se preferires combinar no local.')}</Text>
+   <Text style={styles.muted}>{t('O preço é por reserva. Recebes por MB WAY ou no local, como escolheres em baixo. Deixa em branco se preferires combinar no local.')}</Text>
    {courts.map((c,i)=><View key={i} style={styles.row}>
     <TextInput value={c.name} onChangeText={v=>editCourt(i,{name:v})} maxLength={80} placeholder={t('Ex.: Campo 1')}
      placeholderTextColor={C.muted} accessibilityLabel={t('Nome')} style={styles.input}/>
