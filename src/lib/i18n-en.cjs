@@ -1238,6 +1238,7 @@ const EN={
   "Detalhes (opcional)": "Details (optional)",
   "Detalhes da denúncia": "Report details",
   "Detalhes da sessão": "Game details",
+  "Detalhes do grupo": "Group details",
   "Detalhes do problema": "Problem details",
   "Diagonal": "Diagonal",
   "Direto da comunidade": "Community live stream",

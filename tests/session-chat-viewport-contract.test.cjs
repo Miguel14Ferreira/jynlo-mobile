@@ -16,7 +16,7 @@ test('refresh does not acknowledge unseen session messages',()=>{
  assert.match(source,/lastAcknowledgedMessageId\.current=latest/);
 });
 test('standalone session chat uses compact attachments and does not force page bottom',()=>{
- assert.match(source,/\{auth\.token&&!closed\?<View style=\{styles\.quickActions\}>/);
+ assert.match(source,/\{auth\.token&&!closed&&attachmentsOpen\?<View style=\{styles\.quickActions\}>/);
  assert.match(source,/<ChatPdfComposer compact target=/);
  assert.doesNotMatch(source,/<Page autoScrollToEnd>/);
  assert.match(source,/if\(composerFocused\.current&&inlineNearBottom\.current\)/);

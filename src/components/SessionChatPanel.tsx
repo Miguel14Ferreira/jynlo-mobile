@@ -16,6 +16,7 @@ import {ApiError} from '../lib/api';
 import {sessionChatHistory,postSessionChat,markSessionChatRead,editSessionChatMessage,deleteSessionChatMessage} from '../lib/session-chat-api';
 import {observeSessionChat} from '../lib/session-chat-realtime';
 import type {SessionChatEntry} from '../lib/session-chat-api';
+import {chatLook} from '../lib/chat-look';
 import {C,MobileTheme} from '../lib/theme';
 import {chatPhotoAvailable,sendChatPhoto} from '../lib/chat-photo-attachment';
 import {confirmedSessionChatSend} from '../lib/session-chat-receipt.cjs';
@@ -533,7 +534,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     onPress={()=>{initialAutoScrollPending.current=false;inlineHistoryRef.current?.scrollToEnd({animated:true});}}
     style={styles.newMessages}><JynloIcon name="chevron-down" size={17} color={C.background}/>
     <Text style={styles.newMessagesText}>{t('Mensagens novas')}</Text></Pressable>:null}
-  {auth.token&&!closed?<View style={styles.quickActions}>
+  {auth.token&&!closed&&attachmentsOpen?<View style={styles.quickActions}>
     {muteKnown?<Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ativar avisos deste chat'):t('Silenciar avisos deste chat')}
       style={styles.iconAction} disabled={muteBusy} onPress={toggleMute}>
       <JynloIcon name="notifications" size={22} color={muted?C.muted:C.mint} active={!muted}/>
@@ -588,13 +589,15 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<ChatReplyPreview sender={reply.senderUsername} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
     <View style={styles.composer}>
+     <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
+      onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.plus}><JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
       accessibilityLabel={t('Mensagem da sessão')} placeholder={t('Escreve uma mensagem')}
-       onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});}}
+       onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});setAttachmentsOpen(false);}}
        onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
      <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading}/>
-     <Pressable accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem')} style={styles.sendAction}
+     <Pressable accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem')} style={styles.send}
        disabled={sending||uploading||sendingNow.current||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null))}
        onPress={()=>{void send();}}><JynloIcon name="send" size={22} color={C.background}/></Pressable>
     </View>
@@ -605,6 +608,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
  return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }
 const styles=StyleSheet.create({
+ ...chatLook,
  inline:{gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:16,backgroundColor:C.surface},
  inlineHistory:{height:470,maxHeight:470,minHeight:240,borderWidth:1,borderColor:'#3AAEAA55',borderRadius:14,backgroundColor:'#041D29'},
  inlineHistoryKeyboard:{height:230,maxHeight:230,minHeight:120},
@@ -615,17 +619,15 @@ const styles=StyleSheet.create({
  sendAction:{height:44,width:44,borderRadius:12,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
  editPanel:{padding:12,gap:9,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface},editInput:{minHeight:48,maxHeight:150,color:C.white,padding:12,borderWidth:1,borderColor:C.border,borderRadius:10},messageAction:{minHeight:38,minWidth:35,alignItems:'center',justifyContent:'center'},actionText:{fontSize:12,color:C.mint,fontWeight:'800'},
  title:{fontSize:26,fontWeight:'900',color:C.white},note:{fontSize:12,color:C.muted},
- message:{padding:12,borderRadius:MobileTheme.radius.lg,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:6,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
- mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},sender:{fontSize:12,fontWeight:'800',color:C.mint},
+
+ sender:{fontSize:12,fontWeight:'800',color:C.mint},
  quote:{borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:9,gap:3,marginVertical:3},
  quoteAuthor:{fontSize:12,color:C.mint,fontWeight:'800'},quoteBody:{fontSize:12,lineHeight:18,color:C.muted},
- body:{color:C.white,fontSize:15,lineHeight:21},time:{color:C.muted,fontSize:10,textAlign:'right'},
+ time:{color:C.muted,fontSize:10,textAlign:'right'},
  photoPanel:{gap:9,padding:12,backgroundColor:C.surface,borderRadius:14},preview:{height:180,width:'100%'},
  muteRow:{padding:12,borderWidth:1,borderColor:C.border,borderRadius:14,backgroundColor:C.surface,gap:8},
  attachmentToggle:{alignSelf:'flex-start',paddingVertical:9,paddingHorizontal:11,minHeight:44,justifyContent:'center'},
  attachmentToggleText:{color:C.mint,fontWeight:'800',fontSize:13},attachmentOptions:{gap:8},
  mapLink:{color:C.mint,fontSize:13,fontWeight:'800',paddingVertical:9},gif:{width:240,height:200,maxWidth:'100%',borderRadius:12,backgroundColor:C.surface},
- editor:{gap:9},composer:{flexDirection:'row',gap:8,alignItems:'center'},
- input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:130,backgroundColor:MobileTheme.colors.surface,color:MobileTheme.colors.text,
-  borderWidth:1,borderColor:MobileTheme.colors.border,borderRadius:MobileTheme.radius.lg,padding:12}
+ editor:{gap:9},
 });

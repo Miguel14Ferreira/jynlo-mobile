@@ -6,6 +6,7 @@ import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import type {ScrollViewInstance} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
+import {chatLook} from '../lib/chat-look';
 import {C} from '../lib/theme';
 import {ApiError} from '../lib/api';
 import type {ImagePickerAsset} from 'expo-image-picker';
@@ -88,6 +89,7 @@ function orderedTeamFeed(entries:TeamContentEntry[],collapsed:Set<number>,search
 export default function SportsTeamContentPanel({teamId,kind,token,username}:Props){
  const lastMarked=useRef(0);
  const router=useRouter();
+ const [toolsOpen,setToolsOpen]=useState(false);
  const [entries,setEntries]=useState<TeamContentEntry[]>([]);
  const [olderEntries,setOlderEntries]=useState<TeamContentEntry[]>([]);
  const [hasOlderPosts,setHasOlderPosts]=useState(false);
@@ -742,9 +744,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    if(current===version.current){olderPending.current=false;setOlderBusy(false);}
   }
  };
+ const toolsVisible=kind!=='chat'||toolsOpen;
  const composer=<>
   {replyTo?<ChatReplyPreview sender={kind==='chat'?t('mensagem da equipa'):'publicação'} body={replyPreview(replyTo)} onCancel={()=>switchReply(null)} disabled={sending||uploading}/>:null}
-  <View style={styles.attachmentActions}>
+  {toolsVisible?<View style={styles.attachmentActions}>
    <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar localização atual')}
     accessibilityState={{disabled:sending||locationBusy}}
     disabled={sending||locationBusy} onPress={()=>void composeLocation()} style={styles.attachmentButton}>
@@ -764,7 +767,9 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      onPermissionError={reason=>{revokeIfUnauthorized(new ApiError(reason==='disabled'?409:403,t('Conversa indisponível.')));}}
      onSent={async()=>{await refresh(true,version.current);}}/>
    </>:null}
-  </View>
+   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')} disabled={sending||uploading}
+    onPress={()=>{setToolsOpen(false);setPollOpen(true);}} style={styles.attachmentButton}><Text style={{fontSize:20}}>📊</Text></Pressable>:null}
+  </View>:null}
   {media.length?<View style={styles.selectedMedia}>
    <Text style={styles.sub}>{t('{a} ficheiro(s) selecionado(s) · A legenda é opcional.',{a:media.length})}</Text>
    <View style={styles.mediaPreviews}>
@@ -778,17 +783,17 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </View>
   </View>:null}
   <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
+   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityState={{expanded:toolsOpen}} accessibilityLabel={toolsOpen?t('Fechar anexos'):t('Abrir anexos')}
+    onPress={()=>setToolsOpen(v=>!v)} style={chatLook.plus}><JynloIcon name={toolsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>:null}
    <TextInput ref={composerInputRef} multiline style={[styles.input,kind==='chat'&&styles.chatInput]} value={draft} onChangeText={setDraft}
-    onFocus={()=>{composerFocused.current=true;}} onBlur={()=>{composerFocused.current=false;}}
+    onFocus={()=>{composerFocused.current=true;setToolsOpen(false);}} onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} placeholder={kind==='chat'?t('Escreve uma mensagem…'):t('Partilha uma novidade com o plantel…')}
     placeholderTextColor={C.muted} editable={!sending} accessibilityLabel={t('Texto da mensagem')}/>
-   {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={t('Criar sondagem')} disabled={sending||uploading}
-    onPress={()=>setPollOpen(true)} style={styles.pollButton}><Text style={{fontSize:20}}>📊</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?t('Enviar mensagem'):t('Publicar na equipa')}
     accessibilityState={{disabled:sending||uploading||(!media.length&&!draft.trim())}}
     disabled={sending||uploading||(!media.length&&!draft.trim())} onPress={()=>void send()}
-    style={[styles.button,kind==='chat'&&styles.chatSendButton]}>
-    <JynloIcon name="send" size={20} color="#062A30"/>
+    style={kind==='chat'?[chatLook.send,(sending||uploading||(!media.length&&!draft.trim()))&&{opacity:.5}]:styles.button}>
+    <JynloIcon name="send" size={kind==='chat'?22:20} color="#062A30"/>
     {kind==='feed'?<Text style={styles.buttonText}>{sending?t('A publicar…'):t('Publicar')}</Text>:null}
    </Pressable>
   </View>
@@ -983,8 +988,8 @@ const styles=StyleSheet.create({
  title:{fontSize:18,color:C.white,fontWeight:'800'},sub:{fontSize:12,color:C.muted,lineHeight:18},
  empty:{padding:18,textAlign:'center',color:C.muted},error:{color:C.danger,fontSize:12},
  entry:{borderWidth:1,borderColor:'#3BB2AE52',borderRadius:17,padding:13,gap:9,backgroundColor:'#0D3945'},
- chatBubble:{maxWidth:'89%',alignSelf:'flex-start',borderBottomLeftRadius:5,padding:11,gap:6},
- ownChatBubble:{alignSelf:'flex-end',borderBottomLeftRadius:17,borderBottomRightRadius:5},
+ chatBubble:{...chatLook.message,gap:6},
+ ownChatBubble:{...chatLook.mine},
  ownEntry:{backgroundColor:'#12554D',borderColor:'#3CBB9B80'},
  feedComment:{marginLeft:18,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:'#0B303C'},
  historyLoadMore:{paddingVertical:12,alignItems:'center',gap:7},
@@ -994,7 +999,7 @@ const styles=StyleSheet.create({
  commentContext:{color:C.mint,fontSize:12,fontWeight:'800'},author:{fontSize:11,fontWeight:'800',color:C.mint},
  body:{fontSize:14,lineHeight:20,color:C.white},
  input:{minHeight:78,borderWidth:1,borderColor:'#3BB6AA66',borderRadius:14,padding:12,color:C.white,textAlignVertical:'top',backgroundColor:'#061F2E'},
- chatInput:{flex:1,minWidth:0,minHeight:48,maxHeight:120},
+ chatInput:{...chatLook.input,minWidth:0,textAlignVertical:'center'},
  chatComposerRow:{flexDirection:'row',alignItems:'flex-end',gap:8},
  feedComposerColumn:{gap:9},
  chatSendButton:{width:48,minWidth:48,minHeight:48,paddingHorizontal:0},

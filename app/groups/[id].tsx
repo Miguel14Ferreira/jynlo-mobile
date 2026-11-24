@@ -1,8 +1,12 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {t} from '../../src/lib/i18n';
-import {ActivityIndicator,Alert,Image,Linking,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Image,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import type {ScrollViewInstance} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {KeyboardFrame} from '../../src/components/KeyboardFrame';
+import {chatLook} from '../../src/lib/chat-look';
 import {Stack,useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
-import {Button,Loader,Message,Page} from '../../src/components/UI';
+import {Button,Loader,Message} from '../../src/components/UI';
 import {FriendPicker} from '../../src/components/FriendPicker';
 import {AvailabilityPanel} from '../../src/components/AvailabilityPanel';
 import {useAuth} from '../../src/lib/auth';
@@ -40,6 +44,8 @@ export default function GroupChatScreen(){
  const groupId=Number(params.id);
  const auth=useAuth(),router=useRouter();
  const me=auth.username||'';
+ const [infoOpen,setInfoOpen]=useState(false),[attachOpen,setAttachOpen]=useState(false);
+ const historyRef=useRef<ScrollViewInstance|null>(null);
  const [group,setGroup]=useState<PrivateGroup|null>(null);
  const [messages,setMessages]=useState<PrivateGroupMessage[]>([]);
  const [hasMore,setHasMore]=useState(false);
@@ -229,19 +235,22 @@ export default function GroupChatScreen(){
  }
 
  const title=group?.title||(typeof params.title==='string'?params.title:t('Grupo'));
- return <Page autoScrollToEnd>
-  <Stack.Screen options={{title}}/>
-  {loading?<Loader/>:null}
-  {gone?<><Message>{t('Já não fazes parte deste grupo ou ele deixou de existir.')}</Message><Button title={t('Ver os meus grupos')} onPress={()=>router.replace('/groups')}/></>:null}
-  {error?<><Message tone="error">{error}</Message><Button secondary title={t('Tentar novamente')} onPress={()=>{setLoading(true);void refresh(true);}}/></>:null}
-  {group?<>
-   <View style={styles.header}>
-    <View style={styles.avatar}>{group.photoUrl?<Image source={{uri:group.photoUrl}} style={styles.avatarImg}/>:<Text style={{fontSize:22}}>👥</Text>}</View>
-    <View style={{flex:1}}><Text style={styles.title} numberOfLines={2}>{group.title}</Text><Text style={styles.muted}>{membersLabel(group.members.length)}</Text></View>
-   </View>
+ return <SafeAreaView style={styles.screen} edges={['top','bottom','left','right']}>
+  <Stack.Screen options={{headerShown:false,title}}/>
+  <KeyboardFrame style={{flex:1}}>
+  <View style={styles.header}>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar')} onPress={()=>router.back()} style={styles.headerIcon}><JynloIcon name="back" size={23} color={C.white}/></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Detalhes do grupo')} accessibilityState={{expanded:infoOpen}} onPress={()=>setInfoOpen(v=>!v)} style={{flex:1,flexDirection:'row',alignItems:'center',gap:10}}>
+    <View style={styles.headerAvatar}>{group?.photoUrl?<Image source={{uri:group.photoUrl}} style={styles.headerAvatarImg}/>:<Text style={{fontSize:18}}>👥</Text>}</View>
+    <View style={{flex:1}}><Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>{group?<Text style={styles.headerStatus}>{membersLabel(group.members.length)}</Text>:null}</View>
+   </Pressable>
+   {group?<Pressable accessibilityRole="button" disabled={muteBusy} accessibilityLabel={muted?t('🔕 Ativar notificações'):t('🔔 Silenciar')} onPress={()=>{void toggleMute();}} style={styles.headerIcon}>
+    <Text style={{fontSize:19}}>{muted?'🔕':'🔔'}</Text></Pressable>:null}
+   {group?<Pressable accessibilityRole="button" accessibilityLabel={t('Detalhes do grupo')} accessibilityState={{expanded:infoOpen}} onPress={()=>setInfoOpen(v=>!v)} style={styles.headerIcon}>
+    <JynloIcon name="more" size={22} color={C.mint}/></Pressable>:null}
+  </View>
+  {group&&(infoOpen||panel)?<ScrollView style={styles.info} contentContainerStyle={{gap:10,padding:12}} keyboardShouldPersistTaps="handled">
    <View style={styles.actions}>
-    <Pressable accessibilityRole="button" disabled={muteBusy} onPress={()=>{void toggleMute();}} style={styles.action}>
-     <Text style={styles.actionText}>{muted?t('🔕 Ativar notificações'):t('🔔 Silenciar')}</Text></Pressable>
     {creator?<>
      <Pressable accessibilityRole="button" onPress={()=>{setPanel(panel==='rename'?null:'rename');setRenameTitle(group.title);setActionError('');}} style={styles.action}><Text style={styles.actionText}>{t('Alterar nome')}</Text></Pressable>
      <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void choosePhoto();}} style={styles.action}><Text style={styles.actionText}>{t('Alterar fotografia')}</Text></Pressable>
@@ -275,6 +284,13 @@ export default function GroupChatScreen(){
     <Button title={busy?t('A adicionar…'):t('Adicionar ao grupo')} disabled={busy||!picked.length} onPress={()=>{void doAdd();}}/>
     <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>setPanel(null)}/>
    </View>:null}
+  </ScrollView>:null}
+  <ScrollView ref={historyRef} style={{flex:1}} contentContainerStyle={styles.history} keyboardShouldPersistTaps="handled"
+   onContentSizeChange={()=>{if(!loadingOlder)historyRef.current?.scrollToEnd({animated:false});}}>
+  {loading?<Loader/>:null}
+  {gone?<><Message>{t('Já não fazes parte deste grupo ou ele deixou de existir.')}</Message><Button title={t('Ver os meus grupos')} onPress={()=>router.replace('/groups')}/></>:null}
+  {error?<><Message tone="error">{error}</Message><Button secondary title={t('Tentar novamente')} onPress={()=>{setLoading(true);void refresh(true);}}/></>:null}
+  {group?<>
    {hasMore?<Pressable accessibilityRole="button" disabled={loadingOlder} onPress={()=>{void older();}} style={styles.more}>
     {loadingOlder?<ActivityIndicator color={C.mint}/>:<Text style={styles.moreText}>{t('Carregar mensagens anteriores')}</Text>}</Pressable>:null}
    {!loading&&!messages.length?<Text style={[styles.muted,{textAlign:'center',paddingVertical:16}]}>{t('Ainda não há mensagens neste grupo.')}</Text>:null}
@@ -283,29 +299,32 @@ export default function GroupChatScreen(){
     const files=chatAttachmentList({...m,deletedAt:m.deleted?m.createdAt:null});
     const location=!m.deleted?chatLocationUrl(m.text):null;
     const onlyFileName=files.length>0&&(!m.text||m.text.startsWith('📎 '));
-    return <View key={m.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
+    return <View key={m.id} style={[styles.message,mine&&styles.mine]}>
     {!mine?<Text style={styles.sender}>{group.members.find(x=>x.username.toLowerCase()===m.sender.toLowerCase())?.displayName||m.sender}</Text>:null}
-    {quote?<Text style={[styles.quote,mine&&{color:'#0B3B36',borderLeftColor:'#0B3B36'}]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
-    {m.deleted?<Text style={[styles.text,styles.deleted,mine&&{color:'#0B3B36'}]}>{t('Mensagem apagada')}</Text>:
+    {quote?<Text style={[styles.quote]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
+    {m.deleted?<Text style={[styles.text,styles.deleted]}>{t('Mensagem apagada')}</Text>:
      gif?<Image source={{uri:gif}} resizeMode="contain" style={styles.gif} accessibilityLabel={t('GIF enviado no grupo')}/>:
      readPoll(m.text)?<PollCard poll={readPoll(m.text)!} kind="private" conversationId={groupId} messageId={m.id} token={auth.token}/>:
-     onlyFileName?null:<Text style={[styles.text,mine&&{color:C.background}]} selectable>{m.text}</Text>}
+     onlyFileName?null:<Text style={[styles.text]} selectable>{m.text}</Text>}
     {files.map(file=><SecureChatAttachment key={file.index} index={file.index} scope="private" conversationId={groupId} messageId={m.id}
      token={auth.token} name={file.name} mime={file.mime} size={file.size} onAuthorizationError={()=>{void refresh(true);}}/>)}
     {location?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
      onPress={()=>void Linking.openURL(location).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))} style={styles.msgAction}>
-     <JynloIcon name="location" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>{t('Abrir localização no mapa')}</Text></Pressable>:null}
+     <JynloIcon name="location" size={15} color={C.mint}/><Text style={[styles.msgActionText]}>{t('Abrir localização no mapa')}</Text></Pressable>:null}
     {!m.deleted?<View style={styles.msgActions}>
      <Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {v}',{v:m.sender})}
       onPress={()=>{setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||t('Anexo')).slice(0,150)});}} style={styles.msgAction}>
-      <JynloIcon name="reply" size={15} color={mine?C.background:C.mint}/><Text style={[styles.msgActionText,mine&&{color:C.background}]}>{t('Responder')}</Text></Pressable>
+      <JynloIcon name="reply" size={15} color={C.mint}/><Text style={[styles.msgActionText]}>{t('Responder')}</Text></Pressable>
      {mine||creator?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da mensagem')} disabled={busy} onPress={()=>messageOptions(m)} style={styles.msgAction}>
-      <JynloIcon name="more" size={18} color={mine?C.background:C.mint}/></Pressable>:null}
+      <JynloIcon name="more" size={18} color={C.mint}/></Pressable>:null}
     </View>:null}
     {!m.deleted?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-    <Text style={[styles.time,mine&&{color:'#0B3B36'}]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · '+t('editada'):''}</Text>
+    <Text style={[styles.time]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · '+t('editada'):''}</Text>
    </View>;})}
    {actionError?<Message tone="error">{actionError}</Message>:null}
+  </>:null}
+  </ScrollView>
+  {group?<View style={styles.footer}>
    {editing?<View style={styles.panel}>
     <Text style={styles.label}>{t('Editar mensagem · até 15 minutos após o envio')}</Text>
     <TextInput multiline maxLength={MAX_MESSAGE} value={editText} onChangeText={setEditText} editable={!busy} style={styles.input} accessibilityLabel={t('Editar mensagem')}/>
@@ -325,7 +344,7 @@ export default function GroupChatScreen(){
     <Button title={mediaBusy?t('A enviar ficheiros…'):t('Enviar ficheiros')} disabled={mediaBusy} onPress={()=>{void sendMedia();}}/>
     <Button secondary title={t('Cancelar anexos')} disabled={mediaBusy} onPress={()=>{setMedia([]);setCaption('');}}/>
    </View>:null}
-   <View style={styles.tools}>
+   <View style={[styles.tools,!attachOpen&&{display:'none'}]}>
     {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel={t('Selecionar fotografias ou vídeos')} disabled={mediaBusy||sending||media.length>=4}
      onPress={()=>{void chooseMedia('gallery');}} style={styles.tool}><JynloIcon name="gallery" size={23} color={C.mint}/></Pressable>:null}
     {filesAvailable?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir câmara')} disabled={mediaBusy||sending||media.length>=4}
@@ -338,18 +357,26 @@ export default function GroupChatScreen(){
      onPress={()=>setPollOpen(true)} style={styles.tool}><Text style={{fontSize:20}}>📊</Text></Pressable>
     <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>
    </View>
-   <View style={styles.compose}>
-    <TextInput value={draft} onChangeText={setDraft} multiline maxLength={MAX_MESSAGE} editable={!sending}
-     placeholder={t('Escreve uma mensagem ao grupo…')} placeholderTextColor={C.muted} style={styles.composeInput} accessibilityLabel={t('Mensagem para o grupo')}/>
+   <View style={styles.composer}>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:attachOpen}} accessibilityLabel={attachOpen?t('Fechar anexos'):t('Abrir anexos')}
+     onPress={()=>setAttachOpen(v=>!v)} style={styles.plus}><JynloIcon name={attachOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>
+    <TextInput onFocus={()=>setAttachOpen(false)} value={draft} onChangeText={setDraft} multiline maxLength={MAX_MESSAGE} editable={!sending}
+     placeholder={t('Escreve uma mensagem ao grupo…')} placeholderTextColor={C.muted} style={styles.input} accessibilityLabel={t('Mensagem para o grupo')}/>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Enviar')} disabled={sending||!draft.trim()} onPress={()=>{void send();}}
      style={[styles.send,(sending||!draft.trim())&&{opacity:.5}]}>
-     {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>{t('Enviar')}</Text>}</Pressable>
+     {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}</Pressable>
    </View>
-  </>:null}
- </Page>;
+  </View>:null}
+  </KeyboardFrame>
+ </SafeAreaView>;
 }
 const styles=StyleSheet.create({
- header:{flexDirection:'row',alignItems:'center',gap:12},
+ ...chatLook,
+ screen:{flex:1,backgroundColor:C.background},
+ headerAvatar:{width:36,height:36,borderRadius:18,backgroundColor:C.surface,alignItems:'center',justifyContent:'center',overflow:'hidden'},headerAvatarImg:{width:36,height:36},
+ headerTitle:{fontSize:17,fontWeight:'900',color:C.white},headerStatus:{fontSize:11,color:C.muted},
+ info:{maxHeight:'48%',borderBottomWidth:1,borderBottomColor:C.border},
+ history:{paddingHorizontal:10,paddingTop:10,paddingBottom:12,gap:6,flexGrow:1},
  quote:{color:C.muted,fontSize:12,lineHeight:17,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8,marginBottom:4},
  deleted:{fontStyle:'italic',opacity:.75},
  gif:{width:220,height:160,borderRadius:12},
@@ -372,13 +399,6 @@ const styles=StyleSheet.create({
  photoPreview:{width:140,height:140,borderRadius:70,alignSelf:'center',backgroundColor:C.border},
  input:{minHeight:48,borderWidth:1,borderColor:C.border,borderRadius:12,paddingHorizontal:12,color:C.white,backgroundColor:C.surface},
  more:{minHeight:42,alignItems:'center',justifyContent:'center'},moreText:{color:C.mint,fontWeight:'800'},
- bubble:{maxWidth:'84%',paddingHorizontal:12,paddingVertical:8,borderRadius:16,gap:2},
- mine:{alignSelf:'flex-end',backgroundColor:C.mint,borderBottomRightRadius:4},
- theirs:{alignSelf:'flex-start',backgroundColor:C.surface,borderWidth:1,borderColor:C.border,borderBottomLeftRadius:4},
  sender:{color:C.mint,fontSize:12,fontWeight:'800'},text:{color:C.white,fontSize:15,lineHeight:21},
  time:{color:C.muted,fontSize:11,alignSelf:'flex-end'},
- compose:{flexDirection:'row',alignItems:'flex-end',gap:8,paddingTop:4},
- composeInput:{flex:1,minHeight:46,maxHeight:140,borderWidth:1,borderColor:C.border,borderRadius:14,paddingHorizontal:12,paddingVertical:10,color:C.white,backgroundColor:C.surface},
- send:{minHeight:46,paddingHorizontal:16,borderRadius:14,backgroundColor:C.mint,alignItems:'center',justifyContent:'center'},
- sendText:{color:C.background,fontWeight:'900'}
 });

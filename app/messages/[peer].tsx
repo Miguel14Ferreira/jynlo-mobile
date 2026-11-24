@@ -37,6 +37,7 @@ import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
 import {myStoryReplies,type PrivateStoryReply} from '../../src/lib/social-feed-api';
 import {storyReplyKind} from '../../src/lib/story-reply-display.cjs';
+import {chatLook} from '../../src/lib/chat-look';
 
 export default function DirectConversation(){
  const params=useLocalSearchParams<{peer:string}>();
@@ -701,9 +702,6 @@ export default function DirectConversation(){
    <Button secondary title={t('Cancelar anexos')} disabled={photoBusy} onPress={()=>{setPhoto(null);setExtraPhotos([]);setAttachmentCaption('');}}/>
   </View>:null}
 
-  {auth.token&&!blocked&&blockStatusKnown?<Pressable accessibilityRole="button"
-    accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
-    style={styles.attachmentToggle} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}><JynloIcon name={attachmentsOpen?'close':'attachment'} size={23} color={C.mint}/></Pressable>:null}
   {blocked?<Text style={styles.note}>{t('Este contacto está bloqueado. Abre «Segurança da conversa» para o desbloquear.')}</Text>:null}
   {!blockStatusKnown&&auth.token&&!DEMO_MODE?<View style={{gap:7}}>
     <Text style={styles.note}>{t('Não foi possível confirmar as opções de bloqueio. O envio continua protegido pelas permissões do servidor.')}</Text>
@@ -762,14 +760,17 @@ export default function DirectConversation(){
   </View>:null}
   {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>{t('A responder a {a}',{a:replyTarget.sender})}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar resposta')} onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><JynloIcon name="close" size={19} color={C.mint}/></Pressable></View>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
+   {blockStatusKnown?<Pressable accessibilityRole="button"
+    accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}
+    style={styles.plus} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}><JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>:null}
    <TextInput multiline style={styles.input} placeholder={t('Escreve uma mensagem privada…')}
     placeholderTextColor={C.muted} value={draft} onChangeText={setDraft}
-    onFocus={()=>{composerFocused.current=true;if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:true});}}
+    onFocus={()=>{composerFocused.current=true;if(nearBottom.current)conversationScroll.current?.scrollToEnd({animated:true});setAttachmentsOpen(false);}}
     onBlur={()=>{composerFocused.current=false;}}
     maxLength={2000} accessibilityLabel={t('Mensagem privada para o contacto')}/>
    <Pressable accessibilityRole="button" accessibilityLabel={sending?t('A enviar mensagem…'):t('Enviar mensagem privada')} style={[styles.send,sending&&{opacity:0.5}]}
     disabled={mutationBusy||sending||photoBusy||sendingNow.current||pendingWrites.current.has(peer+'|'+auth.token)||!blockStatusKnown||!draft.trim()||(uncertainSend?.identity===(peer+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(replyTarget?.id??null))} onPress={()=>{void send();}}>
-    {sending?<ActivityIndicator color={C.background}/>:<Text style={styles.sendText}>{t('Enviar')}</Text>}
+    {sending?<ActivityIndicator color={C.background}/>:<JynloIcon name="send" size={22} color={C.background}/>}
    </Pressable>
   </View>:null}
 
@@ -778,6 +779,7 @@ export default function DirectConversation(){
  </SafeAreaView>;
 }
 const styles=StyleSheet.create({
+ ...chatLook,
  storyRepliesSection:{padding:12,gap:8,borderRadius:15,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
  storyRepliesHeading:{fontSize:15,fontWeight:'900',color:C.white},
  storyReplyCard:{padding:12,borderRadius:13,gap:9,backgroundColor:C.surface2,borderLeftWidth:3,borderLeftColor:C.mint},
@@ -813,8 +815,8 @@ const styles=StyleSheet.create({
  reportInput:{minHeight:100,maxHeight:180,color:C.white,borderWidth:1,borderColor:C.border,borderRadius:12,padding:12,textAlignVertical:'top'},
  title:{fontSize:23,fontWeight:'900',color:C.white},
  note:{fontSize:12,color:C.muted,lineHeight:19},
- message:{padding:10,borderRadius:MobileTheme.radius.md,backgroundColor:MobileTheme.colors.surface,borderWidth:1,borderColor:MobileTheme.colors.border,gap:5,maxWidth:'86%',alignSelf:'flex-start',borderBottomLeftRadius:5},
- mine:{backgroundColor:'#10483F',borderColor:'#267566',alignSelf:'flex-end',borderBottomLeftRadius:MobileTheme.radius.lg,borderBottomRightRadius:5},
+
+
  sender:{fontSize:11,color:C.mint,fontWeight:'800'},replyAction:{alignSelf:'flex-end',paddingHorizontal:9,paddingVertical:6,minHeight:32,justifyContent:'center'},replyActionText:{fontSize:11,fontWeight:'800',color:C.mint},replyPreview:{flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,paddingVertical:9,borderLeftWidth:3,borderLeftColor:C.mint,backgroundColor:C.surface,borderRadius:10},replyPreviewTitle:{fontSize:12,fontWeight:'800',color:C.mint},replyPreviewText:{fontSize:12,color:C.white},replyCancel:{minWidth:38,minHeight:38,justifyContent:'center',alignItems:'center'},
  quote:{fontSize:12,color:C.muted,borderLeftWidth:3,borderLeftColor:C.mint,paddingLeft:8},
  body:{fontSize:15,color:C.white,lineHeight:21},
@@ -822,8 +824,8 @@ const styles=StyleSheet.create({
  time:{fontSize:10,color:C.muted,textAlign:'right'},
  photoContainer:{gap:7,padding:8,borderRadius:12,backgroundColor:C.surface},
  photoPreview:{height:110,width:'100%',borderRadius:12},
- composer:{flexDirection:'row',alignItems:'flex-end',gap:9},
- input:{flex:1,minHeight:MobileTheme.touchTarget,maxHeight:145,backgroundColor:MobileTheme.colors.surface,borderColor:MobileTheme.colors.border,borderWidth:1,color:MobileTheme.colors.text,padding:13,borderRadius:MobileTheme.radius.lg},
- send:{backgroundColor:MobileTheme.colors.accent,borderRadius:MobileTheme.radius.md,paddingHorizontal:16,minHeight:MobileTheme.touchTarget,justifyContent:'center'},
+
+
+
  sendText:{color:C.background,fontWeight:'900'}
 });

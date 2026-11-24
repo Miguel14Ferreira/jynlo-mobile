@@ -12,7 +12,9 @@ const files=[
 ];
 test('all chat types use shared tokens and outgoing right-aligned bubbles',()=>{
  for(const file of files){
-  const s=source(file);
+  const own=source(file);
+  // Chats that spread the shared look take their bubble/composer tokens from src/lib/chat-look.ts.
+  const s=own.includes('...chatLook')?source('src/lib/chat-look.ts'):own;
   assert.match(s,/import \{C,MobileTheme\} from/);
   // Incoming bubbles on the left, own messages on the right. The community chat
   // has its own palette (restyled), so colours/radii are not pinned here.
@@ -46,7 +48,7 @@ test('attachments and private access checks are preserved',()=>{
 test('real-device UX: direct chats remain compact without losing composer or attachments',()=>{
  const direct=source('app/messages/[peer].tsx');
  assert.match(direct,/history:\{paddingHorizontal:12,paddingTop:10,paddingBottom:18,gap:8/);
- assert.match(direct,/message:\{padding:10,/);
+ assert.match(direct,/\.\.\.chatLook/);
  assert.match(direct,/SecureChatAttachment/);
  assert.match(direct,/Escreve uma mensagem privada/);
 });
