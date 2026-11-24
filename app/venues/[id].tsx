@@ -174,6 +174,7 @@ export default function VenueDetailScreen(){
     {info('Fonte',condition.informationSource)}
    </View>):<Text style={styles.meta}>{t('Sem informações adicionais por modalidade.')}</Text>}
   </View>:null}
+  {venue?.dataCredit?<Text style={styles.meta}>{t('Fonte dos dados:')} {venue.dataCredit}</Text>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
