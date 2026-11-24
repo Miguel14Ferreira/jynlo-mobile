@@ -28,3 +28,16 @@ export async function editCommunityPost(id:number,postId:number,content:string,t
 export async function deleteCommunityPost(id:number,postId:number,token:string):Promise<void>{
  await request<void>(path(id)+'/'+postId,{token:need(token),method:'DELETE'});
 }
+
+export interface CommunityPostLike {likeCount:number;likedByMe:boolean}
+/** Like counts keyed by post id; posts without likes are left out. */
+export async function communityPostLikes(id:number,token:string):Promise<Record<number,CommunityPostLike>>{
+ if(DEMO_MODE)return {};
+ const map=await request<Record<string,CommunityPostLike>>(path(id)+'/likes',{token:need(token)});
+ const out:Record<number,CommunityPostLike>={};
+ for(const [key,value] of Object.entries(map||{})){const n=Number(key);if(Number.isSafeInteger(n)&&value)out[n]={likeCount:Number(value.likeCount)||0,likedByMe:!!value.likedByMe};}
+ return out;
+}
+export async function setCommunityPostLike(id:number,postId:number,like:boolean,token:string):Promise<CommunityPostLike>{
+ return request<CommunityPostLike>(path(id)+'/'+postId+'/likes',{token:need(token),method:like?'POST':'DELETE',...(like?{body:null}:{})});
+}

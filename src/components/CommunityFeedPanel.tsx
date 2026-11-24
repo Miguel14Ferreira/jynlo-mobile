@@ -8,7 +8,7 @@ import PostAlbumCarousel from './PostAlbumCarousel';
 import FeedVideo from './FeedVideo';
 import PostImageLightbox,{type ExpandedPostPhotos} from './PostImageLightbox';
 import {ChatMentionText} from './ChatMentions';
-import {communityPosts,deleteCommunityPost,editCommunityPost,publishCommunityTextPost,type CommunityPost} from '../lib/community-feed-api';
+import {communityPostLikes,communityPosts,deleteCommunityPost,editCommunityPost,publishCommunityTextPost,setCommunityPostLike,type CommunityPost,type CommunityPostLike} from '../lib/community-feed-api';
 import {publishCommunityPostWithMedia} from '../lib/social-feed-api';
 import {validateMedia} from '../lib/social-feed-core.cjs';
 import {appendAlbumSelection,postMediaItems,MAX_ALBUM_ITEMS} from '../lib/post-album.cjs';
@@ -29,10 +29,23 @@ export function CommunityFeedPanel({communityId,token,username,canManage}:{commu
  const [editing,setEditing]=useState<CommunityPost|null>(null),[editText,setEditText]=useState(''),[busy,setBusy]=useState(false);
  const [expanded,setExpanded]=useState<ExpandedPostPhotos|null>(null);
  const version=useRef(0);
+ const [likes,setLikes]=useState<Record<number,CommunityPostLike>>({}),[likeBusy,setLikeBusy]=useState<number|null>(null);
+ const likeOf=(id:number)=>likes[id]??{likeCount:0,likedByMe:false};
+ async function toggleLike(post:CommunityPost,onlyLike=false){
+  const current=likeOf(post.id);
+  if(likeBusy===post.id||(onlyLike&&current.likedByMe))return;
+  const like=!current.likedByMe;
+  setLikes(m=>({...m,[post.id]:{likeCount:Math.max(0,current.likeCount+(like?1:-1)),likedByMe:like}}));
+  setLikeBusy(post.id);
+  try{const summary=await setCommunityPostLike(communityId,post.id,like,token);setLikes(m=>({...m,[post.id]:summary}));}
+  catch{setLikes(m=>({...m,[post.id]:current}));}
+  finally{setLikeBusy(null);}
+ }
 
  const load=useCallback(async()=>{
   const request=++version.current;
-  try{const list=await communityPosts(communityId,token);if(request===version.current){setPosts(list);setError('');}}
+  try{const list=await communityPosts(communityId,token);if(request===version.current){setPosts(list);setError('');}
+   communityPostLikes(communityId,token).then(map=>{if(request===version.current)setLikes(map);}).catch(()=>{});}
   catch(e){if(request===version.current)setError(e instanceof Error?e.message:t('Não foi possível carregar o feed.'));}
   finally{if(request===version.current)setLoading(false);}
  },[communityId,token]);
@@ -137,7 +150,16 @@ export function CommunityFeedPanel({communityId,token,username,canManage}:{commu
      <Button title={busy?t('A guardar…'):t('Guardar')} disabled={busy} onPress={()=>{void saveEdit();}}/>
      <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>setEditing(null)}/>
     </View>:post.body?<ChatMentionText body={post.body} style={styles.body}/>:null}
-    {album.length?<PostAlbumCarousel items={album} onExpand={setExpanded} renderVideo={uri=><FeedVideo uri={uri}/>}/>:null}
+    {album.length?<PostAlbumCarousel items={album} onExpand={setExpanded} renderVideo={uri=><FeedVideo uri={uri}/>}
+      onDoubleTap={()=>{void toggleLike(post,true);}}/>:null}
+    <View style={styles.row}>
+     <Pressable accessibilityRole="button" accessibilityState={{selected:likeOf(post.id).likedByMe,disabled:likeBusy===post.id}}
+      accessibilityLabel={likeOf(post.id).likedByMe?t('Retirar gosto'):t('Gostar')} disabled={likeBusy===post.id}
+      onPress={()=>{void toggleLike(post);}} hitSlop={6} style={[styles.like,likeOf(post.id).likedByMe&&styles.liked]}>
+      <JynloIcon name="like" size={20} color={likeOf(post.id).likedByMe?'#FF5C7A':C.mint} active={likeOf(post.id).likedByMe}/>
+      {likeOf(post.id).likeCount>0?<Text style={[styles.likeCount,likeOf(post.id).likedByMe&&{color:'#FF5C7A'}]}>{likeOf(post.id).likeCount}</Text>:null}
+     </Pressable>
+    </View>
    </View>;})}
   <PostImageLightbox key={expanded?.uris[expanded.index]||'closed'} photos={expanded} onClose={()=>setExpanded(null)}/>
  </View>;
@@ -157,4 +179,7 @@ const styles=StyleSheet.create({
  author:{color:C.white,fontWeight:'900',fontSize:15},
  meta:{color:C.muted,fontSize:12},
  body:{color:C.white,fontSize:15,lineHeight:21},
+ like:{flexDirection:'row',alignItems:'center',gap:6,minHeight:MobileTheme.touchTarget,paddingHorizontal:12,borderRadius:999,borderWidth:1,borderColor:C.border},
+ liked:{borderColor:'#FF5C7A'},
+ likeCount:{color:C.mint,fontWeight:'800',fontSize:14},
 });
