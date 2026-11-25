@@ -3,11 +3,8 @@ name: Jynlo Android preview - pedido controlado pelo GitHub
 # Executado no Expo EAS, NAO no GitHub Actions.
 # Builds so podem ser pedidas por um commit na develop com o marcador abaixo.
 # Outros commits, incluindo os da auditoria, nao iniciam builds nem gastam creditos.
+# Só manual: cada build além do plano da Expo é paga.
 on:
-  push:
-    branches:
-      - develop
-    if: ${{ contains(github.commit_message, '[jynlo-build-android]') }}
   workflow_dispatch: {}
 
 jobs:

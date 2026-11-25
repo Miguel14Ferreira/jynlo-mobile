@@ -2,6 +2,11 @@ name: Jynlo Google Play - AAB de teste interno
 
 on:
   workflow_dispatch:
+    inputs:
+      submit:
+        description: 'Enviar a build para o teste interno da Google Play como RASCUNHO'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -42,6 +47,11 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build signed Google Play app bundle (.aab)
-        run: eas build --platform android --profile play-internal --non-interactive --wait
+        run: eas build --platform android --profile play-internal --non-interactive --wait --json > eas-build.json
+      - name: Send to Google Play internal testing as DRAFT
+        if: ${{ inputs.submit }}
+        run: |
+          id=$(node -p "require('./eas-build.json')[0].id")
+          eas submit --platform android --profile play-internal --id "$id" --non-interactive --wait
       - name: Next step
         run: echo "Download the signed AAB from Expo EAS build dashboard, then upload to Google Play Console > Testing > Internal testing."
