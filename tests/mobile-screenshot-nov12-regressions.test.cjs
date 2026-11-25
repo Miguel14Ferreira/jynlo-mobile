@@ -22,7 +22,7 @@ test('Stories open native inline camera and gallery, with explicit upload errors
 });
 test('Android screens remain inside system navigation area and season help is readable',()=>{
  const ui=read('src/components/UI.tsx'),create=read('app/sessions/create.tsx');
- assert.match(ui,/edges=\{\['top','bottom','left','right'\]\}/);
+ assert.match(ui,/edges=\{underHeader\?\['bottom','left','right'\]:\['top','bottom','left','right'\]\}/);
  assert.match(create,/seasonHelpText:\{color:C\.mint/);
  assert.match(create,/seasonHead:\{gap:10/);
  // Season help was rewritten in plain language (PR #26).

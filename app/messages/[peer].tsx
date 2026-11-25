@@ -690,7 +690,6 @@ export default function DirectConversation(){
     accessibilityState={{expanded:menuId===m.id}} delayLongPress={280}
     onLongPress={()=>{if(!m.deletedAt)setMenuId(current=>current===m.id?null:m.id);}}
     style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
-   <Text style={styles.sender}>{m.username1}</Text>
    {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
    {m.deletedAt?<Text style={styles.body}>{t('Mensagem removida')}</Text>:
     readCallUp(m.text)?<CallUpCard sessionId={readCallUp(m.text)!} token={auth.token} username={auth.username}/>:

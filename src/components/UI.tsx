@@ -3,7 +3,7 @@ import {currentLocale,t} from '../lib/i18n';
 import {ActivityIndicator,Alert,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {HostInstance,ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from 'expo-router';
+import {useNavigation,usePathname} from 'expo-router';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
 import {JynloIcon} from './JynloIcon';
@@ -19,6 +19,14 @@ import {KeyboardFrame} from './KeyboardFrame';
 export function Page({children,scroll=true,autoScrollToEnd=false}:{children:React.ReactNode;scroll?:boolean;autoScrollToEnd?:boolean}){
   const scrollRef=useRef<ScrollViewInstance|null>(null);
   const nearBottom=useRef(true);
+  // Under a native title bar the status bar is already covered: adding the top
+  // safe-area inset again left an empty band below the bar on every pushed screen.
+  const navigation=useNavigation();
+  let underHeader=false;
+  const pathname=usePathname();
+  // Stack screens declared with headerShown:false in app/_layout.tsx keep the top inset.
+  const headerless=/^\/(welcome|communities\/[^/]+\/chat|messages\/(?!call$)[^/]+)$/.test(pathname||'');
+  try{const state=navigation?.getState?.();underHeader=!headerless&&state?.type==='stack'&&(state.index??0)>0;}catch{underHeader=false;}
   // react-native-keyboard-controller follows the real keyboard frame on Android
   // edge-to-edge and iOS alike: the focused field (and the next one) is scrolled
   // above the keyboard, and the bottom of the page gets the keyboard's height.
@@ -34,7 +42,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
         {children}
       </KeyboardAwareScrollView>
       : <KeyboardFrame style={styles.keyboardFrame}><View style={styles.content}>{children}</View></KeyboardFrame>;
-  return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>{body}</SafeAreaView>;
+  return <SafeAreaView style={styles.page} edges={underHeader?['bottom','left','right']:['top','bottom','left','right']}>{body}</SafeAreaView>;
 }
 export function Brand({subtitle}:{subtitle?:string}){
   // Pushed screens already show the native title bar with a back arrow: a second
