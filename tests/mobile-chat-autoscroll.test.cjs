@@ -10,7 +10,7 @@ test('ordinary page scrolling does not enable chat auto-follow by default',()=>{
  const ui=read('src/components/UI.tsx');
  assert.match(ui,/autoScrollToEnd=false/);
  assert.match(ui,/autoScrollToEnd&&nearBottom\.current/);
- assert.match(ui,/scrollResponderScrollNativeHandleToKeyboard/);
+ assert.match(ui,/KeyboardAwareScrollView/);
 });
 
 for(const [name,route,component] of [

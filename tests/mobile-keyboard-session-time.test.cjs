@@ -13,10 +13,7 @@ test('Android session time field remains in a keyboard-aware scrollable Page',()
  assert.equal(app.expo.android.softwareKeyboardLayoutMode,'resize');
  assert.match(create,/field\('Hora local','time','HH:mm \(24h\)','numeric'\)/);
  assert.match(create,/return <Page>/);
- assert.match(page,/Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
- assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,64,true\)/);
- assert.match(page,/paddingBottom:keyboardHeight\+88/);
- assert.match(page,/onLayout=\{\(\)=>\{if\(keyboardVisible\.current\)scrollFocused\(\);\}\}/);
+ assert.match(page,/<KeyboardAwareScrollView[^>]*bottomOffset=\{\d+\}/);
+ assert.match(page,/extraKeyboardSpace=\{\d+\}/);
  assert.match(page,/onContentSizeChange=\{\(\)=>\{/);
- assert.match(page,/setKeyboardHeight\(0\)/);
 });

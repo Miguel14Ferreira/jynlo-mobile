@@ -6,6 +6,7 @@ import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
 import {Stack,useRouter,usePathname,ErrorBoundary as RouterErrorBoundary,type ErrorBoundaryProps} from 'expo-router';
+import {KeyboardProvider} from 'react-native-keyboard-controller';
 import {ActiveCallBar} from '../src/components/ActiveCallBar';
 import {installGlobalErrorReporting,reportClientError,setErrorRoute} from '../src/lib/client-error';
 import {OfflineBanner} from '../src/components/OfflineBanner';
@@ -207,7 +208,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
 </>;}
-export default function RootLayout(){return <AuthProvider><LanguageProvider><Navigation/></LanguageProvider></AuthProvider>;}
+export default function RootLayout(){return <KeyboardProvider statusBarTranslucent navigationBarTranslucent><AuthProvider><LanguageProvider><Navigation/></LanguageProvider></AuthProvider></KeyboardProvider>;}
 
 // Expo Router renders a recoverable error screen instead of a blank page for
 // route exceptions; the error is reported first so we see it in the server log.

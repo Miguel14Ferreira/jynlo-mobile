@@ -13,11 +13,10 @@ test('Android resizes the screen rather than panning behind the keyboard',()=>{
 });
 test('shared form pages provide keyboard avoidance and scrollable content',()=>{
  const source=read('src/components/UI.tsx');
- assert.match(source,/KeyboardAvoidingView/);
+ assert.match(source,/from 'react-native-keyboard-controller'/);
  // iOS pads; Android (edge-to-edge) measures the focused field against the keyboard.
- assert.match(source,/<KeyboardAvoidingView style=\{styles\.keyboardFrame\} behavior="padding">/);
- assert.match(source,/scrollToReveal\(y,height,top,frameY\)/);
- assert.match(source,/keyboardShouldPersistTaps="handled"/);
+ assert.match(source,/<KeyboardFrame style=\{styles\.keyboardFrame\}>/);
+  assert.match(source,/keyboardShouldPersistTaps=\"handled\"/);
  assert.match(source,/keyboardDismissMode="on-drag"/);
 });
 test('posts, stories, comments, and story replies keep content above keyboard',()=>{
@@ -38,12 +37,9 @@ test('chat pages scroll focused controls into view without blindly jumping past 
  const page=read('src/components/UI.tsx');
  const community=read('src/components/CommunityChatPanel.tsx');
  const session=read('src/components/SessionChatPanel.tsx');
- assert.match(page,/Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
  // Show/hide listeners; the focused field is measured (not a blind jump to the end).
- assert.match(page,/const shown=Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillShow':'keyboardDidShow'/);
- assert.match(page,/scrollResponderScrollNativeHandleToKeyboard\(focused,\d+,true\)/);
- assert.match(page,/if\(keyboardVisible\.current\)scrollFocused\(\);\s*else if\(autoScrollToEnd&&nearBottom\.current\)/);
- assert.match(page,/return\(\)=>\{shown\.remove\(\);hidden\.remove\(\);/);
+ assert.match(page,/<KeyboardAwareScrollView[^>]*bottomOffset=\{\d+\}/);
+ assert.match(page,/if\(autoScrollToEnd&&nearBottom\.current\)/);
  assert.match(community,/<ScrollView ref=\{inlineHistoryRef\}/);
  assert.match(session,/<ScrollView ref=\{inlineHistoryRef\}/);
 });
@@ -51,7 +47,6 @@ test('chat pages scroll focused controls into view without blindly jumping past 
 test('private messages scroll to the latest conversation only when the message composer has focus',()=>{
  const source=read('app/messages/[peer].tsx');
  assert.match(source,/const composerFocused=useRef\(false\)/);
- assert.match(source,/Keyboard\.addListener\(event,/);
  assert.match(source,/if\(!composerFocused\.current\)return/);
  assert.match(source,/onFocus=\{\(\)=>\{composerFocused\.current=true;if\(nearBottom\.current\)conversationScroll\.current\?\.scrollToEnd/);
  assert.match(source,/onBlur=\{\(\)=>\{composerFocused\.current=false;\}\}/);
@@ -60,12 +55,9 @@ test('private messages scroll to the latest conversation only when the message c
 
 test('long forms scroll the actual focused input above the keyboard',()=>{
  const source=read('src/components/UI.tsx');
- assert.match(source,/if\(!scroll\)return/);
- assert.match(source,/TextInput\.State\.currentlyFocusedInput\?\.\(\)/);
- assert.match(source,/scrollResponderScrollNativeHandleToKeyboard\(focused,\d+,true\)/);
- assert.match(source,/Keyboard\.addListener\(Platform\.OS==='ios'\?'keyboardWillHide':'keyboardDidHide'/);
+ assert.match(source,/<KeyboardAwareScrollView[^>]*bottomOffset=\{\d+\}/);
  // Android: extra bottom space so mid-form inputs stay reachable above the keyboard.
- assert.match(source,/keyboardHeight>0&&\{paddingBottom:keyboardHeight\+\d+\}/);
+ assert.match(source,/extraKeyboardSpace=\{\d+\}/);
 });
 
 test('sheets, dialogs and post comments keep the focused field above the keyboard',()=>{
@@ -74,5 +66,5 @@ test('sheets, dialogs and post comments keep the focused field above the keyboar
  assert.match(read('app/posts/[postId]/index.tsx'),/ref=\{keyboard\.scrollRef\} onScroll=\{keyboard\.onScroll\}/);
  const frame=read('src/components/KeyboardFrame.tsx');
  assert.match(frame,/export function useKeyboardReveal\(\)/);
- assert.match(frame,/keyboardOverlap\(y,height,top\)/);
+ assert.match(frame,/<KeyboardAvoidingView style=\{style\} behavior=\"padding\"/);
 });

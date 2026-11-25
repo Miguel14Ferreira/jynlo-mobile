@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Keyboard,KeyboardAvoidingView,Platform,TextInput,View} from 'react-native';
+import {Keyboard,Platform,TextInput,View} from 'react-native';
+import {KeyboardAvoidingView} from 'react-native-keyboard-controller';
 import type {HostInstance,ScrollViewInstance,StyleProp,ViewStyle} from 'react-native';
 import {keyboardOverlap,scrollToReveal} from '../lib/keyboard-core.cjs';
 
@@ -10,22 +11,9 @@ import {keyboardOverlap,scrollToReveal} from '../lib/keyboard-core.cjs';
  * exactly that. If the system did resize the window the overlap is 0.
  */
 export function KeyboardFrame({style,children,accessibilityLabel}:{style?:StyleProp<ViewStyle>;children:React.ReactNode;accessibilityLabel?:string}){
-  const frame=useRef<HostInstance|null>(null);
-  const [padding,setPadding]=useState(0);
-  useEffect(()=>{
-    if(Platform.OS!=='android')return;
-    let keyboardTop:number|null=null;
-    const measure=()=>{
-      if(keyboardTop==null){setPadding(0);return;}
-      const top=keyboardTop;
-      frame.current?.measureInWindow((_x,y,_w,height)=>setPadding(keyboardOverlap(y,height,top)));
-    };
-    const shown=Keyboard.addListener('keyboardDidShow',event=>{keyboardTop=event.endCoordinates.screenY;measure();});
-    const hidden=Keyboard.addListener('keyboardDidHide',()=>{keyboardTop=null;setPadding(0);});
-    return()=>{shown.remove();hidden.remove();};
-  },[]);
-  if(Platform.OS==='ios')return <KeyboardAvoidingView style={style} behavior="padding" accessibilityLabel={accessibilityLabel}>{children}</KeyboardAvoidingView>;
-  return <View ref={frame} style={[style,padding>0&&{paddingBottom:padding}]} accessibilityLabel={accessibilityLabel}>{children}</View>;
+  // Lifts a bottom composer by exactly the part of it the keyboard covers
+  // (react-native-keyboard-controller measures the real keyboard frame).
+  return <KeyboardAvoidingView style={style} behavior="padding" accessibilityLabel={accessibilityLabel}>{children}</KeyboardAvoidingView>;
 }
 
 /**
