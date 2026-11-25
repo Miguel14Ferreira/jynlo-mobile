@@ -1,4 +1,5 @@
 import React,{useEffect,useRef} from 'react';
+import {View} from 'react-native';
 import {LanguageProvider,t,useLanguage} from '../src/lib/i18n';
 import {autoEnablePushOnce,configureForegroundNotifications,refreshPushLanguage} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
@@ -7,7 +8,8 @@ import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
 import {pushNotificationId} from '../src/lib/push-notification-id.cjs';
 import {Stack,useRouter,usePathname,ErrorBoundary as RouterErrorBoundary,type ErrorBoundaryProps} from 'expo-router';
 import {KeyboardProvider} from 'react-native-keyboard-controller';
-import {ActiveCallBar} from '../src/components/ActiveCallBar';
+import {ActiveCallBar,useActiveCallBarVisible} from '../src/components/ActiveCallBar';
+import {SafeAreaFrameContext,SafeAreaInsetsContext,useSafeAreaFrame,useSafeAreaInsets} from 'react-native-safe-area-context';
 import {installGlobalErrorReporting,reportClientError,setErrorRoute} from '../src/lib/client-error';
 import {OfflineBanner} from '../src/components/OfflineBanner';
 import {startNetworkMonitoring} from '../src/lib/network-status';
@@ -121,8 +123,19 @@ function PushAutoOptIn(){
   return null;
 }
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
+/** While the call bar is above the screens, the status bar is already covered: screens get no top inset. */
+function CallAwareInsets({children}:{children:React.ReactNode}){
+  const barVisible=useActiveCallBarVisible(),insets=useSafeAreaInsets(),frame=useSafeAreaFrame();
+  return <View style={{flex:1}}>
+    <ActiveCallBar/>
+    <SafeAreaInsetsContext.Provider value={barVisible?{...insets,top:0}:insets}>
+      <SafeAreaFrameContext.Provider value={frame}>{children}</SafeAreaFrameContext.Provider>
+    </SafeAreaInsetsContext.Provider>
+  </View>;
+}
 function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><PushAutoOptIn/><ErrorRouteTracker/><OfflineBanner/>
   <StatusBar style="light"/>
+  <CallAwareInsets>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
     <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
@@ -210,7 +223,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="google-onboarding" options={{title:t('Registo com Google')}}/>
     <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
-  <ActiveCallBar/>
+  </CallAwareInsets>
 </>;}
 export default function RootLayout(){return <KeyboardProvider statusBarTranslucent navigationBarTranslucent><AuthProvider><LanguageProvider><Navigation/></LanguageProvider></AuthProvider></KeyboardProvider>;}
 

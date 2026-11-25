@@ -6,7 +6,18 @@ import {t} from '../lib/i18n';
 import {C} from '../lib/theme';
 import {activeCall,subscribeActiveCall,type ActiveCall} from '../lib/active-call';
 
-/** Shown on every other screen while a call is running, like WhatsApp's green bar. */
+/** True while the green bar is shown (a call is running and we are not on the call screen). */
+export function useActiveCallBarVisible(){
+ const [call,setCall]=useState<ActiveCall|null>(activeCall());
+ const pathname=usePathname();
+ useEffect(()=>subscribeActiveCall(setCall),[]);
+ return !!call&&pathname!=='/messages/call';
+}
+
+/**
+ * Shown on every other screen while a call is running, like WhatsApp's green bar.
+ * It sits above the screens (not over them), so headers and back buttons stay reachable.
+ */
 export function ActiveCallBar(){
  const [call,setCall]=useState<ActiveCall|null>(activeCall());
  const pathname=usePathname(),router=useRouter(),insets=useSafeAreaInsets();
@@ -21,7 +32,7 @@ export function ActiveCallBar(){
  </Pressable>;
 }
 const styles=StyleSheet.create({
- bar:{position:'absolute',top:0,left:0,right:0,zIndex:50,flexDirection:'row',alignItems:'center',gap:8,
+ bar:{flexDirection:'row',alignItems:'center',gap:8,
   paddingHorizontal:16,paddingBottom:8,backgroundColor:'#0E7A5F'},
  dot:{width:9,height:9,borderRadius:5,backgroundColor:C.white},
  text:{color:C.white,fontWeight:'800',fontSize:13,flexShrink:1},

@@ -1,5 +1,5 @@
 # Chamada de voz para a segunda conta de teste: chat da chamada com o teclado,
-# minimizar (barra verde) e sair. Ninguém precisa de atender. A sessão já foi iniciada.
+# primeiro o chat com o teclado (antes de a chamada expirar sem resposta), depois minimizar (barra verde) e sair. Ninguém precisa de atender. A sessão já foi iniciada.
 appId: com.jynlo.app
 ---
 - launchApp:
@@ -26,18 +26,6 @@ appId: com.jynlo.app
     optional: true
 - takeScreenshot: C02_chamada_ligada
 - tapOn:
-    text: "(Minimizar|Minimise)"
-    optional: true
-- waitForAnimationToEnd:
-    timeout: 4000
-- takeScreenshot: C03_minimizada_barra_verde
-- tapOn:
-    text: "(Chamada em curso com|Call with).*"
-    optional: true
-- waitForAnimationToEnd:
-    timeout: 4000
-- takeScreenshot: C04_voltar_a_chamada
-- tapOn:
     text: "^(Chat)$"
     optional: true
 - waitForAnimationToEnd:
@@ -54,6 +42,18 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 3000
 - takeScreenshot: C07_teclado_fechado
+- tapOn:
+    text: "(Minimizar|Minimise)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: C03_minimizada_barra_verde
+- tapOn:
+    text: "(Chamada em curso com|Call with).*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: C04_voltar_a_chamada
 - back
 - waitForAnimationToEnd:
     timeout: 3000
