@@ -58,10 +58,17 @@ jobs:
       - name: Validar API real e gerar Android nativo com a configuração de loja do EAS
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          FIREBASE_ANDROID_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
+          set -euo pipefail
           test -n "$EXPO_TOKEN" || { echo "::error::EXPO_TOKEN em falta nos secrets"; exit 1; }
+          # The EAS copy of google-services.json is a "Secret" (unreadable outside EAS builds),
+          # so this local Gradle build reads it from the GitHub secret GOOGLE_SERVICES_JSON.
+          test -n "$FIREBASE_ANDROID_JSON" || { echo "::error::Adiciona o secret GOOGLE_SERVICES_JSON (conteúdo do google-services.json do Firebase) ao repositório."; exit 1; }
+          firebase="$RUNNER_TEMP/google-services.json"
+          printf '%s' "$FIREBASE_ANDROID_JSON" > "$firebase"
           npx --yes eas-cli@latest env:exec production --non-interactive \
-            "EXPO_PUBLIC_JYNLO_API_URL=$EXPO_PUBLIC_JYNLO_API_URL npm run check:release && EXPO_PUBLIC_JYNLO_API_URL=$EXPO_PUBLIC_JYNLO_API_URL npx expo prebuild --platform android --no-install --clean"
+            "export GOOGLE_SERVICES_JSON='$firebase' EXPO_PUBLIC_JYNLO_API_URL='$EXPO_PUBLIC_JYNLO_API_URL'; npm run check:release && npx expo prebuild --platform android --no-install --clean"
       - name: Carregar chave privada só para este runner
         env:
           JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
