@@ -1,0 +1,67 @@
+name: Jynlo Mobile - Enviar AAB do EAS à Google Play (teste interno, rascunho)
+
+on:
+  workflow_dispatch:
+    inputs:
+      aab_url:
+        description: 'Link do artefacto AAB do EAS (https://expo.dev/artifacts/eas/....aab)'
+        required: true
+        type: string
+      version:
+        description: 'Versão (ex.: 0.18.0)'
+        required: true
+        type: string
+      version_code:
+        description: 'versionCode da build EAS (ex.: 16)'
+        required: true
+        type: string
+      notes:
+        description: 'Notas da versão (pt-PT)'
+        required: false
+        default: 'Melhorias e correções para os testadores.'
+        type: string
+      confirm:
+        description: 'Escreve ENVIAR_JYNLO_TESTE_INTERNO'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: jynlo-play-internal-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Enviar AAB do EAS para a faixa interna como rascunho
+    if: ${{ github.ref == 'refs/heads/develop' && inputs.confirm == 'ENVIAR_JYNLO_TESTE_INTERNO' && startsWith(inputs.aab_url, 'https://expo.dev/artifacts/eas/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Autenticar via GitHub OIDC (sem chave JSON)
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: jynlo-play-store
+          workload_identity_provider: projects/955491875786/locations/global/workloadIdentityPools/jynlo-github/providers/github-actions
+          service_account: jynlo-play-publisher@jynlo-play-store.iam.gserviceaccount.com
+          create_credentials_file: true
+      - name: Transferir AAB do EAS
+        env:
+          URL: ${{ inputs.aab_url }}
+        run: curl -fsSL --retry 3 -o jynlo.aab "$URL"
+      - name: Confirmar assinatura do AAB
+        run: jarsigner -verify jynlo.aab
+      - name: Instalar biblioteca da API oficial Google Play
+        run: python3 -m pip install --disable-pip-version-check 'google-api-python-client>=2.160,<3' 'google-auth>=2.36,<3' 'google-auth-httplib2>=0.2,<1'
+      - name: Enviar exclusivamente para a faixa interna, como rascunho
+        env:
+          V: ${{ inputs.version }}
+          C: ${{ inputs.version_code }}
+          N: ${{ inputs.notes }}
+        run: python3 scripts/play_upload_internal.py --aab jynlo.aab --apply --status draft --version "$V" --version-code "$C" --notes "$N"

@@ -28,6 +28,13 @@ def validate(base,version,code,commit):
             raise ValueError("Manifesto Android AAB em falta")
     return aab,digest
 
+def validate_plain(aab):
+    if not aab.is_file() or aab.stat().st_size<1_000_000: raise ValueError("AAB em falta ou demasiado pequeno")
+    with zipfile.ZipFile(aab) as bundle:
+        if "base/manifest/AndroidManifest.xml" not in bundle.namelist():
+            raise ValueError("Manifesto Android AAB em falta")
+    with aab.open("rb") as handle: return hashlib.file_digest(handle,"sha256").hexdigest()
+
 def send(aab,status,version,code,notes):
     import google.auth
     from googleapiclient.discovery import build
@@ -53,12 +60,17 @@ def main():
     parser.add_argument("--artifact-dir",type=Path,default=Path("play-artifact"))
     parser.add_argument("--apply",action="store_true")
     parser.add_argument("--status",choices=["draft","completed"],default="draft")
+    parser.add_argument("--aab",type=Path,help="AAB gerado no EAS (sem metadados do GitHub)")
     parser.add_argument("--version",required=True)
     parser.add_argument("--version-code",type=int,required=True)
-    parser.add_argument("--commit",required=True)
+    parser.add_argument("--commit",default="")
     parser.add_argument("--notes",default="Melhorias e correções para os testadores.")
     args=parser.parse_args()
-    aab,sha=validate(args.artifact_dir,args.version,args.version_code,args.commit)
+    if args.aab:
+        aab,sha=args.aab,validate_plain(args.aab)
+    else:
+        if not args.commit: raise ValueError("--commit é obrigatório para AAB do GitHub")
+        aab,sha=validate(args.artifact_dir,args.version,args.version_code,args.commit)
     print("AAB original validado: com.jynlo.app "+args.version+" / code "+str(args.version_code)+" / SHA-256 "+sha)
     if args.apply: send(aab,args.status,args.version,args.version_code,args.notes[:500])
     else: print("MODO SEM ENVIO: Google Play não foi alterada")
