@@ -2,6 +2,15 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Voltar ao vídeo da chamada": "Back to the call video",
+  "Chamada em curso com @{a} · toca para voltar ao vídeo": "Call with @{a} in progress · tap to go back to the video",
+  "Minimizar a chamada e continuar a usar a app": "Minimise the call and keep using the app",
+  "Minimizar": "Minimise",
+  "Sair da chamada?": "Leave the call?",
+  "Podes minimizar e continuar a usar a app sem desligar. Voltas à chamada pela barra verde no topo.": "You can minimise and keep using the app without hanging up. Go back to the call from the green bar at the top.",
+  "Terminar e sair": "End and leave",
+  "Voltar à chamada com @{a}": "Back to the call with @{a}",
+  "Chamada em curso com @{a} · toca para voltar": "Call with @{a} in progress · tap to go back",
   "Mensagem de {v}. Mantém pressionado para responder ou reagir.": "Message from {v}. Press and hold to reply or react.",
   "(obrigatória)": "(required)",
   "(opcional)": "(optional)",

@@ -126,7 +126,9 @@ test('leaving a call clears local ownership and limits overlapping server status
  const screen=read('src/features/direct-call-screen.tsx');
  for(const marker of [
   'const orphan=sessionRef.current;',
-  'sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false)',
+  // The call survives opening other screens; only unmount (or hang up) ends it.
+  'useEffect(()=>()=>{\n  setActiveCall(null);',
+  'The call only ends on hang up or when this screen is closed.',
   'if(auth.token)void endDirectCall(orphan.callId,auth.token).catch(()=>{})',
   'let inspectInFlight=false',
   'if(inspectInFlight)return',
@@ -270,7 +272,7 @@ test('late native call actions cannot unlock a newer account or screen generatio
  assert.equal(screen.split(guarded).length-1,2,'both start and accept must guard their action locks');
  assert.ok(!screen.includes('finally{operation.current=false;if(version===generation.current)setBusy(false);}'));
  assert.match(screen,/const version=\+\+generation\.current;\s*\/\/ A new screen generation must not inherit a pending action lock\.\s*operation\.current=false;setBusy\(false\)/);
- assert.match(screen,/clearInterval\(timer\);generation\.current\+\+;[\s\S]{0,210}operation\.current=false;\s*const orphan=sessionRef\.current/);
+ assert.match(screen,/clearInterval\(timer\);generation\.current\+\+;[\s\S]{0,210}operation\.current=false;/);
  assert.match(screen,/if\(version!==generation\.current\)\{void endDirectCall\(result\.callId,auth\.token\)\.catch\(\(\)=>\{\}\);return;\}/);
 });
 

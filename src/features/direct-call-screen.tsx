@@ -1,9 +1,10 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {t} from '../lib/i18n';
-import {ActivityIndicator,AppState,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,AppState,Keyboard,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {JynloIcon} from '../components/JynloIcon';
 import CallChatSidePanel from '../components/CallChatSidePanel';
-import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
+import {useFocusEffect,useLocalSearchParams,useNavigation,useRouter} from 'expo-router';
+import {Alert} from 'react-native';
 import {AudioSession,LiveKitRoom,VideoTrack,isTrackReference,registerGlobals,useRoomContext,useTracks} from '@livekit/react-native';
 import {Track} from 'livekit-client';
 import {Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../components/UI';
@@ -15,6 +16,7 @@ import {
  directCallAvailability,pendingDirectCall,startDirectCall,acceptDirectCall,declineDirectCall,endDirectCall,directCallMembers,
  type DirectCallSession,type DirectCallInvitation,type DirectCallMedia
 } from '../lib/direct-call-api';
+import {setActiveCall} from '../lib/active-call';
 
 // Register native WebRTC globals only when a call connects, not while Expo Router registers routes.
 let liveKitGlobalsRegistered=false;
@@ -29,18 +31,26 @@ async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
   throw Error(t('Para participares nesta chamada, permite o acesso ao microfone')+(media==='video'?' '+t('e à câmara'):'')+' '+t('nas definições do Android.'));
  }
 }
-function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;onHangup:()=>void;peer:string;self:string;token:string}){
+function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:DirectCallMedia;onHangup:()=>void;onMinimize:()=>void;peer:string;self:string;token:string}){
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
  const {width,height}=useWindowDimensions();
  const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
  const [expandedVideo,setExpandedVideo]=useState(false),[showChat,setShowChat]=useState(false);
+ const [keyboardOpen,setKeyboardOpen]=useState(false);
+ useEffect(()=>{
+  const shown=Keyboard.addListener('keyboardDidShow',()=>setKeyboardOpen(true));
+  const hidden=Keyboard.addListener('keyboardDidHide',()=>setKeyboardOpen(false));
+  return()=>{shown.remove();hidden.remove();};
+ },[]);
  const wide=width>=720;
  // Allow the chat column to stay beside video on wide layouts without
  // forcing video beyond the available viewport on smaller devices.
  const dimensions=videoStageDimensions(wide&&showChat?width-345:width,height,expandedVideo);
  // Reserve usable message space when the call chat opens on a phone.
  const compactChatVideo=!wide&&showChat;
+ // While typing on a phone the chat takes the screen; the call keeps running behind a slim bar.
+ const typingInChat=compactChatVideo&&keyboardOpen;
  const stageHeight=compactChatVideo?Math.min(dimensions.stageHeight,Math.max(150,Math.round(height*.27))):dimensions.stageHeight;
  const [changing,setChanging]=useState(false),[error,setError]=useState('');
  async function toggle(kind:'microphone'|'camera'){
@@ -58,21 +68,31 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
   finally{setChanging(false);}
  }
  return <View style={styles.mediaPanel}>
+  {typingInChat?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar ao vídeo da chamada')} onPress={()=>Keyboard.dismiss()} style={styles.typingBar}>
+   <View style={styles.typingDot}/><Text style={styles.typingBarText}>{t('Chamada em curso com @{a} · toca para voltar ao vídeo',{a:peer})}</Text>
+  </Pressable>:<>
   <View style={styles.callHeadingRow}>
    <Text style={styles.heading}>{t('Chamada {a}',{a:media==='video'?t('de vídeo'):t('de voz')})}</Text>
+   <View style={{flexDirection:'row',gap:8}}>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Minimizar a chamada e continuar a usar a app')} onPress={onMinimize} style={styles.chatToggle}>
+    <JynloIcon name="chevron-down" size={19} color={C.mint}/>
+    <Text style={styles.chatToggleText}>{t('Minimizar')}</Text>
+   </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={showChat?t('Ocultar chat da chamada'):t('Abrir chat da chamada')}
     accessibilityState={{expanded:showChat}} onPress={()=>setShowChat(current=>!current)}
     style={[styles.chatToggle,showChat&&styles.chatToggleActive]}>
     <JynloIcon name="messages" size={19} color={C.mint}/>
     <Text style={styles.chatToggleText}>{showChat?t('Fechar chat'):t('Chat')}</Text>
    </Pressable>
+   </View>
   </View>
   <View style={styles.participants} accessibilityLabel={t('Participantes da chamada')}>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>{t('Tu')}</Text></View>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{peer.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>@{peer}</Text></View>
   </View>
+  </>}
   <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide,compactChatVideo&&styles.callColumnsChatOpen]}>
-   <View style={styles.callStageColumn}>
+   <View style={[styles.callStageColumn,typingInChat&&styles.hiddenStage]}>
   {media==='video'?<View style={styles.videos}>
    {(()=>{
     const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
@@ -99,7 +119,7 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
    <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
-  <View style={[styles.callActions,compactChatVideo&&styles.callActionsCompact]}>
+  {typingInChat?null:<View style={[styles.callActions,compactChatVideo&&styles.callActionsCompact]}>
    <Pressable accessibilityRole="button" accessibilityLabel={muted?t('Ligar microfone'):t('Desligar microfone')} accessibilityState={{disabled:changing}} disabled={changing}
     onPress={()=>{void toggle('microphone');}} style={styles.callAction}>
     <JynloIcon name="microphone" size={23} color={muted?C.muted:C.mint}/>
@@ -113,13 +133,13 @@ function MediaControls({media,onHangup,peer,self,token}:{media:DirectCallMedia;o
    <Pressable accessibilityRole="button" accessibilityLabel={t('Terminar chamada')} onPress={onHangup} style={[styles.callAction,styles.hangupAction]}>
     <JynloIcon name="close" size={24} color={C.white}/><Text style={styles.callActionText}>{t('Desligar')}</Text>
    </Pressable>
-  </View>
+  </View>}
  </View>;
 }
 export default function DirectCallScreen(){
  const params=useLocalSearchParams<{peer?:string}>();
  const peer=typeof params.peer==='string'?params.peer:'';
- const auth=useAuth(),router=useRouter();
+ const auth=useAuth(),router=useRouter(),navigation=useNavigation();
  const [available,setAvailable]=useState(false),[providerStatus,setProviderStatus]=useState('');
  const [pending,setPending]=useState<DirectCallInvitation|null>(null);
  const [session,setSession]=useState<DirectCallSession|null>(null);
@@ -150,13 +170,36 @@ export default function DirectCallScreen(){
    // Discard any in-flight operation from this generation. Its later finally
    // must not unlock actions started when the screen is reopened.
    operation.current=false;
-   const orphan=sessionRef.current;
-   if(orphan){
-    sessionRef.current=null;setSession(null);setConnectedToPeer(false);setAudioReady(false);
-    if(auth.token)void endDirectCall(orphan.callId,auth.token).catch(()=>{});
-   }
+   // Opening another screen keeps the call running (this screen stays mounted
+   // underneath). The call only ends on hang up or when this screen is closed.
   };
  },[refresh]));
+ useEffect(()=>()=>{
+  setActiveCall(null);
+  const orphan=sessionRef.current;
+  if(orphan){
+   sessionRef.current=null;
+   if(auth.token)void endDirectCall(orphan.callId,auth.token).catch(()=>{});
+  }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
+ useEffect(()=>{setActiveCall(session?{peer,media:session.media}:null);},[session?.callId,peer]);
+ // Minimise: open the app on top of this screen, which stays mounted with the call running.
+ const minimize=useCallback(()=>{Keyboard.dismiss();router.push('/');},[router]);
+ // Going back would close this screen and the call with it: ask first.
+ useEffect(()=>{
+  if(!session)return;
+  const nav=navigation as unknown as {addListener:(name:'beforeRemove',cb:(event:{preventDefault:()=>void;data:{action:unknown}})=>void)=>()=>void;dispatch:(action:never)=>void};
+  return nav.addListener('beforeRemove',event=>{
+   if(!sessionRef.current)return;
+   event.preventDefault();
+   Alert.alert(t('Sair da chamada?'),t('Podes minimizar e continuar a usar a app sem desligar. Voltas à chamada pela barra verde no topo.'),[
+    {text:t('Cancelar'),style:'cancel'},
+    {text:t('Minimizar'),onPress:minimize},
+    {text:t('Terminar e sair'),style:'destructive',onPress:()=>{void hangup().finally(()=>nav.dispatch(event.data.action as never));}},
+   ]);
+  });
+ },[session?.callId,navigation]);
  useEffect(()=>{
   if(!session){setAudioReady(false);return;}
   let active=true;
@@ -258,7 +301,7 @@ export default function DirectCallScreen(){
    connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
    onError={e=>{setError(t('Falha ao ligar ao LiveKit: {v}',{v:e.message}));void hangup();}}>
     <MediaControls media={session.media} peer={peer} self={auth.username||''} token={auth.token}
-     onHangup={()=>{void hangup();}}/>
+     onHangup={()=>{void hangup();}} onMinimize={minimize}/>
    </LiveKitRoom>:!session?<>
    {!loading&&!available?<Message>{t('As chamadas estão indisponíveis neste momento ({a}). O chat continua disponível.',{a:providerStatus||t('sem ligação ao servidor')})}</Message>:null}
    {pending?<View style={styles.mediaPanel}>
@@ -301,6 +344,10 @@ const styles=StyleSheet.create({
  callAction:{flex:1,minHeight:70,paddingHorizontal:5,paddingVertical:9,backgroundColor:C.surface2,borderRadius:14,justifyContent:'center',alignItems:'center',gap:5},
  callActionText:{color:C.white,fontSize:11,fontWeight:'800',textAlign:'center'},
  hangupAction:{backgroundColor:'#813D43'},
+ hiddenStage:{height:0,flex:0,overflow:'hidden'},
+ typingBar:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,minHeight:40,borderRadius:12,backgroundColor:'#0B4147'},
+ typingDot:{width:8,height:8,borderRadius:4,backgroundColor:C.mint},
+ typingBarText:{color:C.white,fontSize:12,fontWeight:'800',flexShrink:1},
  videos:{gap:9},
  videoStage:{borderRadius:17,overflow:'hidden',backgroundColor:'#021017',position:'relative'},
  mainVideo:{height:'100%',width:'100%'},
