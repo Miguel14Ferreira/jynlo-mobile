@@ -226,6 +226,8 @@ export default function MessagesScreen(){
       item.kind==='team'?router.push({pathname:'/teams/[id]',params:{id:item.id,tab:'CHAT'}}):
       item.kind==='community'?router.push({pathname:'/communities/[id]/chat',params:{id:item.id}}):
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
+    onLongPress={muteKnown&&mutingKey===null?()=>toggleConversationMute(item):undefined} delayLongPress={350}
+    accessibilityHint={t('Mantém pressionado para silenciar ou ativar os avisos')}
     style={({pressed})=>[styles.tile,styles.tileContent,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
     <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
       {resolveJynloMedia(item.imageUrl)&&!brokenAvatars[item.kind+':'+item.id]?<Image source={{uri:resolveJynloMedia(item.imageUrl)!}} style={styles.avatarPhoto}
@@ -235,19 +237,16 @@ export default function MessagesScreen(){
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
        <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?t('Comunidade'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Equipa'):t('Sessão desportiva'))}</Text>
+       {muteKnown&&isConversationMuted(mutes,item.kind,item.id)?<JynloIcon name="volume-off" size={14} color={T.muted}/>:null}
        {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>
-      <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText||t('Abre para começar a conversa')}</Text>
-      {!!item.latestSender&&<Text numberOfLines={1} style={styles.tiny}>{item.latestSender}</Text>}
+      <Text numberOfLines={1} style={[styles.preview,item.unreadCount>0&&styles.previewUnread]}>{item.latestText?
+        (item.latestSender&&item.latestSender.toLowerCase()===auth.username?.toLowerCase()?t('Tu')+': ':
+         item.kind!=='direct'&&item.latestSender?item.latestSender+': ':'')+item.latestText
+        :t('Abre para começar a conversa')}</Text>
     </View>
     {formatUnreadBadge(item.unreadCount)?<Text style={styles.unread}>{formatUnreadBadge(item.unreadCount)}</Text>:<Text style={styles.arrow}>›</Text>}
    </Pressable>
-   {muteKnown?<Pressable accessibilityRole="button"
-      accessibilityLabel={isConversationMuted(mutes,item.kind,item.id)?t('Ativar avisos da conversa'):t('Silenciar avisos da conversa')}
-      disabled={mutingKey!==null} onPress={()=>toggleConversationMute(item)}
-      style={styles.muteAction}>
-      <JynloIcon name={isConversationMuted(mutes,item.kind,item.id)?'volume-off':'volume'} size={21} color={T.accent}/>
-    </Pressable>:null}
   </View>)}
  </Page>;
 }
@@ -259,7 +258,6 @@ const styles=StyleSheet.create({
  storyRepliesCaption:{fontSize:11,lineHeight:16,color:T.muted},
  conversationRow:{flexDirection:'row',alignItems:'center',gap:8},
  tileContent:{flex:1,minWidth:0},
- muteAction:{width:44,height:44,backgroundColor:T.surface,borderColor:T.border,borderWidth:1,borderRadius:22,alignItems:'center',justifyContent:'center'},
  muteIcon:{fontSize:19,color:T.accent},muteText:{fontSize:10,fontWeight:'800',color:T.muted},
  headerRow:{flexDirection:'row',alignItems:'flex-start',gap:12},
  headerCopy:{flex:1,gap:8},
@@ -281,11 +279,11 @@ const styles=StyleSheet.create({
  listHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  listTitle:{fontSize:17,fontWeight:'900',color:T.text},listCount:{color:T.muted,fontSize:12},
  conversationTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
- tile:{borderRadius:MobileTheme.radius.lg,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,padding:11,flexDirection:'row',alignItems:'center',gap:10,minHeight:72},
- unreadTile:{borderColor:T.accent,backgroundColor:T.raised},pressedTile:{opacity:.78},
- avatar:{width:46,height:46,borderRadius:16,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ tile:{borderRadius:14,paddingVertical:10,paddingHorizontal:6,flexDirection:'row',alignItems:'center',gap:12,minHeight:70},
+ unreadTile:{backgroundColor:'rgba(56,224,192,.07)'},pressedTile:{opacity:.78},
+ avatar:{width:52,height:52,borderRadius:26,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
  avatarPhoto:{width:'100%',height:'100%'},
- communityAvatar:{backgroundColor:'#0C4650'},sessionAvatar:{backgroundColor:'#15453F'},
+ communityAvatar:{backgroundColor:'#0C4650',borderRadius:16},sessionAvatar:{backgroundColor:'#15453F',borderRadius:16},
  avatarSymbol:{fontSize:21,fontWeight:'800',color:T.accent},
  conversationBody:{flex:1,gap:5},
  item:{flexShrink:1,fontWeight:'800',fontSize:15,color:T.text},itemUnread:{fontWeight:'900'},

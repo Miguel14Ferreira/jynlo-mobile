@@ -25,7 +25,7 @@ test('inbox keeps unread indicators and message navigation while silencing only 
  assert.match(screen,/formatUnreadBadge\(item\.unreadCount\)/);
  assert.match(screen,/router\.push\(\{pathname:'\/messages\/\[peer\]'/);
  assert.match(screen,/setMutes\(\[\]\);setMuteKnown\(false\)/);
- assert.match(screen,/muteKnown\?<Pressable/);
+ assert.match(screen,/onLongPress=\{muteKnown&&mutingKey===null/);
 });
 
 test('backend authorization remains authoritative for changing mute state',()=>{

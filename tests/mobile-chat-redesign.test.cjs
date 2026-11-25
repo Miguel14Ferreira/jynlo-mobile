@@ -54,10 +54,10 @@ test('real-device UX: direct chats remain compact without losing composer or att
 });
 test('real-device UX: inbox mute controls do not occupy a full conversation tile',()=>{
  const inbox=source('app/(tabs)/messages.tsx');
- assert.match(inbox,/muteAction:\{width:44,height:44/);
- assert.match(inbox,/JynloIcon name=\{isConversationMuted/);
- assert.match(inbox,/accessibilityLabel=\{isConversationMuted/);
- assert.match(inbox,/minHeight:72/);
+ assert.doesNotMatch(inbox,/styles\.muteAction/);
+ assert.match(inbox,/isConversationMuted\(mutes,item\.kind,item\.id\)\?<JynloIcon name="volume-off"/);
+ assert.match(inbox,/onLongPress=\{muteKnown&&mutingKey===null\?\(\)=>toggleConversationMute\(item\)/);
+ assert.match(inbox,/minHeight:70/);
 });
 test('real-device UX: profile privacy summary collapses, but follow requests remain visible',()=>{
  const privacy=source('src/components/ProfilePrivacySettings.tsx');
@@ -119,5 +119,5 @@ test('mobile UX: inbox keeps notifications, filters, invites, and mute actions a
  assert.match(inbox,/accessibilityLabel="Ver convites e pedidos"/);
  assert.match(inbox,/name=\{item\.kind==='direct'\?'profile'/);
  assert.match(inbox,/onPress=\{\(\)=>setUnreadOnly\(current=>!current\)\}/);
- assert.match(inbox,/accessibilityLabel=\{isConversationMuted/);
+ assert.match(inbox,/onLongPress=\{muteKnown&&mutingKey===null\?\(\)=>toggleConversationMute\(item\)/);
 });

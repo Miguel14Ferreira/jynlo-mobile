@@ -2,6 +2,7 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Mantém pressionado para silenciar ou ativar os avisos": "Press and hold to mute or unmute notifications",
   "Voltar ao vídeo da chamada": "Back to the call video",
   "Chamada em curso com @{a} · toca para voltar ao vídeo": "Call with @{a} in progress · tap to go back to the video",
   "Minimizar a chamada e continuar a usar a app": "Minimise the call and keep using the app",
@@ -586,7 +587,6 @@ const EN={
   "Ativada": "On",
   "Ativar": "Turn on",
   "Ativar avisos": "Turn on alerts",
-  "Ativar avisos da conversa": "Turn on conversation alerts",
   "Ativar avisos desta conversa": "Turn on alerts for this conversation",
   "Ativar avisos deste chat": "Turn on alerts for this chat",
   "Ativar avisos do chat da equipa": "Turn on team chat alerts",
@@ -3943,7 +3943,6 @@ const EN={
   "Sexta": "Friday",
   "Silenciar": "Mute",
   "Silenciar avisos": "Mute alerts",
-  "Silenciar avisos da conversa": "Mute conversation alerts",
   "Silenciar avisos desta conversa": "Mute alerts for this conversation",
   "Silenciar avisos deste chat": "Mute alerts for this chat",
   "Silenciar avisos?": "Mute alerts?",
