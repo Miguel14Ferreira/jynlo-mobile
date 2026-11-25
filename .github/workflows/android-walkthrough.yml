@@ -14,7 +14,7 @@ on:
       flow:
         description: "Percurso a correr"
         type: choice
-        options: [percurso, teclado]
+        options: [percurso, teclado, chamada]
         default: percurso
 
 permissions:

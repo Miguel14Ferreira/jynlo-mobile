@@ -1,0 +1,66 @@
+# Chamada de voz para a segunda conta de teste: chat da chamada com o teclado,
+# minimizar (barra verde) e sair. Ninguém precisa de atender. A sessão já foi iniciada.
+appId: com.jynlo.app
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "(Início|Home)"
+    timeout: 90000
+- openLink: "jynlo://messages/call?peer=jynloteste02"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: C01_ecra_chamada
+- tapOn:
+    text: "(Chamada de voz|Voice call)"
+    optional: true
+- tapOn:
+    text: "(Permitir|Allow|Durante a utilização da app|While using the app|Apenas desta vez|Only this time)"
+    optional: true
+- tapOn:
+    text: "(Permitir|Allow|Durante a utilização da app|While using the app|Apenas desta vez|Only this time)"
+    optional: true
+- extendedWaitUntil:
+    visible: "(Minimizar|Minimise)"
+    timeout: 45000
+    optional: true
+- takeScreenshot: C02_chamada_ligada
+- tapOn:
+    text: "^(Chat)$"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: C03_chat_aberto
+- tapOn:
+    text: "(Mensagem para o chat|Message for the chat).*"
+    optional: true
+- inputText: "Teste do chat na chamada"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: C04_chat_a_escrever
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: C05_teclado_fechado
+- tapOn:
+    text: "(Minimizar|Minimise)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: C06_minimizada_barra_verde
+- tapOn:
+    text: "(Chamada em curso com|Call with).*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: C07_voltar_a_chamada
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: C08_aviso_ao_sair
+- tapOn:
+    text: "(Terminar e sair|End and leave)"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: C09_depois_de_sair
