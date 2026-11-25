@@ -1,8 +1,9 @@
-import React,{useCallback,useMemo,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {currentLocale,t} from '../../src/lib/i18n';
 import {JynloIcon} from '../../src/components/JynloIcon';
 import {Alert,AppState,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {messageRequestCount} from '../../src/lib/message-requests-api';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
@@ -20,6 +21,8 @@ export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
  const [brokenAvatars,setBrokenAvatars]=useState<Record<string,boolean>>({});
+ const [requestCount,setRequestCount]=useState(0);
+ useEffect(()=>{if(!auth.token)return;let alive=true;void messageRequestCount(auth.token).then(r=>{if(alive)setRequestCount(r?.pending||0);}).catch(()=>{});return()=>{alive=false;};},[auth.token,items]);
  const [chatWarning,setChatWarning]=useState('');
  const [notificationUnread,setNotificationUnread]=useState(0);
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
@@ -216,6 +219,9 @@ export default function MessagesScreen(){
   {sameIdentity&&lastSyncedAt?<Text style={styles.tiny}>{t('Última sincronização completa: {a}',{a:lastSyncedAt.toLocaleTimeString(currentLocale(),{hour:'2-digit',minute:'2-digit'})})}</Text>:null}
   {!loading&&sameIdentity&&items.length===0&&!error&&!chatWarning?<Message>{t('Não foram encontradas conversas acessíveis. As mensagens privadas exigem que a amizade esteja ativa.')}</Message>:null}
   {sameIdentity&&!loading&&items.length>0&&displayed.length===0?<Message>{t('Não foram encontradas conversas com estes filtros.')}</Message>:null}
+  {auth.token?<Pressable accessibilityRole="button" accessibilityLabel={t('Pedidos de mensagem')} onPress={()=>router.push('/messages/requests')} style={styles.invitesShortcut}>
+   <JynloIcon name="messages" size={17} color={T.accent}/><Text style={styles.invitesText}>{t('Pedidos de mensagem')}{requestCount>0?' · '+requestCount:''}</Text>
+   <JynloIcon name="chevron-right" size={18} color={T.muted}/></Pressable>:null}
   {displayed.length>0?<View style={styles.listHeader}><Text style={styles.listTitle}>{t('Conversas recentes')}</Text><Text style={styles.listCount}>{displayed.length}</Text></View>:null}
   {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
    <Pressable
