@@ -8,15 +8,16 @@ test('Google Play só pode enviar através de workflow_dispatch em develop e con
  assert.match(yaml,/workflow_dispatch:/);
  assert.doesNotMatch(yaml,/\n\s*push:/);
  assert.match(yaml,/github.ref == 'refs\/heads\/develop'/);
- assert.match(yaml,/ENVIAR_JYNLO_016_TESTE_INTERNO/);
+ assert.match(yaml,/ENVIAR_JYNLO_TESTE_INTERNO/);
  assert.match(yaml,/default: verify-auth/);
  assert.match(yaml,/verify-artifact/);
  assert.match(yaml,/inputs.action == 'verify-artifact'/);
  assert.match(yaml,/Confirmação de validação sem publicação/);
  assert.match(yaml,/default: draft/);
- assert.match(yaml,/run-id: '42023837920'/);
+ assert.match(yaml,/run-id: \$\{\{ inputs.build_run_id \}\}/);
+ assert.match(yaml,/--version "\$V" --version-code "\$C" --commit "\$G"/);
  assert.match(yaml,/inputs.action == 'upload'/);
- assert.match(yaml,/inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO'/);
+ assert.match(yaml,/inputs.confirm == 'ENVIAR_JYNLO_TESTE_INTERNO'/);
  assert.doesNotMatch(yaml,/:app:bundleRelease|:app:assembleRelease/);
 });
 test('Autenticação usa OIDC sem chaves privadas e publicação fica limitada à faixa interna',()=>{
