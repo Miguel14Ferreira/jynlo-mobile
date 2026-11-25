@@ -1,4 +1,5 @@
 import {KeyboardFrame} from '../../src/components/KeyboardFrame';
+import {useChatTyping} from '../../src/lib/chat-typing';
 import {ChatMentionText} from '../../src/components/ChatMentions';
 import {useChatViewing} from '../../src/lib/chat-viewing';
 import {chatLocationUrl} from '../../src/lib/chat-location.cjs';
@@ -80,6 +81,8 @@ export default function DirectConversation(){
  const [muteError,setMuteError]=useState('');
  const pendingMuteWrites=useRef(new Set<string>());
  const [draft,setDraft]=useState('');
+ const typing=useChatTyping('direct',peer||null,auth.token,auth.username);
+ useEffect(()=>{typing.onInput(draft);},[draft]);
  const [replyTarget,setReplyTarget]=useState<{id:number;sender:string;text:string}|null>(null);
  const [editing,setEditing]=useState<DirectChatEntry|null>(null),[editText,setEditText]=useState('');
  const [mutationBusy,setMutationBusy]=useState(false),mutationLock=useRef(false);
@@ -770,6 +773,7 @@ export default function DirectConversation(){
    <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?t('A guardar…'):t('Guardar edição')} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title={t('Cancelar edição')} disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
   </View>:null}
   {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>{t('A responder a {a}',{a:replyTarget.sender})}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar resposta')} onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><JynloIcon name="close" size={19} color={C.mint}/></Pressable></View>:null}
+  {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    {blockStatusKnown?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}

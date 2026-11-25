@@ -1,4 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {useChatTyping} from '../../src/lib/chat-typing';
 import {ChatMentionText} from '../../src/components/ChatMentions';
 import {useChatViewing} from '../../src/lib/chat-viewing';
 import {t} from '../../src/lib/i18n';
@@ -55,6 +56,8 @@ export default function GroupChatScreen(){
  const [loading,setLoading]=useState(true),[loadingOlder,setLoadingOlder]=useState(false);
  const [error,setError]=useState(''),[actionError,setActionError]=useState(''),[gone,setGone]=useState(false);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false);
+ const typing=useChatTyping('private',Number.isSafeInteger(groupId)&&groupId>0?groupId:null,auth.token,auth.username);
+ useEffect(()=>{typing.onInput(draft);},[draft]);
  const [panel,setPanel]=useState<null|'rename'|'add'|'photo'>(null);
  const [photo,setPhoto]=useState<ImagePickerAsset|null>(null);
  const [renameTitle,setRenameTitle]=useState(''),[picked,setPicked]=useState<string[]>([]),[busy,setBusy]=useState(false);
@@ -360,6 +363,7 @@ export default function GroupChatScreen(){
      onPress={()=>setPollOpen(true)} style={styles.tool}><Text style={{fontSize:20}}>📊</Text></Pressable>
     <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>
    </View>
+   {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
    <View style={styles.composer}>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:attachOpen}} accessibilityLabel={attachOpen?t('Fechar anexos'):t('Abrir anexos')}
      onPress={()=>setAttachOpen(v=>!v)} style={styles.plus}><JynloIcon name={attachOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>

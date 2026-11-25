@@ -1,6 +1,6 @@
 import React,{useEffect,useRef} from 'react';
 import {LanguageProvider,t,useLanguage} from '../src/lib/i18n';
-import {autoEnablePushOnce,refreshPushLanguage} from '../src/lib/mobile-push';
+import {autoEnablePushOnce,configureForegroundNotifications,refreshPushLanguage} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
@@ -110,6 +110,7 @@ function PushAutoOptIn(){
     let fired=false;
     const timer=setTimeout(()=>{
       fired=true;
+      void configureForegroundNotifications();
       void pushDeliveryReady(token).then(ready=>{if(ready)void autoEnablePushOnce(username,token);}).catch(()=>{});
     },2500);
     // Leaving the screen early re-arms the check; once it ran, it stays done for this account.

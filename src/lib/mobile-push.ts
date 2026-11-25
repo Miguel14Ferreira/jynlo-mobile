@@ -193,3 +193,17 @@ export async function clearNativePushPresentation():Promise<void>{
  try{await Notifications.clearLastNotificationResponse();}catch{}
  try{await Notifications.dismissAllNotificationsAsync();}catch{}
 }
+
+/**
+ * With the app open, show the alert and play the message sound, like Instagram.
+ * The server already stays silent for the chat the person has open.
+ */
+export async function configureForegroundNotifications():Promise<void>{
+ if(DEMO_MODE)return;
+ try{
+  const Notifications=await import('expo-notifications');
+  Notifications.setNotificationHandler({handleNotification:async()=>({
+   shouldShowBanner:true,shouldShowList:true,shouldPlaySound:true,shouldSetBadge:false
+  })});
+ }catch{/* push is optional on this build */}
+}
