@@ -2,6 +2,9 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Seguido por @{a}": "Followed by @{a}",
+  "Seguido por @{a} e @{b}": "Followed by @{a} and @{b}",
+  "Seguido por @{a} e mais {n}": "Followed by @{a} and {n} more",
   "Nova mensagem": "New message",
   "Ainda não são amigos: a tua primeira mensagem chega como pedido de mensagem.": "You're not friends yet: your first message arrives as a message request.",
   "Enviados · à espera de resposta": "Sent · waiting for a reply",

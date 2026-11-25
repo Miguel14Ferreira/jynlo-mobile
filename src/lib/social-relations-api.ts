@@ -114,3 +114,9 @@ export async function searchStoryMentionProfiles(query:string,token:string|null)
    profilePicUrl:profile.profilePicUrl||null,chatBlocked:false,blockedByMe:false
  }));
 }
+/** People followed by the people you follow, with who ("Seguido por @x"). */
+export type KnownSuggestion=SocialPerson&{followedByCount:number;followedBy:string[]};
+export async function peopleYouMayKnow(token:string|null):Promise<KnownSuggestion[]>{
+ if(DEMO_MODE||!token)return [];
+ return request<KnownSuggestion[]>('/api/follows/suggestions?limit=8',{token});
+}
