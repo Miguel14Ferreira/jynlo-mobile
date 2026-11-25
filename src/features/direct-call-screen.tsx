@@ -67,7 +67,7 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar o dispositivo.'));}
   finally{setChanging(false);}
  }
- return <View style={styles.mediaPanel}>
+ return <View style={[styles.mediaPanel,compactChatVideo&&styles.mediaPanelChat]}>
   {typingInChat?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar ao vídeo da chamada')} onPress={()=>Keyboard.dismiss()} style={styles.typingBar}>
    <View style={styles.typingDot}/><Text style={styles.typingBarText}>{t('Chamada em curso com @{a} · toca para voltar ao vídeo',{a:peer})}</Text>
   </Pressable>:<>
@@ -86,13 +86,13 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
    </Pressable>
    </View>
   </View>
-  <View style={styles.participants} accessibilityLabel={t('Participantes da chamada')}>
+  {compactChatVideo?null:<View style={styles.participants} accessibilityLabel={t('Participantes da chamada')}>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{self.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>{t('Tu')}</Text></View>
    <View style={styles.participant}><View style={styles.avatar}><Text style={styles.avatarText}>{peer.slice(0,1).toUpperCase()}</Text></View><Text style={styles.participantName}>@{peer}</Text></View>
-  </View>
+  </View>}
   </>}
   <View style={[styles.callColumns,wide&&showChat&&styles.callColumnsWide,compactChatVideo&&styles.callColumnsChatOpen]}>
-   <View style={[styles.callStageColumn,typingInChat&&styles.hiddenStage]}>
+   <View style={[styles.callStageColumn,compactChatVideo&&{flex:0},typingInChat&&styles.hiddenStage]}>
   {media==='video'?<View style={styles.videos}>
    {(()=>{
     const {dominant,previews,remaining}=chooseVideoStageTracks(tracks.filter(isTrackReference));
@@ -114,7 +114,7 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
      </Pressable>
     </>;
    })()}
-  </View>:<View style={styles.audioCall}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>{t('Chamada de voz ativa · O chat continua disponível.')}</Text></View>}
+  </View>:<View style={[styles.audioCall,compactChatVideo&&styles.audioCallCompact]}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>{t('Chamada de voz ativa · O chat continua disponível.')}</Text></View>}
    </View>
    <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
   </View>
@@ -290,8 +290,9 @@ export default function DirectCallScreen(){
   finally{ending.current=false;}
  },[auth.token]);
  if(!auth.token||!PEER.test(peer))return <Page><Message tone="error">{t('Inicia sessão e escolhe um contacto válido para realizar chamadas.')}</Message><Button title={t('Voltar')} secondary onPress={()=>router.back()}/></Page>;
- return <Page><DemoBanner/><Eyebrow>{t('CHAMADAS PRIVADAS')}</Eyebrow>
-  <Text style={styles.heading}>{t('Chamada com {a}',{a:peer})}</Text>
+ // During a call the screen does not scroll: the chat and its composer always fit above the keyboard.
+ return <Page scroll={!session}>{session?null:<><DemoBanner/><Eyebrow>{t('CHAMADAS PRIVADAS')}</Eyebrow></>}
+  <Text style={session?styles.headingSmall:styles.heading}>{t('Chamada com {a}',{a:peer})}</Text>
   {!session?<Text style={styles.note}>{t('Para receberes um convite, abre este ecrã. As chamadas em segundo plano e os avisos globais ainda precisam de integração nativa.')}</Text>:null}
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
@@ -322,6 +323,9 @@ const styles=StyleSheet.create({
  heading:{fontSize:22,fontWeight:'900',color:C.white},
  note:{fontSize:13,color:C.muted,lineHeight:19},
  mediaPanel:{gap:12,padding:12,borderWidth:1,borderColor:C.border,borderRadius:18,backgroundColor:C.surface},
+ mediaPanelChat:{flex:1,minHeight:0,gap:8},
+ headingSmall:{fontSize:16,fontWeight:'900',color:C.white},
+ audioCallCompact:{minHeight:64,flexDirection:'row',gap:10},
  callHeadingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'},
  chatToggle:{flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:12,minHeight:44,
   borderRadius:12,borderWidth:1,borderColor:C.border,backgroundColor:C.surface2},
@@ -335,7 +339,7 @@ const styles=StyleSheet.create({
  participantName:{fontSize:12,fontWeight:'800',color:C.white},
  callColumns:{gap:10,minWidth:0},
  callColumnsWide:{flexDirection:'row',alignItems:'stretch'},
- callColumnsChatOpen:{gap:6},
+ callColumnsChatOpen:{gap:6,flex:1,minHeight:0},
  callActionsCompact:{marginTop:2},
  callStageColumn:{flex:1,minWidth:0},
  audioCall:{minHeight:170,justifyContent:'center',alignItems:'center',backgroundColor:'#061B25',borderRadius:16,gap:10},

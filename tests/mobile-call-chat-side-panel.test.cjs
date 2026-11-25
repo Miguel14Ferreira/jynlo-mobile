@@ -85,7 +85,8 @@ test('phone calls prioritize readable chat without leaving the LiveKit room',()=
  assert.match(call,/height:stageHeight/);
  assert.match(call,/compactChatVideo&&styles\.callColumnsChatOpen/);
  assert.match(call,/compactChatVideo\?Math\.min\(dimensions\.previewWidth,96\)/);
- assert.match(panel,/narrow:\{minHeight:320,maxHeight:480\}/);
+ // On a phone the chat fills the screen below the call (the call page does not scroll).
+ assert.match(panel,/narrow:\{flex:1,minHeight:240\}/);
  assert.match(panel,/Na chamada/);
  assert.match(panel,/style=\{styles\.history\}/);
 });

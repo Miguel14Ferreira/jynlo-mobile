@@ -41,7 +41,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
       onContentSizeChange={()=>{if(autoScrollToEnd&&nearBottom.current)scrollRef.current?.scrollToEnd({animated:false});}}>
         {children}
       </KeyboardAwareScrollView>
-      : <KeyboardFrame style={styles.keyboardFrame}><View style={styles.content}>{children}</View></KeyboardFrame>;
+      : <KeyboardFrame style={styles.keyboardFrame}><View style={[styles.content,{flex:1,paddingBottom:16}]}>{children}</View></KeyboardFrame>;
   return <SafeAreaView style={styles.page} edges={underHeader?['bottom','left','right']:['top','bottom','left','right']}>{body}</SafeAreaView>;
 }
 export function Brand({subtitle}:{subtitle?:string}){

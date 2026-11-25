@@ -227,7 +227,7 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
 const styles=StyleSheet.create({
  container:{gap:10,borderRadius:16,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,padding:12,minWidth:0},
  wide:{width:312,minHeight:340,maxHeight:600},
- narrow:{minHeight:320,maxHeight:480},
+ narrow:{flex:1,minHeight:240},
  header:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'},
  liveBadge:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:8,paddingVertical:6,borderRadius:12,backgroundColor:'#123D3B'},
  liveDot:{width:7,height:7,borderRadius:4,backgroundColor:C.mint},
