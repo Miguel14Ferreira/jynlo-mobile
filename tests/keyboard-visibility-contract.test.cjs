@@ -61,8 +61,10 @@ test('long forms scroll the actual focused input above the keyboard',()=>{
 });
 
 test('sheets, dialogs and post comments keep the focused field above the keyboard',()=>{
- for(const file of ['src/components/AttendanceHistory.tsx','src/components/ReportSheet.tsx','src/components/PollComposer.tsx','src/components/CallChatSidePanel.tsx','app/posts/[postId]/index.tsx'])
+ for(const file of ['src/components/AttendanceHistory.tsx','src/components/ReportSheet.tsx','src/components/PollComposer.tsx','app/posts/[postId]/index.tsx'])
   assert.match(read(file),/<KeyboardFrame/,file);
+ // The call chat uses the frame only beside the video (wide); on a phone the call page follows the keyboard.
+ assert.match(read('src/components/CallChatSidePanel.tsx'),/const Frame=wide\?KeyboardFrame:View/);
  assert.match(read('app/posts/[postId]/index.tsx'),/ref=\{keyboard\.scrollRef\} onScroll=\{keyboard\.onScroll\}/);
  const frame=read('src/components/KeyboardFrame.tsx');
  assert.match(frame,/export function useKeyboardReveal\(\)/);

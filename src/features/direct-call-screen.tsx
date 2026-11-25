@@ -67,7 +67,7 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar o dispositivo.'));}
   finally{setChanging(false);}
  }
- return <View style={[styles.mediaPanel,compactChatVideo&&styles.mediaPanelChat]}>
+ return <View style={[styles.mediaPanel,styles.mediaPanelChat]}>
   {typingInChat?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar ao vídeo da chamada')} onPress={()=>Keyboard.dismiss()} style={styles.typingBar}>
    <View style={styles.typingDot}/><Text style={styles.typingBarText}>{t('Chamada em curso com @{a} · toca para voltar ao vídeo',{a:peer})}</Text>
   </Pressable>:<>

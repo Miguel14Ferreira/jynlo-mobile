@@ -121,7 +121,7 @@ function PushAutoOptIn(){
   return null;
 }
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}
-function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><PushAutoOptIn/><ErrorRouteTracker/><OfflineBanner/><ActiveCallBar/>
+function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLanguageSync/><PushAutoOptIn/><ErrorRouteTracker/><OfflineBanner/>
   <StatusBar style="light"/>
   <Stack key={auth.username||"visitor"} screenOptions={{headerStyle:{backgroundColor:C.background},headerTintColor:C.white,
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
@@ -209,6 +209,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="google-onboarding" options={{title:t('Registo com Google')}}/>
     <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
+  <ActiveCallBar/>
 </>;}
 export default function RootLayout(){return <KeyboardProvider statusBarTranslucent navigationBarTranslucent><AuthProvider><LanguageProvider><Navigation/></LanguageProvider></AuthProvider></KeyboardProvider>;}
 
