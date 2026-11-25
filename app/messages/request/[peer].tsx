@@ -8,7 +8,7 @@ import {Message,Page} from '../../../src/components/UI';
 import {JynloIcon} from '../../../src/components/JynloIcon';
 import {publicSportsProfile} from '../../../src/lib/social-relations-api';
 import {resolveJynloMedia} from '../../../src/lib/social-feed-api';
-import {messageAvailability,sendMessageRequest} from '../../../src/lib/message-requests-api';
+import {messageAvailability,sendMessageRequest,sentMessageRequests} from '../../../src/lib/message-requests-api';
 
 /** New conversation with someone who is not a friend (Instagram style): the first message goes as a request. */
 export default function MessageRequestCompose(){
@@ -25,7 +25,14 @@ export default function MessageRequestCompose(){
   void messageAvailability(username,auth.token).then(a=>{
    if(!active)return;
    if(a.mode==='DIRECT'){router.replace({pathname:'/messages/[peer]',params:{peer:username}});return;}
-   if(a.mode==='PENDING'){setBlocked(true);setNote(t('Já enviaste um pedido. Quando for aceite, a conversa aparece em Mensagens.'));}
+   if(a.mode==='PENDING'){
+    setBlocked(true);
+    // Already sent: show the message that is waiting, like a pending conversation.
+    void sentMessageRequests(auth.token!).then(list=>{
+     const mine=(list||[]).find(r=>r.username.toLowerCase()===username.toLowerCase());
+     if(active){if(mine)setSentText(mine.text);else setNote(t('Já enviaste um pedido. Quando for aceite, a conversa aparece em Mensagens.'));}
+    }).catch(()=>{if(active)setNote(t('Já enviaste um pedido. Quando for aceite, a conversa aparece em Mensagens.'));});
+   }
    else if(a.mode==='RECEIVED'){setBlocked(true);setNote(t('Esta pessoa já te enviou um pedido de mensagem: aceita-o em Mensagens.'));}
    else if(a.mode==='NOT_ALLOWED'){setBlocked(true);setNote(t('Não é possível enviar mensagens a esta pessoa.'));}
   }).catch(()=>{});
@@ -47,7 +54,7 @@ export default function MessageRequestCompose(){
     {photo?<Image source={{uri:photo}} style={styles.bigAvatar}/>:<View style={styles.bigAvatar}><Text maxFontSizeMultiplier={1.3} style={styles.bigLetter}>{initials}</Text></View>}
     <Text style={styles.name}>@{username}</Text>
     {fullName?<Text style={styles.muted}>{fullName}</Text>:null}
-    <Text style={styles.hint}>{t('Ainda não são amigos: a tua primeira mensagem chega como pedido de mensagem.')}</Text>
+    {!sentText&&!blocked?<Text style={styles.hint}>{t('Ainda não são amigos: a tua primeira mensagem chega como pedido de mensagem.')}</Text>:null}
    </Pressable>
    {sentText?<>
     <View style={styles.bubble}><Text style={styles.bubbleText}>{sentText}</Text></View>
