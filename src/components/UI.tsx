@@ -3,6 +3,7 @@ import {currentLocale,t} from '../lib/i18n';
 import {ActivityIndicator,Alert,Image,Keyboard,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {HostInstance,ScrollViewInstance} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation} from 'expo-router';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
 import {JynloIcon} from './JynloIcon';
@@ -36,6 +37,12 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
   return <SafeAreaView style={styles.page} edges={['top','bottom','left','right']}>{body}</SafeAreaView>;
 }
 export function Brand({subtitle}:{subtitle?:string}){
+  // Pushed screens already show the native title bar with a back arrow: a second
+  // JYNLO header there only pushes the content down. Keep it on the main tabs.
+  let pushed=false;
+  const navigation=useNavigation();
+  try{const state=navigation?.getState?.();pushed=state?.type==='stack'&&(state.index??0)>0;}catch{pushed=false;}
+  if(pushed)return null;
   return <View style={styles.brandRow}>
     <Image source={require('../../assets/jynlo-icon.png')} style={styles.logo} />
     <View style={{flexShrink:1}}><Text maxFontSizeMultiplier={1.2} style={styles.brandTitle}>JYNLO</Text>{subtitle?<Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={styles.brandSubtitle}>{subtitle}</Text>:null}</View>
