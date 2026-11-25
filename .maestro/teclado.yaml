@@ -12,11 +12,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Procurar por cidade….*"
+    element: 'Procurar por cidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Procurar por cidade….*"
+    text: 'Procurar por cidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -28,11 +28,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar modalidade….*"
+    element: 'Pesquisar modalidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar modalidade….*"
+    text: 'Pesquisar modalidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -44,11 +44,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Responder em privado à Story….*"
+    element: 'Responder em privado à Story….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Responder em privado à Story….*"
+    text: 'Responder em privado à Story….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -60,11 +60,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Editar comentário.*"
+    element: 'Editar comentário.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Editar comentário.*"
+    text: 'Editar comentário.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -76,11 +76,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Conta o que aconteceu neste momento….*"
+    element: 'Conta o que aconteceu neste momento….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Conta o que aconteceu neste momento….*"
+    text: 'Conta o que aconteceu neste momento….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -92,11 +92,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar conversas….*"
+    element: 'Pesquisar conversas….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar conversas….*"
+    text: 'Pesquisar conversas….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -108,11 +108,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Cidade ou distrito.*"
+    element: 'Cidade ou distrito.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Cidade ou distrito.*"
+    text: 'Cidade ou distrito.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -124,11 +124,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Mensagem para o recinto \(opcional\).*"
+    element: 'Mensagem para o recinto \(opcional\).*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Mensagem para o recinto \(opcional\).*"
+    text: 'Mensagem para o recinto \(opcional\).*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -140,11 +140,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: Futeboladas à Balda.*"
+    element: 'Ex\.: Futeboladas à Balda.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: Futeboladas à Balda.*"
+    text: 'Ex\.: Futeboladas à Balda.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -156,11 +156,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar modalidades….*"
+    element: 'Pesquisar modalidades….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar modalidades….*"
+    text: 'Pesquisar modalidades….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -172,11 +172,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Conta às pessoas o que podem esperar….*"
+    element: 'Conta às pessoas o que podem esperar….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Conta às pessoas o que podem esperar….*"
+    text: 'Conta às pessoas o que podem esperar….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -188,11 +188,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar comunidades….*"
+    element: 'Pesquisar comunidades….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar comunidades….*"
+    text: 'Pesquisar comunidades….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -204,11 +204,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Filtrar por modalidade….*"
+    element: 'Filtrar por modalidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Filtrar por modalidade….*"
+    text: 'Filtrar por modalidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -220,11 +220,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar modalidades.*"
+    element: 'Pesquisar modalidades.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar modalidades.*"
+    text: 'Pesquisar modalidades.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -236,11 +236,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "nome@email\.com.*"
+    element: 'nome@email\.com.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "nome@email\.com.*"
+    text: 'nome@email\.com.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -252,11 +252,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Procurar outra modalidade….*"
+    element: 'Procurar outra modalidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Procurar outra modalidade….*"
+    text: 'Procurar outra modalidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -268,11 +268,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: Porto.*"
+    element: 'Ex\.: Porto.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: Porto.*"
+    text: 'Ex\.: Porto.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -284,11 +284,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: Futebol de sábado.*"
+    element: 'Ex\.: Futebol de sábado.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: Futebol de sábado.*"
+    text: 'Ex\.: Futebol de sábado.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -300,11 +300,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: O nosso treino de futsal.*"
+    element: 'Ex\.: O nosso treino de futsal.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: O nosso treino de futsal.*"
+    text: 'Ex\.: O nosso treino de futsal.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -316,11 +316,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Procurar modalidade….*"
+    element: 'Procurar modalidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Procurar modalidade….*"
+    text: 'Procurar modalidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -332,11 +332,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar por nome ou modalidade….*"
+    element: 'Pesquisar por nome ou modalidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar por nome ou modalidade….*"
+    text: 'Pesquisar por nome ou modalidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -348,11 +348,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*"
+    element: 'Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*"
+    text: 'Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -364,11 +364,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Procurar entre .* modalidades.*"
+    element: 'Procurar entre .* modalidades.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Procurar entre .* modalidades.*"
+    text: 'Procurar entre .* modalidades.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -380,11 +380,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: Bossaball.*"
+    element: 'Ex\.: Bossaball.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: Bossaball.*"
+    text: 'Ex\.: Bossaball.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -396,11 +396,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar as minhas comunidades.*"
+    element: 'Pesquisar as minhas comunidades.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar as minhas comunidades.*"
+    text: 'Pesquisar as minhas comunidades.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -412,11 +412,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Nome da competição ou comunidade.*"
+    element: 'Nome da competição ou comunidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Nome da competição ou comunidade.*"
+    text: 'Nome da competição ou comunidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -428,11 +428,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Modalidade.*"
+    element: 'Modalidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Modalidade.*"
+    text: 'Modalidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -444,11 +444,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Nome da equipa.*"
+    element: 'Nome da equipa.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Nome da equipa.*"
+    text: 'Nome da equipa.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -460,11 +460,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Modalidade.*"
+    element: 'Modalidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Modalidade.*"
+    text: 'Modalidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -476,11 +476,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Localização.*"
+    element: 'Localização.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Localização.*"
+    text: 'Localização.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -492,11 +492,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar modalidades desta comunidade.*"
+    element: 'Pesquisar modalidades desta comunidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar modalidades desta comunidade.*"
+    text: 'Pesquisar modalidades desta comunidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -508,11 +508,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: Taça de Primavera.*"
+    element: 'Ex\.: Taça de Primavera.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: Taça de Primavera.*"
+    text: 'Ex\.: Taça de Primavera.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -524,11 +524,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Procurar torneio, comunidade ou desporto….*"
+    element: 'Procurar torneio, comunidade ou desporto….*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Procurar torneio, comunidade ou desporto….*"
+    text: 'Procurar torneio, comunidade ou desporto….*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -540,11 +540,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Nome do recinto.*"
+    element: 'Nome do recinto.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Nome do recinto.*"
+    text: 'Nome do recinto.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -556,11 +556,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Cidade.*"
+    element: 'Cidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Cidade.*"
+    text: 'Cidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -572,11 +572,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Pesquisar modalidade.*"
+    element: 'Pesquisar modalidade.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Pesquisar modalidade.*"
+    text: 'Pesquisar modalidade.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -588,11 +588,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Ex\.: dono, gerente, direção do clube.*"
+    element: 'Ex\.: dono, gerente, direção do clube.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Ex\.: dono, gerente, direção do clube.*"
+    text: 'Ex\.: dono, gerente, direção do clube.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
@@ -604,11 +604,11 @@ appId: com.jynlo.app
 - waitForAnimationToEnd:
     timeout: 8000
 - scrollUntilVisible:
-    element: "Escreve uma mensagem privada.*"
+    element: 'Escreve uma mensagem privada.*'
     timeout: 12000
     optional: true
 - tapOn:
-    text: "Escreve uma mensagem privada.*"
+    text: 'Escreve uma mensagem privada.*'
     optional: true
 - inputText: "Teste teclado"
 - waitForAnimationToEnd:
