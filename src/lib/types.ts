@@ -5,6 +5,8 @@ export type JoinState = 'PARTICIPANT' | 'WAITLISTED';
 export interface SessionSummary {
   /** Organiser marked the court as booked. */
   courtBooked?:boolean|null;
+  /** Players needed for the game to happen (custom or the sport default). */
+  minPlayers?:number|null;
   id: number;
   sport: string;
   city: string;

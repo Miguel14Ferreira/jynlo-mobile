@@ -41,6 +41,8 @@ function notificationDestination(item){
  if(type==='COMMUNITY_JOIN_REQUEST'||type==='COMMUNITY_JOIN_ACCEPTED'||type==='COMMUNITY_JOIN_REJECTED'){
   return validId(item.communityId)?{kind:'community',id:String(item.communityId)}:null;
  }
+ // Someone who is not a friend wrote for the first time: open "Pedidos de mensagem".
+ if(type==='CHAT_MESSAGE'&&item.subject==='Pedido de mensagem')return {kind:'message-requests'};
  const isMessage=type.includes('CHAT')||type.includes('MESSAGE')||type.includes('DIRECT');
  if(isMessage){
   // Checked first: a group alert names the sender but must open the group, not a direct chat.

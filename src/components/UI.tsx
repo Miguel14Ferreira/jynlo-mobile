@@ -100,6 +100,11 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   const progress=participationProgress(session);
   const hasCapacity=Number.isFinite(session.maxParticipants)&&session.maxParticipants>0;
   const count=Number.isFinite(session.participantCount)?Math.max(0,session.participantCount):0;
+  // Players still needed for the game to happen (custom minimum or the sport's default).
+  const open=['OPEN','FULL'].includes(String(session.status||'OPEN').toUpperCase());
+  const sportLower=String(session.sport||'').toLowerCase();
+  const minimum=session.minPlayers??Math.min(Math.max(2,session.maxParticipants||2),/futebol|futsal|basquetebol|basketball/.test(sportLower)?6:/padel|pádel/.test(sportLower)?4:2);
+  const missing=open&&hasCapacity?Math.max(0,minimum-count):0;
   const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString(currentLocale())} km`:null].filter(Boolean).join(' · ');
   return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessão de {sport} em {city}',{sport:sportName(session.sport),city:session.city||t('local a confirmar')})}
     onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
@@ -123,11 +128,13 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
         <Text style={[styles.statusText,(status.tone==='available'||status.tone==='joined')&&styles.statusTextHighlight]}>{status.label}</Text>
       </View>
     </View>
+    {missing>0?<Text style={styles.missingPlayers}>{missing===1?t('Falta 1 para haver jogo'):t('Faltam {n} para haver jogo',{n:missing})}</Text>:null}
     {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel={t('Ocupação da sessão')}><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
     <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>{t('Ver detalhes da sessão')}</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
   </Pressable>;
 }
 const styles=StyleSheet.create({
+  missingPlayers:{color:'#FCD34D',fontSize:13,fontWeight:'800'},
   cardLevel:{color:MobileTheme.colors.accent,fontSize:12,fontWeight:'800',marginTop:2},
   page:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},content:{paddingHorizontal:16,paddingTop:16,paddingBottom:88,gap:16},
   brandRow:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:4},logo:{width:34,height:34,borderRadius:10},

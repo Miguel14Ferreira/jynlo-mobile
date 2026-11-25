@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Falta 1 para haver jogo": "1 more needed for the game",
+  "Faltam {n} para haver jogo": "{n} more needed for the game",
   "Seguido por @{a}": "Followed by @{a}",
   "Seguido por @{a} e @{b}": "Followed by @{a} and @{b}",
   "Seguido por @{a} e mais {n}": "Followed by @{a} and {n} more",
