@@ -7,7 +7,7 @@ import {C} from '../../src/lib/theme';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import {blockUser} from '../../src/lib/user-safety-api';
-import {acceptMessageRequest,declineMessageRequest,incomingMessageRequests,messagePolicy,setMessagePolicy,
+import {acceptMessageRequest,declineMessageRequest,incomingMessageRequests,messagePolicy,sentMessageRequests,setMessagePolicy,
  type IncomingMessageRequest,type MessagePolicy} from '../../src/lib/message-requests-api';
 
 const POLICIES:[MessagePolicy,string][]=[['EVERYONE','Toda a gente'],['COMMUNITIES','Só pessoas das minhas comunidades'],['FOLLOWING','Só quem eu sigo']];
@@ -16,6 +16,7 @@ const POLICIES:[MessagePolicy,string][]=[['EVERYONE','Toda a gente'],['COMMUNITI
 export default function MessageRequestsScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<IncomingMessageRequest[]>([]);
+ const [sent,setSent]=useState<IncomingMessageRequest[]>([]);
  const [policy,setPolicy]=useState<MessagePolicy|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [blockConfirm,setBlockConfirm]=useState<number|null>(null);
@@ -23,8 +24,8 @@ export default function MessageRequestsScreen(){
  const load=useCallback(async()=>{
   if(!token)return;setLoading(true);setError('');
   try{
-   const [list,p]=await Promise.all([incomingMessageRequests(token),messagePolicy(token).catch(()=>null)]);
-   setItems(list||[]);if(p)setPolicy(p.policy);
+   const [list,p,mine]=await Promise.all([incomingMessageRequests(token),messagePolicy(token).catch(()=>null),sentMessageRequests(token).catch(()=>[])]);
+   setItems(list||[]);setSent(mine||[]);if(p)setPolicy(p.policy);
   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível carregar.'));}
   finally{setLoading(false);}
  },[token]);
@@ -64,6 +65,13 @@ export default function MessageRequestsScreen(){
      <Button secondary title={t('Bloquear')} disabled={busy} onPress={()=>setBlockConfirm(r.id)}/>
     </View>}
   </View>)}
+  {sent.length?<>
+   <Text style={styles.label}>{t('Enviados · à espera de resposta')}</Text>
+   {sent.map(s=><Pressable key={'s'+s.id} accessibilityRole="link" onPress={()=>router.push({pathname:'/social/[username]',params:{username:s.username}})} style={styles.sentRow}>
+    <View style={styles.avatar}>{resolveJynloMedia(s.profilePicUrl)?<Image source={{uri:resolveJynloMedia(s.profilePicUrl)!}} style={styles.avatarImg}/>:<Text style={styles.avatarLetter}>{s.username.charAt(0).toUpperCase()}</Text>}</View>
+    <View style={{flex:1}}><Text style={styles.name}>@{s.username}</Text><Text numberOfLines={1} style={styles.note}>{t('Tu')}: {s.text}</Text></View>
+   </Pressable>)}
+  </>:null}
  </Page>;
 }
 const styles=StyleSheet.create({
@@ -82,4 +90,5 @@ const styles=StyleSheet.create({
  avatarImg:{width:'100%',height:'100%'},avatarLetter:{color:C.mint,fontWeight:'900',fontSize:18},
  name:{color:C.white,fontWeight:'800',fontSize:15},
  confirm:{gap:8},
+ sentRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:6},
 });

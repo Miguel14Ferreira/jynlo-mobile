@@ -11,6 +11,7 @@ const user=(u:string)=>encodeURIComponent(u.trim());
 export const messageAvailability=(username:string,token:string)=>request<MessageAvailability>(base+'/availability/'+user(username),{token});
 export const sendMessageRequest=(username:string,text:string,token:string)=>request<void>(base,{token,method:'POST',body:{username,text}});
 export const incomingMessageRequests=(token:string)=>request<IncomingMessageRequest[]>(base,{token});
+export const sentMessageRequests=(token:string)=>request<IncomingMessageRequest[]>(base+'/sent',{token});
 export const messageRequestCount=(token:string)=>request<{pending:number}>(base+'/count',{token});
 export const acceptMessageRequest=(id:number,token:string)=>request<void>(base+'/'+id+'/accept',{token,method:'POST'});
 export const declineMessageRequest=(id:number,token:string)=>request<void>(base+'/'+id+'/decline',{token,method:'POST'});

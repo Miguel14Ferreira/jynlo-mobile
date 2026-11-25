@@ -2,6 +2,7 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Enviados · à espera de resposta": "Sent · waiting for a reply",
   "Pedidos de mensagem": "Message requests",
   "Mensagens de quem ainda não é teu amigo. Só depois de aceitares podem continuar a escrever.": "Messages from people who are not your friends yet. They can only keep writing once you accept.",
   "Quem te pode enviar pedidos": "Who can send you requests",
