@@ -41,7 +41,10 @@ def send(aab,status,version,code,notes):
     from googleapiclient.http import MediaFileUpload
     import google_auth_httplib2,httplib2
     credential,_=google.auth.default(scopes=["https://www.googleapis.com/auth/androidpublisher"])
-    client=google_auth_httplib2.AuthorizedHttp(credential,http=httplib2.Http(timeout=240))
+    raw=httplib2.Http(timeout=240)
+    # Resumable uploads answer 308 "Resume Incomplete"; newer httplib2 treats it as a redirect.
+    raw.redirect_codes=set(raw.redirect_codes)-{308}
+    client=google_auth_httplib2.AuthorizedHttp(credential,http=raw)
     google=build("androidpublisher","v3",http=client,cache_discovery=False)
     edit=google.edits().insert(packageName=PKG,body={}).execute()
     edit_id=edit["id"]
