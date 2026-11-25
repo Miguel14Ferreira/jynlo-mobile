@@ -18,9 +18,9 @@ test('TestFlight is a store-signed iOS build, separate from Android diagnostics'
  assert.equal(eas.build.diagnostic.android.buildType,'apk');
  assert.equal(eas.build.diagnostic.env.JYNLO_ANDROID_DIAGNOSTIC_NO_R8,'1');
  assert.equal(app.ios.bundleIdentifier,'com.jynlo.app');
- assert.equal(app.version,'0.17.0');
+ assert.equal(app.version,'0.18.0');
  assert.equal(app.ios.buildNumber,'2');
- assert.equal(app.android.versionCode,14,'Do not change the ongoing Android closed testing release');
+ assert.equal(app.android.versionCode,15,'Closed testing update 0.18.0 (14 was the first closed testing build)');
  assert.ok(Object.prototype.hasOwnProperty.call(eas.submit,'ios-testflight'));
 });
 

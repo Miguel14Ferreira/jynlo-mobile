@@ -12,8 +12,29 @@ on:
           - verify-auth
           - verify-artifact
           - upload
+      build_run_id:
+        description: 'ID da execução do workflow que gerou o AAB assinado'
+        required: true
+        type: string
+      version:
+        description: 'Versão esperada (ex.: 0.18.0)'
+        required: true
+        type: string
+      version_code:
+        description: 'versionCode esperado (ex.: 15)'
+        required: true
+        type: string
+      commit:
+        description: 'Commit completo de que o AAB foi gerado'
+        required: true
+        type: string
+      notes:
+        description: 'Notas da versão (pt-PT)'
+        required: false
+        default: 'Melhorias e correções para os testadores.'
+        type: string
       confirm:
-        description: 'Só para upload: escreve ENVIAR_JYNLO_016_TESTE_INTERNO'
+        description: 'Só para upload: escreve ENVIAR_JYNLO_TESTE_INTERNO'
         required: false
         default: ''
         type: string
@@ -32,13 +53,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: jynlo-play-internal-016-upload
+  group: jynlo-play-internal-upload
   cancel-in-progress: false
 
 jobs:
   upload:
-    name: Validar OIDC e opcionalmente enviar AAB 0.16.0
-    if: ${{ github.ref == 'refs/heads/develop' && (inputs.action == 'verify-auth' || inputs.action == 'verify-artifact' || (inputs.action == 'upload' && inputs.confirm == 'ENVIAR_JYNLO_016_TESTE_INTERNO')) }}
+    name: Validar OIDC e opcionalmente enviar o AAB
+    if: ${{ github.ref == 'refs/heads/develop' && (inputs.action == 'verify-auth' || inputs.action == 'verify-artifact' || (inputs.action == 'upload' && inputs.confirm == 'ENVIAR_JYNLO_TESTE_INTERNO')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -74,19 +95,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: jynlo-google-play-internal-aab
-          run-id: '42023837920'
+          run-id: ${{ inputs.build_run_id }}
           repository: Miguel14Ferreira/jynlo-mobile
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: play-artifact
       - name: Validar origem, versão, manifesto e SHA-256
         if: ${{ inputs.action == 'upload' || inputs.action == 'verify-artifact' }}
-        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact
+        env:
+          V: ${{ inputs.version }}
+          C: ${{ inputs.version_code }}
+          G: ${{ inputs.commit }}
+        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --version "$V" --version-code "$C" --commit "$G"
       - name: Confirmar assinatura do AAB
         if: ${{ inputs.action == 'upload' || inputs.action == 'verify-artifact' }}
         run: jarsigner -verify play-artifact/android/app/build/outputs/bundle/release/app-release.aab
       - name: Confirmação de validação sem publicação
         if: ${{ inputs.action == 'verify-artifact' }}
-        run: echo "AAB 0.16.0 validado localmente; nenhum envio à Google Play foi efetuado"
+        run: echo "AAB validado localmente; nenhum envio à Google Play foi efetuado"
       - name: Instalar biblioteca da API oficial Google Play
         if: ${{ inputs.action == 'upload' }}
         run: python3 -m pip install --disable-pip-version-check 'google-api-python-client>=2.160,<3' 'google-auth>=2.36,<3' 'google-auth-httplib2>=0.2,<1'
@@ -94,5 +119,9 @@ jobs:
         if: ${{ inputs.action == 'upload' }}
         env:
           RELEASE_STATUS: ${{ inputs.status }}
+          V: ${{ inputs.version }}
+          C: ${{ inputs.version_code }}
+          G: ${{ inputs.commit }}
+          N: ${{ inputs.notes }}
         shell: bash
-        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --apply --status "$RELEASE_STATUS"
+        run: python3 scripts/play_upload_internal.py --artifact-dir play-artifact --apply --status "$RELEASE_STATUS" --version "$V" --version-code "$C" --commit "$G" --notes "$N"

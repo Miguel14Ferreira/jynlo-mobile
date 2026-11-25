@@ -4,19 +4,17 @@ import argparse,hashlib,json,sys,zipfile
 from pathlib import Path
 
 PKG="com.jynlo.app"
-CODE=7
-COMMIT="dc9220284661b92f138b4e7162b548d3b51eae37"
 TRACK="internal"
 
-def validate(base):
+def validate(base,version,code,commit):
     aab=base/"android/app/build/outputs/bundle/release/app-release.aab"
     meta=base/"android-build-info.json"
     checksum=base/"android-build-sha256.txt"
     for f in (aab,meta,checksum):
         if not f.is_file() or f.stat().st_size==0: raise ValueError("Falta "+f.name)
     info=json.loads(meta.read_text())
-    for k,v in {"format":"aab","packageName":PKG,"version":"0.16.0","versionCode":CODE,
-                "gitCommit":COMMIT,"distribution":"google-play-internal"}.items():
+    for k,v in {"format":"aab","packageName":PKG,"version":version,"versionCode":code,
+                "gitCommit":commit,"distribution":"google-play-internal"}.items():
         if info.get(k)!=v: raise ValueError("Metadados não correspondem: "+k)
     if not str(info.get("apiUrl","")).startswith("https://"):
         raise ValueError("A API não está configurada para HTTPS")
@@ -30,7 +28,7 @@ def validate(base):
             raise ValueError("Manifesto Android AAB em falta")
     return aab,digest
 
-def send(aab,status):
+def send(aab,status,version,code,notes):
     import google.auth
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
@@ -42,23 +40,27 @@ def send(aab,status):
     edit_id=edit["id"]
     uploaded=google.edits().bundles().upload(packageName=PKG,editId=edit_id,
         media_body=MediaFileUpload(str(aab),mimetype="application/octet-stream",resumable=True)).execute()
-    if int(uploaded.get("versionCode",-1))!=CODE: raise RuntimeError("versionCode inesperado")
-    body={"track":TRACK,"releases":[{"name":"Jynlo Beta 0.16.0 - Teste Interno",
-        "versionCodes":[str(CODE)],"status":status,
-        "releaseNotes":[{"language":"pt-PT","text":"Login Google, melhorias do Feed, acesso a comunidades e competições. Beta para testadores."}]}]}
+    if int(uploaded.get("versionCode",-1))!=code: raise RuntimeError("versionCode inesperado")
+    body={"track":TRACK,"releases":[{"name":"Jynlo Beta "+version+" - Teste Interno",
+        "versionCodes":[str(code)],"status":status,
+        "releaseNotes":[{"language":"pt-PT","text":notes}]}]}
     google.edits().tracks().update(packageName=PKG,editId=edit_id,track=TRACK,body=body).execute()
     google.edits().commit(packageName=PKG,editId=edit_id).execute()
-    print("Google Play confirmou Jynlo 0.16.0 na faixa interna com estado "+status)
+    print("Google Play confirmou Jynlo "+version+" ("+str(code)+") na faixa interna com estado "+status)
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--artifact-dir",type=Path,default=Path("play-artifact"))
     parser.add_argument("--apply",action="store_true")
     parser.add_argument("--status",choices=["draft","completed"],default="draft")
+    parser.add_argument("--version",required=True)
+    parser.add_argument("--version-code",type=int,required=True)
+    parser.add_argument("--commit",required=True)
+    parser.add_argument("--notes",default="Melhorias e correções para os testadores.")
     args=parser.parse_args()
-    aab,sha=validate(args.artifact_dir)
-    print("AAB original validado: com.jynlo.app 0.16.0 / code 7 / SHA-256 "+sha)
-    if args.apply: send(aab,args.status)
+    aab,sha=validate(args.artifact_dir,args.version,args.version_code,args.commit)
+    print("AAB original validado: com.jynlo.app "+args.version+" / code "+str(args.version_code)+" / SHA-256 "+sha)
+    if args.apply: send(aab,args.status,args.version,args.version_code,args.notes[:500])
     else: print("MODO SEM ENVIO: Google Play não foi alterada")
 
 if __name__=="__main__":
