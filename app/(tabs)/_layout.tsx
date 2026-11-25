@@ -141,7 +141,7 @@ export default function TabsLayout(){
       </Pressable>
       {moreOpen?<>
       <Pressable accessibilityRole="button" accessibilityLabel={t('Sugerir um recinto desportivo')} style={styles.secondaryAction} onPress={()=>action('venue')}>
-       <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>{t('Sugerir recinto')}</Text><Text style={styles.secondaryHint}>{t('Acrescenta um espaço desportivo à Jynlo')}</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+       <JynloIcon name="venue" size={25} color={colors.accent}/><View style={{flex:1}}><Text style={styles.secondaryTitle}>{t('Sugerir recinto')}</Text><Text style={styles.secondaryHint}>{t('Sugere um campo ou regista o teu')}</Text></View><JynloIcon name="chevron-right" size={22} color={colors.accent}/>
       </Pressable>
       {auth.token&&auth.username?checking?<View style={styles.checking}><ActivityIndicator color={colors.accent}/><Text style={styles.secondaryHint}>{t('A verificar as tuas comunidades…')}</Text></View>:checkError?<Text style={styles.info}>{t('Não foi possível verificar as tuas comunidades. Abre novamente este menu para tentar.')}</Text>:null
        :<Text style={styles.info}>{t('Para criar conteúdos ou organizar atividades, inicia sessão na Jynlo.')}</Text>}

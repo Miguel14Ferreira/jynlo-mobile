@@ -357,7 +357,7 @@ const EN={
   "Acompanha as novidades, conversa com o plantel e consulta as conquistas.": "Follow the news, chat with the squad and see the achievements.",
   "Acompanha competições, resultados e classificações por modalidade.": "Follow competitions, results and standings by sport.",
   "Acompanha os plantéis, aceita convites e vê os jogos da competição.": "Follow the squads, accept invitations and see the competition's matches.",
-  "Acrescenta um espaço desportivo à Jynlo": "Add a sports venue to Jynlo",
+ 'Sugere um campo ou regista o teu':'Suggest a venue or register yours',
   "Adesões aceites": "Accepted join requests",
   "Adesões recusadas": "Declined join requests",
   "Adicionar": "Add",
