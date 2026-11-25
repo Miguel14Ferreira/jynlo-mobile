@@ -49,13 +49,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Instalar dependências
         run: npm install --no-audit --no-fund
-      - name: Validar testes, TypeScript e API real
+      - name: Validar testes e TypeScript
         run: |
           npm run test:all
           npm run typecheck
-          npm run check:release
-      - name: Gerar Android nativo
-        run: npx expo prebuild --platform android --no-install --clean
+      # Google Maps and Firebase live in the EAS "production" environment.
+      # env:exec injects them only into these commands; values never reach the logs or the repo.
+      - name: Validar API real e gerar Android nativo com a configuração de loja do EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "::error::EXPO_TOKEN em falta nos secrets"; exit 1; }
+          npx --yes eas-cli@latest env:exec production --non-interactive \
+            "EXPO_PUBLIC_JYNLO_API_URL=$EXPO_PUBLIC_JYNLO_API_URL npm run check:release && EXPO_PUBLIC_JYNLO_API_URL=$EXPO_PUBLIC_JYNLO_API_URL npx expo prebuild --platform android --no-install --clean"
       - name: Carregar chave privada só para este runner
         env:
           JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64: ${{ secrets.JYNLO_PLAY_UPLOAD_KEYSTORE_BASE64 }}
