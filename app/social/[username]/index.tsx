@@ -10,6 +10,7 @@ import type {SocialStory} from '../../../src/lib/types';
 import {reliabilitySummary} from '../../../src/lib/reliability-api';
 import ProfilePosts from '../../../src/components/ProfilePosts';
 import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,publicSportsActivity,publicIndividualTitles,publicCompletedParticipations,type PublicCompletedParticipation,type PublicIndividualTitle,type PublicSportsActivity,type PublicProfileAffiliations,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
+import {PlayerStatsRow} from '../../../src/components/PlayerHighlights';
 import {ProfileMessageAction} from '../../../src/components/ProfileMessageAction';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
 import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/profile-privacy-api';
@@ -147,6 +148,7 @@ export default function PublicSocialProfile(){
      {busy?t('A confirmar…'):status.followedByMe?t('A seguir ✓'):status.requestPending?t('Pedido enviado ✓'):status.privateProfile?t('Pedir para seguir +'):t('Seguir +')}
     </Text>
    </Pressable>:!own?<Text style={styles.sub}>{t('Não foi possível confirmar a relação de seguimento.')}</Text>:null}
+   <PlayerStatsRow username={name} token={auth.token}/>
    {!own&&auth.token?<ProfileMessageAction username={name} token={auth.token}/>:null}
    {!own&&auth.token?<View style={styles.safetyRow}>
     <Pressable accessibilityRole="button" disabled={safetyBusy||blocked===null} onPress={toggleBlock}

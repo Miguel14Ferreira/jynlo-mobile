@@ -1,3 +1,4 @@
+import {CommunityMonthLeaders} from '../../src/components/PlayerHighlights';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
@@ -326,6 +327,7 @@ export default function CommunityDetailScreen(){
          :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam sessões.')}</Text>}
         {auth.token?<AvailabilityPanel kind="community" targetId={id} token={auth.token} communityId={id}/>:null}
         <Button secondary title={t('Ver competições por modalidade')} onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
+        {isMember(community)&&community.rankingsEnabled?<CommunityMonthLeaders communityId={id} token={auth.token} canManage={owner}/>:null}
         {isMember(community)&&community.rankingsEnabled?<Button secondary title={t('Resultados e classificações')} onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
         {isMember(community)&&community.rankingsEnabled&&auth.token?<PublicShareCard target={{kind:'RANKING',communityId:id}}
           name={community.name} token={auth.token} canManage={owner}/>:null}

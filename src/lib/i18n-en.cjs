@@ -2,6 +2,21 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Estatísticas": "Stats",
+  "Destaques do mês": "This month's top players",
+  "Votação criada no chat": "Vote posted in the chat",
+  "Votar o jogador do mês": "Vote player of the month",
+  "A votação está no chat da comunidade.": "The vote is in the community chat.",
+  "Não foi possível criar a votação.": "Couldn't create the vote.",
+  "Os votos são visíveis para quem está na conversa.": "Votes are visible to everyone in the conversation.",
+  "Quem leva o quê?": "Who's bringing what?",
+  "Levo bola": "I'll bring a ball",
+  "Levo coletes": "I'll bring bibs",
+  "Levo água": "I'll bring water",
+  "Contamos contigo?": "Are you in?",
+  "Que dia dá mais jeito?": "Which day works best?",
+  "Ver votos": "View votes",
+  "Esconder votos": "Hide votes",
   "Falta 1 para haver jogo": "1 more needed for the game",
   "Faltam {n} para haver jogo": "{n} more needed for the game",
   "Seguido por @{a}": "Followed by @{a}",

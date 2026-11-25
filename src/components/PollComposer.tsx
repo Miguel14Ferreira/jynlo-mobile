@@ -20,6 +20,15 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
    <View style={styles.sheet}>
     <Text style={styles.title}>{t('📊 Criar sondagem')}</Text>
     <ScrollView style={{maxHeight:380}} contentContainerStyle={{gap:10}} keyboardShouldPersistTaps="handled">
+     <View style={styles.templates}>
+      {/* Quick polls friends use before a game. */}
+      <Pressable accessibilityRole="button" style={styles.template} onPress={()=>{setQuestion(t('Quem leva o quê?'));setOptions([t('Levo bola'),t('Levo coletes'),t('Levo água')]);setInvalid(false);}}>
+       <Text style={styles.templateText}>{t('Quem leva o quê?')}</Text></Pressable>
+      <Pressable accessibilityRole="button" style={styles.template} onPress={()=>{setQuestion(t('Contamos contigo?'));setOptions([t('Vou'),t('Talvez'),t('Não posso')]);setInvalid(false);}}>
+       <Text style={styles.templateText}>{t('Contamos contigo?')}</Text></Pressable>
+      <Pressable accessibilityRole="button" style={styles.template} onPress={()=>{setQuestion(t('Que dia dá mais jeito?'));setOptions([t('Sábado'),t('Domingo')]);setInvalid(false);}}>
+       <Text style={styles.templateText}>{t('Que dia dá mais jeito?')}</Text></Pressable>
+     </View>
      <Text style={styles.label}>{t('Pergunta')}</Text>
      <TextInput value={question} maxLength={POLL_MAX_QUESTION} placeholder={t('Ex.: Que dia jogamos?')} placeholderTextColor={C.muted}
       onChangeText={value=>{setQuestion(value);setInvalid(false);}} style={styles.input} accessibilityLabel={t('Pergunta')}/>
@@ -33,6 +42,7 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
      {options.length<POLL_MAX_OPTIONS?<Pressable accessibilityRole="button" onPress={()=>setOptions(current=>[...current,''])} style={styles.add}>
       <Text style={styles.addText}>{t('+ Adicionar opção')}</Text></Pressable>:null}
     </ScrollView>
+    <Text style={styles.visible}>{t('Os votos são visíveis para quem está na conversa.')}</Text>
     {invalid?<Text style={styles.error}>{t('Escreve a pergunta e pelo menos 2 opções diferentes.')}</Text>:null}
     <Pressable accessibilityRole="button" onPress={submit} style={styles.send}><Text style={styles.sendText}>{t('Enviar sondagem')}</Text></Pressable>
    </View>
@@ -40,6 +50,10 @@ export function PollComposer({visible,onClose,onSend}:{visible:boolean;onClose:(
  </Modal>;
 }
 const styles=StyleSheet.create({
+ templates:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ template:{borderWidth:1,borderColor:C.border,borderRadius:999,paddingHorizontal:10,paddingVertical:6},
+ templateText:{color:C.white,fontSize:12,fontWeight:'700'},
+ visible:{color:C.muted,fontSize:12},
  overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.6)'},
  sheet:{gap:12,padding:18,paddingBottom:30,borderTopLeftRadius:24,borderTopRightRadius:24,backgroundColor:C.background,borderWidth:1,borderColor:C.border},
  title:{color:C.white,fontSize:20,fontWeight:'900'},
