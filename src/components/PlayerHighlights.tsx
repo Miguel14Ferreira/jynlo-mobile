@@ -3,7 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {t} from '../lib/i18n';
 import {C} from '../lib/theme';
-import {communityMonthLeaders,playerOfMonthPoll,playerStats,type MonthLeader,type PlayerStats} from '../lib/player-highlights-api';
+import {communityMonthLeaders,playerOfMonthPoll,playerStats,setMonthHighlights,type MonthLeader,type MonthLeaders,type PlayerStats} from '../lib/player-highlights-api';
 
 /** A player's numbers from community games (goals, assists, MVP), on the profile. */
 export function PlayerStatsRow({username,token}:{username:string;token:string|null}){
@@ -20,8 +20,22 @@ export function PlayerStatsRow({username,token}:{username:string;token:string|nu
 export function CommunityMonthLeaders({communityId,token,canManage}:{communityId:number;token:string|null;canManage:boolean}){
  const router=useRouter();
  const [leaders,setLeaders]=useState<MonthLeader[]>([]),[busy,setBusy]=useState(false),[created,setCreated]=useState(false),[note,setNote]=useState('');
- useEffect(()=>{let alive=true;setLeaders([]);void communityMonthLeaders(communityId,token).then(l=>{if(alive)setLeaders(l);}).catch(()=>{});return()=>{alive=false;};},[communityId,token]);
- if(!leaders.length)return null;
+ const [enabled,setEnabled]=useState(false),[manager,setManager]=useState(false);
+ const apply=(r:MonthLeaders|null)=>{setLeaders(r?.leaders??[]);setEnabled(r?.enabled!==false&&!!r);setManager(r?.canManage??canManage);};
+ useEffect(()=>{let alive=true;setLeaders([]);void communityMonthLeaders(communityId,token).then(r=>{if(alive)apply(r);}).catch(()=>{});return()=>{alive=false;};},[communityId,token]);
+ async function toggle(on:boolean){
+  if(busy||!token)return;setBusy(true);setNote('');
+  try{apply(await setMonthHighlights(communityId,on,token));}
+  catch{setNote(t('Não foi possível guardar. Tenta outra vez.'));}
+  finally{setBusy(false);}
+ }
+ if(manager&&!enabled)return <View style={[styles.card,{borderStyle:'dashed'}]}>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>🏆 {t('Destaques do mês')}</Text>
+  <Text style={styles.note}>{t('Os melhores do mês e a votação do jogador do mês. A comunidade decide se quer usar.')}</Text>
+  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void toggle(true);}} style={styles.vote}><Text style={styles.voteText}>{t('Ativar')}</Text></Pressable>
+  {note?<Text style={styles.note}>{note}</Text>:null}
+ </View>;
+ if(!enabled||(!leaders.length&&!manager))return null;
  async function vote(){
   if(busy||!token)return;setBusy(true);setNote('');
   try{await playerOfMonthPoll(communityId,token);setCreated(true);setNote(t('A votação está no chat da comunidade.'));}
@@ -36,8 +50,12 @@ export function CommunityMonthLeaders({communityId,token,canManage}:{communityId
    <Text style={styles.name} numberOfLines={1}>{l.name}</Text>
    <Text style={styles.nums}>⚽ {l.goals} · 🅰️ {l.assists} · ⭐ {l.mvps}</Text>
   </Pressable>)}
-  {canManage?<Pressable accessibilityRole="button" disabled={busy||created} onPress={()=>{void vote();}} style={[styles.vote,(busy||created)&&{opacity:.6}]}>
-   <Text style={styles.voteText}>{created?t('Votação criada no chat'):busy?t('A criar…'):t('Votar o jogador do mês')}</Text></Pressable>:null}
+  {!leaders.length?<Text style={styles.note}>{t('Ainda não há resultados registados este mês.')}</Text>:null}
+  {manager?<View style={{flexDirection:'row',gap:8,flexWrap:'wrap'}}>
+   {leaders.length>=2?<Pressable accessibilityRole="button" disabled={busy||created} onPress={()=>{void vote();}} style={[styles.vote,(busy||created)&&{opacity:.6}]}>
+    <Text style={styles.voteText}>{created?t('Votação criada no chat'):busy?t('A criar…'):t('Votar o jogador do mês')}</Text></Pressable>:null}
+   <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void toggle(false);}} style={styles.off}><Text style={styles.offText}>{t('Desligar')}</Text></Pressable>
+  </View>:null}
   {note?<Text style={styles.note}>{note}</Text>:null}
  </View>;
 }
@@ -58,4 +76,6 @@ const styles=StyleSheet.create({
  vote:{alignSelf:'flex-start',backgroundColor:C.mint,borderRadius:999,paddingHorizontal:14,paddingVertical:9},
  voteText:{color:'#062B2E',fontWeight:'900'},
  note:{color:C.muted,fontSize:12},
+ off:{borderWidth:1,borderColor:C.border,borderRadius:999,paddingHorizontal:14,paddingVertical:9},
+ offText:{color:C.white,fontWeight:'800'},
 });

@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Os melhores do mês e a votação do jogador do mês. A comunidade decide se quer usar.": "The month's top players and the player-of-the-month vote. Each community decides whether to use it.",
+  "Ainda não há resultados registados este mês.": "No results recorded this month yet.",
   "Estatísticas": "Stats",
   "Destaques do mês": "This month's top players",
   "Votação criada no chat": "Vote posted in the chat",
