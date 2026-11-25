@@ -11,6 +11,11 @@ on:
         type: choice
         options: [pt-PT, en-US]
         default: pt-PT
+      flow:
+        description: "Percurso a correr"
+        type: choice
+        options: [percurso, teclado]
+        default: percurso
 
 permissions:
   contents: write
@@ -68,7 +73,7 @@ jobs:
           QA_PASS: ${{ secrets.JYNLO_QA1_PASSWORD }}
         run: |
           if [ -n "$QA_USER" ] && [ -n "$QA_PASS" ]; then
-            echo "FLOW=.maestro/percurso.yaml" >> "$GITHUB_ENV"
+            echo "FLOW=.maestro/${{ inputs.flow || 'percurso' }}.yaml" >> "$GITHUB_ENV"
             echo "Conta de teste encontrada: percurso com sessão iniciada."
           else
             echo "FLOW=.maestro/visitante.yaml" >> "$GITHUB_ENV"

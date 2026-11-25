@@ -1,0 +1,617 @@
+# Teclado em todos os campos de texto: escreve em cada um e fotografa com o teclado aberto.
+# Gerado a partir dos placeholders dos ecrãs (scripts/qa/gerar-teclado.py). A sessão já foi iniciada.
+appId: com.jynlo.app
+---
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "(Início|Home)"
+    timeout: 90000
+# explore · Procurar por cidade…
+- openLink: "jynlo://explore"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Procurar por cidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Procurar por cidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K01_explore
+- hideKeyboard
+# explore · Pesquisar modalidade…
+- openLink: "jynlo://explore"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar modalidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar modalidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K02_explore
+- hideKeyboard
+# inicio · Responder em privado à Story…
+- openLink: "jynlo://"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Responder em privado à Story….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Responder em privado à Story….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K03_inicio
+- hideKeyboard
+# inicio · Editar comentário
+- openLink: "jynlo://"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Editar comentário.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Editar comentário.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K04_inicio
+- hideKeyboard
+# inicio · Conta o que aconteceu neste momento…
+- openLink: "jynlo://"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Conta o que aconteceu neste momento….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Conta o que aconteceu neste momento….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K05_inicio
+- hideKeyboard
+# messages · Pesquisar conversas…
+- openLink: "jynlo://messages"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar conversas….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar conversas….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K06_messages
+- hideKeyboard
+# book-court · Cidade ou distrito
+- openLink: "jynlo://book-court"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Cidade ou distrito.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Cidade ou distrito.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K07_book-court
+- hideKeyboard
+# book-court · Mensagem para o recinto (opcional)
+- openLink: "jynlo://book-court"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Mensagem para o recinto \(opcional\).*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Mensagem para o recinto \(opcional\).*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K08_book-court
+- hideKeyboard
+# communities/create · Ex.: Futeboladas à Balda
+- openLink: "jynlo://communities/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: Futeboladas à Balda.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: Futeboladas à Balda.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K09_communities_create
+- hideKeyboard
+# communities/create · Pesquisar modalidades…
+- openLink: "jynlo://communities/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar modalidades….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar modalidades….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K10_communities_create
+- hideKeyboard
+# communities/create · Conta às pessoas o que podem esperar…
+- openLink: "jynlo://communities/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Conta às pessoas o que podem esperar….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Conta às pessoas o que podem esperar….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K11_communities_create
+- hideKeyboard
+# communities · Pesquisar comunidades…
+- openLink: "jynlo://communities"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar comunidades….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar comunidades….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K12_communities
+- hideKeyboard
+# communities · Filtrar por modalidade…
+- openLink: "jynlo://communities"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Filtrar por modalidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Filtrar por modalidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K13_communities
+- hideKeyboard
+# edit-profile · Pesquisar modalidades
+- openLink: "jynlo://edit-profile"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar modalidades.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar modalidades.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K14_edit-profile
+- hideKeyboard
+# feedback · nome@email.com
+- openLink: "jynlo://feedback"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "nome@email\.com.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "nome@email\.com.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K15_feedback
+- hideKeyboard
+# first-steps · Procurar outra modalidade…
+- openLink: "jynlo://first-steps"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Procurar outra modalidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Procurar outra modalidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K16_first-steps
+- hideKeyboard
+# first-steps · Ex.: Porto
+- openLink: "jynlo://first-steps"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: Porto.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: Porto.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K17_first-steps
+- hideKeyboard
+# groups · Ex.: Futebol de sábado
+- openLink: "jynlo://groups"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: Futebol de sábado.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: Futebol de sábado.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K18_groups
+- hideKeyboard
+# live · Ex.: O nosso treino de futsal
+- openLink: "jynlo://live"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: O nosso treino de futsal.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: O nosso treino de futsal.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K19_live
+- hideKeyboard
+# nearby-alerts · Procurar modalidade…
+- openLink: "jynlo://nearby-alerts"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Procurar modalidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Procurar modalidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K20_nearby-alerts
+- hideKeyboard
+# people · Pesquisar por nome ou modalidade…
+- openLink: "jynlo://people"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar por nome ou modalidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar por nome ou modalidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K21_people
+- hideKeyboard
+# search · Pessoas, comunidades, equipas, recintos, modalidade ou cidade…
+- openLink: "jynlo://search"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pessoas, comunidades, equipas, recintos, modalidade ou cidade….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K22_search
+- hideKeyboard
+# sessions/create · Procurar entre {count} modalidades
+- openLink: "jynlo://sessions/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Procurar entre .* modalidades.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Procurar entre .* modalidades.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K23_sessions_create
+- hideKeyboard
+# sessions/create · Ex.: Bossaball
+- openLink: "jynlo://sessions/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: Bossaball.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: Bossaball.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K24_sessions_create
+- hideKeyboard
+# sessions/create · Pesquisar as minhas comunidades
+- openLink: "jynlo://sessions/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar as minhas comunidades.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar as minhas comunidades.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K25_sessions_create
+- hideKeyboard
+# teams/competitions · Nome da competição ou comunidade
+- openLink: "jynlo://teams/competitions"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Nome da competição ou comunidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Nome da competição ou comunidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K26_teams_competitions
+- hideKeyboard
+# teams/competitions · Modalidade
+- openLink: "jynlo://teams/competitions"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Modalidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Modalidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K27_teams_competitions
+- hideKeyboard
+# teams · Nome da equipa
+- openLink: "jynlo://teams"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Nome da equipa.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Nome da equipa.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K28_teams
+- hideKeyboard
+# teams · Modalidade
+- openLink: "jynlo://teams"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Modalidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Modalidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K29_teams
+- hideKeyboard
+# teams · Localização
+- openLink: "jynlo://teams"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Localização.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Localização.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K30_teams
+- hideKeyboard
+# tournaments/create · Pesquisar modalidades desta comunidade
+- openLink: "jynlo://tournaments/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar modalidades desta comunidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar modalidades desta comunidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K31_tournaments_create
+- hideKeyboard
+# tournaments/create · Ex.: Taça de Primavera
+- openLink: "jynlo://tournaments/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: Taça de Primavera.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: Taça de Primavera.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K32_tournaments_create
+- hideKeyboard
+# tournaments · Procurar torneio, comunidade ou desporto…
+- openLink: "jynlo://tournaments"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Procurar torneio, comunidade ou desporto….*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Procurar torneio, comunidade ou desporto….*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K33_tournaments
+- hideKeyboard
+# venues · Nome do recinto
+- openLink: "jynlo://venues"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Nome do recinto.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Nome do recinto.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K34_venues
+- hideKeyboard
+# venues · Cidade
+- openLink: "jynlo://venues"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Cidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Cidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K35_venues
+- hideKeyboard
+# venues/create · Pesquisar modalidade
+- openLink: "jynlo://venues/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Pesquisar modalidade.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Pesquisar modalidade.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K36_venues_create
+- hideKeyboard
+# venues/create · Ex.: dono, gerente, direção do clube
+- openLink: "jynlo://venues/create"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Ex\.: dono, gerente, direção do clube.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Ex\.: dono, gerente, direção do clube.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K37_venues_create
+- hideKeyboard
+# messages/jynloteste02 · Escreve uma mensagem privada
+- openLink: "jynlo://messages/jynloteste02"
+- waitForAnimationToEnd:
+    timeout: 8000
+- scrollUntilVisible:
+    element: "Escreve uma mensagem privada.*"
+    timeout: 12000
+    optional: true
+- tapOn:
+    text: "Escreve uma mensagem privada.*"
+    optional: true
+- inputText: "Teste teclado"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: K38_messages_jynloteste02
+- hideKeyboard
