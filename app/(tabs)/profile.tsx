@@ -5,6 +5,7 @@ import {LanguageSwitch} from '../../src/components/LanguageSwitch';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {Alert,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
+import {hasAdminAccess} from '../../src/lib/admin-api';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Brand,Button,DemoBanner,Eyebrow,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -33,6 +34,8 @@ export default function ProfileScreen(){
   const [myVenues,setMyVenues]=React.useState<ManagedVenue[]>([]);
   const [navEditorOpen,setNavEditorOpen]=React.useState(false);
   const bookingsOpen=useBookingsOpen();
+  const [isAdmin,setIsAdmin]=React.useState(false);
+  React.useEffect(()=>{if(!auth.token||DEMO_MODE){setIsAdmin(false);return;}let alive=true;void hasAdminAccess(auth.token).then(ok=>{if(alive)setIsAdmin(ok);});return()=>{alive=false;};},[auth.token]);
   React.useEffect(()=>{if(!auth.token)return;let alive=true;managedVenues(auth.token).then(l=>{if(alive)setMyVenues(l||[]);}).catch(()=>{});return()=>{alive=false;};},[auth.token]);
   const [confirmUsername,setConfirmUsername]=useState('');
   const [profile,setProfile]=useState<ProfilePresentation|null>(null);
@@ -236,6 +239,7 @@ export default function ProfileScreen(){
       );}}/>}
     {auth.username&&!DEMO_MODE?<><Eyebrow>{t('GESTÃO DA CONTA')}</Eyebrow>
 
+    {isAdmin?<Button title={t('Administração · moderação rápida')} onPress={()=>router.push('/admin')}/>:null}
     <Button title={t('Alterar palavra-passe')} secondary onPress={()=>router.push('/change-password')}/>
     <Button title={t('Mudar email')} secondary onPress={()=>router.push('/change-email')}/>
     <Button title={t('Pessoas bloqueadas')} secondary onPress={()=>router.push('/blocked-people')}/>
