@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {t} from '../lib/i18n';
+import type {HostInstance} from 'react-native';
 import {ActivityIndicator,AppState,Keyboard,PermissionsAndroid,Platform,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {JynloIcon} from '../components/JynloIcon';
 import CallChatSidePanel from '../components/CallChatSidePanel';
@@ -38,11 +39,19 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
  const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
  const [expandedVideo,setExpandedVideo]=useState(false),[showChat,setShowChat]=useState(false);
  const [keyboardOpen,setKeyboardOpen]=useState(false);
+ // Where the keyboard starts on screen and where this panel starts: while typing, the panel is
+ // capped to the space between them, so the chat composer always sits right above the keyboard
+ // (whether or not the system resized the window).
+ const [keyboardTop,setKeyboardTop]=useState<number|null>(null),[panelTop,setPanelTop]=useState(0);
+ const panelRef=useRef<HostInstance|null>(null);
+ const measurePanel=useCallback(()=>{panelRef.current?.measureInWindow((_x:number,y:number)=>{if(Number.isFinite(y))setPanelTop(y);});},[]);
  useEffect(()=>{
-  const shown=Keyboard.addListener('keyboardDidShow',()=>setKeyboardOpen(true));
-  const hidden=Keyboard.addListener('keyboardDidHide',()=>setKeyboardOpen(false));
+  const shown=Keyboard.addListener('keyboardDidShow',event=>{
+   setKeyboardOpen(true);setKeyboardTop(event.endCoordinates.screenY);setTimeout(measurePanel,60);
+  });
+  const hidden=Keyboard.addListener('keyboardDidHide',()=>{setKeyboardOpen(false);setKeyboardTop(null);});
   return()=>{shown.remove();hidden.remove();};
- },[]);
+ },[measurePanel]);
  const wide=width>=720;
  // Allow the chat column to stay beside video on wide layouts without
  // forcing video beyond the available viewport on smaller devices.
@@ -67,7 +76,8 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível alterar o dispositivo.'));}
   finally{setChanging(false);}
  }
- return <View style={[styles.mediaPanel,styles.mediaPanelChat]}>
+ const typingMaxHeight=typingInChat&&keyboardTop!=null?Math.max(180,keyboardTop-panelTop-8):undefined;
+ return <View ref={panelRef} onLayout={measurePanel} style={[styles.mediaPanel,styles.mediaPanelChat,typingMaxHeight!=null&&{maxHeight:typingMaxHeight}]}>
   {typingInChat?<Pressable accessibilityRole="button" accessibilityLabel={t('Voltar ao vídeo da chamada')} onPress={()=>Keyboard.dismiss()} style={styles.typingBar}>
    <View style={styles.typingDot}/><Text style={styles.typingBarText}>{t('Chamada em curso com @{a} · toca para voltar ao vídeo',{a:peer})}</Text>
   </Pressable>:<>
@@ -116,7 +126,7 @@ function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:Direct
    })()}
   </View>:<View style={[styles.audioCall,compactChatVideo&&styles.audioCallCompact]}><Text maxFontSizeMultiplier={1.3} style={styles.audioSymbol}>◉</Text><Text style={styles.note}>{t('Chamada de voz ativa · O chat continua disponível.')}</Text></View>}
    </View>
-   <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide}/>
+   <CallChatSidePanel peer={peer} self={self} token={token} visible={showChat} wide={wide} typing={typingInChat}/>
   </View>
   {error?<Message tone="error">{error}</Message>:null}
   {typingInChat?null:<View style={[styles.callActions,compactChatVideo&&styles.callActionsCompact]}>

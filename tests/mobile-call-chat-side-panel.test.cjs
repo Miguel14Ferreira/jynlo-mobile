@@ -13,7 +13,7 @@ test('in-call chat stays inside the mounted LiveKit room and alongside participa
  assert.match(call,/videoStageDimensions\(wide&&showChat\?width-345:width,height,expandedVideo\)/);
  assert.match(call,/accessibilityLabel="Participantes da chamada"/);
  assert.match(call,/accessibilityLabel=\{showChat\?'Ocultar chat da chamada':'Abrir chat da chamada'\}/);
- assert.match(call,/<CallChatSidePanel peer=\{peer\} self=\{self\} token=\{token\} visible=\{showChat\} wide=\{wide\}\/>/);
+ assert.match(call,/<CallChatSidePanel peer=\{peer\} self=\{self\} token=\{token\} visible=\{showChat\} wide=\{wide\} typing=\{typingInChat\}\/>/);
  assert.match(call,/callColumnsWide:\{flexDirection:'row'/);
  assert.match(call,/<MediaControls media=\{session\.media\} peer=\{peer\} self=\{auth\.username\|\|''\} token=\{auth\.token\}/);
  assert.match(call,/const \[muted,setMuted\]=useState\(false\)/);
@@ -88,7 +88,7 @@ test('phone calls prioritize readable chat without leaving the LiveKit room',()=
  // On a phone the chat fills the screen below the call (the call page does not scroll).
  assert.match(panel,/narrow:\{flex:1,minHeight:240\}/);
  assert.match(panel,/Na chamada/);
- assert.match(panel,/style=\{styles\.history\}/);
+ assert.match(panel,/style=\{\[styles\.history,typing&&!wide&&styles\.historyTyping\]\}/);
 });
 
 test('in-call chat keeps the reader in place and signals new messages without forced scrolling',()=>{

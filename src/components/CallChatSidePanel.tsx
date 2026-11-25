@@ -13,8 +13,8 @@ import {observeDirectChat} from '../lib/direct-chat-realtime';
 /** This panel shares the authenticated DM history and never creates a parallel
  * call-only conversation. The video room remains mounted while it is shown.
  */
-export default function CallChatSidePanel({peer,self,token,visible,wide}:{
- peer:string;self:string;token:string;visible:boolean;wide:boolean
+export default function CallChatSidePanel({peer,self,token,visible,wide,typing=false}:{
+ peer:string;self:string;token:string;visible:boolean;wide:boolean;typing?:boolean
 }){
  const [messages,setMessages]=useState<DirectChatEntry[]>([]);
  const [draft,setDraft]=useState(''),[sending,setSending]=useState(false);
@@ -161,16 +161,16 @@ export default function CallChatSidePanel({peer,self,token,visible,wide}:{
  // On a phone the call page itself follows the keyboard; a second avoiding frame here hid the composer.
  const Frame=wide?KeyboardFrame:View;
  return <Frame
-  style={[styles.container,wide?styles.wide:styles.narrow]} accessibilityLabel={t('Chat da chamada')}>
-  <View style={styles.header}>
+  style={[styles.container,wide?styles.wide:styles.narrow,typing&&!wide&&styles.narrowTyping]} accessibilityLabel={t('Chat da chamada')}>
+  {typing&&!wide?null:<View style={styles.header}>
    <View style={styles.avatar}><Text style={styles.avatarLetter}>{peer.slice(0,1).toUpperCase()}</Text></View>
    <View style={{flex:1}}><Text style={styles.title}>{t('Chat da chamada')}</Text>
     <Text style={styles.subtitle}>{t('Conversa privada com @{a} · histórico Jynlo',{a:peer})}</Text></View>
    <View style={styles.liveBadge}><View style={styles.liveDot}/><Text style={styles.liveLabel}>{t('Na chamada')}</Text></View>
-  </View>
+  </View>}
   {loading?<ActivityIndicator color={C.mint}/>:null}
   {visibleSyncWarning?<Text style={styles.warning}>{visibleSyncWarning}</Text>:null}
-  <ScrollView ref={list} style={styles.history} contentContainerStyle={styles.historyContent}
+  <ScrollView ref={list} style={[styles.history,typing&&!wide&&styles.historyTyping]} contentContainerStyle={styles.historyContent}
    keyboardShouldPersistTaps="handled" nestedScrollEnabled scrollEventThrottle={100}
    onScroll={event=>{
     if(firstHistoryPositionPending.current)return;
@@ -230,6 +230,8 @@ const styles=StyleSheet.create({
  container:{gap:10,borderRadius:16,borderColor:C.border,borderWidth:1,backgroundColor:C.surface,padding:12,minWidth:0},
  wide:{width:312,minHeight:340,maxHeight:600},
  narrow:{flex:1,minHeight:240},
+ // While typing, the panel may shrink to the space above the keyboard: messages give way, the composer stays.
+ narrowTyping:{minHeight:0},
  header:{flexDirection:'row',alignItems:'center',gap:10,flexWrap:'wrap'},
  liveBadge:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:8,paddingVertical:6,borderRadius:12,backgroundColor:'#123D3B'},
  liveDot:{width:7,height:7,borderRadius:4,backgroundColor:C.mint},
@@ -239,6 +241,7 @@ const styles=StyleSheet.create({
  title:{color:C.white,fontSize:15,fontWeight:'900'},
  subtitle:{color:C.muted,fontSize:11,lineHeight:16},
  history:{flexGrow:1,minHeight:160},
+ historyTyping:{flex:1,minHeight:48},
  historyContent:{gap:8,paddingVertical:5},
  empty:{color:C.muted,fontSize:12,textAlign:'center',padding:12},
  bubble:{maxWidth:'89%',paddingHorizontal:11,paddingVertical:8,borderRadius:13,gap:3},
