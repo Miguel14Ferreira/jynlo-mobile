@@ -25,7 +25,7 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
   let underHeader=false;
   const pathname=usePathname();
   // Stack screens declared with headerShown:false in app/_layout.tsx keep the top inset.
-  const headerless=/^\/(welcome|communities\/[^/]+\/chat|messages\/(?!call$)[^/]+)$/.test(pathname||'');
+  const headerless=/^\/(welcome|communities\/[^/]+\/chat|messages\/(?!call$|requests$)[^/]+)$/.test(pathname||'');
   try{const state=navigation?.getState?.();underHeader=!headerless&&state?.type==='stack'&&(state.index??0)>0;}catch{underHeader=false;}
   // react-native-keyboard-controller follows the real keyboard frame on Android
   // edge-to-edge and iOS alike: the focused field (and the next one) is scrolled

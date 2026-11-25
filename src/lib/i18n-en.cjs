@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Nova mensagem": "New message",
+  "Ainda não são amigos: a tua primeira mensagem chega como pedido de mensagem.": "You're not friends yet: your first message arrives as a message request.",
   "Enviados · à espera de resposta": "Sent · waiting for a reply",
   "Pedidos de mensagem": "Message requests",
   "Mensagens de quem ainda não é teu amigo. Só depois de aceitares podem continuar a escrever.": "Messages from people who are not your friends yet. They can only keep writing once you accept.",
@@ -21,8 +23,6 @@ const EN={
   "Já enviaste um pedido. Quando for aceite, a conversa aparece em Mensagens.": "You already sent a request. Once accepted, the conversation appears in Messages.",
   "Não foi possível verificar. Tenta novamente.": "Could not check. Try again.",
   "Pedido enviado. Quando for aceite, a conversa aparece em Mensagens.": "Request sent. Once accepted, the conversation appears in Messages.",
-  "Ainda não são amigos: a tua mensagem chega como pedido e só depois de aceite podes enviar mais.": "You are not friends yet: your message arrives as a request and you can send more once it is accepted.",
-  "Escreve a tua mensagem…": "Write your message…",
   "Pedido de mensagem enviado": "Message request sent",
   "Administração": "Administration",
   "Administração · moderação rápida": "Administration · quick moderation",

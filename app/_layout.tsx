@@ -197,6 +197,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="change-email" options={{title:t('Mudar email')}}/>
     <Stack.Screen name="admin" options={{title:t('Administração')}}/>
     <Stack.Screen name="messages/requests" options={{title:t('Pedidos de mensagem')}}/>
+    <Stack.Screen name="messages/request/[peer]" options={{title:t('Nova mensagem')}}/>
     <Stack.Screen name="blocked-people" options={{title:t('Pessoas bloqueadas')}}/>
     <Stack.Screen name="security-mfa" options={{title:t('Verificação em dois passos')}}/>
     <Stack.Screen name="device-sessions" options={{title:t('Sessões no site')}}/>
