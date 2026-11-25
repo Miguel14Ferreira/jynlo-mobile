@@ -12,8 +12,8 @@ jobs:
     timeout-minutes: 75
     env:
       CI: '1'
-      EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID }}
-      EXPO_PUBLIC_JYNLO_API_URL: ${{ vars.JYNLO_PLAY_API_URL }}
+      EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID: ${{ vars.EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID || '5628b5c4-513a-4b82-b0fb-7a50cace5cb6' }}
+      EXPO_PUBLIC_JYNLO_API_URL: ${{ vars.JYNLO_PLAY_API_URL || 'https://api.jynlosports.com' }}
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       JYNLO_REQUIRE_REAL_API: '1'
     steps:
@@ -28,7 +28,8 @@ jobs:
         run: |
           test -n "$EXPO_TOKEN" || { echo "::error::Add EXPO_TOKEN to Actions secrets (never commit it)."; exit 1; }
           test -n "$EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID" || { echo "::error::Set EXPO_PUBLIC_JYNLO_EAS_PROJECT_ID in Actions variables."; exit 1; }
-          node scripts/verify-release.cjs --production
+          # Maps and Firebase live in the EAS production environment and are checked again on EAS.
+          node scripts/verify-release.cjs
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Validate TypeScript and contracts
