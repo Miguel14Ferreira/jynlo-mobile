@@ -2,6 +2,7 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Mensagem de {v}. Mantém pressionado para responder ou reagir.": "Message from {v}. Press and hold to reply or react.",
   "(obrigatória)": "(required)",
   "(opcional)": "(optional)",
   "({n} já estavam inscritos ou não podiam ser convidados)": "({n} were already signed up or couldn't be invited)",
@@ -2388,7 +2389,6 @@ const EN={
   "Mostradas 30 modalidades. Pesquisa para veres mais.": "Showing 30 sports. Search to see more.",
   "Mostrar apenas conversas não lidas": "Show only unread chats",
   "Mostrar apenas notificações não lidas": "Show only unread notifications",
-  "Mostrar ações da mensagem de @{v}": "Show message actions for @{v}",
   "Mostrar chat": "Show chat",
   "Mostrar chat do direto": "Show live chat",
   "Mostrar detalhes de privacidade do perfil": "Show profile privacy details",
@@ -3114,8 +3114,6 @@ const EN={
   "Opcional": "Optional",
   "Operação não concluída.": "Operation not completed.",
   "Opção inválida.": "Invalid option.",
-  "Opções da mensagem": "Message options",
-  "Opções da minha mensagem": "My message options",
   "Opções da publicação": "Post options",
   "Opções desta publicação": "Options for this post",
   "Ordem inválida.": "Invalid order.",
@@ -3637,7 +3635,6 @@ const EN={
   "Reagir em privado": "React privately",
   "Reagir à Story com {v}": "React to the Story with {v}",
   "Reagir à mensagem": "React to the message",
-  "Reagir à mensagem de @{v}": "React to @{v}'s message",
   "Reagiu à tua Story": "Reacted to your Story",
   "Reação": "Reaction",
   "Reação enviada": "Reaction sent",
@@ -3757,8 +3754,6 @@ const EN={
   "Responder a {v}": "Reply to {v}",
   "Responder em privado à Story…": "Reply privately to the Story…",
   "Responder à mensagem": "Reply to the message",
-  "Responder à mensagem de {a}": "Reply to {a}'s message",
-  "Responder à mensagem de {v}": "Reply to {v}'s message",
   "Responsável": "Person in charge",
   "Resposta": "Reply",
   "Resposta de conteúdo social inválida.": "Invalid social content response.",

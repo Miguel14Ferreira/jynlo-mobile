@@ -415,9 +415,9 @@ test('team identity kit and crest studios keep touch-friendly controls and clear
 test('mobile team chat uses contextual message actions and compact editing like unified chats',()=>{
  const panel=read('src/components/SportsTeamContentPanel.tsx');
  assert.match(panel,/expandedMessageActions,setExpandedMessageActions/);
- assert.match(panel,/accessibilityLabel=\{'Mostrar ações da mensagem de @'\+item\.username\}/);
+ assert.match(panel,/onLongPress=\{\(\)=>\{if\(kind==='chat'&&!item\.deleted\)/);
  assert.match(panel,/kind==='feed'\|\|expandedMessageActions===item\.id/);
- assert.match(panel,/onPress=\{\(\)=>\{setExpandedMessageActions\(null\);switchReply\(item\.id\);\}\}/);
+ assert.match(panel,/onPress=\{\(\)=>\{setExpandedMessageActions\(null\);setFeedReactionPickerId\(null\);switchReply\(item\.id\);\}\}/);
  assert.match(panel,/composerInputRef\.current\?\.focus\(\)/);
  assert.match(panel,/styles\.editSave/);
  assert.match(panel,/editDraft\.trim\(\)===item\.body\.trim\(\)/);

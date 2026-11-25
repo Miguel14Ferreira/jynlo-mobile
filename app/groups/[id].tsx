@@ -25,6 +25,7 @@ import ChatPdfComposer from '../../src/components/ChatPdfComposer';
 import ChatReplyPreview from '../../src/components/ChatReplyPreview';
 import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
+import {ChatMessageMenu} from '../../src/components/ChatMessageMenu';
 import {chatAttachmentList,appendChatMediaSelection} from '../../src/lib/chat-attachments-core.cjs';
 import {sendChatPhotoAlbum} from '../../src/lib/chat-photo-album';
 import {validateChatPhoto} from '../../src/lib/chat-photo-validation';
@@ -50,6 +51,7 @@ export default function GroupChatScreen(){
  const me=auth.username||'';
  const [infoOpen,setInfoOpen]=useState(false),[attachOpen,setAttachOpen]=useState(false);
  const historyRef=useRef<ScrollViewInstance|null>(null);
+ const [menuId,setMenuId]=useState<number|null>(null);
  const [group,setGroup]=useState<PrivateGroup|null>(null);
  const [messages,setMessages]=useState<PrivateGroupMessage[]>([]);
  const [hasMore,setHasMore]=useState(false);
@@ -305,7 +307,11 @@ export default function GroupChatScreen(){
     const files=chatAttachmentList({...m,deletedAt:m.deleted?m.createdAt:null});
     const location=!m.deleted?chatLocationUrl(m.text):null;
     const onlyFileName=files.length>0&&(!m.text||m.text.startsWith('📎 '));
-    return <View key={m.id} style={[styles.message,mine&&styles.mine]}>
+    return <Pressable key={m.id} accessibilityRole="button" delayLongPress={280}
+     accessibilityLabel={t('Mensagem de {v}. Mantém pressionado para responder ou reagir.',{v:m.sender})}
+     accessibilityState={{expanded:menuId===m.id}}
+     onLongPress={()=>{if(!m.deleted)setMenuId(current=>current===m.id?null:m.id);}}
+     style={[styles.message,mine&&styles.mine]}>
     {!mine?<Text style={styles.sender}>{group.members.find(x=>x.username.toLowerCase()===m.sender.toLowerCase())?.displayName||m.sender}</Text>:null}
     {quote?<Text style={[styles.quote]} numberOfLines={2}>{quote.sender?quote.sender+': ':''}{quote.text}</Text>:null}
     {m.deleted?<Text style={[styles.text,styles.deleted]}>{t('Mensagem apagada')}</Text>:
@@ -317,16 +323,13 @@ export default function GroupChatScreen(){
     {location?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
      onPress={()=>void Linking.openURL(location).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))} style={styles.msgAction}>
      <JynloIcon name="location" size={15} color={C.mint}/><Text style={[styles.msgActionText]}>{t('Abrir localização no mapa')}</Text></Pressable>:null}
-    {!m.deleted?<View style={styles.msgActions}>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {v}',{v:m.sender})}
-      onPress={()=>{setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||t('Anexo')).slice(0,150)});}} style={styles.msgAction}>
-      <JynloIcon name="reply" size={15} color={C.mint}/><Text style={[styles.msgActionText]}>{t('Responder')}</Text></Pressable>
-     {mine||creator?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da mensagem')} disabled={busy} onPress={()=>messageOptions(m)} style={styles.msgAction}>
-      <JynloIcon name="more" size={18} color={C.mint}/></Pressable>:null}
-    </View>:null}
-    {!m.deleted?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-    <Text style={[styles.time]}>{time(m.createdAt)}{m.editedAt&&!m.deleted?' · '+t('editada'):''}</Text>
-   </View>;})}
+    {!m.deleted?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={!auth.token} onReact={reactions.react} onInspect={reactions.inspect} hideAdd/>:null}
+    {menuId===m.id&&!m.deleted?<ChatMessageMenu sentAt={m.createdAt} edited={!!m.editedAt}
+      myEmoji={reactions.summaries[m.id]?.myEmoji} busy={reactions.busyIds.has(m.id)||busy}
+      onReact={auth.token?emoji=>{setMenuId(null);void reactions.react(m.id,reactions.summaries[m.id]?.myEmoji===emoji?null:emoji as never);}:undefined}
+      onReply={()=>{setMenuId(null);setEditing(null);setReplyTarget({id:m.id,sender:m.sender,text:(m.text||files[0]?.name||t('Anexo')).slice(0,150)});}}
+      onOptions={mine||creator?()=>{setMenuId(null);messageOptions(m);}:undefined}/>:null}
+   </Pressable>;})}
    {actionError?<Message tone="error">{actionError}</Message>:null}
   </>:null}
   </ScrollView>

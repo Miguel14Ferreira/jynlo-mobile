@@ -262,7 +262,7 @@ export default function CommunityDetailScreen(){
         <Eyebrow>{t('COMUNIDADE JYNLO')}</Eyebrow>
         <View style={styles.identityHeading}>
           <View style={styles.identityMark}>{community.photoUrl&&resolveJynloMedia(community.photoUrl)
-            ?<><Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[resolveJynloMedia(community.photoUrl)!],index:0})}><Image source={{uri:resolveJynloMedia(community.photoUrl)!}} style={styles.identityPhoto} resizeMode="cover" accessibilityLabel={t('Fotografia da comunidade {v}',{v:community.name})}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>
+            ?<><Pressable accessibilityRole="imagebutton" style={{width:'100%',height:'100%'}} accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[resolveJynloMedia(community.photoUrl)!],index:0})}><Image source={{uri:resolveJynloMedia(community.photoUrl)!}} style={styles.identityPhoto} resizeMode="cover" accessibilityLabel={t('Fotografia da comunidade {v}',{v:community.name})}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>
             :<Text maxFontSizeMultiplier={1.3} style={styles.identityInitial}>{(community.name||'J').charAt(0).toUpperCase()}</Text>}</View>
           <View style={styles.identityCopy}>
             <Text style={styles.heading}>{community.name}</Text>

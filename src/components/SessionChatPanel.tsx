@@ -29,6 +29,7 @@ import {listConversationMutes,isConversationMuted,setConversationMuted} from '..
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
+import {ChatMessageMenu} from './ChatMessageMenu';
 import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
 import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
@@ -437,15 +438,14 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   }
  }
  const recentPhotoIds=new Set(recentPreviewMessageIds(entries));
+ const [menuId,setMenuId]=useState<number|null>(null);
  const reactions=useChatReactions('session',String(id),auth.token,entries.slice(-historyLimit).map(m=>m.id),!closed);
- const renderedMessages=entries.slice(-historyLimit).map(m=><View key={m.id} style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
-    <View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8}}>
-     <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · '+t('Convidado'):''}</Text>
-     <View style={{flexDirection:'row',gap:5}}>
-      {!m.deletedAt&&!closed?<Pressable accessibilityRole="button" accessibilityLabel={t('Responder a {v}',{v:m.senderUsername})} style={styles.messageAction} onPress={()=>setReply(m)}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>:null}
-      {ownMessage(m)&&!closed?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da minha mensagem')} disabled={mutationBusy} style={styles.messageAction} onPress={()=>messageOptions(m)}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
-     </View>
-    </View>
+ const renderedMessages=entries.slice(-historyLimit).map(m=><Pressable key={m.id} accessibilityRole="button" delayLongPress={280}
+    accessibilityLabel={t('Mensagem de {v}. Mantém pressionado para responder ou reagir.',{v:m.senderUsername})}
+    accessibilityState={{expanded:menuId===m.id}}
+    onLongPress={()=>{if(!m.deletedAt&&!closed)setMenuId(current=>current===m.id?null:m.id);}}
+    style={[styles.message,m.senderUsername.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
+    <Text style={styles.sender}>{m.senderUsername}{m.senderGuest?' · '+t('Convidado'):''}</Text>
     {m.replyToText?<View style={styles.quote}><Text numberOfLines={1} style={styles.quoteAuthor}>{m.replyToSender||t('Mensagem anterior')}</Text><Text numberOfLines={2} style={styles.quoteBody}>{m.replyToText}</Text></View>:null}
     {!m.deletedAt&&giphyImageUrl(m.body)?<Image source={{uri:giphyImageUrl(m.body)!}} resizeMode="contain" style={styles.gif}/>:null}
     {!m.deletedAt&&readPoll(m.body)?<PollCard poll={readPoll(m.body)!} kind="session" conversationId={id} messageId={m.id} token={auth.token}/>:
@@ -456,10 +456,13 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
      </Pressable>:null}
     {!m.deletedAt?chatAttachmentList(m).map(attachment=><SecureChatAttachment key={attachment.index} index={attachment.index} scope="session" conversationId={id} messageId={m.id} token={auth.token} name={attachment.name} mime={attachment.mime} size={attachment.size} autoPreview={recentPhotoIds.has(m.id)&&attachment.mime?.startsWith('image/')===true}
       onAuthorizationError={()=>{setEntries([]);void refresh(false,generation.current);}}/>):null}
-    {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={closed||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}
-    <Text style={styles.time}>{m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?
-     new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · '+t('editada'):''}</Text>
-  </View>);
+    {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={closed||!auth.token} onReact={reactions.react} onInspect={reactions.inspect} hideAdd/>:null}
+    {menuId===m.id&&!m.deletedAt&&!closed?<ChatMessageMenu sentAt={m.createdAt} edited={!!m.editedAt}
+      myEmoji={reactions.summaries[m.id]?.myEmoji} busy={reactions.busyIds.has(m.id)||mutationBusy}
+      onReact={auth.token?emoji=>{setMenuId(null);void reactions.react(m.id,reactions.summaries[m.id]?.myEmoji===emoji?null:emoji as never);}:undefined}
+      onReply={()=>{setMenuId(null);setReply(m);}}
+      onOptions={ownMessage(m)?()=>{setMenuId(null);messageOptions(m);}:undefined}/>:null}
+  </Pressable>);
  const content=<>{!embedded?<><Brand subtitle={t('SESSÃO')}/><DemoBanner/><Eyebrow>{t('CHAT DA SESSÃO')}</Eyebrow></>:null}
   <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Conversa do jogo')}</Text>
   <ChatSearchPanel kind="session" conversationId={String(id)} token={auth.token} enabled={!closed}/> 

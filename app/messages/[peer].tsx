@@ -36,9 +36,11 @@ import {encodeCallUp,readCallUp} from '../../src/lib/chat-callup.cjs';
 import {CallUpCard} from '../../src/components/CallUpCard';
 import {CallUpPicker} from '../../src/components/CallUpPicker';
 import {ChatReactionRow,useChatReactions} from '../../src/components/ChatReactionRow';
+import {ChatMessageMenu} from '../../src/components/ChatMessageMenu';
 import ChatSearchPanel from '../../src/components/ChatSearchPanel';
 import {blockUser,reportUser,unblockUser,userBlockStatus} from '../../src/lib/user-safety-api';
-import {myStoryReplies,type PrivateStoryReply} from '../../src/lib/social-feed-api';
+import {myStoryReplies,resolveJynloMedia,type PrivateStoryReply} from '../../src/lib/social-feed-api';
+import {publicSportsProfile} from '../../src/lib/social-relations-api';
 import {storyReplyKind} from '../../src/lib/story-reply-display.cjs';
 import {chatLook} from '../../src/lib/chat-look';
 
@@ -104,6 +106,14 @@ export default function DirectConversation(){
  const blockCheckRequest=useRef(0);
  const pendingRefresh=useRef(false);
  const [blocked,setBlocked]=useState(false);
+ const [peerPhoto,setPeerPhoto]=useState<string|null>(null);
+ const [menuId,setMenuId]=useState<number|null>(null);
+ useEffect(()=>{
+  let active=true;setPeerPhoto(null);
+  if(!peer)return ()=>{active=false;};
+  void publicSportsProfile(String(peer),auth.token).then(profile=>{if(active)setPeerPhoto(resolveJynloMedia(profile?.profilePicUrl));}).catch(()=>{});
+  return ()=>{active=false;};
+ },[peer,auth.token]);
  const [blockStatusKnown,setBlockStatusKnown]=useState(false);
  const [safetyBusy,setSafetyBusy]=useState(false);
  const safetyInFlight=useRef(false);
@@ -561,7 +571,7 @@ export default function DirectConversation(){
   <KeyboardFrame style={styles.keyboardFrame}>
   <View style={styles.fixedChatHeader}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar às conversas')} onPress={()=>router.back()} style={styles.headerIcon}><JynloIcon name="back" size={23} color={C.white}/></Pressable>
-    <View style={styles.peerAvatar}><JynloIcon name="profile" size={25} color={C.mint}/></View>
+    <View style={styles.peerAvatar}>{peerPhoto?<Image source={{uri:peerPhoto}} style={styles.peerAvatarPhoto} onError={()=>setPeerPhoto(null)}/>:<JynloIcon name="profile" size={25} color={C.mint}/>}</View>
     <Text style={styles.peerTitle} numberOfLines={1}>{peer}</Text>
     {auth.token&&!DEMO_MODE&&blockStatusKnown&&!blocked&&peer.toLowerCase()!==auth.username?.toLowerCase()?<Pressable accessibilityRole="button" accessibilityLabel={t('Iniciar chamada com este contacto')} style={styles.headerIcon} onPress={()=>router.push({pathname:'/messages/call',params:{peer}})}><JynloIcon name="video" size={23} color={C.mint}/></Pressable>:null}
   </View>
@@ -675,7 +685,11 @@ export default function DirectConversation(){
     </Pressable>
    </View>:null}
   {!loading&&!error&&messages.length===0?<Message>{t('Ainda não existem mensagens nesta conversa.')}</Message>:null}
-  {messages.map(m=><View key={m.id} style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
+  {messages.map(m=><Pressable key={m.id} accessibilityRole="button"
+    accessibilityLabel={t('Mensagem de {v}. Mantém pressionado para responder ou reagir.',{v:m.username1})}
+    accessibilityState={{expanded:menuId===m.id}} delayLongPress={280}
+    onLongPress={()=>{if(!m.deletedAt)setMenuId(current=>current===m.id?null:m.id);}}
+    style={[styles.message,m.username1.toLowerCase()===auth.username?.toLowerCase()&&styles.mine]}>
    <Text style={styles.sender}>{m.username1}</Text>
    {m.replyToText?<Text style={styles.quote}>{m.replyToSender}: {m.replyToText}</Text>:null}
    {m.deletedAt?<Text style={styles.body}>{t('Mensagem removida')}</Text>:
@@ -689,14 +703,13 @@ export default function DirectConversation(){
    {!m.deletedAt&&chatLocationUrl(m.text)?<Pressable accessibilityRole="button" accessibilityLabel={t('Abrir localização partilhada no Google Maps')}
     onPress={()=>void Linking.openURL(chatLocationUrl(m.text)!).catch(()=>Alert.alert(t('Localização'),t('Não foi possível abrir o mapa.')))}
     style={styles.replyAction}><View style={{flexDirection:"row",alignItems:"center",gap:5}}><JynloIcon name="location" size={15} color={C.mint}/><Text style={styles.replyActionText}>{t('Abrir localização no mapa')}</Text></View></Pressable>:null}
-   <View style={styles.metaRow}>
-    <View style={styles.metaReactions}>{!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react} onInspect={reactions.inspect}/>:null}</View>
-    {!m.deletedAt?<Pressable accessibilityRole="button" accessibilityLabel={t('Responder à mensagem de {a}',{a:m.username1})} onPress={()=>{setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||t('Anexo')).slice(0,150)});}} style={styles.replyAction}><JynloIcon name="reply" size={18} color={C.mint}/></Pressable>:null}
-    {ownMessage(m)&&!blocked?<Pressable accessibilityRole="button" accessibilityLabel={t('Opções da minha mensagem')} disabled={mutationBusy} onPress={()=>messageOptions(m)} style={styles.replyAction}><JynloIcon name="more" size={20} color={C.mint}/></Pressable>:null}
-    <Text style={styles.metaTime}>{m.date&&Number.isFinite(Date.parse(m.date))?
-     new Date(m.date).toLocaleString('pt-PT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''}{m.editedAt?' · '+t('editada'):''}</Text>
-   </View>
-  </View>)}
+   {!m.deletedAt?<ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={blocked||!blockStatusKnown||!auth.token} onReact={reactions.react} onInspect={reactions.inspect} hideAdd/>:null}
+   {menuId===m.id&&!m.deletedAt?<ChatMessageMenu sentAt={m.date} edited={!!m.editedAt}
+     myEmoji={reactions.summaries[m.id]?.myEmoji} busy={reactions.busyIds.has(m.id)}
+     onReact={blocked||!blockStatusKnown||!auth.token?undefined:emoji=>{setMenuId(null);void reactions.react(m.id,reactions.summaries[m.id]?.myEmoji===emoji?null:emoji as never);}}
+     onReply={()=>{setMenuId(null);setReplyTarget({id:m.id,sender:m.username1,text:(m.text||m.attachmentName||t('Anexo')).slice(0,150)});}}
+     onOptions={ownMessage(m)&&!blocked?()=>{setMenuId(null);messageOptions(m);}:undefined}/>:null}
+  </Pressable>)}
   {syncWarning?<Pressable accessibilityRole="button" accessibilityLabel={t('Tentar sincronizar novamente')} onPress={()=>{void refresh();}} disabled={sending||loading||photoBusy} style={styles.refreshLink}><Text style={styles.refreshText}>{t('↻ Tentar novamente')}</Text></Pressable>:null}
   </ScrollView>
   <View style={styles.footer}>
@@ -813,7 +826,8 @@ const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:C.background},keyboardFrame:{flex:1},
  fixedChatHeader:{minHeight:62,paddingHorizontal:10,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderBottomColor:C.border,backgroundColor:C.background},
  headerIcon:{width:44,height:44,alignItems:'center',justifyContent:'center'},
- peerAvatar:{width:38,height:38,borderRadius:19,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center'},
+ peerAvatar:{width:38,height:38,borderRadius:19,backgroundColor:C.surface2,alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ peerAvatarPhoto:{width:'100%',height:'100%'},
  peerTitle:{flex:1,fontSize:17,fontWeight:'900',color:C.white},
  metaRow:{flexDirection:'row',alignItems:'center',gap:2,marginTop:2},metaReactions:{flex:1,minWidth:0},metaTime:{fontSize:11,color:C.muted,marginLeft:4},
  historyScroll:{flex:1},history:{paddingHorizontal:12,paddingTop:10,paddingBottom:18,gap:8,flexGrow:1},

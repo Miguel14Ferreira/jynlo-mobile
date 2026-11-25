@@ -7,7 +7,7 @@ test('session chat supports the same messages and authorized attachments as norm
  const view=read('src/components/SessionChatPanel.tsx');
  for(const pattern of [/postSessionChat\(id,originalDraft/,/editSessionChatMessage\(/,/deleteSessionChatMessage\(/,
   /sendChatPhotoAlbum\(\{scope:'session',id\}/,/ChatPdfComposer target=\{\{scope:'session',id\}\}/,
-  /SecureChatAttachment key=\{attachment.index\}/,/onPress=\{\(\)=>setReply\(m\)\}/])
+  /SecureChatAttachment key=\{attachment.index\}/,/onReply=\{\(\)=>\{setMenuId\(null\);setReply\(m\);\}\}/])
   assert.match(view,pattern);
 });
 test('session chat mutes notification alerts with server-owned settings and readback',()=>{

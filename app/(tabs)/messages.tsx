@@ -1,7 +1,8 @@
 import React,{useCallback,useMemo,useRef,useState} from 'react';
 import {currentLocale,t} from '../../src/lib/i18n';
 import {JynloIcon} from '../../src/components/JynloIcon';
-import {Alert,AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Alert,AppState,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../../src/lib/optional-notifications.cjs';
 import {useFocusEffect,useRouter} from 'expo-router';
@@ -18,6 +19,7 @@ import {filterInbox,unreadInboxCount,formatInboxTime,formatUnreadBadge} from '..
 export default function MessagesScreen(){
  const auth=useAuth(),router=useRouter();
  const [items,setItems]=useState<JynloInboxSummary[]>([]);
+ const [brokenAvatars,setBrokenAvatars]=useState<Record<string,boolean>>({});
  const [chatWarning,setChatWarning]=useState('');
  const [notificationUnread,setNotificationUnread]=useState(0);
  const [invites,setInvites]=useState<CommunityInvite[]>([]);
@@ -226,7 +228,9 @@ export default function MessagesScreen(){
       router.push({pathname:'/sessions/[id]/chat',params:{id:item.id}})}
     style={({pressed})=>[styles.tile,styles.tileContent,item.unreadCount>0&&styles.unreadTile,pressed&&styles.pressedTile]}>
     <View style={[styles.avatar,item.kind==='community'&&styles.communityAvatar,item.kind==='session'&&styles.sessionAvatar]}>
-      <JynloIcon name={item.kind==='direct'?'profile':item.kind==='community'||item.kind==='private'||item.kind==='team'?'community':'session'} size={24} color={T.accent}/>
+      {resolveJynloMedia(item.imageUrl)&&!brokenAvatars[item.kind+':'+item.id]?<Image source={{uri:resolveJynloMedia(item.imageUrl)!}} style={styles.avatarPhoto}
+        onError={()=>setBrokenAvatars(previous=>({...previous,[item.kind+':'+item.id]:true}))}/>:
+      <JynloIcon name={item.kind==='direct'?'profile':item.kind==='community'||item.kind==='private'||item.kind==='team'?'community':'session'} size={24} color={T.accent}/>}
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
@@ -279,7 +283,8 @@ const styles=StyleSheet.create({
  conversationTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  tile:{borderRadius:MobileTheme.radius.lg,borderWidth:1,borderColor:T.border,backgroundColor:T.surface,padding:11,flexDirection:'row',alignItems:'center',gap:10,minHeight:72},
  unreadTile:{borderColor:T.accent,backgroundColor:T.raised},pressedTile:{opacity:.78},
- avatar:{width:46,height:46,borderRadius:16,backgroundColor:T.raised,alignItems:'center',justifyContent:'center'},
+ avatar:{width:46,height:46,borderRadius:16,backgroundColor:T.raised,alignItems:'center',justifyContent:'center',overflow:'hidden'},
+ avatarPhoto:{width:'100%',height:'100%'},
  communityAvatar:{backgroundColor:'#0C4650'},sessionAvatar:{backgroundColor:'#15453F'},
  avatarSymbol:{fontSize:21,fontWeight:'800',color:T.accent},
  conversationBody:{flex:1,gap:5},

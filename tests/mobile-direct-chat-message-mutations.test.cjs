@@ -20,9 +20,9 @@ test('direct chat can edit own text within 15 minutes and confirm soft delete',(
  assert.match(screen,/Date\.now\(\)-created<=15\*60\*1000/);
  assert.match(screen,/!m\.attachmentName&&!m\.attachments\?\.length/);
  assert.match(screen,/Alert\.alert\(\s*'Apagar mensagem para todos\?'/);
- assert.match(screen,/accessibilityLabel="Opções da minha mensagem"/);
+ assert.match(screen,/onOptions=\{ownMessage\(m\)&&!blocked/);
  assert.match(screen,/accessibilityLabel="Editar mensagem"/);
- assert.match(screen,/m\.editedAt\?' · editada'/);
+ assert.match(screen,/edited=\{!!m\.editedAt\}/);
  assert.match(screen,/m\.deletedAt\?<Text style=\{styles.body\}>Mensagem removida/);
 });
 test('direct edit/delete mutations preserve drafts on uncertain network outcomes',()=>{

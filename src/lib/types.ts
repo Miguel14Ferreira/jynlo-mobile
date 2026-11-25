@@ -179,7 +179,9 @@ export interface CommunityChatEntry {
   attachmentName?:string|null;attachmentMimeType?:string|null;attachmentSize?:number|null;
  attachments?:Array<{index:number;filename:string;mimeType:string;size:number}>|null;
 }
-export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private'|'team';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;}
+export interface JynloInboxSummary {kind:'direct'|'community'|'session'|'private'|'team';id:string;title?:string;latestMessageId:number|null;latestText:string|null;latestSender:string|null;latestAt:string|null;unreadCount:number;
+ /** Peer photo, community/group photo or team logo, when the server has one. */
+ imageUrl?:string|null;}
 
 /** Read-only notification DTO; the backend remains authoritative. */
 export interface JynloNotification {

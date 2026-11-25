@@ -32,7 +32,7 @@ test('embedded chat messages use shared vectors rather than glyph placeholders',
  for(const file of screens){
   const s=read(file);
   for(const name of ['reply','more','video','remove','location'])
-    assert.ok(s.includes('name="'+name+'"'),file+': '+name);
+    assert.ok(s.includes('name="'+name+'"')||((name==='reply'||name==='more')&&s.includes('ChatMessageMenu')),file+': '+name);
   assert.doesNotMatch(s,/>▶ Vídeo<|>↩<|>•••</,file);
  }
 });

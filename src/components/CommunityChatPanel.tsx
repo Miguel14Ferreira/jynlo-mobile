@@ -41,6 +41,7 @@ import {PollCard} from './PollCard';
 import {PollComposer} from './PollComposer';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import {ChatReactionRow,useChatReactions} from './ChatReactionRow';
+import {chatMenuTime} from './ChatMessageMenu';
 import {ChatMentionText,ChatMentionSuggestions} from './ChatMentions';
 import ChatSearchPanel from './ChatSearchPanel';
 import ChatReplyPreview from './ChatReplyPreview';
@@ -480,7 +481,6 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
  const visibleMessages=embedded?messages.slice(-historyLimit):messages;
  const reactions=useChatReactions('community',String(id),auth.token,visibleMessages.map(m=>m.id),!accessRevoked);
  const sendBlocked=sending||uploading||pendingWrites.current.has(id+'|'+auth.token)||!draft.trim()||(uncertainSend?.identity===(id+'|'+auth.token)&&uncertainSend.body===draft.trim()&&uncertainSend.replyId===(reply?.id??null));
- const timeOf=(m:CommunityChatEntry)=>m.createdAt&&Number.isFinite(Date.parse(m.createdAt))?new Date(m.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'';
  // Messaging-app layout: compact bubbles; reply, reactions and options appear on a long press.
  const renderedMessages=visibleMessages.map((m,index)=>{
   const mine=m.username===auth.username;
@@ -509,7 +509,6 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
       onAuthorizationError={()=>{setMessages([]);void refresh(generation.current,false);}}/>):null}
      <View style={styles.metaRow}>
       {!m.deletedAt?<View style={styles.metaReactions}><ChatReactionRow id={m.id} summary={reactions.summaries[m.id]} busy={reactions.busyIds.has(m.id)} disabled={accessRevoked||!auth.token} onReact={reactions.react} onInspect={reactions.inspect} hideAdd/></View>:<View style={styles.metaReactions}/>}
-      <Text style={styles.time}>{timeOf(m)}{m.editedAt?' · '+t('editada'):''}</Text>
      </View>
      {actionsOpen?<View style={styles.contextActions}>
        <View style={styles.quickReactions}>
@@ -531,6 +530,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
           <JynloIcon name="more" size={20} color={C.mint}/>
           <Text style={styles.quoteTitle}>{t('Mais opções')}</Text>
         </Pressable>:null}
+        <Text style={[styles.time,{marginLeft:'auto'}]}>{chatMenuTime(m.createdAt)}{m.editedAt?' · '+t('editada'):''}</Text>
        </View>
       </View>:null}
    </Pressable>;

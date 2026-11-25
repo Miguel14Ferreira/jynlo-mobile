@@ -21,9 +21,9 @@ test('session chat UI exposes own-message edit policy and confirmed removal',()=
  assert.match(screen,/!message.attachmentName/);
  assert.match(screen,/!message.attachments\?\.length/);
  assert.match(screen,/Alert.alert\(\s*'Apagar mensagem para todos\?'/);
- assert.match(screen,/accessibilityLabel="Opções da minha mensagem"/);
+ assert.match(screen,/onOptions=\{ownMessage\(m\)/);
  assert.match(screen,/accessibilityLabel="Editar mensagem"/);
- assert.match(screen,/m.editedAt\?' · editada'/);
+ assert.match(screen,/edited=\{!!m.editedAt\}/);
  assert.match(screen,/m.deletedAt\?'Mensagem removida'/);
 });
 test('session mutation lifecycle guards concurrent sends and preserves failed drafts',()=>{
@@ -34,7 +34,7 @@ test('session mutation lifecycle guards concurrent sends and preserves failed dr
  assert.match(screen,/Consulta o histórico antes de repetir/);
  assert.match(screen,/await refresh\(true,version\)/);
  assert.match(screen,/setReply\(current=>current\?\.id===message.id\?null:current\)/);
- assert.match(screen,/const renderedMessages=.*\.map\(m=><View/);
+ assert.match(screen,/const renderedMessages=.*\.map\(m=><Pressable/);
 });
 
 

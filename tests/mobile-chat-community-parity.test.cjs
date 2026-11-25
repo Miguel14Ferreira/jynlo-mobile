@@ -129,7 +129,7 @@ test('community chat clears only the submitted draft and never renders invalid t
  const screen=read('src/components/CommunityChatPanel.tsx');
  assert.ok(screen.includes('const originalDraft=draft'));
  assert.ok(screen.includes("setDraft(current=>current===originalDraft?'':current)"));
- assert.ok(screen.includes('Number.isFinite(Date.parse(m.createdAt))'));
+ assert.ok(screen.includes('chatMenuTime(m.createdAt)'));
  assert.ok(screen.includes('version!==generation.current'));
 });
 

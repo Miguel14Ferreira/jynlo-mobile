@@ -4,6 +4,7 @@ import {useChatViewing} from '../lib/chat-viewing';
 import {t} from '../lib/i18n';
 import {Alert,AppState,Image,Keyboard,Linking,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {JynloIcon} from './JynloIcon';
+import {chatMenuTime} from './ChatMessageMenu';
 import {giphyImageUrl} from '../lib/chat-giphy.cjs';
 import {chatLocationUrl} from '../lib/chat-location.cjs';
 import type {ScrollViewInstance} from 'react-native';
@@ -858,7 +859,10 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
    </Pressable>
    {olderError?<Text accessibilityRole="alert" style={styles.error}>{olderError}</Text>:null}
   </View>:null}
-  {visibleEntries.map(item=><View key={item.id} style={[styles.entry,kind==='chat'&&styles.chatBubble,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='chat'&&item.username?.toLowerCase()===username.toLowerCase()&&styles.ownChatBubble,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
+  {visibleEntries.map(item=><Pressable key={item.id} disabled={kind!=='chat'||item.deleted} delayLongPress={280}
+   accessibilityState={{expanded:expandedMessageActions===item.id}}
+   onLongPress={()=>{if(kind==='chat'&&!item.deleted){const open=expandedMessageActions!==item.id;setExpandedMessageActions(open?item.id:null);setFeedReactionPickerId(open?item.id:null);}}}
+   style={[styles.entry,kind==='chat'&&styles.chatBubble,item.username?.toLowerCase()===username.toLowerCase()&&styles.ownEntry,kind==='chat'&&item.username?.toLowerCase()===username.toLowerCase()&&styles.ownChatBubble,kind==='feed'&&item.replyToId!=null&&(searchActive?searchResults:allFeedEntries).some(parent=>parent.id===item.replyToId)&&styles.feedComment]}>
    <View style={styles.authorHeader}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir perfil de @{v}',{v:item.username})}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})} style={styles.authorAvatar}>
@@ -871,7 +875,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      <Pressable accessibilityRole="link" accessibilityLabel={t('Abrir perfil de @{v}',{v:item.username})}
       onPress={()=>router.push({pathname:'/social/[username]',params:{username:item.username}})}
       style={styles.authorLink}><Text style={styles.author}>@{item.username}</Text></Pressable>
-     <Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>
+     {kind==='feed'?<Text style={styles.sub}>{new Date(item.createdAt).toLocaleString('pt-PT')}</Text>:null}
     </View>
    </View>
    {item.replyToId?<View style={styles.replyQuote}><JynloIcon name="reply" size={14} color={C.mint}/><Text numberOfLines={2} style={styles.replyQuoteText}>{replyPreview(item.replyToId)}</Text></View>:null}
@@ -910,12 +914,6 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
       style={styles.reactionButton}><Text style={styles.reactionLabel}>{t('☺ Reagir')}</Text></Pressable>
     </>:null}
     {kind==='chat'?<>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Reagir à mensagem de @{v}',{v:item.username})}
-       accessibilityState={{expanded:feedReactionPickerId===item.id,disabled:reactionBusyId!==null}}
-       disabled={reactionBusyId!==null} onPress={()=>setFeedReactionPickerId(current=>current===item.id?null:item.id)}
-       style={[styles.reactionButton,styles.reactionToggle]}>
-       <Text style={styles.reactionLabel}>☺ +</Text>
-      </Pressable>
       {emojis.filter(emoji=>(reactions[item.id]?.counts?.[emoji]||0)>0).map(emoji=><Pressable
         key={'summary-'+emoji} accessibilityRole="button" accessibilityLabel={'Reação '+emoji}
         accessibilityState={{selected:reactions[item.id]?.mine===emoji,disabled:reactionBusyId!==null}}
@@ -933,17 +931,14 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </Pressable>):null}
    </View>:null}
    {!item.deleted?<>
-    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar ações da mensagem de @{v}',{v:item.username})}
-     accessibilityState={{expanded:expandedMessageActions===item.id,disabled:sending}} disabled={sending}
-     onPress={()=>setExpandedMessageActions(current=>current===item.id?null:item.id)}
-     style={styles.messageMore}><JynloIcon name="more" size={21} color={C.mint}/></Pressable>:null}
     {(kind==='feed'||expandedMessageActions===item.id)?<View style={[styles.actions,kind==='chat'&&styles.contextActions]}>
      <Pressable accessibilityRole="button" accessibilityLabel={kind==='chat'?t('Responder à mensagem'):t('Comentar publicação')} style={styles.entryAction}
-      disabled={sending} onPress={()=>{setExpandedMessageActions(null);switchReply(item.id);}}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
+      disabled={sending} onPress={()=>{setExpandedMessageActions(null);setFeedReactionPickerId(null);switchReply(item.id);}}><JynloIcon name="reply" size={19} color={C.mint}/></Pressable>
      {item.canEdit?<Pressable accessibilityRole="button" accessibilityLabel={t('Editar mensagem')} style={styles.entryAction} disabled={sending}
       onPress={()=>{setExpandedMessageActions(null);setEditingId(item.id);setEditDraft(item.body);}}><JynloIcon name="edit" size={19} color={C.mint}/></Pressable>:null}
      {item.canManage?<Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar mensagem')} style={styles.entryAction} disabled={sending}
       onPress={()=>{setExpandedMessageActions(null);remove(item);}}><JynloIcon name="remove" size={19} color={C.mint}/></Pressable>:null}
+     {kind==='chat'?<Text style={[styles.sub,{marginLeft:'auto'}]}>{chatMenuTime(item.createdAt)}</Text>:null}
     </View>:null}
    </>:null}
    {kind==='feed'&&replyTo===item.id?<View style={styles.inlineCommentComposer}>
@@ -963,7 +958,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
      </Pressable>
     </View>
    </View>:null}
-  </View>)}
+  </Pressable>)}
   </ScrollView>
   {kind==='chat'&&unseenBelow&&!searchActive?<Pressable accessibilityRole="button"
    accessibilityLabel={t('Ver mensagens novas')} onPress={()=>{

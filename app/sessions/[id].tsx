@@ -540,7 +540,7 @@ export default function SessionScreen(){
     {guestToken&&!auth.token&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
-        {sessionPhoto?<><Pressable accessibilityRole="imagebutton" accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[sessionPhoto],index:0})}><Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:null}
+        {sessionPhoto?<><Pressable accessibilityRole="imagebutton" style={{width:'100%'}} accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[sessionPhoto],index:0})}><Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:null}
         <View style={styles.top}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?t('{n} vagas',{n:spots}):t(sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true}))}/></View>
         <Text maxFontSizeMultiplier={1.3} style={styles.title}>{sportName(s.sport)||t('Sessão desportiva')}</Text>
