@@ -13,7 +13,8 @@ export function ActiveCallBar(){
  useEffect(()=>subscribeActiveCall(setCall),[]);
  if(!call||pathname==='/messages/call')return null;
  return <Pressable accessibilityRole="button" accessibilityLabel={t('Voltar à chamada com @{a}',{a:call.peer})}
-   onPress={()=>router.navigate({pathname:'/messages/call',params:{peer:call.peer}})}
+   // Go back to the call screen that is still open underneath (never open a second one).
+   onPress={()=>router.dismissTo({pathname:'/messages/call',params:{peer:call.peer}})}
    style={[styles.bar,{paddingTop:insets.top+6}]}>
   <View style={styles.dot}/>
   <Text style={styles.text} numberOfLines={1}>{t('Chamada em curso com @{a} · toca para voltar',{a:call.peer})}</Text>

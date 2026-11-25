@@ -337,7 +337,7 @@ const styles=StyleSheet.create({
   backgroundColor:'#12414C',borderWidth:1,borderColor:C.mint},
  avatarText:{fontWeight:'900',color:C.mint,fontSize:14},
  participantName:{fontSize:12,fontWeight:'800',color:C.white},
- callColumns:{gap:10,minWidth:0},
+ callColumns:{gap:10,minWidth:0,flex:1,minHeight:0},
  callColumnsWide:{flexDirection:'row',alignItems:'stretch'},
  callColumnsChatOpen:{gap:6,flex:1,minHeight:0},
  callActionsCompact:{marginTop:2},
