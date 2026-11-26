@@ -46,6 +46,10 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: npx --yes eas-cli@27.10.0 whoami
 
+      - name: Install dependencies (Expo config plugins are resolved locally)
+        if: github.event_name == 'workflow_dispatch'
+        run: npm install --no-audit --no-fund
+
       - name: Queue iOS TestFlight build
         if: github.event_name == 'workflow_dispatch'
         env:
