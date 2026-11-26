@@ -8,6 +8,7 @@ import {useAuth} from '../src/lib/auth';
 import {chooseGoogleIdentity,googleSignInAvailable} from '../src/lib/google-credential';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import {appleSignInAvailable,chooseAppleIdentity} from '../src/lib/apple-auth';
+import {chooseFacebookToken,facebookAppId} from '../src/lib/facebook-auth';
 import {safeRedirect} from '../src/lib/routes.cjs';
 import {C} from '../src/lib/theme';
 export default function LoginScreen(){
@@ -44,6 +45,21 @@ export default function LoginScreen(){
    }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão com a Apple.'));}
    finally{loginInFlight.current=false;setBusy(false);}
  }
+ const [facebookReady,setFacebookReady]=useState(false);
+ useEffect(()=>{let on=true;void facebookAppId().then(id=>{if(on)setFacebookReady(Boolean(id));});return()=>{on=false;};},[]);
+ async function doFacebookLogin(){
+   if(loginInFlight.current||auth.username)return;
+   loginInFlight.current=true;setError('');setBusy(true);
+   try{
+     const token=await chooseFacebookToken();
+     if(!token)return; // user closed the Facebook page
+     const outcome=await auth.loginFacebook(token);
+     if(outcome==='ONBOARDING_REQUIRED')router.replace({pathname:'/google-onboarding',params:{redirect}});
+     else if(outcome==='MFA_REQUIRED')router.replace({pathname:'/mfa',params:{redirect}});
+     else router.replace(redirect as any);
+   }catch(e){setError(e instanceof Error?e.message:t('Não foi possível iniciar sessão com Facebook.'));}
+   finally{loginInFlight.current=false;setBusy(false);}
+ }
  async function doLogin(){
    if(loginInFlight.current||auth.username)return;
    loginInFlight.current=true;setError('');setBusy(true);
@@ -61,7 +77,7 @@ export default function LoginScreen(){
    <Eyebrow>{t('A TUA CONTA')}</Eyebrow>
    {auth.username?<Message>{t('Já tens sessão iniciada como {user}. Termina essa sessão no Perfil antes de entrares com outra conta.',{user:auth.username})}</Message>:null}
    <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('Joga com a tua malta.')}</Text>
-   <Text style={styles.sub}>{DEMO_MODE?t('Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.'):t('Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.')}</Text>
+   <Text style={styles.sub}>{DEMO_MODE?t('Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.'):facebookReady?t('Entra com Google, Facebook ou a tua conta Jynlo para participares nas sessões.'):t('Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.')}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {auth.username?null:DEMO_MODE?<View style={styles.demoPanel}>
      <Text style={styles.panelTitle}>{t('Experimentar com personagens fictícias')}</Text>
@@ -81,6 +97,12 @@ export default function LoginScreen(){
          style={styles.googleLogo} accessibilityLabel={t('Símbolo da Google')}/>
        <Text style={styles.googleLabel}>{busy?t('A autenticar…'):t('Continuar com Google')}</Text>
      </Pressable>:null}
+     {facebookReady?<Pressable accessibilityRole="button" accessibilityLabel={t('Continuar com Facebook')}
+       disabled={busy} onPress={()=>{void doFacebookLogin();}}
+       style={({pressed})=>[styles.googleButton,styles.facebookButton,(busy||pressed)&&{opacity:0.65}]}>
+       <View style={styles.facebookLogo}><Text style={styles.facebookF}>f</Text></View>
+       <Text style={[styles.googleLabel,{color:'#FFFFFF'}]}>{busy?t('A autenticar…'):t('Continuar com Facebook')}</Text>
+     </Pressable>:null}
      <Text style={styles.separator}>{t('ou entra com utilizador e palavra-passe')}</Text>
      <TextInput style={styles.input} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted}
        value={username} onChangeText={setUsername} autoCapitalize="none" autoComplete="username" testID="login-username"/>
@@ -99,7 +121,10 @@ const styles=StyleSheet.create({
  appleButton:{width:'100%',height:52},
  headline:{color:C.white,fontSize:31,fontWeight:'900',lineHeight:38},
  googleButton:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:12,minHeight:54,borderRadius:15,backgroundColor:'#FFFFFF',paddingHorizontal:16},
- googleLogo:{height:24,width:24},googleLabel:{fontSize:15,fontWeight:'800',color:'#202124'},
+ googleLogo:{height:24,width:24},
+ facebookButton:{backgroundColor:'#1877F2'},
+ facebookLogo:{height:24,width:24,borderRadius:12,backgroundColor:'#FFFFFF',alignItems:'center',justifyContent:'flex-end',overflow:'hidden'},
+ facebookF:{color:'#1877F2',fontSize:22,fontWeight:'900',lineHeight:24,marginBottom:-3,marginLeft:4},googleLabel:{fontSize:15,fontWeight:'800',color:'#202124'},
  sub:{color:C.muted,fontSize:14,lineHeight:21},separator:{textAlign:'center',color:C.muted,fontSize:12,marginVertical:3},
  demoPanel:{padding:20,backgroundColor:C.surface,borderRadius:20,borderWidth:1,borderColor:C.border,gap:16},
  panelTitle:{fontSize:19,color:C.white,fontWeight:'800'},

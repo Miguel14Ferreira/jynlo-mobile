@@ -13,6 +13,7 @@ import {C} from '../src/lib/theme';
 export default function GoogleOnboarding(){
  const router=useRouter(),auth=useAuth();
  const apple=auth.onboardingProvider==='apple';
+ const facebook=auth.onboardingProvider==='facebook';
  const params=useLocalSearchParams<{redirect?:string}>();
  const redirect=safeRedirect(params.redirect);
  const [username,setUsername]=useState('');
@@ -33,16 +34,16 @@ export default function GoogleOnboarding(){
     country:country.trim(),indicativePhone:null,phone:null,gender:null,acceptedLegalTerms:true
    });
    router.replace(redirect as any);
-  }catch(e){setError(e instanceof Error?e.message:apple?t('Não foi possível concluir o registo com a Apple.'):t('Não foi possível concluir o registo Google.'));}
+  }catch(e){setError(e instanceof Error?e.message:apple?t('Não foi possível concluir o registo com a Apple.'):facebook?t('Não foi possível concluir o registo com o Facebook.'):t('Não foi possível concluir o registo Google.'));}
   finally{submitInFlight.current=false;setBusy(false);}
  }
  if(!auth.googleOnboardingEmail)return <Page><Message>
   {t('O registo não está ativo. Volta ao login e entra novamente.')}
  </Message><Button title={t('Voltar ao login')} onPress={()=>router.replace('/login')}/></Page>;
  return <Page>
-  <Text style={styles.eyebrow}>{t('QUASE PRONTO · CONTA GOOGLE')}</Text>
+  <Text style={styles.eyebrow}>{facebook?t('QUASE PRONTO · CONTA FACEBOOK'):t('QUASE PRONTO · CONTA GOOGLE')}</Text>
   <Text style={styles.title}>{t('Cria o teu perfil Jynlo')}</Text>
-  <Text style={styles.subtitle}>{apple?t('Apple confirmada. Escolhe como queres aparecer na Jynlo.'):t('Google confirmado. Escolhe como queres aparecer na Jynlo.')}</Text>
+  <Text style={styles.subtitle}>{apple?t('Apple confirmada. Escolhe como queres aparecer na Jynlo.'):facebook?t('Facebook confirmado. Escolhe como queres aparecer na Jynlo.'):t('Google confirmado. Escolhe como queres aparecer na Jynlo.')}</Text>
   <Text style={styles.email} numberOfLines={2}>{auth.googleOnboardingEmail}</Text>
   {error?<Message tone="error">{error}</Message>:null}
   <View style={styles.group}>
@@ -71,6 +72,7 @@ export default function GoogleOnboarding(){
   </View>
   <Button title={busy?t('A criar conta…'):t('Concluir registo')} disabled={!ready} onPress={()=>{void submit();}}/>
   <Text style={styles.hint}>{apple?t('A Apple confirma a tua identidade; a Jynlo valida-a e cria o teu perfil no servidor. Não recebemos a tua palavra-passe Apple.')
+   :facebook?t('O Facebook confirma a tua identidade; a Jynlo valida-a e cria o teu perfil no servidor. Não recebemos a tua palavra-passe do Facebook.')
    :t('A Google autentica a identidade; a Jynlo valida e cria o teu perfil no servidor. Não guardamos aqui a tua palavra-passe Google.')}</Text>
  </Page>;
 }

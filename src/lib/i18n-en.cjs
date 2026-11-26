@@ -2,6 +2,13 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Continuar com Facebook": "Continue with Facebook",
+  "Não foi possível iniciar sessão com Facebook.": "Couldn't sign in with Facebook.",
+  "Entra com Google, Facebook ou a tua conta Jynlo para participares nas sessões.": "Sign in with Google, Facebook or your Jynlo account to join games.",
+  "Não foi possível concluir o registo com o Facebook.": "Couldn't finish signing up with Facebook.",
+  "QUASE PRONTO · CONTA FACEBOOK": "ALMOST THERE · FACEBOOK ACCOUNT",
+  "Facebook confirmado. Escolhe como queres aparecer na Jynlo.": "Facebook confirmed. Choose how you want to appear on Jynlo.",
+  "O Facebook confirma a tua identidade; a Jynlo valida-a e cria o teu perfil no servidor. Não recebemos a tua palavra-passe do Facebook.": "Facebook confirms your identity; Jynlo verifies it and creates your profile on the server. We never receive your Facebook password.",
   "Os melhores do mês e a votação do jogador do mês. A comunidade decide se quer usar.": "The month's top players and the player-of-the-month vote. Each community decides whether to use it.",
   "Ainda não há resultados registados este mês.": "No results recorded this month yet.",
   "Estatísticas": "Stats",
@@ -3792,7 +3799,6 @@ const EN={
   "Registar série": "Record heat",
   "Registar tempo da estafeta?": "Record relay time?",
   "Registar {a} — {b}? A classificação será calculada pelo servidor.": "Record {a} — {b}? The standings will be calculated by the server.",
-  "Registo com Google": "Sign up with Google",
   "Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.": "Quick win or draw record for the community standings. The result is validated by the server and only community admins can submit it.",
   "Regra de {s} guardada.": "{s} rule saved.",
   "Regras de raquete": "Racket rules",

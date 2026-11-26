@@ -220,7 +220,8 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="reset-password" options={{title:t('Recuperar palavra-passe')}}/>
     <Stack.Screen name="legal" options={{title:t('Informação legal')}}/>
     <Stack.Screen name="feedback" options={{title:t('Enviar opinião')}}/>
-    <Stack.Screen name="google-onboarding" options={{title:t('Registo com Google')}}/>
+    <Stack.Screen name="google-onboarding" options={{title:t('Concluir registo')}}/>
+    <Stack.Screen name="auth/facebook" options={{title:t('Continuar com Facebook'),headerShown:false,animation:'none'}}/>
     <Stack.Screen name="mfa" options={{title:t('Verificação MFA')}}/>
   </Stack>
   </CallAwareInsets>
