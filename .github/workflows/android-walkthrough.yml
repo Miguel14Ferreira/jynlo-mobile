@@ -16,9 +16,15 @@ on:
         type: choice
         options: [percurso, teclado, chamada]
         default: percurso
+      apk_run_id:
+        description: "Reaproveitar a APK de uma execução anterior (ID da execução). Vazio = compilar de novo (~21 min)."
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: android-walkthrough
@@ -48,25 +54,47 @@ jobs:
           echo "::notice::Disco livre no início: $(df -h / | awk 'NR==2{print $4}')"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: ${{ inputs.apk_run_id == '' }}
         with:
           node-version: "22"
       - uses: actions/setup-java@v4
+        if: ${{ inputs.apk_run_id == '' }}
         with:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
+        if: ${{ inputs.apk_run_id == '' }}
       - name: Instalar dependências
+        if: ${{ inputs.apk_run_id == '' }}
         run: npm install --no-audit --no-fund
       - name: Gerar projeto Android
+        if: ${{ inputs.apk_run_id == '' }}
         run: npx expo prebuild --platform android --no-install --clean
       - name: Compilar APK (assinatura de desenvolvimento, só para o emulador)
+        if: ${{ inputs.apk_run_id == '' }}
         working-directory: android
         run: ./gradlew :app:assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=x86_64
       - name: Guardar APK e limpar ficheiros da compilação
+        if: ${{ inputs.apk_run_id == '' }}
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/jynlo.apk"
           rm -rf android/app/build/intermediates android/app/build/tmp android/build node_modules/.cache
           echo "::notice::Disco livre antes do emulador: $(df -h / | awk 'NR==2{print $4}')"
+      - name: Guardar APK para reaproveitar (3 dias)
+        if: ${{ inputs.apk_run_id == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: jynlo-apk
+          path: jynlo.apk
+          retention-days: 3
+      - name: Reaproveitar APK de uma execução anterior
+        if: ${{ inputs.apk_run_id != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: jynlo-apk
+          run-id: ${{ inputs.apk_run_id }}
+          github-token: ${{ github.token }}
+          path: .
       - name: Escolher percurso
         env:
           QA_USER: ${{ secrets.JYNLO_QA1_USERNAME }}
