@@ -11,9 +11,12 @@ import {MobileTheme} from '../lib/theme';
 import {JynloIcon} from '../components/JynloIcon';
 import type {CommunityGroup,SessionSummary} from '../lib/types';
 import {sportName} from '../lib/sport-names.cjs';
+import {communitySummaries} from '../lib/chat-api';
+import {communityNews,unreadMap} from '../lib/home-community-news.cjs';
 
 const colors=MobileTheme.colors;
 const MAX_GAMES=2;
+const MAX_COMMUNITIES=3;
 
 /**
  * "A seguir" block shown at the top of Início for signed-in players: the next
@@ -26,10 +29,11 @@ export function HomeUpNext(){
  const [games,setGames]=useState<SessionSummary[]|null>(null);
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [failed,setFailed]=useState(false);
+ const [unread,setUnread]=useState<Map<string,number>>(new Map());
  const generation=useRef(0);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
-  if(!auth.token||!auth.username){setGames(null);setCommunities([]);return;}
+  if(!auth.token||!auth.username){setGames(null);setCommunities([]);setUnread(new Map());return;}
   const token=auth.token,username=auth.username;
   void Promise.allSettled([mySessions(token,username),myCommunities(token,username)]).then(([sessions,groups])=>{
    if(version!==generation.current)return;
@@ -39,7 +43,14 @@ export function HomeUpNext(){
      .sort((a,b)=>Date.parse(a.gameDate)-Date.parse(b.gameDate));
     setGames(upcoming);setFailed(false);
    }else{setGames(null);setFailed(true);}
-   setCommunities(groups.status==='fulfilled'?groups.value:[]);
+   const mine=groups.status==='fulfilled'?groups.value:[];
+   setCommunities(mine);
+   // Unread counts are a bonus: without them the row falls back to the next game or members.
+   const shown=mine.slice(0,MAX_COMMUNITIES);
+   if(!shown.length){setUnread(new Map());return;}
+   void communitySummaries(token,username,shown).then(rows=>{
+    if(version===generation.current)setUnread(unreadMap(rows));
+   }).catch(()=>{if(version===generation.current)setUnread(new Map());});
   });
   return ()=>{generation.current++;};
  },[auth.token,auth.username]));
@@ -68,15 +79,34 @@ export function HomeUpNext(){
      <Text style={styles.primaryText}>{t('Encontrar um jogo')}</Text>
     </Pressable>
    </View>}
+  {communities.length?<View style={styles.communities}>
+   <View style={styles.head}>
+    <Text style={styles.subtitle}>{t('As tuas comunidades')}</Text>
+    <Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.link}>
+     <Text style={styles.linkText}>{t('Ver todas')}</Text>
+    </Pressable>
+   </View>
+   {communities.slice(0,MAX_COMMUNITIES).map(group=>{
+    const news=communityNews(group,unread,games);
+    const line=news.kind==='unread'?(news.count===1?t('1 mensagem nova'):t('{n} mensagens novas',{n:news.count}))
+     :news.kind==='game'?t('Próximo jogo · {v}',{v:formatDate(news.gameDate)})
+     :t('{n} membros',{n:news.count});
+    return <Pressable key={group.id} accessibilityRole="button"
+     accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})+'. '+line}
+     onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})} style={styles.community}>
+     <View style={styles.communityAvatar}><Text style={styles.communityInitial}>{(group.name||'?').trim().charAt(0).toUpperCase()}</Text></View>
+     <View style={{flex:1,gap:2}}>
+      <Text style={styles.gameTitle} numberOfLines={1}>{group.name}</Text>
+      <Text style={news.kind==='members'?styles.gameMeta:styles.news} numberOfLines={1}>{line}</Text>
+     </View>
+     <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+    </Pressable>;
+   })}
+  </View>:null}
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-   {communities.slice(0,6).map(group=><Pressable key={group.id} accessibilityRole="button"
-     accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})}
-     onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})} style={styles.chip}>
-     <JynloIcon name="community" size={17} color={colors.accent}/><Text style={styles.chipText} numberOfLines={1}>{group.name}</Text>
-    </Pressable>)}
-   <Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.chip}>
-    <Text style={styles.chipText}>{communities.length?t('Comunidades'):t('Encontrar comunidades')}</Text>
-   </Pressable>
+   {communities.length?null:<Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.chip}>
+    <JynloIcon name="community" size={17} color={colors.accent}/><Text style={styles.chipText}>{t('Encontrar comunidades')}</Text>
+   </Pressable>}
    <Pressable accessibilityRole="button" onPress={()=>router.push('/tournaments')} style={styles.chip}>
     <JynloIcon name="championship" size={17} color={colors.accent}/><Text style={styles.chipText}>{t('Torneios')}</Text>
    </Pressable>
@@ -97,6 +127,12 @@ const styles=StyleSheet.create({
  empty:{gap:10},
  primary:{minHeight:MobileTheme.touchTarget,borderRadius:MobileTheme.radius.pill,alignItems:'center',justifyContent:'center',backgroundColor:colors.accent},
  primaryText:{color:colors.background,fontSize:14,fontWeight:'900'},
+ communities:{gap:8},
+ subtitle:{color:colors.text,fontSize:15,fontWeight:'900'},
+ community:{minHeight:56,flexDirection:'row',alignItems:'center',gap:12,paddingVertical:8,paddingHorizontal:11,borderRadius:MobileTheme.radius.md,backgroundColor:colors.raised},
+ communityAvatar:{width:36,height:36,borderRadius:18,alignItems:'center',justifyContent:'center',backgroundColor:colors.background,borderWidth:1,borderColor:colors.border},
+ communityInitial:{color:colors.accent,fontSize:15,fontWeight:'900'},
+ news:{color:colors.accent,fontSize:13,fontWeight:'700'},
  chips:{gap:8,paddingTop:2},
  chip:{minHeight:40,maxWidth:200,flexDirection:'row',alignItems:'center',gap:6,paddingHorizontal:12,borderRadius:MobileTheme.radius.pill,borderWidth:1,borderColor:colors.border,backgroundColor:colors.background},
  chipText:{color:colors.text,fontSize:13,fontWeight:'800',flexShrink:1},

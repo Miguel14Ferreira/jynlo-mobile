@@ -3,7 +3,7 @@ import {DEMO_MODE,request} from './api';
 import {notifyDemoCommunityMessage} from './community-realtime';
 import {communityDetails,myCommunities} from './community-api';
 import {mySessions} from './parity-api';
-import type {CommunityChatEntry,JynloInboxSummary} from './types';
+import type {CommunityChatEntry,CommunityGroup,JynloInboxSummary} from './types';
 import {safeId} from './community-core.cjs';
 import {filterAuthorizedSummaries,filterAuthorizedDirectSummaries} from './authorized-inbox-summaries.cjs';
 const threads=new Map<number,CommunityChatEntry[]>();let nextId=950000;
@@ -73,6 +73,13 @@ export async function deleteCommunityChatMessageForEveryone(id:number,messageId:
 export async function communityInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
  if(!token||!username)throw Error('Inicia sessão para continuar.');
  const groups=await myCommunities(token,username);
+ if(!Array.isArray(groups))throw Error('Lista de comunidades inválida.');
+ return communitySummaries(token,username,groups);
+}
+
+/** Inbox summaries for communities the caller already loaded (no second membership request). */
+export async function communitySummaries(token:string,username:string,groups:CommunityGroup[]):Promise<JynloInboxSummary[]>{
+ if(!token||!username)throw Error('Inicia sessão para continuar.');
  if(!Array.isArray(groups))throw Error('Lista de comunidades inválida.');
  if(DEMO_MODE)return groups.filter(c=>c&&Number.isSafeInteger(c.id)&&c.id>0).map(c=>{
   const last=threads.get(c.id)?.at(-1);

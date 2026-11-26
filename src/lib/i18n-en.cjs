@@ -2,6 +2,9 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "1 mensagem nova": "1 new message",
+  "{n} mensagens novas": "{n} new messages",
+  "Próximo jogo · {v}": "Next game · {v}",
   "Continuar com Facebook": "Continue with Facebook",
   "Não foi possível iniciar sessão com Facebook.": "Couldn't sign in with Facebook.",
   "Entra com Google, Facebook ou a tua conta Jynlo para participares nas sessões.": "Sign in with Google, Facebook or your Jynlo account to join games.",
