@@ -296,7 +296,11 @@ export default function DirectCallScreen(){
   const activeSession=sessionRef.current;
   sessionRef.current=null;setSession(null);
   try{await endDirectCall(activeSession.callId,auth.token);}
-  catch{setError(t('A ligação terminou neste dispositivo, mas não foi possível confirmar o fim da chamada no servidor.'));}
+  catch(e){
+   // Already over on the server (the other person hung up or it expired): nothing to warn about.
+   if(e instanceof ApiError&&(e.status===404||e.status===410))return;
+   setError(t('A ligação terminou neste dispositivo, mas não foi possível confirmar o fim da chamada no servidor.'));
+  }
   finally{ending.current=false;}
  },[auth.token]);
  if(!auth.token||!PEER.test(peer))return <Page><Message tone="error">{t('Inicia sessão e escolhe um contacto válido para realizar chamadas.')}</Message><Button title={t('Voltar')} secondary onPress={()=>router.back()}/></Page>;
