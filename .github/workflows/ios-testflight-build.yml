@@ -56,4 +56,5 @@ jobs:
             --platform ios \
             --profile ios-testflight \
             --non-interactive \
+            --auto-submit-with-profile=ios-testflight \
             --no-wait
