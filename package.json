@@ -1,6 +1,6 @@
 {
   "name": "jynlo-mobile",
-  "version": "0.18.2",
+  "version": "1.2.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {

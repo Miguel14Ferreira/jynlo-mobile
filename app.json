@@ -3,7 +3,7 @@
     "name": "Jynlo",
     "slug": "jynlo-mobile",
     "scheme": "jynlo",
-    "version": "0.18.2",
+    "version": "1.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/jynlo-icon.png",
@@ -17,7 +17,12 @@
         "NSLocationWhenInUseUsageDescription": "A Jynlo usa a tua localização para mostrar jogos e recintos perto de ti e para marcar o local de um jogo que crias.",
         "NSPhotoLibraryUsageDescription": "A Jynlo precisa de acesso às fotos que escolheres para partilhares Stories, publicações e a foto de perfil.",
         "NSPhotoLibraryAddUsageDescription": "A Jynlo guarda na tua galeria as fotos que decidires descarregar.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "pt-PT",
+        "CFBundleLocalizations": [
+          "pt-PT",
+          "en"
+        ]
       },
       "usesAppleSignIn": true,
       "associatedDomains": [
