@@ -22,7 +22,13 @@ test('Explore focuses on finding games without duplicating primary tabs',()=>{
 test('Explore has accessible filters and reset from the empty state',()=>{
  assert.match(source,/accessibilityRole="checkbox" accessibilityState=\{\{checked:availableOnly\}\}/);
  assert.match(source,/accessibilityLabel="Limpar filtros de pesquisa"/);
- assert.match(source,/Ainda não encontrámos jogos/);
- assert.match(source,/Ver todas as modalidades/);
+ assert.match(source,/<ExploreEmpty sport=\{sport\} city=\{debouncedCity\}/);
+ const empty=require('node:fs').readFileSync(require('node:path').join(__dirname,'../src/features/explore-empty.tsx'),'utf8');
+ assert.match(empty,/Ainda não encontrámos jogos/);
+ assert.match(empty,/Ver todas as modalidades/);
+ // No games: the next step is to set up the first one (sport kept) and real venues are shown.
+ assert.match(empty,/pathname:'\/sessions\/create',params:\{\.\.\.\(sport\?\{sport\}:\{\}\)/);
+ assert.match(empty,/searchVenues\(\{sport,city\}\)/);
+ assert.match(empty,/pathname:'\/login'/);
  assert.match(source,/setMapArea\(null\);setDisplay\('list'\)/);
 });

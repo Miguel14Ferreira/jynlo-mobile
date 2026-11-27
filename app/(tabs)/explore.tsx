@@ -16,6 +16,7 @@ import OfflineSessionMap from '../../src/components/OfflineSessionMap';
 import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
 import {filterChoices} from '../../src/lib/session-level-core.cjs';
 import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
+import {ExploreEmpty} from '../../src/features/explore-empty';
 
 // Keep the native map module out of startup; load it only when the map view is opened.
 const SessionNativeMap=lazy(()=>import('../../src/components/SessionNativeMap'));
@@ -193,7 +194,7 @@ export default function DiscoverScreen(){
        <JynloIcon name="search" size={18} color={C.background}/><Text style={styles.retryActionText}>{t('Tentar novamente')}</Text>
      </Pressable>
    </View>:null}
-   {!loading&&!error&&sessions.length===0?<View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{t('Ainda não encontrámos jogos')}</Text><Text style={styles.emptyDetail}>{t('Experimenta outra modalidade ou cidade. Podes também criar uma sessão e convidar a tua malta.')}</Text><Pressable accessibilityRole="button" onPress={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}} style={styles.emptyReset}><Text style={styles.emptyResetText}>{t('Ver todas as modalidades')}</Text></Pressable></View>:null}
+   {!loading&&!error&&sessions.length===0?<ExploreEmpty sport={sport} city={debouncedCity} loggedIn={Boolean(auth.token)} onReset={()=>{setCity('');setDebouncedCity('');setSport('');setSportQuery('');setSportPickerVisible(false);setAvailableOnly(true);setMapArea(null);setDisplay('list');}}/>:null}
    {display==='map'?<View style={styles.mapPanel}>
      {NATIVE_MAP_READY?<Suspense fallback={<Loader/>}>
        <SessionNativeMap initialRegion={PORTUGAL} sessions={mappedSessions}

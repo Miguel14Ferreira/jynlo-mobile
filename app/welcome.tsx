@@ -1,6 +1,6 @@
 import React from 'react';
 import {t} from '../src/lib/i18n';
-import {ActivityIndicator,ImageBackground,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,ImageBackground,ScrollView,StyleSheet,Text,View,Platform} from 'react-native';
 import {Redirect,useRouter} from 'expo-router';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Brand,Button,DemoBanner} from '../src/components/UI';
@@ -24,9 +24,9 @@ export default function WelcomeScreen(){
    <Text style={styles.heading}>{t('Encontra o teu desporto. Encontra as tuas pessoas.')}</Text>
    <Text style={styles.description}>{t('Explora atividades, recintos e comunidades. Inicia sessão para participar.')}</Text>
    {DEMO_MODE?<DemoBanner/>:null}
-   <Button title={DEMO_MODE?t('Experimentar conta fictícia'):t('Entrar na Jynlo · Google ou palavra-passe')} onPress={()=>router.push('/login')}/>
-   <Button title={t('Explorar como visitante')} secondary onPress={explore}/>
+   <Button title={DEMO_MODE?t('Experimentar conta fictícia'):Platform.OS==='ios'?t('Entrar com Apple, Google ou email'):t('Entrar com Google ou email')} onPress={()=>router.push('/login')}/>
    <Button title={t('Criar conta na Jynlo')} secondary onPress={register}/>
+   <Button title={t('Explorar como visitante')} secondary onPress={explore}/>
    <View style={styles.legalLinks}>
     <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})} accessibilityRole="link">{t('Política de Privacidade')}</Text>
     <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})} accessibilityRole="link">{t('Termos de Utilização')}</Text>
