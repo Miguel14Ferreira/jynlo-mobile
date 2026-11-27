@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {t} from '../../src/lib/i18n';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
-import {Brand,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
+import {Brand,Button,DemoBanner,Loader,Message,Page} from '../../src/components/UI';
 import {CommunityCard} from '../../src/components/CommunityUI';
 import {DEMO_MODE} from '../../src/lib/api';
 import {myCommunities,searchCommunities} from '../../src/lib/community-api';
@@ -46,12 +46,6 @@ export default function CommunitiesScreen(){
   const open=(id:number)=>router.push({pathname:'/communities/[id]',params:{id:String(id)}});
   return <Page>
     <Brand subtitle={t('ENCONTRA AS TUAS PESSOAS')}/><DemoBanner/>
-    <View style={styles.hero}>
-      <Eyebrow>{t('JUNTOS É OUTRO JOGO')}</Eyebrow>
-      <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('A tua malta.')}{"\n"}<Text style={{color:C.mint}}>{t('A tua comunidade.')}</Text></Text>
-      <Text style={styles.sub}>{t('De uma sessão podem nascer amizades, equipas e grandes desafios.')}</Text>
-      <Text style={styles.sub}>{t('Jogos, ligas e torneios individuais ou por equipas. Tens o histórico num Excel? Importa-o.')}</Text>
-    </View>
     <View style={styles.actions}>
       <View style={{flex:1}}><Button title={t('+ Criar comunidade')} onPress={()=>auth.token?router.push('/communities/create'):router.push({pathname:'/login',params:{redirect:'/communities/create'}})}/></View>
       <Pressable accessibilityRole="button" onPress={()=>auth.token?router.push('/communities/invites'):router.push('/login')}
