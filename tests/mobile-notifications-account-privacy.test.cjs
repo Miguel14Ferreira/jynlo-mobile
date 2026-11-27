@@ -10,9 +10,9 @@ test('notification and invitation lists are rendered only for the currently auth
  assert.match(code,/const sameAccount=Boolean\(auth\.token&&auth\.username&&account\.current===auth\.username\+'\|'\+auth\.token\)/);
  assert.match(code,/const visibleItems=sameAccount\?items:\[\]/);
  assert.match(code,/const visibleInvites=sameAccount\?invites:\[\]/);
- assert.match(code,/\{sameAccount&&!loading\?<View/);
+ assert.match(code,/\{sameAccount\?<View style=\{styles\.list\}>/);
  assert.match(code,/visibleInvites\.map\(invite=>/);
- assert.match(code,/filteredItems\.map\(n=>/);
+ assert.match(code,/const sections=buildSections\(filteredItems\)/);
  assert.match(code,/const filteredItems=unreadOnly\?visibleItems\.filter\(item=>!item\.read\):visibleItems/);
  assert.doesNotMatch(code,/>Convites para sessões · \{invites\.length\}/);
  assert.doesNotMatch(code,/>Outras notificações · \{items\.length\}/);
@@ -22,7 +22,7 @@ test('old account cannot trigger invitation, notification, push changes or reque
  assert.match(code,/if\(!sameAccount\|\|!auth\.token\|\|inviteDecisionInFlight\.current!==null\)return/);
  assert.match(code,/if\(!sameAccount\|\|!auth\.token\|\|!auth\.username\)return/);
  assert.match(code,/if\(!sameAccount\|\|!auth\.username\|\|!auth\.token\|\|pushBusyRef\.current\)return/);
- assert.match(code,/disabled=\{!sameAccount\|\|loading\|\|busyInvite!==null\}/);
+ assert.match(code,/disabled=\{busyInvite!==null\}/);
 });
 
 test('stale notifications replies require matching generation AND account',()=>{

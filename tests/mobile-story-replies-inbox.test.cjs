@@ -25,7 +25,8 @@ test('only authenticated recipient sees previously stored Story replies',()=>{
 });
 test('notifications surface private reply inbox even if optional push alerts are off',()=>{
  const screen=read('app/notifications.tsx');
- assert.match(screen,/sameAccount\?<Button secondary title="Respostas privadas às minhas Stories"/);
+ // Reached from the "⋯" menu in the title bar.
+ assert.match(screen,/Respostas privadas às minhas Stories'?\)?,\(\)=>router\.push\('\/stories\/replies'\)\]/);
  assert.match(screen,/router\.push\('\/stories\/replies'\)/);
 });
 

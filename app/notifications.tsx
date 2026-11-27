@@ -1,10 +1,10 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {isServerNotificationText} from '../src/lib/server-notification-texts.cjs';
 import {currentLocale,t} from '../src/lib/i18n';
-import {Alert,AppState,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Animated,AppState,Modal,PanResponder,Pressable,StyleSheet,Text,View} from 'react-native';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
-import {useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
+import {Stack,useFocusEffect,useIsFocused,useLocalSearchParams,useRouter} from 'expo-router';
 import {Button,DemoBanner,Loader,Message,Page} from '../src/components/UI';
 import {useAuth} from '../src/lib/auth';
 import {answerSessionInvite,pendingSessionInvites} from '../src/lib/api';
@@ -17,6 +17,8 @@ import {notificationDestination} from '../src/lib/notification-route.cjs';
 import {androidPushConfigured,disableMobilePush,enableMobilePush,pushRegistrationStatus} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
 import {sportName} from '../src/lib/sport-names.cjs';
+import {JynloIcon,type JynloIconName} from '../src/components/JynloIcon';
+import {buildSections,notificationKind,shortTime,type NotificationKind,type NotificationRow} from '../src/lib/notification-center.cjs';
 
 export default function NotificationsScreen(){
  const auth=useAuth(),router=useRouter(),isFocused=useIsFocused();
@@ -31,6 +33,8 @@ export default function NotificationsScreen(){
  const notificationLock=useRef(false),notificationRevision=useRef(0);
  const [pushEnabled,setPushEnabled]=useState(false),[pushBusy,setPushBusy]=useState(false);
  const [deliveryReady,setDeliveryReady]=useState<boolean|null>(null);
+ const [menuOpen,setMenuOpen]=useState(false),[showPush,setShowPush]=useState(false);
+ const [rowMenu,setRowMenu]=useState<NotificationRow<JynloNotification>|null>(null),[swiped,setSwiped]=useState<string|null>(null);
  const pushBusyRef=useRef(false);
  const [pushError,setPushError]=useState('');
  const inFlight=useRef<number|null>(null),generation=useRef(0),account=useRef('');
@@ -338,79 +342,192 @@ export default function NotificationsScreen(){
    try{router.setParams({notificationId:''});}catch{/* Navigation already succeeded. */}
   }
  },[isFocused,auth.token,auth.username,notificationId,loading,historyReady,items,router]);
+ const sections=buildSections(filteredItems);
+ const isUnread=(row:NotificationRow<JynloNotification>)=>row.items.some(n=>!n.read);
+ async function markRowRead(row:NotificationRow<JynloNotification>){
+  if(!sameAccount||!auth.token)return;
+  const identity=auth.username+'|'+auth.token;
+  for(const n of row.items.filter(x=>!x.read)){
+   try{await markNotificationRead(n.id,auth.token);}catch{setError(t('Não foi possível marcar a notificação como lida.'));return;}
+   if(account.current!==identity)return;
+   notificationRevision.current++;
+   setItems(old=>old.map(x=>x.id===n.id?{...x,read:true}:x));
+  }
+ }
+ async function removeRow(row:NotificationRow<JynloNotification>){
+  setSwiped(null);setRowMenu(null);
+  for(const n of row.items)await removeOne(n);
+ }
+ function openRow(row:NotificationRow<JynloNotification>){
+  if(open(row.lead)&&row.items.length>1)void markRowRead({...row,items:row.items.filter(n=>n.id!==row.lead.id)});
+ }
+ const menuItems:[string,()=>void,boolean?][]=[
+  ...(unreadCount>0?[[notificationBusy?t('A atualizar…'):t('Marcar todas como lidas'),()=>{void markAllRead();}] as [string,()=>void]]:[]),
+  [t('Definições de notificações'),()=>router.push('/notification-settings')],
+  [t('Respostas privadas às minhas Stories'),()=>router.push('/stories/replies')],
+  [showPush?t('Esconder notificações no telemóvel'):t('Notificações no telemóvel'),()=>setShowPush(v=>!v)],
+  ...(visibleItems.length>0?[[t('Eliminar todas…'),()=>Alert.alert(t('Eliminar as {n} notificações?',{n:visibleItems.length}),t('Não é possível desfazer. Os convites pendentes continuam disponíveis nas comunidades e nos jogos.'),[{text:t('Cancelar'),style:'cancel'},{text:t('Eliminar todas'),style:'destructive',onPress:()=>void removeAll()}]),true] as [string,()=>void,boolean]]:[]),
+ ];
  return <Page><DemoBanner/>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Notificações')}</Text>
-  <Text style={styles.note}>{t('Convites, novidades desportivas e atividade social.')}</Text>
+  <Stack.Screen options={{headerRight:sameAccount?()=><Pressable accessibilityRole="button" accessibilityLabel={t('Mais ações')} hitSlop={8}
+    onPress={()=>setMenuOpen(true)} style={styles.headerButton}><JynloIcon name="more" size={24} color={C.white}/></Pressable>:undefined}}/>
   {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/notifications'}})}/>:null}
-  {sameAccount?<Button secondary title={t('Gerir notificações')} onPress={()=>router.push('/notification-settings')}/>:null}
-  {sameAccount?<Button secondary title={t('Respostas privadas às minhas Stories')} onPress={()=>router.push('/stories/replies')}/>:null}
-  {loading?<Loader/>:null}
   {sameAccount&&error?<Message tone="error">{error}</Message>:null}
   {sameAccount&&notice?<Message>{notice}</Message>:null}
-  {sameAccount&&!loading?<View style={{gap:12}}>
-   <Text style={styles.heading}>{t('Convites para comunidades · {a}',{a:visibleCommunityInvites.length})}</Text>
-   {visibleCommunityInvites.length===0?<Text style={styles.note}>{t('Não tens convites pendentes para comunidades.')}</Text>:
-    visibleCommunityInvites.slice(0,5).map(invite=><View key={invite.id} style={styles.invite}>
-     <Text style={styles.subject}>{invite.communityName}</Text>
-     <Text style={styles.body}>{t('Convidado por @{a}',{a:invite.invitedByUsername})}</Text>
-     <Button title={t('Ver convite e responder')} secondary
-      onPress={()=>router.push('/communities/invites')}/>
-    </View>)}
-   {visibleCommunityInvites.length>5?<Button secondary title={t('Ver todos os convites de comunidades')}
-    onPress={()=>router.push('/communities/invites')}/>:null}
-   <Text style={styles.heading}>{t('Convites para sessões · {a}',{a:visibleInvites.length})}</Text>
-   {visibleInvites.length===0?<Text style={styles.note}>{t('Não tens convites pendentes para sessões.')}</Text>:visibleInvites.map(invite=><View key={invite.id} style={styles.invite}>
-    <Text style={styles.subject}>{sportName(invite.sport)||t('Sessão desportiva')} · {invite.city||t('Local a confirmar')}</Text>
-    <Text style={styles.body}>{t('Convidado por @{a}',{a:invite.inviterUsername})}</Text>
-    {invite.gameDate?<Text style={styles.note}>{new Date(invite.gameDate).toLocaleString(currentLocale())}</Text>:null}
-    <Button secondary title={t('Ver detalhes da sessão')} disabled={busyInvite!==null}
-      onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(invite.sessionId)}})}/>
-    <View style={styles.actions}>
-     <View style={{flex:1}}><Button title={busyInvite===invite.id?t('A processar…'):t('Aceitar')} disabled={busyInvite!==null} onPress={()=>{void decide(invite,true);}}/></View>
-     <View style={{flex:1}}><Button title={t('Recusar')} secondary disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}}/></View>
-    </View>
-   </View>)}
-   <Text style={styles.heading}>{t('Notificações · {a}',{a:visibleItems.length})}</Text>
-   <View style={styles.filterBar}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar todas as notificações')} accessibilityState={{selected:!unreadOnly}} onPress={()=>setUnreadOnly(false)} style={[styles.filterButton,!unreadOnly&&styles.filterSelected]}><Text style={styles.filterLabel}>{t('Todas · {a}',{a:visibleItems.length})}</Text></Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Mostrar apenas notificações não lidas')} accessibilityState={{selected:unreadOnly}} onPress={()=>setUnreadOnly(true)} style={[styles.filterButton,unreadOnly&&styles.filterSelected]}><Text style={styles.filterLabel}>{t('Não lidas · {a}',{a:unreadCount})}</Text></Pressable>
-   </View>
-   {visibleItems.length>0?<View style={styles.filterBar}>
-    {unreadCount>0?<View style={{flex:1}}><Button secondary title={notificationBusy?t('A atualizar…'):t('Marcar todas como lidas')} disabled={notificationBusy} onPress={()=>{void markAllRead();}}/></View>:null}
-    <View style={{flex:1}}><Button secondary title={t('Limpar notificações')} disabled={notificationBusy} onPress={()=>Alert.alert(t('Eliminar todas as notificações?'),t('Esta ação elimina definitivamente todas as tuas notificações. Os convites pendentes são apresentados separadamente.'),[{text:t('Cancelar'),style:'cancel'},{text:t('Eliminar'),style:'destructive',onPress:()=>void removeAll()}])}/></View>
-   </View>:null}
-   {filteredItems.length===0?<Text style={styles.note}>{unreadOnly?t('Não tens notificações por ler.'):t('Sem outras notificações.')}</Text>:filteredItems.map(n=><View key={n.id} style={[styles.tile,!n.read&&styles.new]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir notificação: {v}',{v:(n.subject||'Jynlo')})} disabled={notificationBusy} onPress={()=>{void open(n);}} style={{flex:1,gap:6}}>
-     <Text style={styles.subject}>{isServerNotificationText(n.subject)?t(n.subject):(n.subject||'Jynlo')}</Text><Text style={styles.body}>{isServerNotificationText(n.message)?t(n.message):n.message}</Text>
-     <Text style={styles.note}>{Number.isFinite(Date.parse(n.createdAt))?new Date(n.createdAt).toLocaleString(currentLocale()):''}</Text>
+  {sameAccount&&(visibleCommunityInvites.length>0||visibleInvites.length>0)?<View style={styles.invites}>
+   {visibleCommunityInvites.slice(0,3).map(invite=><Pressable key={'c'+invite.id} accessibilityRole="button" onPress={()=>router.push('/communities/invites')} style={styles.inviteRow}>
+    <View style={[styles.icon,{backgroundColor:TONES.invite.bg}]}><JynloIcon name="community" size={20} color={TONES.invite.fg}/></View>
+    <View style={{flex:1,minWidth:0}}><Text style={styles.rowTitle} numberOfLines={1}>{invite.communityName}</Text>
+     <Text style={styles.preview} numberOfLines={1}>{t('Convidado por @{a}',{a:invite.invitedByUsername})}</Text></View>
+    <Text style={styles.inviteCta}>{t('Responder')}</Text>
+   </Pressable>)}
+   {visibleInvites.map(invite=><View key={'s'+invite.id} style={styles.inviteRow}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver detalhes da sessão')} style={{flexDirection:'row',gap:12,flex:1,minWidth:0}} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(invite.sessionId)}})}>
+     <View style={[styles.icon,{backgroundColor:TONES.invite.bg}]}><JynloIcon name="calendar" size={20} color={TONES.invite.fg}/></View>
+     <View style={{flex:1,minWidth:0}}><Text style={styles.rowTitle} numberOfLines={1}>{sportName(invite.sport)||t('Sessão desportiva')} · {invite.city||t('Local a confirmar')}</Text>
+      <Text style={styles.preview} numberOfLines={1}>{t('Convidado por @{a}',{a:invite.inviterUsername})}{invite.gameDate?' · '+new Date(invite.gameDate).toLocaleString(currentLocale(),{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</Text></View>
     </Pressable>
-    <View style={{alignItems:'center',justifyContent:'space-between'}}>
-     {!n.read?<Text style={styles.badge}>●</Text>:<Text style={styles.note}>{t('Lida')}</Text>}
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Eliminar notificação: {v}',{v:(n.subject||'Jynlo')})} disabled={notificationBusy} onPress={()=>Alert.alert(t('Eliminar esta notificação?'),t('A notificação será removida da tua lista.'),[{text:t('Cancelar'),style:'cancel'},{text:t('Eliminar'),style:'destructive',onPress:()=>void removeOne(n)}])} style={styles.deleteButton}><Text style={styles.deleteText}>{t('Eliminar')}</Text></Pressable>
+    <View style={{flexDirection:'row',gap:6}}>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Aceitar')} disabled={busyInvite!==null} onPress={()=>{void decide(invite,true);}} style={[styles.pill,styles.pillOn]}>
+      <Text style={styles.pillOnText}>{busyInvite===invite.id?'…':t('Aceitar')}</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Recusar')} disabled={busyInvite!==null} onPress={()=>{void decide(invite,false);}} style={styles.pill}>
+      <Text style={styles.pillText}>{t('Recusar')}</Text></Pressable>
     </View>
    </View>)}
+   {visibleCommunityInvites.length>3?<Pressable accessibilityRole="button" onPress={()=>router.push('/communities/invites')}><Text style={styles.more}>{t('Ver todos os convites de comunidades')}</Text></Pressable>:null}
   </View>:null}
-  {sameAccount?<View style={styles.pushPanel}>
+  {sameAccount?<View style={styles.filters} accessibilityRole="tablist">
+   <Pressable accessibilityRole="tab" accessibilityState={{selected:!unreadOnly}} onPress={()=>setUnreadOnly(false)} style={[styles.filter,!unreadOnly&&styles.filterOn]}>
+    <Text style={[styles.filterText,!unreadOnly&&styles.filterTextOn]}>{t('Todas')} {visibleItems.length}</Text></Pressable>
+   <Pressable accessibilityRole="tab" accessibilityState={{selected:unreadOnly}} onPress={()=>setUnreadOnly(true)} style={[styles.filter,unreadOnly&&styles.filterOn]}>
+    <Text style={[styles.filterText,unreadOnly&&styles.filterTextOn]}>{t('Não lidas')}</Text>
+    {unreadCount>0?<Text style={styles.count}>{unreadCount}</Text>:null}</Pressable>
+  </View>:null}
+  {loading&&!visibleItems.length?<Loader/>:null}
+  {sameAccount&&!loading&&filteredItems.length===0?<View style={styles.empty}>
+   <JynloIcon name="notifications" size={34} color={C.muted}/>
+   <Text style={styles.emptyText}>{unreadOnly?t('Não tens notificações por ler.'):t('Ainda não tens notificações.')}</Text>
+  </View>:null}
+  {sameAccount?<View style={styles.list}>{sections.map(section=><View key={section.id}>
+   <Text style={styles.section}>{section.id==='today'?t('HOJE'):section.id==='yesterday'?t('ONTEM'):t('ANTERIORES')}</Text>
+   {section.rows.map(row=>{
+    const n=row.lead,kind=notificationKind(n.type),tone=TONES[kind],unread=isUnread(row);
+    const subject=isServerNotificationText(n.subject)?t(n.subject):(n.subject||'Jynlo');
+    const title=row.items.length>1&&kind==='chat'?t('{n} mensagens · {who}',{n:row.items.length,who:subject})
+     :row.items.length>1?t('{who} e mais {n}',{who:subject,n:row.items.length-1}):subject;
+    return <SwipeToDelete key={row.key} open={swiped===row.key} onOpen={()=>setSwiped(row.key)} onClose={()=>setSwiped(s=>s===row.key?null:s)}
+      onDelete={()=>{void removeRow(row);}} label={t('Eliminar')}>
+     <Pressable accessibilityRole="button" accessibilityLabel={(unread?t('Não lida')+': ':'')+title} accessibilityHint={t('Toque longo para mais opções')}
+      disabled={notificationBusy} onPress={()=>{if(swiped===row.key)setSwiped(null);else openRow(row);}} onLongPress={()=>setRowMenu(row)}
+      style={[styles.row,unread&&styles.rowUnread]}>
+      <View style={[styles.icon,{backgroundColor:tone.bg}]}><JynloIcon name={tone.icon} size={20} color={tone.fg}/></View>
+      <View style={{flex:1,minWidth:0}}>
+       <View style={styles.rowTop}>
+        <Text style={[styles.rowTitle,!unread&&styles.rowTitleRead]} numberOfLines={1}>{title}</Text>
+        <Text style={styles.time}>{shortTime(n.createdAt,t,currentLocale())}</Text>
+       </View>
+       <Text style={[styles.preview,unread&&styles.previewUnread]} numberOfLines={2}>{isServerNotificationText(n.message)?t(n.message):n.message}</Text>
+      </View>
+      {unread?<View style={styles.dot} accessibilityElementsHidden/>:null}
+     </Pressable>
+    </SwipeToDelete>;
+   })}
+  </View>)}</View>:null}
+  {sameAccount&&showPush?<View style={styles.pushPanel}>
    <Text style={styles.heading}>{t('Notificações no telemóvel')}</Text>
    <Text style={styles.note}>{androidPushConfigured()?pushEnabled?t('Este dispositivo está registado para notificações push. O registo não garante que os avisos sejam entregues.'):t('Podes ativar os avisos neste dispositivo. A entrega exige o serviço de envio operacional.'):t('As notificações dentro da aplicação continuam disponíveis. Para avisos com a aplicação fechada é necessária uma APK com Firebase configurado.')}</Text>
    {deliveryReady===false?<Message tone="error">{t('O envio push ainda não está ativo no servidor. Os avisos continuam disponíveis dentro da Jynlo, mas não serão enviados para o telemóvel.')}</Message>:null}
-   {deliveryReady===null&&androidPushConfigured()?<Text style={styles.note}>{t('Não foi possível confirmar se o servidor está preparado para enviar avisos push.')}</Text>:null}
    {androidPushConfigured()?<Button title={pushBusy?t('A atualizar…'):pushEnabled?t('Desativar neste dispositivo'):t('Ativar notificações neste dispositivo')} disabled={pushBusy||(!pushEnabled&&deliveryReady===false)} onPress={()=>{void togglePush();}}/>:<Message>{t('As notificações dentro da app já funcionam. Os avisos com a app fechada chegam numa próxima versão.')}</Message>}
-   <Button secondary title={pushBusy?t('A verificar…'):t('Verificar registo e serviço de envio')} disabled={pushBusy}
-    onPress={()=>{void verifyPushStatus();}}/>
+   <Button secondary title={pushBusy?t('A verificar…'):t('Verificar registo e serviço de envio')} disabled={pushBusy} onPress={()=>{void verifyPushStatus();}}/>
    {pushEnabled&&deliveryReady===true?<Text style={styles.note}>{t('Dispositivo registado e servidor preparado para enviar. A entrega deve ser confirmada com uma notificação real.')}</Text>:null}
    {pushError?<Message tone="error">{pushError}</Message>:null}
   </View>:null}
-  <Button secondary title={t('Atualizar')} onPress={()=>{void load();}} disabled={!sameAccount||loading||busyInvite!==null}/>
-
+  <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={()=>setMenuOpen(false)}>
+   <Pressable style={styles.backdrop} accessibilityLabel={t('Fechar menu')} onPress={()=>setMenuOpen(false)}>
+    <View style={styles.menu}>
+     {menuItems.map(([label,action,danger],i)=><Pressable key={label} accessibilityRole="menuitem" onPress={()=>{setMenuOpen(false);action();}}
+      style={[styles.menuItem,i>0&&styles.menuDivider]}><Text style={[styles.menuText,danger&&styles.menuDanger]}>{label}</Text></Pressable>)}
+    </View>
+   </Pressable>
+  </Modal>
+  <Modal visible={!!rowMenu} transparent animationType="fade" onRequestClose={()=>setRowMenu(null)}>
+   <Pressable style={[styles.backdrop,{justifyContent:'flex-end'}]} accessibilityLabel={t('Fechar menu')} onPress={()=>setRowMenu(null)}>
+    <View style={styles.sheet}>
+     {rowMenu&&isUnread(rowMenu)?<Pressable accessibilityRole="menuitem" onPress={()=>{const r=rowMenu;setRowMenu(null);void markRowRead(r);}} style={styles.menuItem}>
+      <Text style={styles.menuText}>{t('Marcar como lida')}</Text></Pressable>:null}
+     {rowMenu?<Pressable accessibilityRole="menuitem" onPress={()=>{const r=rowMenu;setRowMenu(null);openRow(r);}} style={[styles.menuItem,styles.menuDivider]}>
+      <Text style={styles.menuText}>{t('Abrir')}</Text></Pressable>:null}
+     {rowMenu?<Pressable accessibilityRole="menuitem" onPress={()=>{const r=rowMenu;void removeRow(r);}} style={[styles.menuItem,styles.menuDivider]}>
+      <Text style={[styles.menuText,styles.menuDanger]}>{t('Eliminar')}</Text></Pressable>:null}
+     <Pressable accessibilityRole="button" onPress={()=>setRowMenu(null)} style={[styles.menuItem,styles.menuDivider]}>
+      <Text style={[styles.menuText,{color:C.muted}]}>{t('Cancelar')}</Text></Pressable>
+    </View>
+   </Pressable>
+  </Modal>
  </Page>;
 }
+
+const TONES:Record<NotificationKind,{icon:JynloIconName;bg:string;fg:string}>={
+ chat:{icon:'messages',bg:'#123a48',fg:'#62e6c4'},invite:{icon:'calendar',bg:'#3a2c10',fg:'#f2b84b'},
+ session:{icon:'session',bg:'#12324a',fg:'#7cc4ff'},payment:{icon:'check',bg:'#123a2c',fg:'#7ee0a1'},
+ social:{icon:'like',bg:'#2a1838',fg:'#c9a7ff'},tournament:{icon:'tournament',bg:'#3a2c10',fg:'#f2b84b'},
+ community:{icon:'community',bg:'#12324a',fg:'#7cc4ff'},venue:{icon:'venue',bg:'#123a2c',fg:'#7ee0a1'},
+ other:{icon:'notifications',bg:'#1d3644',fg:'#b9d4d6'},
+};
+
+/** Swipe left to reveal "Eliminar" (or long-press the row for the same option). */
+function SwipeToDelete({children,open,onOpen,onClose,onDelete,label}:{children:React.ReactNode;open:boolean;onOpen:()=>void;onClose:()=>void;onDelete:()=>void;label:string}){
+ const x=useRef(new Animated.Value(0)).current;
+ const WIDTH=92;
+ useEffect(()=>{Animated.spring(x,{toValue:open?-WIDTH:0,useNativeDriver:true,bounciness:0}).start();},[open,x]);
+ const pan=useRef(PanResponder.create({
+  onMoveShouldSetPanResponder:(_,g)=>Math.abs(g.dx)>12&&Math.abs(g.dx)>Math.abs(g.dy)*1.5,
+  onPanResponderMove:(_,g)=>{x.setValue(Math.max(-WIDTH*1.4,Math.min(0,g.dx+(openRef.current?-WIDTH:0))));},
+  onPanResponderRelease:(_,g)=>{const total=g.dx+(openRef.current?-WIDTH:0);if(total<-WIDTH/2)onOpenRef.current();else{onCloseRef.current();Animated.spring(x,{toValue:0,useNativeDriver:true,bounciness:0}).start();}},
+  onPanResponderTerminate:()=>{Animated.spring(x,{toValue:openRef.current?-WIDTH:0,useNativeDriver:true,bounciness:0}).start();},
+ })).current;
+ const openRef=useRef(open);openRef.current=open;
+ const onOpenRef=useRef(onOpen);onOpenRef.current=onOpen;
+ const onCloseRef=useRef(onClose);onCloseRef.current=onClose;
+ return <View style={styles.swipe}>
+  <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onDelete} style={styles.swipeAction}>
+   <JynloIcon name="remove" size={20} color="#fff"/><Text style={styles.swipeText}>{label}</Text>
+  </Pressable>
+  <Animated.View style={{transform:[{translateX:x}]}} {...pan.panHandlers}>{children}</Animated.View>
+ </View>;
+}
+
 const styles=StyleSheet.create({
- filterBar:{flexDirection:'row',gap:9,alignItems:'center',flexWrap:'wrap'},filterButton:{borderWidth:1,borderColor:C.border,borderRadius:12,paddingHorizontal:12,paddingVertical:10,minHeight:44,justifyContent:'center'},filterSelected:{borderColor:C.mint,backgroundColor:C.surface},filterLabel:{color:C.white,fontWeight:'700',fontSize:12},deleteButton:{minHeight:44,justifyContent:'center',paddingHorizontal:7},deleteText:{color:'#FF9898',fontSize:12,fontWeight:'800'},
+ headerButton:{width:44,height:44,alignItems:'center',justifyContent:'center'},
+ invites:{gap:8},
+ inviteRow:{flexDirection:'row',alignItems:'center',gap:12,padding:10,borderRadius:14,backgroundColor:C.surface,borderWidth:1,borderColor:'rgba(242,184,75,.35)'},
+ inviteCta:{color:C.mint,fontWeight:'800',fontSize:13},
+ pill:{minHeight:36,paddingHorizontal:10,borderRadius:18,borderWidth:1,borderColor:C.border,justifyContent:'center'},
+ pillOn:{backgroundColor:C.mint,borderColor:C.mint},pillText:{color:C.white,fontWeight:'700',fontSize:12},pillOnText:{color:C.background,fontWeight:'800',fontSize:12},
+ more:{color:C.mint,fontWeight:'700',fontSize:13,paddingVertical:6},
+ filters:{flexDirection:'row',gap:8},
+ filter:{flexDirection:'row',alignItems:'center',gap:6,minHeight:38,paddingHorizontal:14,borderRadius:19,borderWidth:1,borderColor:C.border,backgroundColor:C.surface},
+ filterOn:{backgroundColor:C.mint,borderColor:C.mint},filterText:{color:C.white,fontWeight:'700',fontSize:14},filterTextOn:{color:C.background},
+ count:{minWidth:20,height:20,lineHeight:20,borderRadius:10,backgroundColor:'#f2b84b',color:'#231500',fontSize:12,fontWeight:'800',textAlign:'center',paddingHorizontal:5,overflow:'hidden'},
+ empty:{alignItems:'center',gap:8,paddingVertical:36},emptyText:{color:C.muted,fontSize:14},
+ list:{marginHorizontal:-16},
+ section:{color:C.muted,fontSize:12,fontWeight:'800',letterSpacing:.6,paddingHorizontal:16,paddingTop:10,paddingBottom:4},
+ swipe:{overflow:'hidden'},
+ swipeAction:{position:'absolute',right:0,top:0,bottom:0,width:92,backgroundColor:'#b4232f',alignItems:'center',justifyContent:'center',gap:2},
+ swipeText:{color:'#fff',fontSize:12,fontWeight:'800'},
+ row:{flexDirection:'row',alignItems:'flex-start',gap:12,paddingHorizontal:16,paddingVertical:10,backgroundColor:C.background},
+ rowUnread:{backgroundColor:'#0b1d2b'},
+ icon:{width:40,height:40,borderRadius:12,alignItems:'center',justifyContent:'center'},
+ rowTop:{flexDirection:'row',alignItems:'baseline',gap:8},
+ rowTitle:{flex:1,color:C.white,fontWeight:'800',fontSize:14},rowTitleRead:{fontWeight:'600',color:'#d7ecee'},
+ time:{color:C.muted,fontSize:12},
+ preview:{color:C.muted,fontSize:13,lineHeight:18,marginTop:2},previewUnread:{color:'#c9e3e6'},
+ dot:{width:9,height:9,borderRadius:5,backgroundColor:C.mint,marginTop:6},
  pushPanel:{padding:14,borderRadius:16,backgroundColor:C.surface,gap:10},
- title:{fontSize:31,fontWeight:'900',color:C.white},heading:{fontSize:18,fontWeight:'800',color:C.white,marginTop:8},
- note:{fontSize:12,color:C.muted,lineHeight:19},tile:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.border,flexDirection:'row',gap:9},
- invite:{padding:16,borderRadius:16,backgroundColor:C.surface,borderWidth:1,borderColor:C.mint,gap:8},
- actions:{flexDirection:'row',gap:9,marginTop:6},
- new:{borderColor:C.mint},subject:{color:C.white,fontWeight:'900',fontSize:15},body:{color:C.muted,fontSize:13,lineHeight:20},badge:{color:C.mint,fontSize:16}
+ heading:{fontSize:16,fontWeight:'800',color:C.white},note:{fontSize:12,color:C.muted,lineHeight:19},
+ backdrop:{flex:1,backgroundColor:'rgba(0,0,0,.45)',alignItems:'flex-end',paddingTop:56,paddingHorizontal:8},
+ menu:{width:270,borderRadius:14,backgroundColor:'#10283a',borderWidth:1,borderColor:'#2c5568',overflow:'hidden'},
+ sheet:{alignSelf:'stretch',borderTopLeftRadius:20,borderTopRightRadius:20,backgroundColor:'#10283a',borderWidth:1,borderColor:'#2c5568',paddingBottom:24,marginHorizontal:-8},
+ menuItem:{minHeight:50,justifyContent:'center',paddingHorizontal:16},menuDivider:{borderTopWidth:1,borderTopColor:'#1c3a4a'},
+ menuText:{color:C.white,fontSize:15,fontWeight:'600'},menuDanger:{color:'#ff8a8a'},
 });

@@ -19,13 +19,16 @@ test('notifications UI offers unread filter, read-all and confirmed destructive 
  assert.match(screen,/\[unreadOnly,setUnreadOnly\]=useState\(false\)/);
  assert.match(screen,/const unreadCount=visibleItems.filter\(item=>!item.read\).length/);
  assert.match(screen,/const filteredItems=unreadOnly\?visibleItems.filter\(item=>!item.read\):visibleItems/);
- assert.match(screen,/accessibilityLabel="Mostrar apenas notificações não lidas"/);
+ assert.match(screen,/accessibilityRole="tab" accessibilityState=\{\{selected:unreadOnly\}\}/);
  assert.match(screen,/Marcar todas como lidas/);
  assert.match(screen,/async function markAllRead\(\)/);
  assert.match(screen,/async function removeOne\(item:JynloNotification\)/);
  assert.match(screen,/async function removeAll\(\)/);
- assert.match(screen,/Alert.alert\('Eliminar todas as notificações\?'/);
- assert.match(screen,/Alert.alert\('Eliminar esta notificação\?'/);
+ assert.match(screen,/Alert\.alert\('Eliminar as '\+visibleItems\.length\+' notificações\?'/);
+ assert.match(screen,/style:'destructive',onPress:\(\)=>void removeAll\(\)/);
+ // A single alert is removed by swiping it or from its long-press menu.
+ assert.match(screen,/function SwipeToDelete/);
+ assert.match(screen,/onLongPress=\{\(\)=>setRowMenu\(row\)\}/);
  assert.match(screen,/deleteMyNotification\(item.id,auth.token\)/);
  assert.match(screen,/deleteAllMyNotifications\(auth.token\)/);
 });
@@ -65,10 +68,10 @@ test('notification inbox also shows real pending community invites from API',()=
  assert.match(screen,/myCommunityInvites\(auth\.token,auth\.username\)/);
  assert.match(screen,/communityInvitations\.status==='fulfilled'/);
  assert.match(screen,/setCommunityInvites\(communityInvitations\.value\)/);
- assert.match(screen,/Convites para comunidades · \{visibleCommunityInvites\.length\}/);
+ assert.match(screen,/visibleCommunityInvites\.slice\(0,3\)\.map\(invite=>/);
  assert.match(screen,/Convidado por @\{invite\.invitedByUsername\}/);
  assert.match(screen,/router\.push\('\/communities\/invites'\)/);
- assert.ok(screen.indexOf('Convites para comunidades · {visibleCommunityInvites.length}')<
+ assert.ok(screen.indexOf('visibleCommunityInvites.slice(0,3)')<
    screen.indexOf('<View style={styles.pushPanel}>'),'Pending invitations must appear before optional push settings');
  assert.match(screen,/account\.current=identity;setItems\(\[\]\);setInvites\(\[\]\);setCommunityInvites\(\[\]\)/);
 });
