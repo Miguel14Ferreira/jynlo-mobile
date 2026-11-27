@@ -32,11 +32,11 @@ async function ensureCallPermissions(media:DirectCallMedia):Promise<void>{
   throw Error(t('Para participares nesta chamada, permite o acesso ao microfone')+(media==='video'?' '+t('e à câmara'):'')+' '+t('nas definições do Android.'));
  }
 }
-function MediaControls({media,onHangup,onMinimize,peer,self,token}:{media:DirectCallMedia;onHangup:()=>void;onMinimize:()=>void;peer:string;self:string;token:string}){
+function MediaControls({media,cameraStartsOff=false,onHangup,onMinimize,peer,self,token}:{media:DirectCallMedia;cameraStartsOff?:boolean;onHangup:()=>void;onMinimize:()=>void;peer:string;self:string;token:string}){
  const room=useRoomContext();
  const tracks=useTracks([Track.Source.Camera]);
  const {width,height}=useWindowDimensions();
- const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice');
+ const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(media==='voice'||cameraStartsOff);
  const [expandedVideo,setExpandedVideo]=useState(false),[showChat,setShowChat]=useState(false);
  const [keyboardOpen,setKeyboardOpen]=useState(false);
  // Where the keyboard starts on screen and where this panel starts: while typing, the panel is
@@ -264,6 +264,7 @@ export default function DirectCallScreen(){
  },[session?.callId,auth.token,connectedToPeer]);
  async function create(media:DirectCallMedia){
   if(operation.current||!auth.token||!available||!PEER.test(peer))return;
+  setCameraOnJoin(true);
   const version=generation.current;operation.current=true;setBusy(true);setError('');
   try{
    await ensureCallPermissions(media);
@@ -274,8 +275,11 @@ export default function DirectCallScreen(){
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível iniciar a chamada.'));}
   finally{if(version===generation.current){operation.current=false;setBusy(false);}}
  }
- async function answer(accept:boolean){
+ // A video call can be answered with the camera off; it can be turned on during the call.
+ const [cameraOnJoin,setCameraOnJoin]=useState(true);
+ async function answer(accept:boolean,withCamera=true){
   if(operation.current||!auth.token||!pending)return;
+  setCameraOnJoin(withCamera);
   const version=generation.current,invitation=pending;
   operation.current=true;setBusy(true);setError('');
   try{
@@ -313,16 +317,19 @@ export default function DirectCallScreen(){
   {session&&!audioReady?<View style={styles.mediaPanel}><ActivityIndicator color={C.mint}/><Text style={styles.note}>{t('A preparar o áudio da chamada…')}</Text><Button title={t('Terminar chamada')} danger onPress={()=>{void hangup();}}/></View>:null}
   {session&&!connectedToPeer?<Text style={styles.note}>{t('À espera de resposta do contacto…')}</Text>:null}
   {session&&audioReady?<LiveKitRoom key={session.callId} serverUrl={session.serverUrl} token={session.token}
-   connect audio video={session.media==='video'} onDisconnected={()=>{void hangup();}}
+   connect audio video={session.media==='video'&&cameraOnJoin} onDisconnected={()=>{void hangup();}}
    onError={e=>{setError(t('Falha ao ligar ao LiveKit: {v}',{v:e.message}));void hangup();}}>
-    <MediaControls media={session.media} peer={peer} self={auth.username||''} token={auth.token}
+    <MediaControls media={session.media} cameraStartsOff={!cameraOnJoin} peer={peer} self={auth.username||''} token={auth.token}
      onHangup={()=>{void hangup();}} onMinimize={minimize}/>
    </LiveKitRoom>:!session?<>
    {!loading&&!available?<Message>{t('As chamadas estão indisponíveis neste momento ({a}). O chat continua disponível.',{a:providerStatus||t('sem ligação ao servidor')})}</Message>:null}
    {pending?<View style={styles.mediaPanel}>
     <Text style={styles.heading}>{t('{a} está a ligar',{a:peer})}</Text>
     <Text style={styles.note}>{t('Chamada {a}. Só entrarás na sala quando aceitares.',{a:pending.media==='video'?t('de vídeo'):t('de voz')})}</Text>
-    <Button title={busy?t('A ligar…'):t('Aceitar chamada')} disabled={busy||!available} onPress={()=>{void answer(true);}}/>
+    {pending.media==='video'?<>
+     <Button title={busy?t('A ligar…'):t('Atender com vídeo')} disabled={busy||!available} onPress={()=>{void answer(true,true);}}/>
+     <Button title={t('Atender sem câmara')} secondary disabled={busy||!available} onPress={()=>{void answer(true,false);}}/>
+    </>:<Button title={busy?t('A ligar…'):t('Aceitar chamada')} disabled={busy||!available} onPress={()=>{void answer(true);}}/>}
     <Button title={t('Recusar chamada')} secondary disabled={busy} onPress={()=>{void answer(false);}}/>
    </View>:null}
    {!pending&&available?<View style={styles.mediaPanel}>

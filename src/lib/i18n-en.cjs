@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Atender com vídeo": "Answer with video",
+  "Atender sem câmara": "Answer with camera off",
   "Entrar com Apple, Google ou email": "Sign in with Apple, Google or email",
   "Entrar com Google ou email": "Sign in with Google or email",
   "Ainda não há jogos de {sport} em {city}": "No {sport} games in {city} yet",

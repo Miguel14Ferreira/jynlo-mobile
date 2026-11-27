@@ -15,7 +15,7 @@ test('in-call chat stays inside the mounted LiveKit room and alongside participa
  assert.match(call,/accessibilityLabel=\{showChat\?'Ocultar chat da chamada':'Abrir chat da chamada'\}/);
  assert.match(call,/<CallChatSidePanel peer=\{peer\} self=\{self\} token=\{token\} visible=\{showChat\} wide=\{wide\} typing=\{typingInChat\}\/>/);
  assert.match(call,/callColumnsWide:\{flexDirection:'row'/);
- assert.match(call,/<MediaControls media=\{session\.media\} peer=\{peer\} self=\{auth\.username\|\|''\} token=\{auth\.token\}/);
+ assert.match(call,/<MediaControls media=\{session\.media\} cameraStartsOff=\{!cameraOnJoin\} peer=\{peer\} self=\{auth\.username\|\|''\} token=\{auth\.token\}/);
  assert.match(call,/const \[muted,setMuted\]=useState\(false\)/);
  const position=call.indexOf('const dimensions=videoStageDimensions');
  const state=call.indexOf('const [expandedVideo,setExpandedVideo]');
@@ -125,4 +125,12 @@ test('in-call private history and composer are isolated before account-switch ef
  assert.ok(panel.includes('sameConversation&&unseenBelow?'));
  assert.ok(panel.includes('sameConversation&&uncertainSend?.identity===identity'));
  assert.ok(!panel.includes('{messages.map(message=>'));
+});
+
+test('a video call can be answered with the camera off',()=>{
+ const call=read('src/features/direct-call-screen.tsx');
+ assert.match(call,/Atender sem câmara/);
+ assert.match(call,/void answer\(true,false\);/);
+ assert.match(call,/video=\{session\.media==='video'&&cameraOnJoin\}/);
+ assert.match(call,/useState\(media==='voice'\|\|cameraStartsOff\)/);
 });
