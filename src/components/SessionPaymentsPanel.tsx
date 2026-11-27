@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {t} from '../lib/i18n';
-import {AppState,Linking,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
 import {money} from '../lib/format.cjs';
@@ -16,9 +17,12 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
  const [online,setOnline]=useState<OnlinePaymentStatus|null>(null),[onlineDraft,setOnlineDraft]=useState(false);
  const identity=useRef('');
  const awaitingReturn=useRef(false);
+ const [askPaid,setAskPaid]=useState(false);
+ const awaitingMbway=useRef(false);
  // Back from Stripe (payment page or the organiser's sign-up): the server already knows, so read it again.
  useEffect(()=>{
   const sub=AppState.addEventListener('change',state=>{
+   if(state==='active'&&awaitingMbway.current){awaitingMbway.current=false;setAskPaid(true);}
    if(state!=='active'||!awaitingReturn.current)return;
    awaitingReturn.current=false;
    const key=identity.current;
@@ -57,6 +61,14 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
    if(link?.url?.startsWith('https://')){awaitingReturn.current=true;await Linking.openURL(link.url);}
   }catch(e){setError(e instanceof Error&&e.message?e.message:t('Não foi possível abrir o pagamento. Tenta outra vez.'));}
   finally{setBusy(false);}
+ }
+ /** Copies the number, opens MB WAY and, back in Jynlo, asks "Já pagaste?" with a one-tap answer. */
+ async function payByMbway(phoneNumber:string){
+  try{await Clipboard.setStringAsync(phoneNumber);}catch{ /* the number stays on screen */ }
+  awaitingMbway.current=true;
+  setAskPaid(true);
+  try{await Linking.openURL(Platform.OS==='android'?'market://details?id=pt.sibs.android.mbway':'https://apps.apple.com/pt/app/mb-way/id918126133');}
+  catch{awaitingMbway.current=false;}
  }
  if(!data)return error?<Message>{error}</Message>:null;
  const amount=money(data.priceAmount??0);
@@ -114,13 +126,17 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
      :data.mbwayPhone?<>
       <Text style={styles.text}>{t('Paga {a} por MB WAY ao organizador:',{a:amount})}</Text>
       {data.payee?.fullName||data.payee?.username?<Text style={styles.muted}>{t('Número de')} <Text style={styles.text}>{data.payee?.fullName||data.payee?.username}</Text>{data.payee?.fullName&&data.payee?.username?' · @'+data.payee.username:''}</Text>:null}
-      <View style={styles.row}>
-       <Text selectable style={styles.phone}>{phoneLabel(data.mbwayPhone)}</Text>
-       <Pressable accessibilityRole="button" style={styles.small} onPress={()=>void Share.share({message:data.mbwayPhone!})}>
-        <Text style={styles.smallText}>{t('Partilhar número')}</Text></Pressable>
-      </View>
+      <Text selectable style={styles.phone}>{phoneLabel(data.mbwayPhone)}</Text>
+      <Button title={t('Copiar número e abrir o MB WAY')} disabled={busy} onPress={()=>void payByMbway(data.mbwayPhone!)}/>
+      <Text style={styles.muted}>{t('No MB WAY: Enviar dinheiro, colar o número e pôr {a}.',{a:amount})}</Text>
      </>:<Text style={styles.muted}>{t('O organizador ainda não indicou como pagar.')}</Text>}
-    {data.method==='ONLINE'?null:data.me?.claimedAt?<>
+    {data.method==='ONLINE'?null:askPaid&&!data.me?.claimedAt?<View style={styles.ask}>
+     <Text style={styles.label}>{t('Já pagaste {a} no MB WAY?',{a:amount})}</Text>
+     <View style={styles.row}>
+      <Button title={t('Sim, já paguei')} disabled={busy} onPress={()=>{setAskPaid(false);void run(()=>claimPayment(sessionId,true,token));}}/>
+      <Button secondary title={t('Ainda não')} disabled={busy} onPress={()=>setAskPaid(false)}/>
+     </View>
+    </View>:data.me?.claimedAt?<>
      <Text style={styles.muted}>{t('⏳ Disseste que já pagaste. Falta o organizador confirmar.')}</Text>
      <Button secondary title={t('Afinal ainda não paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,false,token))}/>
     </>:<Button title={t('Já paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,true,token))}/>}
@@ -145,6 +161,7 @@ const styles=StyleSheet.create({
  text:{color:C.white,fontSize:15},
  muted:{color:C.muted,fontSize:12},
  ok:{color:C.mint,fontSize:15,fontWeight:'900'},
+ ask:{gap:8,padding:12,borderRadius:14,borderWidth:1,borderColor:C.mint,backgroundColor:'rgba(111,240,212,.1)'},
  error:{color:'#ffb4a8',fontSize:13},
  row:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:8},
  phone:{color:C.white,fontSize:22,fontWeight:'900',letterSpacing:1},
