@@ -118,7 +118,7 @@ export default function VenueDetailScreen(){
   {error?<Message tone="error">{error}</Message>:null}
   {extraError?<Message>{t('Algumas informações adicionais não estão disponíveis neste momento.')}</Message>:null}
   {venue?<View style={styles.card}>
-   <Text style={styles.name}>{venue.name}</Text>
+   <Text style={styles.name}>{venue.name}{venue.adultsOnly?<Text style={styles.adults} accessibilityLabel={t('Só para maiores de 18')}> +18</Text>:null}</Text>
    <Text style={styles.meta}>{[venue.city,venue.district].filter(Boolean).join(' · ')}</Text>
    {booking?.kind==='free'?<Text style={styles.free}>✓ {t('Acesso livre · não precisa de reserva')}</Text>:null}
    {booking?.kind==='link'?<Button title={t('Reservar campo')+' ↗'} onPress={()=>{void openExternal(booking.url);}}/>:null}
@@ -178,6 +178,7 @@ export default function VenueDetailScreen(){
  </Page>;
 }
 const styles=StyleSheet.create({
+ adults:{color:'#b42318',fontWeight:'800',fontSize:16},
  card:{backgroundColor:C.surface,borderColor:C.border,borderWidth:1,borderRadius:18,padding:16,gap:12},
  name:{color:C.white,fontSize:25,fontWeight:'900',lineHeight:32},
  meta:{color:C.muted,fontSize:15,lineHeight:22},

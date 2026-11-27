@@ -223,7 +223,7 @@ export interface FeedItem {
   location?:string|null;
 }
 /** Reduced mobile view; all fields are server sourced, never infer GPS/address. */
-export interface VenueSummary {dataCredit?:string|null;informationSource?:string|null;
+export interface VenueSummary {dataCredit?:string|null;adultsOnly?:boolean;informationSource?:string|null;
   id:number;name:string;city:string;district?:string|null;address:string;
   sports:string|null;venueType:string|null;latitude:number|null;longitude:number|null;
   contact?:string|null;website?:string|null;bookingUrl?:string|null;freeAccess?:boolean|null;lighting:boolean;parking:boolean;

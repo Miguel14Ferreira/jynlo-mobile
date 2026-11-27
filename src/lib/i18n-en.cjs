@@ -4841,5 +4841,6 @@ const EN={
   "🚴 Ciclismo": "🚴 Cycling",
   "🤝 Em mão, no dia": "🤝 In person, on the day",
   "🥊 Combate": "🥊 Combat",
+  "Só para maiores de 18": "Adults only (18+)",
 };
 module.exports={EN};
