@@ -6,8 +6,8 @@ import {useAuth} from '../../../src/lib/auth';
 import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {C} from '../../../src/lib/theme';
 import {bookingError,bookingStatusLabel} from '../../../src/components/VenueJynloBooking';
-import {answerBooking,confirmBookingPaid,managedVenues,managementStatus,managerOffer,saveCourts,saveHours,saveVenuePayment,venueOnlineOnboarding,venueOnlineStatus,venueRequests,
- type VenueOnlineStatus,type VenuePayMethod,type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
+import {answerBooking,confirmBookingPaid,managedVenues,managementStatus,managerOffer,saveCourts,saveHours,blockRequester,saveVenuePayment,unblockPlayer,venueBlocked,venueOnlineOnboarding,venueOnlineStatus,venueRequests,
+ type VenueBlock,type VenueOnlineStatus,type VenuePayMethod,type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
 import {phoneLabel} from '../../../src/lib/session-payments-api';
 import {venueDetails} from '../../../src/lib/parity-api';
 import {formatPrice,lisbonDateTime,lisbonTime,parsePrice,priceField,validateHours} from '../../../src/lib/venue-jynlo-booking.cjs';
@@ -16,6 +16,7 @@ type CourtRow={id:number|null;name:string;sport:string;price:string;slotMinutes:
 type Range={open:string;close:string};
 const WEEKDAYS=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const DURATIONS=[30,60,90,120];
+const BLOCK_REASONS=[{id:'NOT_PAID',label:'Não pagou'},{id:'NO_SHOW',label:'Não apareceu'},{id:'BEHAVIOUR',label:'Comportamento'},{id:'OTHER',label:'Outro motivo'}];
 
 /** Courts, opening hours and booking requests of a venue the person manages. */
 export default function VenueManageScreen(){
@@ -36,6 +37,8 @@ export default function VenueManageScreen(){
  const [hoursMsg,setHoursMsg]=useState(''),[hoursError,setHoursError]=useState('');
  const [payMethod,setPayMethod]=useState<VenuePayMethod|null>(null),[payPhone,setPayPhone]=useState('');
  const [online,setOnline]=useState<VenueOnlineStatus|null>(null);
+ const [blocked,setBlocked]=useState<VenueBlock[]>([]),[blocking,setBlocking]=useState(0),[blockReason,setBlockReason]=useState('');
+ const isBlocked=(u:string)=>blocked.some(x=>x.username.toLowerCase()===(u??'').toLowerCase());
  const awaitingStripe=useRef(false);
  // Back from the venue's Stripe sign-up: read the account state again.
  useEffect(()=>{
@@ -64,6 +67,7 @@ export default function VenueManageScreen(){
    const [o,r,m,st,on]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token),
     managementStatus(venueId,token),venueOnlineStatus(venueId,token)]);
    if(!alive)return;
+   venueBlocked(venueId,token).then(list=>{if(alive)setBlocked(list);}).catch(()=>{ /* managers only */ });
    setOnline(on.status==='fulfilled'?on.value:null);
    const admin=st.status==='fulfilled'&&!st.value.manager&&!!st.value.adminSetup;
    setAdminSetup(admin);
@@ -101,6 +105,23 @@ export default function VenueManageScreen(){
   try{const link=await venueOnlineOnboarding(venueId,auth.token);
    if(link?.url?.startsWith('https://')){awaitingStripe.current=true;await Linking.openURL(link.url);}}
   catch(e){setPayError(bookingError(e,t('Não foi possível abrir a Stripe. Tenta outra vez.')));}
+  finally{setBusy(false);}
+ }
+ async function block(r:VenueBooking){
+  if(!auth.token||busy||!blockReason)return;
+  setBusy(true);setRequestError('');
+  try{
+   const added=await blockRequester(r.id,auth.token,blockReason);
+   setBlocked(list=>[added,...list.filter(x=>x.id!==added.id)]);setBlocking(0);
+   setRequests(await venueRequests(venueId,auth.token));
+  }catch(e){setRequestError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
+  finally{setBusy(false);}
+ }
+ async function unblock(x:VenueBlock){
+  if(!auth.token||busy)return;
+  setBusy(true);setRequestError('');
+  try{setBlocked(await unblockPlayer(venueId,x.id,auth.token));}
+  catch(e){setRequestError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
   finally{setBusy(false);}
  }
  async function paidReceived(r:VenueBooking,paid:boolean){
@@ -169,8 +190,31 @@ export default function VenueManageScreen(){
      <Button title={t('Confirmar')} disabled={busy} onPress={()=>{void decide(r,true);}}/>
      <Button secondary title={t('Recusar')} disabled={busy} onPress={()=>{void decide(r,false);}}/>
     </>:null}
+    {isBlocked(r.requesterUsername)?<Text style={styles.muted}>🚫 {t('Este jogador já não pode reservar aqui.')}</Text>
+     :blocking===r.id?<View style={styles.block}>
+      <Text style={styles.strong}>{t('Deixar de aceitar reservas de {u}?',{u:'@'+r.requesterUsername})}</Text>
+      <Text style={styles.muted}>{t('Os pedidos pendentes dele são recusados e ele deixa de poder pedir reservas aqui. Não é avisado do motivo e podes desfazer quando quiseres.')}</Text>
+      <View style={styles.chips}>
+       {BLOCK_REASONS.map(x=><Pressable key={x.id} accessibilityRole="radio" accessibilityState={{checked:blockReason===x.id}}
+         onPress={()=>setBlockReason(x.id)} style={[styles.chip,blockReason===x.id&&styles.chipOn]}>
+        <Text style={[styles.chipText,blockReason===x.id&&styles.chipTextOn]}>{t(x.label)}</Text></Pressable>)}
+      </View>
+      <Button danger title={t('Bloquear reservas')} disabled={busy||!blockReason} onPress={()=>{void block(r);}}/>
+      <Button secondary title={t('Cancelar')} onPress={()=>setBlocking(0)}/>
+     </View>
+     :r.status!=='PENDING'?<Pressable accessibilityRole="button" style={styles.blockLink}
+       onPress={()=>{setBlocking(r.id);setBlockReason(r.status==='CONFIRMED'&&!r.paidConfirmedAt?'NOT_PAID':'');}}>
+      <Text style={styles.blockLinkText}>{t('Não aceitar mais reservas deste jogador')}</Text></Pressable>:null}
    </View>)}
    {requestError?<Text style={styles.error}>{requestError}</Text>:null}
+  </View>:null}
+  {!adminSetup&&blocked.length?<View style={styles.card}>
+   <Text style={styles.h2}>{t('Jogadores que já não podem reservar')}</Text>
+   <Text style={styles.muted}>{t('Só o recinto vê esta lista.')}</Text>
+   {blocked.map(x=><View key={x.id} style={styles.row}>
+    <Text style={styles.strong}>@{x.username} <Text style={styles.muted}>· {t(BLOCK_REASONS.find(b=>b.id===x.reason)?.label??'Outro motivo')}</Text></Text>
+    <Button secondary title={t('Voltar a aceitar')} disabled={busy} onPress={()=>{void unblock(x);}}/>
+   </View>)}
   </View>:null}
 
   <View style={styles.card}>
@@ -279,6 +323,8 @@ const styles=StyleSheet.create({
  addRange:{minHeight:44,justifyContent:'center'},
  linkText:{color:'#7ae5c5',fontWeight:'800',fontSize:15},
  ok:{color:'#7ae5c5',fontWeight:'800'},
+ block:{gap:8,padding:12,borderRadius:12,borderWidth:1,borderColor:'rgba(255,180,180,.3)',backgroundColor:'rgba(255,180,180,.08)'},
+ blockLink:{minHeight:44,justifyContent:'center'},blockLinkText:{color:'#ffb4b4',fontWeight:'700',textDecorationLine:'underline'},
  payRow:{gap:8},
  error:{color:'#ffb4b4',fontSize:14}
 });

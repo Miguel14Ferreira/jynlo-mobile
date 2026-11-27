@@ -5,6 +5,7 @@ export interface BookingHours {dayOfWeek:number;openTime:string;closeTime:string
 /** ONLINE: paid in the app into the venue's own Stripe account and marked paid automatically. */
 export type VenuePayMethod='MBWAY'|'IN_PERSON'|'ONLINE';
 export interface VenueOnlineStatus {available:boolean;connected:boolean;chargesEnabled:boolean}
+export interface VenueBlock {id:number;username:string;reason:'NOT_PAID'|'NO_SHOW'|'BEHAVIOUR'|'OTHER';createdAt:string;createdBy:string}
 export interface BookingOffer {venueId:number;acceptsBookings:boolean;courts:BookingCourt[];hours:BookingHours[];paymentMethod?:VenuePayMethod|null;mbwayPhone?:string|null}
 export interface BookingSlot {start:string;end:string;free:boolean}
 export interface CourtSlots {courtId:number;name:string;sport:string|null;priceCents:number|null;slotMinutes:number;slots:BookingSlot[]}
@@ -48,6 +49,9 @@ export const saveVenuePayment=(venueId:number,token:string,method:VenuePayMethod
 export const venueOnlineStatus=(venueId:number,token:string)=>request<VenueOnlineStatus>(`/api/venues/${venueId}/management/online-payments`,{token});
 export const venueOnlineOnboarding=(venueId:number,token:string)=>request<{url:string}>(`/api/venues/${venueId}/management/online-payments/onboarding`,{token,method:'POST',body:{}});
 export const bookingCheckout=(id:number,token:string)=>request<{url:string}>(`/api/venue-bookings/${id}/checkout`,{token,method:'POST',body:{}});
+export const venueBlocked=(venueId:number,token:string)=>request<VenueBlock[]>(`/api/venues/${venueId}/management/blocked`,{token});
+export const blockRequester=(bookingId:number,token:string,reason:string)=>request<VenueBlock>(`/api/venue-bookings/${bookingId}/block-requester`,{token,method:'POST',body:{reason}});
+export const unblockPlayer=(venueId:number,blockId:number,token:string)=>request<VenueBlock[]>(`/api/venues/${venueId}/management/blocked/${blockId}`,{token,method:'DELETE'});
 export const markBookingPaid=(id:number,token:string,paid:boolean)=>request<VenueBooking>(`/api/venue-bookings/${id}/paid`,{token,method:'POST',body:{paid}});
 export const confirmBookingPaid=(id:number,token:string,paid:boolean)=>request<VenueBooking>(`/api/venue-bookings/${id}/payment-received`,{token,method:'POST',body:{paid}});
 export const venueRequests=(venueId:number,token:string)=>request<VenueBooking[]>(`/api/venues/${venueId}/management/requests`,{token});

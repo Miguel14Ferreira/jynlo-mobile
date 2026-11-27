@@ -4874,5 +4874,16 @@ const EN={
   "Fica pago automaticamente, sem teres de avisar o recinto.": "It is marked paid automatically; no need to tell the venue.",
   "Depois de o recinto confirmar, pagas na app (MB WAY ou cartão).": "Once the venue confirms, you pay in the app (MB WAY or card).",
   "Pagamento na app": "Pay in the app",
+  "Deixar de aceitar reservas de {u}?": "Stop taking bookings from {u}?",
+  "Os pedidos pendentes dele são recusados e ele deixa de poder pedir reservas aqui. Não é avisado do motivo e podes desfazer quando quiseres.": "Their pending requests are declined and they can no longer request bookings here. They are not told why, and you can undo it at any time.",
+  "Bloquear reservas": "Block bookings",
+  "Não aceitar mais reservas deste jogador": "Don't take more bookings from this player",
+  "Este jogador já não pode reservar aqui.": "This player can no longer book here.",
+  "Jogadores que já não podem reservar": "Players who can no longer book",
+  "Só o recinto vê esta lista.": "Only the venue sees this list.",
+  "Voltar a aceitar": "Allow again",
+  "Não pagou": "Did not pay",
+  "Não apareceu": "Did not show up",
+  "Comportamento": "Behaviour",
 };
 module.exports={EN};
