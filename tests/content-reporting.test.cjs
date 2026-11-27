@@ -32,7 +32,7 @@ test('posts, comments and profiles can be reported where they are seen (store re
  const profile=read('app/social/[username]/index.tsx');
  assert.match(profile,/accessibilityLabel=\{'Denunciar perfil de @'\+name\}/);
  assert.match(profile,/blocked\?'Desbloquear @'\+name:'Bloquear @'\+name/);
- assert.match(profile,/\{!own&&auth\.token\?<View style=\{styles\.safetyRow\}>/);
+ assert.match(profile,/\{!own&&auth\.token&&moreOpen\?<View style=\{styles\.safetyRow\}>/);
 });
 
 test('blocking hides the author in the feed and resets on account change',()=>{

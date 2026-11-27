@@ -4910,5 +4910,11 @@ const EN={
   "Há {n} min": "{n} min ago",
   "Há {n} h": "{n} h ago",
   "Ontem, {time}": "Yesterday, {time}",
+  "Convidar para jogo": "Invite to a game",
+  "Convidar @{u}": "Invite @{u}",
+  "Os teus próximos jogos": "Your upcoming games",
+  "Não tens jogos abertos marcados.": "You have no open games scheduled.",
+  "Ainda não fazes parte de nenhuma comunidade.": "You're not in any community yet.",
+  "Convidado ✓": "Invited ✓",
 };
 module.exports={EN};

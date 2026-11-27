@@ -12,6 +12,7 @@ import ProfilePosts from '../../../src/components/ProfilePosts';
 import {changeFollow,followStatus,publicSportsProfile,publicProfileAffiliations,publicSportsActivity,publicIndividualTitles,publicCompletedParticipations,type PublicCompletedParticipation,type PublicIndividualTitle,type PublicSportsActivity,type PublicProfileAffiliations,type FollowStatus,type PublicSportsProfile} from '../../../src/lib/social-relations-api';
 import {PlayerStatsRow} from '../../../src/components/PlayerHighlights';
 import {ProfileMessageAction} from '../../../src/components/ProfileMessageAction';
+import {InviteToGameSheet} from '../../../src/components/InviteToGameSheet';
 import {parseFavoriteSports} from '../../../src/lib/favorite-sports.cjs';
 import {profilePrivacyStatus,type ProfilePrivacyStatus} from '../../../src/lib/profile-privacy-api';
 import {MobileTheme} from '../../../src/lib/theme';
@@ -25,6 +26,7 @@ export default function PublicSocialProfile(){
  const name=typeof username==='string'&&/^[a-zA-Z0-9_.@-]{1,128}$/.test(username)?username:'';
  const auth=useAuth(),router=useRouter();
  const [profile,setProfile]=useState<PublicSportsProfile|null>(null);
+ const [inviting,setInviting]=useState(false),[moreOpen,setMoreOpen]=useState(false);
  const [status,setStatus]=useState<FollowStatus|null>(null);
  const [privacy,setPrivacy]=useState<ProfilePrivacyStatus|null>(null);
  const [stories,setStories]=useState<SocialStory[]>([]);
@@ -130,9 +132,9 @@ export default function PublicSocialProfile(){
     <PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/>
     <View style={{flex:1,gap:5}}><Text style={styles.name}>{displayName}</Text><Text style={styles.handle}>@{name}</Text></View>
    </View>
+   {sports.length?<View style={styles.tags}>{sports.map(s=><View key={s} style={styles.tag}><Text style={styles.tagLabel}>{sportName(s)}</Text></View>)}</View>:null}
    {profile.bio?.trim()?<Text style={styles.bio}>{profile.bio.trim()}</Text>:null}
    {[profile.location,profile.country].filter(Boolean).length?<Text style={styles.sub}>⌖  {[profile.location,profile.country].filter(Boolean).join(' · ')}</Text>:null}
-   {sports.length?<View style={styles.tags}>{sports.map(s=><View key={s} style={styles.tag}><Text style={styles.tagLabel}>{sportName(s)}</Text></View>)}</View>:null}
    {status?<View style={styles.metrics}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver seguidores')} onPress={()=>router.push({pathname:'/social/[username]/[kind]',params:{username:name,kind:'followers'}})} style={styles.metric}>
      <Text style={styles.metricNum}>{status.followers}</Text><Text style={styles.sub}>{t('Seguidores')}</Text>
@@ -141,6 +143,15 @@ export default function PublicSocialProfile(){
      <Text style={styles.metricNum}>{status.following}</Text><Text style={styles.sub}>{t('A seguir')}</Text>
     </Pressable>
    </View>:null}
+   <PlayerStatsRow username={name} token={auth.token}/>
+   {!own&&auth.token?<View style={styles.primaryRow}>
+    <View style={{flex:1}}><Button title={t('Convidar para jogo')} onPress={()=>setInviting(true)}/></View>
+    <View style={{flex:1}}><ProfileMessageAction username={name} token={auth.token}/></View>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Mais ações')} onPress={()=>setMoreOpen(v=>!v)} style={styles.moreButton}>
+     <Text style={styles.moreText}>⋯</Text></Pressable>
+   </View>:null}
+   {!own&&auth.token&&auth.username?<InviteToGameSheet visible={inviting} onClose={()=>setInviting(false)} username={name} token={auth.token} me={auth.username}/>:null}
+   {own?null:moreOpen||!auth.token?<View style={styles.moreBox}>
    {!own&&status?<Pressable accessibilityRole="button"
     accessibilityLabel={status.followedByMe?t('Deixar de seguir'):status.requestPending?t('Cancelar pedido para seguir'):status.privateProfile?t('Pedir para seguir'):t('Seguir utilizador')}
     disabled={busy} onPress={()=>{void toggle();}} style={[styles.follow,(status.followedByMe||status.requestPending)&&styles.unfollow,busy&&styles.disabled]}>
@@ -148,9 +159,8 @@ export default function PublicSocialProfile(){
      {busy?t('A confirmar…'):status.followedByMe?t('A seguir ✓'):status.requestPending?t('Pedido enviado ✓'):status.privateProfile?t('Pedir para seguir +'):t('Seguir +')}
     </Text>
    </Pressable>:!own?<Text style={styles.sub}>{t('Não foi possível confirmar a relação de seguimento.')}</Text>:null}
-   <PlayerStatsRow username={name} token={auth.token}/>
-   {!own&&auth.token?<ProfileMessageAction username={name} token={auth.token}/>:null}
-   {!own&&auth.token?<View style={styles.safetyRow}>
+   </View>:null}
+   {!own&&auth.token&&moreOpen?<View style={styles.safetyRow}>
     <Pressable accessibilityRole="button" disabled={safetyBusy||blocked===null} onPress={toggleBlock}
      accessibilityLabel={blocked?t('Desbloquear @{v}',{v:name}):t('Bloquear @{v}',{v:name})} style={[styles.safetyAction,(safetyBusy||blocked===null)&&styles.disabled]}>
      <Text style={styles.safetyText}>{safetyBusy?t('A confirmar…'):blocked?t('Desbloquear'):t('Bloquear')}</Text>
@@ -288,5 +298,9 @@ const styles=StyleSheet.create({
  tags:{flexDirection:'row',flexWrap:'wrap',gap:8},tag:{paddingHorizontal:11,paddingVertical:8,backgroundColor:T.raised,borderRadius:MobileTheme.radius.pill},tagLabel:{color:T.accent,fontWeight:'800',fontSize:12},
  metrics:{flexDirection:'row',gap:10},metric:{flex:1,alignItems:'center',minHeight:60,justifyContent:'center',backgroundColor:T.raised,borderRadius:MobileTheme.radius.md},
  metricNum:{color:T.text,fontSize:19,fontWeight:'900'},follow:{minHeight:MobileTheme.touchTarget,backgroundColor:T.accent,borderRadius:MobileTheme.radius.md,alignItems:'center',justifyContent:'center'},
- followText:{color:T.background,fontSize:14,fontWeight:'900'},unfollow:{backgroundColor:T.raised,borderWidth:1,borderColor:T.border},unfollowText:{color:T.text},disabled:{opacity:.5}
+ followText:{color:T.background,fontSize:14,fontWeight:'900'},unfollow:{backgroundColor:T.raised,borderWidth:1,borderColor:T.border},unfollowText:{color:T.text},disabled:{opacity:.5},
+ primaryRow:{flexDirection:'row',alignItems:'center',gap:8},
+ moreButton:{width:46,height:46,borderRadius:12,borderWidth:1,borderColor:T.border,alignItems:'center',justifyContent:'center'},
+ moreText:{color:T.text,fontSize:20,fontWeight:'900'},
+ moreBox:{gap:8},
 });
