@@ -1,3 +1,4 @@
+import {ChatMentionText} from './ChatMentions';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {KeyboardFrame} from './KeyboardFrame';
 import {t} from '../lib/i18n';
@@ -194,8 +195,9 @@ export default function CallChatSidePanel({peer,self,token,visible,wide,typing=f
     return <View key={message.id} style={[styles.bubble,mine?styles.mine:styles.theirs]}>
      <Text style={styles.sender}>{mine?t('Tu'):'@'+peer}</Text>
      {message.replyToText?<Text style={styles.reply}>↳ {message.replyToText}</Text>:null}
-     <Text style={styles.body}>{message.deletedAt?t('Mensagem removida'):
-      message.text||message.attachmentName||(message.attachments?.length?t('Anexo partilhado'):t('Mensagem'))}</Text>
+     {!message.deletedAt&&message.text?<ChatMentionText body={message.text} style={styles.body}/>
+      :<Text style={styles.body}>{message.deletedAt?t('Mensagem removida'):
+      message.attachmentName||(message.attachments?.length?t('Anexo partilhado'):t('Mensagem'))}</Text>}
      <Text style={styles.time}>{message.date&&Number.isFinite(Date.parse(message.date))?
       new Date(message.date).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):''}</Text>
     </View>;
