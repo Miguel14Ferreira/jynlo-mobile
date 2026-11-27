@@ -6,7 +6,7 @@ export interface BookingOffer {venueId:number;acceptsBookings:boolean;courts:Boo
 export interface BookingSlot {start:string;end:string;free:boolean}
 export interface CourtSlots {courtId:number;name:string;sport:string|null;priceCents:number|null;slotMinutes:number;slots:BookingSlot[]}
 export interface DaySlots {venueId:number;date:string;courts:CourtSlots[]}
-export interface ManagementStatus {manager:boolean;claimStatus:'PENDING'|'APPROVED'|'REJECTED'|null;decisionNote:string|null;acceptsBookings:boolean}
+export interface ManagementStatus {manager:boolean;claimStatus:'PENDING'|'APPROVED'|'REJECTED'|null;decisionNote:string|null;acceptsBookings:boolean;adminSetup?:boolean}
 export type BookingStatus='PENDING'|'CONFIRMED'|'DECLINED'|'CANCELLED';
 export interface VenueBooking {
  id:number;venueId:number;venueName:string|null;courtId:number;courtName:string|null;requesterUsername:string;
@@ -57,3 +57,6 @@ export function acceptingVenues():Promise<number[]>{
  if(!acceptingCache)acceptingCache=request<number[]>('/api/venue-bookings/accepting').catch(()=>{acceptingCache=null;return [];});
  return acceptingCache;
 }
+
+/** Printable A4 poster with a QR code to the venue page, served by the website. */
+export const venuePosterUrl=(venueId:number)=>`https://jynlosports.com/venues/${venueId}/cartaz`;

@@ -1,11 +1,11 @@
 import React,{useCallback,useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useRouter} from 'expo-router';
 import {t,useLanguage} from '../lib/i18n';
 import {ApiError} from '../lib/api';
 import {Button} from './UI';
 import {C} from '../lib/theme';
-import {bookingOffer,bookingSlots,claimVenue,managementStatus,requestBooking,
+import {bookingOffer,bookingSlots,claimVenue,managementStatus,requestBooking,venuePosterUrl,
  type BookingOffer,type BookingSlot,type BookingStatus,type CourtSlots,type DaySlots,type ManagementStatus} from '../lib/venue-jynlo-api';
 import {formatPrice,lisbonTime,nextLisbonDays} from '../lib/venue-jynlo-booking.cjs';
 
@@ -129,8 +129,12 @@ export default function VenueJynloBooking({venueId,token,sessionId}:{venueId:num
    {sendError?<Text style={styles.error}>{sendError}</Text>:null}
   </View>:null}
   {token&&status?<View style={{gap:8}}>
-   {status.manager?<Button secondary title={t('Gerir campos e reservas')}
-     onPress={()=>router.push({pathname:'/venues/[id]/manage',params:{id:String(venueId)}})}/>
+   {status.manager||status.adminSetup?<>
+     <Button secondary title={status.manager?t('Gerir campos e reservas'):t('Configurar campos e horário (administração)')}
+      onPress={()=>router.push({pathname:'/venues/[id]/manage',params:{id:String(venueId)}})}/>
+     <Button secondary title={t('Cartaz com código QR')+' ↗'}
+      onPress={()=>{Linking.openURL(venuePosterUrl(venueId)).catch(()=>{ /* no browser available */ });}}/>
+    </>
    :status.claimStatus==='PENDING'?<Text style={styles.hint}>{t('O teu pedido para gerir este recinto está a ser analisado.')}</Text>
    :!claimOpen?<>
      <Pressable accessibilityRole="button" onPress={()=>setClaimOpen(true)} style={styles.link}>

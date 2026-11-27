@@ -6,9 +6,10 @@ import {useAuth} from '../../../src/lib/auth';
 import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {C} from '../../../src/lib/theme';
 import {bookingError,bookingStatusLabel} from '../../../src/components/VenueJynloBooking';
-import {answerBooking,confirmBookingPaid,managedVenues,managerOffer,saveCourts,saveHours,saveVenuePayment,venueRequests,
+import {answerBooking,confirmBookingPaid,managedVenues,managementStatus,managerOffer,saveCourts,saveHours,saveVenuePayment,venueRequests,
  type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
 import {phoneLabel} from '../../../src/lib/session-payments-api';
+import {venueDetails} from '../../../src/lib/parity-api';
 import {formatPrice,lisbonDateTime,lisbonTime,parsePrice,priceField,validateHours} from '../../../src/lib/venue-jynlo-booking.cjs';
 
 type CourtRow={id:number|null;name:string;sport:string;price:string;slotMinutes:number;active:boolean};
@@ -25,6 +26,7 @@ export default function VenueManageScreen(){
  const [name,setName]=useState('');
  const [offer,setOffer]=useState<BookingOffer|null>(null);
  const [requests,setRequests]=useState<VenueBooking[]>([]);
+ const [adminSetup,setAdminSetup]=useState(false);
  const [notes,setNotes]=useState<Record<number,string>>({});
  const [courts,setCourts]=useState<CourtRow[]>([]);
  const [week,setWeek]=useState<Range[][]>([[],[],[],[],[],[],[]]);
@@ -48,8 +50,14 @@ export default function VenueManageScreen(){
   if(!token||!venueId){setLoading(false);return()=>{alive=false;};}
   setLoading(true);setError('');setOffer(null);
   void (async()=>{
-   const [o,r,m]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token)]);
+   const [o,r,m,st]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token),
+    managementStatus(venueId,token)]);
    if(!alive)return;
+   const admin=st.status==='fulfilled'&&!st.value.manager&&!!st.value.adminSetup;
+   setAdminSetup(admin);
+   if(admin&&!(m.status==='fulfilled'&&m.value.some(v=>v.venueId===venueId))){
+    venueDetails(venueId).then(v=>{if(alive)setName(v?.name??'');}).catch(()=>{ /* name is optional */ });
+   }
    if(o.status==='fulfilled')applyOffer(o.value,true);else setError(bookingError(o.reason,t('Não foi possível carregar a gestão do recinto.')));
    if(r.status==='fulfilled')setRequests(r.value);
    if(m.status==='fulfilled')setName(m.value.find(v=>v.venueId===venueId)?.name??'');
@@ -120,8 +128,9 @@ export default function VenueManageScreen(){
    ?'✓ '+t('Aceita reservas na Jynlo. Os jogadores já veem os teus horários livres.')
    :t('Ainda não aceita reservas: adiciona pelo menos um campo e o horário de funcionamento.')}</Text>:null}
 
+  {adminSetup?<Text style={styles.admin}>{t('Estás a configurar este recinto como administração da Jynlo. As reservas só abrem quando o recinto tiver um responsável aprovado, e é ele que responde aos pedidos.')}</Text>:null}
   {offer&&!error?<>
-  <View style={styles.card}>
+  {!adminSetup?<View style={styles.card}>
    <Text style={styles.h2}>{t('Pedidos de reserva')}</Text>
    {!requests.length?<Text style={styles.muted}>{t('Ainda não há pedidos.')}</Text>:null}
    {requests.map(r=><View key={r.id} style={styles.row}>
@@ -142,7 +151,7 @@ export default function VenueManageScreen(){
     </>:null}
    </View>)}
    {requestError?<Text style={styles.error}>{requestError}</Text>:null}
-  </View>
+  </View>:null}
 
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Campos')}</Text>
@@ -219,6 +228,7 @@ export default function VenueManageScreen(){
 }
 
 const styles=StyleSheet.create({
+ admin:{color:'#fde68a',fontWeight:'600',backgroundColor:'rgba(252,211,77,.12)',padding:12,borderRadius:14},
  h1:{color:C.white,fontSize:26,fontWeight:'900',marginBottom:6},
  h2:{color:C.white,fontSize:18,fontWeight:'900'},
  state:{color:'#fcd34d',fontWeight:'800',fontSize:14,lineHeight:20,marginBottom:10},stateOn:{color:'#7ae5c5'},

@@ -4842,5 +4842,8 @@ const EN={
   "🤝 Em mão, no dia": "🤝 In person, on the day",
   "🥊 Combate": "🥊 Combat",
   "Só para maiores de 18": "Adults only (18+)",
+  "Configurar campos e horário (administração)": "Set up courts and hours (admin)",
+  "Cartaz com código QR": "Poster with QR code",
+  "Estás a configurar este recinto como administração da Jynlo. As reservas só abrem quando o recinto tiver um responsável aprovado, e é ele que responde aos pedidos.": "You are setting up this venue as a Jynlo admin. Bookings only open once the venue has an approved manager, who answers the requests.",
 };
 module.exports={EN};
