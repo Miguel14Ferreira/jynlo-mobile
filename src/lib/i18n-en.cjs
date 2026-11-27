@@ -2,6 +2,11 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Comunidade pública ou privada?": "Public or private community?",
+  "Privada: só entra quem for convidado ou aceite.": "Private: only people who are invited or accepted can join.",
+  "Pública: qualquer pessoa a pode encontrar.": "Public: anyone can find it.",
+  "Tornar pública": "Make public",
+  "Tornar privada": "Make private",
   "1 mensagem nova": "1 new message",
   "{n} mensagens novas": "{n} new messages",
   "Próximo jogo · {v}": "Next game · {v}",

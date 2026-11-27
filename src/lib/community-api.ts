@@ -23,6 +23,11 @@ export async function setCommunityPostingPolicy(id:number,membersCanPost:boolean
   if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
   return request<CommunityGroup>(`${root}/${uid(id)}/posting-policy`,{token,method:'PUT',body:{membersCanPost}});
 }
+/** Only the owner switches between public (discoverable) and private (invite or approval). */
+export async function setCommunityVisibility(id:number,visibility:'PUBLIC'|'PRIVATE',token:string):Promise<CommunityGroup>{
+  if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
+  return request<CommunityGroup>(`${root}/${uid(id)}/visibility`,{token,method:'PUT',body:{visibility}});
+}
 export async function setCommunitySessionPolicy(id:number,membersCanCreateSessions:boolean,token:string):Promise<CommunityGroup>{
   if(DEMO_MODE||!token)throw Error('Inicia sessão para alterar a comunidade.');
   return request<CommunityGroup>(`${root}/${uid(id)}/session-creation-policy`,{token,method:'PUT',body:{membersCanCreateSessions}});

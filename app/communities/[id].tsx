@@ -16,7 +16,7 @@ import {
 } from '../../src/lib/community-api';
 import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
-import {setCommunitySessionAudience,setCommunityPostingPolicy,setCommunitySessionPolicy} from '../../src/lib/community-api';
+import {setCommunitySessionAudience,setCommunityPostingPolicy,setCommunitySessionPolicy,setCommunityVisibility} from '../../src/lib/community-api';
 import {canOpenToPublic,canRestrictToMembers} from '../../src/lib/community-session-audience.cjs';
 import {useAuth} from '../../src/lib/auth';
 import {safeRedirect} from '../../src/lib/routes.cjs';
@@ -133,6 +133,20 @@ export default function CommunityDetailScreen(){
     }catch(e){
       if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));
     }finally{if(version===generation.current)setSessionPolicyBusy(false);}
+  }
+  const [visibilityBusy,setVisibilityBusy]=useState(false);
+  async function toggleVisibility(){
+    if(!auth.token||!community||role!=='OWNER'||visibilityBusy)return;
+    const version=generation.current;
+    const next=community.visibility==='PRIVATE'?'PUBLIC':'PRIVATE';
+    setVisibilityBusy(true);setError('');setNotice('');
+    try{
+      const updated=await setCommunityVisibility(id,next,auth.token);
+      if(version!==generation.current)return;
+      setCommunity(updated);setNotice(t('Configuração guardada.'));
+    }catch(e){
+      if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível guardar. Tenta novamente.'));
+    }finally{if(version===generation.current)setVisibilityBusy(false);}
   }
   const onlyOrganizersCreate=!!community&&'membersCanCreateSessions' in community&&(community as CommunityGroup).membersCanCreateSessions===false;
   const canCreateSession=owner||!onlyOrganizersCreate;
@@ -361,6 +375,14 @@ export default function CommunityDetailScreen(){
         <CommunityTeamsPanel communityId={id} isOrganizer={owner} token={auth.token}/>:null}
       {owner&&activeSection==='MANAGE'?<View style={styles.section}>
         <Eyebrow>{t('PERMISSÕES')}</Eyebrow>
+        {role==='OWNER'?<>
+          <Text style={styles.sectionTitle}>{t('Comunidade pública ou privada?')}</Text>
+          <Text style={styles.muted}>{community.visibility==='PRIVATE'
+            ?t('Privada: só entra quem for convidado ou aceite.')
+            :t('Pública: qualquer pessoa a pode encontrar.')}</Text>
+          <Button secondary disabled={visibilityBusy} title={visibilityBusy?t('A guardar…'):community.visibility==='PRIVATE'?t('Tornar pública'):t('Tornar privada')}
+            onPress={()=>{void toggleVisibility();}}/>
+        </>:null}
         <Text style={styles.sectionTitle}>{t('Quem pode criar sessões?')}</Text>
         <Text style={styles.muted}>{onlyOrganizersCreate?t('Só os organizadores'):t('Todos os membros')}</Text>
         <Button secondary disabled={sessionPolicyBusy} title={sessionPolicyBusy?t('A guardar…'):onlyOrganizersCreate?t('Deixar todos os membros criar sessões'):t('Só os organizadores criam sessões')}
