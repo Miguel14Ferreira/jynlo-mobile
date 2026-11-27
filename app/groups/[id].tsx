@@ -1,3 +1,4 @@
+import {TypingBubble} from '../../src/components/TypingBubble';
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {useChatTyping} from '../../src/lib/chat-typing';
 import {ChatMentionText} from '../../src/components/ChatMentions';
@@ -366,7 +367,7 @@ export default function GroupChatScreen(){
      onPress={()=>setPollOpen(true)} style={styles.tool}><Text style={{fontSize:20}}>📊</Text></Pressable>
     <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>{void sendPoll(text);}}/>
    </View>
-   {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
+   {typing.label?<TypingBubble label={typing.label} showName/>:null}
    <View style={styles.composer}>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:attachOpen}} accessibilityLabel={attachOpen?t('Fechar anexos'):t('Abrir anexos')}
      onPress={()=>setAttachOpen(v=>!v)} style={styles.plus}><JynloIcon name={attachOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>

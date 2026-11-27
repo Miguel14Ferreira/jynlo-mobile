@@ -1,3 +1,4 @@
+import {TypingBubble} from './TypingBubble';
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
 import {useChatTyping} from '../lib/chat-typing';
 import {useChatViewing} from '../lib/chat-viewing';
@@ -597,7 +598,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
   </View>:null}
   {auth.token&&!closed?<KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={styles.editor}>
     {reply?<ChatReplyPreview sender={reply.senderUsername} body={reply.body||reply.attachmentName||'Anexo'} onCancel={()=>setReply(null)} disabled={sending||uploading}/>:null}
-    {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
+    {typing.label?<TypingBubble label={typing.label} showName/>:null}
     <View style={styles.composer}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
       onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.plus}><JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>

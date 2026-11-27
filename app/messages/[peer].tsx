@@ -1,3 +1,4 @@
+import {TypingBubble} from '../../src/components/TypingBubble';
 import {KeyboardFrame} from '../../src/components/KeyboardFrame';
 import {useChatTyping} from '../../src/lib/chat-typing';
 import {ChatMentionText} from '../../src/components/ChatMentions';
@@ -785,7 +786,7 @@ export default function DirectConversation(){
    <View style={{flexDirection:'row',gap:10}}><Button title={mutationBusy?t('A guardar…'):t('Guardar edição')} disabled={mutationBusy||!editText.trim()} onPress={()=>void saveEdit()}/><Button secondary title={t('Cancelar edição')} disabled={mutationBusy} onPress={()=>{setEditing(null);setEditText('');}}/></View>
   </View>:null}
   {replyTarget?<View style={styles.replyPreview}><View style={{flex:1,gap:4}}><Text style={styles.replyPreviewTitle}>{t('A responder a {a}',{a:replyTarget.sender})}</Text><Text numberOfLines={2} style={styles.replyPreviewText}>{replyTarget.text}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar resposta')} onPress={()=>setReplyTarget(null)} style={styles.replyCancel}><JynloIcon name="close" size={19} color={C.mint}/></Pressable></View>:null}
-  {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
+  {typing.label?<TypingBubble label={typing.label}/>:null}
   {auth.token&&!blocked?<View style={styles.composer}>
    {blockStatusKnown?<Pressable accessibilityRole="button"
     accessibilityState={{expanded:attachmentsOpen}} onPress={()=>setAttachmentsOpen(value=>!value)}

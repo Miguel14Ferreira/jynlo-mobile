@@ -1,3 +1,4 @@
+import {TypingBubble} from './TypingBubble';
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useChatTyping} from '../lib/chat-typing';
 import {useChatViewing} from '../lib/chat-viewing';
@@ -788,7 +789,7 @@ export default function SportsTeamContentPanel({teamId,kind,token,username}:Prop
     </View>)}
    </View>
   </View>:null}
-  {kind==='chat'&&typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
+  {kind==='chat'&&typing.label?<TypingBubble label={typing.label} showName/>:null}
   <View style={kind==='chat'?styles.chatComposerRow:styles.feedComposerColumn}>
    {kind==='chat'?<Pressable accessibilityRole="button" accessibilityState={{expanded:toolsOpen}} accessibilityLabel={toolsOpen?t('Fechar anexos'):t('Abrir anexos')}
     onPress={()=>setToolsOpen(v=>!v)} style={chatLook.plus}><JynloIcon name={toolsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>:null}

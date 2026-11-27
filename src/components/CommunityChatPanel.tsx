@@ -1,3 +1,4 @@
+import {TypingBubble} from './TypingBubble';
 import {ensureChatCameraPermission} from '../lib/chat-camera-permission';
 import {chatLook} from '../lib/chat-look';
 import {useChatTyping} from '../lib/chat-typing';
@@ -644,7 +645,7 @@ export default function CommunityChatPanel({embedded=false}:{embedded?:boolean})
    <CallUpPicker visible={callUpOpen} token={auth.token} username={auth.username} onClose={()=>setCallUpOpen(false)} onPick={sessionId=>void sendCallUp(sessionId)}/>
    <PollComposer visible={pollOpen} onClose={()=>setPollOpen(false)} onSend={text=>void sendPoll(text)}/>
    <ChatMentionSuggestions draft={draft} token={auth.token} onChange={setDraft} disabled={sending||uploading||accessRevoked}/>
-   {typing.label?<Text style={chatLook.typing} accessibilityLiveRegion="polite">{typing.label}</Text>:null}
+   {typing.label?<TypingBubble label={typing.label} showName/>:null}
    {auth.token&&!accessRevoked?<View style={styles.composer}>
      <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}}
        accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
