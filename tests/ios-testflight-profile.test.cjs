@@ -21,7 +21,7 @@ test('TestFlight is a store-signed iOS build, separate from Android diagnostics'
  assert.equal(app.version,'1.2.0');
  assert.equal(app.ios.infoPlist.CFBundleDevelopmentRegion,'pt-PT','App Store must list Portuguese, not English, as the main language');
  assert.equal(app.ios.buildNumber,'2');
- assert.equal(app.android.versionCode,17,'Closed testing update 0.18.2 (14 was the first closed testing build)');
+ assert.equal(app.android.versionCode,18,'Closed testing update 1.2.0 (17 was 0.18.2; 14 was the first closed testing build)');
  assert.ok(Object.prototype.hasOwnProperty.call(eas.submit,'ios-testflight'));
 });
 
