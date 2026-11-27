@@ -1,10 +1,10 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {t} from '../lib/i18n';
-import {Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Linking,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Button,Message} from './UI';
 import {C} from '../lib/theme';
 import {money} from '../lib/format.cjs';
-import {claimPayment,confirmPayment,phoneLabel,reminderBlocked,remindUnpaid,sessionPayments,setPaymentMethod,type SessionPayments} from '../lib/session-payments-api';
+import {claimPayment,confirmPayment,onlinePaymentOnboarding,onlinePaymentStatus,phoneLabel,reminderBlocked,remindUnpaid,sessionPayments,setPaymentMethod,startOnlinePayment,type OnlinePaymentStatus,type SessionPayments} from '../lib/session-payments-api';
 
 /**
  * "Quem já pagou?" for a paid session. Players pay the organiser directly
@@ -13,7 +13,21 @@ import {claimPayment,confirmPayment,phoneLabel,reminderBlocked,remindUnpaid,sess
 export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number;token:string|null}){
  const [data,setData]=useState<SessionPayments|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[phone,setPhone]=useState(''),[mbwayDraft,setMbwayDraft]=useState(false);
+ const [online,setOnline]=useState<OnlinePaymentStatus|null>(null),[onlineDraft,setOnlineDraft]=useState(false);
  const identity=useRef('');
+ const awaitingReturn=useRef(false);
+ // Back from Stripe (payment page or the organiser's sign-up): the server already knows, so read it again.
+ useEffect(()=>{
+  const sub=AppState.addEventListener('change',state=>{
+   if(state!=='active'||!awaitingReturn.current)return;
+   awaitingReturn.current=false;
+   const key=identity.current;
+   const refresh=()=>sessionPayments(sessionId,token).then(r=>{if(identity.current===key)apply(r);}).catch(()=>{});
+   void refresh();setTimeout(()=>void refresh(),4000);
+   onlinePaymentStatus(token).then(st=>{if(identity.current===key)setOnline(st);}).catch(()=>{});
+  });
+  return()=>sub.remove();
+ },[sessionId,token]);
  useEffect(()=>{
   const key=sessionId+'|'+token;identity.current=key;setData(null);setError('');
   sessionPayments(sessionId,token).then(result=>{if(identity.current===key)apply(result);})
@@ -24,6 +38,8 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
   if(result.organiser){
    if(result.mbwayPhone)setPhone(phoneLabel(result.mbwayPhone));
    setMbwayDraft(result.method==='MBWAY');
+   setOnlineDraft(result.method==='ONLINE');
+   onlinePaymentStatus(token).then(setOnline).catch(()=>{ /* in-app payments simply stay hidden */ });
   }
  }
  async function run(action:()=>Promise<SessionPayments>){
@@ -31,6 +47,15 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
   const key=identity.current;setBusy(true);setError('');
   try{const result=await action();if(identity.current===key)apply(result);}
   catch(e){if(identity.current===key)setError(e instanceof Error&&e.message?e.message:t('Não foi possível guardar. Tenta outra vez.'));}
+  finally{setBusy(false);}
+ }
+ async function openStripe(action:()=>Promise<{url:string}>){
+  if(busy)return;
+  setBusy(true);setError('');
+  try{
+   const link=await action();
+   if(link?.url?.startsWith('https://')){awaitingReturn.current=true;await Linking.openURL(link.url);}
+  }catch(e){setError(e instanceof Error&&e.message?e.message:t('Não foi possível abrir o pagamento. Tenta outra vez.'));}
   finally{setBusy(false);}
  }
  if(!data)return error?<Message>{error}</Message>:null;
@@ -44,10 +69,20 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
   {data.organiser?<>
    <Text style={styles.label}>{t('Como se paga este jogo?')}</Text>
    <View style={styles.row}>
-    <Choice label={t('📱 MB WAY para mim')} selected={mbwayDraft} disabled={busy} onPress={()=>setMbwayDraft(true)}/>
-    <Choice label={t('🤝 Em mão, no dia')} selected={!mbwayDraft&&data.method==='IN_PERSON'} disabled={busy}
-     onPress={()=>{setMbwayDraft(false);if(data.method!=='IN_PERSON')void run(()=>setPaymentMethod(sessionId,'IN_PERSON',null,token));}}/>
+    <Choice label={t('📱 MB WAY para mim')} selected={mbwayDraft} disabled={busy} onPress={()=>{setOnlineDraft(false);setMbwayDraft(true);}}/>
+    <Choice label={t('🤝 Em mão, no dia')} selected={!mbwayDraft&&!onlineDraft&&data.method==='IN_PERSON'} disabled={busy}
+     onPress={()=>{setMbwayDraft(false);setOnlineDraft(false);if(data.method!=='IN_PERSON')void run(()=>setPaymentMethod(sessionId,'IN_PERSON',null,token));}}/>
+    {online?.available?<Choice label={t('💳 Na app (MB WAY ou cartão)')} selected={onlineDraft} disabled={busy}
+     onPress={()=>{setMbwayDraft(false);setOnlineDraft(true);if(online.chargesEnabled&&data.method!=='ONLINE')void run(()=>setPaymentMethod(sessionId,'ONLINE',null,token));}}/>:null}
    </View>
+   {onlineDraft?(online?.chargesEnabled
+    ?<Text style={styles.muted}>{data.method==='ONLINE'?t('Os jogadores pagam na app e ficam marcados como pagos automaticamente.')
+     :t('Os jogadores pagam aqui na Jynlo e ficam marcados como pagos automaticamente. O dinheiro vai direto para a tua conta Stripe, que cobra 1,5% + 0,25 € por pagamento.')}</Text>
+    :<>
+     <Text style={styles.muted}>{t('Os jogadores pagam aqui na Jynlo e ficam marcados como pagos automaticamente. O dinheiro vai direto para a tua conta Stripe, que cobra 1,5% + 0,25 € por pagamento.')}</Text>
+     <Button title={t('Ativar pagamentos na app')+' ↗'} disabled={busy} onPress={()=>void openStripe(()=>onlinePaymentOnboarding(sessionId,token))}/>
+     <Text style={styles.muted}>{t('Abre o formulário do Stripe (identificação e IBAN). Demora uns 5 minutos e só tens de o fazer uma vez.')}</Text>
+    </>):null}
    {mbwayDraft?<>
     <Text style={styles.label}>{t('O teu número MB WAY para receberes')}</Text>
     <TextInput value={phone} onChangeText={setPhone} placeholder="912 345 678" placeholderTextColor={C.muted}
@@ -71,7 +106,11 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
     :<Button secondary title={t('🔔 Lembrar quem falta ({a})',{a:pending})} disabled={busy} onPress={()=>void run(()=>remindUnpaid(sessionId,token))}/>):null}
   </>:<>
    {data.me?.confirmedAt?<Text style={styles.ok}>{t('✅ O organizador confirmou o teu pagamento.')}</Text>:<>
-    {data.method==='IN_PERSON'?<Text style={styles.text}>{t('Paga {a} ao organizador no dia do jogo.',{a:amount})}</Text>
+    {data.method==='ONLINE'?<>
+      <Button title={'💳 '+t('Pagar {a} na app',{a:amount})+' ↗'} disabled={busy} onPress={()=>void openStripe(()=>startOnlinePayment(sessionId,token))}/>
+      <Text style={styles.muted}>{t('MB WAY ou cartão. Fica marcado como pago automaticamente.')}</Text>
+     </>
+     :data.method==='IN_PERSON'?<Text style={styles.text}>{t('Paga {a} ao organizador no dia do jogo.',{a:amount})}</Text>
      :data.mbwayPhone?<>
       <Text style={styles.text}>{t('Paga {a} por MB WAY ao organizador:',{a:amount})}</Text>
       {data.payee?.fullName||data.payee?.username?<Text style={styles.muted}>{t('Número de')} <Text style={styles.text}>{data.payee?.fullName||data.payee?.username}</Text>{data.payee?.fullName&&data.payee?.username?' · @'+data.payee.username:''}</Text>:null}
@@ -81,7 +120,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
         <Text style={styles.smallText}>{t('Partilhar número')}</Text></Pressable>
       </View>
      </>:<Text style={styles.muted}>{t('O organizador ainda não indicou como pagar.')}</Text>}
-    {data.me?.claimedAt?<>
+    {data.method==='ONLINE'?null:data.me?.claimedAt?<>
      <Text style={styles.muted}>{t('⏳ Disseste que já pagaste. Falta o organizador confirmar.')}</Text>
      <Button secondary title={t('Afinal ainda não paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,false,token))}/>
     </>:<Button title={t('Já paguei')} disabled={busy} onPress={()=>void run(()=>claimPayment(sessionId,true,token))}/>}

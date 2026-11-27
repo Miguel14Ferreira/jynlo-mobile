@@ -1,6 +1,6 @@
 import {DEMO_MODE,request} from './api';
 
-export type PaymentMethod='MBWAY'|'IN_PERSON';
+export type PaymentMethod='MBWAY'|'IN_PERSON'|'ONLINE';
 export interface SessionPaymentPlayer{username:string;profilePicUrl:string|null;claimedAt:string|null;confirmedAt:string|null}
 export interface SessionPayments{
  priceAmount:number|null;organiser:boolean;method:PaymentMethod|null;mbwayPhone:string|null;
@@ -27,6 +27,14 @@ export const confirmPayment=(id:number,username:string,paid:boolean,token:string
  request<SessionPayments>(base(id)+'/players/'+encodeURIComponent(username),{token:requireToken(token),method:'PUT',body:{paid}});
 export const remindUnpaid=(id:number,token:string|null)=>
  request<SessionPayments>(base(id)+'/remind',{token:requireToken(token),method:'POST',body:{}});
+
+/** In-app payments: MB WAY or card through the organiser's own Stripe account, marked paid on their own. */
+export interface OnlinePaymentStatus{available:boolean;connected:boolean;chargesEnabled:boolean}
+export const onlinePaymentStatus=(token:string|null)=>request<OnlinePaymentStatus>('/api/payments/online/status',{token:requireToken(token)});
+export const onlinePaymentOnboarding=(id:number,token:string|null)=>
+ request<{url:string}>('/api/payments/online/onboarding',{token:requireToken(token),method:'POST',body:{returnPath:`/menu/events/${id}`}});
+export const startOnlinePayment=(id:number,token:string|null)=>
+ request<{url:string}>(base(id)+'/checkout',{token:requireToken(token),method:'POST',body:{}});
 
 export interface PreviousUnpaid{sessionId:number|null;gameDate:string|null;sport:string|null;unpaid:string[]}
 export const previousUnpaid=(id:number,token:string|null)=>
