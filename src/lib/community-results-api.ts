@@ -34,3 +34,19 @@ export async function setOverallStandings(communityId:number,token:string|null,e
  return request<CommunityCompetitionSettings>(communityPath(communityId)+'/competition/settings',{token,method:'PUT',
   body:{overallStandingsEnabled:enabled}});
 }
+
+/** Standings and games imported from a spreadsheet (the community's history before Jynlo). */
+export type HistoricalStandingRow={position:number;name:string;played:number|null;wins:number|null;draws:number|null;losses:number|null;points:number;goalsFor:number|null;goalsAgainst:number|null};
+export type HistoricalArchiveSummary={id:number;title:string;entryType:'INDIVIDUAL'|'TEAM';seasonId?:number|null;sourceFilename:string;createdAt:string};
+export type HistoricalStandingArchive=HistoricalArchiveSummary&{rows:HistoricalStandingRow[]};
+export type HistoricalMatchRow={sourceRow:number;home:string;away:string;homeScore:number;awayScore:number;sourceDate:string;sourceRound:string};
+export type HistoricalMatchArchive=HistoricalArchiveSummary&{rows:HistoricalMatchRow[]};
+
+export const listStandingArchives=(communityId:number,token:string|null)=>
+ request<HistoricalArchiveSummary[]>(`/api/communities/${communityId}/competition/standings-archives`,{token});
+export const standingArchive=(communityId:number,archiveId:number,token:string|null)=>
+ request<HistoricalStandingArchive>(`/api/communities/${communityId}/competition/standings-archives/${archiveId}`,{token});
+export const listMatchArchives=(communityId:number,token:string|null)=>
+ request<HistoricalArchiveSummary[]>(`/api/communities/${communityId}/competition/match-archives`,{token});
+export const matchArchive=(communityId:number,archiveId:number,token:string|null)=>
+ request<HistoricalMatchArchive>(`/api/communities/${communityId}/competition/match-archives/${archiveId}`,{token});

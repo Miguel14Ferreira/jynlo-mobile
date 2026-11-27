@@ -4880,5 +4880,9 @@ const EN={
   "AO VIVO": "LIVE",
   "há {n} min": "{n} min ago",
   "há {n} h": "{n} h ago",
+  "Histórico": "History",
+  "Histórico importado": "Imported history",
+  "Classificações": "Standings",
+  "Não foi possível abrir este histórico.": "Couldn't open this history.",
 };
 module.exports={EN};

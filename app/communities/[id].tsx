@@ -1,3 +1,4 @@
+import {listMatchArchives,listStandingArchives} from '../../src/lib/community-results-api';
 import {CommunityMonthLeaders} from '../../src/components/PlayerHighlights';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {t} from '../../src/lib/i18n';
@@ -29,6 +30,10 @@ import type {CommunityGroup,CommunityJoinRequest,CommunitySummary,SessionSummary
 import {sportName} from '../../src/lib/sport-names.cjs';
 const isMember=(c:CommunityGroup|CommunitySummary):c is CommunityGroup=>
   'myRole' in c && Boolean((c as CommunityGroup).myRole);
+/** Same rule as the website: a community has competitions unless both kinds were turned off. */
+function hasCompetitions(c:{individualTournamentsEnabled?:boolean;teamTournamentsEnabled?:boolean}){
+  return c.individualTournamentsEnabled!==false||c.teamTournamentsEnabled!==false;
+}
 export default function CommunityDetailScreen(){
  const [zoomPhoto,setZoomPhoto]=useState<ExpandedPostPhotos|null>(null);
   const params=useLocalSearchParams<{id:string;created?:string;returnTo?:string}>();const id=Number(params.id);
@@ -44,6 +49,7 @@ export default function CommunityDetailScreen(){
   const [activeSection,setActiveSection]=useState<'OVERVIEW'|'FEED'|'SESSIONS'|'CHAT'|'MEMBERS'|'MANAGE'>('OVERVIEW');
   const [sessions,setSessions]=useState<SessionSummary[]>([]);
   const [sessionsError,setSessionsError]=useState('');
+  const [hasArchives,setHasArchives]=useState(false);
   const [audienceBusy,setAudienceBusy]=useState<number|null>(null),[audienceError,setAudienceError]=useState('');
   const [requests,setRequests]=useState<CommunityJoinRequest[]>([]);
   const [requestsError,setRequestsError]=useState('');
@@ -71,6 +77,10 @@ export default function CommunityDetailScreen(){
       }
       if(auth.token&&auth.username&&isMember(c)){
         setMyRequest(null);
+        setHasArchives(false);
+        void Promise.allSettled([listStandingArchives(id,auth.token),listMatchArchives(id,auth.token)]).then(res=>{
+          if(version===generation.current)setHasArchives(res.some(x=>x.status==='fulfilled'&&Array.isArray(x.value)&&x.value.length>0));
+        });
         try{
           const next=await communitySessions(id,auth.token,auth.username);
           if(version!==generation.current)return;
@@ -314,8 +324,16 @@ export default function CommunityDetailScreen(){
       {teamDestination&&!role&&myRequest?<Message>{t('O pedido está pendente. Quando for aprovado, verifica novamente a adesão para continuares para a equipa.')}</Message>:null}
       {teamDestination&&!role&&auth.token&&!loading?<Button secondary title={t('Verificar aprovação da comunidade')} disabled={busy} onPress={()=>{void reload();}}/>:null}
       {role?<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionNav} contentContainerStyle={styles.sectionNavContent} accessibilityLabel={t('Secções da comunidade')}>
-        {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Sessões')},{id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
-         accessibilityState={{selected:activeSection===tab.id}} onPress={()=>{if(tab.id==='CHAT')openChat();else setActiveSection(tab.id);}}
+        {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Jogos')},
+          ...((isMember(community)&&(community.rankingsEnabled||hasCompetitions(community)))||hasArchives?[{id:'RANKING',label:isMember(community)&&community.rankingsEnabled?t('Classificação'):t('Histórico')}]:[]),
+          ...(isMember(community)&&hasCompetitions(community)?[{id:'COMPETITIONS',label:t('Competições')}]:[]),
+          {id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
+         accessibilityState={{selected:activeSection===tab.id}} onPress={()=>{
+          // Chat, standings and competitions open their own screens, like on the website's tabs.
+          if(tab.id==='CHAT')openChat();
+          else if(tab.id==='RANKING')router.push({pathname:'/communities/[id]/results',params:{id:String(id)}});
+          else if(tab.id==='COMPETITIONS')router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}});
+          else setActiveSection(tab.id as typeof activeSection);}}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>
          <Text style={[styles.sectionTabText,activeSection===tab.id&&styles.sectionTabTextSelected]}>{tab.label}</Text>
         </Pressable>)}

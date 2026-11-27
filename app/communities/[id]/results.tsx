@@ -1,3 +1,4 @@
+import {HistoricalArchives} from '../../../src/components/HistoricalArchives';
 import React,{useCallback,useMemo,useState} from 'react';
 import {t} from '../../../src/lib/i18n';
 import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -197,6 +198,7 @@ export default function CommunityResultsScreen(){
    })}
    {results.rounds.length>8?<Button secondary title={showAll?t('Mostrar menos'):t('Ver todas as jornadas')} onPress={()=>setShowAll(v=>!v)}/>:null}
   </View>:null}
+  {Number.isSafeInteger(id)&&id>0&&auth.token?<HistoricalArchives communityId={id} token={auth.token}/>:null}
   <Button secondary title={t('Voltar à comunidade')} onPress={()=>router.back()}/>
  </Page>;
 }
