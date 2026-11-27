@@ -4,12 +4,14 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {useAuth} from '../lib/auth';
 import {mySessions} from '../lib/parity-api';
-import {myCommunities} from '../lib/community-api';
+import {myCommunities,searchCommunities} from '../lib/community-api';
+import {discoverSessions} from '../lib/api';
+import {pickOpenGames,pickCommunitySuggestions} from '../lib/home-suggestions.cjs';
 import {organizeMySessions} from '../lib/my-sessions-core.cjs';
 import {formatDate} from '../lib/format.cjs';
 import {MobileTheme} from '../lib/theme';
 import {JynloIcon} from '../components/JynloIcon';
-import type {CommunityGroup,SessionSummary} from '../lib/types';
+import type {CommunityGroup,CommunitySummary,SessionSummary} from '../lib/types';
 import {sportName} from '../lib/sport-names.cjs';
 import {communitySummaries} from '../lib/chat-api';
 import {communityNews,unreadMap} from '../lib/home-community-news.cjs';
@@ -30,6 +32,8 @@ export function HomeUpNext(){
  const [communities,setCommunities]=useState<CommunityGroup[]>([]);
  const [failed,setFailed]=useState(false);
  const [unread,setUnread]=useState<Map<string,number>>(new Map());
+ const [openGames,setOpenGames]=useState<SessionSummary[]>([]);
+ const [suggested,setSuggested]=useState<CommunitySummary[]>([]);
  const generation=useRef(0);
  useFocusEffect(useCallback(()=>{
   const version=++generation.current;
@@ -45,6 +49,18 @@ export function HomeUpNext(){
    }else{setGames(null);setFailed(true);}
    const mine=groups.status==='fulfilled'?groups.value:[];
    setCommunities(mine);
+   // A new account should not land on an empty home: show open games and public communities to join.
+   const myGames=sessions.status==='fulfilled'?(organizeMySessions(sessions.value) as {upcoming:{items:SessionSummary[]}[]}).upcoming.flatMap(g=>g.items):[];
+   if(sessions.status==='fulfilled'&&!myGames.length){
+    void discoverSessions({availableOnly:true,sort:'date'},token,username).then(list=>{
+     if(version===generation.current)setOpenGames(pickOpenGames(list,[],Date.now()) as SessionSummary[]);
+    }).catch(()=>{if(version===generation.current)setOpenGames([]);});
+   }else setOpenGames([]);
+   if(groups.status==='fulfilled'&&!mine.length){
+    void searchCommunities('','',0).then(found=>{
+     if(version===generation.current)setSuggested(pickCommunitySuggestions(found.communities,[]) as CommunitySummary[]);
+    }).catch(()=>{if(version===generation.current)setSuggested([]);});
+   }else setSuggested([]);
    // Unread counts are a bonus: without them the row falls back to the next game or members.
    const shown=mine.slice(0,MAX_COMMUNITIES);
    if(!shown.length){setUnread(new Map());return;}
@@ -75,6 +91,17 @@ export function HomeUpNext(){
    </Pressable>)
    :<View style={styles.empty}>
     <Text style={styles.gameMeta}>{t('Ainda não tens jogos marcados.')}</Text>
+    {openGames.length?<Text style={styles.subtitle}>{t('Jogos abertos com vagas')}</Text>:null}
+    {openGames.map(game=><Pressable key={game.id} accessibilityRole="button"
+      accessibilityLabel={t('{sport} em {city}, {date}',{sport:sportName(game.sport),city:game.city,date:formatDate(game.gameDate)})}
+      onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(game.id)}})} style={styles.game}>
+      <View style={styles.gameIcon}><JynloIcon name="session" size={22} color={colors.accent}/></View>
+      <View style={{flex:1,gap:2}}>
+       <Text style={styles.gameTitle} numberOfLines={1}>{sportName(game.sport)} · {game.city}</Text>
+       <Text style={styles.news} numberOfLines={1}>{t('{a} · faltam {n}',{a:formatDate(game.gameDate),n:Math.max(0,game.maxParticipants-game.participantCount)})}</Text>
+      </View>
+      <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+     </Pressable>)}
     <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/explore')} style={styles.primary}>
      <Text style={styles.primaryText}>{t('Encontrar um jogo')}</Text>
     </Pressable>
@@ -102,6 +129,24 @@ export function HomeUpNext(){
      <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
     </Pressable>;
    })}
+  </View>:null}
+  {!communities.length&&suggested.length?<View style={styles.communities}>
+   <View style={styles.head}>
+    <Text style={styles.subtitle}>{t('Comunidades para te juntares')}</Text>
+    <Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.link}>
+     <Text style={styles.linkText}>{t('Ver todas')}</Text>
+    </Pressable>
+   </View>
+   {suggested.map(group=><Pressable key={group.id} accessibilityRole="button"
+     accessibilityLabel={t('Abrir comunidade {v}',{v:group.name})}
+     onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(group.id)}})} style={styles.community}>
+     <View style={styles.communityAvatar}><Text style={styles.communityInitial}>{(group.name||'?').trim().charAt(0).toUpperCase()}</Text></View>
+     <View style={{flex:1,gap:2}}>
+      <Text style={styles.gameTitle} numberOfLines={1}>{group.name}</Text>
+      {group.sport?<Text style={styles.gameMeta} numberOfLines={1}>{sportName(group.sport)}</Text>:null}
+     </View>
+     <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+    </Pressable>)}
   </View>:null}
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
    {communities.length?null:<Pressable accessibilityRole="button" onPress={()=>router.push('/communities')} style={styles.chip}>
