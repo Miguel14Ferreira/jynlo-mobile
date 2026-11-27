@@ -14,7 +14,8 @@ import {
   joinPublicCommunity,myPendingCommunityRequest,pendingCommunityRequests,requestCommunityMembership,
   rejectCommunityRequest,leaveCommunity,removeCommunityMember,setCommunityMemberRole,transferCommunityOwnership
 } from '../../src/lib/community-api';
-import {communityUrl,communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
+import {communitySports,describeCommunitySports} from '../../src/lib/community-core.cjs';
+import {communityShareUrl} from '../../src/lib/share-links.cjs';
 import type {CommunityFollowState} from '../../src/lib/community-api';
 import {setCommunitySessionAudience,setCommunityPostingPolicy,setCommunitySessionPolicy,setCommunityVisibility} from '../../src/lib/community-api';
 import {canOpenToPublic,canRestrictToMembers} from '../../src/lib/community-session-audience.cjs';
@@ -263,7 +264,7 @@ export default function CommunityDetailScreen(){
     if(!owner||!community)return;
     if(DEMO_MODE){setNotice(t('Na demonstração, os convites funcionam entre Tiago e André, sem links para comunidades fictícias.'));return;}
     const version=generation.current;
-    try{await Share.share({message:`Junta-te à comunidade ${community.name} na Jynlo!\n${communityUrl(id)}`,url:communityUrl(id)});}
+    try{await Share.share({message:`Junta-te à comunidade ${community.name} na Jynlo!\n${communityShareUrl(id)}`,url:communityShareUrl(id)});}
     catch{if(version===generation.current)setError(t('Não foi possível abrir a partilha.'));}
   }
   return <Page><DemoBanner/>

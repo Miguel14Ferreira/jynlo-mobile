@@ -1,4 +1,5 @@
 import React,{useCallback,useRef,useState} from 'react';
+import {sessionShareUrl} from '../../src/lib/share-links.cjs';
 import {t} from '../../src/lib/i18n';
 import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
@@ -397,7 +398,7 @@ export default function SessionScreen(){
       message:`🏟️ ${t('{sport} na Jynlo',{sport:sportName(s?.sport)||t('Sessão desportiva')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta a sessão e confirma a presença: {url}',{url})}`,
       url
     }).catch(()=>setFeedback(t('Não foi possível abrir a partilha. Tenta novamente.')));
-    const publicUrl=`https://jynlosports.com/sessions/${id}`;
+    const publicUrl=sessionShareUrl(id);
     if(!owner||!auth.token||!detail){void send(publicUrl);return;}
     Alert.alert(t('Partilhar sessão'),
       t('A ligação normal não altera convites existentes. Um convite sem conta permite confirmar presença como convidado, mas criar um novo invalida os convites anteriores.'),
