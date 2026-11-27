@@ -27,7 +27,9 @@ export function Page({children,scroll=true,autoScrollToEnd=false}:{children:Reac
   const pathname=usePathname();
   // Stack screens declared with headerShown:false in app/_layout.tsx keep the top inset.
   const headerless=/^\/(welcome|communities\/[^/]+\/chat|messages\/(?!call$|requests$)[^/]+)$/.test(pathname||'');
-  try{const state=navigation?.getState?.();underHeader=!headerless&&state?.type==='stack'&&(state.index??0)>0;}catch{underHeader=false;}
+  // Any screen of the root stack has the native title bar (tab screens belong to the tab navigator), even when
+  // it is the first in the stack (opened from a link): checking the index left a big empty band on those.
+  try{const state=navigation?.getState?.();underHeader=!headerless&&(state?.type==='stack'||(!state&&!!navigation?.canGoBack?.()));}catch{underHeader=false;}
   // react-native-keyboard-controller follows the real keyboard frame on Android
   // edge-to-edge and iOS alike: the focused field (and the next one) is scrolled
   // above the keyboard, and the bottom of the page gets the keyboard's height.
@@ -50,7 +52,7 @@ export function Brand({subtitle}:{subtitle?:string}){
   // JYNLO header there only pushes the content down. Keep it on the main tabs.
   let pushed=false;
   const navigation=useNavigation();
-  try{const state=navigation?.getState?.();pushed=state?.type==='stack'&&(state.index??0)>0;}catch{pushed=false;}
+  try{const state=navigation?.getState?.();pushed=state?.type==='stack'||(!state&&!!navigation?.canGoBack?.());}catch{pushed=false;}
   if(pushed)return null;
   return <View style={styles.brandRow}>
     <Image source={require('../../assets/jynlo-icon.png')} style={styles.logo} />

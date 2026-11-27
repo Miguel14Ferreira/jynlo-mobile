@@ -33,7 +33,7 @@ test('discovery, inbox, profile and tournament filters remain usable on touch de
  assert.match(explore,/onPress=\{\(\)=>\{void load\(\);\}\}/);
  assert.match(inbox,/kindChip:\{minHeight:44/);
  assert.match(profile,/favoriteHeading:\{color:MobileTheme\.colors\.muted,fontSize:12/);
- assert.match(tournaments,/filterLabel:\{color:C\.muted,fontWeight:'800',fontSize:12/);
+ assert.match(tournaments,/search:\{minHeight:44/);
  assert.match(tournaments,/chip:\{minHeight:44,justifyContent:'center'/);
 });
 test('tournament empty, error and filtered states all offer recovery',()=>{
