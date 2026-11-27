@@ -1,3 +1,4 @@
+import {FriendsGoing} from '../components/FriendsGoing';
 import React,{useCallback,useRef,useState} from 'react';
 import {t} from '../lib/i18n';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
@@ -99,6 +100,7 @@ export function HomeUpNext(){
       <View style={{flex:1,gap:2}}>
        <Text style={styles.gameTitle} numberOfLines={1}>{sportName(game.sport)} · {game.city}</Text>
        <Text style={styles.news} numberOfLines={1}>{t('{a} · faltam {n}',{a:formatDate(game.gameDate),n:Math.max(0,game.maxParticipants-game.participantCount)})}</Text>
+       <FriendsGoing sessionId={game.id}/>
       </View>
       <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
      </Pressable>)}

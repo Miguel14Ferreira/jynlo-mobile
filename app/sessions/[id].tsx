@@ -1,3 +1,4 @@
+import {FriendsGoing} from '../../src/components/FriendsGoing';
 import React,{useCallback,useRef,useState} from 'react';
 import {sessionShareUrl} from '../../src/lib/share-links.cjs';
 import {t} from '../../src/lib/i18n';
@@ -768,6 +769,7 @@ export default function SessionScreen(){
           <View style={{flex:1,gap:3}}>
            <Text style={styles.rosterTitle}>{t('Quem vai')}</Text>
            <Text style={styles.hint}>{rosterError?t('Lista por confirmar'):t('{count} participantes visíveis',{count:participants.length})}</Text>
+           <FriendsGoing sessionId={id}/>
           </View>
           <Text maxFontSizeMultiplier={1.3} style={styles.chatDisclosureSymbol}>{showParticipantRoster?'−':'+'}</Text>
         </Pressable>

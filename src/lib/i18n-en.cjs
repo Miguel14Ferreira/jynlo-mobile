@@ -4888,5 +4888,8 @@ const EN={
   "As notificações estão desligadas": "Notifications are off",
   "Com a app fechada não vais saber de mensagens, convites e jogos. Liga-as para não perderes nada.": "With the app closed you won't hear about messages, invites and games. Turn them on so you don't miss anything.",
   "Ativar notificações": "Turn on notifications",
+  "{name} vai": "{name} is going",
+  "{name} e mais 1 amigo vão": "{name} and 1 more friend are going",
+  "{name} e mais {n} amigos vão": "{name} and {n} more friends are going",
 };
 module.exports={EN};

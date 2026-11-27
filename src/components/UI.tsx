@@ -7,6 +7,7 @@ import {useNavigation,usePathname} from 'expo-router';
 import {DEMO_MODE} from '../lib/api';
 import {C,MobileTheme} from '../lib/theme';
 import {JynloIcon} from './JynloIcon';
+import {FriendsGoing} from './FriendsGoing';
 import type {SessionSummary} from '../lib/types';
 import {formatDate,money} from '../lib/format.cjs';
 import {sessionCardStatus,participationProgress} from '../lib/session-card-core.cjs';
@@ -115,6 +116,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
         <View style={{flexDirection:'row',alignItems:'center',gap:4}}><JynloIcon name="location" size={14} color={MobileTheme.colors.muted}/><Text style={styles.cardCity} numberOfLines={1}>{location||t('Local a confirmar')}</Text></View>
         {isLevel(session.skillLevel)?<Text style={styles.cardLevel}>🎯 {levelLabel(session.skillLevel)}</Text>:null}
         {session.courtBooked===true?<Text style={styles.cardLevel}>{t('✓ Campo reservado')}</Text>:null}
+        <FriendsGoing sessionId={session.id}/>
       </View>
       <JynloIcon name="chevron-right" size={25} color={MobileTheme.colors.accent}/>
     </View>

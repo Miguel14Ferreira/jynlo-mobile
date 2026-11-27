@@ -10,6 +10,7 @@ import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/com
 import {discoverSessions} from '../../src/lib/api';
 import {SPORTS} from '../../src/lib/sports';
 import {useAuth} from '../../src/lib/auth';
+import {friendsFirst} from '../../src/lib/friends-going';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
@@ -94,6 +95,8 @@ export default function DiscoverScreen(){
        ...(mapArea?{...mapArea,sort:'distance' as const}:{})},auth.token,auth.username||undefined);
      if(version===loadVersion.current){
        setSessions(next);setSelectedPin(null);
+       // Games with friends go first (only for the list sorted by relevance, not by distance on the map).
+       if(!mapArea&&auth.token)void friendsFirst(next,auth.token).then(sorted=>{if(version===loadVersion.current&&sorted!==next)setSessions(sorted);});
        const custom=next.map(session=>session.sport).filter(name=>name&&!SPORTS.includes(name));
        if(custom.length)setDiscoveredCustomSports(previous=>[...new Set([...previous,...custom])].slice(-40));
      }
