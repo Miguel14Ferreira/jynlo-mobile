@@ -6,6 +6,7 @@ const root=path.join(__dirname,'..');
 
 /** Screens already translated: no visible Portuguese may be added without t(). */
 const TRANSLATED=[
+ 'app/communities/[id]/stats.tsx',
  'app/welcome.tsx',
  'app/login.tsx',
  'app/search.tsx',

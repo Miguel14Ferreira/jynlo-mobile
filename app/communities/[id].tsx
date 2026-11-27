@@ -326,12 +326,14 @@ export default function CommunityDetailScreen(){
       {role?<ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sectionNav} contentContainerStyle={styles.sectionNavContent} accessibilityLabel={t('Secções da comunidade')}>
         {([{id:'OVERVIEW',label:t('Visão geral')},{id:'FEED',label:t('Feed')},{id:'SESSIONS',label:t('Jogos')},
           ...((isMember(community)&&(community.rankingsEnabled||hasCompetitions(community)))||hasArchives?[{id:'RANKING',label:isMember(community)&&community.rankingsEnabled?t('Classificação'):t('Histórico')}]:[]),
+          ...(isMember(community)&&community.rankingsEnabled?[{id:'STATS',label:t('Estatísticas')}]:[]),
           ...(isMember(community)&&hasCompetitions(community)?[{id:'COMPETITIONS',label:t('Competições')}]:[]),
           {id:'CHAT',label:t('Chat')},{id:'MEMBERS',label:t('Membros')}] as const).map(tab=><Pressable key={tab.id} accessibilityRole="tab"
          accessibilityState={{selected:activeSection===tab.id}} onPress={()=>{
           // Chat, standings and competitions open their own screens, like on the website's tabs.
           if(tab.id==='CHAT')openChat();
           else if(tab.id==='RANKING')router.push({pathname:'/communities/[id]/results',params:{id:String(id)}});
+          else if(tab.id==='STATS')router.push({pathname:'/communities/[id]/stats',params:{id:String(id)}});
           else if(tab.id==='COMPETITIONS')router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}});
           else setActiveSection(tab.id as typeof activeSection);}}
          style={[styles.sectionTab,activeSection===tab.id&&styles.sectionTabSelected]}>

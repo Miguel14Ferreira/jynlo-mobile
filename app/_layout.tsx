@@ -211,6 +211,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="nearby-alerts" options={{title:t("Jogos perto de ti")}}/>
     <Stack.Screen name="communities/[id]/championships/fixture" options={{title:t("Calendário do campeonato")}}/>
     <Stack.Screen name="communities/[id]/results" options={{title:t("Resultados da comunidade")}}/>
+    <Stack.Screen name="communities/[id]/stats" options={{title:t("Estatísticas")}}/>
     <Stack.Screen name="sessions/[id]/result" options={{title:t("Resultado da sessão")}}/>
     <Stack.Screen name="stories/replies" options={{title:t("Respostas às Stories")}}/>
     <Stack.Screen name="my-sessions" options={{title:t("As minhas sessões")}}/>
