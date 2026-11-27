@@ -1,7 +1,7 @@
 import React,{useEffect,useRef} from 'react';
-import {View} from 'react-native';
+import {AppState,View} from 'react-native';
 import {LanguageProvider,t,useLanguage} from '../src/lib/i18n';
-import {autoEnablePushOnce,configureForegroundNotifications,refreshPushLanguage} from '../src/lib/mobile-push';
+import {configureForegroundNotifications,keepPushRegistered,refreshPushLanguage} from '../src/lib/mobile-push';
 import {pushDeliveryReady} from '../src/lib/push-device-api';
 import type * as NotificationTypes from 'expo-notifications';
 import {getNativeNotifications} from '../src/lib/optional-notifications.cjs';
@@ -115,11 +115,20 @@ function PushAutoOptIn(){
     const timer=setTimeout(()=>{
       fired=true;
       void configureForegroundNotifications();
-      void pushDeliveryReady(token).then(ready=>{if(ready)void autoEnablePushOnce(username,token);}).catch(()=>{});
+      void pushDeliveryReady(token).then(ready=>{if(ready)void keepPushRegistered(username,token);}).catch(()=>{});
     },2500);
     // Leaving the screen early re-arms the check; once it ran, it stays done for this account.
     return()=>{clearTimeout(timer);if(!fired&&attempted.current===account)attempted.current=null;};
   },[auth.ready,auth.token,auth.username,pathname]);
+  // Coming back to the app: make sure the phone is still registered (throttled inside).
+  useEffect(()=>{
+    if(!auth.ready||!auth.token||!auth.username)return;
+    const username=auth.username,token=auth.token;
+    const sub=AppState.addEventListener('change',state=>{
+      if(state==='active')void pushDeliveryReady(token).then(ready=>{if(ready)void keepPushRegistered(username,token);}).catch(()=>{});
+    });
+    return()=>sub.remove();
+  },[auth.ready,auth.token,auth.username]);
   return null;
 }
 function ErrorRouteTracker(){const pathname=usePathname();useEffect(()=>{setErrorRoute(pathname);},[pathname]);return null;}

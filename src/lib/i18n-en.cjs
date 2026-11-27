@@ -4885,5 +4885,8 @@ const EN={
   "Não pagou": "Did not pay",
   "Não apareceu": "Did not show up",
   "Comportamento": "Behaviour",
+  "As notificações estão desligadas": "Notifications are off",
+  "Com a app fechada não vais saber de mensagens, convites e jogos. Liga-as para não perderes nada.": "With the app closed you won't hear about messages, invites and games. Turn them on so you don't miss anything.",
+  "Ativar notificações": "Turn on notifications",
 };
 module.exports={EN};

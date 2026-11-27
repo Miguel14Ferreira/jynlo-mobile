@@ -22,6 +22,7 @@ import {attendanceDigest,isDigestAttendance,attendanceTitle} from '../../src/lib
 import {readHiddenFeedEntries,writeHiddenFeedEntries} from '../../src/lib/feed-visibility-store';
 import {groupStories,validateMedia} from '../../src/lib/social-feed-core.cjs';
 import {HomeUpNext} from '../../src/features/home-up-next';
+import {PushOffBanner} from '../../src/components/PushOffBanner';
 import {albumError,appendAlbumSelection,moveAlbumItem,postMediaItems,MAX_ALBUM_ITEMS} from '../../src/lib/post-album.cjs';
 import {uncertainPostOutcome} from '../../src/lib/post-publish-uncertainty.cjs';
 import {sharedPostLink} from '../../src/lib/shared-post-link.cjs';
@@ -1430,6 +1431,7 @@ export default function JynloFeedHome(){
       <Pressable onPress={()=>router.push('/notifications')} style={styles.headerCircle} accessibilityLabel={t('Notificações')}><JynloIcon name="notifications" color={WHITE} size={22}/>{unreadNotifications>0&&identityMatches?<View style={styles.pulse} accessibilityLabel={t('{n} notificações por ler',{n:unreadNotifications})}/>:null}</Pressable>
       <Pressable onPress={()=>router.push(auth.token?'/(tabs)/profile':'/login')} style={styles.headerUser} accessibilityLabel={auth.token?t('Perfil e conta ativa'):t('Iniciar sessão')}><CircleAvatar name={auth.username||t('Visitante')} image={myProfilePhoto} size={32}/><Text maxFontSizeMultiplier={1.2} style={styles.headerName} numberOfLines={1}>{auth.username||t('Entrar')}</Text></Pressable></View></View>
     {DEMO_MODE?<View style={styles.demoRibbon}><Text style={styles.demoRibbonText}>{t('◉ PRÉVIA LOCAL  ·  DADOS DE DEMONSTRAÇÃO')}</Text></View>:null}
+    <PushOffBanner/>
     <HomeUpNext/>
     <View style={styles.storiesCard}>
       <SectionHeader eyebrow={t('MOMENTOS DESPORTIVOS')} title={t('Stories')}/>

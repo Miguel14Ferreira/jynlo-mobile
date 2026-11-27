@@ -174,6 +174,56 @@ export async function autoEnablePushOnce(username:string,token:string):Promise<v
  }
 }
 
+const LAST_SYNC_KEY='jynlo.mobile.push.lastSync.';
+const LAST_ASK_KEY='jynlo.mobile.push.lastAsk.';
+const RESYNC_MS=12*60*60*1000;
+const REASK_MS=7*24*60*60*1000;
+
+/**
+ * Keeps this phone able to receive notifications with the app closed. Runs on every start and when the
+ * app comes back: with the permission already given it registers the device again (the push token can
+ * change, or the server may have dropped it); without it, asks again at most once a week while the
+ * system still allows asking. Never takes over a device registered to another account; never throws.
+ */
+export async function keepPushRegistered(username:string,token:string):Promise<'registered'|'blocked'|'skipped'>{
+ if(DEMO_MODE||!username||!token||(Platform.OS!=='android'&&Platform.OS!=='ios'))return 'skipped';
+ if(!androidPushConfigured()||pushOptInPending)return 'skipped';
+ const account=username.toLowerCase().replace(/[^a-z0-9._-]/g,'_');
+ try{
+  const other=await SecureStore.getItemAsync(REGISTERED_ACCOUNT_KEY);
+  if(other&&other!==username.toLowerCase())return 'skipped';
+  const Notifications=await import('expo-notifications');
+  const current=await Notifications.getPermissionsAsync();
+  const now=Date.now();
+  if(current.granted){
+   const last=Number(await SecureStore.getItemAsync(LAST_SYNC_KEY+account)||0);
+   if(other===username.toLowerCase()&&now-last<RESYNC_MS)return 'registered';
+   await enableMobilePush(username,token);
+   await SecureStore.setItemAsync(LAST_SYNC_KEY+account,String(now));
+   return 'registered';
+  }
+  if(current.canAskAgain===false)return 'blocked';
+  const asked=Number(await SecureStore.getItemAsync(LAST_ASK_KEY+account)||0);
+  if(now-asked<REASK_MS)return 'skipped';
+  await SecureStore.setItemAsync(LAST_ASK_KEY+account,String(now));
+  await enableMobilePush(username,token);
+  await SecureStore.setItemAsync(LAST_SYNC_KEY+account,String(now));
+  return 'registered';
+ }catch{
+  return 'skipped';
+ }
+}
+
+/** For the home banner: are phone notifications off for this app? */
+export async function pushPermissionState():Promise<'granted'|'ask'|'blocked'|'unknown'>{
+ if(DEMO_MODE||(Platform.OS!=='android'&&Platform.OS!=='ios')||!androidPushConfigured())return 'unknown';
+ try{
+  const Notifications=await import('expo-notifications');
+  const current=await Notifications.getPermissionsAsync();
+  return current.granted?'granted':current.canAskAgain===false?'blocked':'ask';
+ }catch{return 'unknown';}
+}
+
 export async function disableMobilePush(username:string,token:string):Promise<void>{
  // Invalidate an opt-in still waiting for native permission, Firebase or HTTP.
  invalidatePendingPushRegistration();
