@@ -2,7 +2,10 @@ import {request} from './api';
 
 export interface BookingCourt {id:number;name:string;sport:string|null;priceCents:number|null;slotMinutes:number;active:boolean}
 export interface BookingHours {dayOfWeek:number;openTime:string;closeTime:string}
-export interface BookingOffer {venueId:number;acceptsBookings:boolean;courts:BookingCourt[];hours:BookingHours[];paymentMethod?:'MBWAY'|'IN_PERSON'|null;mbwayPhone?:string|null}
+/** ONLINE: paid in the app into the venue's own Stripe account and marked paid automatically. */
+export type VenuePayMethod='MBWAY'|'IN_PERSON'|'ONLINE';
+export interface VenueOnlineStatus {available:boolean;connected:boolean;chargesEnabled:boolean}
+export interface BookingOffer {venueId:number;acceptsBookings:boolean;courts:BookingCourt[];hours:BookingHours[];paymentMethod?:VenuePayMethod|null;mbwayPhone?:string|null}
 export interface BookingSlot {start:string;end:string;free:boolean}
 export interface CourtSlots {courtId:number;name:string;sport:string|null;priceCents:number|null;slotMinutes:number;slots:BookingSlot[]}
 export interface DaySlots {venueId:number;date:string;courts:CourtSlots[]}
@@ -12,9 +15,9 @@ export interface VenueBooking {
  id:number;venueId:number;venueName:string|null;courtId:number;courtName:string|null;requesterUsername:string;
  startAt:string;endAt:string;status:BookingStatus;priceCents:number|null;playerNote:string|null;ownerNote:string|null;
  sessionId:number|null;createdAt:string;decidedAt:string|null;
- paymentMethod?:'MBWAY'|'IN_PERSON'|null;mbwayPhone?:string|null;paidClaimedAt?:string|null;paidConfirmedAt?:string|null;
+ paymentMethod?:VenuePayMethod|null;mbwayPhone?:string|null;paidClaimedAt?:string|null;paidConfirmedAt?:string|null;
 }
-export interface VenueAvailability {venueId:number;name:string;city:string|null;district:string|null;latitude:number|null;longitude:number|null;paymentMethod:'MBWAY'|'IN_PERSON'|null;courts:CourtSlots[]}
+export interface VenueAvailability {venueId:number;name:string;city:string|null;district:string|null;latitude:number|null;longitude:number|null;paymentMethod:VenuePayMethod|null;courts:CourtSlots[]}
 export interface ManagedVenue {venueId:number;name:string;city:string;pendingRequests:number;acceptsBookings:boolean}
 export interface CourtInput {id?:number|null;name:string;sport?:string|null;priceCents?:number|null;slotMinutes:number;active:boolean}
 
@@ -40,8 +43,11 @@ export const saveCourts=(venueId:number,token:string,courts:CourtInput[])=>
  request<BookingOffer>(`/api/venues/${venueId}/management/courts`,{token,method:'PUT',body:courts});
 export const saveHours=(venueId:number,token:string,hours:BookingHours[])=>
  request<BookingOffer>(`/api/venues/${venueId}/management/hours`,{token,method:'PUT',body:hours});
-export const saveVenuePayment=(venueId:number,token:string,method:'MBWAY'|'IN_PERSON'|null,phone:string|null)=>
+export const saveVenuePayment=(venueId:number,token:string,method:VenuePayMethod|null,phone:string|null)=>
  request<BookingOffer>(`/api/venues/${venueId}/management/payment`,{token,method:'PUT',body:{method,phone}});
+export const venueOnlineStatus=(venueId:number,token:string)=>request<VenueOnlineStatus>(`/api/venues/${venueId}/management/online-payments`,{token});
+export const venueOnlineOnboarding=(venueId:number,token:string)=>request<{url:string}>(`/api/venues/${venueId}/management/online-payments/onboarding`,{token,method:'POST',body:{}});
+export const bookingCheckout=(id:number,token:string)=>request<{url:string}>(`/api/venue-bookings/${id}/checkout`,{token,method:'POST',body:{}});
 export const markBookingPaid=(id:number,token:string,paid:boolean)=>request<VenueBooking>(`/api/venue-bookings/${id}/paid`,{token,method:'POST',body:{paid}});
 export const confirmBookingPaid=(id:number,token:string,paid:boolean)=>request<VenueBooking>(`/api/venue-bookings/${id}/payment-received`,{token,method:'POST',body:{paid}});
 export const venueRequests=(venueId:number,token:string)=>request<VenueBooking[]>(`/api/venues/${venueId}/management/requests`,{token});

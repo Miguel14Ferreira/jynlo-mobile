@@ -103,7 +103,7 @@ export default function BookCourtScreen(){
   {results.map(v=><View key={v.venueId} style={styles.card}>
    <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/venues/[id]',params:{id:String(v.venueId)}})}>
     <Text style={styles.venueName}>{v.name}</Text></Pressable>
-   <Text style={styles.muted}>{v.city}{v.paymentMethod==='MBWAY'?' · '+t('Aceita MB WAY'):''}</Text>
+   <Text style={styles.muted}>{v.city}{v.paymentMethod==='MBWAY'?' · '+t('Aceita MB WAY'):v.paymentMethod==='ONLINE'?' · '+t('Pagamento na app'):''}</Text>
    {v.courts.map(c=><View key={c.courtId} style={styles.court}>
     <Text style={styles.strong}>{c.name}{c.sport?' · '+c.sport:''}{formatPrice(c.priceCents,language)?' · '+formatPrice(c.priceCents,language):''}</Text>
     <View style={styles.slots}>
@@ -117,7 +117,7 @@ export default function BookCourtScreen(){
        placeholder={t('Mensagem para o recinto (opcional)')} placeholderTextColor={C.muted}/>
       <Button title={busy?t('A enviar…'):t('Pedir reserva')} disabled={busy} onPress={()=>{void send();}}/>
       <Button secondary title={t('Cancelar')} onPress={()=>setPicked(null)}/>
-      <Text style={styles.muted}>{v.paymentMethod==='MBWAY'?t('Depois de o recinto confirmar, pagas por MB WAY.'):t('Pagas no recinto.')}</Text>
+      <Text style={styles.muted}>{v.paymentMethod==='MBWAY'?t('Depois de o recinto confirmar, pagas por MB WAY.'):v.paymentMethod==='ONLINE'?t('Depois de o recinto confirmar, pagas na app (MB WAY ou cartão).'):t('Pagas no recinto.')}</Text>
      </>:<Button title={t('Entra para pedir a reserva')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/book-court'}})}/>}
     </View>:null}
    </View>)}

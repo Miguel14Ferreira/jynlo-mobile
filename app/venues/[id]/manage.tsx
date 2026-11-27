@@ -1,13 +1,13 @@
-import React,{useCallback,useState} from 'react';
-import {Pressable,StyleSheet,Switch,Text,TextInput,View} from 'react-native';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
+import {AppState,Linking,Pressable,StyleSheet,Switch,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useLocalSearchParams} from 'expo-router';
 import {t,useLanguage} from '../../../src/lib/i18n';
 import {useAuth} from '../../../src/lib/auth';
 import {Button,Eyebrow,Loader,Message,Page} from '../../../src/components/UI';
 import {C} from '../../../src/lib/theme';
 import {bookingError,bookingStatusLabel} from '../../../src/components/VenueJynloBooking';
-import {answerBooking,confirmBookingPaid,managedVenues,managementStatus,managerOffer,saveCourts,saveHours,saveVenuePayment,venueRequests,
- type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
+import {answerBooking,confirmBookingPaid,managedVenues,managementStatus,managerOffer,saveCourts,saveHours,saveVenuePayment,venueOnlineOnboarding,venueOnlineStatus,venueRequests,
+ type VenueOnlineStatus,type VenuePayMethod,type BookingHours,type BookingOffer,type VenueBooking} from '../../../src/lib/venue-jynlo-api';
 import {phoneLabel} from '../../../src/lib/session-payments-api';
 import {venueDetails} from '../../../src/lib/parity-api';
 import {formatPrice,lisbonDateTime,lisbonTime,parsePrice,priceField,validateHours} from '../../../src/lib/venue-jynlo-booking.cjs';
@@ -34,7 +34,18 @@ export default function VenueManageScreen(){
  const [busy,setBusy]=useState(false),[requestError,setRequestError]=useState('');
  const [courtsMsg,setCourtsMsg]=useState(''),[courtsError,setCourtsError]=useState('');
  const [hoursMsg,setHoursMsg]=useState(''),[hoursError,setHoursError]=useState('');
- const [payMethod,setPayMethod]=useState<'MBWAY'|'IN_PERSON'|null>(null),[payPhone,setPayPhone]=useState('');
+ const [payMethod,setPayMethod]=useState<VenuePayMethod|null>(null),[payPhone,setPayPhone]=useState('');
+ const [online,setOnline]=useState<VenueOnlineStatus|null>(null);
+ const awaitingStripe=useRef(false);
+ // Back from the venue's Stripe sign-up: read the account state again.
+ useEffect(()=>{
+  const sub=AppState.addEventListener('change',state=>{
+   if(state!=='active'||!awaitingStripe.current||!auth.token||!venueId)return;
+   awaitingStripe.current=false;
+   venueOnlineStatus(venueId,auth.token).then(setOnline).catch(()=>{});
+  });
+  return()=>sub.remove();
+ },[auth.token,venueId]);
  const [payMsg,setPayMsg]=useState(''),[payError,setPayError]=useState('');
 
  function applyOffer(o:BookingOffer,withHours:boolean){
@@ -50,9 +61,10 @@ export default function VenueManageScreen(){
   if(!token||!venueId){setLoading(false);return()=>{alive=false;};}
   setLoading(true);setError('');setOffer(null);
   void (async()=>{
-   const [o,r,m,st]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token),
-    managementStatus(venueId,token)]);
+   const [o,r,m,st,on]=await Promise.allSettled([managerOffer(venueId,token),venueRequests(venueId,token),managedVenues(token),
+    managementStatus(venueId,token),venueOnlineStatus(venueId,token)]);
    if(!alive)return;
+   setOnline(on.status==='fulfilled'?on.value:null);
    const admin=st.status==='fulfilled'&&!st.value.manager&&!!st.value.adminSetup;
    setAdminSetup(admin);
    if(admin&&!(m.status==='fulfilled'&&m.value.some(v=>v.venueId===venueId))){
@@ -81,6 +93,14 @@ export default function VenueManageScreen(){
   try{const o=await saveVenuePayment(venueId,auth.token,payMethod,payMethod==='MBWAY'?payPhone.trim():null);
    setPayMethod(o.paymentMethod??null);setPayMsg(t('Pagamento guardado.'));}
   catch(e){setPayError(bookingError(e,t('Não foi possível guardar. Tenta outra vez.')));}
+  finally{setBusy(false);}
+ }
+ async function startOnboarding(){
+  if(!auth.token||busy)return;
+  setBusy(true);setPayError('');
+  try{const link=await venueOnlineOnboarding(venueId,auth.token);
+   if(link?.url?.startsWith('https://')){awaitingStripe.current=true;await Linking.openURL(link.url);}}
+  catch(e){setPayError(bookingError(e,t('Não foi possível abrir a Stripe. Tenta outra vez.')));}
   finally{setBusy(false);}
  }
  async function paidReceived(r:VenueBooking,paid:boolean){
@@ -183,11 +203,11 @@ export default function VenueManageScreen(){
 
   <View style={styles.card}>
    <Text style={styles.h2}>{t('Pagamento das reservas')}</Text>
-   <Text style={styles.muted}>{t('Recebe por MB WAY no teu número ou no local. A Jynlo não recebe nem guarda dinheiro.')}</Text>
+   <Text style={styles.muted}>{t('Como queres receber as reservas? A Jynlo não cobra nada e não recebe nem guarda dinheiro.')}</Text>
    <View style={styles.chips}>
-    {(['MBWAY','IN_PERSON'] as const).map(m=><Pressable key={m} accessibilityRole="radio" accessibilityState={{checked:payMethod===m}}
+    {(online?.available?['MBWAY','IN_PERSON','ONLINE'] as const:['MBWAY','IN_PERSON'] as const).map(m=><Pressable key={m} accessibilityRole="radio" accessibilityState={{checked:payMethod===m}}
       onPress={()=>setPayMethod(m)} style={[styles.chip,payMethod===m&&styles.chipOn]}>
-     <Text style={[styles.chipText,payMethod===m&&styles.chipTextOn]}>{m==='MBWAY'?'📱 '+t('MB WAY'):'🤝 '+t('No local')}</Text>
+     <Text style={[styles.chipText,payMethod===m&&styles.chipTextOn]}>{m==='MBWAY'?'📱 '+t('MB WAY'):m==='ONLINE'?'⚡ '+t('Automático'):'🤝 '+t('No local')}</Text>
     </Pressable>)}
    </View>
    {payMethod==='MBWAY'?<>
@@ -195,7 +215,16 @@ export default function VenueManageScreen(){
      placeholderTextColor={C.muted} accessibilityLabel={t('Número MB WAY do recinto')} style={styles.input}/>
     <Text style={styles.muted}>{t('Só quem tem uma reserva confirmada vê este número.')}</Text>
    </>:null}
-   <Button title={t('Guardar pagamento')} disabled={busy||!payMethod} onPress={()=>{void storePayment();}}/>
+   {payMethod==='ONLINE'?<>
+    <Text style={styles.muted}>{t('O jogador paga na app por MB WAY ou cartão e a reserva fica paga sozinha. O dinheiro vai direto para a conta Stripe do recinto. A Stripe desconta a comissão dela (cerca de 1,5% + 0,25 € por pagamento); a Jynlo não cobra nada.')}</Text>
+    {online?.chargesEnabled?<Text style={styles.ok}>✅ {t('A conta Stripe do recinto está ativa.')}</Text>
+     :adminSetup?<Text style={styles.muted}>{t('Só quem gere o recinto pode ligar a conta Stripe da empresa.')}</Text>
+     :<>
+      <Text style={styles.muted}>{online?.connected?t('Falta acabar o registo na Stripe.'):t('Primeiro liga a conta Stripe do recinto. Os dados da empresa e o IBAN ficam na Stripe, não na Jynlo.')}</Text>
+      <Button secondary title={(online?.connected?t('Continuar na Stripe'):t('Ligar conta Stripe do recinto'))+' ↗'} disabled={busy} onPress={()=>{void startOnboarding();}}/>
+     </>}
+   </>:null}
+   <Button title={t('Guardar pagamento')} disabled={busy||!payMethod||(payMethod==='ONLINE'&&!online?.chargesEnabled)} onPress={()=>{void storePayment();}}/>
    {payMsg?<Text style={styles.ok}>{payMsg}</Text>:null}
    {payError?<Text style={styles.error}>{payError}</Text>:null}
   </View>

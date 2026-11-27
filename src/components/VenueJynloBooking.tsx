@@ -113,8 +113,9 @@ export default function VenueJynloBooking({venueId,token,sessionId}:{venueId:num
    </View>):null}
    {picked?<View style={styles.confirm}>
     <Text style={styles.courtName}>{picked.court.name} · {dayLabel(day)} · {lisbonTime(picked.slot.start)}–{lisbonTime(picked.slot.end)}</Text>
-    <Text style={styles.hint}>{offer?.paymentMethod==='MBWAY'?(price??t('Preço no recinto')):price?t('{price} · pagas no recinto',{price}):t('Preço no recinto')}</Text>
+    <Text style={styles.hint}>{offer?.paymentMethod==='MBWAY'||offer?.paymentMethod==='ONLINE'?(price??t('Preço no recinto')):price?t('{price} · pagas no recinto',{price}):t('Preço no recinto')}</Text>
     {offer?.paymentMethod==='MBWAY'?<Text style={styles.hint}>📱 {t('Depois de o recinto confirmar, pagas por MB WAY ao recinto.')}</Text>:null}
+    {offer?.paymentMethod==='ONLINE'?<Text style={styles.hint}>⚡ {t('Depois de o recinto confirmar, pagas na app (MB WAY ou cartão).')}</Text>:null}
     {token?<>
      <TextInput value={note} onChangeText={setNote} maxLength={300} multiline placeholder={t('Mensagem para o recinto (opcional)')}
       placeholderTextColor={C.muted} accessibilityLabel={t('Mensagem para o recinto (opcional)')} style={[styles.input,{minHeight:64}]}/>
