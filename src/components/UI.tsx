@@ -52,7 +52,7 @@ export function Brand({subtitle}:{subtitle?:string}){
   // JYNLO header there only pushes the content down. Keep it on the main tabs.
   let pushed=false;
   const navigation=useNavigation();
-  try{const state=navigation?.getState?.();pushed=state?.type==='stack'||(!state&&!!navigation?.canGoBack?.());}catch{pushed=false;}
+  try{const state=navigation?.getState?.();pushed=state?.type==='stack'&&(state.index??0)>0;}catch{pushed=false;}
   if(pushed)return null;
   return <View style={styles.brandRow}>
     <Image source={require('../../assets/jynlo-icon.png')} style={styles.logo} />
