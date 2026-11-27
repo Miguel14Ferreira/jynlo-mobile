@@ -4370,7 +4370,6 @@ const EN={
   "Ver torneio {v}": "See tournament {v}",
   "Ver vídeo · {v}": "Watch video · {v}",
   "Ver últimas publicações": "See latest posts",
-  "Ver ›": "See ›",
   "Verde": "Green",
   "Verifica a data e o local.": "Check the date and place.",
   "Verifica a ligação ou tenta carregar novamente.": "Check your connection or try loading again.",
@@ -4878,5 +4877,8 @@ const EN={
   "Ainda não há torneios": "No tournaments yet",
   "Os torneios das tuas comunidades aparecem aqui. Cria um ou junta-te a uma comunidade.": "Your communities' tournaments show up here. Create one or join a community.",
   "Nenhum torneio com estes filtros": "No tournaments match these filters",
+  "AO VIVO": "LIVE",
+  "há {n} min": "{n} min ago",
+  "há {n} h": "{n} h ago",
 };
 module.exports={EN};

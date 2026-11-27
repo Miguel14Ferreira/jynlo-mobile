@@ -1,6 +1,7 @@
+import {resolveJynloMedia} from '../../src/lib/social-feed-api';
 import React,{useCallback,useRef,useState} from 'react';
 import {t} from '../../src/lib/i18n';
-import {AppState,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AppState,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useFocusEffect,useRouter} from 'expo-router';
 import {Button,Loader,Message,Page} from '../../src/components/UI';
 import {useAuth} from '../../src/lib/auth';
@@ -66,15 +67,24 @@ export default function LivesScreen(){
       accessibilityLabel={t('Assistir ao direto {v} de {user}',{v:item.title,user:item.username})}
       onPress={()=>router.push({pathname:'/live/[id]',params:{id:String(item.id)}})}
       style={styles.liveItem}>
-      <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>{t('● LIVE')}</Text></View>
-      <View style={{flex:1,gap:5}}><Text style={styles.liveTitle} numberOfLines={2}>{item.title}</Text>
-       <Text style={styles.note}>@{item.username}{item.canManage?' · '+t('O teu direto'):''}</Text></View>
-      <Text style={styles.watchText}>{t('Ver ›')}</Text>
+      <View style={styles.ring}>{resolveJynloMedia(item.avatarUrl)?<Image source={{uri:resolveJynloMedia(item.avatarUrl)!}} style={styles.avatar}/>
+       :<View style={[styles.avatar,styles.avatarEmpty]}><Text style={styles.avatarLetter}>{item.username.charAt(0).toUpperCase()}</Text></View>}</View>
+      <View style={{flex:1,gap:3,minWidth:0}}>
+       <View style={styles.liveBadge}><Text style={styles.liveBadgeText}>{t('AO VIVO')}</Text></View>
+       <Text style={styles.liveTitle} numberOfLines={1}>{item.title}</Text>
+       <Text style={styles.note} numberOfLines={1}>@{item.username} · {liveSince(item.startedAt)}{item.canManage?' · '+t('O teu direto'):''}</Text></View>
+      <View style={styles.watch}><Text style={styles.watchText}>{t('Ver')} ▶</Text></View>
      </Pressable>)}
     <Button secondary title={t('Procurar novos diretos')} onPress={()=>void refresh()} disabled={loading||busy}/>
    </View>
   </>}
  </Page>;
+}
+function liveSince(startedAt:string){
+ const ms=Date.now()-Date.parse(startedAt);
+ if(!Number.isFinite(ms)||ms<60000)return t('agora mesmo');
+ const min=Math.floor(ms/60000);
+ return min<60?t('há {n} min',{n:min}):t('há {n} h',{n:Math.floor(min/60)});
 }
 const styles=StyleSheet.create({
  kicker:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1},
@@ -84,8 +94,12 @@ const styles=StyleSheet.create({
  panel:{backgroundColor:C.surface,borderRadius:16,borderWidth:1,borderColor:C.border,padding:15,gap:12},
  input:{minHeight:50,borderColor:C.border,borderWidth:1,borderRadius:12,backgroundColor:C.background,color:C.white,paddingHorizontal:13},
  liveItem:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderWidth:1,borderColor:C.border,borderRadius:12},
- liveBadge:{backgroundColor:'#603038',borderRadius:9,paddingHorizontal:7,paddingVertical:6},
- liveBadgeText:{color:'#ffc1c4',fontWeight:'900',fontSize:11},
+ liveBadge:{alignSelf:'flex-start',backgroundColor:'#e11d48',borderRadius:4,paddingHorizontal:6,paddingVertical:1},
+ liveBadgeText:{color:'#fff',fontWeight:'900',fontSize:10,letterSpacing:.6},
+ ring:{width:50,height:50,borderRadius:25,borderWidth:2,borderColor:'#fb4b5d',alignItems:'center',justifyContent:'center'},
+ avatar:{width:42,height:42,borderRadius:21},avatarEmpty:{backgroundColor:'#1d4d5c',alignItems:'center',justifyContent:'center'},
+ avatarLetter:{color:'#fff',fontWeight:'900',fontSize:17},
+ watch:{backgroundColor:C.mint,borderRadius:10,paddingHorizontal:12,paddingVertical:8},
  liveTitle:{color:C.white,fontWeight:'900',fontSize:14},
- watchText:{color:C.mint,fontWeight:'900'}
+ watchText:{color:C.background,fontWeight:'900',fontSize:13}
 });
