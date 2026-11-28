@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "A Jynlo divide os jogadores com base nos resultados anteriores do grupo. Também podes sortear equipas aleatórias. Só fica guardado quando confirmares.": "Jynlo splits the players using the group's previous results. You can also draw random teams. Nothing is saved until you confirm.",
+  "Equilibrar equipas": "Balance teams",
   "Paga {a} por MB WAY para este número:": "Pay {a} by MB WAY to this number:",
   "Pode ser o teu ou o de outra pessoa do grupo. Só os jogadores inscritos veem este número.": "It can be yours or someone else's in the group. Only enrolled players see this number.",
   "Não foi possível carregar os nomes da classificação.": "Could not load the names in the standings.",
@@ -656,7 +658,6 @@ const EN={
   "As classificações desta comunidade já estão ativas.": "This community's rankings are already active.",
   "As coordenadas devem estar na área de Portugal continental suportada.": "Coordinates must be within the supported area of mainland Portugal.",
   "As equipas de estafeta têm quatro atletas.": "Relay teams have four athletes.",
-  "As equipas equilibradas usam automaticamente a classificação da época ativa da comunidade. Se só existir classificação importada, será reutilizada sem pedir outro Excel.": "Balanced teams automatically use the community's active season ranking. If there is only an imported ranking, it is reused without asking for another Excel file.",
   "As equipas mantêm identidade e plantel próprios.": "Teams keep their own identity and squad.",
   "As fotografias e vídeos atuais serão substituídos pelos novos. Os gostos e comentários mantêm-se.": "The current photos and videos will be replaced by the new ones. Likes and comments stay.",
   "As fotografias, os vídeos e o texto deste rascunho serão perdidos.": "The photos, videos and text of this draft will be lost.",
@@ -1568,7 +1569,6 @@ const EN={
   "Equipas do torneio": "Tournament teams",
   "Equipas e comunidades públicas": "Public teams and communities",
   "Equipas e convites": "Teams and invitations",
-  "Equipas equilibradas": "Balanced teams",
   "Equipas inscritas: {a}": "Teams entered: {a}",
   "Equipas onde és jogador": "Teams where you're a player",
   "Erro a carregar equipas.": "Error loading teams.",

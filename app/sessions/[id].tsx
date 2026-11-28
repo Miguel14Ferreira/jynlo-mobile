@@ -720,9 +720,9 @@ export default function SessionScreen(){
           (detail.sport !== 'Voleibol de Praia' || detail.maxParticipants === 4)
         ))?<View style={styles.editor}>
           <Eyebrow>{t('FORMAR DUAS EQUIPAS')}</Eyebrow>
-          <Text style={styles.hint}>{t('As equipas equilibradas usam automaticamente a classificação da época ativa da comunidade. Se só existir classificação importada, será reutilizada sem pedir outro Excel.')}</Text>
+          <Text style={styles.hint}>{t('A Jynlo divide os jogadores com base nos resultados anteriores do grupo. Também podes sortear equipas aleatórias. Só fica guardado quando confirmares.')}</Text>
           {detail.teamBalanceSupported?
-          <Button title={t('Equipas equilibradas')} secondary={teamSource!=='AUTO'} disabled={teamsBusy}
+          <Button title={t('Equilibrar equipas')} secondary={teamSource!=='AUTO'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('AUTO');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>:null}
           <Button title={t('Equipas aleatórias')} secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
             onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>

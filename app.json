@@ -3,14 +3,14 @@
     "name": "Jynlo",
     "slug": "jynlo-mobile",
     "scheme": "jynlo",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/jynlo-icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.jynlo.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "A Jynlo utiliza o microfone quando gravas vídeos com som ou participas numa chamada de voz ou vídeo.",
         "NSCameraUsageDescription": "A Jynlo utiliza a câmara quando tiras fotografias, gravas Stories ou participas numa chamada de vídeo.",
@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/jynlo-icon.png",
         "backgroundColor": "#07171D"
       },
-      "versionCode": 19,
+      "versionCode": 20,
       "intentFilters": [
         {
           "action": "VIEW",
