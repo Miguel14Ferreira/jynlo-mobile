@@ -8,7 +8,7 @@ export interface SessionChatEntry {
  editedAt:string|null;deletedAt:string|null;senderGuest:boolean;
 }
 function validSessionId(id:number):number{
- if(!Number.isSafeInteger(id)||id<=0)throw Error('Jogo inválida.');
+ if(!Number.isSafeInteger(id)||id<=0)throw Error('Jogo inválido.');
  return id;
 }
 export async function sessionChatHistory(id:number,token:string):Promise<SessionChatEntry[]>{

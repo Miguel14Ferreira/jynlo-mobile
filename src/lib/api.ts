@@ -255,6 +255,6 @@ export async function issueSessionGuestLink(id:number,token:string):Promise<stri
 /** "Jogar outra vez": invite the players of one of my previous sessions into a new one. */
 export async function inviteFromPreviousSession(sessionId:number,previousSessionId:number,token:string):Promise<{invited:number;skipped:number}>{
   if(DEMO_MODE)return {invited:0,skipped:0};
-  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(previousSessionId)||previousSessionId<=0)throw Error('Jogo inválida.');
+  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(previousSessionId)||previousSessionId<=0)throw Error('Jogo inválido.');
   return request<{invited:number;skipped:number}>(`/api/sessions/${sessionId}/invites/from-session/${previousSessionId}`,{token,method:'POST',body:null});
 }

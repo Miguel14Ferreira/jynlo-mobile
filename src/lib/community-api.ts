@@ -111,7 +111,7 @@ export async function communitySessions(id:number,token:string,username:string):
 /** Owner/admin only (server-verified): members-only session also shown to other players, or back to members only. */
 export async function setCommunitySessionAudience(communityId:number,sessionId:number,toPublic:boolean,token:string):Promise<SessionSummary>{
  if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir a comunidade.');
- if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválida.');
+ if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválido.');
  return request<SessionSummary>(`/api/communities/${communityId}/sessions/${sessionId}/${toPublic?'open-public':'restrict-members'}`,{token,method:'POST'});
 }
 const DEMO_MEMBERS='Na demonstração não é possível gerir membros.';

@@ -208,6 +208,12 @@ export default function ProfileScreen(){
         {membershipsError?<Text style={styles.membershipsHint}>{t('Não foi possível verificar todas as associações.')}</Text>:null}
       </>}
     </View>:null}
+    {auth.username?<><Eyebrow>{t('A MINHA ATIVIDADE')}</Eyebrow>
+    <Button title={t('Os meus jogos')} secondary onPress={()=>router.push('/my-sessions')}/>
+    {bookingsOpen?<Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>:null}
+    <Button title={t('Equipas e torneios')} secondary onPress={()=>router.push('/teams')}/>
+    {myVenues.length?<Button title={t('Recintos que giro')} secondary onPress={()=>myVenues.length===1?router.push({pathname:'/venues/[id]/manage',params:{id:String(myVenues[0]!.venueId)}} as never):router.push('/venue-bookings')}/>:null}
+    </>:null}
     {auth.token&&!DEMO_MODE?<ProfilePrivacySettings token={auth.token}/>:null}
     {auth.username&&auth.token?<ProfilePosts username={auth.username} token={auth.token}/>:null}
     <LanguageSwitch/>
@@ -217,21 +223,15 @@ export default function ProfileScreen(){
       <JynloIcon name={moreOptionsOpen?'chevron-up':'chevron-down'} size={21} color={C.mint}/>
     </Pressable>
     {moreOptionsOpen?<>
-    <Eyebrow>{t('EXPLORAR A JYNLO')}</Eyebrow>
-    <Button title={t('Feed')} secondary onPress={()=>router.push('/feed')}/>
-    <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
-    <Button title={t('Os meus jogos')} secondary onPress={()=>router.push('/my-sessions')}/>
-    <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
-    {myVenues.length?<Button title={t('Os meus recintos')} secondary onPress={()=>myVenues.length===1?router.push({pathname:'/venues/[id]/manage',params:{id:String(myVenues[0]!.venueId)}} as never):router.push('/venue-bookings')}/>:null}
-    {bookingsOpen?<Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>:null}
+    <Eyebrow>{t('MAIS')}</Eyebrow>
     <Button title={t('Enviar opinião ou reportar problema')} secondary onPress={()=>router.push('/feedback')}/>
     {!auth.username?<><Button title={DEMO_MODE?t('Experimentar conta de demonstração'):t('Iniciar sessão')} onPress={()=>router.push('/login')}/><Button title={t('Voltar às boas-vindas')} secondary onPress={()=>router.push('/welcome')}/></>:
       <Button title={t('Terminar sessão')} secondary onPress={()=>{void auth.logout().then(
         ()=>router.replace('/welcome'),
         error=>{
           router.replace('/welcome');
-          Alert.alert(t('Verifica o jogo'),error instanceof Error?error.message:
-            t('Não foi possível confirmar a remoção das credenciais. Verifica o jogo antes de partilhares o telemóvel.'));
+          Alert.alert(t('Verifica a sessão'),error instanceof Error?error.message:
+            t('Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.'));
         }
       );}}/>}
     {auth.username&&!DEMO_MODE?<><Eyebrow>{t('GESTÃO DA CONTA')}</Eyebrow>

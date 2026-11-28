@@ -4,7 +4,7 @@ import type {CompetitionResultPayload} from './session-competition-result.cjs';
 
 function resource(communityId:number,sessionId:number){
  if(!Number.isSafeInteger(communityId)||communityId<=0||!Number.isSafeInteger(sessionId)||sessionId<=0)
-  throw Error('Comunidade ou jogo inválida.');
+  throw Error('Comunidade ou jogo inválido.');
  return '/api/communities/'+communityId+'/sessions/'+sessionId;
 }
 /** Admin-only roster; the backend checks community role and rankings policy. */
@@ -39,7 +39,7 @@ export type SessionOfficialResult={
  contributions:Array<{username:string;team:'A'|'B'|string|null;goals:number;assists:number}>
 };
 export async function sessionOfficialResult(sessionId:number,token:string|null){
- if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválida.');
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválido.');
  if(!token||DEMO_MODE)throw Error('Inicia sessão para consultar o resultado.');
  return request<SessionOfficialResult>('/api/sessions/'+sessionId+'/official-result',{token});
 }

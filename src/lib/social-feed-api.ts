@@ -48,7 +48,7 @@ export async function profilePosts(username:string,token:string|null,page=0):Pro
 
 /** Opt-in posts linked to a public game. API enforces block/profile/session visibility. */
 export async function sessionSocialMemories(sessionId:number,token:string|null):Promise<FeedItem[]>{
- if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválida.');
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválido.');
  if(!token)return [];
  if(DEMO_MODE)return demoPosts.filter(post=>post.sessionId===sessionId);
  const entries=requireSocialCollection(await request<unknown>(
@@ -295,7 +295,7 @@ export async function togglePostCommentLike(postId:number,comment:SocialComment,
 }
 export async function createTextPost(content:string,token:string|null,username:string|null,location='',sessionId?:number):Promise<FeedItem>{
   requireViewer(token,username);
-  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Jogo inválida.');
+  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Jogo inválido.');
   const body=content.trim();if(!body||body.length>1000)throw new Error('Escreve uma publicação até 1000 caracteres.');
   if(DEMO_MODE){const item:FeedItem={type:'POST',postId:nextDemoPostId++,authorUsername:username!,authorDisplayName:username!,authorProfilePicUrl:null,content:body,imageUrl:null,videoUrl:null,createdAt:nowIso(),sessionId:sessionId??null,sport:null,city:null,gameDate:null,likeCount:0,likedByMe:false,commentCount:0,location:location.trim()||null};demoPosts.unshift(item);return item;}
   const result=await request<FeedItem>('/api/feed/posts',{method:'POST',token,body:{content:body,location:location.trim()||null,...(sessionId?{sessionId}:{})}});
@@ -390,7 +390,7 @@ export async function publishPost(content:string,files:MobileMedia[]|null,token:
   requireViewer(token,username);
   const caption=content.trim();
   const place=location.trim();
-  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Jogo inválida.');
+  if(sessionId!==undefined&&(!Number.isSafeInteger(sessionId)||sessionId<=0))throw Error('Jogo inválido.');
   if(caption.length>1000)throw new Error('A publicação não pode exceder 1000 caracteres.');
   if(place.length>160)throw new Error('A localização pode ter até 160 caracteres.');
   if(!files?.length)return createTextPost(caption,token,username,place,sessionId);
