@@ -3,6 +3,7 @@ import {CommunityMonthLeaders} from '../../src/components/PlayerHighlights';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
 import {t} from '../../src/lib/i18n';
 import CommunityTeamsPanel from '../../src/components/CommunityTeamsPanel';
+import {HistoricalIdentityCard} from '../../src/components/HistoricalIdentityCard';
 import React,{useCallback,useRef,useState} from 'react';
 import {Alert,Image,Pressable,ScrollView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {resolveJynloMedia} from '../../src/lib/social-feed-api';
@@ -371,6 +372,7 @@ export default function CommunityDetailScreen(){
         <Button secondary title={t('Ver competições por modalidade')} onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
         {isMember(community)&&community.rankingsEnabled?<CommunityMonthLeaders communityId={id} token={auth.token} canManage={owner}/>:null}
         {isMember(community)&&community.rankingsEnabled?<Button secondary title={t('Resultados e classificações')} onPress={()=>router.push({pathname:'/communities/[id]/results',params:{id:String(id)}})}/>:null}
+        {isMember(community)&&community.rankingsEnabled&&auth.token?<HistoricalIdentityCard communityId={id} token={auth.token}/>:null}
         {isMember(community)&&community.rankingsEnabled&&auth.token?<PublicShareCard target={{kind:'RANKING',communityId:id}}
           name={community.name} token={auth.token} canManage={owner}/>:null}
         {owner?<View style={styles.startCard}>

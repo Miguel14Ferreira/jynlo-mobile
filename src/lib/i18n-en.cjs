@@ -2,6 +2,23 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Não foi possível carregar os nomes da classificação.": "Could not load the names in the standings.",
+  "Desassociar \"{name}\"?": "Unlink \"{name}\"?",
+  "Os resultados continuam na classificação. Só deixam de estar ligados à tua conta.": "The results stay in the standings. They are just no longer linked to your account.",
+  "Desassociar": "Unlink",
+  "Associação removida.": "Link removed.",
+  "Não foi possível remover a associação.": "Could not remove the link.",
+  "És tu \"{name}\"?": "Are you \"{name}\"?",
+  "Os jogos deste nome passam a contar na tua conta. Podes desfazer quando quiseres.": "This name's games will count on your account. You can undo it whenever you like.",
+  "Sou eu": "That's me",
+  "Nome associado à tua conta.": "Name linked to your account.",
+  "Pedido enviado. Um administrador confirma em breve.": "Request sent. An admin will confirm it soon.",
+  "Não foi possível associar este nome.": "Could not link this name.",
+  "O TEU NOME NA CLASSIFICAÇÃO": "YOUR NAME IN THE STANDINGS",
+  "Ligado à tua conta": "Linked to your account",
+  "À espera de confirmação": "Waiting for confirmation",
+  "Associar outro nome": "Link another name",
+  "Escolher o meu nome": "Pick my name",
   "Atender com vídeo": "Answer with video",
   "Atender sem câmara": "Answer with camera off",
   "Entrar com Apple, Google ou email": "Sign in with Apple, Google or email",
