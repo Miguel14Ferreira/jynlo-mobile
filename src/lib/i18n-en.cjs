@@ -2,6 +2,8 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Paga {a} por MB WAY para este número:": "Pay {a} by MB WAY to this number:",
+  "Pode ser o teu ou o de outra pessoa do grupo. Só os jogadores inscritos veem este número.": "It can be yours or someone else's in the group. Only enrolled players see this number.",
   "Não foi possível carregar os nomes da classificação.": "Could not load the names in the standings.",
   "Desassociar \"{name}\"?": "Unlink \"{name}\"?",
   "Os resultados continuam na classificação. Só deixam de estar ligados à tua conta.": "The results stay in the standings. They are just no longer linked to your account.",
@@ -3013,7 +3015,6 @@ const EN={
   "Número MB WAY do recinto": "Venue's MB WAY number",
   "Número da série": "Heat number",
   "Número da série (1–20)": "Heat number (1–20)",
-  "Número de": "Number belongs to",
   "Número de ciclos (2 a {max})": "Number of cycles (2 to {max})",
   "Número de jogadores confirmados externamente": "Number of players confirmed outside the app",
   "Número de participantes inválido.": "Invalid number of participants.",
@@ -3160,7 +3161,7 @@ const EN={
   "O teu desporto começa aqui.": "Your sport starts here.",
   "O teu direto": "Your live stream",
   "O teu nome": "Your name",
-  "O teu número MB WAY para receberes": "Your MB WAY number to receive payments",
+  "Número MB WAY que recebe os pagamentos": "MB WAY number that receives the payments",
   "O teu pedido de entrada está pendente de aprovação.": "Your request to join is waiting for approval.",
   "O teu pedido para gerir este recinto está a ser analisado.": "Your request to manage this venue is being reviewed.",
   "O teu perfil ainda tem {a} referência(s) de multimédia sem proteção. É necessária uma migração segura antes de ativar a privacidade.": "Your profile still has {a} unprotected media reference(s). A secure migration is needed before turning on privacy.",
@@ -4776,7 +4777,7 @@ const EN={
   "📣 CONVOCATÓRIA": "📣 CALL-UP",
   "📣 Convocar para um jogo": "📣 Call up to a game",
   "📱 MB WAY ao organizador": "📱 MB WAY to the organiser",
-  "📱 MB WAY para mim": "📱 MB WAY to me",
+  "📱 MB WAY": "📱 MB WAY",
   "📷 Câmara desligada": "📷 Camera off",
   "📹 Câmara ligada": "📹 Camera on",
   "🔇 Microfone desligado": "🔇 Microphone off",

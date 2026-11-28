@@ -52,11 +52,11 @@ export default function TournamentPaymentsPanel({communityId,tournamentId,token}
     maxLength={8} editable={!busy} style={styles.input} accessibilityLabel={t('Valor da inscrição por jogador (€)')}/>
    <Text style={styles.label}>{t('Como se paga a inscrição?')}</Text>
    <View style={styles.row}>
-    <Choice label={t('📱 MB WAY para mim')} selected={method==='MBWAY'} disabled={busy} onPress={()=>setMethod('MBWAY')}/>
+    <Choice label={t('📱 MB WAY')} selected={method==='MBWAY'} disabled={busy} onPress={()=>setMethod('MBWAY')}/>
     <Choice label={'🤝 '+t('No local')} selected={method==='IN_PERSON'} disabled={busy} onPress={()=>setMethod('IN_PERSON')}/>
    </View>
    {method==='MBWAY'?<>
-    <Text style={styles.label}>{t('O teu número MB WAY para receberes')}</Text>
+    <Text style={styles.label}>{t('Número MB WAY que recebe os pagamentos')}</Text>
     <TextInput value={phone} onChangeText={setPhone} placeholder="912 345 678" placeholderTextColor={C.muted}
      keyboardType="phone-pad" autoComplete="tel" maxLength={20} editable={!busy} style={styles.input} accessibilityLabel={t('Número MB WAY')}/>
     <Text style={styles.muted}>{t('Só os jogadores inscritos no torneio veem este número.')}</Text>

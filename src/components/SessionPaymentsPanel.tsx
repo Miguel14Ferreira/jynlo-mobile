@@ -81,7 +81,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
   {data.organiser?<>
    <Text style={styles.label}>{t('Como se paga este jogo?')}</Text>
    <View style={styles.row}>
-    <Choice label={t('📱 MB WAY para mim')} selected={mbwayDraft} disabled={busy} onPress={()=>{setOnlineDraft(false);setMbwayDraft(true);}}/>
+    <Choice label={t('📱 MB WAY')} selected={mbwayDraft} disabled={busy} onPress={()=>{setOnlineDraft(false);setMbwayDraft(true);}}/>
     <Choice label={t('🤝 Em mão, no dia')} selected={!mbwayDraft&&!onlineDraft&&data.method==='IN_PERSON'} disabled={busy}
      onPress={()=>{setMbwayDraft(false);setOnlineDraft(false);if(data.method!=='IN_PERSON')void run(()=>setPaymentMethod(sessionId,'IN_PERSON',null,token));}}/>
     {online?.available?<Choice label={t('💳 Na app (MB WAY ou cartão)')} selected={onlineDraft} disabled={busy}
@@ -96,11 +96,11 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
      <Text style={styles.muted}>{t('Abre o formulário do Stripe (identificação e IBAN). Demora uns 5 minutos e só tens de o fazer uma vez.')}</Text>
     </>):null}
    {mbwayDraft?<>
-    <Text style={styles.label}>{t('O teu número MB WAY para receberes')}</Text>
+    <Text style={styles.label}>{t('Número MB WAY que recebe os pagamentos')}</Text>
     <TextInput value={phone} onChangeText={setPhone} placeholder="912 345 678" placeholderTextColor={C.muted}
      keyboardType="phone-pad" autoComplete="tel" maxLength={20} editable={!busy} style={styles.input} accessibilityLabel={t('Número MB WAY')}/>
     <Button title={t('Guardar número')} disabled={busy||!phone.trim()} onPress={()=>void run(()=>setPaymentMethod(sessionId,'MBWAY',phone.trim(),token))}/>
-    <Text style={styles.muted}>{t('Só os jogadores inscritos veem este número.')}</Text>
+    <Text style={styles.muted}>{t('Pode ser o teu ou o de outra pessoa do grupo. Só os jogadores inscritos veem este número.')}</Text>
    </>:null}
    {data.players.length===0?<Text style={styles.muted}>{t('Ainda não há jogadores inscritos.')}</Text>:
     data.players.map(player=><View key={player.username} style={styles.player}>
@@ -124,8 +124,7 @@ export default function SessionPaymentsPanel({sessionId,token}:{sessionId:number
      </>
      :data.method==='IN_PERSON'?<Text style={styles.text}>{t('Paga {a} ao organizador no dia do jogo.',{a:amount})}</Text>
      :data.mbwayPhone?<>
-      <Text style={styles.text}>{t('Paga {a} por MB WAY ao organizador:',{a:amount})}</Text>
-      {data.payee?.fullName||data.payee?.username?<Text style={styles.muted}>{t('Número de')} <Text style={styles.text}>{data.payee?.fullName||data.payee?.username}</Text>{data.payee?.fullName&&data.payee?.username?' · @'+data.payee.username:''}</Text>:null}
+      <Text style={styles.text}>{t('Paga {a} por MB WAY para este número:',{a:amount})}</Text>
       <Text selectable style={styles.phone}>{phoneLabel(data.mbwayPhone)}</Text>
       <Button title={t('Copiar número e abrir o MB WAY')} disabled={busy} onPress={()=>void payByMbway(data.mbwayPhone!)}/>
       <Text style={styles.muted}>{t('No MB WAY: Enviar dinheiro, colar o número e pôr {a}.',{a:amount})}</Text>
