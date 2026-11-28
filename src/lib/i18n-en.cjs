@@ -4893,5 +4893,6 @@ const EN={
  "Jogar":"Play",
   "Não foi possível carregar as sessões.": "Couldn't load the games.",
  "Desporto, cidade, recinto ou pessoa":"Sport, city, venue or person",
+ "Jogos perto de ti com vagas":"Games near you with open spots",
 };
 module.exports={EN};

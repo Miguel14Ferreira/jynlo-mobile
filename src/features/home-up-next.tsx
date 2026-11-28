@@ -50,11 +50,11 @@ export function HomeUpNext(){
    }else{setGames(null);setFailed(true);}
    const mine=groups.status==='fulfilled'?groups.value:[];
    setCommunities(mine);
-   // A new account should not land on an empty home: show open games and public communities to join.
+   // Games with open spots always follow the person's own games (and fill an empty home for new accounts).
    const myGames=sessions.status==='fulfilled'?(organizeMySessions(sessions.value) as {upcoming:{items:SessionSummary[]}[]}).upcoming.flatMap(g=>g.items):[];
-   if(sessions.status==='fulfilled'&&!myGames.length){
+   if(sessions.status==='fulfilled'){
     void discoverSessions({availableOnly:true,sort:'date'},token,username).then(list=>{
-     if(version===generation.current)setOpenGames(pickOpenGames(list,[],Date.now()) as SessionSummary[]);
+     if(version===generation.current)setOpenGames(pickOpenGames(list,myGames.map(g=>g.id),Date.now()) as SessionSummary[]);
     }).catch(()=>{if(version===generation.current)setOpenGames([]);});
    }else setOpenGames([]);
    if(groups.status==='fulfilled'&&!mine.length){
@@ -89,7 +89,20 @@ export function HomeUpNext(){
      <Text style={styles.gameMeta} numberOfLines={1}>{t('{a} · {b}/{c} jogadores',{a:formatDate(game.gameDate),b:game.participantCount,c:game.maxParticipants})}</Text>
     </View>
     <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
-   </Pressable>)
+   </Pressable>).concat(openGames.length?[<View key="open" style={{gap:8}}>
+    <Text style={styles.subtitle}>{t('Jogos perto de ti com vagas')}</Text>
+    {openGames.map(game=><Pressable key={game.id} accessibilityRole="button"
+      accessibilityLabel={t('{sport} em {city}, {date}',{sport:sportName(game.sport),city:game.city,date:formatDate(game.gameDate)})}
+      onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(game.id)}})} style={styles.game}>
+      <View style={styles.gameIcon}><JynloIcon name="session" size={22} color={colors.accent}/></View>
+      <View style={{flex:1,gap:2}}>
+       <Text style={styles.gameTitle} numberOfLines={1}>{sportName(game.sport)} · {game.city}</Text>
+       <Text style={styles.news} numberOfLines={1}>{t('{a} · faltam {n}',{a:formatDate(game.gameDate),n:Math.max(0,game.maxParticipants-game.participantCount)})}</Text>
+       <FriendsGoing sessionId={game.id}/>
+      </View>
+      <JynloIcon name="chevron-right" size={22} color={colors.accent}/>
+     </Pressable>)}
+   </View>]:[])
    :<View style={styles.empty}>
     <Text style={styles.gameMeta}>{t('Ainda não tens jogos marcados.')}</Text>
     {openGames.length?<Text style={styles.subtitle}>{t('Jogos abertos com vagas')}</Text>:null}
