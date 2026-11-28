@@ -78,6 +78,9 @@ export interface SessionParticipant {
   joinedAt: string;
   teamCode?: 'A' | 'B' | null;
   profilePicUrl?: string | null;
+  /** Players who confirmed through the WhatsApp link (no account): username is "guest:<id>". */
+  displayName?: string | null;
+  guest?: boolean;
 }
 export interface SessionTeamPlayer {
   username:string;displayName?:string|null;guest?:boolean;

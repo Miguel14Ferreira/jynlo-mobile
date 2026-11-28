@@ -113,8 +113,8 @@ test('post game football-only form is gated by sport and passed through session 
  const community=read('app/communities/[id].tsx');
  assert.match(view,/const football=sport==='Futebol'/);
  assert.match(view,/buildSessionCompetitionResult\(outcome,roster,sport,scoreA,scoreB\)/);
- assert.match(view,/accessibilityLabel=\{'Golos de '\+player.username\}/);
- assert.match(view,/accessibilityLabel=\{'Assistências de '\+player.username\}/);
+ assert.match(view,/accessibilityLabel=\{'Golos de '\+player.label\}/);
+ assert.match(view,/accessibilityLabel=\{'Assistências de '\+player.label\}/);
  assert.match(view,/roster.filter\(player=>player.selected\)/);
  assert.match(detail,/sport:detail.sport/);
  assert.match(community,/sport:s.sport/);
@@ -230,4 +230,18 @@ test('official score fields are visible only if authenticated backend confirms f
  assert.match(screen,/confirmedOfficialScore\(payload,reply\)/);
  assert.match(api,/footballFinalScore\?:boolean/);
  assert.match(api,/teamScore\?:\{sideA:number;sideB:number\}/);
+});
+
+test('players who confirmed through the WhatsApp link (no account) can be part of the season result',()=>{
+ const roster=editableCompetitionRoster([
+  {id:4,username:'ana',attendanceStatus:'ATTENDED',teamCode:'A'},
+  {id:null,username:'guest:12',attendanceStatus:null,teamCode:'B',displayName:'Vasquinho',guest:true},
+  {id:null,username:'guest:x',attendanceStatus:null,teamCode:'B',displayName:'Falso',guest:true}]);
+ assert.equal(roster.length,2);
+ assert.equal(roster[1].label,'Vasquinho');
+ assert.equal(roster[1].username,'guest:12');
+ assert.equal(roster[1].team,'B');
+ assert.ok(roster[1].id<0);
+ const result=buildSessionCompetitionResult('A',roster,'Futebol');
+ assert.deepEqual(result.players.map(p=>p.username),['ana','guest:12']);
 });

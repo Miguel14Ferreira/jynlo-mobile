@@ -156,10 +156,10 @@ export default function SessionCompetitionResultScreen(){
     {roster.map(player=><View key={player.id} style={styles.player}>
      <Pressable accessibilityRole="checkbox" accessibilityState={{checked:player.selected,disabled:busy}}
       disabled={busy} onPress={()=>change(player.id,{selected:!player.selected})} style={styles.checkbox}>
-      <Text style={styles.playerName}>{player.selected?'☑':'☐'} {player.username}</Text>
+      <Text style={styles.playerName}>{player.selected?'☑':'☐'} {player.label}</Text>
      </Pressable>
      {(['A','B'] as CompetitionTeam[]).map(team=><Pressable key={team}
-      accessibilityRole="button" accessibilityLabel={t('Atribuir {user} à equipa {v}',{user:player.username,v:team})}
+      accessibilityRole="button" accessibilityLabel={t('Atribuir {user} à equipa {v}',{user:player.label,v:team})}
       accessibilityState={{selected:player.team===team,disabled:busy}} disabled={busy}
       onPress={()=>change(player.id,{team,selected:true})}
       style={[styles.teamButton,player.team===team&&player.selected&&styles.teamSelected]}>
@@ -168,14 +168,14 @@ export default function SessionCompetitionResultScreen(){
     </View>)}
     {football&&playerStatsSupported?<Text style={styles.hint}>{t('Indica apenas as estatísticas que conheces. Deixa em branco quando não souberes; zero significa que confirmaste 0.')}</Text>:null}
     {football&&playerStatsSupported?roster.filter(player=>player.selected).map(player=><View key={'stats-'+player.id} style={styles.statsRow}>
-      <Text style={styles.statsName} numberOfLines={1}>{t('{a} · Equipa {b}',{a:player.username,b:player.team||'?'})}</Text>
+      <Text style={styles.statsName} numberOfLines={1}>{t('{a} · Equipa {b}',{a:player.label,b:player.team||'?'})}</Text>
       <View style={styles.statFields}>
         <View style={styles.statField}><Text style={styles.statLabel}>{t('Golos')}</Text>
-          <TextInput accessibilityLabel={t('Golos de {v}',{v:player.username})} value={player.goals}
+          <TextInput accessibilityLabel={t('Golos de {v}',{v:player.label})} value={player.goals}
             keyboardType="number-pad" maxLength={2} editable={!busy}
             onChangeText={value=>change(player.id,{goals:value})} placeholder="—" placeholderTextColor={C.muted} style={styles.statInput}/></View>
         <View style={styles.statField}><Text style={styles.statLabel}>{t('Assistências')}</Text>
-          <TextInput accessibilityLabel={t('Assistências de {v}',{v:player.username})} value={player.assists}
+          <TextInput accessibilityLabel={t('Assistências de {v}',{v:player.label})} value={player.assists}
             keyboardType="number-pad" maxLength={2} editable={!busy}
             onChangeText={value=>change(player.id,{assists:value})} placeholder="—" placeholderTextColor={C.muted} style={styles.statInput}/></View>
       </View>

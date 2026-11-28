@@ -52,11 +52,16 @@ function editableCompetitionRoster(roster){
  const seen=new Set();
  return roster.filter(p=>{
   const username=typeof p?.username==='string'?p.username.trim():'';
-  if(!Number.isSafeInteger(p?.id)||p.id<=0||!username||seen.has(username.toLowerCase())||
+  // Players who confirmed through the WhatsApp link have no account (and no participant id):
+  // they still count for the season under their name in the table.
+  const guest=p?.guest===true&&/^guest:[1-9][0-9]*$/.test(username);
+  if((!guest&&(!Number.isSafeInteger(p?.id)||p.id<=0))||!username||seen.has(username.toLowerCase())||
      ['NO_SHOW','LATE_CANCELLED'].includes(p.attendanceStatus))return false;
   seen.add(username.toLowerCase());return true;
  }).map(p=>({
-  id:p.id,username:p.username.trim(),
+  // A stable local key for guests: the negative guest id (accounts keep their participant id).
+  id:p.guest===true?-Number(p.username.trim().slice(6)):p.id,username:p.username.trim(),
+  label:p.guest===true?(typeof p.displayName==='string'&&p.displayName.trim()?p.displayName.trim():p.username.trim()):p.username.trim(),
   // Only server-persisted team assignments are trusted. Never invent teams.
   team:p.teamCode==='A'||p.teamCode==='B'?p.teamCode:null,
   selected:p.teamCode==='A'||p.teamCode==='B',
@@ -73,7 +78,8 @@ function confirmedPlayerStatistics(payload,round){
  for(const entry of round.entries){
   if(typeof entry?.username==='string')byUsername.set(entry.username.toLowerCase(),entry);
  }
- return reported.every(player=>{
+ // Rows of players without an account are keyed by table name on the server, not by "guest:<id>".
+ return reported.filter(player=>!/^guest:/.test(player.username)).every(player=>{
   const actual=byUsername.get(player.username.toLowerCase());
   return actual&&
    (player.goals===undefined||actual.goals===player.goals)&&

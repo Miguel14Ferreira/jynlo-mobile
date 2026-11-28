@@ -1,7 +1,7 @@
 import type {SessionParticipant} from './types';
 export type CompetitionTeam='A'|'B';
 export type CompetitionOutcome=CompetitionTeam|'DRAW';
-export type CompetitionRosterEntry={id:number;username:string;team:CompetitionTeam|null;selected:boolean;goals:string;assists:string};
+export type CompetitionRosterEntry={id:number;username:string;label:string;team:CompetitionTeam|null;selected:boolean;goals:string;assists:string};
 export type CompetitionResultPayload={outcome:CompetitionOutcome;players:Array<{username:string;team:CompetitionTeam;goals?:number;assists?:number}>;scoreA?:number;scoreB?:number};
 export declare function editableCompetitionRoster(roster:SessionParticipant[]):CompetitionRosterEntry[];
 export declare function buildSessionCompetitionResult(outcome:CompetitionOutcome|null,players:CompetitionRosterEntry[],sport?:string|null,scoreA?:string,scoreB?:string):CompetitionResultPayload;
