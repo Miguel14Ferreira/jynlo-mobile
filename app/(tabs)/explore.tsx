@@ -6,7 +6,7 @@ import type {Region} from 'react-native-maps';
 import {useFocusEffect,useRouter,useLocalSearchParams} from 'expo-router';
 import {useRefreshOnReconnect} from '../../src/lib/network-status';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Brand,DemoBanner,Eyebrow,Message,SessionCard,Loader} from '../../src/components/UI';
+import {DemoBanner,Message,SessionCard,Loader} from '../../src/components/UI';
 import {discoverSessions} from '../../src/lib/api';
 import {SPORTS} from '../../src/lib/sports';
 import {useAuth} from '../../src/lib/auth';
@@ -14,7 +14,7 @@ import {friendsFirst} from '../../src/lib/friends-going';
 import {C,MobileTheme} from '../../src/lib/theme';
 import type {SessionSummary} from '../../src/lib/types';
 import OfflineSessionMap from '../../src/components/OfflineSessionMap';
-import {JynloIcon,type JynloIconName} from '../../src/components/JynloIcon';
+import {JynloIcon} from '../../src/components/JynloIcon';
 import {filterChoices} from '../../src/lib/session-level-core.cjs';
 import {sportMatches,sportName} from '../../src/lib/sport-names.cjs';
 import {ExploreEmpty} from '../../src/features/explore-empty';
@@ -30,14 +30,6 @@ const validPin=(session:SessionSummary)=>session.privateGame!==true&&session.aud
  session.latitude>=-90&&session.latitude<=90&&session.longitude>=-180&&session.longitude<=180;
 const POPULAR_SPORTS=['Futebol','Padel','Basquetebol','Voleibol','Karting','Corrida'] as const;
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-PT').trim();
-const DISCOVER:{label:string;caption:string;icon:JynloIconName;href:string}[]=[
- {label:'Comunidades',caption:'Clubes e grupos',icon:'community',href:'/communities'},
- {label:'Torneios',caption:'Ligas e competições',icon:'tournament',href:'/tournaments'},
- {label:'Recintos',caption:'Campos e pavilhões',icon:'venue',href:'/venues'},
- {label:'Equipas',caption:'A tua e convites',icon:'championship',href:'/teams'},
- {label:'Pessoas',caption:'Quem joga perto',icon:'profile',href:'/people'},
- {label:'Diretos',caption:'Jogos em direto',icon:'video',href:'/live'},
-];
 
 export default function DiscoverScreen(){
  const router=useRouter();const auth=useAuth();
@@ -110,26 +102,24 @@ export default function DiscoverScreen(){
   <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
    refreshControl={<RefreshControl refreshing={loading&&sessions.length>0} onRefresh={()=>{void load();}} tintColor={C.mint}/>}
    showsVerticalScrollIndicator={false}>
-   <Brand subtitle={t('ENCONTRA O TEU DESPORTO')}/>
+   <Text maxFontSizeMultiplier={1.3} style={styles.title} accessibilityRole="header">{t('Jogar')}</Text>
    <DemoBanner/>
-   <View style={styles.hero}>
-     <Eyebrow>{t('O JOGO COMEÇA AQUI')}</Eyebrow>
-     <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('O teu próximo jogo.')}{'\n'}<Text style={{color:C.mint}}>{t('A tua próxima equipa.')}</Text></Text>
-     <Text style={styles.sub}>{t('Descobre sessões abertas e encontra pessoas com quem jogar.')}</Text>
-   </View>
    <Pressable accessibilityRole="search" accessibilityLabel={t('Pesquisar pessoas, comunidades, equipas, recintos e jogos')}
      onPress={()=>router.push('/search' as never)} style={styles.searchEntry}>
      <JynloIcon name="search" size={20} color={C.muted}/>
-     <Text style={styles.searchEntryText} numberOfLines={1}>{t('Pesquisar pessoas, comunidades, recintos…')}</Text>
+     <Text style={styles.searchEntryText} numberOfLines={1}>{t('Desporto, cidade, recinto ou pessoa')}</Text>
    </Pressable>
-   {/* Communities and tournaments have no tab of their own: keep them one tap away. */}
-   <View style={styles.discover} accessibilityLabel={t('Descobrir mais na Jynlo')}>
-     {DISCOVER.map(item=><Pressable key={item.label} accessibilityRole="button" accessibilityLabel={t(item.label)+': '+t(item.caption)}
-       onPress={()=>router.push(item.href as never)} style={styles.discoverTile}>
-       <View style={styles.discoverHead}><JynloIcon name={item.icon} size={20} color={C.mint}/>
-        <Text style={styles.discoverLabel} numberOfLines={2}>{t(item.label)}</Text></View>
-       <Text style={styles.discoverCaption} numberOfLines={2}>{t(item.caption)}</Text>
-     </Pressable>)}
+   {/* One place to look for somewhere to play: games, venues and the map. */}
+   <View style={styles.switcher} accessibilityRole="tablist">
+     <Pressable accessibilityRole="tab" accessibilityState={{selected:display==='list'}} style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
+       <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>{t('Jogos')}</Text>
+     </Pressable>
+     <Pressable accessibilityRole="tab" accessibilityState={{selected:false}} style={styles.switchOption} onPress={()=>router.push('/venues' as never)}>
+       <Text style={styles.switchLabel}>{t('Recintos')}</Text>
+     </Pressable>
+     <Pressable accessibilityRole="tab" accessibilityState={{selected:display==='map'}} style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
+       <Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>{t('Mapa')}</Text>
+     </Pressable>
    </View>
    <TextInput style={styles.search} value={city} onChangeText={updateCity} placeholder={t('Procurar por cidade…')} placeholderTextColor={C.muted} autoCorrect={false} accessibilityLabel={t('Filtrar por cidade')}/>
    {/* Full catalogue first (always visible), then the popular sports. */}
@@ -179,16 +169,6 @@ export default function DiscoverScreen(){
      <Text style={styles.resetFiltersText}>{t('Limpar filtros')}</Text><Text style={styles.resetFiltersIcon}>×</Text>
    </Pressable>:null}
    <View style={styles.section}><Text style={styles.sectionTitle}>{t('Encontrar jogos')}</Text><Text style={styles.total}>{loading?t('A pesquisar…'):(sessions.length===1?t('1 jogo encontrado'):t('{n} jogos encontrados',{n:sessions.length}))}</Text></View>
-   <View style={styles.switcher}>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver jogos no mapa')} accessibilityState={{selected:display==='map'}}
-       style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
-       <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={17} color={display==='map'?C.mint:C.muted}/><Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>{t('Mapa')}</Text></View>
-     </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver jogos em lista')} accessibilityState={{selected:display==='list'}}
-       style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
-       <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>{t('☷ Lista')}</Text>
-     </Pressable>
-   </View>
    {loading&&sessions.length===0?<Loader/>:null}
    {error?<View style={styles.retryPanel}>
      <Message tone="error">{error}</Message>
@@ -254,7 +234,7 @@ const styles=StyleSheet.create({
  retryAction:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:9,minHeight:48,paddingHorizontal:16,borderRadius:12,backgroundColor:C.mint},
  retryActionText:{color:C.background,fontSize:14,fontWeight:'800'},
  page:{flex:1,backgroundColor:MobileTheme.colors.background},content:{paddingHorizontal:MobileTheme.spacing.lg,paddingTop:MobileTheme.spacing.lg,paddingBottom:42,gap:MobileTheme.spacing.lg},
- hero:{marginTop:4,gap:8},headline:{fontSize:28,lineHeight:35,color:C.white,fontWeight:'900',letterSpacing:-0.6},
+ title:{fontSize:28,lineHeight:34,color:C.white,fontWeight:'900',marginTop:4},
  sub:{color:C.muted,lineHeight:21,fontSize:14},
  search:{borderWidth:1,borderColor:C.border,backgroundColor:C.surface,borderRadius:16,minHeight:54,paddingHorizontal:17,color:C.white,fontSize:15},
  chips:{gap:10,paddingVertical:3},chip:{minHeight:44,justifyContent:'center',paddingHorizontal:17,paddingVertical:10,borderRadius:26,backgroundColor:C.surface,borderWidth:1,borderColor:C.border},
