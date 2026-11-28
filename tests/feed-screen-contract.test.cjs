@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');const read=p=>untranslate(fs.readFileSyn
 test('Feed é o separador inicial e Explorar mantém a descoberta de sessões',()=>{
   const tabs=read('app/(tabs)/_layout.tsx');
   assert.match(tabs, /name="index" options=\{\{title:'Início'/);
-  assert.match(tabs, /name="explore" options=\{\{title:'Explorar'/);
+  assert.match(tabs, /name="explore" options=\{\{title:'Jogar'/);
   assert.ok(fs.existsSync(path.join(root,'app/(tabs)/explore.tsx')));
   assert.ok(fs.existsSync(path.join(root,'app/people.tsx')));
 });
