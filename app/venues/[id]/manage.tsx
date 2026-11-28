@@ -54,7 +54,7 @@ export default function VenueManageScreen(){
  function applyOffer(o:BookingOffer,withHours:boolean){
   setOffer(o);
   setCourts(o.courts.map(c=>({id:c.id,name:c.name,sport:c.sport??'',price:priceField(c.priceCents),slotMinutes:c.slotMinutes,active:c.active})));
-  if(withHours){setPayMethod(o.paymentMethod??null);if(o.mbwayPhone)setPayPhone(phoneLabel(o.mbwayPhone));}
+  if(withHours){setPayMethod(o.paymentMethod??'MBWAY');if(o.mbwayPhone)setPayPhone(phoneLabel(o.mbwayPhone));}
   if(withHours)setWeek([1,2,3,4,5,6,7].map(d=>o.hours.filter(h=>h.dayOfWeek===d).map(h=>({open:h.openTime,close:h.closeTime}))));
  }
 
