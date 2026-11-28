@@ -82,7 +82,7 @@ export default function TabsLayout(){
    <Tabs.Screen name="index" options={{title:t('Início'),tabBarButtonTestID:'tab-home',tabBarAccessibilityLabel:t('Início'),tabBarIcon:({color,focused})=><TabSymbol name="home" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="explore" options={{title:t('Jogar'),tabBarButtonTestID:'tab-explore',tabBarAccessibilityLabel:t('Jogar'),tabBarIcon:({color,focused})=><TabSymbol name="explore" color={String(color)} focused={focused}/>}}/>
    <Tabs.Screen name="create" options={{title:t('Criar'),tabBarButton:()=>(
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir menu de criação')} onPress={()=>setOpen(true)} style={styles.createTab}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Criar jogo')} onPress={()=>action('session')} style={styles.createTab}>
      <View style={styles.createCircle}><JynloIcon name="plus" color={colors.background} size={32}/></View>
     </Pressable>)}}/>
    <Tabs.Screen name="groups" options={{title:t('Comunidades'),tabBarButtonTestID:'tab-communities',tabBarAccessibilityLabel:t('Comunidades'),tabBarIcon:({color,focused})=><TabSymbol name="community" color={String(color)} focused={focused}/>}}/>

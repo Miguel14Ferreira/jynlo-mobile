@@ -95,6 +95,14 @@ function withHabitualLocation(form:CreateSessionForm,community:{habitualLatitude
   latitude:lat,longitude:lng,locationConfirmed:true};
 }
 
+const OTHER_CREATE:{label:string;href:unknown}[]=[
+ {label:'Publicação',href:{pathname:'/(tabs)',params:{compose:'post'}}},
+ {label:'Comunidade',href:'/communities/create'},
+ {label:'Equipa',href:{pathname:'/teams',params:{create:'1'}}},
+ {label:'Torneio',href:'/tournaments/create'},
+ {label:'Recinto',href:'/venues/create'},
+];
+
 export default function CreateSessionScreen(){
  const auth=useAuth(),router=useRouter(),locked=useRef(false);
  const params=useLocalSearchParams<{communityId?:string;sport?:string;day?:string;time?:string;repeatFrom?:string;venueId?:string;bookingId?:string}>();
@@ -968,6 +976,14 @@ export default function CreateSessionScreen(){
     <Button title={busy?t('A criar…'):t('Confirmar e criar jogo')} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
   </View>
   <Button secondary title={t('Voltar aos meus jogos')} onPress={()=>router.push('/my-sessions')}/>
+  {/* "+" opens this screen straight away; the other things to create are one tap below. */}
+  <View style={styles.other}>
+   <Text style={styles.otherTitle}>{t('Outras coisas')}</Text>
+   <View style={styles.otherRow}>
+    {OTHER_CREATE.map(item=><Pressable key={item.label} accessibilityRole="button" onPress={()=>router.push(item.href as never)} style={styles.otherChip}>
+     <Text style={styles.otherChipText}>{t(item.label)}</Text></Pressable>)}
+   </View>
+  </View>
  </Page>;
 }
 const styles=StyleSheet.create({presetKicker:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1.2},
@@ -1020,5 +1036,7 @@ const styles=StyleSheet.create({presetKicker:{color:C.mint,fontSize:12,fontWeigh
  stepTextActive:{color:C.mint},
  actions:{gap:10,marginTop:6},
  summaryTitle:{fontSize:14,fontWeight:'900',color:C.mint,marginTop:9},
- summaryValue:{fontSize:14,lineHeight:21,color:C.white}
+ summaryValue:{fontSize:14,lineHeight:21,color:C.white},
+ other:{marginTop:18,paddingTop:14,borderTopWidth:1,borderTopColor:C.border,gap:10},otherTitle:{color:C.muted,fontSize:15,fontWeight:'800'},
+ otherRow:{flexDirection:'row',flexWrap:'wrap',gap:8},otherChip:{minHeight:44,paddingHorizontal:16,borderRadius:22,borderWidth:1,borderColor:C.border,justifyContent:'center'},otherChipText:{color:C.white,fontSize:15,fontWeight:'700'},
 });

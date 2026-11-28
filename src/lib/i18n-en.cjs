@@ -435,7 +435,6 @@ const EN={
   "Abrir localização partilhada no Google Maps": "Open shared location in Google Maps",
   "Abrir localização partilhada no mapa": "Open shared location on the map",
   "Abrir mapa no navegador": "Open map in the browser",
-  "Abrir menu de criação": "Open create menu",
   "Abrir na app autenticadora": "Open in the authenticator app",
   "Abrir notificações": "Open notifications",
   "Abrir o feed onde publicaste": "Open the feed you posted to",
@@ -1193,7 +1192,6 @@ const EN={
   "Criar publicação no Feed": "Create a Feed post",
   "Criar sem perfil": "Create without a preset",
   "Criar jogo": "Create game",
-  "Criar jogo": "Create a sports game",
   "Criar jogo?": "Create sports game?",
   "Criar jogo nesta comunidade": "Create game in this community",
   "Criar sondagem": "Create poll",
@@ -3977,7 +3975,6 @@ const EN={
   "Jogo cancelado. Os inscritos serão avisados na Jynlo; partilha também com convidados externos.": "Game cancelled. Players who joined will be told on Jynlo; share it with external guests too.",
   "Jogo criado com sucesso. Já não é necessário repetir a criação.": "Game created. There's no need to create it again.",
   "Jogo de {sport} na Jynlo.": "{sport} game on Jynlo.",
-  "Jogo": "Sports game",
   "Jogo independente": "Independent game",
   "Jogo indisponível": "Game unavailable",
   "Jogo ou comunidade inválida.": "Invalid game or community.",
@@ -4894,5 +4891,6 @@ const EN={
   "Não foi possível carregar as sessões.": "Couldn't load the games.",
  "Desporto, cidade, recinto ou pessoa":"Sport, city, venue or person",
  "Jogos perto de ti com vagas":"Games near you with open spots",
+ "Outras coisas":"Other things",
 };
 module.exports={EN};

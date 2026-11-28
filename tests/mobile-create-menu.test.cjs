@@ -9,7 +9,7 @@ const tabs=read('app/(tabs)/_layout.tsx');
 const feed=read('app/(tabs)/index.tsx');
 test('centre creation button is a real accessible action with closable sheet',()=>{
  assert.match(tabs,/name="create" options=\{\{title:'Criar',tabBarButton:/);
- assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
+ assert.match(tabs,/accessibilityLabel="Criar jogo"/);
  assert.match(tabs,/<Modal visible=\{open\} transparent animationType="slide" onRequestClose=\{close\}>/);
  assert.match(tabs,/accessibilityLabel="Fechar menu de criação"/);
  for(const screen of ['index','explore','create','messages','profile'])

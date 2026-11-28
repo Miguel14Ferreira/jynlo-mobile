@@ -56,7 +56,7 @@ test('navigation and account safety are unchanged by cosmetic changes',()=>{
  const profile=read('app/(tabs)/profile.tsx');
  for(const tab of ['index','explore','messages','profile'])
   assert.ok(tabs.includes('name="'+tab+'"'));
- assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
+ assert.match(tabs,/accessibilityLabel="Criar jogo"/);
  assert.match(profile,/Eliminar a minha conta/);
 });
 

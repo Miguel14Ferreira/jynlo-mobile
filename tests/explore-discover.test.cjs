@@ -19,5 +19,5 @@ test('tab bar shows icons only, but every tab keeps a spoken name',()=>{
  assert.match(tabs,/tabBarShowLabel:false/);
  for(const t of ['Início','Jogar','Comunidades'])assert.ok(tabs.includes("tabBarAccessibilityLabel:'"+t+"'"),t);
  assert.match(tabs,/tabBarAccessibilityLabel:badge\?'Mensagens, '\+badge\+' por ler':'Mensagens'/);
- assert.match(tabs,/accessibilityLabel="Abrir menu de criação"/);
+ assert.match(tabs,/accessibilityLabel="Criar jogo"/);
 });
