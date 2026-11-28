@@ -1,7 +1,7 @@
 import {DEMO_MODE,request} from './api';
 
 export type PaymentMethod='MBWAY'|'IN_PERSON'|'ONLINE';
-export interface SessionPaymentPlayer{username:string;profilePicUrl:string|null;claimedAt:string|null;confirmedAt:string|null}
+export interface SessionPaymentPlayer{username:string;profilePicUrl:string|null;claimedAt:string|null;confirmedAt:string|null;displayName?:string|null;guest?:boolean}
 export interface SessionPayments{
  priceAmount:number|null;organiser:boolean;method:PaymentMethod|null;mbwayPhone:string|null;
  me:{claimedAt:string|null;confirmedAt:string|null}|null;confirmedCount:number;playerCount:number;
