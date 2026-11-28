@@ -23,7 +23,7 @@ function buildSessionCompetitionResult(outcome,players,sport=null,scoreA='',scor
   const goals=optionalStat(player.goals,tr('Golos'));
   const assists=optionalStat(player.assists,tr('Assistências'));
   if((goals!==null||assists!==null)&&sport!=='Futebol')
-   throw Error(tr('Golos e assistências só podem ser registados em sessões de Futebol.'));
+   throw Error(tr('Golos e assistências só podem ser registados em jogos de Futebol.'));
   byName.add(key);
   selected.push(goals!==null||assists!==null
    ?{username,team,...(goals!==null?{goals}:{}),...(assists!==null?{assists}:{})}

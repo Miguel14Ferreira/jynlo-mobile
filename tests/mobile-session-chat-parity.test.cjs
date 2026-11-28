@@ -62,7 +62,7 @@ test('cancelled sessions notify players automatically and let owners share a pub
  assert.match(screen,/detail\?\.status==='CANCELLED'\?<View style=\{styles\.panel\}>/);
  assert.match(screen,/A Jynlo envia automaticamente o aviso aos participantes inscritos/);
  assert.match(screen,/Convidados externos devem ser informados pelo canal utilizado/);
- assert.match(screen,/×  Sessão cancelada/);
+ assert.match(screen,/×  Jogo cancelado/);
  assert.match(screen,/const cancelledShareText=owner&&detail\?\.status==='CANCELLED'&&detail\.id===id\?/);
  assert.match(screen,/cancellationNotice\(detail\)/);
  assert.match(screen,/Partilhar aviso de cancelamento/);

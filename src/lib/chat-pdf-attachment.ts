@@ -60,7 +60,7 @@ export async function sendChatPdf(
    if(response.status===401)throw Error('Sessão expirada. Inicia sessão novamente.');
    if(response.status===403)throw Error('Sem permissão para enviar nesta conversa.');
    if(target.scope==='session'&&response.status===409)
-    throw Error('O chat da sessão está encerrado. Confirma o estado do jogo.');
+    throw Error('O chat do jogo está encerrado. Confirma o estado do jogo.');
    if(target.scope==='team'&&response.status===409)
     throw Error('O chat da equipa está desativado.');
    if(response.status===413)throw Error('O PDF ultrapassa o limite permitido.');

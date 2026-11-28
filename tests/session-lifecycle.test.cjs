@@ -14,7 +14,7 @@ test('private address and meeting point require authorization and membership or 
 test('participant roster visible only to participants or organizer',()=>{assert.equal(canViewRoster(active,'André'),false);assert.equal(canViewRoster({...active,joined:true},'André'),true);assert.equal(canViewRoster(active,'Tiago'),true);});
 test('API session contract includes leave, waitlist, invite and cancellation endpoints without POST retry',()=>{const fs=require('fs');const api=untranslate(fs.readFileSync(require('path').join(__dirname,'../src/lib/api.ts'),'utf8'));for(const path of ['/api/session-invites/pending','/leave','/cancel','/invites/','/join']) assert.ok(api.includes(path),path);assert.match(api,/never automatically retry a POST/i);});
 
-test('Vista de sessão pública respeita o estado e mostra ícones próprios por modalidade',()=>{
+test('Vista de jogo público respeita o estado e mostra ícones próprios por modalidade',()=>{
  const fs=require('node:fs'),path=require('node:path');
  const view=untranslate(fs.readFileSync(path.join(__dirname,'../app/sessions/[id].tsx'),'utf8'));
  assert.ok(view.includes('sportIcon(s.sport)'));

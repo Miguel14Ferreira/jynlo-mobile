@@ -64,7 +64,7 @@ export async function sendDirectPhoto(peer:string,token:string,asset:ImagePicker
   return message;
  }catch(error){
   if(controller.signal.aborted)throw Error('Tempo esgotado. Consulta o histórico antes de tentar novamente.');
-  if(error instanceof Error&&/^(A sessão|Não tens autorização|Fotografia|O armazenamento|O servidor|O envio)/.test(error.message))
+  if(error instanceof Error&&/^(O jogo|Não tens autorização|Fotografia|O armazenamento|O servidor|O envio)/.test(error.message))
    throw error;
   throw Error('Não foi possível confirmar o envio. Consulta o histórico antes de repetir.');
  }finally{clearTimeout(timer);}

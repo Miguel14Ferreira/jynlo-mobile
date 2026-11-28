@@ -149,9 +149,9 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     headerShadowVisible:false,contentStyle:{backgroundColor:C.background}}}>
     <Stack.Screen name="(tabs)" options={{headerShown:false}}/>
     <Stack.Screen name="welcome" options={{headerShown:false}}/>
-    <Stack.Screen name="sessions/[id]" options={{title:t('Detalhes da sessão')}}/>
-    <Stack.Screen name="sessions/[id]/edit" options={{title:t('Editar sessão')}}/>
-    <Stack.Screen name="sessions/[id]/chat" options={{title:t('Chat da sessão')}}/>
+    <Stack.Screen name="sessions/[id]" options={{title:t('Detalhes do jogo')}}/>
+    <Stack.Screen name="sessions/[id]/edit" options={{title:t('Editar jogo')}}/>
+    <Stack.Screen name="sessions/[id]/chat" options={{title:t('Chat do jogo')}}/>
     <Stack.Screen name="communities/index" options={{title:t("Comunidades")}}/>
     <Stack.Screen name="tournaments/index" options={{title:t("Torneios")}}/>
     <Stack.Screen name="communities/create" options={{title:t("Criar comunidade")}}/>
@@ -195,7 +195,7 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="venues/[id]/manage" options={{title:t('Gestão do recinto')}}/>
     <Stack.Screen name="venue-bookings" options={{title:t('As minhas reservas')}}/>
     <Stack.Screen name="book-court" options={{title:t('Reservar campo')}}/>
-    <Stack.Screen name="sessions/create" options={{title:t('Criar sessão')}}/>
+    <Stack.Screen name="sessions/create" options={{title:t('Criar jogo')}}/>
     <Stack.Screen name="social/[username]/index" options={{title:t('Perfil')}}/>
     <Stack.Screen name="social/[username]/[kind]" options={{title:t('Seguidores e seguindo')}}/>
     <Stack.Screen name="communities/[id]/competitions" options={{title:t('Competições da comunidade')}}/>
@@ -212,9 +212,9 @@ function Navigation(){const auth=useAuth();return <><PushNavigation/><PushLangua
     <Stack.Screen name="communities/[id]/championships/fixture" options={{title:t("Calendário do campeonato")}}/>
     <Stack.Screen name="communities/[id]/results" options={{title:t("Resultados da comunidade")}}/>
     <Stack.Screen name="communities/[id]/stats" options={{title:t("Estatísticas")}}/>
-    <Stack.Screen name="sessions/[id]/result" options={{title:t("Resultado da sessão")}}/>
+    <Stack.Screen name="sessions/[id]/result" options={{title:t("Resultado do jogo")}}/>
     <Stack.Screen name="stories/replies" options={{title:t("Respostas às Stories")}}/>
-    <Stack.Screen name="my-sessions" options={{title:t("As minhas sessões")}}/>
+    <Stack.Screen name="my-sessions" options={{title:t("Os meus jogos")}}/>
     <Stack.Screen name="login" options={{title:t('Entrar na Jynlo')}}/>
     <Stack.Screen name="change-password" options={{title:t('Alterar palavra-passe')}}/>
     <Stack.Screen name="change-email" options={{title:t('Mudar email')}}/>

@@ -31,7 +31,7 @@ test('all three conversations support mute, location and safe GIF rendering',()=
 test('chat messages use the same API-compatible 2000-character composer maximum',()=>{
  assert.match(screens.direct,/maxLength=\{2000\} accessibilityLabel="Mensagem privada/);
  assert.match(screens.community,/maxLength=\{2000\} accessibilityLabel="Mensagem para a comunidade"/);
- assert.match(screens.session,/maxLength=\{2000\}\s+accessibilityLabel="Mensagem da sessão"/);
+ assert.match(screens.session,/maxLength=\{2000\}\s+accessibilityLabel="Mensagem do jogo"/);
  assert.doesNotMatch(screens.community,/maxLength=\{4000\}/);
 });
 test('community and session access stays server-authorized without independent chat invites',()=>{

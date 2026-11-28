@@ -24,6 +24,6 @@ test('logout UI never silently redirects on a failed secure storage deletion',()
  assert.ok(idx>=0);
  assert.match(block,/auth\.logout\(\)\.then\(/);
  assert.match(block,/error=>\{/);
- assert.match(block,/Alert\.alert\('Verifica a sessão'/);
+ assert.match(block,/Alert\.alert\('Verifica o jogo'/);
  assert.match(block,/router\.replace\('\/welcome'\)/);
 });

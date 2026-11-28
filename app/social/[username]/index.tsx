@@ -243,11 +243,11 @@ export default function PublicSocialProfile(){
    </View>:null}
   {profile?<View style={styles.discovery}>
    <Text style={styles.discoveryTitle}>{t('Continuar a descobrir')}</Text>
-   <Text style={styles.discoveryHint}>{t('Encontra sessões, equipas e comunidades na Jynlo.')}</Text>
+   <Text style={styles.discoveryHint}>{t('Encontra jogos, equipas e comunidades na Jynlo.')}</Text>
    <View style={styles.discoveryLinks}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Procurar sessões desportivas')}
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Procurar jogos')}
      style={styles.discoveryLink} onPress={()=>router.push('/explore')}>
-     <Text style={styles.discoveryLinkText}>{t('⌖  Procurar sessões')}</Text>
+     <Text style={styles.discoveryLinkText}>{t('⌖  Procurar jogos')}</Text>
     </Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel={t('Explorar equipas')}
      style={styles.discoveryLink} onPress={()=>router.push('/teams')}>

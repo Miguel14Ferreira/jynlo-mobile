@@ -124,7 +124,7 @@ test('social feed links only to a real session id and uses backend-provided meta
  assert.match(attachment,/item\.city\?\.trim\(\)/);
  assert.match(attachment,/Number\.isFinite\(scheduled\)/);
  assert.match(attachment,/pathname:'\/sessions\/\[id\]'/);
- assert.match(attachment,/Ver detalhes da sessão/);
+ assert.match(attachment,/Ver detalhes do jogo/);
  assert.doesNotMatch(attachment,/confirmar presença|vagas disponíveis|communityId/);
  assert.match(post,/<SessionPostAttachment item=\{item\}\/>/);
 });

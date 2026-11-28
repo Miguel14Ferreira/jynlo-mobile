@@ -2,7 +2,7 @@
 const {tr}=require('./i18n-core.cjs');
 /** Presentation policy only. The Jynlo server remains the final authority on all writes. */
 function registrationAction(s, viewer, at = Date.now()) {
-  if (!s) return {kind:'NONE',label:tr('Sessão indisponível')};
+  if (!s) return {kind:'NONE',label:tr('Jogo indisponível')};
   if (!viewer) return {kind:'LOGIN',label:tr('Entrar para participar')};
   if (s.joined) return {kind:'JOINED',label:tr('Presença confirmada')};
   if (s.waitlisted) return {kind:'WAITLISTED',label:tr('Estás na lista de espera')};
@@ -20,7 +20,7 @@ function registrationAction(s, viewer, at = Date.now()) {
     if (Number.isFinite(openAt) && openAt > at)
       return {kind:'SCHEDULED',label:tr('Inscrições ainda não abertas')};
   }
-  if (s.privateGame) return {kind:'PASSWORD',label:tr('Entrar na sessão privada')};
+  if (s.privateGame) return {kind:'PASSWORD',label:tr('Entrar no jogo privado')};
   if (s.status === 'FULL' || s.participantCount >= s.maxParticipants)
     return {kind:'WAITLIST',label:tr('Pedir lugar na lista de espera')};
   return {kind:'JOIN',label:tr('Confirmar presença')};

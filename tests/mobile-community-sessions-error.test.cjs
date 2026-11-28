@@ -13,10 +13,10 @@ function resetsInclude(source,calls){
 
 test('community sessions load errors are not displayed as empty schedules',()=>{
  assert.match(source,/const \[sessionsError,setSessionsError\]=useState\(''\)/);
- assert.match(source,/catch\{if\(version===generation\.current\)\{setSessions\(\[\]\);setSessionsError\('Não foi possível carregar as sessões/);
+ assert.match(source,/catch\{if\(version===generation\.current\)\{setSessions\(\[\]\);setSessionsError\('Não foi possível carregar os jogos/);
  assert.match(source,/sessionsError\?<Message tone="error">\{sessionsError\}<\/Message>/);
- assert.match(source,/!sessionsError&&sessions\.length===0\?<Message>Esta comunidade ainda não tem sessões agendadas/);
- assert.match(source,/Tentar carregar sessões novamente/);
+ assert.match(source,/!sessionsError&&sessions\.length===0\?<Message>Esta comunidade ainda não tem jogos agendados/);
+ assert.match(source,/Tentar carregar jogos novamente/);
 });
 test('community session errors reset on reload and identity changes',()=>{
  assert.ok(resetsInclude(source,["setLoading(true)","setError('')",'setCommunity(null)','setMyRequest(null)',"setMyRequestError('')",'setSessions([])',"setSessionsError('')"]));

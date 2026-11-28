@@ -29,7 +29,7 @@ test('discovery, inbox, profile and tournament filters remain usable on touch de
  const profile=read('app/(tabs)/profile.tsx');
  const tournaments=read('app/tournaments/index.tsx');
  assert.match(explore,/chip:\{minHeight:44,justifyContent:'center'/);
- assert.match(explore,/accessibilityLabel="Repetir pesquisa de sessões"/);
+ assert.match(explore,/accessibilityLabel="Repetir pesquisa de jogos"/);
  assert.match(explore,/onPress=\{\(\)=>\{void load\(\);\}\}/);
  assert.match(inbox,/kindChip:\{minHeight:44/);
  assert.match(profile,/favoriteHeading:\{color:MobileTheme\.colors\.muted,fontSize:12/);

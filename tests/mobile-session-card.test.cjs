@@ -37,7 +37,7 @@ test('shared session card retains navigation and truthful presentation',()=>{
  assert.match(card,/formatDate\(session\.gameDate\)/);
  assert.match(card,/money\(session\.priceAmount\)/);
  assert.match(card,/Number\.isFinite\(session\.maxParticipants\)/);
- assert.match(card,/Ver detalhes da sessão/);
+ assert.match(card,/Ver detalhes do jogo/);
 });
 
 test('past scheduled sessions cannot advertise open vacancies or attendance',()=>{

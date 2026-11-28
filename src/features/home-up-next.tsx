@@ -77,7 +77,7 @@ export function HomeUpNext(){
   <View style={styles.head}>
    <Text style={styles.title}>{t('jogos::A seguir')}</Text>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/my-sessions')} style={styles.link}>
-    <Text style={styles.linkText}>{games.length>MAX_GAMES?t('Ver todos ({n})',{n:games.length}):t('As minhas sessões')}</Text>
+    <Text style={styles.linkText}>{games.length>MAX_GAMES?t('Ver todos ({n})',{n:games.length}):t('Os meus jogos')}</Text>
    </Pressable>
   </View>
   {next.length?next.map(game=><Pressable key={game.id} accessibilityRole="button"

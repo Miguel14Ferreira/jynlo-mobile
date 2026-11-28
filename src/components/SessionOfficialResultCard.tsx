@@ -27,7 +27,7 @@ export function SessionOfficialResultCard({sessionId,token,game}:{sessionId:numb
    const response=await sessionOfficialResult(sessionId,token);
    if(version!==requestVersion.current)return;
    if(response.sessionId!==sessionId||!Number.isSafeInteger(response.roundId)||response.roundId<=0)
-    throw Error(t('O resultado devolvido pelo servidor não corresponde à sessão.'));
+    throw Error(t('O resultado devolvido pelo servidor não corresponde ao jogo.'));
    setResult(response);
    setLoadedFor(identity);
   }catch(e){

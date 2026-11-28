@@ -94,7 +94,7 @@ export default function SessionScreen(){
     foregroundLoadVersion.current=version;
     if(!Number.isSafeInteger(id)||id<=0){
       foregroundLoadVersion.current=null;
-      setError(t('Identificador de sessão inválido.'));setLoading(false);return null;
+      setError(t('Identificador de jogo inválido.'));setLoading(false);return null;
     }
     setError('');setRosterError('');setLoading(true);setDetail(null);setPreview(null);setParticipants([]);
     setTeamPreview(null);
@@ -122,7 +122,7 @@ export default function SessionScreen(){
           }catch{
             if(version!==detailRequestGeneration.current)return null;
             setParticipants([]);
-            setRosterError(t('Não foi possível carregar a lista de jogadores. Atualiza o estado da sessão para tentar novamente.'));
+            setRosterError(t('Não foi possível carregar a lista de jogadores. Atualiza o estado do jogo para tentar novamente.'));
           }
         }
         // The caller may display sensitive confirmed assignments only after
@@ -136,7 +136,7 @@ export default function SessionScreen(){
       }
     }catch(e){
       if(version===detailRequestGeneration.current)
-        setError(e instanceof Error?e.message:t('Não foi possível carregar a sessão.'));
+        setError(e instanceof Error?e.message:t('Não foi possível carregar o jogo.'));
       return null;
     }finally{
       if(foregroundLoadVersion.current===version)foregroundLoadVersion.current=null;
@@ -175,7 +175,7 @@ export default function SessionScreen(){
       if(version!==detailRequestGeneration.current||epoch!==actionEpoch.current)return;
       if(e instanceof ApiError&&[401,403,404,410].includes(e.status)){
         setDetail(null);setParticipants([]);setTeamPreview(null);
-        setError(t('O acesso a esta sessão mudou. Atualiza para confirmar as permissões.'));
+        setError(t('O acesso o este jogo mudou. Atualiza para confirmar as permissões.'));
       }
       // Network failures preserve the last visible data and draft; the user
       // can still request a full refresh manually.
@@ -238,7 +238,7 @@ export default function SessionScreen(){
       await load();
     }catch(e){
       if(version===detailRequestGeneration.current)
-        setError((e instanceof Error?e.message:t('Não foi possível concluir a ação.'))+' '+t('Confirma o estado da sessão antes de repetir.'));
+        setError((e instanceof Error?e.message:t('Não foi possível concluir a ação.'))+' '+t('Confirma o estado do jogo antes de repetir.'));
     }finally{
       operationInFlight.current=false;
       // Refocusing this exact session keeps the pending lock visible.
@@ -274,9 +274,9 @@ export default function SessionScreen(){
       token:auth.token,method:'POST',body:{token:guestToken}
     });
     if(presence.status==='PARTICIPANT'||presence.status==='ORGANIZER')
-      return {message:t('Já tens presença confirmada nesta sessão.')};
+      return {message:t('Já tens presença confirmada neste jogo.')};
     if(presence.status==='WAITLISTED')
-      return {message:t('Já estás na lista de espera desta sessão.')};
+      return {message:t('Já estás na lista de espera deste jogo.')};
     if(presence.status!=='NONE')throw Error(t('Não foi possível verificar o teu estado de participação.'));
     const result=await request<Awaited<ReturnType<typeof joinSession>>>(`/api/sessions/${id}/guest-join-account`,{
       token:auth.token,method:'POST',body:{token:guestToken}
@@ -289,7 +289,7 @@ export default function SessionScreen(){
     if(!auth.token||!detail||!canLeave(detail))return;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     const actorToken=auth.token,actorUsername=auth.username;
-    Alert.alert(t('Cancelar presença'),t('Queres mesmo deixar esta sessão ou a lista de espera?'),[
+    Alert.alert(t('Cancelar presença'),t('Queres mesmo deixar este jogo ou a lista de espera?'),[
       {text:t('Voltar'),style:'cancel'},
       {text:t('Confirmar'),style:'destructive',onPress:()=>{
         if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
@@ -301,12 +301,12 @@ export default function SessionScreen(){
     if(!auth.token||!detail||!owner)return;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     const actorToken=auth.token,actorUsername=auth.username;
-    Alert.alert(t('Cancelar sessão'),t('Esta ação cancela a sessão para todos os jogadores. Confirmas?'),[
+    Alert.alert(t('Cancelar jogo'),t('Esta ação cancela o jogo para todos os jogadores. Confirmas?'),[
       {text:t('Manter sessão'),style:'cancel'},
-      {text:t('Cancelar sessão'),style:'destructive',onPress:()=>{
+      {text:t('Cancelar jogo'),style:'destructive',onPress:()=>{
         if(promptVersion!==detailRequestGeneration.current||promptEpoch!==actionEpoch.current)return;
         void perform(()=>cancelSession(id,actorToken,actorUsername||undefined),
-          t('Sessão cancelada. Os inscritos serão avisados na Jynlo; partilha também com convidados externos.'));
+          t('Jogo cancelado. Os inscritos serão avisados na Jynlo; partilha também com convidados externos.'));
       }}
     ]);
   };
@@ -318,8 +318,8 @@ export default function SessionScreen(){
        participant.username.toLowerCase()===auth.username?.toLowerCase()||
        participant.username.toLowerCase()===detail.creatorUsername?.toLowerCase())return;
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
-    Alert.alert(t('Remover jogador da sessão?'),
-      t('Remover {user} desta sessão? A lista de espera pode ser atualizada e as equipas confirmadas podem ser anuladas.',{user:participant.username}),
+    Alert.alert(t('Remover jogador do jogo?'),
+      t('Remover {user} deste jogo? A lista de espera pode ser atualizada e as equipas confirmadas podem ser anuladas.',{user:participant.username}),
       [{text:t('Manter jogador'),style:'cancel'},
        {text:t('Remover jogador'),style:'destructive',onPress:()=>{
         if(removalInFlight.current||attendanceInFlight.current||operationInFlight.current||
@@ -339,8 +339,8 @@ export default function SessionScreen(){
           const message=e instanceof ApiError&&e.status===403?
             t('O servidor não autorizou esta remoção.'):
             e instanceof ApiError&&e.status===409?
-            t('A sessão já não permite remover participantes.'):
-            t('Não foi possível confirmar a remoção. Atualiza a sessão e consulta a lista antes de tentares novamente.');
+            t('O jogo já não permite remover participantes.'):
+            t('Não foi possível confirmar a remoção. Atualiza o jogo e consulta a lista antes de tentares novamente.');
           setRosterError(message);
         }).finally(()=>{
           removalInFlight.current=false;
@@ -357,7 +357,7 @@ export default function SessionScreen(){
     const present=status==='ATTENDED';
     const promptVersion=detailRequestGeneration.current,promptEpoch=actionEpoch.current;
     Alert.alert(present?t('Confirmar presença?'):t('Registar falta?'),
-      present?t('Confirmas que {user} compareceu à sessão?',{user:participant.username}):
+      present?t('Confirmas que {user} compareceu ao jogo?',{user:participant.username}):
       t('Confirmas que {user} não compareceu? Esta marcação pode afetar o histórico de fiabilidade do jogador.',{user:participant.username}),
       [{text:t('Voltar'),style:'cancel'},
        {text:present?t('Confirmar presença'):t('Registar falta'),style:present?'default':'destructive',onPress:()=>{
@@ -394,14 +394,14 @@ export default function SessionScreen(){
         setInviteUsername(current=>current.trim()===invitee?'':current);
     },t('Convite enviado. A outra pessoa tem de o aceitar.'));};
   const share=()=>{
-    if(DEMO_MODE){setFeedback(t('Não é possível partilhar uma sessão fictícia da demonstração.'));return;}
+    if(DEMO_MODE){setFeedback(t('Não é possível partilhar um jogo fictícia da demonstração.'));return;}
     const send=(url:string)=>Share.share({
-      message:`🏟️ ${t('{sport} na Jynlo',{sport:sportName(s?.sport)||t('Sessão desportiva')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta a sessão e confirma a presença: {url}',{url})}`,
+      message:`🏟️ ${t('{sport} na Jynlo',{sport:sportName(s?.sport)||t('Jogo')})}\n${s?.gameDate?formatDate(s.gameDate)+'\n':''}${t('Consulta o jogo e confirma a presença: {url}',{url})}`,
       url
     }).catch(()=>setFeedback(t('Não foi possível abrir a partilha. Tenta novamente.')));
     const publicUrl=sessionShareUrl(id);
     if(!owner||!auth.token||!detail){void send(publicUrl);return;}
-    Alert.alert(t('Partilhar sessão'),
+    Alert.alert(t('Partilhar jogo'),
       t('A ligação normal não altera convites existentes. Um convite sem conta permite confirmar presença como convidado, mas criar um novo invalida os convites anteriores.'),
       [
         {text:t('Cancelar'),style:'cancel'},
@@ -431,7 +431,7 @@ export default function SessionScreen(){
     }catch(e){
       if(request===teamsOperation.current&&epoch===actionEpoch.current&&
          version===detailRequestGeneration.current)
-        setTeamsError(e instanceof Error?e.message:t('A sessão não permite gerar equipas neste momento.'));
+        setTeamsError(e instanceof Error?e.message:t('O jogo não permite gerar equipas neste momento.'));
     }finally{
       // A focus change invalidates UI results, not the in-flight POST.
       // No newer team operation can start until this request has settled.
@@ -467,14 +467,14 @@ export default function SessionScreen(){
             }else{
               // The POST was acknowledged. A later refresh failure or changed
               // permission must not be presented as a failed confirmation.
-              setTeamsMessage(t('O servidor confirmou as equipas, mas não foi possível validar a atualização da sessão. Atualiza o estado antes de fazer outra alteração.'));
+              setTeamsMessage(t('O servidor confirmou as equipas, mas não foi possível validar a atualização do jogo. Atualiza o estado antes de fazer outra alteração.'));
             }
           })
           .catch(()=>{
             if(request!==teamsOperation.current||epoch!==actionEpoch.current||
                version!==detailRequestGeneration.current)return;
             setTeamPreview(null);
-            setTeamsError(t('Não foi possível confirmar o resultado. Atualiza a sessão antes de repetir.'));
+            setTeamsError(t('Não foi possível confirmar o resultado. Atualiza o jogo antes de repetir.'));
           })
           .finally(()=>{
             // The existing request owns the lock until it settles, even
@@ -528,7 +528,7 @@ export default function SessionScreen(){
     {error?<Message tone="error">{error}</Message>:null}
      {guestToken?<View style={styles.guestInvitePanel}>
        <Text style={styles.panelHeading}>{t('Convite de participação recebido')}</Text>
-       <Text style={styles.hint}>{t('O convite mantém-se associado a esta sessão. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.')}</Text>
+       <Text style={styles.hint}>{t('O convite mantém-se associado o este jogo. Se não tens conta Jynlo, podes confirmar diretamente abaixo, ou continuar no browser pela ligação original.')}</Text>
        <Button secondary title={t('Continuar no browser')} onPress={()=>{
          const url=`https://jynlosports.com/sessions/${id}?guest=${encodeURIComponent(guestToken)}`;
          void import('expo-web-browser').then(browser=>browser.openBrowserAsync(url)).catch(()=>Alert.alert(t('Convite'),t('Não foi possível abrir a ligação no browser.')));
@@ -542,17 +542,17 @@ export default function SessionScreen(){
     {guestToken&&!auth.token&&!loading&&Number.isSafeInteger(id)&&id>0?<GuestSessionRSVP sessionId={id} guestToken={guestToken} onConfirmed={()=>void load()}/>:null}
     {s&&!loading?<>
       <View style={styles.hero}>
-        {sessionPhoto?<><Pressable accessibilityRole="imagebutton" style={{width:'100%'}} accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[sessionPhoto],index:0})}><Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia da sessão')}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:null}
+        {sessionPhoto?<><Pressable accessibilityRole="imagebutton" style={{width:'100%'}} accessibilityLabel={t('Ampliar fotografia')} onPress={()=>setZoomPhoto({uris:[sessionPhoto],index:0})}><Image source={{uri:sessionPhoto}} style={styles.sessionPhoto} accessibilityLabel={t('Fotografia do jogo')}/></Pressable><PostImageLightbox photos={zoomPhoto} onClose={()=>setZoomPhoto(null)}/></>:null}
         <View style={styles.top}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(s.sport)}</Text>
           <Badge text={sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true})==='Aberta'?t('{n} vagas',{n:spots}):t(sessionParticipationLabel({...s,status:s.status||'UNKNOWN',joined:detail?.joined===true,waitlisted:detail?.waitlisted===true}))}/></View>
-        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{sportName(s.sport)||t('Sessão desportiva')}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.title}>{sportName(s.sport)||t('Jogo')}</Text>
         <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" color={C.muted} size={16}/><Text style={styles.city}>{s.city||t('Local a confirmar')}</Text></View>
         {detail?<Text style={styles.levelLine}>🎯 {levelLabel(detail.skillLevel)}</Text>:null}
         {detail?.communityId&&Number.isSafeInteger(detail.communityId)&&detail.communityId>0?
           <Pressable accessibilityRole="button" onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(detail.communityId)}})}>
             <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="community" size={17} color={C.mint}/><Text style={styles.communityLink}>{t('Abrir comunidade associada')}</Text><JynloIcon name="chevron-right" size={16} color={C.mint}/></View>
           </Pressable>:null}
-        {detail?.audience==='COMMUNITY_ONLY'?<Text style={styles.hint}>{t('Sessão reservada a membros da comunidade.')}</Text>:null}
+        {detail?.audience==='COMMUNITY_ONLY'?<Text style={styles.hint}>{t('Jogo reservado a membros da comunidade.')}</Text>:null}
       </View>
       <View style={styles.infoGrid}>
         <View style={styles.info}><Text style={styles.label}>{t('DATA E HORA')}</Text><Text style={styles.value}>{formatDate(s.gameDate)}</Text></View>
@@ -574,11 +574,11 @@ export default function SessionScreen(){
         s.status!=='CANCELLED'&&s.status!=='COMPLETED'&&
         typeof s.gameDate==='string'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)>Date.now()?
         <View style={styles.panel}>
-         <Pressable accessibilityRole="button" accessibilityLabel={showSessionChat?t('Fechar chat da sessão'):t('Abrir chat da sessão')}
+         <Pressable accessibilityRole="button" accessibilityLabel={showSessionChat?t('Fechar chat do jogo'):t('Abrir chat do jogo')}
            accessibilityState={{expanded:showSessionChat}} onPress={()=>setShowSessionChat(open=>!open)}
            style={styles.chatDisclosure}>
           <View style={{flex:1,gap:4}}>
-           <Text style={styles.panelHeading}>{t('Chat da sessão')}</Text>
+           <Text style={styles.panelHeading}>{t('Chat do jogo')}</Text>
            <Text style={styles.hint}>{t('Mensagens dos participantes confirmados · atualização em tempo real')}</Text>
           </View>
           <Text maxFontSizeMultiplier={1.3} style={styles.chatDisclosureSymbol}>{showSessionChat?'−':'+'}</Text>
@@ -600,8 +600,8 @@ export default function SessionScreen(){
           canPublish={owner||detail.joined}/>:null}
       {feedback?<Message>{feedback}</Message>:null}
       {detail?.status==='CANCELLED'?<View style={styles.panel}>
-        <Text style={styles.cancelledHeading}>{t('×  Sessão cancelada')}</Text>
-        <Text style={styles.hint}>{t('A sessão foi cancelada e já não aceita novas inscrições.')}</Text>
+        <Text style={styles.cancelledHeading}>{t('×  Jogo cancelado')}</Text>
+        <Text style={styles.hint}>{t('O jogo foi cancelado e já não aceita novas inscrições.')}</Text>
         {owner?<Text style={styles.hint}>{t('A Jynlo envia automaticamente o aviso aos participantes inscritos e em lista de espera, conforme as suas preferências. Convidados externos devem ser informados pelo canal utilizado.')}</Text>:null}
         {cancelledShareText?<View style={{gap:10}}>
           <Text selectable style={styles.hint}>{cancelledShareText}</Text>
@@ -616,12 +616,12 @@ export default function SessionScreen(){
        ?<SessionPaymentsPanel sessionId={id} token={auth.token}/>:null}
       {detail?.waitlisted?<Message>{detail.waitlistPosition?t('Estás na lista de espera · posição {n}.',{n:detail.waitlistPosition}):t('Estás na lista de espera.')}</Message>:null}
       {!auth.token&&['OPEN','FULL'].includes(s.status||'')?<Button title={t('Entrar para participar')} onPress={()=>router.push({pathname:'/login',params:{redirect:`/sessions/${id}`}})}/>:null}
-      {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>{t('Esta sessão terminou ou foi cancelada. Podes continuar a explorar outras sessões públicas.')}</Message>:null}
+      {!auth.token&&['CANCELLED','COMPLETED'].includes(s.status||'')?<Message>{t('Este jogo terminou ou foi cancelado. Podes continuar a explorar outros jogos públicos.')}</Message>:null}
       {auth.token&&detail&&['JOIN','WAITLIST','PASSWORD'].includes(action.kind)?<View style={styles.panel}>
         {detail.privateGame?<>
           <Text style={styles.hint}>{t('Este jogo é só por convite. Pede o link de convite ao organizador.')}</Text>
           {legacyPasswordOpen?<TextInput value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none"
-            style={styles.input} placeholder={t('Palavra-passe da sessão')} placeholderTextColor={C.muted}/>
+            style={styles.input} placeholder={t('Palavra-passe do jogo')} placeholderTextColor={C.muted}/>
           :<Pressable accessibilityRole="button" onPress={()=>setLegacyPasswordOpen(true)}><Text style={styles.hint}>{t('Recebeste uma palavra-passe? Usa-a aqui.')}</Text></Pressable>}
         </>:null}
         {!detail.privateGame||legacyPasswordOpen?<Button title={busy?t('A processar…'):action.label} disabled={busy||loading||(detail.privateGame&&!password.trim())} onPress={join}/>:null}
@@ -635,7 +635,7 @@ export default function SessionScreen(){
       {auth.token&&owner&&detail&&!detail.problemType&&(detail.status==='OPEN'||detail.status==='FULL')
         &&Number.isFinite(Date.parse(detail.gameDate))&&Date.parse(detail.gameDate)<=Date.now()?<View style={styles.panel}>
         <Eyebrow>{t('CORREU ALGUMA COISA MAL?')}</Eyebrow>
-        <Text style={styles.hint}>{t('Só o organizador vê isto. Se o jogo não aconteceu, a sessão é cancelada e não conta para presenças nem classificações.')}</Text>
+        <Text style={styles.hint}>{t('Só o organizador vê isto. Se o jogo não aconteceu, o jogo é cancelado e não conta para presenças nem classificações.')}</Text>
         <View style={styles.levelRow}>
          {(['NOT_OCCURRED','VENUE_PROBLEM','OTHER'] as const).map(type=><Pressable key={type} accessibilityRole="radio"
            accessibilityState={{checked:problemType===type,disabled:busy}} disabled={busy} onPress={()=>setProblemType(type)}
@@ -650,9 +650,9 @@ export default function SessionScreen(){
           disabled={busy} onPress={()=>{
            const type=problemType,note=problemNote,token=auth.token!;
            const send=()=>{void perform(async()=>{await reportSessionProblem(id,token,type,note);setProblemType(null);setProblemNote('');},
-             type==='NOT_OCCURRED'?t('Registado: o jogo não aconteceu. A sessão foi cancelada.'):t('Problema reportado.'));};
+             type==='NOT_OCCURRED'?t('Registado: o jogo não aconteceu. O jogo foi cancelado.'):t('Problema reportado.'));};
            if(type!=='NOT_OCCURRED'){send();return;}
-           Alert.alert(t('O jogo não aconteceu?'),t('A sessão é cancelada e não conta para presenças nem classificações. Não dá para desfazer.'),[
+           Alert.alert(t('O jogo não aconteceu?'),t('O jogo é cancelado e não conta para presenças nem classificações. Não dá para desfazer.'),[
             {text:t('Voltar'),style:'cancel'},{text:t('Confirmar'),style:'destructive',onPress:send}]);
           }}/>:null}
       </View>:null}
@@ -664,9 +664,9 @@ export default function SessionScreen(){
       </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')&&Date.parse(detail.gameDate||'')>Date.now()?<View style={styles.panel}>
         <Eyebrow>{t('FERRAMENTAS DO ORGANIZADOR')}</Eyebrow>
-        <Button title={t('Editar dados da sessão')} secondary disabled={busy||loading}
+        <Button title={t('Editar dados do jogo')} secondary disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/[id]/edit',params:{id:String(id)}})}/>
-        <Button title={t('Partilhar convite da sessão')} secondary onPress={share}/>
+        <Button title={t('Partilhar convite do jogo')} secondary onPress={share}/>
         <Button title={t('Jogar outra vez (copiar e convidar os mesmos)')} secondary disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/create',params:{repeatFrom:String(id),...(detail.communityId?{communityId:String(detail.communityId)}:{})}})}/>
         <Button title={adminToolsOpen?t('Ocultar ferramentas avançadas'):t('Mostrar ferramentas avançadas')} secondary onPress={()=>setAdminToolsOpen(open=>!open)}/>
@@ -736,12 +736,12 @@ export default function SessionScreen(){
           </View>:null}
         </View>:null}
         <Text style={styles.hint}>{t('Convidar participantes')}</Text>
-        <Text style={styles.hint}>{t('Partilha a ligação com quem ainda não tem a aplicação. O acesso e a confirmação de presença seguem as regras da sessão na web.')}</Text>
+        <Text style={styles.hint}>{t('Partilha a ligação com quem ainda não tem a aplicação. O acesso e a confirmação de presença seguem as regras do jogo na web.')}</Text>
         <Text style={styles.hint}>{t('Ou convida diretamente alguém com conta Jynlo:')}</Text>
         <TextInput style={styles.input} value={inviteUsername} onChangeText={setInviteUsername}
           autoCapitalize="none" autoCorrect={false} placeholder={t('Nome de utilizador')} placeholderTextColor={C.muted}/>
         <Button title={t('Enviar convite')} disabled={busy||!inviteUsername.trim()} onPress={sendInvite}/>
-        <Button danger title={t('Cancelar esta sessão')} disabled={busy} onPress={cancel}/>
+        <Button danger title={t('Cancelar este jogo')} disabled={busy} onPress={cancel}/>
         </View>:null}
       </View>:null}
       {detail?.communityId&&owner&&detail.status!=='CANCELLED'&&
@@ -749,7 +749,7 @@ export default function SessionScreen(){
         <View style={styles.panel}>
           <Eyebrow>{t('DEPOIS DO JOGO')}</Eyebrow>
           <Text style={styles.hint}>{t('Regista o vencedor, empate e participantes para as classificações da comunidade. A administração da comunidade e o servidor validam a operação.')}</Text>
-          <Button title={t('Registar resultado da sessão')} secondary
+          <Button title={t('Registar resultado do jogo')} secondary
             onPress={()=>router.push({pathname:'/sessions/[id]/result',params:{id:String(id),communityId:String(detail.communityId),sport:detail.sport}})}/>
         </View>:null}
       {detail&&canViewRoster(detail,auth.username)&&!rosterError&&hasConfirmedTeams?<View style={styles.panel}>
@@ -764,7 +764,7 @@ export default function SessionScreen(){
         {confirmedTeams.unassigned.length>0?<Text style={styles.hint}>{t('{n} jogadores ainda sem equipa atribuída.',{n:confirmedTeams.unassigned.length})}</Text>:null}
       </View>:null}
       {detail&&canViewRoster(detail,auth.username)?<View style={styles.panel}>
-        <Pressable accessibilityRole="button" accessibilityLabel={showParticipantRoster?t('Ocultar participantes da sessão'):t('Mostrar participantes da sessão')}
+        <Pressable accessibilityRole="button" accessibilityLabel={showParticipantRoster?t('Ocultar participantes do jogo'):t('Mostrar participantes do jogo')}
           accessibilityState={{expanded:showParticipantRoster}} onPress={()=>setShowParticipantRoster(open=>!open)} style={styles.rosterDisclosure}>
           <View style={{flex:1,gap:3}}>
            <Text style={styles.rosterTitle}>{t('Quem vai')}</Text>
@@ -804,7 +804,7 @@ export default function SessionScreen(){
             {auth.token&&!DEMO_MODE&&owner&&['OPEN','FULL'].includes(detail.status)&&
               p.username.toLowerCase()!==detail.creatorUsername?.toLowerCase()&&
               p.username.toLowerCase()!==auth.username?.toLowerCase()?
-              <Pressable accessibilityRole="button" accessibilityLabel={t('Remover {user} da sessão',{user:p.username})}
+              <Pressable accessibilityRole="button" accessibilityLabel={t('Remover {user} do jogo',{user:p.username})}
                 disabled={busy||loading||removingParticipantId!==null} onPress={()=>confirmRemoveParticipant(p)}
                 style={({pressed})=>[styles.removePlayerButton,{opacity:pressed||removingParticipantId!==null?0.6:1}]}>
                 <Text style={styles.removePlayerLabel}>{removingParticipantId===p.id?t('A remover…'):t('Remover')}</Text>
@@ -820,7 +820,7 @@ export default function SessionScreen(){
       </View>:null}
       {(detail?.joined||owner)&&detail&&detail.status!=='CANCELLED'?
         <AddToCalendarButton session={detail} exactAddress={safeExactAddress(detail,auth.username)} onError={setFeedback}/>:null}
-      <Button title={t('Partilhar esta sessão')} secondary onPress={share}/>
+      <Button title={t('Partilhar este jogo')} secondary onPress={share}/>
     </>:null}
 
     {auth.token&&owner?<FutureExclusionSheet sessionId={id} participant={exclusionFor} token={auth.token} onClose={()=>setExclusionFor(null)}/>:null}

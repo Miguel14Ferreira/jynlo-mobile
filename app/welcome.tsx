@@ -31,7 +31,7 @@ export default function WelcomeScreen(){
     <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'privacy'}})} accessibilityRole="link">{t('Política de Privacidade')}</Text>
     <Text style={styles.legalLink} onPress={()=>router.push({pathname:'/legal',params:{document:'terms'}})} accessibilityRole="link">{t('Termos de Utilização')}</Text>
    </View>
-   <Text style={styles.note}>{DEMO_MODE?t('A demonstração não comunica com o servidor real. Escolher uma conta fictícia é voluntário.'):t('A tua sessão anterior só é restaurada se ainda for válida.')}</Text>
+   <Text style={styles.note}>{DEMO_MODE?t('A demonstração não comunica com o servidor real. Escolher uma conta fictícia é voluntário.'):t('O teu jogo anterior só é restaurada se ainda for válida.')}</Text>
   </View>
  </ScrollView></SafeAreaView>;
 }

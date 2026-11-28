@@ -30,7 +30,7 @@ test('cancellation messages never include private session addresses or access co
 });
 test('cancellation text tolerates legacy null or invalid date values',()=>{
  const result=cancellationNotice({sport:null,gameDate:'invalid',city:null});
- assert.match(result,/Sessão cancelada — desporto/);
+ assert.match(result,/Jogo cancelado — desporto/);
  assert.doesNotMatch(result,/Invalid Date|undefined|null/);
 });
 test('both session detail and feed use the same public-only notice generator',()=>{

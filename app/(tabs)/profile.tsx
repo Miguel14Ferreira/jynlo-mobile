@@ -167,7 +167,7 @@ export default function ProfileScreen(){
       <View style={styles.historyGrid}>
        {([
         ...(attendance&&attendance.games>=3?[[Math.round(attendance.rate)+'%',t('Presença nos jogos')] as const]:[]),
-        [activity.activitiesCompleted,t('Atividades realizadas')],
+        [activity.activitiesCompleted,t('Jogos realizados')],
         [activity.peoplePlayedWith,t('Pessoas com quem joguei')],
         [activity.sportsPractised,t('Modalidades')],
         [activity.eventsCreated,t('Eventos criados')],
@@ -220,7 +220,7 @@ export default function ProfileScreen(){
     <Eyebrow>{t('EXPLORAR A JYNLO')}</Eyebrow>
     <Button title={t('Feed')} secondary onPress={()=>router.push('/feed')}/>
     <Button title={t('Recintos desportivos')} secondary onPress={()=>router.push('/venues')}/>
-    <Button title={t('As minhas sessões')} secondary onPress={()=>router.push('/my-sessions')}/>
+    <Button title={t('Os meus jogos')} secondary onPress={()=>router.push('/my-sessions')}/>
     <Button title={t('As minhas equipas')} secondary onPress={()=>router.push('/teams')}/>
     {myVenues.length?<Button title={t('Os meus recintos')} secondary onPress={()=>myVenues.length===1?router.push({pathname:'/venues/[id]/manage',params:{id:String(myVenues[0]!.venueId)}} as never):router.push('/venue-bookings')}/>:null}
     {bookingsOpen?<Button title={t('As minhas reservas')} secondary onPress={()=>router.push('/venue-bookings')}/>:null}
@@ -230,8 +230,8 @@ export default function ProfileScreen(){
         ()=>router.replace('/welcome'),
         error=>{
           router.replace('/welcome');
-          Alert.alert(t('Verifica a sessão'),error instanceof Error?error.message:
-            t('Não foi possível confirmar a remoção das credenciais. Verifica a sessão antes de partilhares o telemóvel.'));
+          Alert.alert(t('Verifica o jogo'),error instanceof Error?error.message:
+            t('Não foi possível confirmar a remoção das credenciais. Verifica o jogo antes de partilhares o telemóvel.'));
         }
       );}}/>}
     {auth.username&&!DEMO_MODE?<><Eyebrow>{t('GESTÃO DA CONTA')}</Eyebrow>

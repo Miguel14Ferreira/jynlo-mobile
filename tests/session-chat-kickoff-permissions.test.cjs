@@ -35,7 +35,7 @@ test('all session attachment transports identify the kickoff conflict',()=>{
  assert.match(photo,/kind==='session'&&response\.status===409/);
  assert.match(album,/target\.scope==='session'&&response\.status===409/);
  assert.match(pdf,/target\.scope==='session'&&response\.status===409/);
- for(const content of [photo,album,pdf])assert.match(content,/O chat da sessão está encerrado/);
+ for(const content of [photo,album,pdf])assert.match(content,/O chat do jogo está encerrado/);
 });
 
 test('PDF composer tells session chat to recheck permission after a rejected upload',()=>{

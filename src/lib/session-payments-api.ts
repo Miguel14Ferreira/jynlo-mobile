@@ -11,7 +11,7 @@ export interface SessionPayments{
 }
 
 function base(sessionId:number):string{
- if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Sessão inválida.');
+ if(!Number.isSafeInteger(sessionId)||sessionId<=0)throw Error('Jogo inválida.');
  return `/api/sessions/${sessionId}/payments`;
 }
 function requireToken(token:string|null):string{

@@ -102,7 +102,7 @@ test('global roster selection is limited to 30 eligible players and excludes sen
  assert.match(screen,/eligible\.length>30/);
  assert.match(screen,/setSentIds\(current=>\[\.\.\.new Set\(\[\.\.\.current,\.\.\.eligible\]\)\]\)/);
  assert.match(screen,/setRosterLoaded\(false\)/);
- assert.match(screen,/Convite enviado nesta sessão/);
+ assert.match(screen,/Convite enviado neste jogo/);
 });
 
 test('global roster never silently retries uncertain POST and rechecks after successful invitation',()=>{

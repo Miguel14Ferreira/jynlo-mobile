@@ -20,12 +20,12 @@ function googleCalendarUrl(session,exactAddress,now){
  if(!session||!session.gameDate)return null;
  const w=calendarWindow(session.gameDate);
  if(!w||w.end.getTime()<(now||Date.now()))return null;
- const sport=session.sport||tr('Sessão');
+ const sport=session.sport||tr('Jogo');
  const q=new URLSearchParams({
   action:'TEMPLATE',
   text:'Jynlo — '+sport,
   dates:w.dates,
-  details:tr('Sessão de {sport} na Jynlo.',{sport})+(session.creatorUsername?' '+tr('Criada por {user}.',{user:session.creatorUsername}):'')+
+  details:tr('Jogo de {sport} na Jynlo.',{sport})+(session.creatorUsername?' '+tr('Criada por {user}.',{user:session.creatorUsername}):'')+
    (Number.isSafeInteger(session.id)?'\nhttps://jynlosports.com/sessions/'+session.id:''),
   location:calendarLocation(session,exactAddress)
  });

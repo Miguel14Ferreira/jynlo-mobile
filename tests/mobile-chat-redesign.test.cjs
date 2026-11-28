@@ -80,7 +80,7 @@ test('real-device UX: native video call foreground and actions remain accessible
 test('mobile inbox supports clear category filters without mixing private and group messages',()=>{
  const inbox=source('app/(tabs)/messages.tsx');
  assert.match(inbox,/conversationKind,setConversationKind/);
- for(const kind of ["['all','Todas']","['direct','Privadas']","['community','Comunidades']","['session','Sessões']"])
+ for(const kind of ["['all','Todas']","['direct','Privadas']","['community','Comunidades']","['session','Jogos']"])
   assert.ok(inbox.includes(kind),kind);
  assert.match(inbox,/item\.kind===conversationKind/);
  assert.match(inbox,/accessibilityState=\{\{selected:conversationKind===kind\}\}/);

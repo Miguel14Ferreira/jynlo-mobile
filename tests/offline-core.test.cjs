@@ -38,7 +38,7 @@ test('saved label in Portuguese',()=>{
  assert.match(core.savedLabel(now-3*86400000,now),/^a \d{2}\/\d{2}$/);
 });
 
-test('Explorar and As minhas sessões fall back to saved data; logout clears it; banner in the root',()=>{
+test('Explorar and Os meus jogos fall back to saved data; logout clears it; banner in the root',()=>{
  const read=f=>untranslate(fs.readFileSync(path.join(__dirname,'..',f),'utf8'));
  assert.match(read('src/lib/api.ts'),/withOfflineSnapshot\('explore'/);
  assert.match(read('src/lib/parity-api.ts'),/withOfflineSnapshot\('my-sessions'/);

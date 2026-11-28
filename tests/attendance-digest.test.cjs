@@ -13,14 +13,14 @@ test('groups attendance into a single session row and prefers the signed-in part
  assert.equal(rows.length,2);
  assert.equal(rows[0].count,2);
  assert.equal(rows[0].ownActivity,b);
- assert.equal(attendanceTitle(rows[0]),'Miguel e mais 1 participaram numa sessão de Futebol');
+ assert.equal(attendanceTitle(rows[0]),'Miguel e mais 1 participaram num jogo de Futebol');
 });
 test('does not count the same account twice or merge unrelated sessions',()=>{
  const a=activity(22,'miguel');
  const rows=attendanceDigest([a,{...a},activity(34,'miguel')],'miguel');
  assert.equal(rows[0].count,1);
  assert.equal(rows[1].count,1);
- assert.equal(attendanceTitle(rows[0]),'Miguel participou numa sessão de Futebol');
+ assert.equal(attendanceTitle(rows[0]),'Miguel participou num jogo de Futebol');
 });
 test('preserves other activities and handles invalid identifiers',()=>{
  const other={type:'POST',postId:1};

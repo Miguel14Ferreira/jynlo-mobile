@@ -1,6 +1,6 @@
 'use strict';
 const {tr}=require('./i18n-core.cjs');
-/** Session presets ("perfis de sessões") — shared with the web through /api/sessions/presets.
+/** Session presets ("perfis de jogos") — shared with the web through /api/sessions/presets.
  * Never stores dates, passwords or photos; GPS positions are not saved (only map-link points). */
 const MAX_PRESETS=20,MAX_NAME=70;
 const LOCATION_TO_SERVER={saved:'venue',link:'maps',gps:'gps'};
@@ -79,7 +79,7 @@ function formFromPreset(empty,settings,ctx){
   mapsLink:hasPoint?String(s.venueMapLink):'',venueId:locationMode==='saved'&&Number.isSafeInteger(s.selectedVenueId)&&s.selectedVenueId>0?s.selectedVenueId:null,notes};
 }
 const NOTE_TEXT={
- community:'Algumas comunidades deste perfil não estão disponíveis ou não podem criar sessões. Verifica as comunidades selecionadas.',
+ community:'Algumas comunidades deste perfil não estão disponíveis ou não podem criar jogos. Verifica as comunidades selecionadas.',
  weeklySlots:'Este perfil tem mais de um jogo por semana: acrescenta os outros horários no passo "Quando e onde?".',
  gps:'Este perfil usa a localização atual: volta a captar o ponto GPS no passo "Quando e onde?".',
  registration:'Escolhe de novo o dia e a hora de abertura das inscrições.'

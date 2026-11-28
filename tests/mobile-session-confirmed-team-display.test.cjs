@@ -25,7 +25,7 @@ test('cancelled and completed status take priority over cached joined or waitlis
  assert.equal(sessionParticipationLabel({status:'FULL',joined:true,waitlisted:false}),'Confirmado');
  assert.equal(sessionParticipationLabel({status:'FULL',joined:false,waitlisted:true}),'Lista de espera');
  assert.equal(sessionParticipationLabel({status:'OPEN',joined:false,waitlisted:false}),'Aberta');
- assert.equal(sessionParticipationLabel(null),'Sessão indisponível');
+ assert.equal(sessionParticipationLabel(null),'Jogo indisponível');
 });
 test('only authorized session detail viewers see persisted teams, never an unconfirmed preview',()=>{
  const screen=read('app/sessions/[id].tsx');

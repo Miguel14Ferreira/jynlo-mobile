@@ -1,6 +1,6 @@
 'use strict';
 const {tr}=require('./i18n-core.cjs');
-/** Attendance history and disputes — same rules and wording as the web "Minhas sessões" page. */
+/** Attendance history and disputes — same rules and wording as the web "Meus jogos" page. */
 const ATTENDANCE_LABELS={ATTENDED:'Presente',NO_SHOW:'Faltou',LATE_CANCELLED:'Cancelamento tardio',PENDING:'Pendente'};
 const DISPUTE_LABELS={OPEN:'Em análise',ACCEPTED:'Aceite',REJECTED:'Rejeitada'};
 const MAX_REASON=2000;

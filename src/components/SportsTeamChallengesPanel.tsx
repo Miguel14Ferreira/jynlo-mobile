@@ -47,7 +47,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
        &&(!sport||!game.sport||game.sport.toLowerCase()===sport.toLowerCase())));
      setOwnSessionsError('');
     }catch{
-     if(version===generation.current){setOwnSessions([]);setOwnSessionsError(t('Não foi possível consultar as tuas sessões.'));}
+     if(version===generation.current){setOwnSessions([]);setOwnSessionsError(t('Não foi possível consultar os teus jogos.'));}
     }
    }
   }catch{
@@ -105,13 +105,13 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
  const joinSession=(item:TeamChallenge)=>{
   const value=sessionInputs[item.id]||'';
   if(!/^[1-9][0-9]*$/.test(value)||!Number.isSafeInteger(Number(value)))return;
-  void mutate(()=>linkTeamChallengeSession(item.id,Number(value),token),t('Sessão associada ao desafio.'));
+  void mutate(()=>linkTeamChallengeSession(item.id,Number(value),token),t('Jogo associado ao desafio.'));
  };
  if(!token)return <Text style={styles.hint}>{t('Inicia sessão para acompanhar os desafios.')}</Text>;
  return <View style={styles.container}>
   <Text style={styles.eyebrow}>{t('JYNLO · RIVALIDADES')}</Text>
   <Text style={styles.title}>{t('Desafios entre equipas')}</Text>
-  <Text style={styles.hint}>{t('Aceita o desafio e depois associa uma sessão pública. A Jynlo não inscreve jogadores automaticamente.')}</Text>
+  <Text style={styles.hint}>{t('Aceita o desafio e depois associa um jogo público. A Jynlo não inscreve jogadores automaticamente.')}</Text>
   {!isOwner?<Text style={styles.hint}>{t('Os convites e respostas são privados dos responsáveis das equipas.')}</Text>:null}
   {isOwner&&loading?<Text style={styles.hint}>{t('A consultar desafios…')}</Text>:null}
   {error?<Text style={styles.error}>{error}</Text>:null}
@@ -139,7 +139,7 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
       ])}><Text style={styles.action}>{t('Cancelar convite')}</Text></Pressable>:null}
    {isOwner&&item.status==='ACCEPTED'&&!item.sessionId?
     <View style={styles.link}>
-     <Text style={styles.hint}>{t('Escolhe uma sessão pública criada por ti para este desafio.')}</Text>
+     <Text style={styles.hint}>{t('Escolhe um jogo público criado por ti para este desafio.')}</Text>
      {ownSessions.map(game=><Pressable key={game.id}
       accessibilityRole="button"
       accessibilityState={{selected:sessionInputs[item.id]===String(game.id)}}
@@ -148,9 +148,9 @@ export default function SportsTeamChallengesPanel({teamId,token,sport,isOwner}:P
       <Text style={styles.action}>{sportName(game.sport)} · {game.city} · {game.gameDate.slice(0,10)}</Text>
      </Pressable>)}
      {ownSessionsError?<Text style={styles.error}>{ownSessionsError}</Text>:null}
-     {!ownSessions.length?<Text style={styles.hint}>{t('Ainda não tens uma sessão pública elegível.')}</Text>:null}
+     {!ownSessions.length?<Text style={styles.hint}>{t('Ainda não tens um jogo público elegível.')}</Text>:null}
      <Pressable accessibilityRole="button" onPress={()=>router.push('/(tabs)/create')}
-       style={styles.button}><Text style={styles.action}>{t('Criar sessão')}</Text></Pressable>
+       style={styles.button}><Text style={styles.action}>{t('Criar jogo')}</Text></Pressable>
      <Pressable disabled={busy||!ownSessions.some(game=>String(game.id)===sessionInputs[item.id])}
       onPress={()=>joinSession(item)} style={[styles.button,styles.primary]}>
       <Text style={styles.action}>{t('Associar jogo')}</Text></Pressable>

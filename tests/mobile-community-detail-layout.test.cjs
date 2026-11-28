@@ -37,7 +37,7 @@ test('community private data stays protected and main content keeps its existing
  assert.doesNotMatch(src,/<CommunityChatPanel embedded\/>/);
  assert.match(src,/pendingCommunityRequests\(id,auth\.token,auth\.username\)/);
  assert.match(src,/communitySessions\(id,auth\.token,auth\.username\)/);
- assert.match(src,/Criar sessão nesta comunidade/);
+ assert.match(src,/Criar jogo nesta comunidade/);
  assert.match(src,/Ver competições por modalidade/);
  assert.match(src,/Resultados e classificações/);
  assert.match(src,/Criar torneio nesta comunidade/);

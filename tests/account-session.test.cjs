@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {assertCanStartLogin}=require('../src/lib/account-session.cjs');
-test('uma sessão autenticada impede entrada noutra sem logout',()=>{
+test('um jogo autenticada impede entrada noutra sem logout',()=>{
   for(const username of ['Tiago','André','utilizador-real']){
     assert.throws(()=>assertCanStartLogin(username),/Termina primeiro/);
   }

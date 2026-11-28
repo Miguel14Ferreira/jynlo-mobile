@@ -20,12 +20,12 @@ test('community inbox never trusts unverified membership or server titles',()=>{
 });
 
 test('session inbox excludes other kinds, unapproved IDs and duplicate results',()=>{
- const allowed=new Map([['18','Sessão 18']]);
+ const allowed=new Map([['18','Jogo 18']]);
  const result=filterAuthorizedSummaries('session',allowed,[
   summary('community','18'),summary('session','19'),summary('session','18'),
   summary('session','18',{latestMessageId:7})
- ],'Sessão desportiva');
- assert.deepEqual(result.map(item=>item.title),['Sessão 18']);
+ ],'Jogo');
+ assert.deepEqual(result.map(item=>item.title),['Jogo 18']);
 });
 
 test('malformed responses and invalid metadata fail closed',()=>{

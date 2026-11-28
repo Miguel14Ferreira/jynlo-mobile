@@ -44,8 +44,8 @@ export function CallUpCard({sessionId,token,username}:{sessionId:number;token:st
    <Text style={styles.meta}>{formatDate(session.gameDate)}</Text>
    <View style={styles.bar}><View style={[styles.fill,{width:`${progress}%`}]}/></View>
    <Text style={styles.meta}>{t('{a}/{b} vão',{a:session.participantCount,b:session.maxParticipants})}</Text>
-   {closed?<Text style={styles.state}>{t('Esta sessão já não aceita inscrições')}</Text>
-    :organiser?<Text style={styles.state}>{t('És o organizador desta sessão')}</Text>
+   {closed?<Text style={styles.state}>{t('Este jogo já não aceita inscrições')}</Text>
+    :organiser?<Text style={styles.state}>{t('És o organizador deste jogo')}</Text>
     :session.joined?<Text style={[styles.state,{color:C.mint}]}>{t('✓ Vais a este jogo')}</Text>
     :session.waitlisted?<Text style={styles.state}>{t('Estás na lista de espera')}</Text>
     :session.privateGame?<Text style={styles.state}>{t('Jogo só por convite: abre o link do organizador para entrar')}</Text>
@@ -54,9 +54,9 @@ export function CallUpCard({sessionId,token,username}:{sessionId:number;token:st
      </Pressable>}
    {error?<Text style={styles.error}>{error}</Text>:null}
    <Pressable accessibilityRole="link" onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(session.id)}})}>
-    <Text style={styles.link}>{t('Ver sessão ›')}</Text>
+    <Text style={styles.link}>{t('Ver jogo ›')}</Text>
    </Pressable>
-  </>:loading?<ActivityIndicator color={C.mint}/>:<Text style={styles.meta}>{t('Sessão indisponível')}</Text>}
+  </>:loading?<ActivityIndicator color={C.mint}/>:<Text style={styles.meta}>{t('Jogo indisponível')}</Text>}
  </View>;
 }
 const styles=StyleSheet.create({

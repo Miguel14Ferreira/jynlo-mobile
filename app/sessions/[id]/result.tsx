@@ -111,10 +111,10 @@ export default function SessionCompetitionResultScreen(){
    }}
   ]);
  }
- if(!valid)return <Page><Message tone="error">{t('Sessão ou comunidade inválida.')}</Message></Page>;
+ if(!valid)return <Page><Message tone="error">{t('Jogo ou comunidade inválida.')}</Message></Page>;
  return <Page>
   <DemoBanner/><Eyebrow>{t('JYNLO · APÓS O JOGO')}</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Resultado da sessão')}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Resultado do jogo')}</Text>
   <Text style={styles.hint}>{t('Registo rápido de vitória ou empate para as classificações da comunidade. O resultado é validado pelo servidor e só a administração da comunidade pode submetê-lo.')}</Text>
   <Message>{football?(scoreSupported?t('Regista o marcador oficial e, se souberes, os golos e assistências dos jogadores. Não são inferidos dados em falta.'):t('Ainda não é possível registar o marcador. Podes registar vitória ou empate.')):t('Este formulário regista a vitória ou o empate. Estatísticas individuais desta modalidade não são calculadas automaticamente.')}</Message>
   {loading?<Loader/>:null}
@@ -124,7 +124,7 @@ export default function SessionCompetitionResultScreen(){
   {!auth.token?<Button title={t('Iniciar sessão')} onPress={()=>router.push('/login')}/>:null}
   {confirmedIdentity&&recorded?<View style={styles.panel}>
     <Text style={styles.sectionTitle}>{t('Resultado já registado')}</Text>
-    <Text style={styles.hint}>{t('Esta sessão já originou uma jornada. Consulta as classificações da comunidade; não vamos criar uma segunda jornada.')}</Text>
+    <Text style={styles.hint}>{t('Este jogo já originou uma jornada. Consulta as classificações da comunidade; não vamos criar uma segunda jornada.')}</Text>
     <Button secondary title={t('Abrir comunidade')} onPress={()=>router.push({pathname:'/communities/[id]',params:{id:String(communityId)}})}/>
    </View>:null}
   {confirmedIdentity&&!recorded&&!loading?<View style={styles.panel}>
@@ -152,7 +152,7 @@ export default function SessionCompetitionResultScreen(){
     </View>
     <Text style={styles.sectionTitle}>{t('Jogadores que participaram')}</Text>
     <Text style={styles.hint}>{t('Confirma quem jogou e em que equipa. Só serão incluídos jogadores inscritos que o servidor devolveu.')}</Text>
-    {roster.length===0?<Message>{t('Sem jogadores elegíveis. Atualiza a sessão e confirma as inscrições antes de registar o resultado.')}</Message>:null}
+    {roster.length===0?<Message>{t('Sem jogadores elegíveis. Atualiza o jogo e confirma as inscrições antes de registar o resultado.')}</Message>:null}
     {roster.map(player=><View key={player.id} style={styles.player}>
      <Pressable accessibilityRole="checkbox" accessibilityState={{checked:player.selected,disabled:busy}}
       disabled={busy} onPress={()=>change(player.id,{selected:!player.selected})} style={styles.checkbox}>
@@ -182,7 +182,7 @@ export default function SessionCompetitionResultScreen(){
     </View>):null}
     <Button title={busy?t('A registar…'):t('Registar resultado nas classificações')} disabled={busy||!roster.length||!outcome} onPress={confirm}/>
    </View>:null}
-  <Button secondary title={t('Voltar à sessão')} onPress={()=>router.back()}/>
+  <Button secondary title={t('Voltar ao jogo')} onPress={()=>router.back()}/>
  </Page>;
 }
 const styles=StyleSheet.create({

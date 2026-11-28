@@ -43,7 +43,7 @@ export async function sendChatPhoto(kind:ChatKind,id:number,token:string,asset:I
   const response=await expoFetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/json'},credentials:'omit',redirect:'error',body:form,signal:controller.signal});
   if(!response.ok){
    if(kind==='session'&&response.status===409)
-    throw Error('O chat da sessão está encerrado. Confirma o estado do jogo.');
+    throw Error('O chat do jogo está encerrado. Confirma o estado do jogo.');
    if(kind==='session'&&[401,403,410].includes(response.status))
     throw Error('Já não tens permissão para enviar nesta conversa.');
    throw Error('O servidor recusou o envio ('+response.status+').');

@@ -32,7 +32,7 @@ export function FutureExclusionSheet({sessionId,participant,token,onClose}:{
   try{
    const r=await request<{excluded:boolean}>(path(sessionId,p.id),block?{token,method:'PUT',body:{reason}}:{token,method:'DELETE'});
    setExcluded(!!r?.excluded);
-   setDone(r?.excluded?p.username+' '+t('já não se pode inscrever nas tuas próximas sessões.'):p.username+' '+t('pode voltar a inscrever-se nas tuas sessões.'));
+   setDone(r?.excluded?p.username+' '+t('já não se pode inscrever nos teus próximos jogos.'):p.username+' '+t('pode voltar a inscrever-se nos teus jogos.'));
   }catch{setError(block?t('Não foi possível guardar a restrição.'):t('Não foi possível retirar a restrição.'));}
   finally{inFlight.current=false;setBusy(false);}
  }
@@ -43,11 +43,11 @@ export function FutureExclusionSheet({sessionId,participant,token,onClose}:{
     <ScrollView contentContainerStyle={{gap:12}}>
      <Text style={styles.kicker}>{t('INSCRIÇÕES FUTURAS')}</Text>
      <Text style={styles.title}>{p.username}</Text>
-     <Text style={styles.text}>{t('Decisão privada e reversível. Só afeta futuras inscrições nas tuas sessões; não altera presenças nem classificações, e o jogador não é avisado do motivo.')}</Text>
+     <Text style={styles.text}>{t('Decisão privada e reversível. Só afeta futuras inscrições nos teus jogos; não altera presenças nem classificações, e o jogador não é avisado do motivo.')}</Text>
      {excluded===null&&!error?<ActivityIndicator color={C.mint}/>:null}
      {done?<Text style={styles.done}>{done}</Text>:null}
      {excluded===true?<>
-      {done?null:<Text style={styles.state}>{t('Este jogador está impedido de se inscrever nas tuas próximas sessões.')}</Text>}
+      {done?null:<Text style={styles.state}>{t('Este jogador está impedido de se inscrever nos teus próximos jogos.')}</Text>}
       <Pressable accessibilityRole="button" disabled={busy} onPress={()=>{void apply(false);}} style={styles.secondaryBtn}>
        {busy?<ActivityIndicator color={C.white}/>:<Text style={styles.secondaryText}>{t('Voltar a permitir')}</Text>}</Pressable>
      </>:null}

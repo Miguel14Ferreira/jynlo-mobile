@@ -54,7 +54,7 @@ export default function SessionMemoriesPanel({
   <Text style={styles.hint}>{t('Partilha fotografias, vídeos e momentos do jogo. Nada é publicado automaticamente.')}</Text>
   <View style={styles.actions}>
    {completed&&canPublish?<Pressable accessibilityRole="button"
-    accessibilityLabel={t('Partilhar um momento desta sessão')} style={[styles.action,styles.primary]}
+    accessibilityLabel={t('Partilhar um momento deste jogo')} style={[styles.action,styles.primary]}
     onPress={()=>router.push({pathname:'/(tabs)',params:{momentSession:String(sessionId)}})}>
     <Text style={styles.primaryLabel}>{t('Partilhar momento')}</Text>
    </Pressable>:null}

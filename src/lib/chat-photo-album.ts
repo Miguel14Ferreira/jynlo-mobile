@@ -68,7 +68,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
     if(response.status===401)throw Error('A sessão expirou. Inicia sessão novamente.');
     if(response.status===403)throw Error('Já não tens permissão para enviar nesta conversa.');
     if(target.scope==='session'&&response.status===409)
-     throw Error('O chat da sessão está encerrado. Confirma o estado do jogo.');
+     throw Error('O chat do jogo está encerrado. Confirma o estado do jogo.');
     if(target.scope==='team'&&response.status===409)
      throw Error(target.kind==='feed'?'O feed da equipa está desativado.':'O chat da equipa está desativado.');
     if(response.status===413)throw Error('O álbum ultrapassa o limite permitido pelo servidor.');
@@ -88,7 +88,7 @@ export async function sendChatPhotoAlbum(target:AlbumChatTarget,token:string,pho
   }catch(error){
    if(controller.signal.aborted)
     throw Error('O envio excedeu o tempo limite. Consulta o histórico antes de repetir.');
-   if(error instanceof Error&&/^(A sessão|Já não tens|O (?:chat|feed) da equipa|O álbum|O armazenamento|O servidor|O envio)/.test(error.message))
+   if(error instanceof Error&&/^(O jogo|A sessão|Já não tens|O (?:chat|feed) da equipa|O álbum|O armazenamento|O servidor|O envio)/.test(error.message))
     throw error;
    throw Error('Falha de ligação. Consulta o histórico antes de repetir.');
   }finally{clearTimeout(timeout);}

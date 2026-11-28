@@ -37,7 +37,7 @@ test('community tournament pages are not silently truncated after four pages',()
 test('member community links to session creation with authenticated preselection',()=>{
  const community=read('app/communities/[id].tsx');
  const wizard=read('app/sessions/create.tsx');
- assert.match(community,/title="Criar sessão nesta comunidade"/);
+ assert.match(community,/title="Criar jogo nesta comunidade"/);
  assert.match(community,/communityId:String\(id\)/);
  assert.match(wizard,/useLocalSearchParams/);
  assert.match(wizard,/const chosen=groups\.find\(c=>c\.id===requestedCommunityId\)/);

@@ -12,6 +12,6 @@ function cancellationNotice({sport,gameDate,city}={}){
    hour:'2-digit',minute:'2-digit'
  }):'';
  const summary=[label(sport,'desporto'),date,label(city)].filter(Boolean).join(' · ');
- return tr('⚠️ Sessão cancelada — {summary}. O organizador cancelou esta sessão e o jogo não se vai realizar. Por favor, não te desloques ao recinto.',{summary});
+ return tr('⚠️ Jogo cancelado — {summary}. O organizador cancelou este jogo e o jogo não se vai realizar. Por favor, não te desloques ao recinto.',{summary});
 }
 module.exports={cancellationNotice};

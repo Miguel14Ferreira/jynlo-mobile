@@ -84,7 +84,7 @@ export default function CommunityCreateScreen(){
         placeholder={t('Conta às pessoas o que podem esperar…')} placeholderTextColor={C.muted} accessibilityLabel={t('Descrição da comunidade')}/>
       <Button title={saving?t('A criar…'):t('Criar comunidade')} disabled={saving||quotaLoading||!quota?.canCreate||!auth.token||name.trim().length<3||selectedSports.length===0}
         onPress={()=>{void submit();}}/>
-      <Text style={styles.foot}>{t('Após a criação podes enviar convites e organizar novas sessões.')}</Text>
+      <Text style={styles.foot}>{t('Após a criação podes enviar convites e organizar novos jogos.')}</Text>
     </View>
   </Page>;
 }

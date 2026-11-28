@@ -39,13 +39,13 @@ export default function EditSession(){
  const load=useCallback(async()=>{
   const version=++generation.current;setLoading(true);setError('');setSession(null);setDraft(null);
   if(!auth.token||!Number.isSafeInteger(id)||id<=0){
-   setError(t('Inicia sessão para editar uma sessão válida.'));setLoading(false);return;
+   setError(t('Inicia sessão para editar um jogo válido.'));setLoading(false);return;
   }
   try{
    const result=await sessionDetail(id,auth.token,auth.username||undefined);
    if(version!==generation.current)return;
-   if(!isOrganizer(result,auth.username))throw Error(t('Só o organizador pode editar esta sessão.'));
-   if(!['OPEN','FULL'].includes(result.status))throw Error(t('Esta sessão já não está disponível para edição.'));
+   if(!isOrganizer(result,auth.username))throw Error(t('Só o organizador pode editar este jogo.'));
+   if(!['OPEN','FULL'].includes(result.status))throw Error(t('Este jogo já não está disponível para edição.'));
    setSession(result);setDraft(fromSession(result));
   }catch(e){if(version===generation.current)setError(e instanceof Error?e.message:t('Não foi possível abrir a edição.'));}
   finally{if(version===generation.current)setLoading(false);}
@@ -67,7 +67,7 @@ export default function EditSession(){
     void updateSessionDetails(sessionId,token,payload).then(()=>{
      if(version===generation.current)router.replace({pathname:'/sessions/[id]',params:{id:String(sessionId)}});
     }).catch(e=>{
-     if(version===generation.current)setError((e instanceof Error?e.message:t('Não foi possível guardar.'))+' '+t('Confirma o estado da sessão antes de tentar novamente.'));
+     if(version===generation.current)setError((e instanceof Error?e.message:t('Não foi possível guardar.'))+' '+t('Confirma o estado do jogo antes de tentar novamente.'));
     }).finally(()=>{saving.current=false;if(version===generation.current)setBusy(false);});
    }}
   ]);
@@ -82,12 +82,12 @@ export default function EditSession(){
     placeholderTextColor={C.muted} keyboardType={options?.keyboardType||'default'}/>
   </View>;
  return <Page>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Editar sessão')}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Editar jogo')}</Text>
   {loading?<Loader/>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {!loading&&session&&draft?<View style={styles.form}>
    <Badge text="Organizador"/>
-   <Text style={styles.help}>{t('As alterações aplicam-se a esta sessão. Algumas não são possíveis depois de a sessão começar.')}</Text>
+   <Text style={styles.help}>{t('As alterações aplicam-se o este jogo. Algumas não são possíveis depois de o jogo começar.')}</Text>
    <Text style={styles.label}>{t('Modalidade')}</Text>
    <Pressable style={styles.picker} disabled={busy} onPress={()=>setSportPicker(!sportPicker)}>
     <Text style={styles.pickerText}>{sportName(draft.sport)}  ▾</Text>
@@ -109,11 +109,11 @@ export default function EditSession(){
    {field(t('Mínimo de jogadores'),'minParticipants',{keyboardType:'number-pad'})}
    {field(t('Preço por jogador (€)'),'priceAmount',{keyboardType:'decimal-pad'})}
    {field(t('Ponto de encontro (opcional)'),'meetingPointInstructions')}
-   <View style={styles.field}><Text style={styles.label}>{t('Descrição da sessão (opcional)')}</Text>
+   <View style={styles.field}><Text style={styles.label}>{t('Descrição do jogo (opcional)')}</Text>
     <TextInput style={[styles.input,styles.multiline]} multiline textAlignVertical="top" maxLength={1000}
      value={draft.description} onChangeText={value=>set('description',value)} editable={!busy}
      placeholder={t('Informações sobre o jogo, regras ou material necessário')} placeholderTextColor={C.muted}
-     accessibilityLabel={t('Descrição da sessão')}/>
+     accessibilityLabel={t('Descrição do jogo')}/>
    </View>
    <Button title={busy?t('A guardar…'):t('Guardar alterações')} disabled={busy} onPress={confirm}/>
    <Button secondary title={t('Cancelar')} disabled={busy} onPress={()=>router.back()}/>

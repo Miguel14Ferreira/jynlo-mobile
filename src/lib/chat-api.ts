@@ -112,21 +112,21 @@ export async function communitySummaries(token:string,username:string,groups:Com
  * Waitlisted users do not have chat access. The API still checks membership.
  */
 export async function sessionInbox(token:string,username:string):Promise<JynloInboxSummary[]>{
- if(!token||!username)throw Error('Inicia sessão para consultar as conversas de sessões.');
+ if(!token||!username)throw Error('Inicia sessão para consultar as conversas de jogos.');
  const mine=await mySessions(token,username);
  if(!mine||!Array.isArray(mine.created)||!Array.isArray(mine.joined))
-  throw Error('Lista de sessões inválida.');
+  throw Error('Lista de jogos inválida.');
  const allowed=new Map<string,string>();
  for(const session of [...mine.created,...mine.joined]){
   if(!session||!Number.isSafeInteger(session.id)||session.id<=0)continue;
   if(['CANCELLED','COMPLETED'].includes(session.status))continue;
   const sport=typeof session.sport==='string'?session.sport.trim():'';
   const city=typeof session.city==='string'?session.city.trim():'';
-  allowed.set(String(session.id),[sport,city].filter(Boolean).join(' · ')||'Sessão desportiva');
+  allowed.set(String(session.id),[sport,city].filter(Boolean).join(' · ')||'Jogo');
  }
  const ids=[...allowed.keys()];
  if(ids.length===0)return [];
- if(DEMO_MODE)return ids.map(id=>({kind:'session' as const,id,title:allowed.get(id)||'Sessão desportiva',latestMessageId:null,
+ if(DEMO_MODE)return ids.map(id=>({kind:'session' as const,id,title:allowed.get(id)||'Jogo',latestMessageId:null,
   latestText:null,latestSender:null,latestAt:null,unreadCount:0}));
  const summaries:JynloInboxSummary[]=[];
  for(let i=0;i<ids.length;i+=100){
@@ -137,7 +137,7 @@ export async function sessionInbox(token:string,username:string):Promise<JynloIn
   summaries.push(...batch);
  }
  // The server omits closed/revoked chats; never synthesize those entries.
- return filterAuthorizedSummaries('session',allowed,summaries,'Sessão desportiva')
+ return filterAuthorizedSummaries('session',allowed,summaries,'Jogo')
   .sort((a,b)=>(Date.parse(b.latestAt||'')||0)-(Date.parse(a.latestAt||'')||0));
 }
 

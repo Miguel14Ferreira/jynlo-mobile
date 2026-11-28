@@ -60,10 +60,10 @@ test('jogo de época explains rankings and keeps long choices in a vertical layo
 
 test('session creation is an accessible full-width hero above secondary actions',()=>{
  const layout=read('app/(tabs)/_layout.tsx');
- assert.match(layout,/accessibilityLabel="Criar sessão desportiva"/);
+ assert.match(layout,/accessibilityLabel="Criar jogo"/);
  assert.match(layout,/style=\{styles\.sessionHero\} onPress=\{\(\)=>action\('session'\)\}/);
  assert.match(layout,/sessionHero:\{width:'100%',minHeight:142/);
- assert.ok(layout.indexOf('accessibilityLabel="Criar sessão desportiva"') < layout.indexOf("onPress={()=>action('post')}"));
+ assert.ok(layout.indexOf('accessibilityLabel="Criar jogo"') < layout.indexOf("onPress={()=>action('post')}"));
  assert.match(layout,/Marca o jogo, reúne jogadores e organiza as equipas/);
  assert.match(layout,/Também podes criar/);
  assert.match(layout,/style=\{\[styles\.actionCard,styles\.teamCard\]\}/);

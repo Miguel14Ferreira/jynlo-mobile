@@ -32,7 +32,7 @@ function demoNames(id: number): string[] {
 }
 function current(id: number, username?: string): SessionSummary {
   const raw = SEED.find(s => s.id === id);
-  if (!raw) throw new Error('Sessão de demonstração não encontrada.');
+  if (!raw) throw new Error('Jogo de demonstração não encontrada.');
   const names = demoNames(id);
   return { ...raw, participantCount:names.length,
     joinedByViewer: Boolean(username && names.includes(username)),
@@ -65,7 +65,7 @@ export const demoJoin = (id:number,username:string):JoinSessionResponse => {
   const s=current(id,username);
   if(s.joinedByViewer)return {state:'PARTICIPANT',waitlistPosition:null};
   if(s.waitlistedByViewer)return {state:'WAITLISTED',waitlistPosition:waitlisted.get(id)!.indexOf(username)+1};
-  if(s.status==='CANCELLED'||s.status==='COMPLETED') throw new Error('Esta sessão está encerrada.');
+  if(s.status==='CANCELLED'||s.status==='COMPLETED') throw new Error('Este jogo está encerrado.');
   if(s.status!=='OPEN' && s.status!=='FULL') throw new Error('Inscrição indisponível.');
   if(s.status==='FULL'){
     if(!waitlisted.has(id))waitlisted.set(id,[]);
@@ -92,7 +92,7 @@ export function demoInvites(username:string):PendingSessionInvite[]{
 export function demoInvitePlayer(id:number,organizer:string,username:string):{id:number}{
   if(id!==900005||organizer!=='Tiago')throw new Error('Apenas o organizador pode convidar.');
   if(!username.trim()||username.toLowerCase()===organizer.toLowerCase())throw new Error('Escolhe outro utilizador.');
-  if(cancelled.has(id))throw new Error('Sessão cancelada.');
+  if(cancelled.has(id))throw new Error('Jogo cancelado.');
   if(invites.some(i=>i.sessionId===id&&i.username===username))throw new Error('Já existe um convite pendente.');
   const invite:PendingSessionInvite&{username:string}={id:nextInviteId++,sessionId:id,username,inviterUsername:organizer,createdAt:new Date().toISOString(),sport:'Futebol',city:'Lisboa',gameDate:current(id).gameDate,status:current(id).status};
   invites.push(invite);return {id:invite.id};
@@ -100,7 +100,7 @@ export function demoInvitePlayer(id:number,organizer:string,username:string):{id
 export function demoRespondInvite(sessionId:number,inviteId:number,username:string,accept:boolean):JoinSessionResponse|void {
   const index=invites.findIndex(i=>i.sessionId===sessionId&&i.id===inviteId&&i.username===username);
   if(index<0)throw new Error('Convite não encontrado.');
-  if(cancelled.has(sessionId))throw new Error('Sessão cancelada.');
+  if(cancelled.has(sessionId))throw new Error('Jogo cancelado.');
   const result=accept?demoJoin(sessionId,username):undefined;
   invites.splice(index,1);
   return result;

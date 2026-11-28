@@ -19,14 +19,14 @@ function parseSessionDate(day,time,now=Date.now()){
   local.getDate()!==Number(day.slice(8,10))||
   local.getHours()!==Number(time.slice(0,2))||local.getMinutes()!==Number(time.slice(3,5)))
   throw Error(tr('Data ou hora inválida no fuso horário do telemóvel.'));
- if(local.getTime()<=now+5*60000)throw Error(tr('Escolhe uma sessão futura, com pelo menos cinco minutos de antecedência.'));
+ if(local.getTime()<=now+5*60000)throw Error(tr('Escolhe um jogo futuro, com pelo menos cinco minutos de antecedência.'));
  return local.toISOString();
 }
 function validateWeeklySlots(day,time,slots,recurrence,occurrences,now=Date.now()){
  if(slots!=null&&!Array.isArray(slots))
   throw Error(tr('A lista de horários adicionais é inválida.'));
  const extraSlots=Array.isArray(slots)?slots:[];
- if(extraSlots.length>6)throw Error(tr('Escolhe no máximo sete sessões por semana.'));
+ if(extraSlots.length>6)throw Error(tr('Escolhe no máximo sete jogos por semana.'));
  if(recurrence!=='WEEKLY'&&extraSlots.length>0)
   throw Error(tr('Horários adicionais só estão disponíveis com repetição semanal.'));
  const additionalWeeklyGameDates=[];
@@ -40,7 +40,7 @@ function validateWeeklySlots(day,time,slots,recurrence,occurrences,now=Date.now(
   for(const slot of extraSlots){
    if(!slot||typeof slot!=='object'||Array.isArray(slot)||
       typeof slot.day!=='string'||typeof slot.time!=='string')
-    throw Error(tr('Indica um dia e uma hora válidos para cada sessão adicional.'));
+    throw Error(tr('Indica um dia e uma hora válidos para cada jogo adicional.'));
    const iso=parseSessionDate(slot.day,slot.time,now);
    const stamp=Date.parse(iso);
    if(stamp<=first||stamp>=end)throw Error(tr('Os horários adicionais têm de ser posteriores ao primeiro jogo e nos sete dias seguintes.'));
@@ -49,7 +49,7 @@ function validateWeeklySlots(day,time,slots,recurrence,occurrences,now=Date.now(
    additionalWeeklyGameDates.push(iso);
   }
   if(occurrences*(additionalWeeklyGameDates.length+1)>52)
-   throw Error(tr('O plano pode ter no máximo 52 sessões.'));
+   throw Error(tr('O plano pode ter no máximo 52 jogos.'));
   additionalWeeklyGameDates.sort((a,b)=>Date.parse(a)-Date.parse(b));
  }
  return additionalWeeklyGameDates;
@@ -62,7 +62,7 @@ function detachVenueLocation(form){
  return {...form,venueId:null,city:'',address:''};
 }
 function changeCommunityMode(form,mode){
- if(!['INDEPENDENT','SINGLE','SHARED'].includes(mode))throw Error(tr('Tipo de sessão inválido.'));
+ if(!['INDEPENDENT','SINGLE','SHARED'].includes(mode))throw Error(tr('Tipo de jogo inválido.'));
  const cleared={...form,communityId:null,communityShareIds:[],seasonGame:false,
   communityRankingsEnabled:false,confirmActivateRankings:false,
   registrationOpeningMode:'IMMEDIATE',registrationDay:'',registrationTime:''};
@@ -71,7 +71,7 @@ function changeCommunityMode(form,mode){
 }
 function formatSessionLocalDateTime(iso){
  const date=new Date(iso);
- if(!Number.isFinite(date.getTime()))throw Error(tr('Data da sessão inválida.'));
+ if(!Number.isFinite(date.getTime()))throw Error(tr('Data do jogo inválida.'));
  const pad=value=>String(value).padStart(2,'0');
  return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+
   ' '+pad(date.getHours())+':'+pad(date.getMinutes());
@@ -116,9 +116,9 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(hasLatitude!==hasLongitude)throw Error(tr('O ponto no mapa deve ter latitude e longitude.'));
  if(hasLatitude&&(!Number.isFinite(locationLatitude)||Math.abs(locationLatitude)>90||
                   !Number.isFinite(locationLongitude)||Math.abs(locationLongitude)>180))
-   throw Error(tr('O ponto GPS da sessão é inválido.'));
+   throw Error(tr('O ponto GPS do jogo é inválido.'));
  if(hasLatitude&&input.locationConfirmed!==true)
-   throw Error(tr('Confirma o ponto no mapa antes de criares a sessão.'));
+   throw Error(tr('Confirma o ponto no mapa antes de criares o jogo.'));
  const venueId=input.venueId==null?null:Number(input.venueId);
  if(venueId!==null&&(!Number.isSafeInteger(venueId)||venueId<=0))throw Error(tr('Recinto inválido.'));
  const city=String(input.city||'').trim();
@@ -128,7 +128,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  const maxText=String(input.maxParticipants||'').trim();
  if(!/^\d{1,3}$/.test(maxText))throw Error(tr('Número de participantes inválido.'));
  const maxParticipants=Number(maxText);
- if(maxParticipants<2||maxParticipants>100)throw Error(tr('A sessão deve permitir entre 2 e 100 participantes.'));
+ if(maxParticipants<2||maxParticipants>100)throw Error(tr('O jogo deve permitir entre 2 e 100 participantes.'));
  const priceText=String(input.price||'0').trim().replace(',','.');
  if(!/^\d{1,6}(?:\.\d{1,2})?$/.test(priceText))throw Error(tr('Indica um preço válido, com até duas casas decimais.'));
  const priceAmount=Number(priceText);
@@ -151,7 +151,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   throw Error(tr('Escolhe uma comunidade direta ou partilha entre comunidades, não ambas.'));
  const hasCommunity=communityId!==null||shareIds.length>0;
  if(customSport&&(hasCommunity||venueId!==null||input.seasonGame===true))
-  throw Error(tr('Modalidades sugeridas só podem ser usadas em sessões independentes, sem recinto oficial ou classificação.'));
+  throw Error(tr('Modalidades sugeridas só podem ser usadas em jogos independentes, sem recinto oficial ou classificação.'));
  const registrationOpeningMode=input.registrationOpeningMode??'IMMEDIATE';
  if(!['IMMEDIATE','MANUAL','SCHEDULED'].includes(registrationOpeningMode))
   throw Error(tr('Modo de abertura de inscrições inválido.'));
@@ -161,7 +161,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
  if(registrationOpeningMode==='SCHEDULED'){
   registrationOpensAt=parseSessionDate(input.registrationDay||'',input.registrationTime||'',now);
   if(Date.parse(registrationOpensAt)>=Date.parse(gameDate))
-   throw Error(tr('A abertura das inscrições deve anteceder a sessão.'));
+   throw Error(tr('A abertura das inscrições deve anteceder o jogo.'));
  }
  const recurrence=input.recurrence??'NONE';
  if(!['NONE','WEEKLY','BIWEEKLY'].includes(recurrence))throw Error(tr('Repetição inválida.'));
@@ -175,11 +175,11 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   recurrenceOccurrences=Number(text);
   const perCycle=recurrence==='WEEKLY'&&Array.isArray(input.additionalWeeklySlots)?input.additionalWeeklySlots.length+1:1;
   if(recurrenceOccurrences*perCycle>maxSessions)
-   throw Error(hasCommunity?tr('O plano pode ter no máximo {n} sessões.',{n:maxSessions}):tr('O plano pode ter no máximo {n} sessões sem comunidade.',{n:maxSessions}));
+   throw Error(hasCommunity?tr('O plano pode ter no máximo {n} jogos.',{n:maxSessions}):tr('O plano pode ter no máximo {n} jogos sem comunidade.',{n:maxSessions}));
   const zone=String(input.recurrenceTimeZone||'').trim();
-  if(!zone||zone.length>64)throw Error(tr('Não foi possível identificar o fuso horário para repetir sessões.'));
+  if(!zone||zone.length>64)throw Error(tr('Não foi possível identificar o fuso horário para repetir jogos.'));
   try{new Intl.DateTimeFormat('en-US',{timeZone:zone});}
-  catch{throw Error(tr('Fuso horário inválido para repetição de sessões.'));}
+  catch{throw Error(tr('Fuso horário inválido para repetição de jogos.'));}
   recurrenceTimeZone=zone;
  }
  const additionalWeeklyGameDates=validateWeeklySlots(input.day,input.time,input.additionalWeeklySlots,recurrence,recurrenceOccurrences,now);
@@ -193,7 +193,7 @@ function createSessionPayload(input,allowedSports,now=Date.now()){
   throw Error(tr('Confirma a ativação das classificações para criar o jogo de época.'));
  const privateGame=input.privateGame===true;
  const password=String(input.password||'').trim();
- if(privateGame&&shareIds.length)throw Error(tr('Sessões partilhadas não podem ser só por convite.'));
+ if(privateGame&&shareIds.length)throw Error(tr('Jogos partilhados não podem ser só por convite.'));
  // Private games are invite-only (link or direct invite); no password any more.
  const meetingPointInstructions=String(input.meetingPointInstructions||'').trim();
  if(meetingPointInstructions.length>240||/[\x00-\x1F\x7F]/.test(meetingPointInstructions))throw Error(tr('O ponto de encontro deve ter uma única linha até 240 caracteres.'));

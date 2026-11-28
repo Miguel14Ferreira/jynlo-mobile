@@ -59,7 +59,7 @@ test('single POST lock is kept until pending creation settles after navigation',
  assert.match(source,/setBusy\(locked\.current\);\s*const version=\+\+communityLoadVersion\.current/);
  assert.match(source,/locked\.current=true;setBusy\(true\)/);
  assert.match(source,/locked\.current=false;\s*setBusy\(false\)/);
- assert.match(source,/Verifica as tuas sessões antes de tentares novamente, para evitar duplicados/);
+ assert.match(source,/Verifica os teus jogos antes de tentares novamente, para evitar duplicados/);
 });
 test('switching accounts invalidates stale venue search results',()=>{
  assert.match(source,/setVenueChosen\(null\);clearVenueSearch\(\)/);

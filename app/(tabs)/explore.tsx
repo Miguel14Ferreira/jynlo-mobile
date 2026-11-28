@@ -54,7 +54,7 @@ export default function DiscoverScreen(){
    const longitude=pin?.longitude??PORTUGAL.longitude;
    // Launch the official Google Maps web viewer instead of relying on OSM volunteer tile servers.
    const url=`https://www.google.com/maps/@${latitude},${longitude},10z`;
-   try{await Linking.openURL(url);}catch{setError(t('Não foi possível abrir o mapa no navegador. Consulta as sessões na lista.'));}
+   try{await Linking.openURL(url);}catch{setError(t('Não foi possível abrir o mapa no navegador. Consulta os jogos na lista.'));}
  };
  const [mapArea,setMapArea]=useState<{latitude:number;longitude:number;radiusKm:number}|null>(null);
  const mappedSessions=useMemo(()=>sessions.filter(validPin),[sessions]);
@@ -101,7 +101,7 @@ export default function DiscoverScreen(){
        if(custom.length)setDiscoveredCustomSports(previous=>[...new Set([...previous,...custom])].slice(-40));
      }
    }catch(e){
-     if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:t('Não foi possível carregar as sessões.'));}
+     if(version===loadVersion.current){setSessions([]);setError(e instanceof Error?e.message:t('Não foi possível carregar os jogos.'));}
    }finally{if(version===loadVersion.current)setLoading(false);}
  },[sport,debouncedCity,mapArea,availableOnly,skillLevel,auth.token,auth.username]);
  useFocusEffect(useCallback(()=>{void load();return()=>{loadVersion.current++;};},[load]));
@@ -155,9 +155,9 @@ export default function DiscoverScreen(){
        <Text style={styles.sportResultText}>{sportName(name)}</Text>
      </Pressable>)}
      {canSearchCustomSport?<Pressable accessibilityRole="button"
-       accessibilityLabel={t('Pesquisar sessões de {sport}',{sport:typedCustomSport})}
+       accessibilityLabel={t('Pesquisar jogos de {sport}',{sport:typedCustomSport})}
        onPress={()=>chooseSport(typedCustomSport)} style={styles.sportResult}>
-       <Text style={styles.sportResultText}>{t('Pesquisar sessões de “{sport}”',{sport:typedCustomSport})}</Text>
+       <Text style={styles.sportResultText}>{t('Pesquisar jogos de “{sport}”',{sport:typedCustomSport})}</Text>
      </Pressable>:null}
      {sportSuggestions.length===0&&!canSearchCustomSport?
        <Text style={styles.emptySport}>{t('Não encontrámos essa modalidade. Verifica o nome.')}</Text>:null}
@@ -165,7 +165,7 @@ export default function DiscoverScreen(){
    </View>:null}
    <Pressable accessibilityRole="checkbox" accessibilityState={{checked:availableOnly}} style={styles.filter} onPress={()=>setAvailableOnly(!availableOnly)}>
      <View style={[styles.square,availableOnly&&styles.squareSelected]}><Text style={{color:C.background}}>{availableOnly?'✓':''}</Text></View>
-     <Text style={{color:C.white}}>{t('Apenas sessões com vagas')}</Text>
+     <Text style={{color:C.white}}>{t('Apenas jogos com vagas')}</Text>
    </Pressable>
    <View style={styles.levelFilter} accessibilityLabel={t('Filtrar por nível')}>
      <Text style={styles.levelFilterLabel}>{t('🎯 Nível')}</Text>
@@ -180,11 +180,11 @@ export default function DiscoverScreen(){
    </Pressable>:null}
    <View style={styles.section}><Text style={styles.sectionTitle}>{t('Encontrar jogos')}</Text><Text style={styles.total}>{loading?t('A pesquisar…'):(sessions.length===1?t('1 jogo encontrado'):t('{n} jogos encontrados',{n:sessions.length}))}</Text></View>
    <View style={styles.switcher}>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessões no mapa')} accessibilityState={{selected:display==='map'}}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver jogos no mapa')} accessibilityState={{selected:display==='map'}}
        style={[styles.switchOption,display==='map'&&styles.switchSelected]} onPress={()=>setDisplay('map')}>
        <View style={{flexDirection:'row',alignItems:'center',gap:5}}><JynloIcon name="location" size={17} color={display==='map'?C.mint:C.muted}/><Text style={[styles.switchLabel,display==='map'&&styles.switchLabelSelected]}>{t('Mapa')}</Text></View>
      </Pressable>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessões em lista')} accessibilityState={{selected:display==='list'}}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Ver jogos em lista')} accessibilityState={{selected:display==='list'}}
        style={[styles.switchOption,display==='list'&&styles.switchSelected]} onPress={()=>setDisplay('list')}>
        <Text style={[styles.switchLabel,display==='list'&&styles.switchLabelSelected]}>{t('☷ Lista')}</Text>
      </Pressable>
@@ -192,7 +192,7 @@ export default function DiscoverScreen(){
    {loading&&sessions.length===0?<Loader/>:null}
    {error?<View style={styles.retryPanel}>
      <Message tone="error">{error}</Message>
-     <Pressable accessibilityRole="button" accessibilityLabel={t('Repetir pesquisa de sessões')} style={styles.retryAction}
+     <Pressable accessibilityRole="button" accessibilityLabel={t('Repetir pesquisa de jogos')} style={styles.retryAction}
        disabled={loading} onPress={()=>{void load();}}>
        <JynloIcon name="search" size={18} color={C.background}/><Text style={styles.retryActionText}>{t('Tentar novamente')}</Text>
      </Pressable>
@@ -208,7 +208,7 @@ export default function DiscoverScreen(){
        <Message>{t('Esta APK não tem o mapa Google configurado. Mostramos um esquema geográfico simplificado e seguro; o mapa com ruas requer uma APK com a chave da SDK Android.')}</Message>
      </>}
      {NATIVE_MAP_READY?<View style={styles.mapActions}>
-       <Pressable accessibilityRole="button" accessibilityLabel={t('Pesquisar sessões nesta área do mapa')}
+       <Pressable accessibilityRole="button" accessibilityLabel={t('Pesquisar jogos nesta área do mapa')}
          style={styles.areaSearch} onPress={()=>{
            const r=viewport.current;
            if(![r.latitude,r.longitude,r.latitudeDelta,r.longitudeDelta].every(Number.isFinite)||
@@ -228,14 +228,14 @@ export default function DiscoverScreen(){
      <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir mapa no navegador')} style={styles.areaSearch} onPress={()=>{void openMap();}}>
        <View style={{flexDirection:'row',alignItems:'center',gap:6}}><JynloIcon name="location" size={17} color={C.background}/><Text style={styles.areaSearchText}>{t('Abrir Google Maps')}</Text></View>
      </Pressable>
-     {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>{t('Toca num pino para consultar a sessão correspondente.')}</Text>:null}
+     {!NATIVE_MAP_READY&&mappedSessions.length>0&&!currentPin?<Text style={styles.mapNotice}>{t('Toca num pino para consultar o jogo correspondente.')}</Text>:null}
      {currentPin?<View style={styles.pinCard}><SessionCard session={currentPin}
        onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(currentPin.id)}})}/></View>:null}
-     <Text style={styles.mapNotice}>{t('{mapped} sessões com coordenadas públicas · {total} resultados',{mapped:mappedSessions.length,total:sessions.length})}</Text>
+     <Text style={styles.mapNotice}>{t('{mapped} jogos com coordenadas públicas · {total} resultados',{mapped:mappedSessions.length,total:sessions.length})}</Text>
      {NATIVE_MAP_READY?<Text style={styles.mapNotice}>{t('Mapa Google · coordenadas fornecidas pelos organizadores')}</Text>:null}
-     {sessions.length>0&&mappedSessions.length===0?<Message>{t('Estas sessões não têm coordenadas públicas. Consulta a vista Lista para ver todos os resultados.')}</Message>:null}
+     {sessions.length>0&&mappedSessions.length===0?<Message>{t('Estes jogos não têm coordenadas públicas. Consulta a vista Lista para ver todos os resultados.')}</Message>:null}
    </View>:sessions.map(s=><SessionCard key={s.id} session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>)}
-   {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>{t('Ver todas as sessões na lista →')}</Text></Pressable>:null}
+   {display==='map'&&sessions.length>mappedSessions.length?<Pressable accessibilityRole="button" onPress={()=>setDisplay('list')} style={styles.showList}><Text style={styles.showListText}>{t('Ver todos os jogos na lista →')}</Text></Pressable>:null}
   </ScrollView>
  </SafeAreaView>;
 }

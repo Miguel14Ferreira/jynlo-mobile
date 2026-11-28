@@ -13,12 +13,12 @@ test('the mobile inbox displays real community and session names, not raw IDs',(
  assert.match(types,/interface JynloInboxSummary \{[^\n]*title\?:string/);
  assert.match(api,/title:typeof c\.name==='string'&&c\.name\.trim\(\)\?c\.name\.trim\(\):'Comunidade'/);
  assert.match(api,/filterAuthorizedSummaries\('community',allowed,summaries,'Comunidade'\)/);
- assert.match(api,/filterAuthorizedSummaries\('session',allowed,summaries,'Sessão desportiva'\)/);
+ assert.match(api,/filterAuthorizedSummaries\('session',allowed,summaries,'Jogo'\)/);
  assert.match(api,/session\.sport/);
  assert.match(api,/session\.city/);
- assert.match(screen,/item\.title\|\|\(item\.kind==='community'\?'Comunidade':item\.kind==='private'\?'Grupo':item\.kind==='team'\?'Equipa':'Sessão desportiva'\)/);
+ assert.match(screen,/item\.title\|\|\(item\.kind==='community'\?'Comunidade':item\.kind==='private'\?'Grupo':item\.kind==='team'\?'Equipa':'Jogo'\)/);
  assert.doesNotMatch(screen,/'Comunidade #'\+item\.id/);
- assert.doesNotMatch(screen,/'Sessão #'\+item\.id/);
+ assert.doesNotMatch(screen,/'Jogo #'\+item\.id/);
 });
 
 test('inbox titles are derived only from authenticated, authorized membership lists',()=>{

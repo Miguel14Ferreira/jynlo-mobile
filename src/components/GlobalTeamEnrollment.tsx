@@ -101,7 +101,7 @@ export function GlobalTeamEnrollment({communityId,competitionId,type,globalTeamI
      disabled={!rosterLoaded||!person.communityMember||sentIds.includes(person.profileId)||busy} style={styles.row} onPress={()=>toggle(person.profileId)}>
     <Text style={styles.name}>{selected.includes(person.profileId)?'☑':'☐'} {person.username}</Text>
     {!person.communityMember?<Text style={styles.note}>{t('Precisa de aderir à comunidade')}</Text>:null}
-    {sentIds.includes(person.profileId)?<Text style={styles.note}>{t('Convite enviado nesta sessão')}</Text>:null}
+    {sentIds.includes(person.profileId)?<Text style={styles.note}>{t('Convite enviado neste jogo')}</Text>:null}
    </Pressable>)}
    {rosterLoaded&&roster.length>0?<Button title={'Convidar '+selected.length+' jogadores'} disabled={busy||!selected.length||selected.length>30}
        onPress={()=>void invite()}/>:null}

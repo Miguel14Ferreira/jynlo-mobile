@@ -18,7 +18,7 @@ function confirmedSessionTeams(participants){
  return groups;
 }
 function sessionParticipationLabel(session,at=Date.now()){
- if(!session)return tr('Sessão indisponível');
+ if(!session)return tr('Jogo indisponível');
  if(session.status==='CANCELLED')return tr('Cancelada');
  if(session.status==='COMPLETED')return tr('Concluída');
  // A stale OPEN/FULL status must not advertise expired sessions as joinable.

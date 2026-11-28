@@ -12,7 +12,7 @@ import {sportName} from '../lib/sport-names.cjs';
 const fmtDate=(iso:string)=>{const d=new Date(iso);return Number.isNaN(d.getTime())?'':
  d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});};
 
-/** Reliability numbers + attendance history with "Contestar falta" — parity with the web "Minhas sessões". */
+/** Reliability numbers + attendance history with "Contestar falta" — parity with the web "Meus jogos". */
 export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}:{
  token:string;username:string;ownedSessionIds:number[];onOpenSession:(id:number)=>void;
 }){
@@ -36,7 +36,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
   <Text style={styles.title}>{t('Histórico de presenças · {a}',{a:list.length})}</Text>
   {summary?<View style={styles.grid} accessibilityLabel={t('Taxa de presença {v}',{v:summary.completedSessions?formatRate(summary.attendanceRate):'—'})}>
    <Stat label={t('Taxa de presença')} value={summary.completedSessions?formatRate(summary.attendanceRate):'—'}/>
-   <Stat label={t('Sessões concluídas')} value={String(summary.completedSessions??0)}/>
+   <Stat label={t('Jogos concluídos')} value={String(summary.completedSessions??0)}/>
    <Stat label={t('Faltas')} value={String(summary.noShows??0)}/>
    <Stat label={t('Cancelamentos tardios')} value={String(summary.lateCancellations??0)}/>
   </View>:null}
@@ -44,7 +44,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
   {loading?<ActivityIndicator color={C.mint} style={{padding:16}}/>:null}
   {!loading&&error?<><Message tone="error">{error}</Message>
    <Pressable accessibilityRole="button" onPress={()=>{void load();}} style={styles.outline}><Text style={styles.outlineText}>{t('Tentar novamente')}</Text></Pressable></>:null}
-  {!loading&&!error&&list.length===0?<Text style={styles.empty}>{t('Ainda não tens presenças registadas em sessões concluídas.')}</Text>:null}
+  {!loading&&!error&&list.length===0?<Text style={styles.empty}>{t('Ainda não tens presenças registadas em jogos concluídos.')}</Text>:null}
   {!loading&&!error?list.map(item=>{const dispute=disputeLabel(item.disputeStatus);
    return <View key={item.participantId} style={styles.card}>
     <View style={styles.row}>
@@ -57,7 +57,7 @@ export function AttendanceHistory({token,username,ownedSessionIds,onOpenSession}
     </View>
     {dispute?<Text style={[styles.dispute,item.disputeStatus==='ACCEPTED'&&{color:C.mint},item.disputeStatus==='REJECTED'&&{color:C.danger}]}>{t('Contestação: {a}',{a:dispute})}</Text>:null}
     <View style={styles.actions}>
-     <Pressable accessibilityRole="button" onPress={()=>onOpenSession(item.sessionId)} style={styles.link}><Text style={styles.linkText}>{t('Ver sessão')}</Text></Pressable>
+     <Pressable accessibilityRole="button" onPress={()=>onOpenSession(item.sessionId)} style={styles.link}><Text style={styles.linkText}>{t('Ver jogo')}</Text></Pressable>
      {item.canDispute?<Pressable accessibilityRole="button" accessibilityLabel={t('Contestar falta em {v}',{v:sportName(item.sport)})}
       onPress={()=>{setNotice('');setPending(item);}} style={styles.outline}><Text style={styles.outlineText}>{t('Contestar falta')}</Text></Pressable>:null}
     </View>
@@ -92,7 +92,7 @@ function DisputeSheet({item,token,onClose,onSent}:{item:AttendanceHistoryItem|nu
      <Text style={styles.sheetTitle}>{t('Contestar falta em {a}',{a:sportName(current.sport)})}</Text>
      <Text style={styles.text}>{t('{a}. Explica de forma objetiva por que motivo consideras que o registo de falta está incorreto. A equipa Jynlo analisa e decide.',{a:fmtDate(current.gameDate)})}</Text>
      <TextInput value={reason} onChangeText={t=>{setReason(t);setError('');}} editable={!busy} multiline maxLength={MAX_REASON}
-      placeholder={t('Ex.: Estive presente na sessão e fui registado por engano como falta.')} placeholderTextColor={C.muted}
+      placeholder={t('Ex.: Estive presente no jogo e fui registado por engano como falta.')} placeholderTextColor={C.muted}
       style={styles.input} accessibilityLabel={t('Justificação')}/>
      {error?<Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text>:null}
      <Pressable accessibilityRole="button" disabled={busy||!reason.trim()} onPress={()=>{void send();}}

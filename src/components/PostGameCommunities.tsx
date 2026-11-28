@@ -39,7 +39,7 @@ export function PostGameCommunities({sessionId,token,username}:{sessionId:number
   {groups.length?<>
    <Text style={styles.kicker}>{t('DEPOIS DO JOGO')}</Text>
    <Text style={styles.title}>{t('Gostaste de jogar com esta malta?')}</Text>
-   <Text style={styles.help}>{t('Se quiseres, junta-te às comunidades que organizaram este jogo e descobre as próximas sessões. É totalmente opcional.')}</Text>
+   <Text style={styles.help}>{t('Se quiseres, junta-te às comunidades que organizaram este jogo e descobre os próximos jogos. É totalmente opcional.')}</Text>
    {groups.map(g=><View key={g.id} style={styles.option}>
     <Text style={styles.name}>{g.name}</Text>
     <Text style={styles.help}>{g.requiresApproval?t('A adesão requer aprovação de um administrador.'):t('Comunidade aberta a novos membros.')}</Text>

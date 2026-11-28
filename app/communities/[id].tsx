@@ -85,7 +85,7 @@ export default function CommunityDetailScreen(){
           const next=await communitySessions(id,auth.token,auth.username);
           if(version!==generation.current)return;
           setSessions(next);setSessionsError('');
-        }catch{if(version===generation.current){setSessions([]);setSessionsError(t('Não foi possível carregar as sessões. Tenta novamente.'));}}
+        }catch{if(version===generation.current){setSessions([]);setSessionsError(t('Não foi possível carregar os jogos. Tenta novamente.'));}}
         if(c.myRole==='OWNER'||c.myRole==='ADMIN'){
           try{
             const next=await pendingCommunityRequests(id,auth.token,auth.username);
@@ -242,7 +242,7 @@ export default function CommunityDetailScreen(){
     ]);
   }
   function confirmLeave(){
-    Alert.alert(t('Sair da comunidade?'),t('Deixas de ver as sessões e o chat desta comunidade. Podes voltar a pedir para entrar.'),[
+    Alert.alert(t('Sair da comunidade?'),t('Deixas de ver os jogos e o chat desta comunidade. Podes voltar a pedir para entrar.'),[
       {text:t('Cancelar'),style:'cancel'},
       {text:t('Sair'),style:'destructive',onPress:()=>{void memberAction(()=>leaveCommunity(id,auth.token!,auth.username!),'',t('Não foi possível sair da comunidade.'),true);}}
     ]);
@@ -262,7 +262,7 @@ export default function CommunityDetailScreen(){
       }});
     }
     if(role==='OWNER'||(role==='ADMIN'&&m.role==='MEMBER'))options.push({text:t('Remover da comunidade'),style:'destructive',onPress:()=>{
-      Alert.alert(t('Remover {a}?',{a:name}),t('Deixa de ter acesso às sessões e ao chat da comunidade.'),[
+      Alert.alert(t('Remover {a}?',{a:name}),t('Deixa de ter acesso aos jogos e ao chat da comunidade.'),[
         {text:t('Cancelar'),style:'cancel'},
         {text:t('Remover'),style:'destructive',onPress:()=>{void memberAction(()=>removeCommunityMember(id,m.username,token,me),t('{a} foi removido.',{a:name}),t('Não foi possível remover o membro.'));}}
       ]);
@@ -345,8 +345,8 @@ export default function CommunityDetailScreen(){
         <Text style={styles.sectionTitle}>{t('O espaço da comunidade')}</Text>
         <Text style={styles.muted}>{t('Encontra os próximos jogos, acompanha a conversa e organiza a tua comunidade.')}</Text>
         <View style={styles.quickLinks}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t('Ver próximas sessões da comunidade')} onPress={()=>setActiveSection('SESSIONS')} style={styles.quickLink}>
-           <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>{t('Sessões')}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Ver próximos jogos da comunidade')} onPress={()=>setActiveSection('SESSIONS')} style={styles.quickLink}>
+           <Text style={styles.quickLinkIcon}>◷</Text><Text style={styles.quickLinkTitle}>{t('Jogos')}</Text>
            <Text style={styles.quickLinkDescription}>{sessionsError?t('Por confirmar'):t('{n} agendadas',{n:sessions.length})}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir chat da comunidade')} onPress={openChat} style={styles.quickLink}>
@@ -358,8 +358,8 @@ export default function CommunityDetailScreen(){
            <Text style={styles.quickLinkDescription}>{t('{a} jogadores',{a:(community as CommunityGroup).memberCount})}</Text>
           </Pressable>
         </View>
-        {canCreateSession?<Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
-         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam sessões.')}</Text>}
+        {canCreateSession?<Button title={t('Criar jogo nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam jogos.')}</Text>}
         {auth.token?<AvailabilityPanel kind="community" targetId={id} token={auth.token} communityId={id}/>:null}
         <Button secondary title={t('Ver competições por modalidade')} onPress={()=>router.push({pathname:'/communities/[id]/competitions',params:{id:String(id)}})}/>
         {isMember(community)&&community.rankingsEnabled?<CommunityMonthLeaders communityId={id} token={auth.token} canManage={owner}/>:null}
@@ -404,9 +404,9 @@ export default function CommunityDetailScreen(){
           <Button secondary disabled={visibilityBusy} title={visibilityBusy?t('A guardar…'):community.visibility==='PRIVATE'?t('Tornar pública'):t('Tornar privada')}
             onPress={()=>{void toggleVisibility();}}/>
         </>:null}
-        <Text style={styles.sectionTitle}>{t('Quem pode criar sessões?')}</Text>
+        <Text style={styles.sectionTitle}>{t('Quem pode criar jogos?')}</Text>
         <Text style={styles.muted}>{onlyOrganizersCreate?t('Só os organizadores'):t('Todos os membros')}</Text>
-        <Button secondary disabled={sessionPolicyBusy} title={sessionPolicyBusy?t('A guardar…'):onlyOrganizersCreate?t('Deixar todos os membros criar sessões'):t('Só os organizadores criam sessões')}
+        <Button secondary disabled={sessionPolicyBusy} title={sessionPolicyBusy?t('A guardar…'):onlyOrganizersCreate?t('Deixar todos os membros criar jogos'):t('Só os organizadores criam jogos')}
           onPress={()=>{void toggleSessionPolicy();}}/>
         <Text style={styles.sectionTitle}>{t('Quem pode publicar?')}</Text>
         <Text style={styles.muted}>{(community as CommunityGroup|null)?.membersCanPost===false?t('Só os organizadores'):t('Todos os membros')}</Text>
@@ -448,13 +448,13 @@ export default function CommunityDetailScreen(){
         <CommunityFeedPanel communityId={id} token={auth.token} username={auth.username} canManage={owner}/>
       </View>:null}
       {role&&activeSection==='SESSIONS'?<View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('Próximas sessões')}</Text>
-        {canCreateSession?<Button title={t('Criar sessão nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
-         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam sessões.')}</Text>}
+        <Text style={styles.sectionTitle}>{t('Próximos jogos')}</Text>
+        {canCreateSession?<Button title={t('Criar jogo nesta comunidade')} onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(id)}})}/>
+         :<Text style={styles.muted}>{t('Nesta comunidade, só os organizadores criam jogos.')}</Text>}
         {sessionsError?<Message tone="error">{sessionsError}</Message>:null}
-        {sessionsError?<Button secondary title={t('Tentar carregar sessões novamente')} disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
+        {sessionsError?<Button secondary title={t('Tentar carregar jogos novamente')} disabled={loading||busy} onPress={()=>{void reload();}}/>:null}
         {audienceError?<Message tone="error">{audienceError}</Message>:null}
-        {!sessionsError&&sessions.length===0?<Message>{t('Esta comunidade ainda não tem sessões agendadas.')}</Message>:null}
+        {!sessionsError&&sessions.length===0?<Message>{t('Esta comunidade ainda não tem jogos agendados.')}</Message>:null}
         {sessions.map(s=><View key={s.id} style={styles.communitySessionRow}>
           <SessionCard session={s} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(s.id)}})}/>
           {auth.token&&(canOpenToPublic(s,owner)||canRestrictToMembers(s,owner,id))?<View style={{gap:4}}>
@@ -465,12 +465,12 @@ export default function CommunityDetailScreen(){
              setAudienceBusy(s.id);setAudienceError('');
              setCommunitySessionAudience(id,s.id,toPublic,token)
               .then(updated=>setSessions(prev=>prev.map(item=>item.id===updated.id?{...item,...updated}:item)))
-              .catch(()=>setAudienceError(toPublic?t('Não foi possível abrir a sessão a outros jogadores.'):t('Não foi possível restringir a sessão aos membros.')))
+              .catch(()=>setAudienceError(toPublic?t('Não foi possível abrir a sessão a outros jogadores.'):t('Não foi possível restringir o jogo aos membros.')))
               .finally(()=>setAudienceBusy(null));
             }}/>
            <Text style={styles.audienceHint}>{canOpenToPublic(s,owner)
-            ?t('Os membros continuam a poder juntar-se. A sessão passa também a aparecer a outros jogadores.')
-            :t('Remove a sessão da pesquisa pública. Inscrições já confirmadas não são anuladas.')}</Text>
+            ?t('Os membros continuam a poder juntar-se. O jogo passa também a aparecer a outros jogadores.')
+            :t('Remove o jogo da pesquisa pública. Inscrições já confirmadas não são anuladas.')}</Text>
           </View>:null}
           {owner&&isMember(community)&&community.rankingsEnabled&&s.status!=='CANCELLED'&&Number.isFinite(Date.parse(s.gameDate))&&Date.parse(s.gameDate)<Date.now()?
            <Button secondary title={t('Registar resultado do jogo')}

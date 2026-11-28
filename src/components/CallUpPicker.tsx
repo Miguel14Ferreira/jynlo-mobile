@@ -27,10 +27,10 @@ export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:bo
    <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('Fechar')}/>
    <View style={styles.sheet}>
     <Text style={styles.title}>{t('📣 Convocar para um jogo')}</Text>
-    <Text style={styles.help}>{t('Escolhe uma das tuas próximas sessões. Quem estiver no chat pode responder "Vou" diretamente.')}</Text>
-    {failed?<Text style={styles.help}>{t('Não foi possível carregar as tuas sessões.')}</Text>
+    <Text style={styles.help}>{t('Escolhe uma dos teus próximos jogos. Quem estiver no chat pode responder "Vou" diretamente.')}</Text>
+    {failed?<Text style={styles.help}>{t('Não foi possível carregar os teus jogos.')}</Text>
      :items===null?<ActivityIndicator color={C.mint}/>
-     :items.length===0?<Text style={styles.help}>{t('Não tens sessões futuras organizadas por ti.')}</Text>
+     :items.length===0?<Text style={styles.help}>{t('Não tens jogos futuros organizados por ti.')}</Text>
      :<ScrollView style={{maxHeight:320}} contentContainerStyle={{gap:8}}>
        {items.map(s=><Pressable key={s.id} accessibilityRole="button" onPress={()=>onPick(s.id)} style={styles.item}>
         <Text style={styles.itemTitle}>{sportName(s.sport)} · {s.city}</Text>
@@ -38,7 +38,7 @@ export function CallUpPicker({visible,token,username,onClose,onPick}:{visible:bo
        </Pressable>)}
       </ScrollView>}
     <Pressable accessibilityRole="button" onPress={()=>{onClose();router.push('/sessions/create');}} style={styles.create}>
-     <Text style={styles.createText}>{t('Criar sessão')}</Text>
+     <Text style={styles.createText}>{t('Criar jogo')}</Text>
     </Pressable>
    </View>
   </View>

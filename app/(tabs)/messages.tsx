@@ -78,7 +78,7 @@ export default function MessagesScreen(){
    const failedSources=[
     ...(privateChats.status==='rejected'?[t('mensagens privadas')]:[]),
     ...(groups.status==='rejected'?[t('comunidades')]:[]),
-    ...(sessionChats.status==='rejected'?[t('sessões')]:[]),
+    ...(sessionChats.status==='rejected'?[t('jogos')]:[]),
     ...(groupChats.status==='rejected'?[t('grupos')]:[]),
     ...(teamChats.status==='rejected'?[t('equipas')]:[]),
     ...(requests.status==='rejected'?[t('convites')]:[])
@@ -162,7 +162,7 @@ export default function MessagesScreen(){
  return <Page><Brand subtitle={t('A CONVERSA CONTINUA')}/><DemoBanner/>
   <View style={styles.headerRow}>
    <View style={styles.headerCopy}><Eyebrow>{t('COMUNIDADE É CONVERSA')}</Eyebrow><Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Mensagens')}</Text>
-    <Text style={styles.sub}>{t('Conversas privadas, grupos, comunidades e sessões, num só lugar.')}</Text>
+    <Text style={styles.sub}>{t('Conversas privadas, grupos, comunidades e jogos, num só lugar.')}</Text>
    </View>
    <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir notificações')} onPress={()=>router.push('/notifications')} style={styles.notificationAction}><JynloIcon name="notifications" size={22} color={T.accent}/>{sameIdentity&&notificationUnread>0?<Text style={styles.notificationCount}>{notificationUnread>99?'99+':notificationUnread}</Text>:null}</Pressable>
   </View>
@@ -171,7 +171,7 @@ export default function MessagesScreen(){
     placeholderTextColor={C.muted} style={styles.searchInput} autoCapitalize="none"
     accessibilityLabel={t('Pesquisar conversas pelo contacto ou mensagem')}/>
    <View style={styles.filterRow}>
-    {([['all','Todas'],['direct','Privadas'],['private','Grupos'],['team','Equipas'],['community','Comunidades'],['session','Sessões']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={t('Filtrar conversas: {label}',{label:t(label)})} accessibilityState={{selected:conversationKind===kind}}
+    {([['all','Todas'],['direct','Privadas'],['private','Grupos'],['team','Equipas'],['community','Comunidades'],['session','Jogos']] as const).map(([kind,label])=><Pressable key={kind} accessibilityRole="button" accessibilityLabel={t('Filtrar conversas: {label}',{label:t(label)})} accessibilityState={{selected:conversationKind===kind}}
       onPress={()=>setConversationKind(kind)} style={[styles.kindChip,conversationKind===kind&&styles.kindChipActive]}>
       <Text style={[styles.kindText,conversationKind===kind&&styles.kindTextActive]}>{t(label)}</Text>
     </Pressable>)}
@@ -226,7 +226,7 @@ export default function MessagesScreen(){
   {displayed.map(item=><View key={`${item.kind}-${item.id}`} style={styles.conversationRow}>
    <Pressable
     accessibilityRole="button"
-    accessibilityLabel={`${item.kind==='direct'?t('Conversa com'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Chat da equipa'):item.kind==='community'?t('Comunidade'):t('Chat da sessão')} ${item.title||item.id}, ${item.unreadCount>0?t('{n} mensagens não lidas',{n:item.unreadCount}):t('sem mensagens não lidas')}`}
+    accessibilityLabel={`${item.kind==='direct'?t('Conversa com'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Chat da equipa'):item.kind==='community'?t('Comunidade'):t('Chat do jogo')} ${item.title||item.id}, ${item.unreadCount>0?t('{n} mensagens não lidas',{n:item.unreadCount}):t('sem mensagens não lidas')}`}
     onPress={()=>item.kind==='direct'?router.push({pathname:'/messages/[peer]',params:{peer:item.id}}):
       item.kind==='private'?router.push({pathname:'/groups/[id]',params:{id:item.id,title:item.title||''}}):
       item.kind==='team'?router.push({pathname:'/teams/[id]',params:{id:item.id,tab:'CHAT'}}):
@@ -242,7 +242,7 @@ export default function MessagesScreen(){
     </View>
     <View style={styles.conversationBody}>
       <View style={styles.conversationTop}>
-       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?t('Comunidade'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Equipa'):t('Sessão desportiva'))}</Text>
+       <Text style={[styles.item,item.unreadCount>0&&styles.itemUnread]} numberOfLines={1}>{item.kind==='direct'?item.id:item.title||(item.kind==='community'?t('Comunidade'):item.kind==='private'?t('Grupo'):item.kind==='team'?t('Equipa'):t('Jogo'))}</Text>
        {muteKnown&&isConversationMuted(mutes,item.kind,item.id)?<JynloIcon name="volume-off" size={14} color={T.muted}/>:null}
        {!!item.latestAt&&<Text style={[styles.tiny,item.unreadCount>0&&styles.unreadTime]}>{formatInboxTime(item.latestAt)}</Text>}
       </View>

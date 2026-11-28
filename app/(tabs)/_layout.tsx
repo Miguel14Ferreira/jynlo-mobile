@@ -101,9 +101,9 @@ export default function TabsLayout(){
       <Text style={styles.sheetSubtitle}>{t('Junta pessoas através do desporto.')}</Text>
      </View><Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Fechar')} style={styles.close}><JynloIcon name="close" size={25} color={colors.text}/></Pressable></View>
      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.actions}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Criar sessão desportiva')} accessibilityHint={t('Organiza um jogo, convida participantes e gere equipas')} style={styles.sessionHero} onPress={()=>action('session')}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Criar jogo')} accessibilityHint={t('Organiza um jogo, convida participantes e gere equipas')} style={styles.sessionHero} onPress={()=>action('session')}>
        <View style={styles.sessionHeroIcon}><JynloIcon name="session" size={26} color={colors.accent}/></View>
-       <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>{t('AÇÃO PRINCIPAL')}</Text><Text style={styles.sessionHeroTitle}>{t('Criar sessão')}</Text><Text style={styles.sessionHeroSubtitle}>{t('Marca o jogo, reúne jogadores e organiza as equipas.')}</Text></View>
+       <View style={styles.sessionHeroCopy}><Text style={styles.sessionHeroEyebrow}>{t('AÇÃO PRINCIPAL')}</Text><Text style={styles.sessionHeroTitle}>{t('Criar jogo')}</Text><Text style={styles.sessionHeroSubtitle}>{t('Marca o jogo, reúne jogadores e organiza as equipas.')}</Text></View>
        <JynloIcon name="chevron-right" size={25} color={colors.background}/>
       </Pressable>
       <Text style={styles.moreActionsTitle}>{t('Também podes criar')}</Text>

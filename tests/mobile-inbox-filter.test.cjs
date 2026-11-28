@@ -60,7 +60,7 @@ test('inbox cards show last message time and accessible unread counts',()=>{
  assert.match(screen,/accessibilityRole="button"/);
  assert.match(screen,/numberOfLines=\{1\}/);
  assert.match(screen,/pathname:'\/sessions\/\[id\]\/chat'/);
- assert.match(screen,/Chat da sessão/);
+ assert.match(screen,/Chat do jogo/);
 });
 
 test('account changes hide cached inbox and reject responses from previous identity',()=>{

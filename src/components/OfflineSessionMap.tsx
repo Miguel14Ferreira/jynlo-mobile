@@ -14,14 +14,14 @@ const isMainland=(s:SessionSummary)=>s.latitude!=null&&s.longitude!=null&&
 /** Safe geographic fallback when the signed APK does not contain Google Maps. */
 export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
  const mainland=sessions.filter(isMainland);
- return <View style={styles.frame} accessibilityLabel={t('Esquema aproximado das sessões em Portugal continental')}>
+ return <View style={styles.frame} accessibilityLabel={t('Esquema aproximado dos jogos em Portugal continental')}>
    <Text style={styles.heading}>{t('Portugal continental · esquema de localizações')}</Text>
    <Text style={styles.hint}>{t('Pinos baseados nas coordenadas públicas. Sem fundo cartográfico nem ruas.')}</Text>
    <View style={styles.plot}>
     <Text style={styles.north}>N ↑</Text>
     <View pointerEvents="none" style={styles.continent}/>
     {mainland.map(s=><Pressable key={s.id} accessibilityRole="button"
-      accessibilityLabel={(s.city?t('Ver sessão de {sport} em {city}',{sport:sportName(s.sport),city:s.city}):t('Ver sessão de {v}',{v:sportName(s.sport)}))}
+      accessibilityLabel={(s.city?t('Ver jogo de {sport} em {city}',{sport:sportName(s.sport),city:s.city}):t('Ver jogo de {v}',{v:sportName(s.sport)}))}
       onPress={()=>onSelect(s.id)} style={[styles.pin,{
        left:(clamp(100*((s.longitude!-boundaries.west)/(boundaries.east-boundaries.west))))+'%' as `${number}%`,
        top:(clamp(100*((boundaries.north-s.latitude!)/(boundaries.north-boundaries.south))))+'%' as `${number}%`,
@@ -30,7 +30,7 @@ export default function OfflineSessionMap({sessions,selectedId,onSelect}:Props){
      </Pressable>)}
     <Text style={styles.south}>S ↓</Text>
    </View>
-   <Text style={styles.hint}>{t('{a} sessões neste esquema · {b} fora da área continental ou sem posição representável',{a:mainland.length,b:sessions.length-mainland.length})}</Text>
+   <Text style={styles.hint}>{t('{a} jogos neste esquema · {b} fora da área continental ou sem posição representável',{a:mainland.length,b:sessions.length-mainland.length})}</Text>
   </View>;
 }
 const styles=StyleSheet.create({

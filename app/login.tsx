@@ -77,7 +77,7 @@ export default function LoginScreen(){
    <Eyebrow>{t('A TUA CONTA')}</Eyebrow>
    {auth.username?<Message>{t('Já tens sessão iniciada como {user}. Termina essa sessão no Perfil antes de entrares com outra conta.',{user:auth.username})}</Message>:null}
    <Text maxFontSizeMultiplier={1.3} style={styles.headline}>{t('Joga com a tua malta.')}</Text>
-   <Text style={styles.sub}>{DEMO_MODE?t('Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.'):facebookReady?t('Entra com Google, Facebook ou a tua conta Jynlo para participares nas sessões.'):t('Entra com Google ou utiliza a tua conta Jynlo para participares nas sessões.')}</Text>
+   <Text style={styles.sub}>{DEMO_MODE?t('Esta APK usa apenas personagens fictícias. As contas reais não funcionam nesta demonstração.'):facebookReady?t('Entra com Google, Facebook ou a tua conta Jynlo para participares nos jogos.'):t('Entra com Google ou utiliza a tua conta Jynlo para participares nos jogos.')}</Text>
    {error?<Message tone="error">{error}</Message>:null}
    {auth.username?null:DEMO_MODE?<View style={styles.demoPanel}>
      <Text style={styles.panelTitle}>{t('Experimentar com personagens fictícias')}</Text>

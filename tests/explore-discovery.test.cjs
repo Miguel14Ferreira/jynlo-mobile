@@ -22,7 +22,7 @@ test('Pesquisa de cidade usa debounce e ignora resultados atrasados',()=>{
  assert.match(file,/setTimeout\(\(\)=>setDebouncedCity\(city\.trim\(\)\),350\)/);
  assert.match(file,/version===loadVersion\.current/);
 });
-test('Explorar mostra Comunidades aos visitantes e preserva login na criação de sessão',()=>{
+test('Explorar mostra Comunidades aos visitantes e preserva login na criação de jogo',()=>{
  const file=read('app/(tabs)/explore.tsx');
  // Explore is now only "find games"; creating lives in the central Criar tab
  // (which sends guests to login), and Communities open from Home "Próximos jogos".

@@ -33,8 +33,8 @@ export default function SessionDraftLocationMap({point,venueName,address,city,on
       provider={Platform.OS==='android'?PROVIDER_GOOGLE:undefined}
       initialRegion={{...coordinates,latitudeDelta:0.008,longitudeDelta:0.008}}
       scrollEnabled={false} zoomEnabled={false} rotateEnabled={false} pitchEnabled={false}
-      accessibilityLabel={t('Pré-visualização do ponto exato da sessão')}>
-      <Marker coordinate={coordinates} title={venueName||t('Local da sessão')}/>
+      accessibilityLabel={t('Pré-visualização do ponto exato do jogo')}>
+      <Marker coordinate={coordinates} title={venueName||t('Local do jogo')}/>
     </MapView>
    </View>:<View style={styles.fallback}>
     <Text style={styles.description}>{coordinates

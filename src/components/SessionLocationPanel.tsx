@@ -38,7 +38,7 @@ export default function SessionLocationPanel({session,token,canEdit,onSaved}:Pro
    const updated=await request<SessionDetail>(`/api/sessions/${session.id}/maps-link`,{
     token,method:'PATCH',body:{url:url||null}
    });
-   if(updated?.id!==session.id)throw Error(t('O servidor não confirmou a sessão atualizada.'));
+   if(updated?.id!==session.id)throw Error(t('O servidor não confirmou o jogo atualizado.'));
    onSaved(updated);setEditing(false);setNotice(t('Ligação Google Maps guardada.'));
   }catch(e){
    setError((e instanceof Error?e.message:t('Não foi possível guardar a localização.'))
@@ -55,8 +55,8 @@ export default function SessionLocationPanel({session,token,canEdit,onSaved}:Pro
    {pin&&authorized?<View style={styles.mapContainer}>
     <MapView key={session.id+'|'+pin.latitude+'|'+pin.longitude}
      style={styles.map} initialRegion={{...pin,latitudeDelta:.008,longitudeDelta:.008}}
-     accessibilityLabel={t('Mapa do ponto GPS registado para a sessão')}>
-     <Marker coordinate={pin} title={t('Ponto registado para esta sessão')}/>
+     accessibilityLabel={t('Mapa do ponto GPS registado para o jogo')}>
+     <Marker coordinate={pin} title={t('Ponto registado para este jogo')}/>
     </MapView>
     <Text style={styles.hint}>{t('Mapa do ponto GPS guardado. Confirma a entrada com o organizador.')}</Text>
    </View>:null}

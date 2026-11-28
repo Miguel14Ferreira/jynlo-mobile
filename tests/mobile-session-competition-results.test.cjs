@@ -60,7 +60,7 @@ test('session details only offer entry for community games that have actually ta
  assert.match(s,/detail\?\.communityId&&owner&&detail.status!=='CANCELLED'/);
  assert.match(s,/Date.parse\(detail.gameDate\)<Date.now\(\)/);
  assert.match(s,/pathname:'\/sessions\/\[id\]\/result'/);
- assert.match(s,/Registar resultado da sessão/);
+ assert.match(s,/Registar resultado do jogo/);
 });
 
 test('absent and late-cancelled players cannot be inserted into a quick result',()=>{

@@ -428,7 +428,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     // Multipart failures may surface as text instead of ApiError. Never
     // retry an uncertain upload, only revalidate conversation access.
     if((e instanceof ApiError&&[401,403,404,409,410].includes(e.status))||
-       (e instanceof Error&&/permissão para enviar|sessão expirou|chat (?:da sessão )?(?:fechado|encerrado)/i.test(e.message)))
+       (e instanceof Error&&/permissão para enviar|sessão expirou|chat (?:do jogo |da sessão )?(?:fechad|encerrad)[oa]/i.test(e.message)))
      await refresh(true,version);
     else setError((e instanceof Error?e.message:t('Envio não confirmado.'))+' '+t('Verifica o histórico antes de repetir.'));
    }
@@ -603,7 +603,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
      <Pressable accessibilityRole="button" accessibilityState={{expanded:attachmentsOpen}} accessibilityLabel={attachmentsOpen?t('Fechar anexos'):t('Abrir anexos')}
       onPress={()=>setAttachmentsOpen(value=>!value)} style={styles.plus}><JynloIcon name={attachmentsOpen?'close':'plus'} size={24} color={C.mint}/></Pressable>
      <TextInput multiline value={draft} onChangeText={setDraft} maxLength={2000}
-      accessibilityLabel={t('Mensagem da sessão')} placeholder={t('Escreve uma mensagem')}
+      accessibilityLabel={t('Mensagem do jogo')} placeholder={t('Escreve uma mensagem')}
        onFocus={()=>{composerFocused.current=true;if(inlineNearBottom.current)inlineHistoryRef.current?.scrollToEnd({animated:true});setAttachmentsOpen(false);}}
        onBlur={()=>{composerFocused.current=false;}}
       placeholderTextColor={C.muted} style={styles.input}/>
@@ -614,7 +614,7 @@ export default function SessionChatPanel({embedded=false}:{embedded?:boolean}){
     </View>
   </KeyboardAvoidingView>:null}
   {syncWarning&&!closed?<Button title={t('Tentar novamente')} secondary disabled={loading||sending||uploading} onPress={()=>{void refresh();}}/>:null}
-  {!embedded?<Button title={t('Voltar à sessão')} secondary onPress={()=>router.back()}/>:null}
+  {!embedded?<Button title={t('Voltar ao jogo')} secondary onPress={()=>router.back()}/>:null}
  </>;
  return embedded?<View style={styles.inline}>{content}</View>:<Page>{content}</Page>;
 }

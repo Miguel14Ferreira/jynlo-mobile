@@ -61,7 +61,7 @@ export function Brand({subtitle}:{subtitle?:string}){
 }
 export function DemoBanner(){return DEMO_MODE?<View style={styles.demoBanner}>
   <Text style={styles.demoText}>{t('● MODO DEMONSTRAÇÃO')}</Text>
-  <Text style={styles.demoSub}>{t('Sessões e perfis fictícios. Nada é enviado para a Jynlo real.')}</Text>
+  <Text style={styles.demoSub}>{t('Jogos e perfis fictícios. Nada é enviado para a Jynlo real.')}</Text>
 </View>:null;}
 export function Eyebrow({children}:{children:React.ReactNode}){
   return <Text style={styles.eyebrow}>{children}</Text>;
@@ -109,7 +109,7 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
   const minimum=session.minPlayers??Math.min(Math.max(2,session.maxParticipants||2),/futebol|futsal|basquetebol|basketball/.test(sportLower)?6:/padel|pádel/.test(sportLower)?4:2);
   const missing=open&&hasCapacity?Math.max(0,minimum-count):0;
   const location=[session.city,session.distanceKm!==null&&Number.isFinite(session.distanceKm)?`${session.distanceKm.toLocaleString(currentLocale())} km`:null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver sessão de {sport} em {city}',{sport:sportName(session.sport),city:session.city||t('local a confirmar')})}
+  return <Pressable accessibilityRole="button" accessibilityLabel={t('Ver jogo de {sport} em {city}',{sport:sportName(session.sport),city:session.city||t('local a confirmar')})}
     onPress={onPress} style={({pressed})=>[styles.card,pressed&&styles.cardPressed]}>
     <View style={styles.cardTop}>
       <View style={styles.sportBox}><Text maxFontSizeMultiplier={1.3} style={styles.sportIcon}>{sportIcon(session.sport)}</Text></View>
@@ -133,8 +133,8 @@ export function SessionCard({session,onPress}:{session:SessionSummary;onPress:()
       </View>
     </View>
     {missing>0?<Text style={styles.missingPlayers}>{missing===1?t('Falta 1 para haver jogo'):t('Faltam {n} para haver jogo',{n:missing})}</Text>:null}
-    {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel={t('Ocupação da sessão')}><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
-    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>{t('Ver detalhes da sessão')}</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
+    {hasCapacity?<View style={styles.capacityTrack} accessibilityLabel={t('Ocupação do jogo')}><View style={[styles.capacityFill,{width:`${Math.round(progress*100)}%`}]}/></View>:null}
+    <View style={styles.sessionFooter}><Text style={styles.sessionFooterText}>{t('Ver detalhes do jogo')}</Text><JynloIcon name="chevron-right" size={19} color={MobileTheme.colors.accent}/></View>
   </Pressable>;
 }
 const styles=StyleSheet.create({

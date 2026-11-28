@@ -14,7 +14,7 @@ test('notification and invitation lists are rendered only for the currently auth
  assert.match(code,/visibleInvites\.map\(invite=>/);
  assert.match(code,/const sections=buildSections\(filteredItems\)/);
  assert.match(code,/const filteredItems=unreadOnly\?visibleItems\.filter\(item=>!item\.read\):visibleItems/);
- assert.doesNotMatch(code,/>Convites para sessões · \{invites\.length\}/);
+ assert.doesNotMatch(code,/>Convites para jogos · \{invites\.length\}/);
  assert.doesNotMatch(code,/>Outras notificações · \{items\.length\}/);
 });
 

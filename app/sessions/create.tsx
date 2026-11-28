@@ -275,7 +275,7 @@ export default function CreateSessionScreen(){
      setCommunityMode('SINGLE');
      setForm(previous=>withHabitualLocation({...changeCommunityMode(previous,'SINGLE'),communityId:chosen.id,
       sport:chosenSport||(sports.includes(previous.sport)?previous.sport:''),communityRankingsEnabled:chosen.rankingsEnabled},chosen));
-    }else setCommunityError(t('Já não pertences a esta comunidade. Seleciona outra antes de criares a sessão.'));
+    }else setCommunityError(t('Já não pertences a esta comunidade. Seleciona outra antes de criares o jogo.'));
    }
   }
   catch{
@@ -327,7 +327,7 @@ export default function CreateSessionScreen(){
   };
  },[loadCommunities,auth.username,auth.token,requestedCommunityId,presetDay,presetTime,repeatFrom]));
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- // Presets ("perfis de sessões") are shared with the web and never hold dates, passwords or photos.
+ // Presets ("perfis de jogos") are shared with the web and never hold dates, passwords or photos.
  const [presets,setPresets]=useState<SessionPreset[]>([]);
  const [presetId,setPresetId]=useState<number|null>(null);
  const [presetName,setPresetName]=useState('');
@@ -344,7 +344,7 @@ export default function CreateSessionScreen(){
    setPresets([]);setPresetId(null);setPresetName('');setPresetMessage('');setPresetNotes([]);untemplated.current=null;}
   setPresetError('');
   if(auth.token&&!DEMO_MODE)myPresets(auth.token).then(list=>{if(live)setPresets(Array.isArray(list)?list:[]);})
-   .catch(()=>{if(live)setPresetError(t('Não foi possível carregar os perfis de sessões.'));});
+   .catch(()=>{if(live)setPresetError(t('Não foi possível carregar os perfis de jogos.'));});
   return()=>{live=false;};
  },[auth.token]));
  function resetLocationUi(){
@@ -464,7 +464,7 @@ export default function CreateSessionScreen(){
    if(!customSportMode&&!SPORTS.includes(form.sport)){
     setError(t('Seleciona uma modalidade do catálogo ou escolhe a opção Outro.'));return;
    }
-   if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError(t('Seleciona pelo menos uma comunidade ou escolhe sessão independente.'));return;}
+   if(communityMode!=='INDEPENDENT'&&!hasCommunity){setError(t('Seleciona pelo menos uma comunidade ou escolhe jogo independente.'));return;}
    if(form.communityId&&!selectedCommunity){setError(t('Seleciona novamente a comunidade.'));return;}
    if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport)){
     setError(t('Escolhe uma modalidade permitida nesta comunidade.'));return;
@@ -488,7 +488,7 @@ export default function CreateSessionScreen(){
     if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
      throw Error(t('Indica quantos jogadores já tens confirmados, sem contar contigo.'));
     createSessionPayload(form,SPORTS);
-   }catch(e){setError(e instanceof Error?e.message:t('Verifica as informações da sessão.'));return;}
+   }catch(e){setError(e instanceof Error?e.message:t('Verifica as informações do jogo.'));return;}
   }
   setStep(current=>Math.min(3,current+1));
  }
@@ -497,7 +497,7 @@ export default function CreateSessionScreen(){
   let payload:ReturnType<typeof createSessionPayload>;
   try{
    if(hasExistingPlayers&&Number(form.externalConfirmedParticipants)<1)
-    throw Error(t('Indica quantos jogadores já tens confirmados antes de criar a sessão.'));
+    throw Error(t('Indica quantos jogadores já tens confirmados antes de criar o jogo.'));
    if(communityMode!=='INDEPENDENT'&&!hasCommunity)throw Error(t('Escolhe uma comunidade para continuar.'));
    if(form.communityId&&!selectedCommunity)throw Error(t('Atualiza a lista de comunidades antes de continuar.'));
    if(selectedCommunity&&!communitySports(selectedCommunity).includes(form.sport))
@@ -511,21 +511,21 @@ export default function CreateSessionScreen(){
     throw Error(t('O recinto selecionado não é válido para a modalidade. Pesquisa novamente.'));
    if(locationLoading||(locationMode!=='saved'&&(form.latitude==null||form.longitude==null||form.locationConfirmed!==true)))throw Error(t('Confirma a localização escolhida antes de criar.'));
    if(locationMode==='link'&&(!verifiedMapsLink||verifiedMapsLink!==mapsLink.trim()))
-    throw Error(t('Confirma novamente a ligação Google Maps antes de criar a sessão.'));
+    throw Error(t('Confirma novamente a ligação Google Maps antes de criar o jogo.'));
    payload={...createSessionPayload(form,SPORTS),
     googleMapsUrl:locationMode==='link'?verifiedMapsLink:null};setError('');
   }
-  catch(e){setError(e instanceof Error?e.message:t('Verifica os dados da sessão.'));return;}
+  catch(e){setError(e instanceof Error?e.message:t('Verifica os dados do jogo.'));return;}
   const identity=communityLoadIdentity.current;
   const version=communityLoadVersion.current;
   const actorToken=auth.token,actorUsername=auth.username;
-  Alert.alert(t('Criar sessão desportiva?'),describeSessionConfirmation(payload,{
+  Alert.alert(t('Criar jogo?'),describeSessionConfirmation(payload,{
    communityName:selectedCommunity?.name,
    sharedCommunityNames:sharedCommunities.map(c=>c.name),
    venueName:venueChosen?.name
   }),[
    {text:t('Voltar'),style:'cancel'},
-   {text:t('Criar sessão'),onPress:async()=>{
+   {text:t('Criar jogo'),onPress:async()=>{
     if(locked.current||confirmedCreation.current||
        version!==communityLoadVersion.current||identity!==communityLoadIdentity.current)return;
     const operation=++createOperation.current;
@@ -538,7 +538,7 @@ export default function CreateSessionScreen(){
      setCreatedId(result.id);
      if(repeatFrom&&actorToken){
       try{const summary=await inviteFromPreviousSession(result.id,repeatFrom,actorToken);Alert.alert(t('Jogar outra vez'),repeatInviteMessage(summary));}
-      catch{Alert.alert(t('Jogar outra vez'),t('A sessão foi criada, mas não foi possível convidar os jogadores da última vez. Podes convidá-los na sessão.'));}
+      catch{Alert.alert(t('Jogar outra vez'),t('O jogo foi criado, mas não foi possível convidar os jogadores da última vez. Podes convidá-los no jogo.'));}
      }
      if(bookingId&&actorToken){
       // A failed link never blocks opening the new game.
@@ -551,9 +551,9 @@ export default function CreateSessionScreen(){
     }catch(e){
      if(operation===createOperation.current&&version===communityLoadVersion.current&&identity===communityLoadIdentity.current)
       setError(confirmedCreation.current?
-       t('A sessão foi criada, mas não foi possível abrir o detalhe automaticamente. Usa o botão «Abrir sessão criada» para continuar.'):
-       (e instanceof Error?e.message:t('Não foi possível criar a sessão.'))+' '+
-       t('Verifica as tuas sessões antes de tentares novamente, para evitar duplicados.'));
+       t('O jogo foi criado, mas não foi possível abrir o detalhe automaticamente. Usa o botão «Abrir sessão criada» para continuar.'):
+       (e instanceof Error?e.message:t('Não foi possível criar o jogo.'))+' '+
+       t('Verifica os teus jogos antes de tentares novamente, para evitar duplicados.'));
     }finally{
      // Do not allow another POST until this one has actually settled, even after navigation.
      locked.current=false;
@@ -586,8 +586,8 @@ export default function CreateSessionScreen(){
     </View>
    </View>
   </Modal><DemoBanner/><Eyebrow>{t('JYNLO · ORGANIZAR')}</Eyebrow>
-  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Criar uma sessão')}</Text>
-  <Text style={styles.note}>{t('Configura a sessão em quatro etapas. Os dados só são enviados depois da confirmação final.')}</Text>
+  <Text maxFontSizeMultiplier={1.3} style={styles.title}>{t('Criar um jogo')}</Text>
+  <Text style={styles.note}>{t('Configura o jogo em quatro etapas. Os dados só são enviados depois da confirmação final.')}</Text>
   {repeatNote?<Message>{repeatNote}</Message>:null}
   <View style={styles.steps}>{stepLabels.map((label,index)=><Pressable key={label}
    accessibilityRole="button" disabled={busy||index>step} onPress={()=>{setStep(index);setError('');}}
@@ -596,11 +596,11 @@ export default function CreateSessionScreen(){
   </Pressable>)}</View>
   <Text style={styles.note}>{t('Etapa {step} de 4',{step:step+1})} · {stepLabels[step]}</Text>
   {!auth.token?<Button title={t('Entrar para criar')} onPress={()=>router.push({pathname:'/login',params:{redirect:'/sessions/create'}})}/>:null}
-  {DEMO_MODE?<Message>{t('Na demonstração não são criadas sessões reais.')}</Message>:null}
+  {DEMO_MODE?<Message>{t('Na demonstração não são criadas jogos reais.')}</Message>:null}
   {error?<Message tone="error">{error}</Message>:null}
   {createdId&&confirmedCreation.current?.identity===communityLoadIdentity.current?
    <View style={{gap:9}}>
-    <Message>{t('Sessão criada com sucesso. Já não é necessário repetir a criação.')}</Message>
+    <Message>{t('Jogo criado com sucesso. Já não é necessário repetir a criação.')}</Message>
     <Button title={t('Abrir sessão criada')} onPress={()=>router.replace({pathname:'/sessions/[id]',params:{id:String(createdId)}})}/>
    </View>:null}
   {communityError?<Message tone="error">{communityError}</Message>:null}
@@ -655,7 +655,7 @@ export default function CreateSessionScreen(){
      setForm(prev=>({...prev,sport:proposedName,venueId:null,seasonGame:false,confirmActivateRankings:false}));
     }}/>:null}
    {customSportMode?<>
-    <Text style={styles.note}>{t('Escreve a modalidade. A sessão é independente e a sugestão será revista antes de entrar no catálogo oficial.')}</Text>
+    <Text style={styles.note}>{t('Escreve a modalidade. O jogo é independente e a sugestão será revista antes de entrar no catálogo oficial.')}</Text>
     <TextInput style={styles.input} value={form.sport} maxLength={60}
       onChangeText={value=>{preselectionOverridden.current=true;setForm(prev=>({...prev,sport:value,venueId:null}));}}
       placeholder={t('Ex.: Bossaball')} placeholderTextColor={C.muted}
@@ -675,7 +675,7 @@ export default function CreateSessionScreen(){
      t('Estas comunidades não têm modalidades em comum. Retira uma comunidade ou escolhe outra combinação.')}
    </Text>:null}
   </View>
-  <View style={styles.panel}><Text style={styles.heading}>{t('Tipo de sessão')}</Text>
+  <View style={styles.panel}><Text style={styles.heading}>{t('Tipo de jogo')}</Text>
    <View style={styles.inline}>
     {(['INDEPENDENT','SINGLE','SHARED'] as const).map(mode=>
      <Button key={mode} title={mode==='INDEPENDENT'?t('Independente'):mode==='SINGLE'?t('Comunidade'):t('Partilhar')}
@@ -688,7 +688,7 @@ export default function CreateSessionScreen(){
    {communityMode==='INDEPENDENT'?<Text style={styles.note}>{t('Sessão aberta a jogadores da Jynlo, sem comunidade associada.')}</Text>:null}
    {communityMode!=='INDEPENDENT'?<>
     <Text style={styles.note}>{communityMode==='SINGLE'
-     ?t('Escolhe uma comunidade. As sessões associadas são apenas para os seus membros.')
+     ?t('Escolhe uma comunidade. Os jogos associados são apenas para os seus membros.')
      :t('Escolhe até cinco comunidades. Os respetivos membros poderão participar, sem palavra-passe.')}</Text>
     <TextInput style={styles.input} value={communitySearch} onChangeText={setCommunitySearch}
      placeholder={t('Pesquisar as minhas comunidades')} placeholderTextColor={C.muted}
@@ -739,8 +739,8 @@ export default function CreateSessionScreen(){
   </View>:null}
   </>:null}
   {step===1?<View style={styles.panel}><Text style={styles.heading}>{t('Quando e onde?')}</Text>
-   <Text style={styles.label}>{t('Data da sessão')}</Text>
-   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir calendário da sessão')}
+   <Text style={styles.label}>{t('Data do jogo')}</Text>
+   <Pressable accessibilityRole="button" accessibilityLabel={t('Abrir calendário do jogo')}
     disabled={busy} onPress={()=>setShowDateCalendar(open=>!open)}
     style={[styles.option,{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}]}>
     <Text style={styles.optionText}>{form.day||t('Escolher data no calendário')}</Text>
@@ -804,7 +804,7 @@ export default function CreateSessionScreen(){
    <TextInput style={styles.input} value={venueCityQuery} onChangeText={v=>{setVenueCityQuery(v);clearVenueSearch();}}
     placeholder={t('Filtrar por localidade (opcional)')} placeholderTextColor={C.muted} editable={!busy}
     accessibilityLabel={t('Localidade para procurar recintos')}/>
-   <Text style={styles.note}>{t('Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade da sessão serão atualizadas automaticamente.')}</Text>
+   <Text style={styles.note}>{t('Podes procurar recintos em qualquer localidade. Ao selecionar um recinto, a morada e a cidade do jogo serão atualizadas automaticamente.')}</Text>
    <Button secondary title={venueLoading?t('A pesquisar…'):t('Procurar recintos')} disabled={busy||venueLoading||!form.sport} onPress={()=>{void findVenues();}}/>
    {venueError?<Message tone="error">{venueError}</Message>:null}
    {venueMatches.map(v=><Pressable key={v.id} accessibilityRole="button" style={styles.option} disabled={busy}
@@ -821,7 +821,7 @@ export default function CreateSessionScreen(){
     onPick={slot=>{setPickedSlot(slot);if(slot)setForm(prev=>({...prev,day:slot.day,time:slot.time}));}}/>:null}
    {locationMode==='saved'&&venueChosen&&venueChosen.city?.trim()&&venueChosen.address?.trim()?
     <Text style={styles.note}>{t('A morada e a localidade são fornecidas pelo recinto selecionado. Retira o recinto para introduzir uma morada própria.')}</Text>:<>
-    {venueChosen?<Message>{t('Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar a sessão.')}</Message>:null}
+    {venueChosen?<Message>{t('Este recinto não tem uma morada ou localidade completa. Preenche os dados em falta antes de publicar o jogo.')}</Message>:null}
     {field(t('Localidade'),'city',t('Ex.: Lisboa'))}
     {field(t('Morada'),'address',t('Rua e número, recinto ou ponto de referência'))}
    </>}
@@ -831,7 +831,7 @@ export default function CreateSessionScreen(){
    {field(t('Capacidade total, incluindo organizador'),'maxParticipants','10','numeric')}
    {field(t('Preço por participante (€)'),'price','0','decimal-pad')}
    {field(t('Mínimo de participantes para realizar'),'minParticipants','2','numeric')}
-   <Text style={styles.label}>{t('Nível da sessão')}</Text>
+   <Text style={styles.label}>{t('Nível do jogo')}</Text>
    <View style={styles.levelRow}>
     {sessionChoices().map(choice=>{const selected=(form.skillLevel||'')===choice.value;
      return <Pressable key={choice.value||'all'} accessibilityRole="radio" accessibilityState={{checked:selected}} disabled={busy}
@@ -872,8 +872,8 @@ export default function CreateSessionScreen(){
    {form.recurrence!=='NONE'?<>
     {field(t('Número de ciclos (2 a {max})',{max:hasCommunity?52:12}),'recurrenceOccurrences','4','numeric')}
     <Text style={styles.note}>{hasCommunity
-     ?t('O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 sessões.')
-     :t('Repete o mesmo jogo, até 12 sessões (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.')}</Text>
+     ?t('O primeiro horário é a data indicada acima. Cada jogo tem as suas inscrições, até 52 jogos.')
+     :t('Repete o mesmo jogo, até 12 jogos (cerca de 3 meses). Cada jogo tem as suas inscrições. Para mais, cria uma comunidade.')}</Text>
     {form.recurrence==='WEEKLY'?<View style={styles.field}>
      <Text style={styles.label}>{t('Mais horários na primeira semana (até seis adicionais)')}</Text>
      {(form.additionalWeeklySlots||[]).map((slot,index)=><View key={index} style={styles.option}>
@@ -908,13 +908,13 @@ export default function CreateSessionScreen(){
      onSelect={date=>{patch('registrationDay',date);setShowRegistrationCalendar(false);}}/>:null}
     {field(t('Hora de abertura'),'registrationTime',t('HH:mm (24h)'),'numeric')}
    </>:null}
-   {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>{t('As inscrições só abrem quando o organizador as ativar na sessão.')}</Text>:null}
+   {form.registrationOpeningMode==='MANUAL'?<Text style={styles.note}>{t('As inscrições só abrem quando o organizador as ativar no jogo.')}</Text>:null}
    <Text style={styles.label}>{t('Visibilidade')}</Text>
    {sharedIds.length>0?<Message>{t('Partilha entre comunidades: visibilidade apenas para membros.')}</Message>:null}
    <View style={styles.inline}><Button secondary={form.privateGame} title={hasCommunity?t('Toda a comunidade'):t('Pública')} disabled={busy} onPress={()=>patch('privateGame',false)}/>
     <Button secondary={!form.privateGame} title={t('Só por convite')} disabled={busy||sharedIds.length>0} onPress={()=>patch('privateGame',true)}/></View>
    {form.privateGame?<Text style={styles.note}>{t('Não aparece no Explorar. Depois de criares o jogo, partilha o link de convite (quem o tiver entra, com ou sem conta) ou convida pessoas diretamente.')}</Text>:null}
-   <Text style={styles.note}>{t('Os jogadores externos já confirmados contam para a ocupação da sessão.')}</Text>
+   <Text style={styles.note}>{t('Os jogadores externos já confirmados contam para a ocupação do jogo.')}</Text>
   </View>:null}
   {step===3?<View style={styles.panel}>
    <Text style={styles.heading}>{t('Rever antes de publicar')}</Text>
@@ -923,7 +923,7 @@ export default function CreateSessionScreen(){
    <Text style={styles.summaryValue}>{sportName(form.sport)}</Text>
    <Text style={styles.summaryValue}>{selectedCommunity?t('Comunidade: {name}',{name:selectedCommunity.name}):
     sharedCommunities.length?t('Partilhada com: {names}',{names:sharedCommunities.map(c=>c.name).join(', ')}):
-    t('Sessão independente')}</Text>
+    t('Jogo independente')}</Text>
    <Button secondary title={t('Editar modalidade e comunidades')} disabled={busy} onPress={()=>setStep(0)}/>
    <Text style={styles.summaryTitle}>{t('Data e recinto')}</Text>
    <Text style={styles.summaryValue}>{form.day} às {form.time}</Text>
@@ -945,11 +945,11 @@ export default function CreateSessionScreen(){
    <Text style={styles.summaryValue}>{hasExistingPlayers?t('Vou completar um grupo existente'):t('Vou encontrar jogadores na Jynlo')}</Text>
    <Text style={styles.summaryValue}>{t('Preço: {price} €',{price:form.price||'0'})} · {sharedIds.length?t('Apenas membros das comunidades'):form.privateGame?t('Privada com palavra-passe'):selectedCommunity?t('Apenas membros da comunidade'):t('Pública')}</Text>
    <Text style={styles.summaryValue}>{t('Inscrições:')} {form.registrationOpeningMode==='SCHEDULED'?t('Abertura {day} às {time}',{day:String(form.registrationDay??''),time:String(form.registrationTime??'')}):form.registrationOpeningMode==='MANUAL'?t('Abertura manual'):t('Abertura imediata')}</Text>
-   <Text style={styles.summaryValue}>{form.recurrence==='NONE'?t('Sessão única'):
+   <Text style={styles.summaryValue}>{form.recurrence==='NONE'?t('Jogo único'):
     t('{frequency} · {cycles} ciclos · {slots} horário(s) por ciclo',{frequency:form.recurrence==='WEEKLY'?t('Semanal'):t('Quinzenal'),cycles:String(form.recurrenceOccurrences??''),slots:(form.additionalWeeklySlots?.length||0)+1})}</Text>
    {form.seasonGame?<Text style={styles.summaryValue}>{t('Jogo de época')}{form.confirmActivateRankings?' · '+t('ativa as classificações com autorização'):''}</Text>:null}
    <Button secondary title={t('Editar participação e inscrições')} disabled={busy} onPress={()=>setStep(2)}/>
-   <Message>{t('O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta a sessão criada antes de tentares repetir a operação se houver uma falha de ligação.')}</Message>
+   <Message>{t('O organizador ocupa uma vaga automaticamente. Depois de confirmares, consulta o jogo criado antes de tentares repetir a operação se houver uma falha de ligação.')}</Message>
   </View>:null}
   {step===3&&auth.token&&!DEMO_MODE?<View style={styles.panel}>
    <Text style={styles.presetKicker}>{t('PERFIS DE SESSÕES')}</Text>
@@ -965,9 +965,9 @@ export default function CreateSessionScreen(){
   <View style={styles.actions}>
    {step>0?<Button secondary title={t('Anterior')} disabled={busy} onPress={()=>{setStep(current=>Math.max(0,current-1));setError('');}}/>:null}
    {step<3?<Button title={t('Continuar')} disabled={busy} onPress={nextStep}/>:
-    <Button title={busy?t('A criar…'):t('Confirmar e criar sessão')} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
+    <Button title={busy?t('A criar…'):t('Confirmar e criar jogo')} disabled={busy||!auth.token||!auth.username||DEMO_MODE||!form.sport} onPress={confirm}/>}
   </View>
-  <Button secondary title={t('Voltar às minhas sessões')} onPress={()=>router.push('/my-sessions')}/>
+  <Button secondary title={t('Voltar aos meus jogos')} onPress={()=>router.push('/my-sessions')}/>
  </Page>;
 }
 const styles=StyleSheet.create({presetKicker:{color:C.mint,fontSize:12,fontWeight:'900',letterSpacing:1.2},

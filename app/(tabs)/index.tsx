@@ -739,12 +739,12 @@ export default function JynloFeedHome(){
       if(activeStoryAccount.current!==actor)return;
       if(game.status!=='COMPLETED'||game.canSharePublicly!==true||
         (!game.joined&&game.creatorUsername?.toLowerCase()!==username.toLowerCase())){
-        setError(t('Só os participantes ou o organizador podem partilhar momentos de uma sessão pública concluída.'));
+        setError(t('Só os participantes ou o organizador podem partilhar momentos de um jogo público concluído.'));
         return;
       }
       openPostComposer(gameId);
     }).catch(()=>{
-      if(activeStoryAccount.current===actor)setError(t('Não foi possível confirmar a sessão para partilhar o momento.'));
+      if(activeStoryAccount.current===actor)setError(t('Não foi possível confirmar o jogo para partilhar o momento.'));
     });
   },[momentSession,auth.ready,auth.token,auth.username,router]);
   useEffect(()=>{
@@ -887,9 +887,9 @@ export default function JynloFeedHome(){
   async function shareFeedSession(item:FeedItem){
     if(!Number.isSafeInteger(item.sessionId)||!item.sessionId||item.sessionId<=0)return;
     try{
-      await Share.share({message:[item.sport||t('Sessão desportiva'),item.city||'',sharedPostLink(item)].filter(Boolean).join(' · ')});
+      await Share.share({message:[item.sport||t('Jogo'),item.city||'',sharedPostLink(item)].filter(Boolean).join(' · ')});
     }catch(e){
-      Alert.alert(t('Partilhar sessão'),e instanceof Error?e.message:t('Não foi possível partilhar a sessão.'));
+      Alert.alert(t('Partilhar jogo'),e instanceof Error?e.message:t('Não foi possível partilhar o jogo.'));
     }
   }
 
@@ -912,13 +912,13 @@ export default function JynloFeedHome(){
       if(feedIdentity.current!==identity)return;
       if(detail.creatorUsername?.toLowerCase()!==username.toLowerCase()||
          (detail.status!=='OPEN'&&detail.status!=='FULL')){
-        Alert.alert(t('Sessão indisponível'),t('Esta sessão já não pode ser cancelada ou não és o organizador.'));
+        Alert.alert(t('Jogo indisponível'),t('Este jogo já não pode ser cancelado ou não és o organizador.'));
         return;
       }
-      Alert.alert(t('Cancelar sessão'),
-        t('Vais cancelar a sessão de {sport} para todos os participantes. Esta ação não pode ser anulada. Confirmas?',{sport:sportName(detail.sport)||sportName(item.sport)||t('desporto')}),[
+      Alert.alert(t('Cancelar jogo'),
+        t('Vais cancelar o jogo de {sport} para todos os participantes. Esta ação não pode ser anulada. Confirmas?',{sport:sportName(detail.sport)||sportName(item.sport)||t('desporto')}),[
         {text:t('Manter sessão'),style:'cancel'},
-        {text:t('Sim, cancelar sessão'),style:'destructive',onPress:()=>{
+        {text:t('Sim, cancelar jogo'),style:'destructive',onPress:()=>{
           if(feedIdentity.current!==identity||sessionCancelInFlight.current)return;
           sessionCancelInFlight.current=true;setSessionCancelBusyId(id);
           // Never automatically retry an uncertain POST. The session detail
@@ -928,8 +928,8 @@ export default function JynloFeedHome(){
             const key=removedFeedKey(item);
             if(key)confirmedRemovedFeedKeys.current.add(key);
             setPosts(current=>current.filter(entry=>!(entry.type==='SESSION_CREATED'&&entry.sessionId===id)));
-            Alert.alert(t('Sessão cancelada'),
-              t('A sessão foi cancelada. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.'),[
+            Alert.alert(t('Jogo cancelado'),
+              t('O jogo foi cancelado. Os participantes com conta Jynlo receberão uma notificação interna. Se convidaste jogadores pelo WhatsApp, partilha também o aviso com eles.'),[
                 {text:t('Fechar'),style:'cancel'},
                 {text:t('Partilhar aviso'),onPress:()=>{void shareCancelledFeedSession(detail);}}
               ]);
@@ -937,8 +937,8 @@ export default function JynloFeedHome(){
           }).catch(e=>{
             if(feedIdentity.current===identity)
               Alert.alert(t('Cancelamento não confirmado'),
-                e instanceof Error&&e.message?e.message+' '+t('Verifica o estado da sessão antes de repetir.'):
-                t('Verifica o estado da sessão antes de repetir.'));
+                e instanceof Error&&e.message?e.message+' '+t('Verifica o estado do jogo antes de repetir.'):
+                t('Verifica o estado do jogo antes de repetir.'));
           }).finally(()=>{
             if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
           });
@@ -946,7 +946,7 @@ export default function JynloFeedHome(){
       ]);
     }catch(e){
       if(feedIdentity.current===identity)
-        Alert.alert(t('Não foi possível verificar a sessão'),
+        Alert.alert(t('Não foi possível verificar o jogo'),
           e instanceof Error?e.message:t('Abre o detalhe e tenta novamente.'));
     }finally{
       if(feedIdentity.current===identity){sessionCancelInFlight.current=false;setSessionCancelBusyId(null);}
@@ -1106,7 +1106,7 @@ export default function JynloFeedHome(){
       const created=await publishPost(body,media,actor,username,place,linkedSessionId??undefined);
       // Do not display a previous account's session association in a new account.
       if(feedIdentity.current===`${username}:${actor}`&&linkedSessionId&&created.sessionId!==linkedSessionId)
-        Alert.alert(t('Publicação enviada'),t('O servidor confirmou a publicação, mas não a associação à sessão. Não voltes a enviar sem verificar o teu feed.'));
+        Alert.alert(t('Publicação enviada'),t('O servidor confirmou a publicação, mas não a associação ao jogo. Não voltes a enviar sem verificar o teu feed.'));
       // Show the server-confirmed item immediately. A delayed feed refresh must
       // never make a successful post look as if it vanished.
       if(feedIdentity.current===`${username}:${actor}`){
@@ -1307,7 +1307,7 @@ export default function JynloFeedHome(){
   function AttendanceDigest(){
     if(!attendanceGroups.length)return null;
     const groups=showAllAttendance?attendanceGroups:attendanceGroups.slice(0,5);
-    return <View style={styles.attendanceDigest} accessibilityLabel={t('Atividade de sessões')}>
+    return <View style={styles.attendanceDigest} accessibilityLabel={t('Atividade de jogos')}>
       {groups.map(group=>{
         const when=group.item.gameDate?new Date(group.item.gameDate):null;
         const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString(currentLocale(),{day:'2-digit',month:'2-digit',year:'numeric'}):null;
@@ -1318,9 +1318,9 @@ export default function JynloFeedHome(){
             <Text style={styles.attendanceTitle}>{attendanceTitle(group)}</Text>
             {place?<Text style={styles.attendanceMeta}>{place}</Text>:null}
             <View style={styles.attendanceActions}>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Ver sessão ${group.sessionId}`}
+              <Pressable accessibilityRole="button" accessibilityLabel={`Ver jogo ${group.sessionId}`}
                 style={styles.attendanceButton} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(group.sessionId)}})}>
-                <Text style={styles.attendanceActionText}>{t('Ver sessão →')}</Text>
+                <Text style={styles.attendanceActionText}>{t('Ver jogo →')}</Text>
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel={t('Ocultar do meu feed')}
                 disabled={!auth.token||!hiddenReady}
@@ -1332,7 +1332,7 @@ export default function JynloFeedHome(){
         </View>;
       })}
       {attendanceGroups.length>5?<Pressable accessibilityRole="button"
-        accessibilityLabel={showAllAttendance?t('Mostrar menos atividades'):t('Ver todas as atividades')}
+        accessibilityLabel={showAllAttendance?t('Mostrar menos atividades'):t('Ver todos os jogos')}
         accessibilityState={{expanded:showAllAttendance}}
         onPress={()=>setShowAllAttendance(value=>!value)} style={styles.attendanceMore}>
         <Text style={styles.attendanceActionText}>{showAllAttendance?t('Mostrar menos'):t('Ver todas')}</Text>
@@ -1347,23 +1347,23 @@ export default function JynloFeedHome(){
     const mine=item.type==='SESSION_CREATED'&&Boolean(auth.token&&auth.username&&
       item.authorUsername.toLowerCase()===auth.username.toLowerCase());
     return <View style={{gap:9}}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t('Consultar sessão associada à publicação')} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('Consultar jogo associado à publicação')} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(id)}})} style={styles.postSessionCard}>
         <View style={styles.postSessionIcon}><JynloIcon name="session" size={26} color={TEAL}/></View>
         <View style={{flex:1,gap:4}}>
-          <Text style={styles.postSessionTitle}>{sportName(item.sport?.trim())||t('Sessão desportiva')}</Text>
+          <Text style={styles.postSessionTitle}>{sportName(item.sport?.trim())||t('Jogo')}</Text>
           {(item.city?.trim()||when)?<Text style={styles.postSessionMeta}>{[item.city?.trim(),when].filter(Boolean).join(' · ')}</Text>:null}
-          <Text style={styles.postSessionLink}>{t('Ver detalhes da sessão')}</Text>
+          <Text style={styles.postSessionLink}>{t('Ver detalhes do jogo')}</Text>
         </View>
       </Pressable>
       {item.type==='SESSION_CREATED'?<View style={{flexDirection:'row',flexWrap:'wrap',gap:9}}>
-        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar sessão')} style={styles.attendanceButton}
+        <Pressable accessibilityRole="button" accessibilityLabel={t('Partilhar jogo')} style={styles.attendanceButton}
           onPress={()=>void shareFeedSession(item)}>
-          <Text style={styles.attendanceActionText}>{t('Partilhar sessão')}</Text>
+          <Text style={styles.attendanceActionText}>{t('Partilhar jogo')}</Text>
         </Pressable>
-        {mine?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar a minha sessão')} style={styles.attendanceButton}
+        {mine?<Pressable accessibilityRole="button" accessibilityLabel={t('Cancelar o meu jogo')} style={styles.attendanceButton}
           disabled={sessionCancelBusyId!==null} onPress={()=>void requestCancelFeedSession(item)}>
           <Text style={{color:'#FF9292',fontWeight:'700'}}>
-            {sessionCancelBusyId===id?t('A verificar…'):t('Cancelar sessão')}
+            {sessionCancelBusyId===id?t('A verificar…'):t('Cancelar jogo')}
           </Text>
         </Pressable>:null}
       </View>:null}
@@ -1606,7 +1606,7 @@ export default function JynloFeedHome(){
         <KeyboardFrame style={{flex:1,gap:17}}>
         <View style={styles.composerTopBar}>
           <Pressable accessibilityRole="button" accessibilityLabel={t('Fechar nova publicação')} disabled={publishing} onPress={closePostComposer} style={styles.modalClose}><JynloIcon name="close" color={WHITE} size={25}/></Pressable>
-          <View style={{flex:1,alignItems:'center'}}><Text style={styles.composerTopTitle}>{t('Nova publicação')}</Text>{composerSessionId?<Text style={styles.storiesIntro}>{t('Recordação do jogo · sessão {v}',{v:composerSessionId})}</Text>:null}</View>
+          <View style={{flex:1,alignItems:'center'}}><Text style={styles.composerTopTitle}>{t('Nova publicação')}</Text>{composerSessionId?<Text style={styles.storiesIntro}>{t('Recordação do jogo · jogo {v}',{v:composerSessionId})}</Text>:null}</View>
           <Pressable accessibilityRole="button" accessibilityLabel={postRetryAcknowledged?t('Partilhar publicação'):t('Verificar o envio antes de repetir')} accessibilityState={{disabled:(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged,busy:publishing}} disabled={(!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged} onPress={()=>void submitPost()} style={[styles.composerShare,((!composerMedia.length&&!composerText.trim())||publishing||!postRetryAcknowledged)&&{opacity:.45}]}>
             <View style={styles.publishButtonContent}>{publishing?<ActivityIndicator color={INDIGO} size="small"/>:null}<Text accessibilityLiveRegion="polite" style={styles.composerShareText}>{publishing?t('A enviar…'):postRetryAcknowledged?t('Partilhar'):t('Confirma primeiro')}</Text></View>
           </Pressable>

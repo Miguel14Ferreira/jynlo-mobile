@@ -71,7 +71,7 @@ export default function GuestSessionRSVP({sessionId,guestToken,onConfirmed}:{ses
    // A second POST would either overbook or return a misleading duplicate error.
    if(/ligação|tempo|servidor respondeu|confirmar|rede|timeout/i.test(detail)){
     uncertainSubmission.current=true;setStatusUnknown(true);
-    setError(t('Não foi possível saber se a presença ficou confirmada. Não repitas a inscrição: consulta o organizador ou verifica o estado da sessão no browser.'));
+    setError(t('Não foi possível saber se a presença ficou confirmada. Não repitas a inscrição: consulta o organizador ou verifica o estado do jogo no browser.'));
    }else setError(detail);
   }
   finally{pending.current=false;setBusy(false);}

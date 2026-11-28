@@ -382,9 +382,9 @@ export default function NotificationsScreen(){
     <Text style={styles.inviteCta}>{t('Responder')}</Text>
    </Pressable>)}
    {visibleInvites.map(invite=><View key={'s'+invite.id} style={styles.inviteRow}>
-    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver detalhes da sessão')} style={{flexDirection:'row',gap:12,flex:1,minWidth:0}} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(invite.sessionId)}})}>
+    <Pressable accessibilityRole="button" accessibilityLabel={t('Ver detalhes do jogo')} style={{flexDirection:'row',gap:12,flex:1,minWidth:0}} onPress={()=>router.push({pathname:'/sessions/[id]',params:{id:String(invite.sessionId)}})}>
      <View style={[styles.icon,{backgroundColor:TONES.invite.bg}]}><JynloIcon name="calendar" size={20} color={TONES.invite.fg}/></View>
-     <View style={{flex:1,minWidth:0}}><Text style={styles.rowTitle} numberOfLines={1}>{sportName(invite.sport)||t('Sessão desportiva')} · {invite.city||t('Local a confirmar')}</Text>
+     <View style={{flex:1,minWidth:0}}><Text style={styles.rowTitle} numberOfLines={1}>{sportName(invite.sport)||t('Jogo')} · {invite.city||t('Local a confirmar')}</Text>
       <Text style={styles.preview} numberOfLines={1}>{t('Convidado por @{a}',{a:invite.inviterUsername})}{invite.gameDate?' · '+new Date(invite.gameDate).toLocaleString(currentLocale(),{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</Text></View>
     </Pressable>
     <View style={{flexDirection:'row',gap:6}}>

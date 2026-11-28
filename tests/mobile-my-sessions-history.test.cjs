@@ -32,7 +32,7 @@ test('screen renders upcoming grouped lists and optionally opens past sessions w
  assert.match(source,/sections.history.filter\(section=>section.items.length>0\)/);
  assert.match(source,/accessibilityState=\{\{expanded:showHistory\}\}/);
  assert.match(source,/Ver histórico/);
- assert.match(source,/Não tens sessões futuras/);
+ assert.match(source,/Não tens jogos futuros/);
  assert.match(source,/SessionCard key=\{item.id\} session=\{item\} onPress=\{\(\)=>open\(item\)\}/);
  assert.match(read('src/lib/my-sessions-core.d.cts'),/organizeMySessions/);
 });

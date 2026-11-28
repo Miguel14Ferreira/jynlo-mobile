@@ -34,7 +34,7 @@ function attendanceTitle(group){
  const name=representative.authorDisplayName||representative.authorUsername||tr('Alguém');
  const sport=group.item.sport||'desporto';
  return group.count>1
-  ? `${name} e mais ${group.count-1} participaram numa sessão de ${sport}`
-  : `${name} participou numa sessão de ${sport}`;
+  ? `${name} e mais ${group.count-1} participaram num jogo de ${sport}`
+  : `${name} participou num jogo de ${sport}`;
 }
 module.exports={attendanceDigest,isDigestAttendance,attendanceTitle};

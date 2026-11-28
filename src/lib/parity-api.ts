@@ -51,7 +51,7 @@ export async function venueRatingSummary(id:number):Promise<VenueRatingSummary|n
 }
 
 export async function mySessions(token:string|null,username:string|null):Promise<MySessions>{
-  if(!token||!username)throw new Error('Inicia sessão para veres as tuas sessões.');
+  if(!token||!username)throw new Error('Inicia sessão para veres os teus jogos.');
   if(DEMO_MODE){const all=demoSessions({},username);return {created:username==='Tiago'?all.filter(x=>x.id===900005):[],joined:all.filter(x=>x.joinedByViewer&&!(username==='Tiago'&&x.id===900005)),waitlisted:[]};}
   const {withOfflineSnapshot}=await import('./offline-cache');
   return withOfflineSnapshot('my-sessions',username,()=>request<MySessions>('/api/sessions/mine',{token}));

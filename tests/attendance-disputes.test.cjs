@@ -37,7 +37,7 @@ test('rate is shown as a rounded, bounded percentage',()=>{
  assert.equal(core.formatRate(87.6),'88%');assert.equal(core.formatRate(140),'100%');assert.equal(core.formatRate(NaN),'—');
 });
 
-test('app uses the server endpoints and shows the history in Minhas sessões',()=>{
+test('app uses the server endpoints and shows the history in Meus jogos',()=>{
  const api=read('src/lib/reliability-api.ts');
  assert.match(api,/'\/api\/attendance\/me'/);
  assert.match(api,/'\/api\/attendance-disputes',\{token,method:'POST',body:\{participantId,reason:text\}\}/);

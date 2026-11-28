@@ -83,7 +83,7 @@ export default function SecurityMfaScreen(){
   </View>:null}
   {!loading&&enabled===true&&!disabling?<Button secondary title={t('Desativar verificação em dois passos')} onPress={()=>{setDisabling(true);setCode('');setError('');setNotice('');}}/>:null}
   {disabling?<View style={styles.panel}>
-   <Text style={styles.step}>{t('Para desativar, introduz o código atual da tua app autenticadora. A sessão sozinha não chega, para proteger a conta.')}</Text>
+   <Text style={styles.step}>{t('Para desativar, introduz o código atual da tua app autenticadora. O jogo sozinha não chega, para proteger a conta.')}</Text>
    {codeInput}
    {error?<Message tone="error">{error}</Message>:null}
    <Button danger title={busy?t('A confirmar…'):t('Desativar')} disabled={busy||code.length!==6} onPress={()=>{void turnOff();}}/>

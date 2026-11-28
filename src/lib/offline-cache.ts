@@ -1,7 +1,7 @@
 import {snapshotName,serializeSnapshot,usableSnapshot} from './offline-core.cjs';
 import {markShowingSaved,setOffline} from './network-status';
 
-// Last good copy of a few screens (Explorar, As minhas sessões) in the app's
+// Last good copy of a few screens (Explorar, Os meus jogos) in the app's
 // private cache folder, per account, for up to 7 days. Never messages or chats.
 
 async function file(kind:string,owner:string|null|undefined){

@@ -37,7 +37,7 @@ export default function ChampionshipFixtureScreen(){
  const reload=useCallback(async(version=generation.current)=>{
   const request=++reloadRequest.current;
   if(!auth.token||!auth.username||![cid,chid,eid,fid].every(valid)){
-   if(version===generation.current&&request===reloadRequest.current){setError(t('Sessão ou jogo inválido.'));setLoading(false);}return;
+   if(version===generation.current&&request===reloadRequest.current){setError(t('Jogo ou jogo inválido.'));setLoading(false);}return;
   }
   // Fail closed: a failed refresh must never leave the previous match editable.
   if(version===generation.current&&request===reloadRequest.current){setLoading(true);setError('');setCanWrite(false);setFixture(null);setRoster([]);}

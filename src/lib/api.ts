@@ -36,7 +36,7 @@ export async function request<T>(path:string, {token,method='GET',body,timeoutMs
     if (!response.ok) {
       const fallback = response.status===401?'Inicia sessão para continuar.':
         response.status===403?'Não tens permissão para esta ação.':
-        response.status===409?'Esta sessão já não aceita essa ação.':
+        response.status===409?'Este jogo já não aceita essa ação.':
         response.status===429?'Demasiados pedidos. Tenta mais tarde.':
         'Não foi possível concluir o pedido.';
       // Show the reason the server gave (e.g. "Já existe uma época ativa…") when it is meant for people.
@@ -50,7 +50,7 @@ export async function request<T>(path:string, {token,method='GET',body,timeoutMs
     return (await readSuccessfulResponse(response)) as T;
   }catch(error){
     if(error instanceof ApiError || error instanceof InvalidSuccessfulResponseError) throw error;
-    if(controller.signal.aborted) throw new Error('A ligação demorou demasiado. Verifica o estado da sessão antes de repetir.');
+    if(controller.signal.aborted) throw new Error('A ligação demorou demasiado. Verifica o estado do jogo antes de repetir.');
     throw new Error('Falha de ligação à Jynlo. Verifica a rede e tenta novamente.');
   }finally{clearTimeout(timeout);}
 }
@@ -93,7 +93,7 @@ export async function sessionParticipants(id:number,token:string):Promise<Sessio
 }
 /** IMPORTANT: never automatically retry a POST on a connection timeout. */
 export async function joinSession(id:number,token:string,username?:string,password?:string):Promise<JoinSessionResponse>{
-  if(!Number.isSafeInteger(id)||id<=0||!token)throw Error('Sessão ou autenticação inválida.');
+  if(!Number.isSafeInteger(id)||id<=0||!token)throw Error('Jogo ou autenticação inválida.');
   if(DEMO_MODE&&!username)throw Error('Inicia sessão para participar.');
   const result=DEMO_MODE?demoJoin(id,username!):
     await request<JoinSessionResponse>(`/api/sessions/${id}/join`,{token,method:'POST',body:{password:password?.trim()||null}});
@@ -123,7 +123,7 @@ export async function recordSessionAttendance(
  if(DEMO_MODE||!token)throw Error('Inicia sessão para registar presenças.');
  if(!Number.isSafeInteger(sessionId)||sessionId<=0||
     !Number.isSafeInteger(participantId)||participantId<=0)
-  throw Error('Identificador de sessão ou participante inválido.');
+  throw Error('Identificador de jogo ou participante inválido.');
  if(status!=='ATTENDED'&&status!=='NO_SHOW')throw Error('Estado de presença inválido.');
  await request<void>(`/api/sessions/${sessionId}/participants/${participantId}/attendance`,{
   token,method:'PUT',body:{status}
@@ -134,7 +134,7 @@ export async function removeSessionParticipant(sessionId:number,participantId:nu
  if(DEMO_MODE||!token)throw Error('Inicia sessão para gerir participantes.');
  if(!Number.isSafeInteger(sessionId)||sessionId<=0||
     !Number.isSafeInteger(participantId)||participantId<=0)
-  throw Error('Identificador de sessão ou participante inválido.');
+  throw Error('Identificador de jogo ou participante inválido.');
  await request<void>(`/api/sessions/${sessionId}/participants/${participantId}`,{token,method:'DELETE'});
 }
 
@@ -153,7 +153,7 @@ export async function updateSessionMeetingPoint(id:number,token:string,instructi
 }
 /** Organizer-only: level of the session (null = all levels). Never retried automatically. */
 export async function updateSessionSkillLevel(id:number,token:string,skillLevel:'BEGINNER'|'INTERMEDIATE'|'ADVANCED'|null):Promise<SessionDetail>{
- if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir o nível da sessão.');
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para gerir o nível do jogo.');
  if(skillLevel!==null&&!['BEGINNER','INTERMEDIATE','ADVANCED'].includes(skillLevel))throw Error('Nível inválido.');
  return request<SessionDetail>(`/api/sessions/${id}/skill-level`,{token,method:'PATCH',body:{skillLevel}});
 }
@@ -205,7 +205,7 @@ export async function pendingSessionInvites(token:string,username?:string):Promi
 export async function inviteToSession(id:number,username:string,token:string,actor?:string):Promise<{id:number}>{
   const invitee=username.trim();
   if(!Number.isSafeInteger(id)||id<=0||!invitee||!token)
-    throw Error('Sessão, destinatário ou autenticação inválidos para enviar convite.');
+    throw Error('Jogo, destinatário ou autenticação inválidos para enviar convite.');
   const result=DEMO_MODE?await demoInvitePlayer(id,actor||'',invitee):
     await request<{id:number}>(`/api/sessions/${id}/invites`,{token,method:'POST',body:{username:invitee}});
   if(!Number.isSafeInteger(result?.id)||result.id<=0)
@@ -255,6 +255,6 @@ export async function issueSessionGuestLink(id:number,token:string):Promise<stri
 /** "Jogar outra vez": invite the players of one of my previous sessions into a new one. */
 export async function inviteFromPreviousSession(sessionId:number,previousSessionId:number,token:string):Promise<{invited:number;skipped:number}>{
   if(DEMO_MODE)return {invited:0,skipped:0};
-  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(previousSessionId)||previousSessionId<=0)throw Error('Sessão inválida.');
+  if(!Number.isSafeInteger(sessionId)||sessionId<=0||!Number.isSafeInteger(previousSessionId)||previousSessionId<=0)throw Error('Jogo inválida.');
   return request<{invited:number;skipped:number}>(`/api/sessions/${sessionId}/invites/from-session/${previousSessionId}`,{token,method:'POST',body:null});
 }

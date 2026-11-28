@@ -16,7 +16,7 @@ type Props={
 export default function SessionNativeMap({initialRegion,sessions,onRegionChange,onSelectSession}:Props){
  return <MapView style={styles.map} initialRegion={initialRegion}
   provider={Platform.OS==='android'?PROVIDER_GOOGLE:undefined}
-  mapType="standard" loadingEnabled accessibilityLabel={t('Mapa de sessões')}
+  mapType="standard" loadingEnabled accessibilityLabel={t('Mapa de jogos')}
   onRegionChangeComplete={onRegionChange}>
   {sessions.map(s=><Marker key={s.id} coordinate={{latitude:s.latitude!,longitude:s.longitude!}}
    title={sportName(s.sport)} description={s.city} onPress={()=>onSelectSession(s.id)}/>)}

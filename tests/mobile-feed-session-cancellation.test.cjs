@@ -18,13 +18,13 @@ test('only the original creator sees the cancellation shortcut',()=>{
  assert.match(card,/item\.type==='SESSION_CREATED'/);
  assert.match(card,/item\.authorUsername\.toLowerCase\(\)===auth\.username\.toLowerCase\(\)/);
  assert.match(card,/\{mine\?<Pressable/);
- assert.match(card,/accessibilityLabel="Cancelar a minha sessão"/);
+ assert.match(card,/accessibilityLabel="Cancelar o meu jogo"/);
  assert.match(card,/onPress=\{\(\)=>void requestCancelFeedSession\(item\)\}/);
 });
 
 test('the session card retains independent share and detail navigation',()=>{
- assert.match(card,/accessibilityLabel="Consultar sessão associada à publicação"/);
- assert.match(card,/accessibilityLabel="Partilhar sessão"/);
+ assert.match(card,/accessibilityLabel="Consultar jogo associado à publicação"/);
+ assert.match(card,/accessibilityLabel="Partilhar jogo"/);
  assert.match(card,/onPress=\{\(\)=>void shareFeedSession\(item\)\}/);
  assert.match(feed,/sharedPostLink\(item\)/);
 });
@@ -39,9 +39,9 @@ test('cancellation rechecks owner and active status with the server',()=>{
 });
 
 test('a destructive confirmation is required before sending POST /cancel',()=>{
- assert.match(cancel,/Alert\.alert\('Cancelar sessão'/);
+ assert.match(cancel,/Alert\.alert\('Cancelar jogo'/);
  assert.match(cancel,/\{text:'Manter sessão',style:'cancel'\}/);
- assert.match(cancel,/\{text:'Sim, cancelar sessão',style:'destructive',onPress:/);
+ assert.match(cancel,/\{text:'Sim, cancelar jogo',style:'destructive',onPress:/);
  assert.match(cancel,/void cancelSession\(id,actor,username\)\.then/);
  assert.match(api,/export async function cancelSession\(/);
  assert.match(api,/`\/api\/sessions\/\$\{id\}\/cancel`/);
@@ -51,13 +51,13 @@ test('successful cancellation hides only the cancelled session activity',()=>{
  assert.match(cancel,/confirmedRemovedFeedKeys\.current\.add\(key\)/);
  assert.match(cancel,/setPosts\(current=>current\.filter\(entry=>!\(entry\.type==='SESSION_CREATED'&&entry\.sessionId===id\)\)\)/);
  assert.match(cancel,/void load\(\)/);
- assert.match(cancel,/Alert\.alert\('Sessão cancelada'/);
+ assert.match(cancel,/Alert\.alert\('Jogo cancelado'/);
 });
 
 test('failed or uncertain cancellation preserves content and prompts recheck',()=>{
  assert.match(cancel,/\.catch\(e=>\{/);
  assert.match(cancel,/Alert\.alert\('Cancelamento não confirmado'/);
- assert.match(cancel,/Verifica o estado da sessão antes de repetir/);
+ assert.match(cancel,/Verifica o estado do jogo antes de repetir/);
  assert.doesNotMatch(cancel,/retry\(/);
 });
 

@@ -28,7 +28,7 @@ test('successful team POST reports refresh uncertainty without claiming confirma
  assert.match(confirm,/const refreshed=await load\(\)/);
  assert.match(confirm,/if\(request!==teamsOperation\.current\|\|epoch!==actionEpoch\.current\)return/);
  assert.match(confirm,/if\(refreshed&&isOrganizer\(refreshed,auth\.username\)\)\{/);
- assert.match(confirm,/O servidor confirmou as equipas, mas não foi possível validar a atualização da sessão/);
+ assert.match(confirm,/O servidor confirmou as equipas, mas não foi possível validar a atualização do jogo/);
  const success=confirm.slice(confirm.indexOf('.then(async result=>'),confirm.indexOf('.catch(()=>'));
  assert.doesNotMatch(success,/setTeamsError\(/);
  assert.ok(success.indexOf('const refreshed=await load()')<success.indexOf('O servidor confirmou as equipas, mas'));

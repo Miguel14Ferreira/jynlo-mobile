@@ -7,7 +7,7 @@ test('session details contain the real chat; the community chat opens full scree
  const session=read('app/sessions/[id].tsx'),community=read('app/communities/[id].tsx');
  assert.match(session,/import SessionChatPanel from/);
  assert.match(session,/<SessionChatPanel embedded\/>/);
- assert.doesNotMatch(session,/title="Abrir chat da sessão"/);
+ assert.doesNotMatch(session,/title="Abrir chat do jogo"/);
  assert.match(community,/router\.push\(\{pathname:'\/communities\/\[id\]\/chat'/);
  assert.doesNotMatch(community,/title="Abrir chat da comunidade"/);
 });
