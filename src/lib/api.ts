@@ -191,6 +191,11 @@ export async function suggestSessionTeams(id:number,token:string,source:'AUTO'|'
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para consultar equipas.');
  return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/suggestion?source=${source}`,{token});
 }
+/** Organiser: link (path) to the public teams page; the same link is reused. */
+export async function shareSessionTeams(id:number,token:string):Promise<{sessionId:number;token:string;path:string}>{
+ if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para partilhar as equipas.');
+ return request<{sessionId:number;token:string;path:string}>(`/api/sessions/${id}/teams/share`,{token,method:'POST',body:{}});
+}
 export async function confirmSessionTeams(id:number,token:string,source:'AUTO'|'FORM'|'EXCEL_POINTS'|'RANDOM',preview?:SessionTeamSuggestion):Promise<SessionTeamSuggestion>{
  if(!Number.isSafeInteger(id)||id<=0||!token||DEMO_MODE)throw Error('Inicia sessão para confirmar equipas.');
  return request<SessionTeamSuggestion>(`/api/sessions/${id}/teams/confirm?source=${source}`,{

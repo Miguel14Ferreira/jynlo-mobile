@@ -2,6 +2,12 @@
 // English for the app. Key = the Portuguese text used in the code (see i18n-core.cjs).
 // Keep placeholders like {count} identical; tests check every key is used and matches.
 const EN={
+  "Formar equipas": "Make teams",
+  "As vagas estão preenchidas. Forma as duas equipas e partilha-as no grupo.": "All spots are filled. Make the two teams and share them with the group.",
+  "Partilhar equipas no WhatsApp": "Share teams on WhatsApp",
+  "Equipas para o jogo de {sport} · {when}": "Teams for the {sport} game · {when}",
+  "Não foi possível partilhar as equipas": "Could not share the teams",
+  "Inicia sessão para partilhar as equipas.": "Sign in to share the teams.",
   "A Jynlo divide os jogadores com base nos resultados anteriores do grupo. Também podes sortear equipas aleatórias. Só fica guardado quando confirmares.": "Jynlo splits the players using the group's previous results. You can also draw random teams. Nothing is saved until you confirm.",
   "Equilibrar equipas": "Balance teams",
   "Paga {a} por MB WAY para este número:": "Pay {a} by MB WAY to this number:",
@@ -1829,7 +1835,6 @@ const EN={
   "FEED": "FEED",
   "FERRAMENTAS DO ORGANIZADOR": "ORGANISER TOOLS",
   "FIABILIDADE": "RELIABILITY",
-  "FORMAR DUAS EQUIPAS": "MAKE TWO TEAMS",
   "FORMATO": "FORMAT",
   "FOTOGRAFIA DE PERFIL": "PROFILE PHOTO",
   "FOTOGRAFIAS": "PHOTOS",

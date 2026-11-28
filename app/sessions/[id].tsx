@@ -6,7 +6,7 @@ import {Alert,AppState,Image,Pressable,Share,StyleSheet,Text,TextInput,View} fro
 import {useFocusEffect,useLocalSearchParams,useRouter} from 'expo-router';
 import {Badge,Button,DemoBanner,Eyebrow,Loader,Message,Page} from '../../src/components/UI';
 import PostImageLightbox,{type ExpandedPostPhotos} from '../../src/components/PostImageLightbox';
-import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,reportSessionProblem,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview} from '../../src/lib/api';
+import {request,ApiError,DEMO_MODE,cancelSession,inviteToSession,joinSession,leaveSession,removeSessionParticipant,recordSessionAttendance,openSessionRegistration,suggestSessionTeams,confirmSessionTeams,updateSessionMeetingPoint,updateSessionSkillLevel,reportSessionProblem,updateSessionExternalConfirmations,issueSessionGuestLink,sessionDetail,sessionParticipants,sessionPreview,shareSessionTeams} from '../../src/lib/api';
 import {useAuth} from '../../src/lib/auth';
 import {C} from '../../src/lib/theme';
 import {confirmedSessionJoin} from '../../src/lib/session-join-receipt.cjs';
@@ -80,6 +80,7 @@ export default function SessionScreen(){
   const [showSessionChat,setShowSessionChat]=useState(false);
   const [showParticipantRoster,setShowParticipantRoster]=useState(true);
   const [teamSource,setTeamSource]=useState<'AUTO'|'RANDOM'>('AUTO');
+  const [teamsOpen,setTeamsOpen]=useState(false);
   const [teamPreview,setTeamPreview]=useState<SessionTeamSuggestion|null>(null);
   const [teamsBusy,setTeamsBusy]=useState(false),[teamsError,setTeamsError]=useState('');
   const teamsInFlight=useRef(false),teamsOperation=useRef(0);
@@ -522,6 +523,16 @@ export default function SessionScreen(){
   const openAt=detail?.registrationOpensAt&&Number.isFinite(Date.parse(detail.registrationOpensAt))?
     formatDate(detail.registrationOpensAt):null;
 
+  /** The teams page (game + both teams, no account needed) shared on WhatsApp or any app. */
+  async function shareTeams(){
+    if(!auth.token||!detail)return;
+    try{
+      const link=await shareSessionTeams(id,auth.token);
+      const when=detail.gameDate?new Date(detail.gameDate).toLocaleString('pt-PT',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      const url='https://jynlosports.com'+link.path;
+      await Share.share({message:t('Equipas para o jogo de {sport} · {when}',{sport:sportName(detail.sport),when})+'\n'+url,url});
+    }catch(e){Alert.alert(t('Não foi possível partilhar as equipas'),e instanceof Error?e.message:'');}
+  }
   return <Page>
     <DemoBanner/>
     <Eyebrow>{t('JYNLO · DETALHES DO JOGO')}</Eyebrow>
@@ -665,6 +676,40 @@ export default function SessionScreen(){
         {detail.communityId?<PublicShareCard target={{kind:'RANKING',communityId:detail.communityId}}
           name={t('Classificação')} token={auth.token} canManage/>:null}
       </View>:null}
+      {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')&&Date.parse(detail.gameDate||'')>Date.now()&&
+        detail.participantCount>=detail.maxParticipants&&(detail.communityId || (
+          detail.playFormat !== 'INDIVIDUAL' &&
+          ['Andebol','Basebol','Basquetebol','Basquetebol 3x3','Corfebol','Cricket','Curling',
+           'Flag Football','Futebol','Futebol Americano','Futsal','Hóquei','Hóquei em Campo',
+           'Hóquei em Patins','Hóquei no Gelo','Lacrosse','Polo Aquático','Rugby',
+           'Rugby Sevens','Softbol','Voleibol','Voleibol de Praia'].includes(detail.sport) &&
+          detail.maxParticipants >= 4 && detail.maxParticipants % 2 === 0 &&
+          (detail.sport !== 'Basquetebol 3x3' || detail.maxParticipants === 6) &&
+          (detail.sport !== 'Rugby Sevens' || detail.maxParticipants === 14) &&
+          (detail.sport !== 'Voleibol de Praia' || detail.maxParticipants === 4)
+        ))?<View style={styles.panel}>
+        <Eyebrow>{t('EQUIPAS')}</Eyebrow>
+        <Text style={styles.hint}>{t('As vagas estão preenchidas. Forma as duas equipas e partilha-as no grupo.')}</Text>
+        {!teamsOpen?<Button title={t('Formar equipas')} onPress={()=>setTeamsOpen(true)}/>:<View style={styles.editor}>
+          <Text style={styles.hint}>{t('A Jynlo divide os jogadores com base nos resultados anteriores do grupo. Também podes sortear equipas aleatórias. Só fica guardado quando confirmares.')}</Text>
+          {detail.teamBalanceSupported?
+          <Button title={t('Equilibrar equipas')} secondary={teamSource!=='AUTO'} disabled={teamsBusy}
+            onPress={()=>{setTeamSource('AUTO');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>:null}
+          <Button title={t('Equipas aleatórias')} secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
+            onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
+          <Button title={teamsBusy?t('A calcular…'):(!detail.teamBalanceSupported||teamSource==='RANDOM')?t('Sortear equipas'):t('Pré-visualizar equipas')} disabled={teamsBusy||busy}
+            onPress={()=>{void previewBalancedTeams();}}/>
+          {teamsError?<Message tone="error">{teamsError}</Message>:null}
+          {teamsMessage?<Message>{teamsMessage}</Message>:null}
+          {teamPreview?<View style={styles.editor}>
+            <Text style={styles.hint}>{(teamSource==='RANDOM'||!detail.teamBalanceSupported)?t('Sorteio sem classificação. Confirma para guardar estas equipas para todos os participantes.'):t('{n} de {total} jogadores com estatísticas.',{n:teamPreview.playersWithStats,total:teamPreview.totalPlayers})}</Text>
+            {renderTeam(t('Equipa A'),teamPreview.teamA,teamPreview.teamAScore)}
+            {renderTeam(t('Equipa B'),teamPreview.teamB,teamPreview.teamBScore)}
+            {(teamSource==='RANDOM'||!detail.teamBalanceSupported)?<Button secondary title={t('Sortear novamente')} disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:null}
+            <Button title={t('Confirmar distribuição de equipas')} disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>
+          </View>:null}
+        </View>}
+      </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')&&Date.parse(detail.gameDate||'')>Date.now()?<View style={styles.panel}>
         <Eyebrow>{t('FERRAMENTAS DO ORGANIZADOR')}</Eyebrow>
         <Button title={t('Editar dados do jogo')} secondary disabled={busy||loading}
@@ -708,36 +753,6 @@ export default function SessionScreen(){
           <Button title={t('Guardar número de jogadores')} disabled={busy} onPress={saveExternalCount}/>
           <Button secondary title={t('Cancelar edição')} disabled={busy} onPress={()=>setEditExternalCount(false)}/>
          </View>}
-        {(detail.communityId || (
-          detail.playFormat !== 'INDIVIDUAL' &&
-          ['Andebol','Basebol','Basquetebol','Basquetebol 3x3','Corfebol','Cricket','Curling',
-           'Flag Football','Futebol','Futebol Americano','Futsal','Hóquei','Hóquei em Campo',
-           'Hóquei em Patins','Hóquei no Gelo','Lacrosse','Polo Aquático','Rugby',
-           'Rugby Sevens','Softbol','Voleibol','Voleibol de Praia'].includes(detail.sport) &&
-          detail.maxParticipants >= 4 && detail.maxParticipants % 2 === 0 &&
-          (detail.sport !== 'Basquetebol 3x3' || detail.maxParticipants === 6) &&
-          (detail.sport !== 'Rugby Sevens' || detail.maxParticipants === 14) &&
-          (detail.sport !== 'Voleibol de Praia' || detail.maxParticipants === 4)
-        ))?<View style={styles.editor}>
-          <Eyebrow>{t('FORMAR DUAS EQUIPAS')}</Eyebrow>
-          <Text style={styles.hint}>{t('A Jynlo divide os jogadores com base nos resultados anteriores do grupo. Também podes sortear equipas aleatórias. Só fica guardado quando confirmares.')}</Text>
-          {detail.teamBalanceSupported?
-          <Button title={t('Equilibrar equipas')} secondary={teamSource!=='AUTO'} disabled={teamsBusy}
-            onPress={()=>{setTeamSource('AUTO');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>:null}
-          <Button title={t('Equipas aleatórias')} secondary={teamSource!=='RANDOM'} disabled={teamsBusy}
-            onPress={()=>{setTeamSource('RANDOM');setTeamPreview(null);setTeamsMessage('');setTeamsError('');}}/>
-          <Button title={teamsBusy?t('A calcular…'):(!detail.teamBalanceSupported||teamSource==='RANDOM')?t('Sortear equipas'):t('Pré-visualizar equipas')} disabled={teamsBusy||busy}
-            onPress={()=>{void previewBalancedTeams();}}/>
-          {teamsError?<Message tone="error">{teamsError}</Message>:null}
-          {teamsMessage?<Message>{teamsMessage}</Message>:null}
-          {teamPreview?<View style={styles.editor}>
-            <Text style={styles.hint}>{(teamSource==='RANDOM'||!detail.teamBalanceSupported)?t('Sorteio sem classificação. Confirma para guardar estas equipas para todos os participantes.'):t('{n} de {total} jogadores com estatísticas.',{n:teamPreview.playersWithStats,total:teamPreview.totalPlayers})}</Text>
-            {renderTeam(t('Equipa A'),teamPreview.teamA,teamPreview.teamAScore)}
-            {renderTeam(t('Equipa B'),teamPreview.teamB,teamPreview.teamBScore)}
-            {(teamSource==='RANDOM'||!detail.teamBalanceSupported)?<Button secondary title={t('Sortear novamente')} disabled={teamsBusy||busy} onPress={()=>{void previewBalancedTeams();}}/>:null}
-            <Button title={t('Confirmar distribuição de equipas')} disabled={teamsBusy||busy} onPress={persistBalancedTeams}/>
-          </View>:null}
-        </View>:null}
         <Text style={styles.hint}>{t('Convidar participantes')}</Text>
         <Text style={styles.hint}>{t('Partilha a ligação com quem ainda não tem a aplicação. O acesso e a confirmação de presença seguem as regras do jogo na web.')}</Text>
         <Text style={styles.hint}>{t('Ou convida diretamente alguém com conta Jynlo:')}</Text>
@@ -757,6 +772,7 @@ export default function SessionScreen(){
         </View>:null}
       {detail&&canViewRoster(detail,auth.username)&&!rosterError&&hasConfirmedTeams?<View style={styles.panel}>
         <Eyebrow>{t('EQUIPAS CONFIRMADAS')}</Eyebrow>
+        {owner&&auth.token?<Button title={t('Partilhar equipas no WhatsApp')} disabled={busy} onPress={()=>{void shareTeams();}}/>:null}
         <Text style={styles.hint}>{t('Distribuição guardada no servidor. Todos os participantes autorizados podem consultar as equipas.')}</Text>
         {(['A','B'] as const).map(team=><View key={team} style={styles.confirmedTeamCard}>
           <Text style={styles.teamHeading}>{t('Equipa {team} · {n} jogadores',{team,n:confirmedTeams[team].length})}</Text>
