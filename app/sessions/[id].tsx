@@ -32,6 +32,7 @@ import {canLeave,canViewRoster,isOrganizer,registrationAction,safeExactAddress,s
 import type {SessionDetail,SessionParticipant,PublicSessionPreview,SessionTeamSuggestion,SessionTeamPlayer} from '../../src/lib/types';
 import {sessionChoices,levelLabel} from '../../src/lib/session-level-core.cjs';
 import {AddToCalendarButton} from '../../src/components/AddToCalendarButton';
+import {PublicShareCard} from '../../src/components/PublicShareCard';
 import {sportName} from '../../src/lib/sport-names.cjs';
 
 function ParticipantAvatar({participant}:{participant:SessionParticipant}){
@@ -659,8 +660,10 @@ export default function SessionScreen(){
       {auth.token&&owner&&detail&&detail.status==='COMPLETED'?<View style={styles.panel}>
         <Eyebrow>{t('DEPOIS DO JOGO')}</Eyebrow>
         <Text style={styles.hint}>{t('Correu bem? Marca o próximo com as mesmas definições e convida os mesmos jogadores.')}</Text>
-        <Button title={t('Jogar outra vez')} disabled={busy||loading}
+        <Button title={t('Marcar o próximo jogo')} disabled={busy||loading}
           onPress={()=>router.push({pathname:'/sessions/create',params:{repeatFrom:String(id),...(detail.communityId?{communityId:String(detail.communityId)}:{})}})}/>
+        {detail.communityId?<PublicShareCard target={{kind:'RANKING',communityId:detail.communityId}}
+          name={t('Classificação')} token={auth.token} canManage/>:null}
       </View>:null}
       {auth.token&&owner&&detail&&(detail.status==='OPEN'||detail.status==='FULL')&&Date.parse(detail.gameDate||'')>Date.now()?<View style={styles.panel}>
         <Eyebrow>{t('FERRAMENTAS DO ORGANIZADOR')}</Eyebrow>

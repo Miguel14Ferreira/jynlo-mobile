@@ -3327,6 +3327,8 @@ const EN={
   "Partilhar cancelamento": "Share cancellation",
   "Partilhar com {name}": "Share with {name}",
   "Partilhar convite": "Share invite",
+  "Marcar o primeiro jogo": "Schedule the first game",
+  "Marcar o próximo jogo": "Schedule the next game",
   "Partilhar convite da equipa": "Share team invitation",
   "Partilhar convite do jogo": "Share game invitation",
   "Partilhar este jogo": "Share this game",

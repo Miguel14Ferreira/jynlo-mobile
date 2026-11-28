@@ -278,7 +278,14 @@ export default function CommunityDetailScreen(){
     catch{if(version===generation.current)setError(t('Não foi possível abrir a partilha.'));}
   }
   return <Page><DemoBanner/>
-    {params.created==='1'?<Message>{t('Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.')}</Message>:null}
+    {params.created==='1'?<View style={styles.section}>
+      <Message>{t('Comunidade criada. Convida agora as pessoas com quem queres continuar a jogar.')}</Message>
+      {owner&&community?<>
+        <Button title={t('Partilhar convite')} onPress={()=>{void share();}}/>
+        <Button secondary title={t('Marcar o primeiro jogo')}
+          onPress={()=>router.push({pathname:'/sessions/create',params:{communityId:String(community.id)}})}/>
+      </>:null}
+    </View>:null}
     {loading?<Loader/>:null}
     {error?<Message tone="error">{error}</Message>:null}
     {error&&!community&&!loading?<Button secondary title={t('Tentar carregar comunidade novamente')} disabled={busy} onPress={()=>{void reload();}}/>:null}
